@@ -103,12 +103,13 @@
         <para>
             To use shared transports, all we need to do is to add a property "singleton_name" to the transport
             configuration. All channels with the same singleton name will be shared:
-            <programlisting>
-                &lt;UDP ...
-                    singleton_name="tp_one" ...
-                /&gt;
-            </programlisting>
         </para>
+        <programlisting language="XML">
+&lt;UDP ...
+    singleton_name="tp_one" ...
+/&gt;
+        </programlisting>
+
 
         <para>
             All channels using this configuration will now shared transport "tp_one". The channel on the right will
@@ -129,52 +130,73 @@
             A typical protocol stack configuration using UDP is:
         </para>
 
-        <programlisting>
-                  &lt;config&gt;
-                        &lt;UDP
-                             mcast_addr="${jgroups.udp.mcast_addr:228.10.10.10}"
-                             mcast_port="${jgroups.udp.mcast_port:45588}"
-                             discard_incompatible_packets="true"
-                             max_bundle_size="60000"
-                             max_bundle_timeout="30"
-                             ip_ttl="${jgroups.udp.ip_ttl:2}"
-                             enable_bundling="true"
-                             thread_pool.enabled="true"
-                             thread_pool.min_threads="1"
-                             thread_pool.max_threads="25"
-                             thread_pool.keep_alive_time="5000"
-                             thread_pool.queue_enabled="false"
-                             thread_pool.queue_max_size="100"
-                             thread_pool.rejection_policy="Run"
-                             oob_thread_pool.enabled="true"
-                             oob_thread_pool.min_threads="1"
-                             oob_thread_pool.max_threads="8"
-                             oob_thread_pool.keep_alive_time="5000"
-                             oob_thread_pool.queue_enabled="false"
-                             oob_thread_pool.queue_max_size="100"
-                             oob_thread_pool.rejection_policy="Run"/&gt;
-                        &lt;PING timeout="2000"
-                                num_initial_members="3"/&gt;
-                        &lt;MERGE2 max_interval="30000"
-                                min_interval="10000"/&gt;
-                        &lt;FD_SOCK/&gt;
-                        &lt;FD timeout="10000" max_tries="5"   shun="true"/&gt;
-                        &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
-                        &lt;pbcast.NAKACK
-                                       use_mcast_xmit="false"
-                                       retransmit_timeout="300,600,1200,2400,4800"
-                                       discard_delivered_msgs="true"/&gt;
-                        &lt;UNICAST timeout="300,600,1200,2400,3600"/&gt;
-                        &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                                       max_bytes="400000"/&gt;
-                        &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
-                                    shun="false"
-                                    view_bundling="true"/&gt;
-                        &lt;FC max_credits="20000000"
-                                        min_threshold="0.10"/&gt;
-                        &lt;FRAG2 frag_size="60000"  /&gt;
-                        &lt;pbcast.STATE_TRANSFER  /&gt;
-                  &lt;/config&gt;
+        <programlisting language="XML">
+&lt;config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd"&gt;
+    &lt;UDP
+         mcast_port="${jgroups.udp.mcast_port:45588}"
+         tos="8"
+         ucast_recv_buf_size="20M"
+         ucast_send_buf_size="640K"
+         mcast_recv_buf_size="25M"
+         mcast_send_buf_size="640K"
+         loopback="true"
+         discard_incompatible_packets="true"
+         max_bundle_size="64K"
+         max_bundle_timeout="30"
+         ip_ttl="${jgroups.udp.ip_ttl:2}"
+         enable_bundling="true"
+         enable_diagnostics="true"
+         thread_naming_pattern="cl"
+
+         timer_type="new"
+         timer.min_threads="4"
+         timer.max_threads="10"
+         timer.keep_alive_time="3000"
+         timer.queue_max_size="500"
+
+         thread_pool.enabled="true"
+         thread_pool.min_threads="2"
+         thread_pool.max_threads="8"
+         thread_pool.keep_alive_time="5000"
+         thread_pool.queue_enabled="true"
+         thread_pool.queue_max_size="10000"
+         thread_pool.rejection_policy="discard"
+
+         oob_thread_pool.enabled="true"
+         oob_thread_pool.min_threads="1"
+         oob_thread_pool.max_threads="8"
+         oob_thread_pool.keep_alive_time="5000"
+         oob_thread_pool.queue_enabled="false"
+         oob_thread_pool.queue_max_size="100"
+         oob_thread_pool.rejection_policy="Run"/&gt;
+
+    &lt;PING timeout="2000"
+            num_initial_members="3"/&gt;
+    &lt;MERGE2 max_interval="30000"
+            min_interval="10000"/&gt;
+    &lt;FD_SOCK/&gt;
+    &lt;FD_ALL/&gt;
+    &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
+    &lt;BARRIER /&gt;
+    &lt;pbcast.NAKACK use_stats_for_retransmission="false"
+                   exponential_backoff="0"
+                   use_mcast_xmit="true"
+                   retransmit_timeout="300,600,1200"
+                   discard_delivered_msgs="true"/&gt;
+    &lt;UNICAST timeout="300,600,1200"/&gt;
+    &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+                   max_bytes="4M"/&gt;
+    &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
+                view_bundling="true"/&gt;
+    &lt;UFC max_credits="2M"
+         min_threshold="0.4"/&gt;
+    &lt;MFC max_credits="2M"
+         min_threshold="0.4"/&gt;
+    &lt;FRAG2 frag_size="60K"  /&gt;
+    &lt;pbcast.STATE_TRANSFER /&gt;
+&lt;/config&gt;
         </programlisting>
     
 
@@ -362,24 +384,24 @@
 
             <para>
                 The properties for a typical stack based on TCP might look like this (edited for brevity):
-      <programlisting>
-    &lt;TCP bind_port="7800" /&gt;
-    &lt;TCPPING timeout="3000"
-             initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
-             port_range="1"
-             num_initial_members="3"/&gt;
-    &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
-    &lt;pbcast.NAKACK
-                   use_mcast_xmit="false"
-                   retransmit_timeout="300,600,1200,2400,4800"
-                   discard_delivered_msgs="true"/&gt;
-    &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                   max_bytes="400000"/&gt;
-    &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
-                shun="true"
-                view_bundling="true"/&gt;
-      </programlisting>
             </para>
+            <programlisting language="XML">
+&lt;TCP bind_port="7800" /&gt;
+&lt;TCPPING timeout="3000"
+    initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
+    port_range="1"
+    num_initial_members="3"/&gt;
+&lt;VERIFY_SUSPECT timeout="1500"  /&gt;
+&lt;pbcast.NAKACK
+    use_mcast_xmit="false"
+    retransmit_timeout="300,600,1200,2400,4800"
+    discard_delivered_msgs="true"/&gt;
+&lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+    max_bytes="400000"/&gt;
+&lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
+    view_bundling="true"/&gt;
+            </programlisting>
+
 
             <variablelist>
                 <varlistentry>
@@ -467,12 +489,13 @@
 
                 <para>
                     A protocol stack using TCP and TCPPING looks like this (other protocols omitted):
-                    <programlisting>
-            &lt;TCP bind_port="7800" /&gt; +
-            &lt;TCPPING initial_hosts="HostA[7800],HostB[7800]" port_range="2"
-                   timeout="3000" num_initial_members="3" /&gt;
-                    </programlisting>
                 </para>
+                <programlisting language="XML">
+&lt;TCP bind_port="7800" /&gt; +
+&lt;TCPPING initial_hosts="HostA[7800],HostB[7800]" port_range="2"
+    timeout="3000" num_initial_members="3" /&gt;
+                </programlisting>
+
 
                 <para>
                     The concept behind TCPPING is that some selected cluster members assume the role of well-known hosts
@@ -501,11 +524,11 @@
                 <para>
                     <classname>TCPGOSSIP</classname> uses one or more GossipRouters to (1) register itself and (2)
                     fetch information about already registered cluster members. A configuration looks like this:
-                    <programlisting>
-              &lt;TCP /&gt;
-              &lt;TCPGOSSIP initial_hosts="HostA[5555],HostB[5555]" num_initial_members="3" /&gt;
-                    </programlisting>
                 </para>
+                <programlisting language="XML">
+&lt;TCP /&gt;
+&lt;TCPGOSSIP initial_hosts="HostA[5555],HostB[5555]" num_initial_members="3" /&gt;
+                </programlisting>
 
                 <para>
                     The <parameter>initial_hosts</parameter> property is a comma-delimited list of GossipRouters.
@@ -562,11 +585,12 @@
             <para>
                 The solution works as follows. A channel inside a firewall has to use protocol TUNNEL instead of UDP or
                 TCP as transport. The recommended discovery protocol is PING. Here's a configuration:
-                <programlisting>
-              &lt;TUNNEL gossip_router_hosts="HostA[12001]" /&gt;
-              &lt;PING /&gt;
-                </programlisting>
             </para>
+
+            <programlisting language="XML">
+&lt;TUNNEL gossip_router_hosts="HostA[12001]" /&gt;
+&lt;PING /&gt;
+            </programlisting>
 
             <para>
                 <classname>TUNNEL</classname> uses a GossipRouter (outside the firewall) running on HostA at port

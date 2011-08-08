@@ -54,7 +54,7 @@
           a server receives requests and sends responses. <classname>MessageDispatcher</classname> allows for an
           application to be both at the same time. To be able to serve requests in the server role, the
           <methodname>RequestHandler.handle()</methodname> method has to be implemented:
-          <programlisting>
+          <programlisting language="Java">
               Object handle(Message msg) throws Exception;
           </programlisting>
       </para>
@@ -131,7 +131,7 @@
           An example of how to use RequestOptions is:
           </para>
 
-          <programlisting>
+          <programlisting language="Java">
               RpcDispatcher disp;
               RequestOptions opts=new RequestOptions(Request.GET_ALL)
                                       .setFlags(Message.NO_FC | Message.DONT_BUNDLE);
@@ -142,7 +142,7 @@
 
       <para>The methods to send requests are:</para>
 
-      <programlisting>
+      <programlisting language="Java">
           public &lt;T&gt; RspList&lt;T&gt; castMessage(final Collection&lt;Address&gt; dests,
                                       Message msg, RequestOptions options) throws Exception;
           public &lt;T&gt; NotifyingFuture&lt;RspList&lt;T&gt;&gt; castMessageWithFuture(final Collection&lt;Address&gt; dests,
@@ -200,7 +200,7 @@
           which contains all responses (not all methods shown):
       </para>
 
-      <programlisting>
+      <programlisting language="Java">
           public class RspList implements Map&lt;Address,Rsp&gt; {
               public boolean isReceived(Address sender);
               public int     numSuspectedMembers();
@@ -227,7 +227,7 @@
           This section shows an example of how to use a <classname>MessageDispatcher</classname>.
       </para>
     
-      <programlisting>
+      <programlisting language="Java">
     public class MessageDispatcherTest implements RequestHandler {
         Channel            channel;
         MessageDispatcher  disp;
@@ -316,20 +316,20 @@
           To invoke remote method calls (unicast and multicast) the following methods are used:
       </para>
 
-    <programlisting>
-        public &lt;T&gt; RspList&lt;T&gt; callRemoteMethods(Collection&lt;Address&gt; dests, String method_name, Object[] args,
-                                            Class[] types, RequestOptions options) throws Exception;
-        public &lt;T&gt; RspList&lt;T&gt; callRemoteMethods(Collection&lt;Address&gt; dests,
-                                            MethodCall method_call,
-                                            RequestOptions options) throws Exception;
-        public &lt;T&gt; NotifyingFuture&lt;RspList&lt;T&gt;&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
-                                                                       MethodCall method_call,
-                                                                       RequestOptions options) throws Exception;
-        public &lt;T&gt; T callRemoteMethod(Address dest, String method_name, Object[] args,
-                                   Class[] types, RequestOptions options) throws Exception;
-        public &lt;T&gt; T callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Exception;
-        public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
-                                                                             RequestOptions options) throws Exception;
+    <programlisting language="Java">
+public &lt;T&gt; RspList&lt;T&gt; callRemoteMethods(Collection&lt;Address&gt; dests, String method_name, Object[] args,
+                                      Class[] types, RequestOptions options) throws Exception;
+public &lt;T&gt; RspList&lt;T&gt; callRemoteMethods(Collection&lt;Address&gt; dests,
+                                      MethodCall method_call,
+                                      RequestOptions options) throws Exception;
+public &lt;T&gt; NotifyingFuture&lt;RspList&lt;T&gt;&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
+                                                               MethodCall method_call,
+                                                               RequestOptions options) throws Exception;
+public &lt;T&gt; T callRemoteMethod(Address dest, String method_name, Object[] args,
+                                    Class[] types, RequestOptions options) throws Exception;
+public &lt;T&gt; T callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Exception;
+public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
+                                                                     RequestOptions options) throws Exception;
     </programlisting>
 
       <para>
@@ -375,41 +375,40 @@
 
       <para>The code below shows an example of using RpcDispatcher:</para>
 
-      <programlisting>
-    public class RpcDispatcherTest {
-          JChannel           channel;
-          RpcDispatcher      disp;
-          RspList            rsp_list;
-          String             props; // set by application
+      <programlisting language="Java">
+public class RpcDispatcherTest {
+    JChannel           channel;
+    RpcDispatcher      disp;
+    RspList            rsp_list;
+    String             props; // set by application
 
-          public static int print(int number) throws Exception {
-              return number * 2;
-          }
-
-          public void start() throws Exception {
-              MethodCall call=new MethodCall(getClass().getMethod("print", int.class));
-              RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 5000);
-              channel=new JChannel(props);
-              disp=new RpcDispatcher(channel, null, null, this);
-              channel.connect("RpcDispatcherTestGroup");
-
-              for(int i=0; i &lt; 10; i++) {
-                  Util.sleep(100);
-                  rsp_list=disp.callRemoteMethods(null, "print", new Object[]{i}, new Class[]{int.class}, opts);
-                  // Alternative: use a (prefabricated) MethodCall:
-                  // call.setArgs(i);
-                  // rsp_list=disp.callRemoteMethods(null, call, opts);
-                  System.out.println("Responses: " + rsp_list);
-              }
-              channel.close();
-              disp.stop();
-          }
-
-          public static void main(String[] args) throws Exception {
-              new RpcDispatcherTest().start();
-          }
-
+    public static int print(int number) throws Exception {
+        return number * 2;
     }
+
+    public void start() throws Exception {
+        MethodCall call=new MethodCall(getClass().getMethod("print", int.class));
+        RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 5000);
+        channel=new JChannel(props);
+        disp=new RpcDispatcher(channel, null, null, this);
+        channel.connect("RpcDispatcherTestGroup");
+
+        for(int i=0; i &lt; 10; i++) {
+            Util.sleep(100);
+            rsp_list=disp.callRemoteMethods(null, "print", new Object[]{i}, new Class[]{int.class}, opts);
+            // Alternative: use a (prefabricated) MethodCall:
+            // call.setArgs(i);
+            // rsp_list=disp.callRemoteMethods(null, call, opts);
+            System.out.println("Responses: " + rsp_list);
+        }
+        channel.close();
+        disp.stop();
+    }
+
+    public static void main(String[] args) throws Exception {
+        new RpcDispatcherTest().start();
+    }
+}
      </programlisting>
 
 
@@ -439,27 +438,29 @@
             <para>
                 A <emphasis>Future</emphasis> allows a caller to return immediately and grab the result(s) later. In
                 2.9, two new methods, which return futures, have been added to RpcDispatcher:
-                <programlisting>
-        public NotifyingFuture&lt;RspList&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
-                                                   MethodCall method_call, RequestOptions options) throws Exception;
-        public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
-                                                     RequestOptions options) throws Exception;
-                </programlisting>
             </para>
+            <programlisting language="Java">
+public NotifyingFuture&lt;RspList&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
+                                            MethodCall method_call, RequestOptions options) throws Exception;
+public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
+                                            RequestOptions options) throws Exception;
+            </programlisting>
+
 
             <para>
                 A NotifyingFuture extends java.util.concurrent.Future, with its regular methods such as isDone(),
                 get() and cancel(). NotifyingFuture adds setListener&lt;FutureListener&gt; to get notified when
                 the result is available. This is shown in the following code:
-                <programlisting>
-        NotifyingFuture&lt;RspList&gt; future=dispatcher.callRemoteMethodsWithFuture(...);
-        future.setListener(new FutureListener() {
-            void futureDone(Future&lt;T&gt; future) {
-                System.out.println("result is " + future.get());
-            }
-        });
-                </programlisting>
             </para>
+
+            <programlisting language="Java">
+NotifyingFuture&lt;RspList&gt; future=dispatcher.callRemoteMethodsWithFuture(...);
+future.setListener(new FutureListener() {
+    void futureDone(Future&lt;T&gt; future) {
+        System.out.println("result is " + future.get());
+    }
+});
+            </programlisting>
 
         </section>
 
@@ -474,11 +475,11 @@
               (2) whether more responses are needed, or whether the call (if blocking) can return. The
               <classname>RspFilter</classname> interface looks as follows:
           </para>
-          <programlisting>
-              public interface RspFilter {
-                  boolean isAcceptable(Object response, Address sender);
-                  boolean needMoreResponses();
-              }
+          <programlisting language="Java">
+public interface RspFilter {
+    boolean isAcceptable(Object response, Address sender);
+    boolean needMoreResponses();
+}
           </programlisting>
 
           <para>
@@ -492,32 +493,32 @@
           </para>
           <para>
               The sample code below shows how to use a RspFilter:
-              <programlisting>
-    public void testResponseFilter() throws Exception {
-        final long timeout = 10 * 1000 ;
-
-        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, timeout, false,
-                                                  new RspFilter() {
-                                                      int num=0;
-                                                      public boolean isAcceptable(Object response, Address sender) {
-                                                          boolean retval=((Integer)response).intValue() &gt; 1;
-                                                          if(retval)
-                                                              num++;
-                                                          return retval;
-                                                      }
-
-                                                      public boolean needMoreResponses() {
-                                                          return num &lt; 2;
-                                                      }
-                                                  });
-
-        RspList rsps=disp1.callRemoteMethods(null, "foo", null, null, options);
-        System.out.println("responses are:\n" + rsps);
-        assertEquals("there should be three response values", 3, rsps.size());
-        assertEquals("number of responses received should be 2", 2, rsps.numReceived());
-    }
-              </programlisting>
           </para>
+          <programlisting language="Java">
+public void testResponseFilter() throws Exception {
+    final long timeout = 10 * 1000 ;
+
+    RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, timeout, false,
+                                              new RspFilter() {
+                                                  int num=0;
+                                                  public boolean isAcceptable(Object response, Address sender) {
+                                                      boolean retval=((Integer)response).intValue() &gt; 1;
+                                                      if(retval)
+                                                          num++;
+                                                      return retval;
+                                                  }
+                                                  public boolean needMoreResponses() {
+                                                      return num &lt; 2;
+                                                  }
+                                              });
+
+    RspList rsps=disp1.callRemoteMethods(null, "foo", null, null, options);
+    System.out.println("responses are:\n" + rsps);
+    assertEquals("there should be three response values", 3, rsps.size());
+    assertEquals("number of responses received should be 2", 2, rsps.numReceived());
+}
+          </programlisting>
+
 
           <para>
               Here, we invoke a cluster wide RPC (dests=null), which blocks (mode=GET_ALL) for 10 seconds max
@@ -631,21 +632,22 @@
         </para>
         <para>
             Below is an example of how LockService is typically used:
-            <programlisting>
-                // locking.xml needs to have a locking protocol
-                JChannel ch=new JChannel("/home/bela/locking.xml");
-                LockService lock_service=new LockService(ch);
-                ch.connect("lock-cluster");
-                Lock lock=lock_service.getLock("mylock");
-                lock.lock();
-                try {
-                    // do something with the locked resource
-                }
-                finally {
-                    lock.unlock();
-                }
-            </programlisting>
         </para>
+
+        <programlisting language="Java">
+// locking.xml needs to have a locking protocol
+JChannel ch=new JChannel("/home/bela/locking.xml");
+LockService lock_service=new LockService(ch);
+ch.connect("lock-cluster");
+Lock lock=lock_service.getLock("mylock");
+lock.lock();
+try {
+    // do something with the locked resource
+}
+finally {
+    lock.unlock();
+}
+        </programlisting>
 
         <para>
             In the example, we create a channel, then a LockService, then connect the channel. If the channel's
@@ -694,23 +696,24 @@
             <para>
                 Therefore the recommended solution here is for nodes to listen to MergeView changes if they expect
                 merging to occur, and re-acquire all of their locks after a merge, e.g.:
-                <programlisting>
-                    Lock l1, l2, l3;
-                    LockService lock_service;
-                    ...
-                    public void viewAccepted(View view) {
-                        if(view instanceof MergeView) {
-                            new Thread() {
-                                public void run() {
-                                    lock_service.unlockAll();
-                                    // stop all access to resources protected by l1, l2 or l3
-                                    // every thread needs to re-acquire the locks it holds
-                                }
-                            }.start
-                        }
-                    }
-                </programlisting>
             </para>
+
+            <programlisting language="Java">
+Lock l1, l2, l3;
+LockService lock_service;
+...
+public void viewAccepted(View view) {
+    if(view instanceof MergeView) {
+        new Thread() {
+            public void run() {
+                lock_service.unlockAll();
+                // stop all access to resources protected by l1, l2 or l3
+                // every thread needs to re-acquire the locks it holds
+            }
+        }.start
+    }
+}
+            </programlisting>
         </section>
     </section>
     
@@ -740,24 +743,25 @@
         
         <para>
             Below is an example of how ExecutionService is typically used:
-            <programlisting>
-            // locking.xml needs to have a locking protocol
-            JChannel ch=new JChannel("/home/bela/executing.xml");
-            ExecutionService exec_service =new ExecutionService(ch);
-            ch.connect("exec-cluster");
-            Future&lt;Value&gt; future = exec_service.submit(new MyCallable());
-            try {
-                Value value = future.get();
-                // Do something with value
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            catch (ExecutionException e) {
-                e.getCause().printStackTrace();
-            }
-            </programlisting>
         </para>
+
+        <programlisting language="Java">
+// locking.xml needs to have a locking protocol
+JChannel ch=new JChannel("/home/bela/executing.xml");
+ExecutionService exec_service =new ExecutionService(ch);
+ch.connect("exec-cluster");
+Future&lt;Value&gt; future = exec_service.submit(new MyCallable());
+try {
+    Value value = future.get();
+    // Do something with value
+}
+catch (InterruptedException e) {
+    e.printStackTrace();
+}
+catch (ExecutionException e) {
+    e.getCause().printStackTrace();
+}
+        </programlisting>
 
         <para>
             In the example, we create a channel, then an ExecutionService, then connect the channel. Then we submit

@@ -234,7 +234,7 @@
             depends="check-tutorial" unless="tutorial.up-to-date">
         <echo message="Building tutorial from docbook ..."/>
         <run-maven dir="${tutorial.dir}"/>
-        <touch file="${tutorial.dir}/build/timestamp"/>
+        <touch file="${tutorial.dir}/target/timestamp"/>
     </target>
 
 

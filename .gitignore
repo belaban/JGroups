@@ -13,3 +13,7 @@ atlassian*
 keystore/
 tmp/
 bla*.java
+doc/manual/target
+doc/tutorial/target
+
+

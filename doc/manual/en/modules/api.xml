@@ -55,14 +55,16 @@
             <para>
                 The <classname>MessageListener</classname> interface below provides callbacks for message reception and
                 for providing and setting the state:
-                <programlisting>
-                    public interface MessageListener {
-                        void receive(Message msg);
-                        void getState(OutputStream output) throws Exception;
-                        void setState(InputStream input) throws Exception;
-                    }
-                </programlisting>
             </para>
+
+            <programlisting language="Java">
+public interface MessageListener {
+    void receive(Message msg);
+    void getState(OutputStream output) throws Exception;
+    void setState(InputStream input) throws Exception;
+}
+            </programlisting>
+
 
             <para>Method <methodname>receive()</methodname> is be called whenever a message is received. The
                 <methodname>getState()</methodname> and <methodname>setState()</methodname>
@@ -79,16 +81,17 @@
                 <classname>MessageListener</classname> interface above: every time a new view, a suspicion message,
                 or a block event is received, the corresponding method of the class implementing
                 <classname>MembershipListener</classname>  will be called.
-
-                <programlisting>
-                    public interface MembershipListener {
-                        public void viewAccepted(View new_view);
-                        public void suspect(Object suspected_mbr);
-                        public void block();
-                        public void unblock();
-                    }
-                </programlisting>
             </para>
+
+            <programlisting language="Java">
+public interface MembershipListener {
+    public void viewAccepted(View new_view);
+    public void suspect(Object suspected_mbr);
+    public void block();
+    public void unblock();
+}
+            </programlisting>
+
 
             <para>
                 Oftentimes the only callback that needs to be implemented will be
@@ -135,11 +138,9 @@
 
         <section id="Receiver">
             <title>Receiver</title>
-            <para>
-                <screen>
-                    public interface Receiver extends MessageListener, MembershipListener { }
-                </screen>
-            </para>
+            <programlisting language="Java">
+public interface Receiver extends MessageListener, MembershipListener { }
+            </programlisting>
 
             <para>
                 A Receiver can be used to receive messages and view changes; receive() will be invoked as soon as a
@@ -179,15 +180,13 @@
 
         <section id="ChannelListener">
             <title>ChannelListener</title>
-            <para>
-                <programlisting>
-                    public interface ChannelListener {
-                        void channelConnected(Channel channel);
-                        void channelDisconnected(Channel channel);
-                        void channelClosed(Channel channel);
-                    }
-                </programlisting>
-            </para>
+            <programlisting language="Java">
+public interface ChannelListener {
+    void channelConnected(Channel channel);
+    void channelDisconnected(Channel channel);
+    void channelClosed(Channel channel);
+}
+            </programlisting>
 
             <para>
                 A class implementing <classname>ChannelListener</classname> can use the
@@ -205,13 +204,14 @@
         <para>Each member of a group has an address, which uniquely identifies the member. The interface for such an
             address is Address, which requires concrete implementations to provide methods such as comparison and
             sorting of addresses. JGroups addresses have to implement the following interface:
-
-            <programlisting>
-              public interface Address extends Externalizable, Comparable, Cloneable {
-                  int size();
-              }
-            </programlisting>
         </para>
+
+        <programlisting language="Java">
+public interface Address extends Externalizable, Comparable, Cloneable {
+    int size();
+}
+        </programlisting>
+
 
         <para>
             For marshalling purposes, size() needs to return the number of bytes an instance of an address implementation
@@ -348,12 +348,13 @@
             from a message received previously, or it can be <literal>null</literal>, which means that the message
             will be sent to all members of the group. A typical multicast message, sending string
             <literal>"Hello"</literal> to all members would look like this:
-
-            <programlisting>
-                Message msg=new Message(null, "Hello");
-                channel.send(msg);
-            </programlisting>
         </para>
+
+        <programlisting language="Java">
+Message msg=new Message(null, "Hello");
+channel.send(msg);
+        </programlisting>
+
     </section>
 
     <section id="Header">
@@ -403,13 +404,15 @@
         <para>
             The code below shows how to send a (unicast) message to the first member of a view (error checking code
             omitted):
-            <programlisting>
-                View view=channel.getView();
-                Address first=view.getMembers().get(0);
-                Message msg=new Message(first, null, "Hello world");
-                channel.send(msg);
-            </programlisting>
         </para>
+
+        <programlisting language="Java">
+View view=channel.getView();
+Address first=view.getMembers().get(0);
+Message msg=new Message(first, null, "Hello world");
+channel.send(msg);
+        </programlisting>
+
 
         <para>
             Whenever an application is notified that a new view has been installed (e.g. by
@@ -493,8 +496,8 @@
                 The most frequently used constructor of <classname>JChannel</classname> looks as follows:
             </para>
 
-            <programlisting>
-                public JChannel(String props) throws Exception {}
+            <programlisting language="Java">
+public JChannel(String props) throws Exception {}
             </programlisting>
 
             <para>
@@ -528,73 +531,73 @@
             <para>
                 A sample XML configuration looks like this (edited from udp.xml):
             </para>
-            <programlisting>
-                &lt;config xmlns="urn:org:jgroups"
-                        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd"&gt;
-                    &lt;UDP
-                         mcast_port="${jgroups.udp.mcast_port:45588}"
-                         tos="8"
-                         ucast_recv_buf_size="20M"
-                         ucast_send_buf_size="640K"
-                         mcast_recv_buf_size="25M"
-                         mcast_send_buf_size="640K"
-                         loopback="true"
-                         discard_incompatible_packets="true"
-                         max_bundle_size="64K"
-                         max_bundle_timeout="30"
-                         ip_ttl="${jgroups.udp.ip_ttl:2}"
-                         enable_bundling="true"
-                         enable_diagnostics="true"
-                         thread_naming_pattern="cl"
+            <programlisting language="XML">
+&lt;config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd"&gt;
+    &lt;UDP
+         mcast_port="${jgroups.udp.mcast_port:45588}"
+         tos="8"
+         ucast_recv_buf_size="20M"
+         ucast_send_buf_size="640K"
+         mcast_recv_buf_size="25M"
+         mcast_send_buf_size="640K"
+         loopback="true"
+         discard_incompatible_packets="true"
+         max_bundle_size="64K"
+         max_bundle_timeout="30"
+         ip_ttl="${jgroups.udp.ip_ttl:2}"
+         enable_bundling="true"
+         enable_diagnostics="true"
+         thread_naming_pattern="cl"
 
-                         timer_type="new"
-                         timer.min_threads="4"
-                         timer.max_threads="10"
-                         timer.keep_alive_time="3000"
-                         timer.queue_max_size="500"
+         timer_type="new"
+         timer.min_threads="4"
+         timer.max_threads="10"
+         timer.keep_alive_time="3000"
+         timer.queue_max_size="500"
 
-                         thread_pool.enabled="true"
-                         thread_pool.min_threads="2"
-                         thread_pool.max_threads="8"
-                         thread_pool.keep_alive_time="5000"
-                         thread_pool.queue_enabled="true"
-                         thread_pool.queue_max_size="10000"
-                         thread_pool.rejection_policy="discard"
+         thread_pool.enabled="true"
+         thread_pool.min_threads="2"
+         thread_pool.max_threads="8"
+         thread_pool.keep_alive_time="5000"
+         thread_pool.queue_enabled="true"
+         thread_pool.queue_max_size="10000"
+         thread_pool.rejection_policy="discard"
 
-                         oob_thread_pool.enabled="true"
-                         oob_thread_pool.min_threads="1"
-                         oob_thread_pool.max_threads="8"
-                         oob_thread_pool.keep_alive_time="5000"
-                         oob_thread_pool.queue_enabled="false"
-                         oob_thread_pool.queue_max_size="100"
-                         oob_thread_pool.rejection_policy="Run"/&gt;
+         oob_thread_pool.enabled="true"
+         oob_thread_pool.min_threads="1"
+         oob_thread_pool.max_threads="8"
+         oob_thread_pool.keep_alive_time="5000"
+         oob_thread_pool.queue_enabled="false"
+         oob_thread_pool.queue_max_size="100"
+         oob_thread_pool.rejection_policy="Run"/&gt;
 
-                    &lt;PING timeout="2000"
-                            num_initial_members="3"/&gt;
-                    &lt;MERGE2 max_interval="30000"
-                            min_interval="10000"/&gt;
-                    &lt;FD_SOCK/&gt;
-                    &lt;FD_ALL/&gt;
-                    &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
-                    &lt;BARRIER /&gt;
-                    &lt;pbcast.NAKACK use_stats_for_retransmission="false"
-                                   exponential_backoff="0"
-                                   use_mcast_xmit="true"
-                                   retransmit_timeout="300,600,1200"
-                                   discard_delivered_msgs="true"/&gt;
-                    &lt;UNICAST2 timeout="300,600,1200"/&gt;
-                    &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                                   max_bytes="4M"/&gt;
-                    &lt;pbcast.GMS print_local_addr="true" join_timeout="10000"
-                                view_bundling="true"/&gt;
-                    &lt;UFC max_credits="2M"
-                         min_threshold="0.4"/&gt;
-                    &lt;MFC max_credits="2M"
-                         min_threshold="0.4"/&gt;
-                    &lt;FRAG2 frag_size="60K"  /&gt;
-                    &lt;pbcast.STATE_TRANSFER  /&gt;
-                &lt;/config&gt;
+    &lt;PING timeout="2000"
+            num_initial_members="3"/&gt;
+    &lt;MERGE2 max_interval="30000"
+            min_interval="10000"/&gt;
+    &lt;FD_SOCK/&gt;
+    &lt;FD_ALL/&gt;
+    &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
+    &lt;BARRIER /&gt;
+    &lt;pbcast.NAKACK use_stats_for_retransmission="false"
+                   exponential_backoff="0"
+                   use_mcast_xmit="true"
+                   retransmit_timeout="300,600,1200"
+                   discard_delivered_msgs="true"/&gt;
+    &lt;UNICAST timeout="300,600,1200"/&gt;
+    &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+                   max_bytes="4M"/&gt;
+    &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
+                view_bundling="true"/&gt;
+    &lt;UFC max_credits="2M"
+         min_threshold="0.4"/&gt;
+    &lt;MFC max_credits="2M"
+         min_threshold="0.4"/&gt;
+    &lt;FRAG2 frag_size="60K"  /&gt;
+    &lt;pbcast.STATE_TRANSFER /&gt;
+&lt;/config>
             </programlisting>
 
             <para>
@@ -643,46 +646,52 @@
                 <para>
                     An example of how to programmatically create a channel is shown below (copied from
                     ProgrammaticChat):
-                    <programlisting>
-              public static void main(String[] args) throws Exception {
-                    JChannel ch=new JChannel(false); // (1)
-                    ProtocolStack stack=new ProtocolStack();
-                    ch.setProtocolStack(stack); // (2)
-                    stack.addProtocol(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")))
-                        .addProtocol(new PING())
-                        .addProtocol(new MERGE2())
-                        .addProtocol(new FD_SOCK())
-                        .addProtocol(new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000))
-                        .addProtocol(new VERIFY_SUSPECT())
-                        .addProtocol(new BARRIER())
-                        .addProtocol(new NAKACK())
-                        .addProtocol(new UNICAST2())
-                        .addProtocol(new STABLE())
-                        .addProtocol(new GMS())
-                        .addProtocol(new UFC())
-                        .addProtocol(new MFC())
-                        .addProtocol(new FRAG2()); // (3)
-                    stack.init(); // (4)
-
-                    ch.setReceiver(new ReceiverAdapter() {
-                            public void viewAccepted(View new_view) {
-                                System.out.println("view: " + new_view);
-                            }
-
-                            public void receive(Message msg) {
-                                System.out.println("&lt;&lt; " + msg.getObject() + " [" + msg.getSrc() + "]");
-                            }
-                    });
-
-                    ch.connect("ChatCluster");
-
-                    for(;;) {
-                        String line=Util.readStringFromStdin(": ");
-                        ch.send(null, line);
-                    }
-              }
-                    </programlisting>
                 </para>
+                    <programlisting language="Java">
+public class ProgrammaticChat {
+
+    public static void main(String[] args) throws Exception {
+        JChannel ch=new JChannel(false);         // (1)
+        ProtocolStack stack=new ProtocolStack(); // (2)
+        ch.setProtocolStack(stack);
+        stack.addProtocol(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")))
+                .addProtocol(new PING())
+                .addProtocol(new MERGE2())
+                .addProtocol(new FD_SOCK())
+                .addProtocol(new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000))
+                .addProtocol(new VERIFY_SUSPECT())
+                .addProtocol(new BARRIER())
+                .addProtocol(new NAKACK())
+                .addProtocol(new UNICAST2())
+                .addProtocol(new STABLE())
+                .addProtocol(new GMS())
+                .addProtocol(new UFC())
+                .addProtocol(new MFC())
+                .addProtocol(new FRAG2());       // (3)
+        stack.init();                            // (4)
+
+        ch.setReceiver(new ReceiverAdapter() {
+            public void viewAccepted(View new_view) {
+                System.out.println("view: " + new_view);
+            }
+
+            public void receive(Message msg) {
+                System.out.println("&lt;&lt; " + msg.getObject() + " [" + msg.getSrc() + "]");
+            }
+        });
+
+        ch.connect("ChatCluster");
+
+
+        for(;;) {
+            String line=Util.readStringFromStdin(": ");
+            ch.send(null, line);
+        }
+    }
+
+}
+                    </programlisting>
+
                 <para>
                     First a JChannel is created (1). The 'false' argument tells the channel not to create a ProtocolStack.
                     This is needed because we will create one ourselves later and set it in the channel (2).
@@ -725,10 +734,11 @@
             </para>
             <para>
                 The logical name can be set using:
-                <programlisting>
-                    public void setName(String logical_name);
-                </programlisting>
             </para>
+            <programlisting language="Java">
+public void setName(String logical_name);
+            </programlisting>
+
             <para>
                 This should be done <emphasis>before</emphasis> connecting a channel. Note that the logical name stays
                 with a channel until the channel is destroyed, whereas a UUID is created on each connection.
@@ -737,9 +747,9 @@
             <para>
                 When JGroups starts, it prints the logical name and the associated physical address(es):
                 <screen>
-                    -------------------------------------------------------------------
-                    GMS: address=mac-53465, cluster=DrawGroupDemo, physical address=192.168.1.3:49932
-                    -------------------------------------------------------------------
+-------------------------------------------------------------------
+GMS: address=mac-53465, cluster=DrawGroupDemo, physical address=192.168.1.3:49932
+-------------------------------------------------------------------
                 </screen>
 
                 The logical name is mac-53465 and the physical address is 192.168.1.3:49932. The UUID is not shown here.
@@ -758,29 +768,37 @@
                 about the location of the node to which the address is assigned. Note that methods equals(), hashCode()
                 and compare() of the UUID super class should not be changed.
             </para>
+
             <para>
-                To use custom addresses, the following things have to be done:
-                <itemizedlist>
-                    <listitem>Write an implementation of org.jgroups.stack.AddressGenerator</listitem>
-                    <listitem>For any class CustomAddress, it will need to get registered with the ClassConfigurator in
-                        order to marshal it correctly:
-                        <programlisting>
-                    class CustomAddress extends UUID {
-                        static {
-                            ClassConfigurator.add((short)8900, CustomAddress.class);
-                        }
-                    }
-                        </programlisting>
-                        Note that the ID should be chosen such that it doesn't collide with any IDs defined in
-                        jg-magic-map.xml.
-                    </listitem>
-                    <listitem>Set the address generator in JChannel: setAddressGenerator(AddressGenerator). This has to
-                        be done <emphasis>before</emphasis> the channel is connected.
-                    </listitem>
-                </itemizedlist>
+                To use custom addresses, an implementation of <classname>org.jgroups.stack.AddressGenerator</classname>
+                has to be written.
             </para>
             <para>
-                An example of a subclass is org.jgroups.util.PayloadUUID, and there are 2 more shipped with JGroups.
+                For any class CustomAddress, it will need to get registered with the ClassConfigurator in
+                order to marshal it correctly:
+            </para>
+            <programlisting language="Java">
+class CustomAddress extends UUID {
+    static {
+        ClassConfigurator.add((short)8900, CustomAddress.class);
+    }
+}
+            </programlisting>
+
+            <note>
+                <para>
+                    Note that the ID should be chosen such that it doesn't collide with any IDs defined in
+                    jg-magic-map.xml.
+                </para>
+            </note>
+            <para>
+                Set the address generator in JChannel: setAddressGenerator(AddressGenerator). This has to
+                be done <emphasis>before</emphasis> the channel is connected.
+            </para>
+
+            <para>
+                An example of a subclass is <classname>org.jgroups.util.PayloadUUID</classname>, and there are
+                2 more shipped with JGroups.
             </para>
         </section>
 
@@ -792,8 +810,8 @@
                 to a channel giving the name of the cluster to be joined:
             </para>
 
-            <programlisting>
-                public void connect(String clustername) throws Exception;
+            <programlisting language="Java">
+public void connect(String clustername) throws Exception;
             </programlisting>
 
             <para>
@@ -836,8 +854,8 @@
                 one atomic operation.
             </para>
 
-            <programlisting>
-                public synchronized void connect(String cluster_name, Address target, long timeout) throws Exception;
+            <programlisting language="Java">
+public synchronized void connect(String cluster_name, Address target, long timeout) throws Exception;
             </programlisting>
 
             <para>
@@ -857,17 +875,17 @@
                 not be available when a channel is in the unconnected state.
             </para>
 
-            <programlisting>
-                public Address getAddress();
+            <programlisting language="Java">
+public Address getAddress();
             </programlisting>
 
             <para>
                 Method <methodname>getClusterName()</methodname> returns the name of the cluster which the member joined.
             </para>
 
-            <screen>
-                public String getClusterName();
-            </screen>
+            <programlisting language="Java">
+public String getClusterName();
+            </programlisting>
 
             <para>
                 Again, the result is undefined if the channel is in the disconnected or closed state.
@@ -879,8 +897,8 @@
 
             <para>The following method can be used to get the current view of a channel:</para>
 
-            <programlisting>
-                public View getView();
+            <programlisting language="Java">
+public View getView();
             </programlisting>
 
             <para>
@@ -902,11 +920,11 @@
                 methods:
             </para>
 
-            <programlisting>
-                public void send(Message msg) throws Exception;
-                public void send(Address dst, Serializable obj) throws Exception;
-                public void send(Address dst, byte[] buf) throws Exception;
-                public void send(Address dst, byte[] buf, int offset, int length) throws Exception;
+            <programlisting language="Java">
+public void send(Message msg) throws Exception;
+public void send(Address dst, Serializable obj) throws Exception;
+public void send(Address dst, byte[] buf) throws Exception;
+public void send(Address dst, byte[] buf, int offset, int length) throws Exception;
             </programlisting>
 
             <para>
@@ -925,13 +943,15 @@
                 message.
             </para>
 
-            <para>Here's an example of sending a message to all members of a cluster:
-
-                <programlisting>
-                    Map data; // any serializable data
-                    channel.send(null, data);
-                </programlisting>
+            <para>
+                Here's an example of sending a message to all members of a cluster:
             </para>
+
+            <programlisting language="Java">
+Map data; // any serializable data
+channel.send(null, data);
+            </programlisting>
+
 
             <para>
                 The null value as destination address means that the message will be sent to all members in the cluster.
@@ -942,13 +962,14 @@
 
             <para>
                 Here's an example of sending a unicast message to the first member (coordinator) of a group:
-
-                <programlisting>
-                    Map data;
-                    Address receiver=channel.getView().getMembers().get(0);
-                    channel.send(receiver, "hello world");
-                </programlisting>
             </para>
+
+            <programlisting language="Java">
+Map data;
+Address receiver=channel.getView().getMembers().get(0);
+channel.send(receiver, "hello world");
+            </programlisting>
+
 
             <para>
                 The sample code determines the coordinator (first member of the view) and sends it a "hello world"
@@ -960,8 +981,9 @@
 
                 <para>
                     Sometimes, it is desirable not to have to deal with one's own messages, ie. messages sent by oneself.
-                    To do this, JChannel.setDiscardOwnMessages(boolean flag) can be set to true (false by default). This means
-                    that every cluster node will receive a message sent by P, but P itself won't.
+                    To do this, <methodname>JChannel.setDiscardOwnMessages(boolean flag)</methodname> can be set to
+                    true (false by default). This means that every cluster node will receive a message sent
+                    by P, but P itself won't.
                 </para>
                 <para>
                     Note that this method replaces the old JChannel.setOpt(LOCAL, false) method, which was removed in 3.0.
@@ -979,27 +1001,29 @@
                 receive messages, views, and state transfer callbacks.
             </para>
 
-            <programlisting>
-                public void receive(Message msg);
+            <programlisting language="Java">
+public void receive(Message msg);
             </programlisting>
 
 
             <para>
                 A Receiver can be registered with a channel using JChannel.setReceiver(). All received messages, view
                 changes and state transfer requests will invoke callbacks on the registered Receiver:
-                <programlisting>
-                    JChannel ch=new JChannel();
-                    ch.setReceiver(new ReceiverAdapter() {
-                        public void receive(Message msg) {
-                            System.out.println("received message " + msg);
-                        }
-                        public void viewAccepted(View view) {
-                            System.out.println("received view " + new_view);
-                        }
-                    });
-                    ch.connect("MyCluster");
-                </programlisting>
-            </para>
+             </para>
+
+            <programlisting language="Java">
+JChannel ch=new JChannel();
+ch.setReceiver(new ReceiverAdapter() {
+    public void receive(Message msg) {
+        System.out.println("received message " + msg);
+    }
+    public void viewAccepted(View view) {
+        System.out.println("received view " + new_view);
+    }
+});
+ch.connect("MyCluster");
+            </programlisting>
+
 
 
         </section>
@@ -1025,10 +1049,11 @@
             <para>
                 A newly joined member may want to retrieve the state of the cluster before starting work. This is done
                 with <methodname>getState()</methodname>:
-                <programlisting>
-                    public void getState(Address target, long timeout) throws Exception;
-                </programlisting>
             </para>
+            <programlisting language="Java">
+public void getState(Address target, long timeout) throws Exception;
+            </programlisting>
+
             <para>
                 This method returns the state of one member (usually of the oldest member, the coordinator). The target
                 parameter can usually be null, to ask the current coordinator for the state. If a timeout (ms) elapses
@@ -1049,9 +1074,9 @@
                 following callbacks from ReceiverAdapter (Receiver):
             </para>
             
-            <programlisting>
-                    public void getState(OutputStream output) throws Exception;
-                    public void setState(InputStream input) throws Exception;
+            <programlisting language="Java">
+public void getState(OutputStream output) throws Exception;
+public void setState(InputStream input) throws Exception;
             </programlisting>
 
             <para>
@@ -1097,26 +1122,27 @@
 
             
 
-            <para>The following code fragment shows how a group member participates in state transfers:
-                <programlisting>
-                  public void getState(OutputStream output) throws Exception {
-                      synchronized(state) {
-                          Util.objectToStream(state, new DataOutputStream(output));
-                      }
-                  }
+            <para>The following code fragment shows how a group member participates in state transfers:</para>
 
-                  public void setState(InputStream input) throws Exception {
-                      List&lt;String&gt; list=(List&lt;String&gt;)Util.objectFromStream(new DataInputStream(input));
-                      synchronized(state) {
-                          state.clear();
-                          state.addAll(list);
-                      }
-                      System.out.println("received state (" + list.size() + " messages in chat history):");
-                      for(String str: list)
-                          System.out.println(str);
-                  }
-                </programlisting>
-            </para>
+            <programlisting language="Java">
+public void getState(OutputStream output) throws Exception {
+    synchronized(state) {
+        Util.objectToStream(state, new DataOutputStream(output));
+    }
+}
+
+public void setState(InputStream input) throws Exception {
+    List&lt;String&gt; list=(List&lt;String&gt;)Util.objectFromStream(new DataInputStream(input));
+    synchronized(state) {
+        state.clear();
+        state.addAll(list);
+    }
+    System.out.println("received state (" + list.size() + " messages in chat history):");
+    for(String str: list)
+        System.out.println(str);
+    }
+}
+            </programlisting>
 
             <para>
                 This code is the Chat example from the JGroups tutorial and the state here is a list of strings.
@@ -1132,10 +1158,10 @@
                 <para>
                     If a lot of smaller fragments are written to an output stream, it is best to wrap the output stream
                     into a BufferedOutputStream, e.g.
-                    <programlisting>
-                        Util.objectToState(state, new BufferedOutputStream(new DataOutputStream(output)));
-                    </programlisting>
                 </para>
+                <programlisting language="Java">
+Util.objectToState(state, new BufferedOutputStream(new DataOutputStream(output)));
+                </programlisting>
             </note>
 
             <para>
@@ -1204,11 +1230,11 @@
         <section id="Disconnecting">
             <title>Disconnecting from a channel</title>
 
-            <para>Disconnecting from a channel is done using the following method:
-                <programlisting>
-                    public void disconnect();
-                </programlisting>
-            </para>
+            <para>Disconnecting from a channel is done using the following method:</para>
+            <programlisting language="Java">
+public void disconnect();
+            </programlisting>
+
 
             <para>
                 It will have no effect if the channel is already in the disconnected or closed state. If connected, it
@@ -1229,10 +1255,11 @@
             <para>
                 To destroy a channel instance (destroy the associated protocol stack, and release all resources),
                 method <methodname>close()</methodname> is used:
-                <programlisting>
-                    public void close();
-                </programlisting>
             </para>
+            <programlisting language="Java">
+public void close();
+            </programlisting>
+
 
             <para>
                 Closing a connected channel disconnects the channel first.
