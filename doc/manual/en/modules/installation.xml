@@ -175,22 +175,18 @@
         <para>To see whether your system can find the JGroups classes, execute the following command:
         </para>
 
-        <screen>
-            java org.jgroups.Version
-        </screen>
+        <screen>java org.jgroups.Version</screen>
 
         <para>or</para>
 
-        <screen>
-            java -jar jgroups-all.jar
-        </screen>
+        <screen>java -jar jgroups-all.jar</screen>
 
         <para>You should see the following output (more or less) if the
             class is found:</para>
         <screen>
-            $  java org.jgroups.Version
+$  java org.jgroups.Version
 
-               Version:      3.0.0.Beta1
+   Version:      3.0.0.Beta1
         </screen>
     </section>
 
@@ -200,9 +196,7 @@
         <para>To test whether JGroups works okay on your machine, run the following command twice:
         </para>
 
-        <screen>
-            java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw
-        </screen>
+        <screen>java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw</screen>
 
         <para>2 whiteboard windows should appear as shown in <xref linkend="DrawScreenshotFig"/>.
 
@@ -245,9 +239,7 @@
             this the loopback interface (typically lo) can be configured,
             e.g.</para>
 
-        <screen>
-            route add -net 224.0.0.0 netmask 240.0.0.0 dev lo
-        </screen>
+        <screen>route add -net 224.0.0.0 netmask 240.0.0.0 dev lo</screen>
 
         <para>This means that all traffic directed to the 224.0.0.0
             network will be sent to the loopback interface, which means it
@@ -284,15 +276,11 @@
             this: McastReceiverTest and McastSenderTest. Start
             McastReceiverTest, e.g.</para>
 
-        <screen>
-            java org.jgroups.tests.McastReceiverTest
-        </screen>
+        <screen>java org.jgroups.tests.McastReceiverTest</screen>
 
         <para>Then start McastSenderTest:</para>
 
-        <screen>
-            java org.jgroups.tests.McastSenderTest
-        </screen>
+        <screen>java org.jgroups.tests.McastSenderTest</screen>
 
         <para>If you want to bind to a specific network interface card (NIC), use -bind_addr 192.168.0.2,
         where 192.168.0.2 is the IP address of the NIC to which you want to bind. Use this parameter in both
@@ -324,9 +312,7 @@
             e.g.
         </para>
 
-        <screen>
-        java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props /home/bela/udp.xml
-        </screen>
+        <screen>java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props /home/bela/udp.xml</screen>
 
         <para>The JDK uses IPv6 by default, although is has a dual stack, that is, it also supports IPv4.
             <ulink url="http://java.sun.com/j2se/1.4/docs/guide/net/ipv6_guide/">Here's</ulink>

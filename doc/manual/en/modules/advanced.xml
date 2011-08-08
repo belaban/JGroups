@@ -664,7 +664,7 @@
                 <listitem>
                     <para>Start the GossipRouter:
                         <screen>
-                    java org.jgroups.stack.GossipRouter -port 12001
+java org.jgroups.stack.GossipRouter -port 12001
                         </screen>
                     </para>
                 </listitem>
@@ -807,30 +807,31 @@
 
                 <para>
                     Here's an example of the new configuration:
-                    <screen>
-                        <![CDATA[
-                        <UDP
-                                mcast_addr="228.10.10.10"
-                                mcast_port="45588"
-
-                                thread_pool.enabled="true"
-                                thread_pool.min_threads="1"
-                                thread_pool.max_threads="100"
-                                thread_pool.keep_alive_time="20000"
-                                thread_pool.queue_enabled="false"
-                                thread_pool.queue_max_size="10"
-                                thread_pool.rejection_policy="Run"
-
-                                oob_thread_pool.enabled="true"
-                                oob_thread_pool.min_threads="1"
-                                oob_thread_pool.max_threads="4"
-                                oob_thread_pool.keep_alive_time="30000"
-                                oob_thread_pool.queue_enabled="true"
-                                oob_thread_pool.queue_max_size="10"
-                                oob_thread_pool.rejection_policy="Run"/>
-                                ]]>
-                    </screen>
                 </para>
+
+                <programlisting language="XML">
+&lt;UDP
+    mcast_addr="228.10.10.10"
+    mcast_port="45588"
+
+    thread_pool.enabled="true"
+    thread_pool.min_threads="1"
+    thread_pool.max_threads="100"
+    thread_pool.keep_alive_time="20000"
+    thread_pool.queue_enabled="false"
+    thread_pool.queue_max_size="10"
+    thread_pool.rejection_policy="Run"
+
+    oob_thread_pool.enabled="true"
+    oob_thread_pool.min_threads="1"
+    oob_thread_pool.max_threads="4"
+    oob_thread_pool.keep_alive_time="30000"
+    oob_thread_pool.queue_enabled="true"
+    oob_thread_pool.queue_max_size="10"
+    oob_thread_pool.rejection_policy="Run"/&gt;
+                </programlisting>
+
+
 
                 <para>
                     The attributes for the 2 thread pools are prefixed with thread_pool and oob_thread_pool respectively.
@@ -976,9 +977,7 @@
                 Scoped messages apply only to <emphasis>regular</emphasis> (non-OOB) messages, and are delivered
                 concurrently between scopes, but ordered within a given scope. For example, if we used the sessions above
                 (e.g. the jsessionid) as scopes, then the delivery could be as follows ('->' means sequential, '||' means concurrent):
-                <screen>
-                    X1 -> X2 -> X3 -> X4 || Y1 -> Y2 -> Y3 || Z1 -> Z2 -> Z3
-                </screen>
+                <screen>X1 -> X2 -> X3 -> X4 || Y1 -> Y2 -> Y3 || Z1 -> Z2 -> Z3</screen>
                 This means that all updates to X are delivered in parallel to updates to Y and updates to Z. However, within
                 a given scope, updates are delivered in the order in which they were performed, so X1 is delivered before
                 X2, which is deliverd before X3 and so on.
@@ -1129,43 +1128,7 @@
 
     <section>
         <title>Misc</title>
-        <section>
-            <title>Shunning</title>
 
-            <para>
-                Note that in 2.8, shunning has been removed, so the sections below only apply to versions up to 2.7.
-            </para>
-
-            Let's say we have 4 members in a group: {A,B,C,D}. When a member (say D) is expelled from the group, e.g.
-            because it didn't respond to are-you-alive messages, and later comes back, then it is shunned. Shunning
-            causes a member to leave the group and re-join, if this is enabled on the Channel. To enable automatic
-            re-connects, the AUTO_RECONNECT option has to be set on the Channel:
-            <screen>
-                channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
-            </screen>
-
-            
-            <para>To enable shunning, set FD.shun and GMS.shun to true.</para>
-
-            Let's look at a more detailed example. Say member D is overloaded, and doesn't respond to are-you-alive
-            messages (done by the failure detection (FD) protocol). It is therefore suspected and excluded. The new
-            view for A, B and C will be {A,B,C}, however for D the view is still {A,B,C,D}. So when D comes back and
-            sends messages to the group, or any individiual member, those messages will be discarded, because A,B and
-            C don't see D in their view. D is shunned when A,B or C receive an are-you-alive message from D, or D
-            shuns itself when it receives a view which doesn't include D.<para/>
-
-            So shunning is always a unilateral decision. However, things may be different if all members exclude each
-            other from the group. For example, say we have a switch connecting A, B, C and D. If someone pulls all
-            plugs on the switch, or powers the switch down, then A, B, C and D will all form singleton groups, that is,
-            each member thinks it's the only member in the group. When the switch goes back to normal, then each member
-            will shun everybody else (a real shun fest :-)). This is clearly not desirable, so in this case shunning
-            should be turned off:
-            <screen>
-                &lt;FD timeout="2000" max_tries="3" shun="false"/&gt;
-                ...
-                &lt;pbcast.GMS join_timeout="3000" shun="false"/&gt;
-            </screen>
-        </section>
         <section>
             <title>Using a custom socket factory</title>
             <para>
@@ -1185,30 +1148,30 @@
                 To provide one's own socket factory, the following has to be done: if we have a non-shared transport,
                 the code below creates a SocketFactory implementation and sets it in the transport:
             </para>
-            <screen>
-                JChannel ch;
-                MySocketFactory factory; // e.g. extends DefaultSocketFactory
-                ch=new JChannel("config.xml");
-                ch.setSocketFactory(new MySocketFactory());
-                ch.connect("demo");
-            </screen>
+            <programlisting language="Java">
+JChannel ch;
+MySocketFactory factory; // e.g. extends DefaultSocketFactory
+ch=new JChannel("config.xml");
+ch.setSocketFactory(new MySocketFactory());
+ch.connect("demo");
+            </programlisting>
 
             <para>
                 If a shared transport is used, then we have to set 2 socket factories: 1 in the shared transport and
                 one in the TP.ProtocolAdapter:
             </para>
-            <screen>
-                JChannel c1=new JChannel("config.xml"), c2=new JChannel("config.xml");
+            <programlisting language="Java">
+JChannel c1=new JChannel("config.xml"), c2=new JChannel("config.xml");
 
-                TP transport=c1.getProtocolStack().getTransport();
-                transport.setSocketFactory(new MySocketFactory("transport"));
+TP transport=c1.getProtocolStack().getTransport();
+transport.setSocketFactory(new MySocketFactory("transport"));
 
-                c1.setSocketFactory(new MySocketFactory("first-cluster"));
-                c2.setSocketFactory(new MySocketFactory("second-cluster"));
+c1.setSocketFactory(new MySocketFactory("first-cluster"));
+c2.setSocketFactory(new MySocketFactory("second-cluster"));
 
-                c1.connect("first-cluster");
-                c2.connect("second-cluster");
-            </screen>
+c1.connect("first-cluster");
+c2.connect("second-cluster");
+            </programlisting>
 
             <para>
                 First, we grab one of the channels to fetch the transport and set a SocketFactory in it. Then we
@@ -1248,17 +1211,18 @@
         </para>
         <para>
             In both cases, the application has to handle a MergeView (subclass of View), as shown in the code below:
-            <screen>
-                public void viewAccepted(View view) {
-                    if(view instanceof MergeView) {
-                        MergeView tmp=(MergeView)view;
-                        Vector&lt;View&gt; subgroups=tmp.getSubgroups();
-                        // merge state or determine primary partition
-                        // run this in a separate thread !
-                    }
-                }
-            </screen>
         </para>
+        <programlisting language="Java">
+public void viewAccepted(View view) {
+    if(view instanceof MergeView) {
+        MergeView tmp=(MergeView)view;
+        Vector&lt;View&gt; subgroups=tmp.getSubgroups();
+        // merge state or determine primary partition
+        // run this in a separate thread !
+    }
+}
+        </programlisting>
+
         <para>
             It is essential that the merge view handling code run on a separate thread if it needs more than a few
             milliseconds, or else it would block the calling thread.
@@ -1315,57 +1279,58 @@
         <para>
             Here's code which picks as primary partition the first view in the MergeView, then re-acquires the state from
             the <emphasis>new</emphasis> coordinator of the combined view:
-            <screen>
-                public static void main(String[] args) throws Exception {
-                       final JChannel ch=new JChannel("/home/bela/udp.xml");
-                       ch.setReceiver(new ExtendedReceiverAdapter() {
-                           public void viewAccepted(View new_view) {
-                               handleView(ch, new_view);
-                           }
-                       });
-                       ch.connect("x");
-                       while(ch.isConnected())
-                           Util.sleep(5000);
-                   }
-
-                private static void handleView(JChannel ch, View new_view) {
-                    if(new_view instanceof MergeView) {
-                        ViewHandler handler=new ViewHandler(ch, (MergeView)new_view);
-                        // requires separate thread as we don't want to block JGroups
-                        handler.start();
-                    }
-                }
-
-                private static class ViewHandler extends Thread {
-                    JChannel ch;
-                    MergeView view;
-
-                    private ViewHandler(JChannel ch, MergeView view) {
-                        this.ch=ch;
-                        this.view=view;
-                    }
-
-                    public void run() {
-                        Vector&lt;View&gt; subgroups=view.getSubgroups();
-                        View tmp_view=subgroups.firstElement(); // picks the first
-                        Address local_addr=ch.getLocalAddress();
-                        if(!tmp_view.getMembers().contains(local_addr)) {
-                            System.out.println("Not member of the new primary partition ("
-                                         + tmp_view + "), will re-acquire the state");
-                            try {
-                                ch.getState(null, 30000);
-                            }
-                            catch(Exception ex) {
-                            }
-                        }
-                        else {
-                            System.out.println("Not member of the new primary partition ("
-                                       + tmp_view + "), will do nothing");
-                        }
-                    }
-                }
-            </screen>
         </para>
+        <programlisting language="Java">
+public static void main(String[] args) throws Exception {
+    final JChannel ch=new JChannel("/home/bela/udp.xml");
+    ch.setReceiver(new ExtendedReceiverAdapter() {
+        public void viewAccepted(View new_view) {
+            handleView(ch, new_view);
+        }
+    });
+    ch.connect("x");
+    while(ch.isConnected())
+        Util.sleep(5000);
+    }
+
+    private static void handleView(JChannel ch, View new_view) {
+        if(new_view instanceof MergeView) {
+            ViewHandler handler=new ViewHandler(ch, (MergeView)new_view);
+            // requires separate thread as we don't want to block JGroups
+            handler.start();
+        }
+    }
+
+    private static class ViewHandler extends Thread {
+        JChannel ch;
+        MergeView view;
+
+        private ViewHandler(JChannel ch, MergeView view) {
+            this.ch=ch;
+            this.view=view;
+        }
+
+        public void run() {
+            Vector&lt;View&gt; subgroups=view.getSubgroups();
+            View tmp_view=subgroups.firstElement(); // picks the first
+            Address local_addr=ch.getLocalAddress();
+            if(!tmp_view.getMembers().contains(local_addr)) {
+                System.out.println("Not member of the new primary partition ("
+                                   + tmp_view + "), will re-acquire the state");
+                try {
+                    ch.getState(null, 30000);
+                }
+                catch(Exception ex) {
+                }
+            }
+            else {
+                System.out.println("Not member of the new primary partition ("
+                                   + tmp_view + "), will do nothing");
+            }
+        }
+}
+        </programlisting>
+
         <para>
             The handleView() method is called from viewAccepted(), which is called whenever there is a new view. It spawns
             a new thread which gets the subgroups from the MergeView, and picks the first subgroup to be the primary
@@ -1409,13 +1374,13 @@
             <para>
                 The algorithm is shown in pseudo code below:
                 <screen>
-                    On initialization:
-                        - Mark the node as read-only
+On initialization:
+    - Mark the node as read-only
                     
-                    On view change V:
-                        - If V has >= N members:
-                            - If not read-write: get state from coord and switch to read-write
-                        - Else: switch to read-only
+On view change V:
+    - If V has >= N members:
+        - If not read-write: get state from coord and switch to read-write
+    - Else: switch to read-only
                 </screen>
             </para>
             <para>
@@ -1776,12 +1741,13 @@
             <title>Configuration</title>
             <para>
                 DAISYCHAIN can be placed directly on top of the transport, regardless of whether it is UDP or TCP, e.g.
-                <screen>
-                    &lt;TCP .../&gt;
-                    &lt;DAISYCHAIN .../&gt;
-                    &lt;TCPPING .../&gt;
-                </screen>
             </para>
+
+            <programlisting language="XML">
+&lt;TCP .../&gt;
+&lt;DAISYCHAIN .../&gt;
+&lt;TCPPING .../&gt;
+            </programlisting>
         </section>
 
     </section>

@@ -151,11 +151,29 @@ public interface Receiver extends MessageListener, MembershipListener { }
 
         <section id="ReceiverAdapter">
             <title>ReceiverAdapter</title>
+
             <para>
                 This class implements Receiver with no-op implementations. When implementing a callback, we can simply
                 extend ReceiverAdapter and overwrite receive() in order to not having to implement all callbacks of the
                 interface.
             </para>
+
+            <para>
+                <classname>ReceiverAdapter</classname> looks as follows:
+            </para>
+
+            <programlisting language="Java">
+public class ReceiverAdapter implements Receiver {
+    public void receive(Message msg) {}
+    public void getState(OutputStream output) throws Exception {}
+    public void setState(InputStream input) throws Exception {}
+    public void viewAccepted(View view) {}
+    public void suspect(Address mbr) {}
+    public void block() {}
+    public void unblock() {}
+}
+            </programlisting>
+
             <para>
                 A ReceiverAdapter is the recommended way to implement callbacks.
             </para>
@@ -496,15 +514,19 @@ channel.send(msg);
                 The most frequently used constructor of <classname>JChannel</classname> looks as follows:
             </para>
 
-            <programlisting language="Java">
-public JChannel(String props) throws Exception {}
-            </programlisting>
+            <programlisting language="Java">public JChannel(String props) throws Exception {}</programlisting>
 
             <para>
                 The <parameter>props</parameter> argument points to an XML file containing the configuration of the
                 protocol stack to be used. This can be a String, but there are also other constructors which take for
                 example a DOM element or a URL (see the javadoc for details).
             </para>
+
+            <para>
+                The code sample below shows how to create a channel based on an XML configuration file:
+            </para>
+
+            <programlisting language="Java">JChannel ch=new JChannel("/home/bela/udp.xml");</programlisting>
 
             <para>
                 If the props argument is null, the default properties will be used. An exception will be thrown if the
@@ -514,15 +536,11 @@ public JChannel(String props) throws Exception {}
 
             <para>For example, the Draw demo can be launched as follows:</para>
 
-            <screen>
-                java org.javagroups.demos.Draw -props file:/home/bela/udp.xml
-            </screen>
+            <screen>java org.javagroups.demos.Draw -props file:/home/bela/udp.xml</screen>
 
             <para>or</para>
 
-            <screen>
-                java org.javagroups.demos.Draw -props http://www.jgroups.org/udp.xml
-            </screen>
+            <screen>java org.javagroups.demos.Draw -props http://www.jgroups.org/udp.xml</screen>
 
             <para>
                 In the latter case, an application downloads its protocol stack specification from a server, which
@@ -720,12 +738,13 @@ public class ProgrammaticChat {
             <para>
                 A channel can be given a logical name which is then used instead of the channel's address in toString().
                 A logical name might show the function of a channel, e.g. "HostA-HTTP-Cluster", which is more legible
-                than a UUID 3c7e52ea-4087-1859-e0a9-77a0d2f69f29.
+                than a UUID <literal>3c7e52ea-4087-1859-e0a9-77a0d2f69f29</literal>.
             </para>
             <para>
                 For example, when we have 3 channels, using logical names we might see a view "{A,B,C}", which is nicer
-                than "{56f3f99e-2fc0-8282-9eb0-866f542ae437, ee0be4af-0b45-8ed6-3f6e-92548bfa5cde,
-                9241a071-10ce-a931-f675-ff2e3240e1ad} !"
+                than "{<literal>56f3f99e-2fc0-8282-9eb0-866f542ae437</literal>,
+                <literal>ee0be4af-0b45-8ed6-3f6e-92548bfa5cde</literal>,
+                <literal>9241a071-10ce-a931-f675-ff2e3240e1ad</literal>} !"
             </para>
             <para>
                 If no logical name is set, JGroups generates one, using the hostname and a random number, e.g.
@@ -735,9 +754,7 @@ public class ProgrammaticChat {
             <para>
                 The logical name can be set using:
             </para>
-            <programlisting language="Java">
-public void setName(String logical_name);
-            </programlisting>
+            <programlisting language="Java">public void setName(String logical_name);</programlisting>
 
             <para>
                 This should be done <emphasis>before</emphasis> connecting a channel. Note that the logical name stays
@@ -749,8 +766,7 @@ public void setName(String logical_name);
                 <screen>
 -------------------------------------------------------------------
 GMS: address=mac-53465, cluster=DrawGroupDemo, physical address=192.168.1.3:49932
--------------------------------------------------------------------
-                </screen>
+-------------------------------------------------------------------</screen>
 
                 The logical name is mac-53465 and the physical address is 192.168.1.3:49932. The UUID is not shown here.
             </para>
@@ -810,9 +826,7 @@ class CustomAddress extends UUID {
                 to a channel giving the name of the cluster to be joined:
             </para>
 
-            <programlisting language="Java">
-public void connect(String clustername) throws Exception;
-            </programlisting>
+            <programlisting language="Java">public void connect(String clustername) throws Exception;</programlisting>
 
             <para>
                 The cluster name is the name of the cluster to be joined. All channels that call connect() with
@@ -854,9 +868,7 @@ public void connect(String clustername) throws Exception;
                 one atomic operation.
             </para>
 
-            <programlisting language="Java">
-public synchronized void connect(String cluster_name, Address target, long timeout) throws Exception;
-            </programlisting>
+            <programlisting language="Java">public void connect(String cluster_name, Address target, long timeout) throws Exception;</programlisting>
 
             <para>
                 Just as in a regular connect(), the cluster name represents a cluster to be joined. The target parameter
@@ -875,17 +887,13 @@ public synchronized void connect(String cluster_name, Address target, long timeo
                 not be available when a channel is in the unconnected state.
             </para>
 
-            <programlisting language="Java">
-public Address getAddress();
-            </programlisting>
+            <programlisting language="Java">public Address getAddress();</programlisting>
 
             <para>
                 Method <methodname>getClusterName()</methodname> returns the name of the cluster which the member joined.
             </para>
 
-            <programlisting language="Java">
-public String getClusterName();
-            </programlisting>
+            <programlisting language="Java">public String getClusterName();</programlisting>
 
             <para>
                 Again, the result is undefined if the channel is in the disconnected or closed state.
@@ -897,9 +905,7 @@ public String getClusterName();
 
             <para>The following method can be used to get the current view of a channel:</para>
 
-            <programlisting language="Java">
-public View getView();
-            </programlisting>
+            <programlisting language="Java">public View getView();</programlisting>
 
             <para>
                 This method does <emphasis>not</emphasis>  returns the current view of the channel. The
@@ -1001,9 +1007,7 @@ channel.send(receiver, "hello world");
                 receive messages, views, and state transfer callbacks.
             </para>
 
-            <programlisting language="Java">
-public void receive(Message msg);
-            </programlisting>
+            <programlisting language="Java">public void receive(Message msg);</programlisting>
 
 
             <para>
@@ -1050,9 +1054,7 @@ ch.connect("MyCluster");
                 A newly joined member may want to retrieve the state of the cluster before starting work. This is done
                 with <methodname>getState()</methodname>:
             </para>
-            <programlisting language="Java">
-public void getState(Address target, long timeout) throws Exception;
-            </programlisting>
+            <programlisting language="Java">public void getState(Address target, long timeout) throws Exception;</programlisting>
 
             <para>
                 This method returns the state of one member (usually of the oldest member, the coordinator). The target
@@ -1231,9 +1233,7 @@ Util.objectToState(state, new BufferedOutputStream(new DataOutputStream(output))
             <title>Disconnecting from a channel</title>
 
             <para>Disconnecting from a channel is done using the following method:</para>
-            <programlisting language="Java">
-public void disconnect();
-            </programlisting>
+            <programlisting language="Java">public void disconnect();</programlisting>
 
 
             <para>
@@ -1256,9 +1256,7 @@ public void disconnect();
                 To destroy a channel instance (destroy the associated protocol stack, and release all resources),
                 method <methodname>close()</methodname> is used:
             </para>
-            <programlisting language="Java">
-public void close();
-            </programlisting>
+            <programlisting language="Java">public void close();</programlisting>
 
 
             <para>

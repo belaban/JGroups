@@ -54,10 +54,11 @@
           a server receives requests and sends responses. <classname>MessageDispatcher</classname> allows for an
           application to be both at the same time. To be able to serve requests in the server role, the
           <methodname>RequestHandler.handle()</methodname> method has to be implemented:
-          <programlisting language="Java">
-              Object handle(Message msg) throws Exception;
-          </programlisting>
       </para>
+      <programlisting language="Java">
+Object handle(Message msg) throws Exception;
+      </programlisting>
+
 
       <para>
           The <methodname>handle()</methodname> method is called whenever a request is received. It must return a value
@@ -132,10 +133,10 @@
           </para>
 
           <programlisting language="Java">
-              RpcDispatcher disp;
-              RequestOptions opts=new RequestOptions(Request.GET_ALL)
-                                      .setFlags(Message.NO_FC | Message.DONT_BUNDLE);
-              Object val=disp.callRemoteMethod(target, method_call, opts);
+RpcDispatcher disp;
+RequestOptions opts=new RequestOptions(Request.GET_ALL)
+                    .setFlags(Message.NO_FC | Message.DONT_BUNDLE);
+Object val=disp.callRemoteMethod(target, method_call, opts);
           </programlisting>
 
       </section>
@@ -143,13 +144,12 @@
       <para>The methods to send requests are:</para>
 
       <programlisting language="Java">
-          public &lt;T&gt; RspList&lt;T&gt; castMessage(final Collection&lt;Address&gt; dests,
+public &lt;T&gt; RspList&lt;T&gt; castMessage(final Collection&lt;Address&gt; dests,
                                       Message msg, RequestOptions options) throws Exception;
-          public &lt;T&gt; NotifyingFuture&lt;RspList&lt;T&gt;&gt; castMessageWithFuture(final Collection&lt;Address&gt; dests,
+public &lt;T&gt; NotifyingFuture&lt;RspList&lt;T&gt;&gt; castMessageWithFuture(final Collection&lt;Address&gt; dests,
                                                                  Message msg, RequestOptions options) throws Exception;
-          public &lt;T&gt; T sendMessage(Message msg, RequestOptions opts) throws Exception;
-          public &lt;T&gt; NotifyingFuture&lt;T&gt; sendMessageWithFuture(Message msg, RequestOptions options) throws Exception;
-
+public &lt;T&gt; T sendMessage(Message msg, RequestOptions opts) throws Exception;
+public &lt;T&gt; NotifyingFuture&lt;T&gt; sendMessageWithFuture(Message msg, RequestOptions options) throws Exception;
       </programlisting>
 
       <para>
@@ -201,16 +201,16 @@
       </para>
 
       <programlisting language="Java">
-          public class RspList implements Map&lt;Address,Rsp&gt; {
-              public boolean isReceived(Address sender);
-              public int     numSuspectedMembers();
-              public Vector  getResults();
-              public Vector  getSuspectedMembers();
-              public boolean isSuspected(Address sender);
-              public Object  get(Address sender);
-              public int     size();
-          }
-    </programlisting>
+public class RspList&lt;T&gt; implements Map&lt;Address,Rsp&gt; {
+    public boolean isReceived(Address sender);
+    public int     numSuspectedMembers();
+    public List&lt;T&gt; getResults();
+    public List&lt;Address&gt; getSuspectedMembers();
+    public boolean isSuspected(Address sender);
+    public Object  get(Address sender);
+    public int     size();
+}
+      </programlisting>
 
       <para>
           <methodname>isReceived()</methodname> checks whether a response from <parameter>sender</parameter>
@@ -228,43 +228,43 @@
       </para>
     
       <programlisting language="Java">
-    public class MessageDispatcherTest implements RequestHandler {
-        Channel            channel;
-        MessageDispatcher  disp;
-        RspList            rsp_list;
-        String             props; // to be set by application programmer
+public class MessageDispatcherTest implements RequestHandler {
+    Channel            channel;
+    MessageDispatcher  disp;
+    RspList            rsp_list;
+    String             props; // to be set by application programmer
 
-        public void start() throws Exception {
-            channel=new JChannel(props);
-            disp=new MessageDispatcher(channel, null, null, this);
-            channel.connect("MessageDispatcherTestGroup");
+    public void start() throws Exception {
+        channel=new JChannel(props);
+        disp=new MessageDispatcher(channel, null, null, this);
+        channel.connect("MessageDispatcherTestGroup");
 
-            for(int i=0; i &lt; 10; i++) {
-                Util.sleep(100);
-                System.out.println("Casting message #" + i);
-                rsp_list=disp.castMessage(null,
-                    new Message(null, null, new String("Number #" + i)),
-                    ResponseMode.GET_ALL, 0);
-                System.out.println("Responses:\n" +rsp_list);
-            }
-            channel.close();
-            disp.stop();
+        for(int i=0; i &lt; 10; i++) {
+            Util.sleep(100);
+            System.out.println("Casting message #" + i);
+            rsp_list=disp.castMessage(null,
+                new Message(null, null, new String("Number #" + i)),
+                ResponseMode.GET_ALL, 0);
+            System.out.println("Responses:\n" +rsp_list);
         }
+        channel.close();
+        disp.stop();
+    }
 
-        public Object handle(Message msg) throws Exception {
-            System.out.println("handle(): " + msg);
-            return "Success !";
+    public Object handle(Message msg) throws Exception {
+        System.out.println("handle(): " + msg);
+        return "Success !";
+    }
+
+    public static void main(String[] args) {
+        try {
+            new MessageDispatcherTest().start();
         }
-
-        public static void main(String[] args) {
-            try {
-                new MessageDispatcherTest().start();
-            }
-            catch(Exception e) {
-                System.err.println(e);
-            }
+        catch(Exception e) {
+            System.err.println(e);
         }
     }
+}
       </programlisting>
 
         <para>

@@ -445,18 +445,18 @@
             members, as emitted by failure detection protocols. The algorithm for
             joining a new member is essentially:
             <screen>
-                - loop
-                - find initial members (discovery)
-                - if no responses:
-                - become singleton group and break out of the loop
-                - else:
-                - determine the coordinator (oldest member) from the responses
-                - send JOIN request to coordinator
-                - wait for JOIN response
-                - if JOIN response received:
-                - install view and break out of the loop
-                - else
-                - sleep for 5 seconds and continue the loop
+- loop
+- find initial members (discovery)
+- if no responses:
+    - become singleton group and break out of the loop
+- else:
+    - determine the coordinator (oldest member) from the responses
+    - send JOIN request to coordinator
+    - wait for JOIN response
+    - if JOIN response received:
+        - install view and break out of the loop
+    - else
+        - sleep for 5 seconds and continue the loop
             </screen>
         </para>
 

@@ -48,60 +48,61 @@
         <para>
             The code below shows how an application defines a custom header, MyHeader, and uses it to attach additional
             information to message sent (to itself):
-            <screen>
-                public class bla {
-
-                    public static void main(String[] args) throws Exception {
-                        JChannel ch=new JChannel();
-                        ch.connect("demo");
-                        ch.setReceiver(new ReceiverAdapter() {
-                            public void receive(Message msg) {
-                                MyHeader hdr=(MyHeader)msg.getHeader("x");
-                                System.out.println("-- received message " + msg + ", header is " + hdr);
-                            }
-                        });
-
-                        ClassConfigurator.getInstance().add((short)1900, MyHeader.class);
-
-                        int cnt=1;
-                        for(int i=0; i &lt; 5; i++) {
-                            Message msg=new Message();
-                            msg.putHeader((short)1900, new MyHeader(cnt++));
-                            ch.send(msg);
-                        }
-                        ch.close();
-                    }
-
-
-                    public static class MyHeader extends Header implements Streamable {
-                        int counter=0;
-
-                        public MyHeader() {
-                        }
-
-                        private MyHeader(int counter) {
-                            this.counter=counter;
-                        }
-
-                        public String toString() {
-                            return "counter=" + counter;
-                        }
-
-                        public int size() {
-                            return Global.INT_SIZE;
-                        }
-
-                        public void writeTo(DataOutputStream out) throws IOException {
-                            out.writeInt(counter);
-                        }
-
-                        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-                            counter=in.readInt();
-                        }
-                    }
-                }
-            </screen>
         </para>
+        <programlisting language="Java">
+public class bla {
+
+    public static void main(String[] args) throws Exception {
+        JChannel ch=new JChannel();
+        ch.connect("demo");
+        ch.setReceiver(new ReceiverAdapter() {
+            public void receive(Message msg) {
+                MyHeader hdr=(MyHeader)msg.getHeader("x");
+                System.out.println("-- received message " + msg + ", header is " + hdr);
+            }
+        });
+
+        ClassConfigurator.getInstance().add((short)1900, MyHeader.class);
+
+        int cnt=1;
+        for(int i=0; i &lt; 5; i++) {
+            Message msg=new Message();
+            msg.putHeader((short)1900, new MyHeader(cnt++));
+            ch.send(msg);
+        }
+        ch.close();
+    }
+
+
+    public static class MyHeader extends Header implements Streamable {
+        int counter=0;
+
+        public MyHeader() {
+        }
+
+        private MyHeader(int counter) {
+            this.counter=counter;
+        }
+
+        public String toString() {
+            return "counter=" + counter;
+        }
+
+        public int size() {
+            return Global.INT_SIZE;
+        }
+
+       public void writeTo(DataOutputStream out) throws IOException {
+            out.writeInt(counter);
+       }
+
+       public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            counter=in.readInt();
+       }
+    }
+}
+        </programlisting>
+
         <para>
             The MyHeader class has an empty public constructor and implements the writeExternal() and readExternal()
             methods with no-op implementations.
