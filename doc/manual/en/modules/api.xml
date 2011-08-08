@@ -424,7 +424,7 @@
             <para>The ViewId is used to uniquely number views. It consists of the address of the view creator and a
                 sequence number. ViewIds can be compared for equality and put in a hashmaps as they implement equals()
                 and hashCode().
-                <footnote>Note that the latter 2 methods only take the ID into account.</footnote>
+                <footnote><para>Note that the latter 2 methods only take the ID into account.</para></footnote>
             </para>
         </section>
 

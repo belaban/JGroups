@@ -1,3 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+]>
+        
 <chapter>
     <title>Writing a simple application</title>
 
@@ -58,7 +62,7 @@
             connect(String clustername) method is used. All channel instances which call connect() with the same argument will
             join the same cluster. So, let's actually create a JChannel and connect to a cluster called "ChatCluster":
         </para>
-        <programlisting>
+        <programlisting language="Java">
 import org.jgroups.JChannel;
 
 public class SimpleChat {
@@ -102,30 +106,30 @@ public class SimpleChat {
             instances currently in the cluster. When "exit" or "quit" quit are entered, we fall out of the
             loop and close the channel.
         </para>
-        <programlisting>
-    private void start() throws Exception {
-        channel=new JChannel();
-        channel.connect("ChatCluster");
-        <emphasis role="bold">eventLoop();</emphasis>
-        <emphasis role="bold">channel.close();</emphasis>
-    }
+        <programlisting language="Java">
+private void start() throws Exception {
+    channel=new JChannel();
+    channel.connect("ChatCluster");
+    eventLoop();
+    channel.close();
+}
 
-    private void eventLoop() {
-        BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
-        while(true) {
-            try {
-                System.out.print("&gt; "); System.out.flush();
-                String line=in.readLine().toLowerCase();
-                if(line.startsWith("quit") || line.startsWith("exit"))
-                    break;
-                line="[" + user_name + "] " + line;
-                Message msg=new Message(null, null, line);
-                channel.send(msg);
-            }
-            catch(Exception e) {
-            }
+private void eventLoop() {
+    BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
+    while(true) {
+        try {
+            System.out.print("&gt; "); System.out.flush();
+            String line=in.readLine().toLowerCase();
+            if(line.startsWith("quit") || line.startsWith("exit"))
+                break;
+            line="[" + user_name + "] " + line;
+            Message msg=new Message(null, null, line);
+            channel.send(msg);
+        }
+        catch(Exception e) {
         }
     }
+}
         </programlisting>
         <para>
             We added the call to eventLoop() and the closing of the channel to the start() method, and we provided an
@@ -163,34 +167,38 @@ public class SimpleChat {
             org.jgroups.Receiver, however, I chose to extend ReceiverAdapter which has default
             implementations, and only override callbacks (receive() and viewChange()) we're interested in. We
             now need to extend ReceiverAdapter:
-            <programlisting>
-public class SimpleChat extends ReceiverAdapter {
-            </programlisting>
         </para>
+
+        <programlisting language="Java">public class SimpleChat extends ReceiverAdapter {</programlisting>
+
         <para>
             , set the receiver in start():
-            <programlisting>
-    private void start() throws Exception {
-        channel=new JChannel();
-        <emphasis role="bold">channel.setReceiver(this);</emphasis>
-        channel.connect("ChatCluster");
-        eventLoop();
-        channel.close();
-    }
-            </programlisting>
         </para>
+
+                <programlisting language="Java">
+private void start() throws Exception {
+    channel=new JChannel();
+    channel.setReceiver(this);
+    channel.connect("ChatCluster");
+    eventLoop();
+    channel.close();
+}
+                </programlisting>
+
         <para>
             , and implement receive() and viewAccepted():
-            <programlisting>
-    public void viewAccepted(View new_view) {
-        System.out.println("** view: " + new_view);
-    }
-
-    public void receive(Message msg) {
-        System.out.println(msg.getSrc() + ": " + msg.getObject());
-    }
-            </programlisting>
         </para>
+
+        <programlisting language="Java">
+public void viewAccepted(View new_view) {
+    System.out.println("** view: " + new_view);
+}
+
+public void receive(Message msg) {
+    System.out.println(msg.getSrc() + ": " + msg.getObject());
+}
+        </programlisting>
+
         <para>
             The viewAccepted() callback is called whenever a new instance joins the cluster, or an existing instance
             leaves (crashes included). Its toString() method prints out the view ID (an increasing ID) and a list of
@@ -212,13 +220,13 @@ public class SimpleChat extends ReceiverAdapter {
         <para>
             Now that the demo chat application is fully functional, let's try it out. Start an instances of SimpleChat:
             <screen>
-                [linux]/home/bela$ java SimpleChat
+[linux]/home/bela$ java SimpleChat
 
-                -------------------------------------------------------------------
-                GMS: address=linux-48776, cluster=ChatCluster, physical address=192.168.1.5:42442
-                -------------------------------------------------------------------
-                ** view: [linux-48776|0] [linux-48776]
-                >
+-------------------------------------------------------------------
+GMS: address=linux-48776, cluster=ChatCluster, physical address=192.168.1.5:42442
+-------------------------------------------------------------------
+** view: [linux-48776|0] [linux-48776]
+>
             </screen>
         </para>
         <para>
@@ -232,13 +240,13 @@ public class SimpleChat extends ReceiverAdapter {
         </para>
         <para>
             <screen>
-                [linux]/home/bela$ java SimpleChat
+[linux]/home/bela$ java SimpleChat
 
-                -------------------------------------------------------------------
-                GMS: address=linux-37238, cluster=ChatCluster, physical address=192.168.1.5:40710
-                -------------------------------------------------------------------
-                ** view: [linux-48776|1] [linux-48776, linux-37238]
-                >
+-------------------------------------------------------------------
+GMS: address=linux-37238, cluster=ChatCluster, physical address=192.168.1.5:40710
+-------------------------------------------------------------------
+** view: [linux-48776|1] [linux-48776, linux-37238]
+>
             </screen>
         </para>
         <para>
@@ -288,17 +296,19 @@ public class SimpleChat extends ReceiverAdapter {
         </para>
         <para>
             The start() method is now modified to include the call to JChannel.getState():
-            <programlisting>
-    private void start() throws Exception {
-        channel=new JChannel();
-        channel.setReceiver(this);
-        channel.connect("ChatCluster");
-        <emphasis role="bold">channel.getState(null, 10000);</emphasis>
-        eventLoop();
-        channel.close();
-    }
-            </programlisting>
         </para>
+
+        <programlisting language="Java">
+private void start() throws Exception {
+    channel=new JChannel();
+    channel.setReceiver(this);
+    channel.connect("ChatCluster");
+    channel.getState(null, 10000);
+    eventLoop();
+    channel.close();
+}
+        </programlisting>
+
         <para>
             The getState() method's first argument is the target instance, and null means get the state from the first
             instance (the coordinator). The second argument is the timeout; here's we're willing to wait for 10 secs
@@ -314,34 +324,37 @@ public class SimpleChat extends ReceiverAdapter {
         </para>
         <para>
             The list is defined as an instance variable:
-            <programlisting>
-    final List&lt;String&gt; state=new LinkedList&lt;String&gt;();
-            </programlisting>
         </para>
+
+        <programlisting language="Java">final List&lt;String&gt; state=new LinkedList&lt;String&gt;();</programlisting>
 
         <para>
             Of course, now we need to modify receive() to add each received message to our state:
-            <programlisting>
-    public void receive(Message msg) {
-        String line=msg.getSrc() + ": " + msg.getObject();
-        System.out.println(line);
-        <emphasis role="bold">synchronized(state) {
-            state.add(line);
-        }</emphasis>
-    }
-            </programlisting>
         </para>
+
+        <programlisting language="Java">
+public void receive(Message msg) {
+    String line=msg.getSrc() + ": " + msg.getObject();
+    System.out.println(line);
+    synchronized(state) {
+        state.add(line);
+    }
+}
+        </programlisting>
+
 
         <para>
             The getState() callback implementation is
-            <programlisting>
-    public void getState(OutputStream output) throws Exception {
-        synchronized(state) {
-            Util.objectToStream(state, new DataOutputStream(output));
-        }
-    }
-            </programlisting>
         </para>
+
+        <programlisting language="Java">
+public void getState(OutputStream output) throws Exception {
+    synchronized(state) {
+        Util.objectToStream(state, new DataOutputStream(output));
+    }
+}
+        </programlisting>
+
         <para>
             The getState() method is called in the <emphasis>state provider</emphasis>, ie. an existing instance, to
             return the shared cluster state. It is passed an output stream to which the state has to be written. Note
@@ -356,25 +369,27 @@ public class SimpleChat extends ReceiverAdapter {
             The setState() method is called on the <emphasis>state requester</emphasis>, ie. the instance
             which called JChannel.getState(). Its task is to read the state from the input stream and set it
             accordingly:
-            <programlisting>
-    public void setState(InputStream input) throws Exception {
-        List&lt;String&gt; list=(List&lt;String&gt;)Util.objectFromStream(new DataInputStream(input));
-        synchronized(state) {
-            state.clear();
-            state.addAll(list);
-        }
-        System.out.println("received state (" + list.size() + " messages in chat history):");
-        for(String str: list) {
-            System.out.println(str);
-        }
-    }
-            </programlisting>
         </para>
+
+        <programlisting language="Java">
+public void setState(InputStream input) throws Exception {
+    List&lt;String&gt; list=(List&lt;String&gt;)Util.objectFromStream(new DataInputStream(input));
+    synchronized(state) {
+        state.clear();
+        state.addAll(list);
+    }
+    System.out.println("received state (" + list.size() + " messages in chat history):");
+    for(String str: list) {
+        System.out.println(str);
+    }
+}
+        </programlisting>
+
         <para>
             We again call a JGroups utility method (Util.objectFromStream()) to create an object from an input stream.
         </para>
         <para>
-            Then we synchronize on <code>state</code>, and set its contents from the received state.
+            Then we synchronize on <literal>state</literal>, and set its contents from the received state.
         </para>
         <para>
             We also print the number of messages in the received chat history to stdout. Note that this is not

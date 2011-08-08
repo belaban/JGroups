@@ -7,7 +7,6 @@
             JGroups can be downloaded <ulink url="http://sourceforge.net/projects/javagroups/files/JGroups/">here</ulink>.
             For this tutorial, I'm using the binary version of JGroups 3.0, so download one of the jgroups-3.x.y.jar
             files (e.g. jgroups-3.0.0.Final.jar).
-            <emphasis>Note that JGroups 3.0 requires JDK 6</emphasis>.
         </para>
 
         <para>
@@ -24,6 +23,10 @@
                 </listitem>
             </itemizedlist>
         </para>
+
+        <note>
+            <para>Note that JGroups 3.0 requires JDK 6.</para>
+        </note>
     </section>
 
 
@@ -40,38 +43,32 @@
 
         <para>To see whether your system can find the JGroups classes, execute the following command:</para>
 
-        <screen>
-            java org.jgroups.Version
-        </screen>
+        <screen>java org.jgroups.Version</screen>
 
         <para>or</para>
 
-        <screen>
-            java -jar jgroups-3.x.y.jar
-        </screen>
+        <screen>java -jar jgroups-3.x.y.jar</screen>
 
         <para>You should see the following output (more or less) if the
             class is found:</para>
 
         <screen>
-            $  java org.jgroups.Version
-
-               Version:      3.0.0.Beta1
-        </screen>
+$  java org.jgroups.Version
+   Version:      3.0.0.Beta1</screen>
 
     </section>
 
     <section>
         <title>Running a Demo Program</title>
 
-        <para>To test whether JGroups works okay on your machine, run the following command twice:
+        <para>
+            To test whether JGroups works okay on your machine, run the following command twice:
         </para>
 
-        <screen>
-            java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw
-        </screen>
+        <screen>java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw</screen>
 
-        <para>2 whiteboard windows should appear as shown in <xref linkend="DrawScreenshotFig"/>.
+        <para>
+            2 whiteboard windows should appear as shown in <xref linkend="DrawScreenshotFig"/>.
 
             <figure id="DrawScreenshotFig"><title>Screenshot of 2 Draw instances</title>
                 <graphic fileref="images/DrawScreenshot.png" format="PNG" align="left"  />
@@ -81,7 +78,8 @@
             their title bars. After some time, both windows should show 2. This means that the two instances found
             each other and formed a cluster.</para>
 
-        <para>When drawing in one window, the second instance should also be updated. As the default group transport
+        <para>
+            When drawing in one window, the second instance should also be updated. As the default group transport
             uses IP multicast, make sure that - if you want start the 2 instances in different subnets
             - IP multicast is enabled. If this is not the case, the 2 instances won't 'find' each other and the
             example won't work.
@@ -104,18 +102,14 @@
         <para>Sometimes there isn't a network connection (e.g. DSL modem is down), or we want to multicast only on the
             local machine. To do this, we can use the loopback device (127.0.0.1):
         </para>
-        <screen>
-            java -Djgroups.bind_addr=127.0.0.1 -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw
-        </screen>
+        <screen>java -Djgroups.bind_addr=127.0.0.1 -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw</screen>
 
         <para>
             You should again see 2 instances of Draw which form a cluster. If this is not the case, you may
             have to add a multicast route to the loopback device (this requires superuser or admin privileges):
         </para>
 
-        <screen>
-            route add -net 224.0.0.0 netmask 240.0.0.0 dev lo
-        </screen>
+        <screen>route add -net 224.0.0.0 netmask 240.0.0.0 dev lo</screen>
 
         <para>This means that all traffic directed to the 224.0.0.0 network will be sent to the loopback interface,
             which means it doesn't need any network to be running.
@@ -153,9 +147,7 @@
                 <listitem>
                     You don't use the right network interface (NIC): define the NIC with the -Djgroups.bind_addr system
                     property:
-                    <screen>
-                        java -Djgroups.bind_addr=192.168.5.2 java.org.jgroups.demos.Draw
-                    </screen>
+                    <screen>java -Djgroups.bind_addr=192.168.5.2 java.org.jgroups.demos.Draw</screen>
                 </listitem>
                 <listitem>
                     There is no multicast route for the chosen NIC.

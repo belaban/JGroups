@@ -372,8 +372,7 @@
             <para>
                 Reliable delivery means that no message sent by a sender will ever be lost, as all messages are
                 numbered with sequence numbers (by sender) and retransmission requests are sent to the sender of
-                a message<footnote>
-            </footnote> if that sequence number is not received.
+                a message if that sequence number is not received.
             </para>
             <para>
                 FIFO order means that all messages from a given sender are received in exactly the order in which

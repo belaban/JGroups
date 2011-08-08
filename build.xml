@@ -29,12 +29,13 @@
     <property name="javadoc.dir" value="${dist.dir}/javadoc"/>
     <property name="conf.dir" value="${root.dir}/conf"/>
     <property name="testng.conf.dir" value="${root.dir}/conf/testng"/>
-    <property name="bin.dir" value="${root.dir}/bin"/>
-    <property name="keystore.dir" value="${root.dir}/keystore"/>
+    <property name="bin.dir"          value="${root.dir}/bin"/>
+    <property name="keystore.dir"     value="${root.dir}/keystore"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <!--<property name="javadoc.packages" value="org.jgroups,org.jgroups.blocks"/>-->
-    <property name="timestamp" value=".timestamp"/>
-    <property name="protocols.xml" value="${manual.dir}/en/modules/protocols.xml"/>
+    <property name="timestamp"        value=".timestamp"/>
+    <property name="protocols.xml"    value="${manual.dir}/en/modules/protocols.xml"/>
+    <property name="maven.executable" value="mvn"/>
 
 	<!-- 5 minutes per test suite timeout -->
     <property name="unittest.timeout.low" value="500000"/>
@@ -220,34 +221,25 @@
     </target>
 
     <target name="manual" description="Build all html and pdf docs"
-            depends="check-docbook-support,check-manual,compile" unless="manual.up-to-date">
+            depends="check-manual,compile" unless="manual.up-to-date">
         <echo message="Building manual from docbook ..."/>
         <prot-properties-to-doc input="${protocols.xml}"/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="all.doc"/>
-    	<delete file="${protocols.xml}.tmp"/>
-        <touch file="${manual.dir}/build/timestamp"/>
-    </target>
-
-    <target name="html" description="Build html docs"
-            depends="check-docbook-support,check-manual,compile" unless="manual.up-to-date">
-        <echo message="Building HTML manual from docbook ..."/>
-        <prot-properties-to-doc input="${protocols.xml}"/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="html"/>
-    	<delete file="${protocols.xml}.tmp"/>
-        <touch file="${manual.dir}/build/timestamp"/>
+        <run-maven dir="${manual.dir}"/>
+    	<!--<delete file="${protocols.xml}.tmp"/>-->
+        <touch file="${manual.dir}/target/timestamp"/>
     </target>
 
 
     <target name="tutorial" description="Build all html and pdf docs"
-            depends="check-docbook-support,check-tutorial" unless="tutorial.up-to-date">
+            depends="check-tutorial" unless="tutorial.up-to-date">
         <echo message="Building tutorial from docbook ..."/>
-        <ant dir="${root.dir}/doc/tutorial" antfile="build.xml" target="all.doc"/>
+        <run-maven dir="${tutorial.dir}"/>
         <touch file="${tutorial.dir}/build/timestamp"/>
     </target>
 
 
     <target name="check-tutorial">
-        <uptodate property="tutorial.up-to-date" targetfile="${tutorial.dir}/build/timestamp">
+        <uptodate property="tutorial.up-to-date" targetfile="${tutorial.dir}/target/timestamp">
             <srcfiles dir="${tutorial.dir}/en" includes="**/*">
             </srcfiles>
         </uptodate>
@@ -255,7 +247,7 @@
     </target>
 
     <target name="check-manual">
-        <uptodate property="manual.up-to-date" targetfile="${manual.dir}/build/timestamp">
+        <uptodate property="manual.up-to-date" targetfile="${manual.dir}/target/timestamp">
             <srcfiles dir="${manual.dir}/en" includes="**/*">
             </srcfiles>
         </uptodate>
@@ -272,24 +264,6 @@
 	</target>
 
 
-
-    <target name="check-docbook-support">
-        <available file="${root.dir}/../docbook-support" type="dir"
-                   property="docbook.support.present"/>
-        <fail message="docbook-support directory does not exist, please check it out from jboss first (run target checkout-docbook-support)"
-              unless="docbook.support.present"/>
-    </target>
-
-
-
-    <target name="checkout-docbook-support">
-        <exec executable="svn">
-            <arg value="co"/>
-            <arg value="http://anonsvn.jboss.org/repos/jbossas/projects/docs/docbook-support/"/>
-            <arg value="${root.dir}/../docbook-support"/>
-        </exec>
-    </target>
-
     <target name="clean"
             description="Removes all class files and the ./dist directory">
         <delete dir="${compile.dir}" failonerror="false"/>
@@ -305,8 +279,8 @@
             </fileset>
         </delete>
     	<!-- clean the docs directory if docs have been processed -->
-        <delete dir="${manual.dir}/build"/>
-        <delete dir="${tutorial.dir}/build"/>
+        <delete dir="${manual.dir}/target"/>
+        <delete dir="${tutorial.dir}/target"/>
         <delete dir="${root.dir}/schema" failonerror="false"/>
     </target>
 
@@ -551,13 +525,20 @@
         <attribute name="input" default="${protocols.xml}"/>
         <sequential>
             <echo message="Replacing variables in @{input}"/>
-		<java classname="org.jgroups.util.PropertiesToXML" classpathref="jg.classpath">
-            <arg value="@{input}"/>
-        </java>
+            <java classname="org.jgroups.util.PropertiesToXML" classpathref="jg.classpath">
+                <arg value="@{input}"/>
+            </java>
         </sequential>
     </macrodef>
 
-    <!--
-=============================== TestNG ======================================== -->
+    <macrodef name="run-maven">
+        <attribute name="dir"/>
+        <sequential>
+            <echo message="Running maven on @{dir}/pom.xml"/>
+            <exec executable="${maven.executable}" dir="@{dir}">
+                <arg line="compile"/>
+            </exec>
+        </sequential>
+    </macrodef>
 
 </project>
