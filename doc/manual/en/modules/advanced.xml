@@ -2031,7 +2031,7 @@ msg.setFlag((byte)(Message.OOB | Message.NO_FC));
         
     </section>
 
-    <section>
+    <section id="Ergonomics">
         <title>Ergonomics</title>
         <para>
             Ergonomics is similar to the dynamic setting of optimal values for the JVM, e.g. garbage collection,
@@ -2051,7 +2051,7 @@ msg.setFlag((byte)(Message.OOB | Message.NO_FC));
             Here we leave ergonomics enabled for UDP (the default is true), but disable it for PING.
         </para>
         <para>
-            Ergonomics is work-in-progress.
+            Ergonomics is work-in-progress, and will be implemented over multiple releases.
         </para>
     </section>
 </chapter>

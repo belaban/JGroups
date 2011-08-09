@@ -201,83 +201,75 @@ public class PropertiesToXML {
         }
     }
 
-    private static void convertToDocbookTable(Properties props, Class<?> clazz)
-                    throws ParserConfigurationException, TransformerException {
-        boolean isConcreteClass = (clazz.getModifiers() & Modifier.ABSTRACT) == 0;
+    private static void convertToDocbookTable(Properties props, Class<?> clazz) throws Exception {
         boolean isExperimental = clazz.isAnnotationPresent(Experimental.class);
         boolean isUnsupported = clazz.isAnnotationPresent(Unsupported.class);
-        // if(isConcreteClass && !isExperimental && !isUnsupported) {
-        if (isConcreteClass && !isUnsupported) {
-            Class<?> protocol = clazz;
-            Document xmldoc = null;
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            DOMImplementation impl = builder.getDOMImplementation();
-            xmldoc = impl.createDocument(null, "table", null);
-            Element tbody = createXMLTree(xmldoc, isExperimental);
-            Map<String, String> nameToDescription = new TreeMap<String, String>();
+        if (isUnsupported)
+            return;
+        Document xmldoc = null;
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        DOMImplementation impl = builder.getDOMImplementation();
+        xmldoc = impl.createDocument(null, "table", null);
+        Element tbody = createXMLTree(xmldoc, isExperimental);
+        Map<String, String> nameToDescription = new TreeMap<String, String>();
 
-            // iterate fields
-            for (Class clazzInLoop = clazz; clazzInLoop != null; clazzInLoop = clazzInLoop
-                            .getSuperclass()) {
-                Field[] fields = clazzInLoop.getDeclaredFields();
-                for (Field field : fields) {
-                    if (field.isAnnotationPresent(Property.class)) {
-                        String property = field.getName();
-                        Property annotation = field.getAnnotation(Property.class);
-                        String desc = annotation.description();
-                        nameToDescription.put(property, desc);
+        Field[] fields = clazz.getDeclaredFields();
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(Property.class)) {
+                String property = field.getName();
+                Property annotation = field.getAnnotation(Property.class);
+                String desc = annotation.description();
+                nameToDescription.put(property, desc);
+            }
+        }
+
+        // iterate methods
+        Method[] methods = clazz.getDeclaredMethods();
+        for (Method method : methods) {
+            if (method.isAnnotationPresent(Property.class)
+              && method.getName().startsWith("set")) {
+
+                Property annotation = method.getAnnotation(Property.class);
+                String desc = annotation.description();
+
+                if (desc.length() > 0) {
+
+                    String name = annotation.name();
+                    if (name.length() < 1) {
+                        name = Util.methodNameToAttributeName(method.getName());
                     }
+                    nameToDescription.put(name, desc);
                 }
             }
+        }
 
-            // iterate methods
-            Method[] methods = clazz.getMethods();
-            for (Method method : methods) {
-                if (method.isAnnotationPresent(Property.class)
-                                && method.getName().startsWith("set")) {
+        // and write them out
+        for (Map.Entry<String, String> e : nameToDescription.entrySet()) {
+            Element row = xmldoc.createElement("row");
+            Element entry = xmldoc.createElement("entry");
+            entry.setTextContent(e.getKey());
+            row.appendChild(entry);
 
-                    Property annotation = method.getAnnotation(Property.class);
-                    String desc = annotation.description();
+            entry = xmldoc.createElement("entry");
+            entry.setTextContent(e.getValue());
+            row.appendChild(entry);
+            tbody.appendChild(row);
+        }
 
-                    if (desc.length() > 0) {
-
-                        String name = annotation.name();
-                        if (name.length() < 1) {
-                            name = Util.methodNameToAttributeName(method.getName());
-                        }
-                        nameToDescription.put(name, desc);
-                    }
-                }
-            }
-
-            // and write them out
-            for (Map.Entry<String, String> e : nameToDescription.entrySet()) {
-                Element row = xmldoc.createElement("row");
-                Element entry = xmldoc.createElement("entry");
-                entry.setTextContent(e.getKey());
-                row.appendChild(entry);
-
-                entry = xmldoc.createElement("entry");
-                entry.setTextContent(e.getValue());
-                row.appendChild(entry);
-                tbody.appendChild(row);
-            }
-
-            // do we have more than one property (superclass Protocol has only one property (stats))
-            if (nameToDescription.size() > 1) {
-                DOMSource domSource = new DOMSource(xmldoc);
-                StringWriter sw = new StringWriter();
-                StreamResult streamResult = new StreamResult(sw);
-                TransformerFactory tf = TransformerFactory.newInstance();
-                Transformer serializer = tf.newTransformer();
-                serializer.setOutputProperty(OutputKeys.ENCODING, "ISO-8859-1");
-                serializer.setOutputProperty(OutputKeys.INDENT, "yes");
-                serializer.transform(domSource, streamResult);
-                StringBuffer buffer = sw.getBuffer();
-                buffer.delete(0, buffer.indexOf("table") - 1);
-                props.put(protocol.getSimpleName(), buffer.toString());
-            }
+        // do we have more than one property (superclass Protocol has only one property (stats))
+        if (!nameToDescription.isEmpty()) {
+            DOMSource domSource = new DOMSource(xmldoc);
+            StringWriter sw = new StringWriter();
+            StreamResult streamResult = new StreamResult(sw);
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer serializer = tf.newTransformer();
+            serializer.setOutputProperty(OutputKeys.ENCODING, "ISO-8859-1");
+            serializer.setOutputProperty(OutputKeys.INDENT, "yes");
+            serializer.transform(domSource, streamResult);
+            StringBuffer buffer = sw.getBuffer();
+            buffer.delete(0, buffer.indexOf("table") - 1);
+            props.put(clazz.getSimpleName(), buffer.toString());
         }
     }
 

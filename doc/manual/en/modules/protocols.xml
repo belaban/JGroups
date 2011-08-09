@@ -3,61 +3,95 @@
     <title>List of Protocols</title>
 
     <para>
-        This section is work in progress; we strive to update the documentation as we make changes to the code.
+        This chapter describes the most frequently used protocols, and their configuration. <emphasis>Ergonomics</emphasis>
+        (<xref linkend="Ergonomics"/>) strives to reduce the number of properties that have to be configured, by
+        dynamically adjusting them at run time, however, this is not yet in place.
+    </para>
+     <para>
+         Meanwhile, we recommend that users should copy one of the predefined configurations (shipped with JGroups), e.g.
+         <literal>udp.xml</literal> or <literal>tcp.xml</literal>, and make only minimal changes to it.
     </para>
     <para>
-        The most important properties are described on the
-        <ulink url="http://www.jboss.org/wiki/Wiki.jsp?page=JGroups">wiki</ulink>. The idea is that users take one
-        of the predefined configurations (shipped with JGroups) and make only minor changes to it.
+        This section is work in progress; we strive to update the documentation as we make changes to the code.
     </para>
 
-    <para>For each protocol define:</para>
+    <section id="CommonProps">
+        <title>Properties availabe in every protocol</title>
+        <para>
+            The table below lists properties that are available in all protocols, as they're defined in the superclass
+            of all protocols, <classname>org.jgroups.stack.Protocol</classname>.
+        </para>
 
-    <itemizedlist>
-        <listitem>
-            <para>Properties provided</para>
-        </listitem>
 
-        <listitem>
-            <para>Required services</para>
-        </listitem>
+        <table>
+            <title>Properties of <classname>org.jgroups.stack.Protocol</classname></title>
 
-        <listitem>
-            <para>Provided services</para>
-        </listitem>
+            <tgroup cols="2">
+                <colspec align="left" />
 
-        <listitem>
-            <para>Behavior</para>
-        </listitem>
-    </itemizedlist>
+                <thead>
+                    <row>
+                        <entry align="center">Name</entry>
+                        <entry align="center">Description</entry>
+                    </row>
+                </thead>
+
+                <tbody>
+                    <row>
+                        <entry>stats</entry>
+                        <entry>
+                            Whether the protocol should collect protocol-specific runtime statistics. What those
+                            statistics are (or whether they even exist) depends on the particular protocol.
+                            See the org.jgroups.stack.Protocol javadoc for the available API related to statistics.
+                            Default is true.
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>ergonomics</entry>
+                        <entry>
+                            Turns on ergonomics. See <xref linkend="Ergonomics"/> for details.
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>id</entry>
+                        <entry>
+                            Gives the protocol a different ID if needed so we can have multiple instances of it in
+                            the same stack
+                        </entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+
+
+
+    </section>
 
     <section>
         <title>Transport</title>
+        <para>
+            <classname>TP</classname> is the base class for all transports, e.g. UDP and TCP. All of the properties
+            defined here are inherited by the subclasses.
+        </para>
+        ${TP}
 
         <section>
             <title>UDP</title>
             
 			${UDP}			          
-
-            <para></para>
         </section>
 
         <section>
             <title>TCP</title>
-
+            ${BasicTCP}
 			${TCP}
-			
-            <para></para>
-        </section>        
+        </section>
 
         <section>
             <title>TUNNEL</title>
             
 			${TUNNEL}
-            
-
-            <para></para>
-        </section>       
+        </section>
     </section>
 
     <section id="DiscoveryProtocols">
@@ -66,12 +100,20 @@
         The task of the discovery is to find an initial membership, which is used to determine the current
         coordinator. Once a coordinator is found, the joiner sends a JOIN request to the coord.
 
+        <section id="Discovery">
+            <title>Discovery</title>
+            <para>
+                <classname>Discovery</classname> is the superclass for all discovery protocols and therefore its
+                properties below can be used in any subclass.
+            </para>
+            ${Discovery}
+        </section>
 
-        <section>
+
+        <section id="PING">
             <title>PING</title>
             
 			${PING}
-            <para></para>
         </section>
 
 
@@ -85,7 +127,6 @@
             </para>
 
 			${PING}
-            <para></para>
         </section>
         
         <section>
@@ -98,30 +139,24 @@
             </para>
 
 			${JDBC_PING}
-            <para></para>
         </section>
 
         <section>
             <title>TCPPING</title>
             
 			${TCPPING}
-
-            <para></para>
         </section>
 
         <section>
             <title>TCPGOSSIP</title>
             
 			${TCPGOSSIP}
-
-            <para></para>
         </section>
 
         <section>
             <title>MPING</title>
 
 			${MPING}
-            <para></para>
         </section>
 
         <section>
@@ -132,7 +167,6 @@
             </para>
 
             ${BPING}
-            <para></para>
         </section>
 
         <section>
@@ -147,7 +181,6 @@
             </para>
 
 			${S3_PING}
-            <para></para>
         </section>
     </section>
 
@@ -156,9 +189,8 @@
 
         <section>
             <title>MERGE2</title>
-				${MERGE2}
+            ${MERGE2}
 
-            <para></para>
         </section>
     </section>
 
@@ -605,6 +637,14 @@
             ${STATE_TRANSFER}
         </section>
 
+        <section id="StreamingStateTransfer">
+            <title>StreamingStateTransfer</title>
+            <para>
+                <classname>StreamingStateTransfer</classname> is the superclass of STATE and STATE_SOCK (see below).
+                Its properties are:
+            </para>
+            ${StreamingStateTransfer}
+        </section>
 
         <section id="pbcast.STATE">
             <title>pbcast.STATE</title>
@@ -649,9 +689,9 @@
                 <title>Configuration</title>
 
                 <para>
-                    STATE allows for the following confguration parameters:
+                    STATE has currently no properties other than those inherited by
+                    <classname>StreamingStateTransfer</classname> (see above).
                 </para>
-				${STATE}
             </section>
         </section>
 
@@ -691,6 +731,11 @@
         <para>
             Flow control throttles the sender so the receivers are not overrun with messages.
         </para>
+        <para>
+            The properties for <classname>FlowControl</classname> are shown below and can be used in
+            MFC and UFC:
+        </para>
+        ${FlowControl}
 
         <section>
             <title>FC</title>
@@ -710,49 +755,14 @@
 
 			${FC}
 
+            <note>
+                <para>
+                    FC has been deprecated, use MFC and UFC instead.
+                </para>
+            </note>
+
         </section>
 
-<!--        <section>
-            <title>SFC</title>
-            <para>
-                A simplified version of FC. FC can actually still overrun receivers when the transport's latency is very
-                small. SFC is a simple flow control protocol for group (= multipoint) messages.
-            </para>
-            <para>
-                Every sender has max_credits bytes for sending multicast messages to the group.
-            </para>
-            <para>
-                Every multicast message (we don't consider unicast messages) decrements max_credits by its size.
-                When max_credits falls below 0, the sender asks all receivers for new credits and blocks
-                until *all* credits have been received from all members.
-            </para>
-
-            <para>
-                When the receiver receives a credit request, it checks whether it has received max_credits bytes from the requester since
-                the last credit request. If yes, it sends new credits to the requester and resets the max_credits for the requester.
-                Else, it takes a note of the credit request from P and - when max_credits bytes have finally been received from P - it
-                sends the credits to P and resets max_credits for P.
-
-            </para>
-            <para>
-                The maximum amount of memory for received messages is therefore &lt;number of senders&gt; * max_credits.
-
-            </para>
-
-            <para>
-                The relationship with STABLE is as follows: when a member Q is slow, it will prevent STABLE from collecting messages above
-                the ones seen by Q (everybody else has seen more messages). However, because Q will *not* send credits back to the senders
-                until it has processed all messages worth max_credits bytes, the senders will block. This in turn allows STABLE to
-                progress and eventually garbage collect most messages from all senders. Therefore, SFC and STABLE complement each other,
-                with SFC blocking senders so that STABLE can catch up.
-            </para>
-
-            <para>
-                SFC is currently experimental, we recommend to use MFC and UFC (see below) instead.
-            </para>
-			
-			${SFC}
-        </section>-->
 
         <section>
             <title>MFC and UFC</title>
@@ -765,11 +775,19 @@
 
             <section id="MFC">
                 <title>MFC</title>
+                <para>
+                    <classname>MFC</classname> has currently no properties other than those inherited by
+                    <classname>FlowControl</classname> (see above).
+                </para>
                 ${MFC}
             </section>
 
             <section id="UFC">
                 <title>UFC</title>
+                <para>
+                    <classname>UFC</classname> has currently no properties other than those inherited by
+                    <classname>FlowControl</classname> (see above).
+                </para>
                 ${UFC}
             </section>
 
@@ -1044,8 +1062,11 @@
             <title>Locking protocols</title>
             <para>
                 There are currently 2 locking protocols: org.jgroups.protocols.CENTRAL_LOCK and
-                org.jgroups.protocols.PEER_LOCK.
+                org.jgroups.protocols.PEER_LOCK. Both extend <classname>Locking</classname>, which has the
+                following properties:
             </para>
+            ${Locking}
+
             <section id="CENTRAL_LOCK">
                 <title>CENTRAL_LOCK</title>
                 <para>
@@ -1101,6 +1122,7 @@
             <para>
                 CENTRAL_EXECUTOR is an implementation of Executing which is needed by the ExecutionService.
             </para>
+            ${Executing}
             ${CENTRAL_EXECUTOR}
         </section>
 
