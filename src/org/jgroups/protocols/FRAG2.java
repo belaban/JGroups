@@ -44,7 +44,7 @@ public class FRAG2 extends Protocol {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
     @Property(description="The max number of bytes in a message. Larger messages will be fragmented")
-    int frag_size=1500;
+    int frag_size=60000;
   
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
