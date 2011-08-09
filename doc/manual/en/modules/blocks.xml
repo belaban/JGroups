@@ -55,9 +55,7 @@
           application to be both at the same time. To be able to serve requests in the server role, the
           <methodname>RequestHandler.handle()</methodname> method has to be implemented:
       </para>
-      <programlisting language="Java">
-Object handle(Message msg) throws Exception;
-      </programlisting>
+      <programlisting language="Java">Object handle(Message msg) throws Exception;</programlisting>
 
 
       <para>
@@ -566,7 +564,7 @@ public void testResponseFilter() throws Exception {
         </para>
 
         <para>
-            Modifications such as<methodname>put()</methodname>, <methodname>clear()</methodname> or
+            Modifications such as <methodname>put()</methodname>, <methodname>clear()</methodname> or
             <methodname>remove()</methodname> will be propagated in orderly fashion to all replicas. Read-only requests
             such as <methodname>get()</methodname> will only be invoked on the local hashmap.
         </para>

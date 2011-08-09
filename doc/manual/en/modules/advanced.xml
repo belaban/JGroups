@@ -180,9 +180,7 @@
     &lt;FD_ALL/&gt;
     &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
     &lt;BARRIER /&gt;
-    &lt;pbcast.NAKACK use_stats_for_retransmission="false"
-                   exponential_backoff="0"
-                   use_mcast_xmit="true"
+    &lt;pbcast.NAKACK use_mcast_xmit="true"
                    retransmit_timeout="300,600,1200"
                    discard_delivered_msgs="true"/&gt;
     &lt;UNICAST timeout="300,600,1200"/&gt;
@@ -221,8 +219,9 @@
 
                 <listitem>
                     <para>
-                        Uses IP multicast (by default) to find initial members. Once found, the current coordinator can
-                        be determined and a unicast JOIN request will be sent to it in order to join the cluster.
+                        This is the discovery protocol. It uses IP multicast (by default) to find initial members.
+                        Once found, the current coordinator can be determined and a unicast JOIN request will be sent
+                        to it in order to join the cluster.
                     </para>
                 </listitem>
             </varlistentry>
@@ -245,10 +244,10 @@
             </varlistentry>
 
             <varlistentry>
-                <term>FD</term>
+                <term>FD / FD_ALL</term>
                 <listitem>
-                    <para>Failure detection based on heartbeat are-you-alive messages (in a ring form between
-                        members). Generates notification if a member fails</para>
+                    <para>Failure detection based on heartbeat are-you-alive messages. Generates notification
+                        if a member fails</para>
                 </listitem>
             </varlistentry>
 
@@ -257,6 +256,17 @@
                 <listitem>
                     <para>Double-checks whether a suspected member is really dead,
                         otherwise the suspicion generated from protocol below is discarded</para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term>BARRIER</term>
+                <listitem>
+                    <para>
+                        Needed to transfer state; this will block messages that modify the shared state until a
+                        digest has been taken, then unblocks all threads. <emphasis>Not needed
+                        if no state transfer protocol is present.</emphasis>
+                    </para>
                 </listitem>
             </varlistentry>
 
@@ -294,6 +304,24 @@
             </varlistentry>
 
             <varlistentry>
+                <term>UFC</term>
+                <listitem>
+                    <para>
+                        Unicast Flow Control. Provides flow control between 2 members.
+                    </para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term>MFC</term>
+                <listitem>
+                    <para>
+                        Multicast Flow Control. Provides flow control between a sender and all cluster members.
+                    </para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
                 <term>FRAG2</term>
                 <listitem>
                     <para>Fragments large messages into smaller ones and reassembles
@@ -311,6 +339,110 @@
                 </listitem>
             </varlistentry>
         </variablelist>
+
+        <section id="MessageBundling">
+            <title>Message bundling</title>
+
+            <para>
+                Message bundling is beneficial when sending many small messages; it queues them until they have accumulated
+                a certain size, or until a timeout has elapsed. Then, the queued messages are assembled into a larger
+                message, and that message is then sent. At the receiver, the large message is disassembled and the
+                smaller messages are sent up the stack.
+            </para>
+            <para>
+                When sending many smaller messages, the ratio between payload and message headers might be small; say we
+                send a "hello" string: the payload here is 7 bytes, whereas the addresses and headers (depending on the
+                stack configuration) might be 30 bytes. However, if we bundle (say) 100 messages, then the payload of
+                the large message is 700 bytes, but the header is still 30 bytes. Thus, we're able to send more
+                actual data across the wire with one large message than many smaller ones.
+            </para>
+            <para>
+                Message bundling is conceptually similar to TCP's Nagling algorithm.
+            </para>
+            <para>
+                A sample configuration is shown below:
+            </para>
+
+            <programlisting language="XML">
+&lt;UDP
+    enable_bundling="true"
+    max_bundle_size="64K"
+    max_bundle_timeout="30"
+/&gt;
+            </programlisting>
+
+            <para>
+                Here, bundling is enabled (the default). The max accumulated size is 64'000 bytes and we wait for
+                30 ms max. If at time T0, we're sending 10 smaller messages with an accumulated size of 2'000 bytes, but
+                then send no more messages, then the timeout will kick in after 30 ms and the messages will get packed
+                into a large message M and M will be sent. If we send 1000 messages of 100 bytes each, then - after
+                exceeding 64'000 bytes (after ca. 64 messages) - we'll send the large message, and this might have taken
+                only 3 ms.
+            </para>
+
+            <section id="MessageBundlingAndPerf">
+                <title>Message bundling and performance</title>
+                <para>
+                    While message bundling is good when sending many small messages asynchronously, it can be bad when
+                    invoking synchronous RPCs: say we're invoking 10 synchronous (blocking) RPCs across the cluster
+                    with an RpcDispatcher (see <xref linkend="RpcDispatcher"/>), and the payload of the marshalled
+                    arguments of one call is less than 64K.
+                </para>
+                <para>
+                    Because the RPC is blocking, we'll wait until the call has returned before invoking the next RPC.
+                </para>
+                <para>
+                    For each RPC, the request takes up to 30 ms, and each response will also take up to 30 ms, for a
+                    total of 60 ms <emphasis>per call</emphasis>. So the 10 blocking RPCs would take a total of 600 ms !
+                </para>
+                <para>
+                    This is clearly not desirable. However, there's a simple solution: we can use message flags
+                    (see <xref linkend="MessageFlags"/>) to override the default bundling behavior in the transport:
+                </para>
+                <programlisting language="Java">
+RpcDispatcher disp;
+RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 5000).setFlags(Message.DONT_BUNDLE);
+RspList rsp_list=disp.callRemoteMethods(null, "print", new Object[]{i}, new Class[]{int.class}, opts);
+                </programlisting>
+                <para>
+                    The <methodname>RequestOptions.setFlags(Message.DONT_BUNDLE)</methodname> call tags the message
+                    with the DONT_BUNDLE flag. When the message is to be sent by the transport, it will be sent
+                    immediately, regardless of whether bundling is enabled in the transport.
+                </para>
+                <para>
+                    Using the DONT_BUNDLE flag to invoke <methodname>print()</methodname> will take a few milliseconds
+                    for 10 blocking RPCs versus 600 ms without the flag.
+                </para>
+
+                    <para>
+                        An alternative to setting the DONT_BUNDLE flag is to use futures to invoke 10 blocking RPCs:
+                    </para>
+
+                    <programlisting language="Java">
+List&lt;Future&lt;RspList&gt;&gt; futures=new ArrayList&lt;Future&lt;RspList&gt;&gt;();
+for(int i=0; i &lt; 10; i++) {
+    Future&lt;RspList&gt; future=disp.callRemoteMethodsWithFuture(...);
+    futures.add(future);
+}
+
+for(Future&lt;RspList&gt; future: futures) {
+    RspList rsp_list=future.get();
+    // do something with the response
+}
+                </programlisting>
+                <para>
+                    Here we use <methodname>callRemoteMethodsWithFuture()</methodname> which (although the call
+                    is blocking!) returns immediately, with a future. After invoking the 10 calls, we then grab the
+                    results by fetching them from the futures.
+                </para>
+                <para>
+                    Compared to the few milliseconds above, this will take ca 60 ms (30 for the request and 30 for
+                    the responses), but this is still better than the 600 ms we get when not using the DONT_BUNDLE
+                    flag. Note that, if the accumulated size of the 10 requests exceeds <literal>max_bundle_size</literal>,
+                    the large message would be sent immediately, so this might even be faster than 30 ms for the request.
+                </para>
+            </section>
+        </section>
 
         <section>
             <title>UDP</title>
@@ -388,18 +520,17 @@
             <programlisting language="XML">
 &lt;TCP bind_port="7800" /&gt;
 &lt;TCPPING timeout="3000"
-    initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
-    port_range="1"
-    num_initial_members="3"/&gt;
+         initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
+         port_range="1"
+         num_initial_members="3"/&gt;
 &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
-&lt;pbcast.NAKACK
-    use_mcast_xmit="false"
-    retransmit_timeout="300,600,1200,2400,4800"
-    discard_delivered_msgs="true"/&gt;
+&lt;pbcast.NAKACK use_mcast_xmit="false"
+               retransmit_timeout="300,600,1200,2400,4800"
+               discard_delivered_msgs="true"/&gt;
 &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-    max_bytes="400000"/&gt;
+               max_bytes="400000"/&gt;
 &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
-    view_bundling="true"/&gt;
+               view_bundling="true"/&gt;
             </programlisting>
 
 
@@ -493,7 +624,7 @@
                 <programlisting language="XML">
 &lt;TCP bind_port="7800" /&gt; +
 &lt;TCPPING initial_hosts="HostA[7800],HostB[7800]" port_range="2"
-    timeout="3000" num_initial_members="3" /&gt;
+         timeout="3000" num_initial_members="3" /&gt;
                 </programlisting>
 
 
@@ -501,7 +632,7 @@
                     The concept behind TCPPING is that some selected cluster members assume the role of well-known hosts
                     from which the initial membership information can be retrieved. In the example,
                     <parameter>HostA</parameter> and <parameter>HostB</parameter> are designated members that will be
-                    used by TCPPING to lookup the initial membership. The property <parameter>bin_port</parameter>
+                    used by TCPPING to lookup the initial membership. The property <parameter>bind_port</parameter>
                     in <classname>TCP</classname> means that each member should try to assign port 7800 for itself.
                     If this is not possible it will try the next higher port (<literal>7801</literal>) and so on, until
                     it finds an unused port.
@@ -511,7 +642,7 @@
                     <classname>TCPPING</classname> will try to contact both <parameter>HostA</parameter> and
                     <parameter>HostB</parameter>, starting at port <literal>7800</literal> and ending at port
                     <literal>7800 + port_range</literal>, in the above example ports <literal>7800</literal> -
-                    <literal>7804</literal>. Assuming that at least one of <parameter>HostA</parameter> or
+                    <literal>7802</literal>. Assuming that at least one of <parameter>HostA</parameter> or
                     <parameter>HostB</parameter> is up, a response will be received. To be absolutely sure to receive
                     a response, it is recommended to add all the hosts on which members of the cluster will be running
                     to the configuration.
@@ -663,9 +794,7 @@
 
                 <listitem>
                     <para>Start the GossipRouter:
-                        <screen>
-java org.jgroups.stack.GossipRouter -port 12001
-                        </screen>
+                        <screen>java org.jgroups.stack.GossipRouter -port 12001</screen>
                     </para>
                 </listitem>
 
@@ -811,8 +940,7 @@ java org.jgroups.stack.GossipRouter -port 12001
 
                 <programlisting language="XML">
 &lt;UDP
-    mcast_addr="228.10.10.10"
-    mcast_port="45588"
+    thread_naming_pattern="cl"
 
     thread_pool.enabled="true"
     thread_pool.min_threads="1"
@@ -855,6 +983,14 @@ java org.jgroups.stack.GossipRouter -port 12001
 
                             <tbody>
                                 <row>
+                                    <entry>thread_naming_pattern</entry>
+                                    <entry>Determines how threads are named that are running from thread pools in
+                                    concurrent stack. Valid values include any combination of "cl" letters, where
+                                    "c" includes the cluster name and "l" includes local address of the channel.
+                                        The default is "cl"
+                                    </entry>
+                                </row>
+                                <row>
                                     <entry>enabled</entry>
                                     <entry>Whether of not to use a thread pool. If set to false, the caller's thread
                                     is used.</entry>
@@ -870,14 +1006,14 @@ java org.jgroups.stack.GossipRouter -port 12001
                                 </row>
                                 <row>
                                     <entry>keep_alive_time</entry>
-                                    <entry>Number of milliseconds until an idle thread is removed from the pool</entry>
+                                    <entry>Number of milliseconds until an idle thread is placed back into the pool</entry>
                                 </row>
                                 <row>
                                     <entry>queue_enabled</entry>
                                     <entry>Whether of not to use a (bounded) queue. If enabled, when all minimum
                                     threads are busy, work items are added to the queue. When the queue is full,
                                     additional threads are created, up to max_threads. When max_threads have been
-                                    reached, the rejection policy is consulted.</entry>
+                                    reached (and the queue is full), the rejection policy is consulted.</entry>
                                 </row>
                                 <row>
                                     <entry>max_size</entry>
@@ -891,14 +1027,6 @@ java org.jgroups.stack.GossipRouter -port 12001
                                     exception. "Discard" discards the message, "DiscardOldest" discards the
                                     oldest entry in the queue. Note that these values might change, for example a
                                     "Wait" value might get added in the future.</entry>
-                                </row>
-                                <row>
-                                    <entry>thread_naming_pattern</entry>
-                                    <entry>Determines how threads are named that are running from thread pools in 
-                                    concurrent stack. Valid values include any combination of "cl" letters, where
-                                    "c" includes the cluster name and "l" includes local address of the channel.
-                                        The default is "cl"
-                                    </entry>
                                 </row>
                             </tbody>
                         </tgroup>
@@ -1011,7 +1139,7 @@ java org.jgroups.stack.GossipRouter -port 12001
             </note>
         </section>
 
-        <section>
+        <section id="OOB">
             <title>Out-of-band messages</title>
             <para>
                 OOB messages completely ignore any ordering constraints the stack might have. Any message marked as OOB
@@ -1050,7 +1178,7 @@ java org.jgroups.stack.GossipRouter -port 12001
                         <tbody>
                             <row>
                                 <entry>Default thread pool</entry>
-                                <entry>This is the pools for handling incoming messages. It can be fetched using
+                                <entry>This is the pool for handling incoming messages. It can be fetched using
                                     getDefaultThreadPool() and replaced using setDefaultThreadPool(). When setting a
                                     thread pool, the old thread pool (if any) will be shutdown and all of it tasks
                                     cancelled first
@@ -1105,6 +1233,12 @@ java org.jgroups.stack.GossipRouter -port 12001
                 </table>
 
             </para>
+            <note>
+                <para>
+                    Note that thread pools and factories should be replaced after a channel has been created and
+                    before it is connected (<methodname>JChannel.connect()</methodname>).
+                </para>
+            </note>
         </section>
 
 
@@ -1218,7 +1352,7 @@ public void viewAccepted(View view) {
         MergeView tmp=(MergeView)view;
         Vector&lt;View&gt; subgroups=tmp.getSubgroups();
         // merge state or determine primary partition
-        // run this in a separate thread !
+        // run in a separate thread !
     }
 }
         </programlisting>
@@ -1451,8 +1585,16 @@ On view change V:
         <title>Large clusters</title>
         <para>
             This section is a collection of best practices and tips and tricks for running large clusters on JGroups.
-            By large clusters, we mean several hundred nodes in a cluster.
+            By large clusters, we mean several hundred nodes in a cluster. These recommendations are captured in
+            <literal>udp-largecluster.xml</literal> which is shipped with JGroups.
         </para>
+
+        <note>
+            <para>
+                This is work-in-progress, and <literal>udp-largecluster.xml</literal> is likely to see changes
+                in the future.
+            </para>
+        </note>
 
         <section>
             <title>Reducing chattiness</title>
@@ -1504,16 +1646,44 @@ On view change V:
                 <para>
                     Heartbeating requires messages to be sent around, and we need to be careful to limit the number of
                     messages sent by a failure detection protocol (1) to detect crashed members and (2) when a member
-                    has been suspected. The following sections discuss how to configure FD_ALL and FD_SOCK, the most
+                    has been suspected. The following sections discuss how to configure FD_ALL, FD and FD_SOCK, the most
                     commonly used failure detection protocols, for use in large clusters.
                 </para>
 
                 <section>
                     <title>FD_SOCK</title>
+                    <para>
+                        FD_SOCK is discussed in detail in <xref linkend="FD_SOCK"/>.
+                    </para>
                 </section>
-                
+
+                <section>
+                    <title>FD</title>
+                    <para>
+                        FD uses a ring topology, where every member sends heartbeats to its neighbor only. We
+                        recommend to use this protocol only when TCP is the transport, as it generates a lot of
+                        traffic in large clusters.
+                    </para>
+                    <para>
+                        For details see <xref linkend="FD"/>.
+                    </para>
+                </section>
+
                 <section>
                     <title>FD_ALL</title>
+                    <para>
+                        FD_ALL has every member periodically multicast a heartbeat, and everyone updates internal
+                        tables of members and their last heartbeat received. When a member hasn't received a heartbeat
+                        from any given member for more than <literal>timeout</literal> ms, that member will get
+                        suspected.
+                    </para>
+                    <pra>
+                        FD_ALL is the recommended failure detection protocol when the transport provides IP
+                        multicasting capabilities (UDP).
+                    </pra>
+                    <para>
+                        For details see <xref linkend="FD_ALL"/>.
+                    </para>
                 </section>
             </section>
 
@@ -1755,8 +1925,110 @@ On view change V:
     <section id="MessageFlags">
         <title>Using message flags to selectively bypass certain protocols</title>
         <para>
-            TBD
+            A message can be tagged with a selection of <emphasis>flags</emphasis>, which alter the way certain
+            protocols treat the message. This is done as follows:
         </para>
+        <programlisting language="Java">
+Message msg=new Message();
+msg.setFlag((byte)(Message.OOB | Message.NO_FC));
+        </programlisting>
+        <para>
+            Here we tag the message to be OOB (out of band) and to bypass flow control.
+        </para>
+        <para>
+            The advantage of tagging messages is that we don't need to change the configuration, but instead can override it
+            on a per-message basis.
+        </para>
+        <para>
+            The available flags are:
+        </para>
+
+        <variablelist>
+            <varlistentry>
+                <term>Message.OOB</term>
+                <listitem>
+                    <para>
+                        This tags a message as out-of-band, which will get it processed by the out-of-band thread
+                        pool at the receiver's side. Note that an OOB message does not provide any ordering guarantees,
+                        although OOB messages are reliable (no loss) and are delivered only once.
+                        See <xref linkend="OOB"/> for details.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>Message.DONT_BUNDLE</term>
+                <listitem>
+                    <para>
+                        This flag causes the transport not to bundle the message, but to send it immediately.
+                    </para>
+                    <para>
+                        See <xref linkend="MessageBundlingAndPerf"/> for a discussion of the DONT_BUNDLE flag with
+                        respect to performance of blocking RPCs.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>Message.NO_FC</term>
+                <listitem>
+                    <para>
+                        This flag bypasses any flow control protocol (see <xref linkend="FlowControl"/>) for a discussion
+                        of flow control protocols.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>Message.SCOPED</term>
+                <listitem>
+                    <para>
+                        This flag is set automatically when <methodname>Message.setScope()</methodname> is called.
+                        See <xref linkend="Scopes"/> for a discussion on scopes.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>Message.NO_RELIABILITY</term>
+                <listitem>
+                    <para>
+                        When sending unicast or multicast messages, some protocols (UNICAST, NAKACK) add sequence
+                        numbers to the messages in order to (1) deliver them reliably and (2) in order.
+                    </para>
+                    <para>
+                        If we don't want reliability, we can tag the message with flag NO_RELIABILITY. This means that
+                        a message tagged with this flag may not be received, may be received more than once, or may
+                        be received out of order.
+                    </para>
+                    <para>
+                        A message tagged with NO_RELIABILITY will simply bypass reliable protocols such as UNICAST
+                        and NAKACK.
+                    </para>
+                    <para>
+                        For example, if we send multicast message M1, M2 (NO_RELIABILITY), M3 and M4, and the starting
+                        sequence number is #25, then M1 will have seqno #25, M3 will have #26 and M4 will have #27. We
+                        can see that we don't allocate a seqno for M2 here.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>Message.NO_TOTAL_ORDER</term>
+                <listitem>
+                    <para>
+                        If we use a total order configuration with SEQUENCER (<xref linkend="SEQUENCER"/>), then we
+                        can bypass SEQUENCER (if we don't need total order for a given message) by tagging the message
+                        with <literal>NO_TOTAL_ORDER</literal>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>Message.NO_RELAY</term>
+                <listitem>
+                    <para>
+                        If we use RELAY (see <xref linkend="RelayAdvanced"/>) and don't want a message to be relayed to
+                        the other site(s), then we can tag the message with NO_RELAY.
+                    </para>
+                </listitem>
+            </varlistentry>
+        </variablelist>
+        
     </section>
 
     <section>
@@ -1766,6 +2038,20 @@ On view change V:
             memory sizes etc. In JGroups, ergonomics means that we try to dynamically determine and set optimal
             values for protocol properties. Examples are thread pool size, flow control credits, heartbeat
             frequency and so on.
+        </para>
+        <para>
+            There is an <literal>ergonomics</literal> property which can be enabled or disabled for every protocol.
+            The default is true. To disable it, set it to false, e.g.:
+        </para>
+        <programlisting language="XML">
+&lt;UDP... /&gt;
+&lt;PING ergonomics="false"/&gt;
+        </programlisting>
+        <para>
+            Here we leave ergonomics enabled for UDP (the default is true), but disable it for PING.
+        </para>
+        <para>
+            Ergonomics is work-in-progress.
         </para>
     </section>
 </chapter>

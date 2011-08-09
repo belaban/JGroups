@@ -172,7 +172,7 @@
         failure detection layer to exclude a crashed member (this is done by the group membership protocol, GMS), but
         simply to notify everyone that a node in the cluster is suspected of having crashed.
 
-        <section>
+        <section id="FD">
             <title>FD</title>
 
             <para>Failure detection based on heartbeat messages. If reply is not
@@ -199,7 +199,7 @@
         </section>
 
 
-        <section>
+        <section id="FD_ALL">
             <title>FD_ALL</title>
 
             <para>Failure detection based on simple heartbeat protocol. Every member periodically multicasts a
@@ -292,7 +292,7 @@
         </section>
 
 
-        <section>
+        <section id="FD_SOCK">
             <title>FD_SOCK</title>
 
             <para>Failure detection protocol based on a ring of TCP sockets created
@@ -415,7 +415,7 @@
     <section>
         <title>Ordering</title>
 
-        <section>
+        <section id="SEQUENCER">
             <title>SEQUENCER</title>
 
             <para>
@@ -680,7 +680,7 @@
     </section>
 
 
-    <section>
+    <section id="FlowControl">
         <title>Flow control</title>
         <para>
             Flow control takes care of adjusting the rate of a message sender to the rate of the slowest receiver over time.
@@ -712,7 +712,7 @@
 
         </section>
 
-        <section>
+<!--        <section>
             <title>SFC</title>
             <para>
                 A simplified version of FC. FC can actually still overrun receivers when the transport's latency is very
@@ -752,7 +752,7 @@
             </para>
 			
 			${SFC}
-        </section>
+        </section>-->
 
         <section>
             <title>MFC and UFC</title>
@@ -763,12 +763,12 @@
                 For example, if no unicast flow control is needed, UFC can be left out of the stack configuration.
             </para>
 
-            <section>
+            <section id="MFC">
                 <title>MFC</title>
                 ${MFC}
             </section>
 
-            <section>
+            <section id="UFC">
                 <title>UFC</title>
                 ${UFC}
             </section>
