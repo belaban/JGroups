@@ -87,14 +87,14 @@
             </imageResource>
             <formats>
               <format>
-                <formatName>pdf</formatName>
-                <stylesheetResource>classpath:/xslt/org/jboss/pdf.xsl</stylesheetResource>
-                <finalName>${docname}.pdf</finalName>
-              </format>
-              <format>
                 <formatName>html</formatName>
                 <stylesheetResource>classpath:/xslt/org/jboss/xhtml.xsl</stylesheetResource>
                 <finalName>index.html</finalName>
+              </format>
+                <format>
+                <formatName>pdf</formatName>
+                <stylesheetResource>classpath:/xslt/org/jboss/pdf.xsl</stylesheetResource>
+                <finalName>${docname}.pdf</finalName>
               </format>
               <!--<format>
                 <formatName>html_single</formatName>
