@@ -1,24 +1,14 @@
 package org.jgroups.util;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.TreeMap;
+import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
+import org.jgroups.stack.Protocol;
+import org.w3c.dom.DOMImplementation;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -29,16 +19,12 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-
-import org.jgroups.annotations.Experimental;
-import org.jgroups.annotations.Property;
-import org.jgroups.annotations.Unsupported;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.stack.Protocol;
-import org.w3c.dom.DOMImplementation;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import java.io.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.util.*;
 
 /**
  * Iterates over all concrete Protocol classes and creates tables with Protocol's properties.
@@ -186,7 +172,7 @@ public class PropertiesToXML {
         }
 
         // do we have more than one property (superclass Protocol has only one property (stats))
-        if (clazzes != null && clazzes.size() > 1) {
+        if (clazzes.size() > 1) {
             DOMSource domSource = new DOMSource(xmldoc);
             StringWriter sw = new StringWriter();
             StreamResult streamResult = new StreamResult(sw);
@@ -233,14 +219,14 @@ public class PropertiesToXML {
                 Property annotation = method.getAnnotation(Property.class);
                 String desc = annotation.description();
 
-                if (desc.length() > 0) {
+                if(desc == null || desc.length() == 0)
+                    desc="n/a";
 
-                    String name = annotation.name();
-                    if (name.length() < 1) {
-                        name = Util.methodNameToAttributeName(method.getName());
-                    }
-                    nameToDescription.put(name, desc);
+                String name = annotation.name();
+                if (name.length() < 1) {
+                    name = Util.methodNameToAttributeName(method.getName());
                 }
+                nameToDescription.put(name, desc);
             }
         }
 
@@ -277,11 +263,9 @@ public class PropertiesToXML {
         StringWriter output = new StringWriter();
         FileReader input = new FileReader(f);
         char[] buffer = new char[8 * 1024];
-        int count = 0;
         int n = 0;
         while (-1 != (n = input.read(buffer))) {
             output.write(buffer, 0, n);
-            count += n;
         }
         return output.toString();
     }

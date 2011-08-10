@@ -685,7 +685,7 @@ for(Future&lt;RspList&gt; future: futures) {
             </section>
         </section>
 
-        <section>
+        <section id="TUNNEL_Advanced">
             <title>TUNNEL</title>
 
 
@@ -1316,7 +1316,7 @@ c2.connect("second-cluster");
         </section>
     </section>
 
-    <section>
+    <section id="HandlingNetworkPartitions">
         <title>Handling network partitions</title>
 
         <para>
@@ -1528,7 +1528,7 @@ On view change V:
     </section>
 
 
-    <section>
+    <section id="Flushing">
         <title>Flushing: making sure every node in the cluster received a message</title>
 
         When sending messages, the properties of the default stacks (udp.xml, tcp.xml) are that all messages are delivered

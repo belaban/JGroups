@@ -67,29 +67,126 @@
 
     </section>
 
-    <section>
+    <section id="Transport">
         <title>Transport</title>
         <para>
             <classname>TP</classname> is the base class for all transports, e.g. UDP and TCP. All of the properties
-            defined here are inherited by the subclasses.
+            defined here are inherited by the subclasses. The properties for <classname>TP</classname> are:
         </para>
         ${TP}
 
-        <section>
+        <para>
+            <literal>bind_addr</literal> can be set to the address of a network interface, e.g. <literal>192.168.1.5</literal>.
+            It can also be set for the entire stack using system property <literal>-Djgroups.bind_addr</literal>, which
+            overrrides the XML value (if given).
+        </para>
+        <para>
+            The following special values are also recognized for <literal>bind_addr</literal>:
+        </para>
+
+        <variablelist>
+            <varlistentry>
+                <term>GLOBAL</term>
+                <listitem>
+                    <para>
+                        Picks a global IP address if available. If not, falls back to a SITE_LOCAL IP address.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>SITE_LOCAL</term>
+                <listitem>
+                    <para>
+                        Picks a site local (non routable) IP address, e.g. from the <literal>192.168.0.0</literal> or
+                        <literal>10.0.0.0</literal> address range.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>LINK_LOCAL</term>
+                <listitem>
+                    <para>
+                        Picks a link-local IP address, from <literal>169.254.1.0</literal> through
+                        <literal>169.254.254.255</literal>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>NON_LOOPBACK</term>
+                <listitem>
+                    <para>
+                        Picks <emphasis>any</emphasis> non loopback address.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>LOOPBACK</term>
+                <listitem>
+                    <para>
+                        Pick a loopback address, e.g. <literal>127.0.0.1</literal>.
+                    </para>
+                </listitem>
+            </varlistentry>
+        </variablelist>
+        <para>
+            An example of setting the bind address in UDP to use a site local address is:
+        </para>
+        <programlisting language="Java">
+&lt;UDP bind_addr="SITE_LOCAL" /&gt;
+        </programlisting>
+        <para>
+            This will pick any address of any interface that's site-local, e.g. a <literal>192.168.x.x</literal> or
+            <literal>10.x.x.x</literal> address.
+        </para>
+
+        <section id="UDP">
             <title>UDP</title>
-            
+            <para>
+                UDP uses IP multicast for sending messages to all members of a group and UDP datagrams for unicast
+                messages (sent to a single member). When started, it opens a unicast and multicast socket: the unicast
+                socket is used to send/receive unicast messages, whereas the multicast socket sends and receives multicast
+                messages. The channel's physical address will be the address and port number of the unicast socket.
+            </para>
+
+            <para>
+                A protocol stack with UDP as transport protocol is typically used with clusters whose members run
+                in the same subnet. If running across subnets, an admin has to ensure that
+                IP multicast is enabled across subnets. It is often the case that IP multicast is not enabled across
+                subnets. In such cases, the stack has to either use UDP without IP multicasting or other transports
+                such as TCP.
+            </para>
 			${UDP}			          
         </section>
 
-        <section>
+        <section id="TCP">
             <title>TCP</title>
+            <para>
+                Specifying TCP in your protocol stack tells JGroups to use TCP to send messages between cluster members.
+                Instead of using a multicast bus, the cluster members create a mesh of TCP connections.
+            </para>
+            <para>
+                For example, while UDP sends 1 IP multicast packet when sending a message to a cluster of 10 members,
+                TCP needs to send the message 9 times. It sends the same message to the first member, to the second
+                member, and so on (excluding itself as the message is looped back internally).
+            </para>
+            <para>
+                This is slow, as the cost of sending a group message is O(n) with TCP, where it is O(1) with UDP. As the
+                cost of sending a group message with TCP is a function of the cluster size, it becomes higher with
+                larger clusters.
+            </para>
+            <note>
+                <para>We recommend to use UDP for larger clusters, whenever possible</para>
+            </note>
+
             ${BasicTCP}
 			${TCP}
         </section>
 
-        <section>
+        <section id="TUNNEL">
             <title>TUNNEL</title>
-            
+            <para>
+                TUNNEL was described in <xref linkend="TUNNEL_Advanced"/>.
+            </para>
 			${TUNNEL}
         </section>
     </section>
@@ -97,8 +194,14 @@
     <section id="DiscoveryProtocols">
         <title>Initial membership discovery</title>
 
-        The task of the discovery is to find an initial membership, which is used to determine the current
-        coordinator. Once a coordinator is found, the joiner sends a JOIN request to the coord.
+        <para>
+            The task of the discovery is to find an initial membership, which is used to determine the current
+            coordinator. Once a coordinator is found, the joiner sends a JOIN request to the coord.
+        </para>
+        <para>
+            Discovery is also called periodically by MERGE2 (see <xref linkend="MERGE2"/>), to see if we have
+            diverging cluster membership information.
+        </para>
 
         <section id="Discovery">
             <title>Discovery</title>
@@ -106,15 +209,82 @@
                 <classname>Discovery</classname> is the superclass for all discovery protocols and therefore its
                 properties below can be used in any subclass.
             </para>
+            <para>
+                Discovery sends a discovery request, and waits for <literal>num_initial_members</literal> discovery
+                responses, or <literal>timeout</literal> ms, whichever occurs first, before returning. Note that
+                <literal>break_on_coord_rsp="true"</literal> will return as soon as we have a response from a coordinator.
+            </para>
             ${Discovery}
         </section>
 
 
         <section id="PING">
             <title>PING</title>
-            
+
+            <para>
+                Initial (dirty) discovery of members. Used to detect the coordinator (oldest member), by
+                mcasting PING requests to an IP multicast address.
+            </para>
+            <para>
+                Each member responds with a packet {C, A}, where C=coordinator's address and A=own address. After N
+                milliseconds or M replies, the joiner determines the coordinator from the responses, and sends a
+                JOIN request to it (handled by GMS). If nobody responds, we assume we are the first member of a group.
+            </para>
+            <para>
+                Unlike TCPPING, PING employs dynamic discovery, meaning that the member does not have to know in advance
+                where other cluster members are.
+            </para>
+            <para>
+                <classname>PING</classname> uses the IP multicasting capabilities of the transport to send a discovery
+                request to the cluster. It therefore requires UDP as transport.
+            </para>
 			${PING}
         </section>
+
+        <section id="TCPPING_Prot">
+            <title>TCPPING</title>
+            <para>
+                TCPPING is used with TCP as transport, and uses a static list of cluster members's addresses. See
+                <xref linkend="TCPPING"/> for details.
+            </para>
+            ${TCPPING}
+            <note>
+                <para>
+                    It is recommended to include the addresses of <emphasis>all</emphasis> cluster members in
+                    <literal>initial_hosts</literal>.
+                </para>
+            </note>
+        </section>
+
+        <section if="TCPGOSSIP_Prot">
+            <title>TCPGOSSIP</title>
+            <para>
+                TCPGOSSIP uses an external GossipRouter to discover the members of a cluster. See <xref linkend="TCPGOSSIP"/>
+                for details.
+            </para>
+            ${TCPGOSSIP}
+        </section>
+
+        <section>
+            <title>MPING</title>
+            <para>
+                MPING (=Multicast PING) uses IP multicast to discover the initial membership. It can be used with all
+                transports, but usually is used in combination with TCP. TCP usually requires TCPPING, which has to list
+                all cluster members explicitly, but MPING doesn't have this requirement. The typical use case for this
+                is when we want TCP as transport, but multicasting for discovery so we don't have to define a static
+                list of initial hosts in TCPPING
+            </para>
+            <para>
+                MPING uses its own multicast socket for discovery. Properties <literal>bind_addr</literal> (can also
+                be set via <literal>-Djgroups.bind_addr=</literal>), <literal>mcast_addr</literal> and
+                <literal>mcast_port</literal> can be used to configure it.
+            </para>
+            <para>
+                Note that MPING requires a separate thread listening on the multicast socket for discovery requests.
+            </para>
+            ${MPING}
+        </section>
+
 
 
         <section>
@@ -141,23 +311,6 @@
 			${JDBC_PING}
         </section>
 
-        <section>
-            <title>TCPPING</title>
-            
-			${TCPPING}
-        </section>
-
-        <section>
-            <title>TCPGOSSIP</title>
-            
-			${TCPGOSSIP}
-        </section>
-
-        <section>
-            <title>MPING</title>
-
-			${MPING}
-        </section>
 
         <section>
             <title>BPING</title>
@@ -171,44 +324,133 @@
 
         <section>
             <title>S3_PING</title>
-            This uses an Amazon S3 bucket into which all members write their addresses. New joiners read all addresses
-            from this bucket and ping each of the elements of the resulting set of members. When a member leaves, it
-            deletes its corresponding file.
+            
             <para>
-              S3_PING is primarily meant to be used on Amazon EC2 where multicast traffic is not allowed and
-              no external process (GossipRouter) is desired. When Amazon RDS is preferred over S3, or if a shared
-              database is used, an alternative is to use JDBC_PING.
+                S3_PING uses Amazon S3 to discover initial members. New joiners read all addresses
+                from this bucket and ping each of the elements of the resulting set of members. When a member leaves, it
+                deletes its corresponding file.
             </para>
 
-			${S3_PING}
+            <para>
+                It's designed specifically for members running on Amazon EC2, where multicast traffic is not allowed and
+                thus MPING or PING will not work. When Amazon RDS is preferred over S3, or if a shared database is used,
+                an alternative is to use JDBC_PING.
+            </para>
+
+            <para>
+                Each instance uploads a small file to an S3 bucket and each instance reads the files out of this bucket
+                to determine the other members.
+            </para>
+
+
+            <para>
+                There are three different ways to use S3_PING, each having its own tradeoffs between security and
+                ease-of-use. These are described in more detail below:
+            </para>
+            <itemizedlist>
+                <listitem>
+                    Private buckets, Amazon AWS credentials given to each instance
+                </listitem>
+                <listitem>
+                    Public readable and writable buckets, no credentials given to each instance
+                </listitem>
+                <listitem>
+                    Public readable but private writable buckets, pre-signed URLs given to each instance
+                </listitem>
+            </itemizedlist>
+
+            <para>
+                Pre-signed URLs are the most secure method since writing to buckets still requires authorization and
+                you don't have to pass Amazon AWS credentials to every instance. However, they are also the most complex
+                to setup.
+            </para>
+            <para>
+                Here's a configuration example for private buckets with credentials given to each instance:
+            </para>
+            <programlisting language="XML">
+&lt;S3_PING location="my_bucket" access_key="access_key"
+         secret_access_key="secret_access_key" timeout="2000"
+         num_initial_members="3"/&gt;
+            </programlisting>
+
+            <para>
+                Here's an example for public buckets with no credentials:
+            </para>
+            <programlisting language="XML">
+&lt;S3_PING location="my_bucket"
+         timeout="2000" num_initial_members="3"/&gt;
+            </programlisting>
+            <para>
+                And finally, here's an example for public readable buckets with pre-signed URLs:
+            </para>
+            <programlisting language="XML">
+&lt;S3_PING pre_signed_put_url="http://s3.amazonaws.com/my_bucket/DemoCluster/node1?AWSAccessKeyId=access_key&amp;Expires=1316276200&amp;Signature=it1cUUtgCT9ZJyCJDj2xTAcRTFg%3D"
+         pre_signed_delete_url="http://s3.amazonaws.com/my_bucket/DemoCluster/node1?AWSAccessKeyId=access_key&amp;Expires=1316276200&amp;Signature=u4IFPRq%2FL6%2FAohykIW4QrKjR23g%3D"
+         timeout="2000" num_initial_members="3"/&gt;
+            </programlisting>
+
+
+            ${S3_PING}
         </section>
     </section>
 
     <section>
         <title>Merging after a network partition</title>
 
-        <section>
+        <section id="MERGE2">
             <title>MERGE2</title>
+            <para>
+                If a cluster gets split for some reasons (e.g. network partition), this protocol merges the subclusters
+                back into one cluster. It is only run by the coordinator (the oldest member in a cluster), which
+                periodically multicasts its presence and view information. If another coordinator (for the same cluster)
+                receives this message, it will initiate a merge process. Note that this merges subgroups
+                <literal>{A,B}</literal> and <literal>{C,D,E}</literal> back into <literal>{A,B,C,D,E}</literal>,
+                but it does <emphasis>not merge state</emphasis>. The application has to handle the  callback to merge
+                state. See <xref linkend="HandlingNetworkPartitions"/> for suggestion on merging states.
+            </para>
+            <para>
+                Following a merge, the coordinator of the merged group can shift from the typical case of
+                "the coordinator is the member who has been up the longest."  During the merge process, the coordinators
+                of the various subgroups need to reach a common decision as to who the new coordinator is.
+                In order to ensure a consistent result, each coordinator combines the addresses of all the members
+                in a list and then sorts the list. The first member in the sorted list becomes the coordinator.
+                The sort order is determined by how the address implements the interface. Then JGroups  compares based
+                on the UUID. So, take a hypothetical case where two machines were running, with one machine running
+                three separate cluster members and the other two members. If communication between the machines were cut,
+                the following subgroups would form:
+                <literal>{A,B} and {C,D,E}</literal>
+                Following the merge, the new view would be: <literal>{C,D,A,B,E}</literal>, with C being the new
+                coordinator.
+            </para>
+            <para>
+                Note that "A", "B" and so on are just logical names, attached to UUIDs, but the actual sorting is done
+                on the actual UUIDs.
+            </para>
             ${MERGE2}
 
         </section>
     </section>
 
-    <section>
-
-
+    <section id="FailureDetection">
         <title>Failure Detection</title>
 
-        The task of failure detection is to probe members of a group and see whether they are alive. When a member is
-        suspected (= deemed dead), then a SUSPECT message is sent to all nodes of the cluster. It is not the task of the
-        failure detection layer to exclude a crashed member (this is done by the group membership protocol, GMS), but
-        simply to notify everyone that a node in the cluster is suspected of having crashed.
+        <para>
+            The task of failure detection is to probe members of a group and see whether they are alive. When a member is
+            suspected (= deemed dead), then a SUSPECT message is sent to all nodes of the cluster. It is not the task of the
+            failure detection layer to exclude a crashed member (this is done by the group membership protocol, GMS), but
+            simply to notify everyone that a node in the cluster is suspected of having crashed.
+        </para>
+        <para>
+            The SUSPECT message is handled by the GMS protocol of the current coordinator only; all other members
+            ignore it.
+        </para>
 
         <section id="FD">
             <title>FD</title>
 
-            <para>Failure detection based on heartbeat messages. If reply is not
-                received without timeout ms, max_tries times, a member is declared
+            <para>
+                Failure detection based on heartbeat messages. If reply is not
+                received without <literal>timeout</literal> ms, <literal>max_tries</literal> times, a member is declared
                 suspected, and will be excluded by GMS
             </para>
 
@@ -256,22 +498,47 @@
 
         </section>
 
+         <section id="FD_SOCK">
+            <title>FD_SOCK</title>
 
-        <section>
-            <title>FD_SIMPLE</title>
+            <para>
+                Failure detection protocol based on a ring of TCP sockets created
+                between cluster members. Each member in a cluster connects to its neighbor
+                (the last member connects to the first), thus forming a ring. Member B is
+                suspected when its neighbor A detects abnormally closing of its TCP socket
+                (presumably due to a node B crash). However, if a member B is about to
+                leave gracefully, it lets its neighbor A know, so that it does not become suspected.
+            </para>
 
-            <para/>
+            <para>
+                If you are using a multi NIC machine note that JGroups versions
+                prior to 2.2.8 have FD_SOCK implementation that does not assume this
+                possibility. Therefore JVM can possibly select NIC unreachable to its
+                neighbor and setup FD_SOCK server socket on it. Neighbor would be unable
+                to connect to that server socket thus resulting in immediate suspecting
+                of a member. Suspected member is kicked out of the group, tries to
+                rejoin, and thus goes into join/leave loop. JGroups version 2.2.8
+                introduces srv_sock_bind_addr property so you can specify network
+                interface where FD_SOCK TCP server socket should be bound. This network
+                interface is most likely the same interface used for other JGroups
+                traffic. JGroups versions 2.2.9 and newer consult bind.address system
+                property or you can specify network interface directly as FD_SOCK
+                bind_addr property.
+            </para>
+
+			${FD_SOCK}
         </section>
 
 
         <section>
             <title>FD_PING</title>
-            FD_PING uses a script or command that is
-            run with 1 argument (the host to be pinged) and needs to return 0
-            (success) or 1 (failure). The default command is /sbin/ping (ping.exe on
-            Windows), but this is user configurable and can be replaced with any
-            user-provided script or executable.
- 
+            <para>
+                FD_PING uses a script or command that is
+                run with 1 argument (the host to be pinged) and needs to return 0
+                (success) or 1 (failure). The default command is /sbin/ping (ping.exe on
+                Windows), but this is user configurable and can be replaced with any
+                user-provided script or executable.
+            </para>
  
 			 ${FD_PING}
  
@@ -295,68 +562,29 @@
             have
             suspected the host ! Please check your JDK/OS combo before running this
             protocol.
-            <table>
-                <title>Properties</title>
-
-                <tgroup cols="2">
-                    <colspec align="left"/>
-
-                    <thead>
-                        <row>
-                            <entry align="center">Name</entry>
-
-                            <entry align="center">Description</entry>
-                        </row>
-                    </thead>
-
-                    <tbody>
-                        <row>
-                            <entry>bind_addr</entry>
-
-                            <entry>The network interface to be used for sending ICMP
-                                packets, e.g.
-                                <code>bind_addr="192.16.8.0.2"</code>
-                            </entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
+            ${FD_ICMP}
         </section>
 
 
-        <section id="FD_SOCK">
-            <title>FD_SOCK</title>
 
-            <para>Failure detection protocol based on a ring of TCP sockets created
-                between group members. Each member in a group connects to its neighbor
-                (last member connects to first) thus forming a ring. Member B is
-                suspected when its neighbor A detects abnormally closed TCP socket
-                (presumably due to a node B crash). However, if a member B is about to
-                leave gracefully, it lets its neighbor A know, so that it does not
-                become suspected.
-            </para>
-
-            <para>If you are using a multi NIC machine note that JGroups versions
-                prior to 2.2.8 have FD_SOCK implementation that does not assume this
-                possibility. Therefore JVM can possibly select NIC unreachable to its
-                neighbor and setup FD_SOCK server socket on it. Neighbor would be unable
-                to connect to that server socket thus resulting in immediate suspecting
-                of a member. Suspected member is kicked out of the group, tries to
-                rejoin, and thus goes into join/leave loop. JGroups version 2.2.8
-                introduces srv_sock_bind_addr property so you can specify network
-                interface where FD_SOCK TCP server socket should be bound. This network
-                interface is most likely the same interface used for other JGroups
-                traffic. JGroups versions 2.2.9 and newer consult bind.address system
-                property or you can specify network interface directly as FD_SOCK
-                bind_addr property.
-            </para>
-
-			${FD_SOCK}
-        </section>
 
 
         <section>
             <title>VERIFY_SUSPECT</title>
+            <para>
+                Verifies that a suspected member is really dead by pinging that member one last time before excluding it,
+                and dropping the suspect message if the member does respond.
+            </para>
+            <para>
+                VERIFY_SUSPECT tries to minimize false suspicions.
+            </para>
+            <para>
+                The protocol works as follows: it catches SUSPECT events traveling up the stack.
+                The it verifies that the suspected member is really dead. If yes, it passes the SUSPECT event up the
+                stack, otherwise it discards it. VERIFY_SUSPECT Has to be placed somewhere above the failure detection
+                protocol and below the GMS protocol (receiver of the SUSPECT event). Note that SUSPECT events may be
+                reordered by this protocol.
+            </para>
             ${VERIFY_SUSPECT}
 
             <para/>
@@ -365,16 +593,16 @@
 
     </section>
 
-    <section>
+    <section id="ReliableMessageTransmission">
         <title>Reliable message transmission</title>
 
-        <section>
+        <section id="NAKACK">
             <title>pbcast.NAKACK</title>
 
             <para>
                 NAKACK provides reliable delivery and FIFO (= First In First Out) properties for messages sent to all
                 nodes in a cluster.
-                </para>
+            </para>
             <para>
                 Reliable delivery means that no message sent by a sender will ever be lost, as all messages are
                 numbered with sequence numbers (by sender) and retransmission requests are sent to the sender of
@@ -389,18 +617,23 @@
                 FIFO order means that all messages from a given sender are received in exactly the order in which
                 they were sent.
             </para>
+            <para>
+                NAKACK is a Lossless and FIFO delivery of multicast messages, using negative acks. E.g. when
+                receiving P:1, P:3, P:4, a receiver delivers only P:1, and asks P for retransmission of message 2,
+                queuing P3-4. When P2 is finally received, the receiver will deliver P2-4 to the application.
+            </para>
 
 			${NAKACK}
 
         </section>
 
-         <section>
+         <section id="UNICAST">
             <title>UNICAST</title>
 
             <para>
                 UNICAST provides reliable delivery and FIFO (= First In First Out) properties for point-to-point
                 messages between one sender and one receiver.
-                </para>
+            </para>
             <para>
                 Reliable delivery means that no message sent by a sender will ever be lost, as all messages are
                 numbered with sequence numbers (by sender) and retransmission requests are sent to the sender of
@@ -433,14 +666,256 @@
         </section>
     </section>
 
+    <section id="STABLE">
+        <title>Message stability</title>
+        <para>
+            To serve potential retransmission requests, a member has to store received messages until it is known
+            that every member in the cluster has received them. Message stability for a given message M means that M
+            has been seen by everyone in the cluster.
+        </para>
+        <para>
+            The stability protocol periodically (or when a certain number of bytes have been received) initiates a
+            consensus protocol, which multicasts a stable message containing the highest message numbers for a
+            given member. This is called a digest.
+        </para>
+        <para>
+            When everyone has received everybody else's stable messages, a digest is computed which consists of the
+            minimum sequence numbers of all received digests so far. This is the stability vector, and contain only
+            message sequence numbers that have been seen by everyone.
+        </para>
+        <para>
+            This stability vector is the broadcast to the group and everyone can remove messages from their
+            retransmission tables whose sequence numbers are smaller than the ones received in the stability vector.
+            These messages can then be garbage collected.
+        </para>
+
+        <section>
+            <title>STABLE</title>
+            <para>
+                STABLE garbage collects messages that have been seen by all members of a cluster. Each member has to
+                store all messages because it may be asked to retransmit. Only when we are sure that all members have
+                seen a message can it be removed from the retransmission buffers. STABLE periodically gossips its
+                highest and lowest messages seen. The lowest value is used to compute the min (all lowest seqnos
+                for all members), and messages with a seqno below that min can safely be discarded.
+            </para>
+            <para>
+                Note that STABLE can also be configured to run when N bytes have been received. This is recommended
+                when sending messages at a high rate, because sending stable messages based on time might accumulate
+                messages faster than STABLE can garbage collect them.
+            </para>
+            ${STABLE}
+
+
+        </section>
+
+    </section>
+
+    <section id="GMS">
+        <title>Group Membership</title>
+
+        <para>
+            Group membership takes care of joining new members, handling leave
+            requests by existing members, and handling SUSPECT messages for crashed
+            members, as emitted by failure detection protocols. The algorithm for
+            joining a new member is essentially:
+        </para>
+        <screen>
+- loop
+- find initial members (discovery)
+- if no responses:
+    - become singleton group and break out of the loop
+- else:
+    - determine the coordinator (oldest member) from the responses
+    - send JOIN request to coordinator
+    - wait for JOIN response
+    - if JOIN response received:
+        - install view and break out of the loop
+    - else
+        - sleep for 5 seconds and continue the loop
+        </screen>
+
+
+            <section>
+                <title>pbcast.GMS</title>
+
+                ${GMS}
+
+
+            <section>
+                <title>Joining a new member</title>
+
+                <para>
+                    Consider the following situation: a new member wants to join a
+                    group. The prodedure to do so is:
+                </para>
+
+                <itemizedlist>
+                    <listitem>
+                        <para>Multicast an (unreliable) discovery request (ping)</para>
+                    </listitem>
+
+                    <listitem>
+                        <para>Wait for n responses or m milliseconds (whichever is first)
+                        </para>
+                    </listitem>
+
+                    <listitem>
+                        <para>Every member responds with the address of the coordinator</para>
+                    </listitem>
+
+                    <listitem>
+                        <para>If the initial responses are &gt; 0: determine the coordinator
+                            and start the JOIN protocolg
+                        </para>
+                    </listitem>
+
+                    <listitem>
+                        <para>If the initial response are 0: become coordinator, assuming that
+                            no one else is out there
+                        </para>
+                    </listitem>
+                </itemizedlist>
+
+                <para>
+                    However, the problem is that the initial mcast discovery request
+                    might get lost, e.g. when multiple members start at the same time, the
+                    outgoing network buffer might overflow, and the mcast packet might get
+                    dropped. Nobody receives it and thus the sender will not receive any
+                    responses, resulting in an initial membership of 0. This could result in
+                    multiple coordinators, and multiple subgroups forming. How can we overcome
+                    this problem ? There are two solutions:
+                </para>
+
+                <orderedlist>
+                    <listitem>
+                        <para>Increase the timeout, or number of responses received. This will
+                            only help if the reason of the empty membership was a slow host. If
+                            the mcast packet was dropped, this solution won't help
+                        </para>
+                    </listitem>
+
+                    <listitem>
+                        <para>Add the MERGE2 protocol. This doesn't actually prevent
+                            multiple initial cordinators, but rectifies the problem by merging
+                            different subgroups back into one. Note that this might involve state
+                            merging which needs to be done by the application.
+                        </para>
+                    </listitem>
+
+                </orderedlist>
+
+            </section>
+
+        </section>
+    </section>
+    
+    <section id="FlowControl">
+        <title>Flow control</title>
+        <para>
+            Flow control takes care of adjusting the rate of a message sender to the rate of the slowest receiver over time.
+            If a sender continuously sends messages at a rate that is faster than the receiver(s), the receivers will
+            either queue up messages, or the messages will get discarded by the receiver(s), triggering costly
+            retransmissions. In addition, there is spurious traffic on the cluster, causing even more retransmissions.
+        </para>
+        <para>
+            Flow control throttles the sender so the receivers are not overrun with messages.
+        </para>
+        <para>
+            Note that flow control can be bypassed by setting message flag Message.NO_FC. See <xref linkend="MessageFlags"/>
+            for details.
+        </para>
+        <para>
+            The properties for <classname>FlowControl</classname> are shown below and can be used in
+            MFC and UFC:
+        </para>
+        ${FlowControl}
+
+        <section>
+            <title>FC</title>
+            <para>
+                FC uses a credit based system, where each sender has <code>max_credits</code> credits and decrements
+                them whenever a message is sent. The sender blocks when the credits fall below 0, and only resumes
+                sending messages when it receives a replenishment message from the receivers.
+            </para>
+            <para>
+                The receivers maintain a table of credits for all senders and decrement the given sender's credits
+                as well, when a message is received.
+            </para>
+            <para>
+                When a sender's credits drops below a threshold, the receiver will send a replenishment message to
+                the sender. The threshold is defined by <code>min_bytes</code> or <code>min_threshold</code>.
+            </para>
+
+			${FC}
+
+            <note>
+                <para>
+                    FC has been deprecated, use MFC and UFC instead.
+                </para>
+            </note>
+
+        </section>
+
+
+        <section>
+            <title>MFC and UFC</title>
+            <para>
+                In 2.10, FC was separated into MFC (Multicast Flow Control) and Unicast Flow Control (UFC). The reason
+                was that multicast flow control should not be impeded by unicast flow control, and vice versa. Also,
+                performance for the separate implementations could be increased, plus they can be individually omitted.
+                For example, if no unicast flow control is needed, UFC can be left out of the stack configuration.
+            </para>
+
+            <section id="MFC">
+                <title>MFC</title>
+                <para>
+                    <classname>MFC</classname> has currently no properties other than those inherited by
+                    <classname>FlowControl</classname> (see above).
+                </para>
+                ${MFC}
+            </section>
+
+            <section id="UFC">
+                <title>UFC</title>
+                <para>
+                    <classname>UFC</classname> has currently no properties other than those inherited by
+                    <classname>FlowControl</classname> (see above).
+                </para>
+                ${UFC}
+            </section>
+
+        </section>
+
+    </section>
+
+
+
     <section>
         <title>Fragmentation</title>
 
         <section>
             <title>FRAG and FRAG2</title>
-
-
-            ${FRAG}
+            <para>
+                FRAG and FRAG2 fragment large messages into smaller ones, send the smaller ones, and at the receiver
+                side, the smaller fragments will get assembled into larger messages again, and delivered to the
+                application. FRAG and FRAG2 work for both unicast and multicast messages.
+            </para>
+            <para>
+                The difference between FRAG and FRAG2 is that FRAG2 does 1 less copy than FRAG, so it is the recommended
+                fragmentation protocol. FRAG serializes a message to know the exact size required (including headers),
+                whereas FRAG2 only fragments the payload (excluding the headers), so it is faster.
+            </para>
+            <para>
+                The properties of FRAG2 are:
+            </para>
+            ${FRAG2}
+            <para>
+                Contrary to FRAG, FRAG2 does not need to serialize a message in order to break it into smaller
+                fragments: it looks only at the message's buffer, which is a byte array anyway. We assume that the
+                size addition for headers and src and dest addresses is minimal when the transport finally has to
+                serialize the message, so we add a constant (by default 200 bytes). Because of the efficiency gained by
+                not having to serialize the message just to determine its size, FRAG2 is generally recommended over FRAG.
+            </para>
         </section>
     </section>
 
@@ -469,140 +944,9 @@
         </section>
     </section>
 
-    <section>
-        <title>Group Membership</title>
-
-        <para>Group membership takes care of joining new members, handling leave
-            requests by existing members, and handling SUSPECT messages for crashed
-            members, as emitted by failure detection protocols. The algorithm for
-            joining a new member is essentially:
-            <screen>
-- loop
-- find initial members (discovery)
-- if no responses:
-    - become singleton group and break out of the loop
-- else:
-    - determine the coordinator (oldest member) from the responses
-    - send JOIN request to coordinator
-    - wait for JOIN response
-    - if JOIN response received:
-        - install view and break out of the loop
-    - else
-        - sleep for 5 seconds and continue the loop
-            </screen>
-        </para>
 
 
-        <section>
-            <title>pbcast.GMS</title>
 
-			${GMS}
-			            
-
-            <section>
-                <title>Disabling the initial coordinator</title>
-
-                <para>Consider the following situation: a new member wants to join a
-                    group. The prodedure to do so is:
-                </para>
-
-                <itemizedlist>
-                    <listitem>
-                        <para>Multicast an (unreliable) discovery request (ping)</para>
-                    </listitem>
-
-                    <listitem>
-                        <para>Wait for n responses or m milliseconds (whichever is
-                            first)
-                        </para>
-                    </listitem>
-
-                    <listitem>
-                        <para>Every member responds with the address of the coordinator</para>
-                    </listitem>
-
-                    <listitem>
-                        <para>If the initial responses are &gt; 0: determine the coordinator
-                            and start the JOIN protocolg
-                        </para>
-                    </listitem>
-
-                    <listitem>
-                        <para>If the initial response are 0: become coordinator, assuming that
-                            no one else is out there
-                        </para>
-                    </listitem>
-                </itemizedlist>
-
-                <para>However, the problem is that the initial mcast discovery request
-                    might get lost, e.g. when multiple members start at the same time, the
-                    outgoing network buffer might overflow, and the mcast packet might get
-                    dropped. Nobody receives it and thus the sender will not receive any
-                    responses, resulting in an initial membership of 0. This could result in
-                    multiple coordinators, and multiple subgroups forming. How can we overcome
-                    this problem ? There are 3 solutions:
-                </para>
-
-                <orderedlist>
-                    <listitem>
-                        <para>Increase the timeout, or number of responses received. This will
-                            only help if the reason of the empty membership was a slow host. If
-                            the mcast packet was dropped, this solution won't help
-                        </para>
-                    </listitem>
-
-                    <listitem>
-                        <para>Add the MERGE(2) protocol. This doesn't actually prevent
-                            multiple initial cordinators, but rectifies the problem by merging
-                            different subgroups back into one. Note that this involves state
-                            merging which needs to be done by the application.
-                        </para>
-                    </listitem>
-
-                    <listitem>
-                        <para>(new) Prevent members from becoming coordinator on initial
-                            startup. This solution is applicable when we know which member is
-                            going to be the initial coordinator of a fresh group. We don't care
-                            about afterwards, then coordinatorship can migrate to another member.
-                            In this case, we configure the member that is always supposed to be
-                            started first with disable_initial_coord=false (the default) and all
-                            other members with disable_initial_coord=true.This works as described
-                            below.
-                        </para>
-                    </listitem>
-                </orderedlist>
-
-                <para>When the initial membership is received, and is null, and the
-                    property disable_initial_coord is true, then we just continue in the loop
-                    and retry receving the initial membership (until it is non-null). If the
-                    property is false, we are allowed to become coordinator, and will do so.
-                    Note that - if a member is started as first member of a group - but its
-                    property is set to true, then it will loop until another member whose
-                    disable_initial_coord property is set to false, is started.
-                </para>
-            </section>
-
-        </section>
-    </section>
-
-
-    <section>
-        <title>Security</title>
-
-        <para>
-
-        </para>
-
-        <section>
-            <title>ENCRYPT</title>
-            
-            ${ENCRYPT}
-        </section>
-
-        <section>
-            <title>AUTH</title>
-        </section>
-    </section>
 
     <section id="StateTransferProtocolDetails">
         <title>State Transfer</title>
@@ -720,183 +1064,193 @@
     </section>
 
 
-    <section id="FlowControl">
-        <title>Flow control</title>
+    <section>
+        <title>pbcast.FLUSH</title>
+
         <para>
-            Flow control takes care of adjusting the rate of a message sender to the rate of the slowest receiver over time.
-            If a sender continuously sends messages at a rate that is faster than the receiver(s), the receivers will
-            either queue up messages, or the messages will get discarded by the receiver(s), triggering costly
-            retransmissions. In addition, there is spurious traffic on the cluster, causing even more retransmissions.
+            Flushing forces group members to send all their pending messages
+            prior to a certain event. The process of flushing acquiesces the
+            cluster so that state transfer or a join can be done. It is also
+            called the stop-the-world model as nobody will be able to send
+            messages while a flush is in process. Flush is used in:
+        </para>
+
+        <para>
+            <itemizedlist>
+                <listitem>
+                    <para>State transfer</para>
+
+                    <para>
+                        When a member requests state transfer, it tells everyone to
+                        stop sending messages and waits for everyone's ack. Then it have received everyone's asks,
+                        the application asks the coordinator for its state and ships it back to the
+                        requester. After the requester has received and set the state
+                        successfully, the requester tells everyone to resume sending messages.
+                    </para>
+                </listitem>
+
+                <listitem>
+                    <para>
+                        View changes (e.g.a join). Before installing a new view
+                        V2, flushing ensures that all messages <emphasis>sent</emphasis> in the
+                        current view V1 are indeed <emphasis>delivered</emphasis> in V1, rather than in V2
+                        (in all non-faulty members). This is essentially Virtual Synchrony.
+                    </para>
+                </listitem>
+            </itemizedlist>
+        </para>
+
+        <para>
+            FLUSH is designed as another protocol positioned just below the
+            channel, on top of the stack (e.g. above STATE_TRANSFER). The STATE_TRANSFER and GMS
+            protocols request a flush by sending an event up the stack, where
+            it is handled by the FLUSH protcol. Another event is sent back by
+            the FLUSH protocol to let the caller know that the flush has completed.
+            When done (e.g. view was installed or state transferred), the protocol
+            sends a message, which will allow everyone in the cluster to resume sending.
+        </para>
+
+        <para>
+            A channel is notified that the FLUSH phase has been started by
+            the <methodname>Receiver.block()</methodname> callback. 
         </para>
         <para>
-            Flow control throttles the sender so the receivers are not overrun with messages.
+            Read more about flushing in <xref linkend="Flushing"/>.
         </para>
-        <para>
-            The properties for <classname>FlowControl</classname> are shown below and can be used in
-            MFC and UFC:
-        </para>
-        ${FlowControl}
 
-        <section>
-            <title>FC</title>
-            <para>
-                FC uses a credit based system, where each sender has <code>max_credits</code> credits and decrements
-                them whenever a message is sent. The sender blocks when the credits fall below 0, and only resumes
-                sending messages when it receives a replenishment message from the receivers.
-            </para>
-            <para>
-                The receivers maintain a table of credits for all senders and decrement the given sender's credits
-                as well, when a message is received.
-            </para>
-            <para>
-                When a sender's credits drops below a threshold, the receiver will send a replenishment message to
-                the sender. The threshold is defined by <code>min_bytes</code> or <code>min_threshold</code>.
-            </para>
+        ${FLUSH}
 
-			${FC}
-
-            <note>
-                <para>
-                    FC has been deprecated, use MFC and UFC instead.
-                </para>
-            </note>
-
-        </section>
-
-
-        <section>
-            <title>MFC and UFC</title>
-            <para>
-                In 2.10, FC was separated into MFC (Multicast Flow Control) and Unicast Flow Control (UFC). The reason
-                was that multicast flow control should not be impeded by unicast flow control, and vice versa. Also,
-                performance for the separate implementations could be increased, plus they can be individually omitted.
-                For example, if no unicast flow control is needed, UFC can be left out of the stack configuration.
-            </para>
-
-            <section id="MFC">
-                <title>MFC</title>
-                <para>
-                    <classname>MFC</classname> has currently no properties other than those inherited by
-                    <classname>FlowControl</classname> (see above).
-                </para>
-                ${MFC}
-            </section>
-
-            <section id="UFC">
-                <title>UFC</title>
-                <para>
-                    <classname>UFC</classname> has currently no properties other than those inherited by
-                    <classname>FlowControl</classname> (see above).
-                </para>
-                ${UFC}
-            </section>
-
-        </section>
-        
     </section>
 
-    <section>
-        <title>Message stability</title>
-        <para>
-            To serve potential retransmission requests, a member has to store received messages until it is known
-            that every member in the cluster has received them. Message stability for a given message M means that M
-            has been seen by everyone in the cluster.
-        </para>
-        <para>
-            The stability protocol periodically (or when a certain number of bytes have been received) initiates a
-            consensus protocol, which multicasts a stable message containing the highest message numbers for a
-            given member. This is called a digest.
-        </para>
-        <para>
-            When everyone has received everybody else's stable messages, a digest is computed which consists of the
-            minimum sequence numbers of all received digests so far. This is the stability vector, and contain only
-            message sequence numbers that have been seen by everyone.
-        </para>
-        <para>
-            This stability vector is the broadcast to the group and everyone can remove messages from their
-            retransmission tables whose sequence numbers are smaller than the ones received in the stability vector.
-            These messages can then be garbage collected.
-        </para>
 
-        <section>
-            <title>STABLE</title>
-
-			${STABLE}
+    
 
 
-        </section>
-
-    </section>    
-
-    <section>
+    <section id="Misc">
         <title>Misc</title>
 
-        <section>
-            <title>COMPRESS</title>
-            ${COMPRESS}
-            <para></para>
-        </section>
-
-
-        <section>
-            <title>pbcast.FLUSH</title>
-
-            <para>Flushing forces group members to send all their pending messages
-                prior to a certain event. The process of flushing acquiesces the
-                cluster so that state transfer or a join can be done. It is also
-                called the stop-the-world model as nobody will be able to send
-                messages while a flush is in process. Flush is used:
-            </para>
+        <section id="Security">
+            <title>Security</title>
 
             <para>
-                <itemizedlist>
-                    <listitem>
-                        <para>State transfer</para>
-
-                        <para>When a member requests state transfer it tells everyone to
-                            stop sending messages and waits for everyone's ack. Then it asks
-                            the application for its state and ships it back to the
-                            requester. After the requester has received and set the state
-                            successfully, the requester tells everyone to resume sending
-                            messages.
-                        </para>
-                    </listitem>
-
-                    <listitem>
-                        <para>View changes (e.g.a join). Before installing a new view
-                            V2, flushing would ensure that all messages *sent* in the
-                            current view V1 are indeed *delivered* in V1, rather than in V2
-                            (in all non-faulty members). This is essentially Virtual
-                            Synchrony.
-                        </para>
-                    </listitem>
-                </itemizedlist>
+                JGroups provides protocols to encrypt cluster traffic (ENCRYPT), and to make sure that only
+                authorized members can join a cluster (AUTH).
             </para>
 
-            <para>FLUSH is designed as another protocol positioned just below the
-                channel, e.g. above STATE_TRANSFER and FC. STATE_TRANSFER and GMS
-                protocol request flush by sending a SUSPEND event up the stack, where
-                it is handled by the FLUSH protcol. The SUSPEND_OK ack sent back by
-                the FLUSH protocol let's the caller know that the flush has completed.
-                When done (e.g. view was installed or state transferred), the protocol
-                sends up a RESUME event, which will allow everyone in the cluster to
-                resume sending.
-            </para>
+            <section id="ENCRYPT">
+                <title>ENCRYPT</title>
+                <para>
+                    A detailed description of ENCRYPT is found in the JGroups source (<filename>JGroups/doc/ENCRYPT.html</filename>).
+                    Encryption by default only encrypts the message body, but doesn't encrypt message headers.
+                    To encrypt the entire message (including all headers, plus destination and source addresses),
+                    the property <literal>encrypt_entire_message</literal> has to be set to true.
+                    Also, ENCRYPT has to be below any protocols whose headers we want to encrypt, e.g.
+                </para>
+                <programlisting language="XML">
+&lt;config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd"&gt;
+    &lt;UDP mcast_recv_buf_size="64000" mcast_send_buf_size="32000" mcast_port="45566" ucast_recv_buf_size="64000"
+        loopback="true" ucast_send_buf_size="32000" ip_ttl="32"/&gt;
+    &lt;PING timeout="2000" num_initial_members="3"/&gt;
+    &lt;MERGE2 max_interval="10000" min_interval="5000"/&gt;
+    &lt;FD timeout="2000" max_tries="3" /&gt;
+    &lt;VERIFY_SUSPECT timeout="1500"/&gt;
+    &lt;ENCRYPT encrypt_entire_message="false" sym_init="128" sym_algorithm="AES/ECB/PKCS5Padding" asym_init="512" asym_algorithm="RSA"/&gt;
+    &lt;pbcast.NAKACK retransmit_timeout="600,1200,2400,4800"/&gt;
+    &lt;UNICAST timeout="1200,2400,3600"/&gt;
+    &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000" max_bytes="4m"/&gt;
+    &lt;FRAG2 frag_size="8192"  /&gt;
+    &lt;pbcast.GMS print_local_addr="true" join_timeout="3000" /&gt;
+&lt;/config&gt;
+                </programlisting>
+                <para>
+                    Note that ENCRYPT sits below NAKACK and UNICAST, so the sequence numbers for these 2 protocols will
+                    be encrypted. Had ENCRYPT been placed below UNICAST but above NAKACK, then only UNICAST's headers
+                    (including sequence numbers) would have been encrypted, but not NAKACKs.
+                </para>
+                <para>
+                    Note that it doesn't make too much sense to place ENCRYPT even lower in the stack, because then
+                    almost all traffic (even merge or discovery traffic) will be encrypted, which may be somewhat of
+                    a performance drag.
+                    </para>
 
-            <para>Channel can be notified that FLUSH phase has been started by
-                turning channel block option on. By default it is turned off. If
-                channel blocking is turned on FLUSH notifies application layer that
-                channel has been blocked by sending EVENT.BLOCK event. Channel
-                responds by sending EVENT.BLOCK_OK event down to FLUSH protocol. We
-                recommend turning on channel block notification only if channel is
-                used in push mode. In push mode application that uses channel can
-                perform block logic by implementing MembershipListener.block()
-                callback method.
-            </para>
-            
-            ${FLUSH}			
+                <para>
+                    When we encrypt an entire message, we have to marshal the message into a byte buffer first and
+                    then encrypt it. This entails marshalling and copying of the byte buffer, which is not so good
+                    performance wise...
+                </para>
 
+                <section>
+                    <title>Using a key store</title>
+                    <para>
+                        ENCRYPT uses store type JCEKS (for details between JKS and JCEKS see here), however
+                        <literal>keytool</literal> uses JKS, therefore a keystore generated with keytool will not be accessible.
+                    </para>
+                    <para>
+                        To generate a keystore compatible with JCEKS, use the following command line options to keytool:
+                    </para>
+                    <screen>
+keytool -genseckey -alias myKey -keypass changeit -storepass changeit  -keyalg Blowfish -keysize 56 -keystore defaultStore.keystore -storetype  JCEKS
+                    </screen>
+
+
+                    <para>
+                        ENCRYPT could then be configured as follows:
+                    </para>
+                    <programlisting language="XML">
+&lt;ENCRYPT key_store_name="defaultStore.keystore" store_password="changeit" alias="myKey"/&gt;
+                    </programlisting>
+
+                    <para>
+                        Note that defaultStore.keystore will have to be found in the claspath.
+                    </para>
+                </section>
+
+                ${ENCRYPT}
+            </section>
+
+            <section id="AUTH">
+                <title>AUTH</title>
+                <para>
+                    AUTH is used to provide a layer of authentication to JGroups.  This allows you to define pluggable
+                    security that defines if a node should be allowed to join a cluster.  AUTH sits below the GMS
+                    protocol and listens for JOIN REQUEST messages.  When a JOIN REQUEST is received it tries to find
+                    an AuthHeader object, inside of which should be an implementation of the AuthToken object.
+                </para>
+                <para>
+                    AuthToken is an abstract class, implementations of which are responsible for providing the
+                    actual authentication mechanism.  Some basic implementations of AuthToken are provide in the
+                    org.jgroups.auth package (SimpleToken, MD5Token and X509Token).  Effectivly all these implementations
+                    do is encrypt a string (found in the jgroups config) and pass that on the JOIN REQUEST.
+                </para>
+                <para>
+                    When authentication is successful, the message is simply passed up the stack to the GMS protocol.
+                    When it fails, the AUTH protocol creates a JOIN RESPONSE message with a failure string and passes
+                    it back down the stack.  This failure string informs the client of the reason for failure.
+                    Clients will then fail to join the group and will throw a SecurityException.
+                    If this error string is null then authentication is considered to have passed.
+                </para>
+                <para>
+                    For more information refer to the wiki at <ulink url="http://community.jboss.org/wiki/JGroupsAUTH"/>.
+                </para>
+                ${AUTH}
+            </section>
         </section>
+
+
+        <section id="COMPRESS">
+            <title>COMPRESS</title>
+            <para>
+                COMPRESS compresses messages larger than <literal>min_size</literal>, and uncompresses them at the
+                receiver's side. Property <literal>compression_level</literal> determines how thorough the
+                compression algorith should be (0: no compression, 9: highest compression).
+            </para>
+            ${COMPRESS}
+        </section>
+
+
+
 
         <section id="SCOPE">
             <title>SCOPE</title>
