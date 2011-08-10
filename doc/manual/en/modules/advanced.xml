@@ -1265,41 +1265,39 @@ for(Future&lt;RspList&gt; future: futures) {
 
     </section>
 
-    <section>
-        <title>Misc</title>
 
-        <section>
-            <title>Using a custom socket factory</title>
-            <para>
-                JGroups creates all of its sockets through a SocketFactory, which is located in the transport (TP) or
-                TP.ProtocolAdapter (in a shared transport). The factory has methods to create sockets (Socket,
-                ServerSocket, DatagramSocket and MulticastSocket)
-                <footnote>
-                    <para>
-                        Currently, SocketFactory does not support creation of NIO sockets / channels.
-                    </para>
-                </footnote>,
-                closen sockets and list all open sockets. Every socket creation method has a service name, which could
-                be for example "jgroups.fd_sock.srv_sock". The service name is used to look up a port (e.g. in a config
-                file) and create the correct socket.
-            </para>
-            <para>
-                To provide one's own socket factory, the following has to be done: if we have a non-shared transport,
-                the code below creates a SocketFactory implementation and sets it in the transport:
-            </para>
-            <programlisting language="Java">
+    <section>
+        <title>Using a custom socket factory</title>
+        <para>
+            JGroups creates all of its sockets through a SocketFactory, which is located in the transport (TP) or
+            TP.ProtocolAdapter (in a shared transport). The factory has methods to create sockets (Socket,
+            ServerSocket, DatagramSocket and MulticastSocket)
+            <footnote>
+                <para>
+                    Currently, SocketFactory does not support creation of NIO sockets / channels.
+                </para>
+            </footnote>,
+            closen sockets and list all open sockets. Every socket creation method has a service name, which could
+            be for example "jgroups.fd_sock.srv_sock". The service name is used to look up a port (e.g. in a config
+            file) and create the correct socket.
+        </para>
+        <para>
+            To provide one's own socket factory, the following has to be done: if we have a non-shared transport,
+            the code below creates a SocketFactory implementation and sets it in the transport:
+        </para>
+        <programlisting language="Java">
 JChannel ch;
 MySocketFactory factory; // e.g. extends DefaultSocketFactory
 ch=new JChannel("config.xml");
 ch.setSocketFactory(new MySocketFactory());
 ch.connect("demo");
-            </programlisting>
+        </programlisting>
 
-            <para>
-                If a shared transport is used, then we have to set 2 socket factories: 1 in the shared transport and
-                one in the TP.ProtocolAdapter:
-            </para>
-            <programlisting language="Java">
+        <para>
+            If a shared transport is used, then we have to set 2 socket factories: 1 in the shared transport and
+            one in the TP.ProtocolAdapter:
+        </para>
+        <programlisting language="Java">
 JChannel c1=new JChannel("config.xml"), c2=new JChannel("config.xml");
 
 TP transport=c1.getProtocolStack().getTransport();
@@ -1310,15 +1308,14 @@ c2.setSocketFactory(new MySocketFactory("second-cluster"));
 
 c1.connect("first-cluster");
 c2.connect("second-cluster");
-            </programlisting>
+        </programlisting>
 
-            <para>
-                First, we grab one of the channels to fetch the transport and set a SocketFactory in it. Then we
-                set one SocketFactory per channel that resides on the shared transport. When JChannel.connect() is
-                called, the SocketFactory will be set in TP.ProtocolAdapter.
-            </para>
+        <para>
+            First, we grab one of the channels to fetch the transport and set a SocketFactory in it. Then we
+            set one SocketFactory per channel that resides on the shared transport. When JChannel.connect() is
+            called, the SocketFactory will be set in TP.ProtocolAdapter.
+        </para>
 
-        </section>
     </section>
 
     <section id="HandlingNetworkPartitions">
@@ -2177,5 +2174,285 @@ msg.setFlag((byte)(Message.OOB | Message.NO_FC));
         <para>
             Ergonomics is work-in-progress, and will be implemented over multiple releases.
         </para>
+    </section>
+
+    <section id="Probe">
+        <title>Probe</title>
+        <para>
+            Probe is the Swiss Army Knife for JGroups; it allows to fetch information about the members running in
+            a cluster, get and set properties of the various protocols, and invoke methods in all cluster members.
+        </para>
+        <para>
+            Probe can even insert protocols into running cluster members, or remove/replace existing protocols. Note
+            that this doesn't make sense though with <emphasis>stateful</emphasis> protocols such as NAKACK. But this
+            feature is helpful, it could be used for example to insert a diagnostics or stats protocol into a running
+            system. When done, the protocol can be removed again.
+        </para>
+        <para>
+            Of course, probe could be used to do crazy things: one could insert the BSH (BeanShell, a Java interpreter)
+            protocol into all cluster members, then connect to the individual nodes (listening on a TCP port), and
+            inject Java code into the running JVM ! To prevent this, probing can be disabled (see below). The default
+            configurations have it <emphasis>enabled</emphasis>.
+        </para>
+        <para>
+            Probe is a script (<filename>probe.sh</filename> in the <filename>bin</filename> directory of the source
+            distribution) that can be invoked on any of the hosts in same network in which a cluster is running.
+        </para>
+        <note>
+            <para>
+                Probe currently requires IP multicasting to be enabled in a network, in order to discover the cluster
+                members in a network. It <emphasis>can</emphasis> be used with TCP as transport, but still
+                requires multicasting.
+            </para>
+        </note>
+        <para>
+            The probe.sh script essentially calls <classname>org.jgroups.tests.Probe</classname> which is part of
+            the JGroups JAR.
+        </para>
+        <para>
+            The way probe works is that every stack has an additional multicast socket that by default listens
+            on 224.0.75.75:7500 for diagnostics requests from probe. The configuration is located in the transport
+            protocol (e.g. UDP), and consists of the following properties:
+        </para>
+
+        <table>
+            <title>Properties for diagnostics / probe</title>
+
+            <tgroup cols="2">
+                <colspec align="left" />
+                <thead>
+                    <row>
+                        <entry align="center">Name</entry>
+                        <entry align="center">Description</entry>
+                    </row>
+                </thead>
+
+                <tbody>
+                    <row>
+                        <entry>enable_diagnostics</entry>
+                        <entry>
+                            Whether or not to enable diagnostics (default: true). When enabled, this will create
+                            a MulticastSocket and we have one additional thread listening for probe requests. When
+                            disabled, we'll have neither the thread nor the socket created.
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>diagnostics_addr</entry>
+                        <entry>
+                            The multicast address which the MulticastSocket should join. The default is
+                            <literal>"224.0.75.75"</literal> for IPv4 and <literal>"ff0e::0:75:75" for IPv6</literal>.
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>diagnostics_port</entry>
+                        <entry>
+                            The port on which the MulticastSocket should listen. The default is 7500.
+                        </entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+
+        <para>
+            Probe is extensible; by implementing a <classname>ProbeHandler</classname> and registering it with the
+            transport (<methodname>TP.registerProbeHandler()</methodname>), any protocol, or even
+            <emphasis>applications</emphasis> can register functionality to be invoked via probe. Refer to the
+            javadoc for details.
+        </para>
+
+        <para>
+            To get information about the cluster members running in the local network, we can use the following
+            probe command (note that probe could also be invoked as
+            <literal>java -classpath $CP org.jgroups.tests.Probe $*</literal>):
+        </para>
+        <screen>
+[linux]/home/bela/JGroups$ probe.sh
+
+-- send probe on /224.0.75.75:7500
+
+
+#1 (149 bytes):
+local_addr=A [1a1f543c-2332-843b-b523-8d7653874de7]
+cluster=DrawGroupDemo
+view=[A|1] [A, B]
+physical_addr=192.168.1.5:43283
+version=3.0.0.Beta1
+
+                
+#2 (149 bytes):
+local_addr=B [88588976-5416-b054-ede9-0bf8d4b56c02]
+cluster=DrawGroupDemo
+view=[A|1] [A, B]
+physical_addr=192.168.1.5:35841
+version=3.0.0.Beta1
+
+
+
+2 responses (2 matches, 0 non matches)
+[linux]/home/bela/JGroups$
+        </screen>
+
+        <para>
+            This gets us 2 responses, from A and B. "A" and "B" are the logical names, but we also see the UUIDs.
+            They're both in the same cluster ("DrawGroupDemo") and both have the same view
+            (<literal>[A|1] [A, B]</literal>). The physical address and the version of both members is also shown.
+        </para>
+        <para>
+            Note that <command>probe.sh -help</command> lists the command line options.
+        </para>
+        <para>
+            To fetch all of the JMX information from all protocols, we can invoke
+        </para>
+        <screen>probe jmx</screen>
+        <para>
+            However, this dumps all of the JMX attributes from all protocols of all cluster members, so make sure
+            to pipe the output into a file and awk and sed it for legibility !
+        </para>
+        <para>
+            However, we can also JMX information from a specific protocol, e.g. FRAG2 (slightly edited>:
+        </para>
+        <screen>
+[linux]/home/bela$ probe.sh  jmx=FRAG2
+
+-- send probe on /224.0.75.75:7500
+
+
+#1 (318 bytes):
+local_addr=B [88588976-5416-b054-ede9-0bf8d4b56c02]
+cluster=DrawGroupDemo
+physical_addr=192.168.1.5:35841
+jmx=FRAG2={id=5, level=off, num_received_msgs=131, frag_size=60000,
+           num_sent_msgs=54, stats=true, num_sent_frags=0,
+           name=FRAG2, ergonomics=true, num_received_frags=0}
+
+view=[A|1] [A, B]
+version=3.0.0.Beta1
+
+
+#2 (318 bytes):
+local_addr=A [1a1f543c-2332-843b-b523-8d7653874de7]
+cluster=DrawGroupDemo
+physical_addr=192.168.1.5:43283
+jmx=FRAG2={id=5, level=off, num_received_msgs=131, frag_size=60000,
+           num_sent_msgs=77, stats=true, num_sent_frags=0,
+           name=FRAG2, ergonomics=true, num_received_frags=0}
+
+view=[A|1] [A, B]
+version=3.0.0.Beta1
+
+
+
+
+2 responses (2 matches, 0 non matches)
+[linux]/home/bela$
+
+        </screen>
+
+        <para>
+            We can also get information about specific properties in a given protocol:
+        </para>
+        <screen>
+[linux]/home/bela$ probe.sh  jmx=NAKACK.xmit
+
+-- send probe on /224.0.75.75:7500
+
+
+#1 (443 bytes):
+local_addr=A [1a1f543c-2332-843b-b523-8d7653874de7]
+cluster=DrawGroupDemo
+physical_addr=192.168.1.5:43283
+jmx=NAKACK={xmit_table_max_compaction_time=600000, xmit_history_max_size=50,
+            xmit_rsps_sent=0, xmit_reqs_received=0, xmit_table_num_rows=5,
+            xmit_reqs_sent=0, xmit_table_resize_factor=1.2,
+            xmit_from_random_member=false, xmit_table_size=78,
+            xmit_table_msgs_per_row=10000, xmit_rsps_received=0}
+
+view=[A|1] [A, B]
+version=3.0.0.Beta1
+
+
+#2 (443 bytes):
+local_addr=B [88588976-5416-b054-ede9-0bf8d4b56c02]
+cluster=DrawGroupDemo
+physical_addr=192.168.1.5:35841
+jmx=NAKACK={xmit_table_max_compaction_time=600000, xmit_history_max_size=50,
+            xmit_rsps_sent=0, xmit_reqs_received=0, xmit_table_num_rows=5,
+            xmit_reqs_sent=0, xmit_table_resize_factor=1.2,
+            xmit_from_random_member=false, xmit_table_size=54,
+            xmit_table_msgs_per_row=10000, xmit_rsps_received=0}
+
+view=[A|1] [A, B]
+version=3.0.0.Beta1
+
+
+
+
+2 responses (2 matches, 0 non matches)
+[linux]/home/bela$
+
+        </screen>
+        <para>
+            This returns all JMX attributes that start with <literal>"xmit"</literal> in all NAKACK protocols of
+            all cluster members. We can also pass a list of attributes:
+        </para>
+        <screen>
+[linux]/home/bela$ probe.sh  jmx=NAKACK.missing,xmit
+
+-- send probe on /224.0.75.75:7500
+
+
+#1 (468 bytes):
+local_addr=A [1a1f543c-2332-843b-b523-8d7653874de7]
+cluster=DrawGroupDemo
+physical_addr=192.168.1.5:43283
+jmx=NAKACK={xmit_table_max_compaction_time=600000, xmit_history_max_size=50,
+            xmit_rsps_sent=0, xmit_reqs_received=0, xmit_table_num_rows=5,
+            xmit_reqs_sent=0, xmit_table_resize_factor=1.2,
+            xmit_from_random_member=false, xmit_table_size=78,
+            missing_msgs_received=0, xmit_table_msgs_per_row=10000,
+            xmit_rsps_received=0}
+
+view=[A|1] [A, B]
+version=3.0.0.Beta1
+
+
+#2 (468 bytes):
+local_addr=B [88588976-5416-b054-ede9-0bf8d4b56c02]
+cluster=DrawGroupDemo
+physical_addr=192.168.1.5:35841
+jmx=NAKACK={xmit_table_max_compaction_time=600000, xmit_history_max_size=50,
+            xmit_rsps_sent=0, xmit_reqs_received=0, xmit_table_num_rows=5,
+            xmit_reqs_sent=0, xmit_table_resize_factor=1.2,
+            xmit_from_random_member=false, xmit_table_size=54,
+            missing_msgs_received=0, xmit_table_msgs_per_row=10000,
+            xmit_rsps_received=0}
+
+view=[A|1] [A, B]
+version=3.0.0.Beta1
+
+
+
+
+2 responses (2 matches, 0 non matches)
+[linux]/home/bela$
+        </screen>
+        <para>
+            This returns all attributes of NAKACK that start with <literal>"xmit"</literal> or <literal>"missing"</literal>.
+        </para>
+
+        <para>
+            To invoke an operation, e.g. to set the logging level in all UDP protocols from "warn" to "trace", we
+            can use <command>probe.sh op=UPD.setLevel["trace"]</command>. This raises the logging level in all
+            UDP protocols of all cluster members, which is useful to diagnose a running system.
+        </para>
+        <para>
+            Operation invocation uses reflection, so any method defined in any protocol can be invoked. This is
+            a powerful tool to get diagnostics information from a running cluster.
+        </para>
+        <para>
+            For further information, refer to the command line options of probe
+            (<command>probe.sh -h</command>).
+        </para>
+
     </section>
 </chapter>

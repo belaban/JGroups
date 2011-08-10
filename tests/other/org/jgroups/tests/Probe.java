@@ -152,7 +152,7 @@ public class Probe {
                     ipv6=true;
                     continue;
                 }
-                if("-help".equals(args[i]) || "-h".equals(args[i])) {
+                if("-help".equals(args[i]) || "-h".equals(args[i]) || "--help".equals(args[i])) {
                     help();
                     return;
                 }
