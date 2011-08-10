@@ -34,6 +34,7 @@
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <property name="timestamp" value=".timestamp"/>
     <property name="protocols.xml" value="${manual.dir}/en/modules/protocols.xml"/>
+    <property name="bnd.dir" value="${root.dir}/bnd"/>
 
 	<!-- 5 minutes per test suite timeout -->
     <property name="unittest.timeout.low" value="500000"/>
@@ -48,6 +49,11 @@
         <pathelement location="${conf.dir}"/>
         <pathelement location="${keystore.dir}"/>
         <fileset dir="${lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+    <path id="bnd.classpath">
+        <fileset dir="${bnd.dir}">
             <include name="*.jar"/>
         </fileset>
     </path>
@@ -124,10 +130,22 @@
 
     <target name="jgroups.jar"
             description="Creates the jgroups-${version}.jar (includes everything)" depends="compile,create-schema">
-    	<mkdir dir="${dist.dir}"/>
+    	<mkdir dir="${dist.dir}"/>        
+        <get src="http://dl.dropbox.com/u/2590603/bnd/biz.aQute.bnd.jar" dest="bnd/biz.aQute.bnd.jar" skipexisting="true"/>
+        <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
+        <property name="bndclasspath" refid="jg.classpath"/>
+        <property name="-savemanifest" value="${conf.dir}/MANIFEST.MF"/>
+        <property name="-output" value="${conf.dir}"/>
+        <taskdef resource="aQute/bnd/ant/taskdef.properties" classpathref="bnd.classpath"/>
+         <bnd
+             classpath="${bndclasspath}"
+             eclipse="false"
+             failok="false"
+             exceptions="true"
+             files="${bnd.dir}/jgroups.bnd" />
     <jar destfile="${dist.dir}/jgroups-${version}.jar"
          basedir="${compile.dir}"
-         manifest="${root.dir}/target/classes/META-INF/MANIFEST.MF"
+         manifest="${conf.dir}/MANIFEST.MF"
          includes="org/jgroups/**,schema/**">
         <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
     </jar>    	
@@ -135,10 +153,22 @@
 
     <target name="jgroups-core.jar"
             description="Creates the jgroups-core.jar. Includes only core file, no demos" depends="compile,create-schema">
-	    <mkdir dir="${dist.dir}"/>	
+	<mkdir dir="${dist.dir}"/>        
+        <get src="http://dl.dropbox.com/u/2590603/bnd/biz.aQute.bnd.jar" dest="bnd/biz.aQute.bnd.jar" skipexisting="true"/>
+        <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
+        <property name="bndclasspath" refid="jg.classpath"/>
+        <property name="-savemanifest" value="${conf.dir}/MANIFEST.MF"/>
+        <property name="-output" value="${conf.dir}"/>
+        <taskdef resource="aQute/bnd/ant/taskdef.properties" classpathref="bnd.classpath"/>
+        <bnd
+              classpath="${bndclasspath}"
+              eclipse="false"
+              failok="false"
+              exceptions="true"
+              files="${bnd.dir}/jgroups.bnd" />	
 	    <jar jarfile="${dist.dir}/jgroups-core.jar"
 	         basedir="${compile.dir}"
-	         manifest="${root.dir}/target/classes/META-INF/MANIFEST.MF"
+	         manifest="${conf.dir}/MANIFEST.MF"
 	         includes="org/jgroups/**,schema/**"
 	         excludes="org/jgroups/demos/**,
 	                  org/jgroups/tests/**,
@@ -151,9 +181,20 @@
     <target name="jgroups-sources.jar"
             description="Creates the jgroups-sources.jar. Includes only core source files, no demos, no tests">
         <mkdir dir="${dist.dir}"/>
+        <get src="http://dl.dropbox.com/u/2590603/bnd/biz.aQute.bnd.jar" dest="bnd/biz.aQute.bnd.jar" skipexisting="true"/>
+        <property name="bndclasspath" refid="jg.classpath"/>
+        <property name="-savemanifest" value="${conf.dir}/MANIFEST.MF"/>
+        <property name="-output" value="${conf.dir}"/>
+        <taskdef resource="aQute/bnd/ant/taskdef.properties" classpathref="bnd.classpath"/>
+        <bnd
+              classpath=""
+              eclipse="false"
+              failok="false"
+              exceptions="true"
+              files="${bnd.dir}/jgroups.bnd" />
         <jar jarfile="${dist.dir}/jgroups-sources.jar"
              basedir="${src.dir}"
-             manifest="${root.dir}/target/classes/META-INF/MANIFEST.MF"
+             manifest="${conf.dir}/MANIFEST.MF"
              includes="org/jgroups/**"
              excludes="org/jgroups/demos/**">
         </jar>
@@ -363,6 +404,9 @@
         <delete dir="${manual.dir}/build"/>
         <delete dir="${tutorial.dir}/build"/>
         <delete dir="${root.dir}/schema" failonerror="false"/>
+        <delete>
+           <fileset dir="${bnd.dir}" includes="biz*"/>
+        </delete>
     </target>
 
 
