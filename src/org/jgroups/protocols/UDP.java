@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
-import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
@@ -85,7 +84,8 @@ public class UDP extends TP {
     @Property(description="Receive buffer size of the unicast datagram socket. Default is 64'000 bytes")
     protected int ucast_recv_buf_size=64000;
 
-    @Property
+    @Property(description="If true, disables IP_MULTICAST_LOOP on the MulticastSocket (for sending and receiving of " +
+      "multicast packets). IP multicast packets send on a host P will therefore not be received by anyone on P. Use with caution.")
     protected boolean disable_loopback=false;
 
 

@@ -78,7 +78,7 @@ public class TUNNEL extends TP {
         return false;
     }
 
-    @Property
+    @Property(description="A comma-separated list of GossipRouter hosts, e.g. HostA[12001],HostB[12001]")
    public void setGossipRouterHosts(String hosts) throws UnknownHostException {
       gossip_router_hosts.clear();
       // if we get passed value of List<SocketAddress>#toString() we have to strip []
