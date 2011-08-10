@@ -8,4 +8,4 @@ Bundle-SymbolicName: org.jgroups
 Bundle-Vendor: JBoss, a division of Red Hat
 Bundle-Version: ${version}
 Export-Package: schema;version=${version},${javadoc.packages};version=${version},
-Import-Package: !bsh.*|org.testng.*|org.bouncycastle.*,*
+Import-Package: !bsh.*;!org.testng.*;!org.bouncycastle.*,*
