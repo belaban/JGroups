@@ -57,7 +57,7 @@ public class MPING extends PING implements Runnable {
     @Property(description="Time to live for discovery packets. Default is 8", systemProperty=Global.MPING_IP_TTL)
     int ip_ttl=8;
 
-    @Property(name="mcast_addr", systemProperty=Global.MPING_MCAST_ADDR,
+    @Property(description="Multicast address to be used for discovery", name="mcast_addr", systemProperty=Global.MPING_MCAST_ADDR,
               defaultValueIPv4="230.5.6.7", defaultValueIPv6="ff0e::5:6:7")
     InetAddress mcast_addr=null;
 
