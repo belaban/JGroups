@@ -80,7 +80,7 @@ $  java org.jgroups.Version
                 <imageobject>
                     <imagedata fileref="images/DrawScreenshot.png"
                                format="PNG"
-                               align="center"/>
+                               align="center" />
                 </imageobject>
             </mediaobject>
         </figure>

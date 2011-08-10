@@ -142,12 +142,19 @@ Object val=disp.callRemoteMethod(target, method_call, opts);
       <para>The methods to send requests are:</para>
 
       <programlisting language="Java">
-public &lt;T&gt; RspList&lt;T&gt; castMessage(final Collection&lt;Address&gt; dests,
-                                      Message msg, RequestOptions options) throws Exception;
-public &lt;T&gt; NotifyingFuture&lt;RspList&lt;T&gt;&gt; castMessageWithFuture(final Collection&lt;Address&gt; dests,
-                                                                 Message msg, RequestOptions options) throws Exception;
-public &lt;T&gt; T sendMessage(Message msg, RequestOptions opts) throws Exception;
-public &lt;T&gt; NotifyingFuture&lt;T&gt; sendMessageWithFuture(Message msg, RequestOptions options) throws Exception;
+public &lt;T&gt; RspList&lt;T&gt;
+       castMessage(final Collection&lt;Address&gt; dests,
+                   Message msg,
+                   RequestOptions options) throws Exception;
+public &lt;T&gt; NotifyingFuture&lt;RspList&lt;T&gt;&gt;
+       castMessageWithFuture(final Collection&lt;Address&gt; dests,
+                             Message msg,
+                             RequestOptions options) throws Exception;
+public &lt;T&gt; T sendMessage(Message msg,
+                         RequestOptions opts) throws Exception;
+public &lt;T&gt; NotifyingFuture&lt;T&gt;
+       sendMessageWithFuture(Message msg,
+                             RequestOptions options) throws Exception;
       </programlisting>
 
       <para>
@@ -315,19 +322,32 @@ public class MessageDispatcherTest implements RequestHandler {
       </para>
 
     <programlisting language="Java">
-public &lt;T&gt; RspList&lt;T&gt; callRemoteMethods(Collection&lt;Address&gt; dests, String method_name, Object[] args,
-                                      Class[] types, RequestOptions options) throws Exception;
-public &lt;T&gt; RspList&lt;T&gt; callRemoteMethods(Collection&lt;Address&gt; dests,
-                                      MethodCall method_call,
-                                      RequestOptions options) throws Exception;
-public &lt;T&gt; NotifyingFuture&lt;RspList&lt;T&gt;&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
-                                                               MethodCall method_call,
-                                                               RequestOptions options) throws Exception;
-public &lt;T&gt; T callRemoteMethod(Address dest, String method_name, Object[] args,
-                                    Class[] types, RequestOptions options) throws Exception;
-public &lt;T&gt; T callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Exception;
-public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
-                                                                     RequestOptions options) throws Exception;
+public &lt;T&gt; RspList&lt;T&gt;
+       callRemoteMethods(Collection&lt;Address&gt; dests,
+                         String method_name,
+                         Object[] args,
+                         Class[] types,
+                         RequestOptions options) throws Exception;
+public &lt;T&gt; RspList&lt;T&gt;
+       callRemoteMethods(Collection&lt;Address&gt; dests,
+                         MethodCall method_call,
+                         RequestOptions options) throws Exception;
+public &lt;T&gt; NotifyingFuture&lt;RspList&lt;T&gt;&gt;
+       callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
+                                   MethodCall method_call,
+                                   RequestOptions options) throws Exception;
+public &lt;T&gt; T callRemoteMethod(Address dest,
+                              String method_name,
+                              Object[] args,
+                              Class[] types,
+                              RequestOptions options) throws Exception;
+public &lt;T&gt; T callRemoteMethod(Address dest,
+                              MethodCall call,
+                              RequestOptions options) throws Exception;
+public &lt;T&gt; NotifyingFuture&lt;T&gt;
+       callRemoteMethodWithFuture(Address dest,
+                                  MethodCall call,
+                                  RequestOptions options) throws Exception;
     </programlisting>
 
       <para>
@@ -393,7 +413,11 @@ public class RpcDispatcherTest {
 
         for(int i=0; i &lt; 10; i++) {
             Util.sleep(100);
-            rsp_list=disp.callRemoteMethods(null, "print", new Object[]{i}, new Class[]{int.class}, opts);
+            rsp_list=disp.callRemoteMethods(null,
+                                            "print",
+                                            new Object[]{i},
+                                            new Class[]{int.class},
+                                            opts);
             // Alternative: use a (prefabricated) MethodCall:
             // call.setArgs(i);
             // rsp_list=disp.callRemoteMethods(null, call, opts);
@@ -438,10 +462,14 @@ public class RpcDispatcherTest {
                 2.9, two new methods, which return futures, have been added to RpcDispatcher:
             </para>
             <programlisting language="Java">
-public NotifyingFuture&lt;RspList&gt; callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
-                                            MethodCall method_call, RequestOptions options) throws Exception;
-public &lt;T&gt; NotifyingFuture&lt;T&gt; callRemoteMethodWithFuture(Address dest, MethodCall call,
-                                            RequestOptions options) throws Exception;
+public NotifyingFuture&lt;RspList&gt;
+       callRemoteMethodsWithFuture(Collection&lt;Address&gt; dests,
+                                   MethodCall method_call,
+                                   RequestOptions options) throws Exception;
+public &lt;T&gt; NotifyingFuture&lt;T&gt;
+       callRemoteMethodWithFuture(Address dest,
+                                  MethodCall call,
+                                  RequestOptions options) throws Exception;
             </programlisting>
 
 
@@ -496,24 +524,27 @@ public interface RspFilter {
 public void testResponseFilter() throws Exception {
     final long timeout = 10 * 1000 ;
 
-    RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, timeout, false,
-                                              new RspFilter() {
-                                                  int num=0;
-                                                  public boolean isAcceptable(Object response, Address sender) {
-                                                      boolean retval=((Integer)response).intValue() &gt; 1;
-                                                      if(retval)
-                                                          num++;
-                                                      return retval;
-                                                  }
-                                                  public boolean needMoreResponses() {
-                                                      return num &lt; 2;
-                                                  }
-                                              });
+    RequestOptions opts;
+    opts=new RequestOptions(ResponseMode.GET_ALL,
+                            timeout, false,
+                            new RspFilter() {
+                                int num=0;
+                                public boolean isAcceptable(Object response,
+                                                            Address sender) {
+                                    boolean retval=((Integer)response).intValue() &gt; 1;
+                                    if(retval)
+                                        num++;
+                                    return retval;
+                                }
+                                public boolean needMoreResponses() {
+                                    return num &lt; 2;
+                                }
+                            });
 
-    RspList rsps=disp1.callRemoteMethods(null, "foo", null, null, options);
+    RspList rsps=disp1.callRemoteMethods(null, "foo", null, null, opts);
     System.out.println("responses are:\n" + rsps);
-    assertEquals("there should be three response values", 3, rsps.size());
-    assertEquals("number of responses received should be 2", 2, rsps.numReceived());
+    assert rsps.size() == 3;
+    assert rsps.numReceived() == 2;
 }
           </programlisting>
 

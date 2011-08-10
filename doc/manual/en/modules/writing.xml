@@ -27,13 +27,15 @@
         <programlisting language="Java">
 public interface Streamable {
 
-    /** Write the entire state of the current object (including superclasses) to outstream.
-     * Note that the output stream must not be closed */
+    /** Write the entire state of the current object (including superclasses)
+        to outstream. Note that the output stream must not be closed */
     void writeTo(DataOutput out) throws IOException;
 
-    /** Read the state of the current object (including superclasses) from instream
-     * Note that the input stream must not be closed */
-    void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException;
+    /** Read the state of the current object (including superclasses) from
+        instream. Note that the input stream must not be closed */
+    void readFrom(DataInput in) throws IOException,
+                                       IllegalAccessException,
+                                       InstantiationException;
 }
         </programlisting>
 
@@ -67,7 +69,8 @@ public class bla {
         ch.setReceiver(new ReceiverAdapter() {
             public void receive(Message msg) {
                 MyHeader hdr=(MyHeader)msg.getHeader("x");
-                System.out.println("-- received message " + msg + ", header is " + hdr);
+                System.out.println("-- received " + msg +
+                                   ", header is " + hdr);
             }
         });
 
@@ -105,7 +108,9 @@ public class bla {
             out.writeInt(counter);
        }
 
-       public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+       public void readFrom(DataInputStream in) throws IOException,
+                                                       IllegalAccessException,
+                                                       InstantiationException {
             counter=in.readInt();
        }
     }

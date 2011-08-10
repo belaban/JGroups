@@ -80,7 +80,7 @@
         </para>
 
         <figure id="SharedTransportFig"><title>A shared transport</title>
-            <graphic fileref="images/SharedTransport.png" format="PNG" align="center"  />
+            <graphic fileref="images/SharedTransport.png" format="PNG" align="center" scale="75" />
         </figure>
 
         <para>
@@ -401,8 +401,13 @@
                 </para>
                 <programlisting language="Java">
 RpcDispatcher disp;
-RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 5000).setFlags(Message.DONT_BUNDLE);
-RspList rsp_list=disp.callRemoteMethods(null, "print", new Object[]{i}, new Class[]{int.class}, opts);
+RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 5000)
+                        .setFlags(Message.DONT_BUNDLE);
+RspList rsp_list=disp.callRemoteMethods(null,
+                                        "print",
+                                        new Object[]{i},
+                                        new Class[]{int.class},
+                                        opts);
                 </programlisting>
                 <para>
                     The <methodname>RequestOptions.setFlags(Message.DONT_BUNDLE)</methodname> call tags the message
@@ -520,7 +525,7 @@ for(Future&lt;RspList&gt; future: futures) {
             <programlisting language="XML">
 &lt;TCP bind_port="7800" /&gt;
 &lt;TCPPING timeout="3000"
-         initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
+         initial_hosts="${jgroups.tcpping.initial_hosts:HostA[7800],HostB[7801]}"
          port_range="1"
          num_initial_members="3"/&gt;
 &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
@@ -895,7 +900,7 @@ for(Future&lt;RspList&gt; future: futures) {
 
             <para>
                 <figure id="ConcurrentStackFig"><title>The concurrent stack</title>
-                    <graphic fileref="images/ConcurrentStack.png" format="PNG" align="left" />
+                    <graphic fileref="images/ConcurrentStack.png" format="PNG" align="left" scale="75"/>
                 </figure>
             </para>
             <para>
@@ -1677,10 +1682,10 @@ On view change V:
                         from any given member for more than <literal>timeout</literal> ms, that member will get
                         suspected.
                     </para>
-                    <pra>
+                    <para>
                         FD_ALL is the recommended failure detection protocol when the transport provides IP
                         multicasting capabilities (UDP).
-                    </pra>
+                    </para>
                     <para>
                         For details see <xref linkend="FD_ALL"/>.
                     </para>

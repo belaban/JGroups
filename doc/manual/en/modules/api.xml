@@ -138,9 +138,7 @@ public interface MembershipListener {
 
         <section id="Receiver">
             <title>Receiver</title>
-            <programlisting language="Java">
-public interface Receiver extends MessageListener, MembershipListener { }
-            </programlisting>
+            <programlisting language="Java">public interface Receiver extends MessageListener, MembershipListener;</programlisting>
 
             <para>
                 A Receiver can be used to receive messages and view changes; receive() will be invoked as soon as a
@@ -278,7 +276,7 @@ public interface Address extends Externalizable, Comparable, Cloneable {
 
         <figure id="MessageFig">
             <title>Structure of a message</title>
-            <graphic align="center" fileref="images/Message.png" format="PNG"/>
+            <graphic align="center" fileref="images/Message.png" format="PNG" scale="75"/>
         </figure>
 
         <para>A message has 5 fields:</para>
@@ -484,7 +482,7 @@ channel.send(msg);
 
         <figure id="ChannelStatesFig">
             <title>Channel states</title>
-            <graphic align="center" fileref="images/ChannelStates.png" format="PNG"/>
+            <graphic align="center" fileref="images/ChannelStates.png" format="PNG" scale="75"/>
         </figure>
 
         <para>
@@ -514,7 +512,7 @@ channel.send(msg);
                 The most frequently used constructor of <classname>JChannel</classname> looks as follows:
             </para>
 
-            <programlisting language="Java">public JChannel(String props) throws Exception {}</programlisting>
+            <programlisting language="Java">public JChannel(String props) throws Exception;</programlisting>
 
             <para>
                 The <parameter>props</parameter> argument points to an XML file containing the configuration of the
@@ -672,11 +670,13 @@ public class ProgrammaticChat {
         JChannel ch=new JChannel(false);         // (1)
         ProtocolStack stack=new ProtocolStack(); // (2)
         ch.setProtocolStack(stack);
-        stack.addProtocol(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")))
+        stack.addProtocol(new UDP().setValue("bind_addr",
+                                              InetAddress.getByName("192.168.1.5")))
                 .addProtocol(new PING())
                 .addProtocol(new MERGE2())
                 .addProtocol(new FD_SOCK())
-                .addProtocol(new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000))
+                .addProtocol(new FD_ALL().setValue("timeout", 12000)
+                                         .setValue("interval", 3000))
                 .addProtocol(new VERIFY_SUSPECT())
                 .addProtocol(new BARRIER())
                 .addProtocol(new NAKACK())
@@ -694,7 +694,8 @@ public class ProgrammaticChat {
             }
 
             public void receive(Message msg) {
-                System.out.println("&lt;&lt; " + msg.getObject() + " [" + msg.getSrc() + "]");
+                Address sender=msg.getSrc();
+                System.out.println(msg.getObject() + " [" + sender + "]");
             }
         });
 
@@ -826,7 +827,7 @@ class CustomAddress extends UUID {
                 to a channel giving the name of the cluster to be joined:
             </para>
 
-            <programlisting language="Java">public void connect(String clustername) throws Exception;</programlisting>
+            <programlisting language="Java">public void connect(String cluster) throws Exception;</programlisting>
 
             <para>
                 The cluster name is the name of the cluster to be joined. All channels that call connect() with
@@ -868,7 +869,7 @@ class CustomAddress extends UUID {
                 one atomic operation.
             </para>
 
-            <programlisting language="Java">public void connect(String cluster_name, Address target, long timeout) throws Exception;</programlisting>
+            <programlisting language="Java">public void connect(String cluster, Address target, long timeout) throws Exception;</programlisting>
 
             <para>
                 Just as in a regular connect(), the cluster name represents a cluster to be joined. The target parameter
@@ -930,7 +931,7 @@ class CustomAddress extends UUID {
 public void send(Message msg) throws Exception;
 public void send(Address dst, Serializable obj) throws Exception;
 public void send(Address dst, byte[] buf) throws Exception;
-public void send(Address dst, byte[] buf, int offset, int length) throws Exception;
+public void send(Address dst, byte[] buf, int off, int len) throws Exception;
             </programlisting>
 
             <para>
@@ -1134,12 +1135,13 @@ public void getState(OutputStream output) throws Exception {
 }
 
 public void setState(InputStream input) throws Exception {
-    List&lt;String&gt; list=(List&lt;String&gt;)Util.objectFromStream(new DataInputStream(input));
+    List&lt;String&gt; list;
+    list=(List&lt;String&gt;)Util.objectFromStream(new DataInputStream(input));
     synchronized(state) {
         state.clear();
         state.addAll(list);
     }
-    System.out.println("received state (" + list.size() + " messages in chat history):");
+    System.out.println(list.size() + " messages in chat history):");
     for(String str: list)
         System.out.println(str);
     }
@@ -1162,7 +1164,9 @@ public void setState(InputStream input) throws Exception {
                     into a BufferedOutputStream, e.g.
                 </para>
                 <programlisting language="Java">
-Util.objectToState(state, new BufferedOutputStream(new DataOutputStream(output)));
+Util.objectToStream(state,
+                    new BufferedOutputStream(
+                        new DataOutputStream(output)));
                 </programlisting>
             </note>
 
