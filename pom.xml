@@ -192,6 +192,8 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
+                        <Main-Class>org.jgroups.Version</Main-Class>
+                        <Implementation-Version>${project.version}</Implementation-Version>
                         <Export-Package>
                             schema;version=${project.version},
                             ${project.groupId}.*;version=${project.version}
