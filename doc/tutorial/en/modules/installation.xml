@@ -8,7 +8,7 @@
         <title>Download</title>
         <para>
             JGroups can be downloaded <ulink url="http://sourceforge.net/projects/javagroups/files/JGroups/">here</ulink>.
-            For this tutorial, I'm using the binary version of JGroups 3.0, so download one of the jgroups-3.x.y.jar
+            For this tutorial, I&apos;m using the binary version of JGroups 3.0, so download one of the jgroups-3.x.y.jar
             files (e.g. jgroups-3.0.0.Final.jar).
         </para>
 
@@ -94,8 +94,8 @@ $  java org.jgroups.Version
         <para>
             When drawing in one window, the second instance should also be updated. As the default group transport
             uses IP multicast, make sure that - if you want start the 2 instances in different subnets
-            - IP multicast is enabled. If this is not the case, the 2 instances won't 'find' each other and the
-            example won't work.
+            - IP multicast is enabled. If this is not the case, the 2 instances won&apos;t &apos;find&apos; each other and the
+            example won&apos;t work.
         </para>
 
         <para>
@@ -112,7 +112,7 @@ $  java org.jgroups.Version
             (You may skip this section if the 2 instances found each other correctly in the previous section).
         </para>
 
-        <para>Sometimes there isn't a network connection (e.g. DSL modem is down), or we want to multicast only on the
+        <para>Sometimes there isn&apos;t a network connection (e.g. DSL modem is down), or we want to multicast only on the
             local machine. To do this, we can use the loopback device (127.0.0.1):
         </para>
         <screen>java -Djgroups.bind_addr=127.0.0.1 -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw</screen>
@@ -125,13 +125,13 @@ $  java org.jgroups.Version
         <screen>route add -net 224.0.0.0 netmask 240.0.0.0 dev lo</screen>
 
         <para>This means that all traffic directed to the 224.0.0.0 network will be sent to the loopback interface,
-            which means it doesn't need any network to be running.
+            which means it doesn&apos;t need any network to be running.
         </para>
 
         <para>Typical home networks have a gateway/firewall with 2 NICs: the first (eth0) is connected to the outside
             world (Internet Service Provider), the second (eth1) to the internal network, with the gateway
             firewalling/masquerading traffic between the internal and external networks. If no route for multicast
-            traffic is added, the default will be to use the fdefault gateway, which will typically direct the
+            traffic is added, the default will be to use the default gateway, which will typically direct the
             multicast traffic towards the ISP. To prevent this (e.g. ISP drops multicast traffic, or latency is too
             high), we recommend to add a route for multicast traffic which goes to the internal network (e.g. eth1).
         </para>
@@ -141,9 +141,9 @@ $  java org.jgroups.Version
     <section>
         <title>Trouble shooting</title>
         <para>
-            If the 2 Draw instances don't find each other, read INSTALL.html, which comes with JGroups and has more
+            If the 2 Draw instances don&apos;t find each other, read INSTALL.html, which comes with JGroups and has more
             detailed trouble shooting information. In a nutshell, there are multiple possible reasons the cluster
-            doesn't form:
+            doesn&apos;t form:
             <itemizedlist>
                 <listitem>
                     <para>
@@ -158,12 +158,12 @@ $  java org.jgroups.Version
                     You can force use of IPv6 addresses by using setting system property
                     -Djava.net.preferIPv6Addresses=true. If you use IPv6 addresses, you should also define IPv6 addresses
                     in your configuration; e.g. if you set bind_addr="192.168.1.5" in UDP, JGroups will try to pick
-                    IPv4 addresses if an IPv4 stack is available, or you're running a dual stack.
+                    IPv4 addresses if an IPv4 stack is available, or you&apos;re running a dual stack.
                     </para>
                 </listitem>
                 <listitem>
                     <para>
-                    You don't use the right network interface (NIC): define the NIC with the -Djgroups.bind_addr system
+                    You don&apos;t use the right network interface (NIC): define the NIC with the -Djgroups.bind_addr system
                     property:</para>
                     <screen>java -Djgroups.bind_addr=192.168.5.2 java.org.jgroups.demos.Draw</screen>
                 </listitem>

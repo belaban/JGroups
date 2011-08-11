@@ -80,7 +80,7 @@ public class SimpleChat {
 }
         </programlisting>
         <para>
-            First we create a channel using the empty contructor. This configures the channel with the default properties.
+            First we create a channel using the empty constructor. This configures the channel with the default properties.
             Alternatively, we could pass an XML file to configure the channel, e.g. new JChannel("/home/bela/udp.xml").
         </para>
         <para>
@@ -103,7 +103,7 @@ public class SimpleChat {
         <title>The main event loop and sending chat messages</title>
         <para>
             We now run an event loop, which reads input from stdin ('a message') and sends it to all
-            instances currently in the cluster. When "exit" or "quit" quit are entered, we fall out of the
+            instances currently in the cluster. When "exit" or "quit" are entered, we fall out of the
             loop and close the channel.
         </para>
         <programlisting language="Java">
@@ -218,7 +218,7 @@ public void receive(Message msg) {
     <section>
         <title>Trying out the SimpleChat application</title>
         <para>
-            Now that the demo chat application is fully functional, let's try it out. Start an instances of SimpleChat:
+            Now that the demo chat application is fully functional, let's try it out. Start an instance of SimpleChat:
             <screen>
 [linux]/home/bela$ java SimpleChat
 
