@@ -83,11 +83,6 @@ public class ClientGmsImpl extends GmsImpl {
                 if(log.isDebugEnabled())
                     log.debug("initial_mbrs are " + responses);
                 if(responses.isEmpty()) {
-                    if(gms.disable_initial_coord) {
-                        if(log.isTraceEnabled())
-                            log.trace("received an initial membership of 0, but cannot become coordinator " + "(disable_initial_coord=true), will retry fetching the initial membership");
-                        continue;
-                    }
                     if(log.isDebugEnabled())
                         log.debug("no initial members discovered: creating group as first member");
                     becomeSingletonMember(mbr);

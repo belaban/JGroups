@@ -49,10 +49,6 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     @Property(description="Print physical address(es) on startup")
     private boolean print_physical_addrs=true;
     
-    @Property(description="If true this member can never become coordinator. Default is false",
-              deprecatedMessage="This method will be deprecated in 3.0")
-    boolean disable_initial_coord=false; // can the member become a coord on startup or not ?
-    
     /**
      * Setting this to false disables concurrent startups. This is only used by
      * unit testing code for testing merging. To everybody else: don't change it
