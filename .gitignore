@@ -15,5 +15,8 @@ tmp/
 bla*.java
 doc/manual/target
 doc/tutorial/target
+bnd/
+conf/MANIFEST.MF
+
 
 
