@@ -194,31 +194,8 @@
                     <instructions>
                         <Export-Package>
                             schema;version=${project.version},
-                            org.jgroups;version=${project.version},
-                            org.jgroups.annotations;version=${project.version},
-                            org.jgroups.auth;version=${project.version},
-                            org.jgroups.blocks;version=${project.version},
-                            org.jgroups.blocks.mux;version=${project.version},
-                            org.jgroups.blocks.locking;version=${project.version},
-                            org.jgroups.blocks.executor;version=${project.version},
-                            org.jgroups.client;version=${project.version},
-                            org.jgroups.conf;version=${project.version},
-                            org.jgroups.debug;version=${project.version},
-                            org.jgroups.demos;version=${project.version},
-                            org.jgroups.demos.wb;version=${project.version},
-                            org.jgroups.jmx;version=${project.version},
-                            org.jgroups.logging;version=${project.version},
-                            org.jgroups.mux;version=${project.version},
-                            org.jgroups.persistence;version=${project.version},
-                            org.jgroups.protocols;version=${project.version},
-                            org.jgroups.protocols.pbcast;version=${project.version},
-                            org.jgroups.stack;version=${project.version},
-                            org.jgroups.util;version=${project.version},
-                            org.jgroups.tests;version=${project.version}
+                            ${project.groupId}.*;version=${project.version}
                         </Export-Package>
-                        <Import-Package>
-                            !bsh.*,*
-                        </Import-Package>
                         <Bundle-RequiredExecutionEnvironment>J2SE-1.6</Bundle-RequiredExecutionEnvironment>
                     </instructions>
                 </configuration>
