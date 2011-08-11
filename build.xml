@@ -302,6 +302,7 @@
         <delete dir="${keystore.dir}" failonerror="false"/>
         <delete file="${lib.dir}/jboss-test.jar" failonerror="false"/>
         <delete file="${root.dir}/velocity.log*" failonerror="false"/>
+        <delete file="${conf.dir}/MANIFEST.MF" failonerror="false"/>
         <delete>
             <fileset dir="${root.dir}" defaultexcludes="no">
                 <include name="**/*~"/>
