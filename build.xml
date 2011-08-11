@@ -159,7 +159,7 @@
 
     <target name="jgroups.jar"
             description="Creates the jgroups-${version}.jar (includes everything)"
-            depends="clean,compile-no-unittests,compile-essential-unittests">
+            depends="clean,compile-no-unittests,compile-essential-unittests,create-schema">
     	<mkdir dir="${dist.dir}"/>
         <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
         <property name="bndclasspath" refid="jg.classpath"/>
@@ -177,6 +177,9 @@
          manifest="${conf.dir}/MANIFEST.MF"
          includes="org/jgroups/**">
         <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
+        <fileset dir="${compile.dir}/schema">
+            <include name="*.xsd"/>
+        </fileset>
         <fileset dir="${root.dir}">
             <include name="INSTALL.html"/>
             <include name="LICENSE"/>
