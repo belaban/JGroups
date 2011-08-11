@@ -36,7 +36,7 @@
     <property name="timestamp"        value=".timestamp"/>
     <property name="protocols.xml"    value="${manual.dir}/en/modules/protocols.xml"/>
     <property name="maven.executable" value="mvn"/>
-    <property name="bnd.dir" value="${root.dir}/bnd"/>
+    <property name="bnd.dir"          value="${root.dir}/bnd"/>
 
 	<!-- 5 minutes per test suite timeout -->
     <property name="unittest.timeout.low" value="500000"/>

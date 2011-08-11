@@ -1,26 +1,26 @@
 <thirdparty-licenses>
     <module name='ant'
             licenseType='apache-2.0'
-            version='1.6.5'
+            version='1.8.2'
             projectHome='http://ant.apache.org/'
             description='ANT (compile time)'>
         <jar name='ant.jar' />
     </module>
     <module name='ant-launcher'
             licenseType='apache-2.0'
-            version='1.6.5'
+            version='1.8.2'
             projectHome='http://ant.apache.org/'
             description='ANT launcher (compile time)'>
         <jar name='ant-launcher.jar' />
     </module>
     <module name='ant-junit'
             licenseType='apache-2.0'
-            version='1.6.5'
+            version='1.8.2'
             projectHome='http://ant.apache.org/'
             description='ANT junit support (compile time)'>
         <jar name='ant-junit.jar' />
     </module>
-    <module name='ant-serializer'
+    <module name='serializer'
             licenseType='apache-2.0'
             version='1.6.5'
             projectHome='http://ant.apache.org/'
@@ -35,7 +35,7 @@
         <jar name='bouncycastle.jar' />
     </module>
     <module name='Beanshell'
-            licenseType='lgpl (dual license, but LGPL may eb chosen)'
+            licenseType='lgpl (dual license, but LGPL may be chosen)'
             version='2.0b5'
             projectHome='http://www.beanshell.org'
             description='Lightweight Scripting for Java. Uused mainly by the BSH protocol (uncomplete) (runtime)'>
@@ -48,13 +48,6 @@
             description='Annotations of JCIP'>
         <jar name='none (part of src tree: org.jgroups.annotations)' />
     </module>
-    <module name='junit'
-            licenseType='cpl-1.0'
-            version='3.8.1'
-            projectHome='http://www.junit.org/index.htm'
-            description='Java unit testing framework (testing time)'>
-        <jar name='junit.jar' />
-    </module>
     <module name='log4j'
         licenseType='apache-2.0'
         version='1.2.14'
@@ -62,14 +55,14 @@
         description='Java logging framework (runtime)'>
         <jar name='log4j.jar' />
     </module>
-    <module name='TestNG'
+    <module name='testng'
             licenseType='apache-2.0'
             version='5.8'
             projectHome='http://www.testng.org'
             description='Used for unit testing'>
         <jar name='testng.jar' />
     </module>
-    <module name='apache-xalan'
+    <module name='xalan'
             licenseType='apache-2.0'
             version='2.4.D1'
             projectHome='http://xml.apache.org/xalan-j/'
