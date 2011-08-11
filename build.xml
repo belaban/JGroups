@@ -6,7 +6,7 @@
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>
 
-    <property name="version" value="2.12.0.Alpha1"/>
+    <property name="version" value="3.0.0.Beta1"/>
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
     <property name="root.dir" value="${basedir}"/>
@@ -29,11 +29,13 @@
     <property name="javadoc.dir" value="${dist.dir}/javadoc"/>
     <property name="conf.dir" value="${root.dir}/conf"/>
     <property name="testng.conf.dir" value="${root.dir}/conf/testng"/>
-    <property name="bin.dir" value="${root.dir}/bin"/>
-    <property name="keystore.dir" value="${root.dir}/keystore"/>
+    <property name="bin.dir"          value="${root.dir}/bin"/>
+    <property name="keystore.dir"     value="${root.dir}/keystore"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
-    <property name="timestamp" value=".timestamp"/>
-    <property name="protocols.xml" value="${manual.dir}/en/modules/protocols.xml"/>
+    <!--<property name="javadoc.packages" value="org.jgroups,org.jgroups.blocks"/>-->
+    <property name="timestamp"        value=".timestamp"/>
+    <property name="protocols.xml"    value="${manual.dir}/en/modules/protocols.xml"/>
+    <property name="maven.executable" value="mvn"/>
     <property name="bnd.dir" value="${root.dir}/bnd"/>
 
 	<!-- 5 minutes per test suite timeout -->
@@ -77,10 +79,6 @@
     </patternset>
 
 
-    <patternset id="one.test">
-        <include name="**/*${test}*"/>
-    </patternset>
-
     <patternset id="all.tests">
         <include name="org/jgroups/tests/**Test**"/>
         <include name="org/jgroups/blocks/**Test**"/>
@@ -100,10 +98,11 @@
 
     <target name="compile"
             depends="prepare"
-            description="Compiles are Java files">
+            description="Compiles all Java files">
         <javac destdir="${compile.dir}"
-               source="1.5"
+               source="1.6"
                classpathref="jg.classpath"
+               includeantruntime="false"
                debug="on"
                deprecation="off"
                optimize="off"
@@ -120,40 +119,54 @@
     </target>
 
 
+    <target name="compile-no-unittests"
+            depends="prepare"
+            description="Compiles all Java files">
+        <javac srcdir="${src.dir}"
+               destdir="${compile.dir}"
+               source="1.6"
+               classpathref="jg.classpath"
+               includeantruntime="false"
+               debug="on"
+               deprecation="off"
+               optimize="off"
+               listfiles="false"
+               includes="org/jgroups/**">
+            <exclude name="**/obsolete/**"/>
+        </javac>
+    </target>
+
+    <target name="compile-essential-unittests"
+            depends="prepare"
+            description="Compiles only tests shipped with JGroups">
+        <javac destdir="${compile.dir}"
+               source="1.6"
+               classpathref="jg.classpath"
+               includeantruntime="false"
+               debug="on"
+               deprecation="off"
+               optimize="off"
+               listfiles="false"
+               includes="org/jgroups/tests/**">
+            <src path="${tests.dir}/perf"/>
+            <src path="${tests.dir}/other"/>
+            <exclude name="**/obsolete/**"/>
+        </javac>
+    </target>
+
+
     <target name="jar"
             description="Compiles and creates JAR files in the ./dist directory"
-            depends="compile,
-                jgroups.jar,
-    			jgroups-sources.jar">
+            depends="jgroups.jar,jgroups-sources.jar">
+        <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
+
     </target>
 
 
     <target name="jgroups.jar"
-            description="Creates the jgroups-${version}.jar (includes everything)" depends="compile,create-schema">
-    	<mkdir dir="${dist.dir}"/>        
-        <get src="http://dl.dropbox.com/u/2590603/bnd/biz.aQute.bnd.jar" dest="bnd/biz.aQute.bnd.jar" skipexisting="true"/>
-        <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
-        <property name="bndclasspath" refid="jg.classpath"/>
-        <property name="-savemanifest" value="${conf.dir}/MANIFEST.MF"/>
-        <property name="-output" value="${conf.dir}"/>
-        <taskdef resource="aQute/bnd/ant/taskdef.properties" classpathref="bnd.classpath"/>
-         <bnd
-             classpath="${bndclasspath}"
-             eclipse="false"
-             failok="false"
-             exceptions="true"
-             files="${bnd.dir}/jgroups.bnd" />
-    <jar destfile="${dist.dir}/jgroups-${version}.jar"
-         basedir="${compile.dir}"
-         manifest="${conf.dir}/MANIFEST.MF"
-         includes="org/jgroups/**,schema/**">
-        <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
-    </jar>    	
-    </target>
-
-    <target name="jgroups-core.jar"
-            description="Creates the jgroups-core.jar. Includes only core file, no demos" depends="compile,create-schema">
-	<mkdir dir="${dist.dir}"/>        
+            description="Creates the jgroups-${version}.jar (includes everything)"
+            depends="clean,compile-no-unittests,compile-essential-unittests">
+    	<mkdir dir="${dist.dir}"/>
         <get src="http://dl.dropbox.com/u/2590603/bnd/biz.aQute.bnd.jar" dest="bnd/biz.aQute.bnd.jar" skipexisting="true"/>
         <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
         <property name="bndclasspath" refid="jg.classpath"/>
@@ -161,22 +174,27 @@
         <property name="-output" value="${conf.dir}"/>
         <taskdef resource="aQute/bnd/ant/taskdef.properties" classpathref="bnd.classpath"/>
         <bnd
-              classpath="${bndclasspath}"
-              eclipse="false"
-              failok="false"
-              exceptions="true"
-              files="${bnd.dir}/jgroups.bnd" />	
-	    <jar jarfile="${dist.dir}/jgroups-core.jar"
-	         basedir="${compile.dir}"
-	         manifest="${conf.dir}/MANIFEST.MF"
-	         includes="org/jgroups/**,schema/**"
-	         excludes="org/jgroups/demos/**,
-	                  org/jgroups/tests/**,
-	                  org/jgroups/**/*Test.class,
-	                  org/jgroups/**/*Test\$*.class">
-	        <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
-	    </jar>	   
+            classpath="${bndclasspath}"
+            eclipse="false"
+            failok="false"
+            exceptions="true"
+            files="${bnd.dir}/jgroups.bnd" />
+    <jar destfile="${dist.dir}/jgroups-${version}.jar"
+         basedir="${compile.dir}"
+         manifest="${conf.dir}/MANIFEST.MF"
+         includes="org/jgroups/**">
+        <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
+        <fileset dir="${root.dir}">
+            <include name="INSTALL.html"/>
+            <include name="LICENSE"/>
+            <include name="README"/>
+        </fileset>
+        <fileset dir="${lib.dir}">
+            <include name="licenses/thirdparty*"/>
+        </fileset>
+    </jar>    	
     </target>
+
 
     <target name="jgroups-sources.jar"
             description="Creates the jgroups-sources.jar. Includes only core source files, no demos, no tests">
@@ -195,95 +213,11 @@
         <jar jarfile="${dist.dir}/jgroups-sources.jar"
              basedir="${src.dir}"
              manifest="${conf.dir}/MANIFEST.MF"
-             includes="org/jgroups/**"
-             excludes="org/jgroups/demos/**">
+             includes="org/jgroups/**">
         </jar>
     </target>
 
-    <target name="dist" description="Creates the distribution ZIP files in ./dist">
-        <antcall target="src-dist"/>
-        <antcall target="bin-dist"/>
-    </target>
 
-
-    <target name="src-dist" depends="clean">
-        <echo message="Creating source distribution ${dist.dir}/JGroups-${version}.src.zip"/>
-        <mkdir dir="${tmp.dir}/JGroups-${version}.src"/>
-        <copy todir="${tmp.dir}/JGroups-${version}.src">
-            <fileset dir="${root.dir}">
-                <exclude name="*CVS*"/>
-                <exclude name="doc/progguide/**"/>
-                <exclude name="doc/usersguide/**"/>
-            </fileset>
-        </copy>
-
-        <mkdir dir="${dist.dir}"/>
-        <zip zipfile="${dist.dir}/JGroups-${version}.src.zip" basedir="${tmp.dir}" filesonly="true"/>
-        <delete dir="${tmp.dir}" failonerror="false"/>
-    </target>
-
-    <target name="bin-dist" depends="jar">
-        <echo message="Creating binary distribution ${dist.dir}/JGroups-${version}.bin.zip"/>
-        <mkdir dir="${tmp.dir}/JGroups-${version}.bin"/>
-        <copy todir="${tmp.dir}/JGroups-${version}.bin">
-            <fileset dir="${root.dir}">
-                <include name="CREDITS"/>
-                <include name="INSTALL.html"/>
-                <include name="LICENSE"/>
-                <include name="EULA"/>
-            </fileset>
-            <fileset dir="${lib.dir}">
-                <include name="licenses/*"/>
-            </fileset>
-            <fileset dir="${dist.dir}">
-                <include name="jgroups-${version}*.jar"/>
-            </fileset>
-            <fileset dir="${conf.dir}">
-                <include name="config.txt"/>
-                <include name="udp.xml"/>
-                <include name="flush-*.xml"/>
-                <include name="tcp*.xml"/>
-                <include name="mping.xml"/>
-                <include name="sfc.xml"/>
-            </fileset>
-            <fileset dir="${bin.dir}">
-                <include name="jgroups*"/>
-            </fileset>
-        </copy>
-        <mkdir dir="${dist.dir}"/>
-        <zip zipfile="${dist.dir}/JGroups-${version}.bin.zip" basedir="${tmp.dir}" filesonly="true"/>
-        <delete dir="${tmp.dir}" failonerror="false"/>
-    </target>
-
-    <target name="gossip-service"
-            description="Creates the service archive used to deploy GossipRouter as a JBoss MBean"
-            depends="compile">
-        <mkdir dir="${dist.dir}/gossiptemp"/>
-        <copy file="${conf.dir}/gossip-service.xml" tofile="${dist.dir}/gossiptemp/jboss-service.xml"/>
-        <jar jarfile="${dist.dir}/gossip-router.sar"
-             basedir="${compile.dir}"
-             includes="org/jgroups/**"
-             excludes="org/jgroups/demos/**,
-                      org/jgroups/tests/**,
-                      org/jgroups/**/*Test.class,
-                      org/jgroups/**/*Test\$*.class">
-            <metainf dir="${dist.dir}/gossiptemp"
-                     includes="jboss-service.xml"/>
-            <fileset dir="${conf.dir}" includes="jg-magic-map.xml"/>
-        </jar>
-        <delete dir="${dist.dir}/gossiptemp"/>
-    </target>
-
-
-    <target name="jgroups-service" depends="jgroups-core.jar"
-            description="Creates the service archive used to deploy a JGroups channel as a JBoss MBean">
-        <jar jarfile="${dist.dir}/jgroups-service.sar">
-            <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
-            <metainf dir="${conf.dir}"
-                     includes="jboss-service.xml"/>
-            <fileset dir="${conf.dir}" includes="jg-magic-map.xml,stacks.xml"/>
-        </jar>
-    </target>
 
     <!-- generate java doc -->
     <target name="javadoc"
@@ -297,7 +231,7 @@
                  author="true"
                  version="true"
                  use="true"
-                 bottom="Copyright &#169; 1998-2009 Bela Ban / Red Hat. All Rights Reserved."
+                 bottom="Copyright &#169; 1998-2012 Bela Ban / Red Hat. All Rights Reserved."
                  useexternalfile="yes"
                  doctitle="JGroups"
                  overview="${src.dir}/org/jgroups/overview.html">
@@ -316,34 +250,25 @@
     </target>
 
     <target name="manual" description="Build all html and pdf docs"
-            depends="check-docbook-support,check-manual,compile" unless="manual.up-to-date">
+            depends="check-manual,compile" unless="manual.up-to-date">
         <echo message="Building manual from docbook ..."/>
         <prot-properties-to-doc input="${protocols.xml}"/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="all.doc"/>
-    	<delete file="${protocols.xml}.tmp"/>
-        <touch file="${manual.dir}/build/timestamp"/>
-    </target>
-
-    <target name="html" description="Build html docs"
-            depends="check-docbook-support,check-manual,compile" unless="manual.up-to-date">
-        <echo message="Building HTML manual from docbook ..."/>
-        <prot-properties-to-doc input="${protocols.xml}"/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="html"/>
-    	<delete file="${protocols.xml}.tmp"/>
-        <touch file="${manual.dir}/build/timestamp"/>
+        <run-maven dir="${manual.dir}"/>
+    	<!--<delete file="${protocols.xml}.tmp"/>-->
+        <touch file="${manual.dir}/target/timestamp"/>
     </target>
 
 
     <target name="tutorial" description="Build all html and pdf docs"
-            depends="check-docbook-support,check-tutorial" unless="tutorial.up-to-date">
+            depends="check-tutorial" unless="tutorial.up-to-date">
         <echo message="Building tutorial from docbook ..."/>
-        <ant dir="${root.dir}/doc/tutorial" antfile="build.xml" target="all.doc"/>
-        <touch file="${tutorial.dir}/build/timestamp"/>
+        <run-maven dir="${tutorial.dir}"/>
+        <touch file="${tutorial.dir}/target/timestamp"/>
     </target>
 
 
     <target name="check-tutorial">
-        <uptodate property="tutorial.up-to-date" targetfile="${tutorial.dir}/build/timestamp">
+        <uptodate property="tutorial.up-to-date" targetfile="${tutorial.dir}/target/timestamp">
             <srcfiles dir="${tutorial.dir}/en" includes="**/*">
             </srcfiles>
         </uptodate>
@@ -351,7 +276,7 @@
     </target>
 
     <target name="check-manual">
-        <uptodate property="manual.up-to-date" targetfile="${manual.dir}/build/timestamp">
+        <uptodate property="manual.up-to-date" targetfile="${manual.dir}/target/timestamp">
             <srcfiles dir="${manual.dir}/en" includes="**/*">
             </srcfiles>
         </uptodate>
@@ -359,7 +284,7 @@
     </target>
 
 
-	<target name="create-schema" description="creates XML schema for this version of JGroups" depends="compile">
+	<target name="create-schema" description="creates XML schema for this version of JGroups">
 		<delete dir="${compile.dir}/schema" failonerror="false"/>
 		<mkdir dir="${compile.dir}/schema"/>
 		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath">
@@ -367,24 +292,6 @@
 		</java>
 	</target>
 
-
-
-    <target name="check-docbook-support">
-        <available file="${root.dir}/../docbook-support" type="dir"
-                   property="docbook.support.present"/>
-        <fail message="docbook-support directory does not exist, please check it out from jboss first (run target checkout-docbook-support)"
-              unless="docbook.support.present"/>
-    </target>
-
-
-
-    <target name="checkout-docbook-support">
-        <exec executable="svn">
-            <arg value="co"/>
-            <arg value="http://anonsvn.labs.jboss.com/labs/jbosslabs/trunk/doc/docbook-support/"/>
-            <arg value="${root.dir}/../docbook-support"/>
-        </exec>
-    </target>
 
     <target name="clean"
             description="Removes all class files and the ./dist directory">
@@ -401,8 +308,8 @@
             </fileset>
         </delete>
     	<!-- clean the docs directory if docs have been processed -->
-        <delete dir="${manual.dir}/build"/>
-        <delete dir="${tutorial.dir}/build"/>
+        <delete dir="${manual.dir}/target"/>
+        <delete dir="${tutorial.dir}/target"/>
         <delete dir="${root.dir}/schema" failonerror="false"/>
         <delete>
            <fileset dir="${bnd.dir}" includes="biz*"/>
@@ -518,8 +425,8 @@
                  threadcount="5"
                  parallel="tests"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
-                 initial.mcast.port="25100"
-                 initial.tcp.port="25100"
+                 initial.mcast.port="25000"
+                 initial.tcp.port="25000"
                  testng.xmlfile="testng-udp.xml"
                 />
     </target>
@@ -530,8 +437,8 @@
                  threadcount="5"
                  parallel="tests"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
-                 initial.mcast.port="25200"
-                 initial.tcp.port="25200"
+                 initial.mcast.port="26000"
+                 initial.tcp.port="26000"
                  testng.xmlfile="testng-udp-flush.xml"
                 />
     </target>
@@ -546,8 +453,8 @@
                  threadcount="5"
                  parallel="tests"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
-                 initial.mcast.port="25300"
-                 initial.tcp.port="25300"
+                 initial.mcast.port="27000"
+                 initial.tcp.port="27000"
                  testng.xmlfile="testng-tcp.xml"
                  tcp.recv.buf.size="50000"
                  tcp.send.buf.size="10000"
@@ -564,8 +471,8 @@
                  threadcount="1"
                  parallel="tests"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
-                 initial.mcast.port="25300"
-                 initial.tcp.port="25300"
+                 initial.mcast.port="28000"
+                 initial.tcp.port="28000"
                  testng.xmlfile="testng-tcp-stress.xml"
                  tcp.recv.buf.size="50000"
                  tcp.send.buf.size="10000"
@@ -581,8 +488,8 @@
                  threadcount="10"
                  parallel="tests"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
-                 initial.mcast.port="25400"
-                 initial.tcp.port="25400"
+                 initial.mcast.port="29000"
+                 initial.tcp.port="29000"
                  testng.xmlfile="testng-tcp-flush.xml"
                  tcp.recv.buf.size="50000"
                  tcp.send.buf.size="10000"
@@ -650,13 +557,20 @@
         <attribute name="input" default="${protocols.xml}"/>
         <sequential>
             <echo message="Replacing variables in @{input}"/>
-		<java classname="org.jgroups.util.PropertiesToXML" classpathref="jg.classpath">
-            <arg value="@{input}"/>
-        </java>
+            <java classname="org.jgroups.util.PropertiesToXML" classpathref="jg.classpath">
+                <arg value="@{input}"/>
+            </java>
         </sequential>
     </macrodef>
 
-    <!--
-=============================== TestNG ======================================== -->
+    <macrodef name="run-maven">
+        <attribute name="dir"/>
+        <sequential>
+            <echo message="Running maven on @{dir}/pom.xml"/>
+            <exec executable="${maven.executable}" dir="@{dir}">
+                <arg line="compile"/>
+            </exec>
+        </sequential>
+    </macrodef>
 
 </project>
