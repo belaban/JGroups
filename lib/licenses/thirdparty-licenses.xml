@@ -27,6 +27,13 @@
             description='ANT (compile time), needed for generation of test reports'>
         <jar name='serializer.jar' />
     </module>
+     <module name='BND'
+            licenseType='apache-2.0'
+            version='1.44.0'
+            projectHome='http://www.aqute.biz/Bnd/Bnd'
+            description='Used to generate an OSGI compliant conf/MANIFEST.MF'>
+        <jar name='bnd.jar' />
+    </module>
     <module name='Bouncy castle'
             licenseType='bouncycastle'
             version='1.17'
