@@ -7,7 +7,7 @@ Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Bundle-SymbolicName: org.jgroups
 Bundle-Vendor: JBoss, a division of Red Hat
 Bundle-Version: ${version}
-Export-Package: schema;version=${version},${javadoc.packages};version=${version},
+Export-Package: ${javadoc.packages};version=${version},
 Import-Package: bsh|org.bouncycastle.jce.provider;resolution:=optional,!org.testng.*,*
 Implementation-Version: ${version}
 Main-Class: org.jgroups.Version
