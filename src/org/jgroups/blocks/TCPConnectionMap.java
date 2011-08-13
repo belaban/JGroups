@@ -614,9 +614,9 @@ public class TCPConnectionMap{
                 this.send_queue=new LinkedBlockingQueue<byte[]>(send_queue_size);
             }
             
-            public void addToQueue(byte[] data) throws Exception{
+            public void addToQueue(byte[] data) throws Exception {
                 if(canRun())
-                    send_queue.add(data);
+                    send_queue.put(data);
             }
 
             public void start() {
