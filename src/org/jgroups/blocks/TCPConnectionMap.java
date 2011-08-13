@@ -616,7 +616,7 @@ public class TCPConnectionMap{
             
             public void addToQueue(byte[] data) throws Exception{
                 if(canRun())
-                    send_queue.add(data);
+                    send_queue.put(data);
             }
 
             public void start() {
