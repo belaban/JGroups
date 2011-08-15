@@ -108,10 +108,6 @@ public class Global {
     public static final int IPV6_SIZE=16;
 
 
-    public static final int SMALL_CLUSTER_SIZE=10;
-    public static final int NORMAL_CLUSTER_SIZE=20;
-    public static final int BIG_CLUSTER_SIZE=100;
-
 
 
     public static boolean getPropertyAsBoolean(String property, boolean defaultValue) {

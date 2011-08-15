@@ -66,9 +66,6 @@ public abstract class Discovery extends Protocol {
             "discovery request, or not. Default is false, except for TCPPING")
     protected boolean return_entire_cache=false;
 
-    @Property(description="Only members with a rank <= max_rank will send a discovery response. 1 means only the " +
-            "coordinator will reply. 0 disables this; everyone replies. JIRA: https://jira.jboss.org/browse/JGRP-1181")
-    protected int max_rank=0;
 
     @Property(description="If greater than 0, we'll wait a random number of milliseconds in range [0..stagger_timeout] " +
       "before sending a discovery response. This prevents traffic spikes in large clusters when everyone sends their " +
@@ -85,10 +82,7 @@ public abstract class Discovery extends Protocol {
     @ManagedAttribute
     private volatile int max_found_members=0;
 
-    @ManagedAttribute
-    protected int rank=0;
 
-    
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     protected  volatile boolean is_server=false;
@@ -107,8 +101,6 @@ public abstract class Discovery extends Protocol {
         timer=getTransport().getTimer();
         if(timer == null)
             throw new Exception("timer cannot be retrieved from protocol stack");
-        if(max_rank > 0)
-            return_entire_cache=true;
         if(stagger_timeout < 0)
             throw new IllegalArgumentException("stagger_timeout cannot be negative");
         if(stagger_timeout > timeout) {
@@ -328,10 +320,7 @@ public abstract class Discovery extends Protocol {
                             discoveryRequestReceived(msg.getSrc(), data.getLogicalName(), physical_addrs);
                         }
 
-                        if(max_rank > 0 && rank > 0 && rank > max_rank) // https://jira.jboss.org/browse/JGRP-1181
-                            return null;
-
-                        if(return_entire_cache && hdr.view_id == null && rank != 0) {
+                        if(return_entire_cache && hdr.view_id == null) {
                             Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
                             if(cache != null) {
                                 for(Map.Entry<Address,PhysicalAddress> entry: cache.entrySet()) {
@@ -453,22 +442,6 @@ public abstract class Discovery extends Protocol {
                     synchronized(members) {
                         members.clear();
                         members.addAll(tmp);
-                    }
-                }
-                rank=Util.getRank(view, local_addr);
-                if(ergonomics) {
-                    int size=view.size();
-                    if(size <= Global.SMALL_CLUSTER_SIZE) {
-                        max_rank=0;
-                        return_entire_cache=false;
-                    }
-                    else if(size <= Global.NORMAL_CLUSTER_SIZE) {
-                        max_rank=size / 5;
-                        return_entire_cache=true;
-                    }
-                    else {
-                        max_rank=Math.min(size / 5, 10);
-                        return_entire_cache=true;
                     }
                 }
                 return down_prot.down(evt);
