@@ -31,7 +31,12 @@ public class ParseMessages {
             dis=new DataInputStream(input);
 
             for(;;) {
-                version=dis.readShort();
+                try {
+                    version=dis.readShort();
+                }
+                catch(IOException io_ex) {
+                    break;
+                }
 
 //                int ch1 = input.read();
 //                int ch2 = input.read();
