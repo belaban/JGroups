@@ -1,7 +1,6 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Promise;
 import org.jgroups.util.UUID;
@@ -65,7 +64,7 @@ public class FILE_PING extends Discovery {
         return true;
     }
 
-    public void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception{
+    public void sendGetMembersRequest(String cluster_name, Promise promise, ViewId view_id) throws Exception{
         List<PingData> existing_mbrs=readAll(cluster_name);
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
@@ -88,7 +87,7 @@ public class FILE_PING extends Discovery {
                     if(dest == null || dest.equals(physical_addr))
                         continue;
                     PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
-                    hdr.return_view_only=return_views_only;
+                    hdr.view_id=view_id;
                     final Message msg=new Message(dest);
                     msg.setFlag(Message.OOB);
                     msg.putHeader(this.id, hdr); // needs to be getName(), so we might get "MPING" !

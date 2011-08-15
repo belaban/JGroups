@@ -1,10 +1,7 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Global;
-import org.jgroups.PhysicalAddress;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -20,11 +17,12 @@ import java.util.Collection;
  * @author Bela Ban
  */
 public class PingData implements Streamable {
-    private Address own_addr=null;
-    private View view=null;
-    private boolean is_server=false;
-    private String logical_name=null;
-    private Collection<PhysicalAddress> physical_addrs=null;
+    protected Address own_addr=null;
+    protected View    view=null;    // only sent with merge-triggered discovery response (if ViewIds differ)
+    protected ViewId  view_id=null; // only sent with GMS-triggered discovery response
+    protected boolean is_server=false;
+    protected String  logical_name=null;
+    protected Collection<PhysicalAddress> physical_addrs=null;
 
 
     public PingData() {
@@ -41,9 +39,15 @@ public class PingData implements Streamable {
                     String logical_name, Collection<PhysicalAddress> physical_addrs) {
         this(own_addr, view, is_server);
         this.logical_name=logical_name;
-        if(physical_addrs != null) {
+        if(physical_addrs != null)
             this.physical_addrs=new ArrayList<PhysicalAddress>(physical_addrs);
-        }
+    }
+
+
+    public PingData(Address own_addr, View view, ViewId view_id, boolean is_server,
+                    String logical_name, Collection<PhysicalAddress> physical_addrs) {
+        this(own_addr, view, is_server, logical_name, physical_addrs);
+        this.view_id=view_id;
     }
 
 
@@ -62,6 +66,8 @@ public class PingData implements Streamable {
     }
 
     public Address getCoordAddress() {
+        if(view_id != null)
+            return view_id.getCoordAddress();
         return view != null? view.getVid().getCoordAddress() : null;
     }
 
@@ -76,6 +82,10 @@ public class PingData implements Streamable {
     public void setView(View view) {
         this.view=view;
     }
+
+    public ViewId getViewId() {return view_id;}
+
+    public void setViewId(ViewId view_id) {this.view_id=view_id;}
 
     public boolean isServer() {
         return is_server;
@@ -107,8 +117,17 @@ public class PingData implements Streamable {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append("own_addr=").append(own_addr).append(", view id=").append((view != null? view.getVid() : null))
-                .append(", is_server=").append(is_server).append(", is_coord=" + isCoord());
+        sb.append("own_addr=").append(own_addr);
+        if(view_id != null)
+            sb.append(", view_id=").append(view_id);
+        if(view != null) {
+            sb.append(", view=");
+            if(view.size() > 10)
+                sb.append(view.size() + " mbrs");
+            else
+                sb.append(view);
+        }
+        sb.append(", is_server=").append(is_server).append(", is_coord=" + isCoord());
         if(logical_name != null)
             sb.append(", logical_name=").append(logical_name);
         if(physical_addrs != null && !physical_addrs.isEmpty())
@@ -119,6 +138,7 @@ public class PingData implements Streamable {
     public void writeTo(DataOutput outstream) throws IOException {
         Util.writeAddress(own_addr, outstream);
         Util.writeView(view, outstream);
+        Util.writeViewId(view_id, outstream);
         outstream.writeBoolean(is_server);
         Util.writeString(logical_name, outstream);
         Util.writeAddresses(physical_addrs, outstream);
@@ -127,6 +147,7 @@ public class PingData implements Streamable {
     public void readFrom(DataInput instream) throws IOException, IllegalAccessException, InstantiationException {
         own_addr=Util.readAddress(instream);
         view=Util.readView(instream);
+        view_id=Util.readViewId(instream);
         is_server=instream.readBoolean();
         logical_name=Util.readString(instream);
         physical_addrs=(Collection<PhysicalAddress>)Util.readAddresses(instream, ArrayList.class);
@@ -136,6 +157,7 @@ public class PingData implements Streamable {
         int retval=Global.BYTE_SIZE; // for is_server
         retval+=Util.size(own_addr);
         retval+=Util.size(view);
+        retval+=Util.size(view_id);
         retval+=Global.BYTE_SIZE;     // presence byte for logical_name
         if(logical_name != null)
             retval+=logical_name.length() +2;

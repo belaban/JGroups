@@ -251,7 +251,7 @@ public class MERGE2 extends Protocol {
         }
 
         private void _findAndNotify() {
-            List<PingData> discovery_rsps=findAllMembers();
+            List<PingData> discovery_rsps=findAllViews();
 
             if(log.isTraceEnabled()) {
                 StringBuilder sb=new StringBuilder();
@@ -314,8 +314,8 @@ public class MERGE2 extends Protocol {
 
         /** Returns a list of PingData with only the view from members around the cluster */
         @SuppressWarnings("unchecked")
-        private List<PingData> findAllMembers() {
-            List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.FIND_ALL_MBRS));
+        private List<PingData> findAllViews() {
+            List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.FIND_ALL_VIEWS));
             if(retval == null) return Collections.emptyList();
             if(is_coord && local_addr != null) {
                 PingData tmp=new PingData(local_addr, view, true);

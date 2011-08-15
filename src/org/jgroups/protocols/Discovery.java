@@ -108,7 +108,7 @@ public abstract class Discovery extends Protocol {
     }
 
 
-    public abstract void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception;
+    public abstract void sendGetMembersRequest(String cluster_name, Promise promise, ViewId view_id) throws Exception;
 
     public abstract boolean isDynamic();
 
@@ -154,11 +154,15 @@ public abstract class Discovery extends Protocol {
     @ManagedAttribute
     public String getView() {return view != null? view.getViewId().toString() : "null";}
 
+    public ViewId getViewId() {
+        return view != null? view.getViewId() : null;
+    }
+
 
     public Vector<Integer> providedUpServices() {
         Vector<Integer> ret=new Vector<Integer>(3);
         ret.addElement(Event.FIND_INITIAL_MBRS);
-        ret.addElement(Event.FIND_ALL_MBRS);
+        ret.addElement(Event.FIND_ALL_VIEWS);
         ret.addElement(Event.GET_PHYSICAL_ADDRESS);
         return ret;
     }
@@ -177,22 +181,6 @@ public abstract class Discovery extends Protocol {
         max_found_members=0;
     }
 
-    /**
-     * Finds the views: sends a GET_MBRS_REQ to all members, waits 'timeout' ms or
-     * until 'num_initial_members' have been retrieved
-     * @return List<Views>
-     */
-    public List<View> findAllViews(Promise<JoinRsp> promise) {
-        List<PingData> rsps=findAllMembers(promise);
-        List<View> retval=new ArrayList<View>();
-        if(rsps != null) {
-            for(PingData data: rsps) {
-                if(data.getView() != null)
-                    retval.add(data.getView());
-            }
-        }
-        return retval;
-    }
 
     /**
      * Finds initial members
@@ -200,17 +188,17 @@ public abstract class Discovery extends Protocol {
      * @return
      */
     public List<PingData> findInitialMembers(Promise<JoinRsp> promise) {
-        return findInitialMembers(promise, num_initial_members, break_on_coord_rsp, false);
+        return findMembers(promise, num_initial_members, break_on_coord_rsp, null);
     }
 
-    public List<PingData> findAllMembers(Promise<JoinRsp> promise) {
+    public List<PingData> findAllViews(Promise<JoinRsp> promise) {
         int num_expected_mbrs=Math.max(max_found_members, Math.max(num_initial_members, view != null? view.size() : num_initial_members));
         max_found_members=Math.max(max_found_members, num_expected_mbrs);
-        return findInitialMembers(promise, num_expected_mbrs, false, true);
+        return findMembers(promise, num_expected_mbrs, false, getViewId());
     }
 
-    protected List<PingData> findInitialMembers(Promise<JoinRsp> promise, int num_expected_rsps,
-                                                boolean break_on_coord, boolean return_views_only) {
+    protected List<PingData> findMembers(Promise<JoinRsp> promise, int num_expected_rsps,
+                                         boolean break_on_coord, ViewId view_id) {
         num_discovery_requests++;
 
         final Responses rsps=new Responses(num_expected_rsps, num_initial_srv_members, break_on_coord, promise);
@@ -218,7 +206,7 @@ public abstract class Discovery extends Protocol {
             ping_responses.add(rsps);
         }
 
-        sender.start(group_addr, promise, return_views_only);
+        sender.start(group_addr, promise, view_id);
         try {
             return rsps.get(timeout);
         }
@@ -249,11 +237,13 @@ public abstract class Discovery extends Protocol {
 
     @ManagedOperation(description="Runs the discovery protocol to find all views")
     public String findAllViewsAsString() {
-    	List<View> results=findAllViews(null);
-        if(results == null || results.isEmpty()) return "<empty>";
+        List<PingData> rsps=findAllViews(null);
+        if(rsps == null || rsps.isEmpty()) return "<empty>";
         StringBuilder sb=new StringBuilder();
-        for(View view: results) {
-            sb.append(view).append("\n");
+        for(PingData data: rsps) {
+            View v=data.getView();
+            if(v !=  null)
+                sb.append(v).append("\n");
         }
         return sb.toString();
     }
@@ -292,7 +282,7 @@ public abstract class Discovery extends Protocol {
                 if(hdr == null)
                     return up_prot.up(evt);
 
-                PingData data=hdr.arg;
+                PingData data=hdr.data;
                 Address logical_addr=data != null? data.getAddress() : null;
 
                 switch(hdr.type) {
@@ -314,7 +304,7 @@ public abstract class Discovery extends Protocol {
                             }
                         }
 
-                        // add physical address (if available) to transport's cache
+                        // add physical address and logical name of the discovery sender (if available) to the cache
                         if(data != null) {
                             if(logical_addr == null)
                                 logical_addr=msg.getSrc();
@@ -330,21 +320,31 @@ public abstract class Discovery extends Protocol {
                         if(max_rank > 0 && rank > 0 && rank > max_rank) // https://jira.jboss.org/browse/JGRP-1181
                             return null;
 
-                        if(return_entire_cache && !hdr.return_view_only && rank != 0) {
+                        if(return_entire_cache && hdr.view_id == null && rank != 0) {
                             Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
                             if(cache != null) {
                                 for(Map.Entry<Address,PhysicalAddress> entry: cache.entrySet()) {
                                     Address addr=entry.getKey();
                                     PhysicalAddress physical_addr=entry.getValue();
                                     sendDiscoveryResponse(addr, Arrays.asList(physical_addr), is_server,
-                                                          UUID.get(addr), msg.getSrc());
+                                                          hdr.view_id != null, UUID.get(addr), msg.getSrc());
                                 }
                             }
                         }
                         else {
-                            List<PhysicalAddress> physical_addrs=hdr.return_view_only? null :
+                            if(hdr.view_id != null) {
+
+                                // If the discovery request is merge-triggered, and we the ViewId shipped with it
+                                // is the same as ours, we don't respond (JGRP-1315).
+                                ViewId my_view_id=view != null? view.getViewId() : null;
+                                if(my_view_id != null && Util.sameViewId(my_view_id, hdr.view_id))
+                                    return null;
+                            }
+
+                            List<PhysicalAddress> physical_addrs=hdr.view_id != null? null :
                                     Arrays.asList((PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)));
-                            sendDiscoveryResponse(local_addr, physical_addrs, is_server, UUID.get(local_addr), msg.getSrc());
+                            sendDiscoveryResponse(local_addr, physical_addrs, is_server, hdr.view_id != null,
+                                                  UUID.get(local_addr), msg.getSrc());
                         }
                         return null;
 
@@ -381,7 +381,7 @@ public abstract class Discovery extends Protocol {
 
             case Event.GET_PHYSICAL_ADDRESS:
                 try {
-                    sendGetMembersRequest(group_addr, null, false);
+                    sendGetMembersRequest(group_addr, null, null);
                 }
                 catch(InterruptedIOException ie) {
                     if(log.isWarnEnabled()){
@@ -423,12 +423,12 @@ public abstract class Discovery extends Protocol {
         switch(evt.getType()) {
 
             case Event.FIND_INITIAL_MBRS:      // sent by GMS layer
-            case Event.FIND_ALL_MBRS:
+            case Event.FIND_ALL_VIEWS:
                 // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
                 long start=System.currentTimeMillis();
-                boolean find_all_views=evt.getType() == Event.FIND_ALL_MBRS;
+                boolean find_all_views=evt.getType() == Event.FIND_ALL_VIEWS;
                 Promise<JoinRsp> promise=(Promise<JoinRsp>)evt.getArg();
-                List<PingData> rsps=find_all_views? findAllMembers(promise) : findInitialMembers(promise);
+                List<PingData> rsps=find_all_views? findAllViews(promise) : findInitialMembers(promise);
                 long diff=System.currentTimeMillis() - start;
                 if(log.isTraceEnabled())
                     log.trace("discovery took "+ diff + " ms: responses: " + Util.printPingData(rsps));
@@ -527,11 +527,18 @@ public abstract class Discovery extends Protocol {
 
 
     protected void sendDiscoveryResponse(Address logical_addr, List<PhysicalAddress> physical_addrs,
-                                       boolean is_server, String logical_name, Address sender) {
-        PingData ping_rsp=new PingData(logical_addr, view, is_server, logical_name, physical_addrs);
+                                         boolean is_server, boolean return_view_only, String logical_name, Address sender) {
+        PingData data;
+        if(return_view_only)
+            data=new PingData(logical_addr, view, is_server, logical_name, physical_addrs);
+        else {
+            ViewId view_id=view != null? view.getViewId() : null;
+            data=new PingData(logical_addr, null, view_id, is_server, logical_name, physical_addrs);
+        }
+
         Message rsp_msg=new Message(sender, null, null);
         rsp_msg.setFlag(Message.OOB);
-        PingHeader rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, ping_rsp);
+        PingHeader rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, data);
         rsp_msg.putHeader(this.id, rsp_hdr);
         if(log.isTraceEnabled())
             log.trace("received GET_MBRS_REQ from " + sender + ", sending response " + rsp_hdr);
@@ -544,13 +551,13 @@ public abstract class Discovery extends Protocol {
 
         public PingSenderTask() {}
 
-        public synchronized void start(final String cluster_name, final Promise promise, final boolean return_views_only) {
+        public synchronized void start(final String cluster_name, final Promise promise, final ViewId view_id) {
             long delay = (long)(timeout / (double)num_ping_requests);
             if(senderFuture == null || senderFuture.isDone()) {
                 senderFuture=timer.scheduleWithFixedDelay(new Runnable() {
                     public void run() {
                         try {
-                            sendGetMembersRequest(cluster_name, promise, return_views_only);
+                            sendGetMembersRequest(cluster_name, promise, view_id);
                         }
                         catch(InterruptedIOException ie) {
                             ;

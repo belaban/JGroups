@@ -15,7 +15,7 @@ public class Event {
     public static final int SUSPECT                            =  9;  // arg = Address of suspected member
     public static final int BLOCK                              = 10;  // arg = null (used by FLUSH)
     public static final int FIND_INITIAL_MBRS                  = 12;  // arg = JoinPromise (or null (merge2))
-    public static final int FIND_ALL_MBRS                      = 13;  // arg = JoinPromise (or null (merge2))
+    public static final int FIND_ALL_VIEWS                     = 13;  // arg = JoinPromise (or null (merge2))
     public static final int MERGE                              = 14;  // arg = Map<Address,View>
     public static final int TMP_VIEW                           = 15;  // arg = View
     public static final int BECOME_SERVER                      = 16;  // sent when client has joined group
@@ -95,7 +95,7 @@ public class Event {
             case SUSPECT:                return "SUSPECT";
             case BLOCK:	                 return "BLOCK";
             case FIND_INITIAL_MBRS:	     return "FIND_INITIAL_MBRS";
-            case FIND_ALL_MBRS:          return "FIND_ALL_INITIAL_VIEWS";
+            case FIND_ALL_VIEWS:         return "FIND_ALL_VIEWS";
             case TMP_VIEW:	             return "TMP_VIEW";
             case BECOME_SERVER:	         return "BECOME_SERVER";
             case GET_APPLSTATE:          return "GET_APPLSTATE";
