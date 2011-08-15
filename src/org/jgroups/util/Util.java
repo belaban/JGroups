@@ -819,6 +819,24 @@ public class Util {
         return view;
     }
 
+    public static void writeViewId(ViewId vid, DataOutputStream out) throws IOException {
+        if(vid == null) {
+            out.writeBoolean(false);
+            return;
+        }
+        out.writeBoolean(true);
+        vid.writeTo(out);
+    }
+
+    public static ViewId readViewId(DataInputStream in) throws IOException, InstantiationException, IllegalAccessException {
+        if(in.readBoolean() == false)
+            return null;
+        ViewId retval=new ViewId();
+        retval.readFrom(in);
+        return retval;
+    }
+
+
     public static void writeAddress(Address addr, DataOutputStream out) throws IOException {
         byte flags=0;
         boolean streamable_addr=true;
@@ -884,6 +902,13 @@ public class Util {
         int retval=Global.BYTE_SIZE; // presence
         if(view != null)
             retval+=view.serializedSize() + Global.BYTE_SIZE; // merge view or regular view
+        return retval;
+    }
+
+    public static int size(ViewId vid) {
+        int retval=Global.BYTE_SIZE; // presence
+        if(vid != null)
+            retval+=vid.serializedSize();
         return retval;
     }
 

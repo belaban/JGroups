@@ -5,10 +5,7 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.PhysicalAddress;
+import org.jgroups.*;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
@@ -124,7 +121,7 @@ public class TCPGOSSIP extends Discovery {
     }
 
     @SuppressWarnings("unchecked")
-    public void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception {
+    public void sendGetMembersRequest(String cluster_name, Promise promise, ViewId view_id) throws Exception {
         if (group_addr == null) {
             if (log.isErrorEnabled())
                 log.error("cluster_name is null, cannot get membership");
@@ -179,7 +176,7 @@ public class TCPGOSSIP extends Discovery {
             Message msg = new Message(mbr_addr);
             msg.setFlag(Message.OOB);
             PingHeader hdr = new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
-            hdr.return_view_only = return_views_only;
+            hdr.view_id=view_id;
             msg.putHeader(this.id, hdr);
             if (log.isTraceEnabled())
                 log.trace("[FIND_INITIAL_MBRS] sending GET_MBRS_REQ request to " + mbr_addr);            

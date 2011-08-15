@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
@@ -79,9 +80,8 @@ public class TCPPING extends Discovery {
     
     public void setInitialHosts(List<IpAddress> initial_hosts) {
         this.initial_hosts=initial_hosts;
-    }      
+    }
 
-    
     public int getPortRange() {
         return port_range;
     }
@@ -93,6 +93,11 @@ public class TCPPING extends Discovery {
     @ManagedAttribute
     public String getDynamicHostList() {
         return dynamic_hosts.toString();
+    }
+
+    @ManagedOperation
+    public void clearDynamicHostList() {
+        dynamic_hosts.clear();
     }
 
     @ManagedAttribute
@@ -109,11 +114,11 @@ public class TCPPING extends Discovery {
     }
     
     
-    public void sendGetMembersRequest(String cluster_name, Promise promise, boolean return_views_only) throws Exception{
+    public void sendGetMembersRequest(String cluster_name, Promise promise, ViewId view_id) throws Exception{
         PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
-        hdr.return_view_only=return_views_only;
+        hdr.view_id=view_id;
 
         Set<PhysicalAddress> combined_target_members=new HashSet<PhysicalAddress>(initial_hosts);
         combined_target_members.addAll(dynamic_hosts);
