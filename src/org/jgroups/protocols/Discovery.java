@@ -70,7 +70,11 @@ public abstract class Discovery extends Protocol {
             "coordinator will reply. 0 disables this; everyone replies. JIRA: https://jira.jboss.org/browse/JGRP-1181")
     protected int max_rank=0;
 
-    
+    @Property(description="If greater than 0, we'll wait a random number of milliseconds in range [0..stagger_timeout] " +
+      "before sending a discovery response. This prevents traffic spikes in large clusters when everyone sends their " +
+      "discovery response at the same time")
+    protected long stagger_timeout=0;
+
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
 
     
@@ -105,6 +109,13 @@ public abstract class Discovery extends Protocol {
             throw new Exception("timer cannot be retrieved from protocol stack");
         if(max_rank > 0)
             return_entire_cache=true;
+        if(stagger_timeout < 0)
+            throw new IllegalArgumentException("stagger_timeout cannot be negative");
+        if(stagger_timeout > timeout) {
+            log.debug("stagger_timeout (" + stagger_timeout + ") was greater than timeout (" + timeout +
+                        "); setting it to " + timeout + " ms");
+            stagger_timeout=timeout;
+        }
     }
 
 
@@ -542,6 +553,10 @@ public abstract class Discovery extends Protocol {
         rsp_msg.setFlag(Message.OOB);
         PingHeader rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, data);
         rsp_msg.putHeader(this.id, rsp_hdr);
+
+        if(stagger_timeout > 0)
+            Util.sleepRandom(0, stagger_timeout);
+
         if(log.isTraceEnabled())
             log.trace("received GET_MBRS_REQ from " + sender + ", sending response " + rsp_hdr);
         down_prot.down(new Event(Event.MSG, rsp_msg));
