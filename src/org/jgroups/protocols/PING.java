@@ -41,11 +41,15 @@ public class PING extends Discovery {
         return true;
     }
 
-    public void sendGetMembersRequest(String cluster_name, Promise promise, ViewId view_id) throws Exception{
-        //  Mcast GET_MBRS_REQ message
-        PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-        List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
-        PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), physical_addrs);
+    public void sendGetMembersRequest(String cluster_name, Promise promise, ViewId view_id) throws Exception {
+        PingData data=null;
+
+        if(view_id == null) {
+            PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+            List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
+            data=new PingData(local_addr, null, false, UUID.get(local_addr), physical_addrs);
+        }
+        
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
         hdr.view_id=view_id;
         Message msg=new Message(null);  // mcast msg

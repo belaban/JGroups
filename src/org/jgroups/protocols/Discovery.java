@@ -529,8 +529,10 @@ public abstract class Discovery extends Protocol {
     protected void sendDiscoveryResponse(Address logical_addr, List<PhysicalAddress> physical_addrs,
                                          boolean is_server, boolean return_view_only, String logical_name, Address sender) {
         PingData data;
-        if(return_view_only)
-            data=new PingData(logical_addr, view, is_server, logical_name, physical_addrs);
+        if(return_view_only) {
+            // data=new PingData(logical_addr, view, is_server, logical_name, physical_addrs);
+            data=new PingData(logical_addr, view, is_server, null, null);
+        }
         else {
             ViewId view_id=view != null? view.getViewId() : null;
             data=new PingData(logical_addr, null, view_id, is_server, logical_name, physical_addrs);
