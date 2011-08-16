@@ -34,6 +34,8 @@ API changes in 3.0.0
 
 - Removed deprecated methods and classes
 
+- Removed VIEW_SYNC: not needed anymore, as MERGE2 covers the functionality of merging different views into one
+
 - Streamable: DataInputStream --> DataInput, DataOutputStream --> DataOutput
 
 - RpcDispatcher: merged Marshaller and Marshaller2 into Marshaller interface
