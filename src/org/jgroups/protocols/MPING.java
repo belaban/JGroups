@@ -271,9 +271,8 @@ public class MPING extends PING implements Runnable {
         super.stop();
     }
 
-    void sendMcastDiscoveryRequest(Message msg) {
-        Buffer           buf;
-        DatagramPacket   packet;
+    @Override
+    protected void sendMcastDiscoveryRequest(Message msg) {
         DataOutputStream out=null;
 
         try {
@@ -283,9 +282,8 @@ public class MPING extends PING implements Runnable {
             out=new DataOutputStream(out_stream);
             msg.writeTo(out);
             out.flush(); // flushes contents to out_stream
-            buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-            packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), mcast_addr, mcast_port);
-            discovery_reception.reset();
+            Buffer buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+            DatagramPacket packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), mcast_addr, mcast_port);
             if(mcast_send_sockets != null) {
                 MulticastSocket s;
                 for(int i=0; i < mcast_send_sockets.length; i++) {
@@ -302,7 +300,6 @@ public class MPING extends PING implements Runnable {
                 if(mcast_sock != null)
                     mcast_sock.send(packet);
             }
-            waitForDiscoveryRequestReception();
         }
         catch(IOException ex) {
             log.error("failed sending discovery request", ex);

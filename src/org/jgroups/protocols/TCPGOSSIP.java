@@ -1,15 +1,15 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.stack.RouterStubManager;
-import org.jgroups.util.Promise;
 import org.jgroups.util.Tuple;
-import org.jgroups.util.UUID;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -118,69 +118,53 @@ public class TCPGOSSIP extends Discovery {
         stubManager.disconnectStubs();
     }
 
-    @SuppressWarnings("unchecked")
-    public void sendGetMembersRequest(String cluster_name, Promise promise, ViewId view_id) throws Exception {
-        if (group_addr == null) {
-            if (log.isErrorEnabled())
+    public Collection<PhysicalAddress> fetchClusterMembers(String cluster_name) {
+        Set<PhysicalAddress> retval=new HashSet<PhysicalAddress>();
+        if(group_addr == null) {
+            if(log.isErrorEnabled())
                 log.error("cluster_name is null, cannot get membership");
-            return;
+            return retval;
         }
 
-        if (log.isTraceEnabled())
+        if(log.isTraceEnabled())
             log.trace("fetching members from GossipRouter(s)");
 
-        final List<PingData> responses = new LinkedList<PingData>();
-        for (RouterStub stub : stubManager.getStubs()) {
+        final List<PingData> responses=new LinkedList<PingData>();
+        for(RouterStub stub: stubManager.getStubs()) {
             try {
-                List<PingData> rsps = stub.getMembers(group_addr);
+                List<PingData> rsps=stub.getMembers(group_addr);
                 responses.addAll(rsps);
             }
             catch(Throwable t) {
-                log.warn("failed fetching members from " + stub.getGossipRouterAddress() + ": " +  t);
+                log.warn("failed fetching members from " + stub.getGossipRouterAddress() + ": " + t);
             }
         }
 
-        final Set<Address> initial_mbrs = new HashSet<Address>();
-        for (PingData rsp : responses) {
-            Address logical_addr = rsp.getAddress();
-            initial_mbrs.add(logical_addr);
+        for(PingData rsp : responses) {
+            Address logical_addr=rsp.getAddress();
 
             // 1. Set physical addresses
-            Collection<PhysicalAddress> physical_addrs = rsp.getPhysicalAddrs();
-            if (physical_addrs != null) {
-                for (PhysicalAddress physical_addr : physical_addrs)
-                    down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address, PhysicalAddress>(
-                                    logical_addr, physical_addr)));
+            Collection<PhysicalAddress> physical_addrs=rsp.getPhysicalAddrs();
+            if(physical_addrs != null) {
+                for(PhysicalAddress physical_addr : physical_addrs) {
+                    retval.add(physical_addr);
+                    down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
+                }
             }
 
             // 2. Set logical name
-            String logical_name = rsp.getLogicalName();
-            if (logical_name != null && logical_addr instanceof org.jgroups.util.UUID)
+            String logical_name=rsp.getLogicalName();
+            if(logical_name != null && logical_addr instanceof org.jgroups.util.UUID)
                 org.jgroups.util.UUID.add(logical_addr, logical_name);
         }
 
-        if (initial_mbrs.isEmpty()) {
-            if (log.isTraceEnabled())
-                log.trace("[FIND_INITIAL_MBRS]: found no members");
-            return;
-        }
-        if (log.isTraceEnabled())
-            log.trace("consolidated mbrs from GossipRouter(s) are " + initial_mbrs);
-
-        PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-        PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
-
-        for (Address mbr_addr : initial_mbrs) {
-            Message msg = new Message(mbr_addr);
-            msg.setFlag(Message.OOB);
-            PingHeader hdr = new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
-            hdr.view_id=view_id;
-            msg.putHeader(this.id, hdr);
-            if (log.isTraceEnabled())
-                log.trace("[FIND_INITIAL_MBRS] sending GET_MBRS_REQ request to " + mbr_addr);            
-            down_prot.down(new Event(Event.MSG, msg));
-        }
+        return retval;
     }
+
+    public boolean sendDiscoveryRequestsInParallel() {
+        return false;
+    }
+
 
     @ManagedOperation
     public void addInitialHost(String hostname, int port) {
@@ -214,7 +198,6 @@ public class TCPGOSSIP extends Discovery {
         if(physical_addr != null)
             physical_addrs.add(physical_addr);
 
-      
         for (RouterStub stub : stubManager.getStubs()) {
             try {
                 if(log.isTraceEnabled())

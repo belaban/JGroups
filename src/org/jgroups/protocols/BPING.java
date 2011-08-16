@@ -104,7 +104,8 @@ public class BPING extends PING implements Runnable {
         super.stop();
     }
 
-    void sendMcastDiscoveryRequest(Message msg) {
+    @Override
+    protected void sendMcastDiscoveryRequest(Message msg) {
         DataOutputStream out=null;
 
         try {
@@ -113,16 +114,13 @@ public class BPING extends PING implements Runnable {
             ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(128);
             out=new DataOutputStream(out_stream);
             msg.writeTo(out);
-            out.flush(); // flushes contents to out_stream
+            out.flush();
             Buffer buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
 
-            discovery_reception.reset();
             for(int i=bind_port; i < bind_port+port_range; i++) {
                 DatagramPacket packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), dest_addr, i);
                 sock.send(packet);
             }
-            
-            waitForDiscoveryRequestReception();
         }
         catch(IOException ex) {
             log.error("failed sending discovery request", ex);

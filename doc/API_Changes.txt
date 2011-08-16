@@ -53,6 +53,8 @@ API changes in 3.0.0
 
 - Removed Address.isMulticastAddress(): a null address is a multicast address
 
+- Removed TCPPING.return_entire_cache. See https://issues.jboss.org/browse/JGRP-1315 for details.
+
 - Rsp, RspList, RpcDispatcher.callRemoteMethodsXXX() and MessageDispatcher.cast/sendXXX() methods now use
   generics, so the code below:
 
