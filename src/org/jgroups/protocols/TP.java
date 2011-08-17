@@ -2085,7 +2085,7 @@ public abstract class TP extends Protocol {
              //   diag_sock=Util.createMulticastSocket(getSocketFactory(),
                       //                               Global.TP_DIAG_MCAST_SOCK, diagnostics_addr, diagnostics_port, log);
             //else
-                diag_sock=getSocketFactory().createMulticastSocket(Global.TP_DIAG_MCAST_SOCK, diagnostics_port);
+            diag_sock=getSocketFactory().createMulticastSocket(Global.TP_DIAG_MCAST_SOCK, diagnostics_port);
             
             List<NetworkInterface> interfaces=Util.getAllAvailableInterfaces();
             bindToInterfaces(interfaces, diag_sock);
