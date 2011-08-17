@@ -28,6 +28,7 @@ FLAGS="-server -Xmx600M -Xms600M -Xmn500M -Xss128K"
 FLAGS="$FLAGS -XX:CompileThreshold=10000 -XX:+AggressiveHeap -XX:ThreadStackSize=64K -XX:SurvivorRatio=8"
 FLAGS="$FLAGS -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=31"
 FLAGS="$FLAGS -Xshare:off"
+# JMX="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7777 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
 JMX="-Dcom.sun.management.jmxremote"
 #EXPERIMENTAL="-XX:+UseFastAccessorMethods -XX:+UseTLAB"
 

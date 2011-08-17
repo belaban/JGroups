@@ -2081,10 +2081,10 @@ public abstract class TP extends Protocol {
 
             // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
             // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
-            if(can_bind_to_mcast_addr)
-                diag_sock=Util.createMulticastSocket(getSocketFactory(),
-                                                     Global.TP_DIAG_MCAST_SOCK, diagnostics_addr, diagnostics_port, log);
-            else
+           // if(can_bind_to_mcast_addr)
+             //   diag_sock=Util.createMulticastSocket(getSocketFactory(),
+                      //                               Global.TP_DIAG_MCAST_SOCK, diagnostics_addr, diagnostics_port, log);
+            //else
                 diag_sock=getSocketFactory().createMulticastSocket(Global.TP_DIAG_MCAST_SOCK, diagnostics_port);
             
             List<NetworkInterface> interfaces=Util.getAllAvailableInterfaces();
