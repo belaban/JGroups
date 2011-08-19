@@ -360,7 +360,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 long sleep_time=100;
                 for(int i=1; i <= 10; i++) {
                     try {
-                        entry.sent_msgs.addToRetransmitter(seqno, msg);  // adds to retransmitter
+                        entry.sent_msgs.addToRetransmitter(seqno);  // adds to retransmitter
                         break;
                     }
                     catch(Throwable t) {
