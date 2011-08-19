@@ -172,6 +172,16 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         return num_xmits;
     }
 
+    @ManagedAttribute
+    public long getPendingXmitRequests() {
+        long retval=0;
+        Collection<ReceiverEntry> values=recv_table.values();
+        for(ReceiverEntry entry: values)
+        if(entry.received_msgs != null)
+            retval+=entry.received_msgs.getPendingXmits();
+        return retval;
+    }
+
     public long getMaxRetransmitTime() {
         return max_retransmit_time;
     }
@@ -214,7 +224,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
             NakReceiverWindow win=entry.getValue().received_msgs;
-            sb.append(entry.getKey() + ": ").append(win.getRetransmiTableSize())
+            sb.append(entry.getKey() + ": ").append(win.getRetransmitTableSize())
               .append(" (capacity=" + win.getRetransmitTableCapacity())
               .append(", fill factor=" + win.getRetransmitTableFillFactor() + "%)\n");
         }
@@ -469,7 +479,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     }
 
     @ManagedOperation(description="Sends a STABLE message to all senders. This causes message purging and potential" +
-            " retransmissions from senders")
+      " retransmissions from senders")
     public void sendStableMessages() {
         for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
             Address dest=entry.getKey();
@@ -509,8 +519,6 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         ReceiverEntry entry=recv_table.get(dest);
         NakReceiverWindow win=entry != null? entry.received_msgs : null;
         if(win != null) {
-            //System.out.println("[" + local_addr + "] stable(" + dest + ", hd=" + win.getHighestDelivered() + "): " +
-              //                   "win: " + win);
             win.stable(win.getHighestDelivered());
         }
     }

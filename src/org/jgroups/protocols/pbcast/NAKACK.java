@@ -228,7 +228,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     public long getMissingMessagesReceived() {return missing_msgs_received;}
 
     @ManagedAttribute(description="Total number of missing messages")
-    public int getPendingRetransmissionRequests() {
+    public int getPendingXmitRequests() {
         int num=0;
         for(NakReceiverWindow win: xmit_table.values()) {
             num+=win.getPendingXmits();
@@ -245,6 +245,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return num;
     }
 
+    @ManagedAttribute
+    public int getXmitTableMissingMessages() {
+        int num=0;
+        for(NakReceiverWindow win: xmit_table.values()) {
+            num+=win.getMissingMessages();
+        }
+        return num;
+    }
+
 
     @ManagedAttribute
     public long getCurrentSeqno() {return seqno;}
@@ -257,9 +266,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return sb.toString();
     }
 
-    public int getReceivedTableSize() {
-        return getPendingRetransmissionRequests();
-    }
 
     /**
      * Please don't use this method; it is only provided for unit testing !
@@ -422,7 +428,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
             NakReceiverWindow win=entry.getValue();
-            sb.append(entry.getKey() + ": ").append(win.getRetransmiTableSize())
+            sb.append(entry.getKey() + ": ").append(win.getRetransmitTableSize())
+              .append(", offset=").append(win.getRetransmitTableOffset())
               .append(" (capacity=" + win.getRetransmitTableCapacity())
               .append(", fill factor=" + win.getRetransmitTableFillFactor() + "%)\n");
         }

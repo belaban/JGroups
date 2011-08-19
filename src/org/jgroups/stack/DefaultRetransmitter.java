@@ -3,10 +3,11 @@ package org.jgroups.stack;
 
 import org.jgroups.Address;
 import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
 
+import java.util.Collection;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 
 /**
@@ -25,10 +26,9 @@ import java.util.concurrent.ConcurrentMap;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.4 $
  */
 public class DefaultRetransmitter extends Retransmitter {
-    private final ConcurrentMap<Long,Task> msgs=Util.createConcurrentMap();
+    private final ConcurrentNavigableMap<Long,Task> msgs=new ConcurrentSkipListMap<Long,Task>();
 
 
     /**
@@ -79,6 +79,32 @@ public class DefaultRetransmitter extends Retransmitter {
             return task.getNumRetransmits();
         }
         return -1;
+    }
+
+    /**
+     * Removes the given seqno and all seqnos lower than it
+     * @param seqno
+     * @param remove_all_below If true, all seqnos below seqno are removed, too
+     * @return
+     */
+    public int remove(long seqno, boolean remove_all_below) {
+        if(!remove_all_below)
+            return remove(seqno);
+        if(msgs.isEmpty())
+            return 0;
+        ConcurrentNavigableMap<Long,Task> to_be_removed=msgs.headMap(seqno, true);
+        if(to_be_removed.isEmpty())
+            return 0;
+        Collection<Task> values=to_be_removed.values();
+        int num_xmits=0;
+        for(Task task: values) {
+            if(task != null) {
+                task.cancel();
+                num_xmits+=task.getNumRetransmits();
+            }
+        }
+        to_be_removed.clear();
+        return num_xmits;
     }
 
     /**

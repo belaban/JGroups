@@ -25,7 +25,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     private RetransmitCommand                 retransmit_command = null;                 // called to request XMIT of msgs
     private final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap<Long,Message>();
     private Interval                          interval=new StaticInterval(400,800,1200,1600);
-    private final Retransmitter               retransmitter;
+    private final DefaultRetransmitter        retransmitter;
     private long                              lowest=Global.DEFAULT_FIRST_UNICAST_SEQNO; // lowest seqno, used by ack()
     private long                              highest=0;
 
@@ -173,11 +173,10 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     /* ----------------------------- End of Retransmitter.RetransmitCommand interface ---------------- */
 
     private void removeRange(long from, long to) {
-        for(long i=from; i <= to; i++) {
+        for(long i=from; i <= to; i++)
             msgs.remove(i);
-            if(retransmitter != null)
-                retransmitter.remove(i);
-        }
+        if(retransmitter != null)
+            retransmitter.remove(to, true);
     }
 
 }

@@ -343,10 +343,10 @@ public class RetransmitTable {
     }
 
 
-    /** Returns the number of null elements up to 'to' */
-    public int getNullMessages(long to) {
+    /** Returns the number of null elements in the range [from .. to], excluding 'from' and 'to' */
+    public int getNullMessages(long from, long to) {
         int retval=0;
-        for(long i=offset; i <= to; i++) {
+        for(long i=from+1; i < to; i++) {
             int row_index=computeRow(i);
             if(row_index < 0 || row_index >= matrix.length)
                 continue;
@@ -360,7 +360,8 @@ public class RetransmitTable {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append("size=" + size + ", capacity=" + capacity() + ", highest_purged=" + highest_seqno_purged + ", highest=" + highest_seqno);
+        sb.append("size=" + size + ", capacity=" + capacity() + ", highest=" + highest_seqno +
+                    ", highest_purged=" + highest_seqno_purged);
         return sb.toString();
     }
 

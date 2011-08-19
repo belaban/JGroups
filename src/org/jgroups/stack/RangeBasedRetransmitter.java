@@ -25,8 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class RangeBasedRetransmitter extends Retransmitter {
 
-
-    // todo: when JDK 6 is the baseline, convert the TreeMap to a TreeSet or ConcurrentSkipListSet and use ceiling()
     /** Sorted hashmap storing the ranges */
     private final Map<Seqno,Seqno> ranges=new ConcurrentSkipListMap<Seqno,Seqno>(new SeqnoComparator());
 
@@ -118,6 +116,8 @@ public class RangeBasedRetransmitter extends Retransmitter {
 
         return retval;
     }
+
+
 
     /**
      * Reset the retransmitter: clear all msgs and cancel all the

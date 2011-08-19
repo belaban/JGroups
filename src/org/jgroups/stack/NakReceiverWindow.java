@@ -135,7 +135,7 @@ public class NakReceiverWindow {
                     new RangeBasedRetransmitter(sender, cmd, sched) :
                     new DefaultRetransmitter(sender, cmd, sched);
 
-        xmit_table=new RetransmitTable(num_rows, msgs_per_row, low, resize_factor, max_compaction_time, automatic_purging);
+        xmit_table=new RetransmitTable(num_rows, msgs_per_row, highest_delivered, resize_factor, max_compaction_time, automatic_purging);
     }
 
 
@@ -202,11 +202,13 @@ public class NakReceiverWindow {
     }
 
 
-    public int getRetransmiTableSize() {return xmit_table.size();}
+    public int getRetransmitTableSize() {return xmit_table.size();}
 
     public int getRetransmitTableCapacity() {return xmit_table.capacity();}
 
     public double getRetransmitTableFillFactor() {return xmit_table.getFillFactor();}
+
+    public long getRetransmitTableOffset() {return xmit_table.getOffset();}
 
     public void compact() {
         xmit_table.compact();
@@ -266,7 +268,7 @@ public class NakReceiverWindow {
             // Case #4: we received a seqno higher than expected: add to Retransmitter
             if(seqno > next_to_add) {
                 xmit_table.put(seqno, msg);
-                retransmitter.add(old_next, seqno -1);     // BUT: add only null messages to xmitter
+                retransmitter.add(old_next, seqno -1);
                 if(listener != null) {
                     try {listener.messageGapDetected(next_to_add, seqno, msg.getSrc());} catch(Throwable t) {}
                 }
@@ -360,7 +362,7 @@ public class NakReceiverWindow {
 
 
     /**
-     * Delete all messages <= seqno (they are stable, that is, have been received at all members).
+     * Delete all messages <= seqno (they are stable, that is, have been delivered by all members).
      * Stop when a number > seqno is encountered (all messages are ordered on seqnos).
      */
     public void stable(long seqno) {
@@ -372,13 +374,20 @@ public class NakReceiverWindow {
                 return;
             }
 
-            // we need to remove all seqnos *including* seqno
-            xmit_table.purge(seqno);
+
+            xmit_table.purge(seqno); // we need to remove all seqnos *including* seqno
             
-            // remove all seqnos below seqno from retransmission
-            for(long i=low; i <= seqno; i++) {
-                retransmitter.remove(i);
-            }
+            // remove all seqnos below (and including) seqno from retransmission
+
+            /** We don't need to remove a range from the retransmitter, as the messages in the range will always be empty:
+                - When we get a stable() message, it'll only include seqnos that were *delivered* by everyone
+                - To get a seqno delivered, all seqnos below it must have been delivered (no gaps)
+                - Therefore all seqnos below seqno are non-null, and were either never in a retransmitter, or got
+                  removed from the retransmitter when a missing message was received.
+                ==> The call below is therefore unneeded, as it will never remove any seqnos from a retransmitter !
+                belaban Aug 2011
+                // retransmitter.remove(seqno, true);
+             **/
 
             highest_stability_seqno=Math.max(highest_stability_seqno, seqno);
             low=Math.max(low, seqno);
@@ -533,6 +542,16 @@ public class NakReceiverWindow {
         }
     }
 
+    public int getMissingMessages() {
+        lock.readLock().lock();
+        try {
+            return xmit_table.getNullMessages(highest_delivered, highest_received);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
 
     public String toString() {
         lock.readLock().lock();
@@ -556,7 +575,7 @@ public class NakReceiverWindow {
         try {
             sb.append('[').append(low).append(" : ").append(highest_delivered).append(" (").append(highest_received).append(")");
             if(xmit_table != null && !xmit_table.isEmpty()) {
-                int non_received=xmit_table.getNullMessages(highest_received);
+                int non_received=xmit_table.getNullMessages(highest_delivered, highest_received);
                 sb.append(" (size=").append(xmit_table.size()).append(", missing=").append(non_received).
                   append(", highest stability=").append(highest_stability_seqno).append(')');
             }
