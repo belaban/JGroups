@@ -20,6 +20,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 
@@ -36,13 +37,13 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.CENTRAL_EXECUTOR;
 import org.jgroups.protocols.Executing.Owner;
-import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.NotifyingFuture;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -53,8 +54,7 @@ import org.testng.annotations.Test;
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ExecutingServiceTest extends ChannelTestBase {
     protected static Log logger= LogFactory.getLog(ExecutingServiceTest.class);
-    protected static AtomicReference<CyclicBarrier> requestBlocker =
-        new AtomicReference<CyclicBarrier>();
+    protected ExposedExecutingProtocol exposedProtocol;
     
     protected JChannel c1, c2, c3;
     protected ExecutionService e1, e2, e3;
@@ -63,7 +63,13 @@ public class ExecutingServiceTest extends ChannelTestBase {
     @BeforeClass
     protected void init() throws Exception {
         c1=createChannel(true, 3, "A");
-        addExecutingProtocol(c1);
+        
+        // Add the exposed executing protocol
+        ProtocolStack stack=c1.getProtocolStack();
+        exposedProtocol = new ExposedExecutingProtocol();
+        exposedProtocol.setLevel("trace");
+        stack.insertProtocolAtTop(exposedProtocol);
+        
         er1=new ExecutionRunner(c1);
         c1.connect("ExecutionServiceTest");
 
@@ -95,8 +101,13 @@ public class ExecutingServiceTest extends ChannelTestBase {
         SleepingStreamableCallable.barrier.reset();
     }
     
+    @AfterMethod
+    protected void resetBlockers() {
+        CyclicBarrier barrier = ExposedExecutingProtocol.requestBlocker.getAndSet(null);
+        if (barrier != null) barrier.reset();
+    }
+    
     public static class ExposedExecutingProtocol extends CENTRAL_EXECUTOR {
-        
         public ExposedExecutingProtocol() {
             // We use the same id as the CENTRAL_EXECUTOR
             id=ClassConfigurator.getProtocolId(CENTRAL_EXECUTOR.class);
@@ -109,13 +120,22 @@ public class ExecutingServiceTest extends ChannelTestBase {
             CyclicBarrier barrier = requestBlocker.get();
             if (barrier != null) {
                 try {
+                    // The first wait is to make sure the caller knows
+                    // they can now close the channel
+                    barrier.await();
+                    // The second wait is for us to be notified that the
+                    // channel is now down
                     barrier.await();
                 }
                 catch (InterruptedException e) {
-                    assert false : "Exception while waiting: " + e.toString();
+                    e.printStackTrace();
+                    assert false : Thread.currentThread().getId() + 
+                        "Exception while waiting: " + e.toString();
                 }
                 catch (BrokenBarrierException e) {
-                    assert false : "Exception while waiting: " + e.toString();
+                    e.printStackTrace();
+                    assert false : Thread.currentThread().getId() + 
+                        "Exception while waiting: " + e.toString();
                 }
             }
             super.sendRequest(dest, type, requestId, object);
@@ -132,6 +152,13 @@ public class ExecutingServiceTest extends ChannelTestBase {
         public Lock getLock() {
             return _consumerLock;
         }
+        
+        public AtomicLong getCounter() {
+            return counter;
+        }
+        
+        public static final AtomicReference<CyclicBarrier> requestBlocker = 
+            new AtomicReference<CyclicBarrier>();
     }
 
     /**
@@ -174,6 +201,8 @@ public class ExecutingServiceTest extends ChannelTestBase {
     protected static class SleepingStreamableCallable implements Callable<Void>, Streamable {
         long millis;
         
+        // These have to be static, since they cannot be serialized and the
+        // test calls back to the same jvm so they will hit the same barrier
         public static BlockingQueue<Thread> canceledThreads = new LinkedBlockingQueue<Thread>();
         public static CyclicBarrier barrier = new CyclicBarrier(2);
         
@@ -515,13 +544,16 @@ public class ExecutingServiceTest extends ChannelTestBase {
     
     @Test
     public void testCoordinatorWentDownWhileSendingMessage() throws Exception {
+        // We sleep for 1 second to make sure other tests are done with messages
+        // since the barrier being inserted can be picked up by other threads
+        Thread.sleep(1000);
         // It is 3 calls.
         // The first is the original message sending to the coordinator
         // The second is the new message to send the request to the new coordinator
         // The last is our main method below waiting for others
-        final CyclicBarrier barrier = new CyclicBarrier(3);
+        final CyclicBarrier barrier = new CyclicBarrier(2);
         
-        requestBlocker.set(barrier);
+        ExposedExecutingProtocol.requestBlocker.set(barrier);
         
         final Callable<Integer> callable = new SimpleStreamableCallable<Integer>(23);
         ExecutorService service = Executors.newCachedThreadPool();
@@ -533,21 +565,24 @@ public class ExecutingServiceTest extends ChannelTestBase {
             }
         });
         
-        service.submit(new Runnable() {
-            @Override
-            public void run() {
-                // we close the coordinator
-                Util.close(c1);
-            }
-        });
-        
+        // Wait for the message to be almost sent to coordinator
         barrier.await(2, TimeUnit.SECONDS);
-
-        requestBlocker.getAndSet(null).reset();
-
+        
+        // Set the blocker to be null now that we know only our message is blocked
+        // so we don't block anyone else accidentally
+        ExposedExecutingProtocol.requestBlocker.set(null);
+        
+        // Take down the coordinator which forces c2 or B to take over
+        Util.close(c1);
+        
+        // Let the message go and see if it wasn't lost
+        barrier.await(1, TimeUnit.SECONDS);
+        
+        // Reset the barrier to make sure no one messed up
+        barrier.reset();
+        
         // We need to reconnect the channel now
         c1=createChannel(c2, "A");
-        addExecutingProtocol(c1);
         er1=new ExecutionRunner(c1);
         c1.connect("ExecutionServiceTest");
         
@@ -569,7 +604,10 @@ public class ExecutingServiceTest extends ChannelTestBase {
         assert requests.size() == 1 : "There is no request in the coordinator queue - " + requests.size();
         Owner owner = requests.iterator().next();
         assert owner.getAddress().equals(c2.getAddress()) : "The request Address doesn't match";
-        assert owner.getRequestId() == 0 : "We only had 1 request so it should be zero still";
+        // Counter is always one higher than previously dished out id
+        long expected = protocol.getCounter().get() -1;
+        assert owner.getRequestId() == expected : "Request id " + 
+            owner.getRequestId() + " didn't match what we expected " + expected; 
     }
     
     @Test
@@ -595,12 +633,5 @@ public class ExecutingServiceTest extends ChannelTestBase {
         assert !consumer1.isAlive() : "Consumer did not stop correctly";
         consumer2.join(2000);
         assert !consumer2.isAlive() : "Consumer did not stop correctly";
-    }
-    
-    protected void addExecutingProtocol(JChannel ch) {
-        ProtocolStack stack=ch.getProtocolStack();
-        Protocol protocol = new ExposedExecutingProtocol();
-        protocol.setLevel("trace");
-        stack.insertProtocolAtTop(protocol);
     }
 }

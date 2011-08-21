@@ -754,14 +754,15 @@ abstract public class Executing extends Protocol {
     protected void handleInterruptRequest(Address source, long requestId) {
         Owner owner = new Owner(source, requestId);
         Runnable runnable = removeKeyForValue(_running, owner);
+        Thread thread = null;
         if (runnable != null) {
-            Thread thread = _runnableThreads.remove(runnable);
+            thread = _runnableThreads.remove(runnable);
+        }
+        if (thread != null) {
             thread.interrupt();
         }
-        else {
-            if (log.isTraceEnabled())
-                log.trace("Message could not be interrupted due to it already returned");
-        }
+        else if (log.isTraceEnabled())
+            log.trace("Message could not be interrupted due to it already returned");
     }
 
     protected void handleNewRunRequest(Owner sender) {
