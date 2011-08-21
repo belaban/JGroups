@@ -797,7 +797,64 @@ catch (ExecutionException e) {
             our callable giving us a Future.  Then we wait for the future to finish returning our value and do something
             with it.  If any exception occurs we print the stack trace of that exception.
         </para>
-        
+
+        <para>
+            The <classname>ExecutionService</classname> follows the Producer-Consumer Pattern very closely.  The
+            <classname>ExecutionService</classname> is used as the Producer for this Pattern.  Therefore the service
+            only passes tasks off to be handled and doesn't do anything with the actual invocation of those tasks.  
+            There is a separate class that can was written specifically as a consumer, which can be ran on any node of
+            the cluster.  This class is <classname>ExecutionRunner</classname> and implements java.lang.Runnable.
+            A user is required to run one or more instances of a <classname>ExecutionRunner</classname> on a node of
+            the cluster.  By having a thread run one of these runners, that thread has no volunteered to be able to
+            run any task that is submitted to the cluster via an <classname>ExecutionService</classname>.  This allows
+            for any node in the cluster to participate or not participate in the running of these tasks and also any
+            node can optionally run more than 1 <classname>ExecutionRunner</classname> if this node has additional
+            capacity to do so.  A runner will run indefinately until the thread that is currently running it is 
+            interrupted.  If a task is running when the runner is interrupted the task will be interrupted. 
+        </para>
+
+        <para>
+            Below is an example of how simple it is to have a single node start and allow for 10 distributed tasks to be executed simultaneously on it:
+        </para>
+
+        <programlisting language="Java">
+int runnerCount = 10;
+// locking.xml needs to have a locking protocol
+JChannel ch=new JChannel("/home/bela/executing.xml");
+ch.connect("exec-cluster");
+
+ExecutionRunner runner = new ExecutionRunner(ch);
+
+java.util.concurrent.ExecutorService conc_exec_service = Executors.newFixedThreadPool(runnerCount);
+for (int i = 0; i < runnerCount; ++i) {
+   // If you want to stop the runner hold onto the future and cancel with
+   // interrupt.
+   conc_exec_service.submit(runner); 
+}
+        </programlisting>
+
+        <para>
+            In the example, we create a channel, then connect the channel, then an ExecutionRunner. Then we create
+            a java.util.concurrent.ExecutorService that is used to start 10 threads that each thread runs the
+            ExecutionRunner.  This allows for this node to have 10 threads actively accept and work on requests
+            submitted via any ExecutionService in the cluster.
+        </para>
+
+        <para>
+            Since an ExecutionService does not allow for non serializable class instances to be sent across as tasks
+            there are 2 utility classes provided to get around this problem.  For users that are used to using a
+            CompletionService with an Executor there is an equivalent ExecutionCompletionService provided that allows 
+            for a user to have the same functionality.  It would have been preferred to allow for the same 
+            ExecutorCompletionService to be used, but due to it's implementation using a non serializable object
+            the ExecutionCompletionService was implemented to be used instead in conjunction with an ExecutorService.
+            Also utility class was designed to help users to submit tasks which use a non serializable class.  The
+            Executions class contains a method serializableCallable which allows for a user to pass a constructor of a class that implements Callable and
+            it's arguments to then return to a user a Callable that will upon running will automatically create
+            and object from the constructor passing the provided arguments to it and then will call the call
+            method on the object and return it's result as a normal callable.  All the arguments provided
+            must still be serializable and the return object as detailed previously.
+        </para>
+
         <para>
             JGroups includes a demo (org.jgroups.demos.ExecutionServiceDemo), which can be used to interactively
             experiment with a distributed sort algorithm and performance.  This is for demonstration purposes and
@@ -809,47 +866,7 @@ catch (ExecutionException e) {
             <xref linkend="CENTRAL_EXECUTOR">CENTRAL_EXECUTOR</xref>. The executing protocol has to be placed at or
             towards the top of the stack (close to the channel).
         </para>
-        <!-- TODO: must finish up the merging holes and write next section -->
-        <!--section>
-            <title>Executing and merges</title>
-            <para>
-                The following scenario is susceptible to merging: we have a cluster view of {A,B,C,D} and then the cluster
-                splits into {A,B} and {C,D}. Assume that B and D now acquire a lock "mylock".
-                This is what happens (with the executing protocol being CENTRAL_EXECUTOR):
-                <itemizedlist>
-                    <listitem>There are 2 coordinators: A for {A,B} and C for {C,D}</listitem>
-                    <listitem>B submits task "callable1" to A</listitem>
-                    <listitem>D submits task "callable2" to C</listitem>
-                    <listitem>The partitions merge back into {A,B,C,D}. Now, only A is the coordinator, but C ceases
-                    to be a coordinator</listitem>
-                    <listitem>Problem: D still holds the task which should actually be invalid !</listitem>
-                </itemizedlist>
-                There is no easy way (via the ExecutorService API) to 'remove' the lock from D. We could for example simply cancel
-                D's task of "callable2", but then there's no way telling C that the task it holds is actually stale !
-            </para>
-            <para>
-                Therefore the recommended solution here is for nodes to listen to MergeView changes if they expect
-                merging to occur, and re-submit all of their tasks after a merge, e.g.:
-                <screen>
-                    Future f1, f2, f3;
-                    ExecutionService execution_service;
-                    ...
-                    public void viewAccepted(View view) {
-                        if(view instanceof MergeView) {
-                            new Thread() {
-                                public void run() {
-                                    execution_service.unlockAll();
-                                    // stop all access to resources protected by l1, l2 or l3
-                                    // every thread needs to re-acquire the locks it holds
-                                }
-                            }.start
-                        }
-                    }
-                </screen>
-            </para>
-        </section-->
     </section>
  
-    
 </chapter>
 
