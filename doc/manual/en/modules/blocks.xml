@@ -775,7 +775,7 @@ public void viewAccepted(View view) {
         </para>
 
         <programlisting language="Java">
-// locking.xml needs to have a locking protocol
+// executing.xml needs to have a locking protocol
 JChannel ch=new JChannel("/home/bela/executing.xml");
 ExecutionService exec_service =new ExecutionService(ch);
 ch.connect("exec-cluster");
@@ -825,11 +825,11 @@ ch.connect("exec-cluster");
 
 ExecutionRunner runner = new ExecutionRunner(ch);
 
-java.util.concurrent.ExecutorService conc_exec_service = Executors.newFixedThreadPool(runnerCount);
-for (int i = 0; i < runnerCount; ++i) {
-   // If you want to stop the runner hold onto the future and cancel with
-   // interrupt.
-   conc_exec_service.submit(runner); 
+ExecutorService service = Executors.newFixedThreadPool(runnerCount);
+for (int i = 0; i &lt; runnerCount; ++i) {
+   // If you want to stop the runner hold onto the future
+   // and cancel with interrupt.
+   service.submit(runner);
 }
         </programlisting>
 
