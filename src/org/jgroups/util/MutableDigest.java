@@ -36,15 +36,15 @@ public class MutableDigest extends Digest {
         return senders;
     }
 
-    public void add(Address sender, long low_seqno, long highest_delivered_seqno) {
+    public void add(Address sender, long highest_delivered_seqno) {
         checkSealed();
-        add(sender, low_seqno, highest_delivered_seqno, -1);
+        add(sender, highest_delivered_seqno, -1);
     }
 
 
-    public void add(Address sender, long low_seqno, long highest_delivered_seqno, long highest_received_seqno) {
+    public void add(Address sender, long highest_delivered_seqno, long highest_received_seqno) {
         checkSealed();
-        add(sender, new Digest.Entry(low_seqno, highest_delivered_seqno, highest_received_seqno));
+        add(sender, new Digest.Entry(highest_delivered_seqno, highest_received_seqno));
     }
 
     private void add(Address sender, Entry entry) {
@@ -68,7 +68,7 @@ public class MutableDigest extends Digest {
                 entry=it.next();
                 key=entry.getKey();
                 val=entry.getValue();
-                add(key, val.getLow(), val.getHighestDeliveredSeqno(), val.getHighestReceivedSeqno());
+                add(key, val.getHighestDeliveredSeqno(), val.getHighestReceivedSeqno());
             }
         }
     }
@@ -80,9 +80,9 @@ public class MutableDigest extends Digest {
         }
     }
 
-    public boolean set(Address sender, long low_seqno, long highest_delivered_seqno, long highest_received_seqno) {
+    public boolean set(Address sender, long highest_delivered_seqno, long highest_received_seqno) {
         checkSealed();
-        Entry entry=senders.put(sender, new Entry(low_seqno, highest_delivered_seqno, highest_received_seqno));
+        Entry entry=senders.put(sender, new Entry(highest_delivered_seqno, highest_received_seqno));
         return entry == null;
     }
 
@@ -104,7 +104,7 @@ public class MutableDigest extends Digest {
             sender=entry.getKey();
             val=entry.getValue();
             if(val != null) {
-                merge(sender, val.getLow(), val.getHighestDeliveredSeqno(), val.getHighestReceivedSeqno());
+                merge(sender, val.getHighestDeliveredSeqno(), val.getHighestReceivedSeqno());
             }
         }
     }
@@ -113,13 +113,12 @@ public class MutableDigest extends Digest {
     /**
      * Similar to add(), but if the sender already exists, its seqnos will be modified (no new entry) as follows:
      * <ol>
-     * <li>this.low_seqno=min(this.low_seqno, low_seqno)
      * <li>this.highest_delivered_seqno=max(this.highest_delivered_seqno, highest_delivered_seqno)
      * <li>this.highest_received_seqno=max(this.highest_received_seqno, highest_received_seqno)
      * </ol>
      * If the sender doesn not exist, a new entry will be added (provided there is enough space)
      */
-    public void merge(Address sender, long low_seqno, long highest_delivered_seqno, long highest_received_seqno) {
+    public void merge(Address sender, long highest_delivered_seqno, long highest_received_seqno) {
         if(sender == null) {
             if(log.isErrorEnabled()) log.error("sender == null");
             return;
@@ -127,11 +126,10 @@ public class MutableDigest extends Digest {
         checkSealed();
         Entry entry=senders.get(sender);
         if(entry == null) {
-            add(sender, low_seqno, highest_delivered_seqno, highest_received_seqno);
+            add(sender, highest_delivered_seqno, highest_received_seqno);
         }
         else {
-            Entry new_entry=new Entry(Math.min(entry.getLow(), low_seqno),
-                                      Math.max(entry.getHighestDeliveredSeqno(), highest_delivered_seqno),
+            Entry new_entry=new Entry(Math.max(entry.getHighestDeliveredSeqno(), highest_delivered_seqno),
                                       Math.max(entry.getHighestReceivedSeqno(), highest_received_seqno));
             senders.put(sender, new_entry);
         }
@@ -151,7 +149,7 @@ public class MutableDigest extends Digest {
         // highest_received must be >= highest_delivered, but not smaller !
         long new_highest_received=Math.max(entry.getHighestReceivedSeqno(), new_highest_delivered);
 
-        Entry new_entry=new Entry(entry.getLow(), new_highest_delivered, new_highest_received);
+        Entry new_entry=new Entry(new_highest_delivered, new_highest_received);
         senders.put(sender, new_entry);
     }
 
@@ -176,11 +174,11 @@ public class MutableDigest extends Digest {
 
 
 
-    public void setHighestDeliveredAndSeenSeqnos(Address sender, long low_seqno, long highest_delivered_seqno, long highest_received_seqno) {
+    public void setHighestDeliveredAndSeenSeqnos(Address sender, long highest_delivered_seqno, long highest_received_seqno) {
         Entry entry=senders.get(sender);
         if(entry != null) {
             checkSealed();
-            Entry new_entry=new Entry(low_seqno, highest_delivered_seqno, highest_received_seqno);
+            Entry new_entry=new Entry(highest_delivered_seqno, highest_received_seqno);
             senders.put(sender, new_entry);
         }
     }

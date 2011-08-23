@@ -2,12 +2,14 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.NakAckHeader;
-import org.jgroups.util.*;
-import org.jgroups.util.UUID;
+import org.jgroups.stack.NakReceiverWindow;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.DefaultTimeScheduler;
+import org.jgroups.util.MutableDigest;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -67,8 +69,8 @@ public class NAKACK_Delivery_Test {
 
         // set a dummy digest
         MutableDigest digest=new MutableDigest(2);
-        digest.add(c1, 0, 0, 0);
-        digest.add(c2, 0, 0, 0);
+        digest.add(c1, 0, 0);
+        digest.add(c2, 0, 0);
         nak.down(new Event(Event.SET_DIGEST, digest));
 
         // set dummy view

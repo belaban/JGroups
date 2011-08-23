@@ -44,7 +44,7 @@ public class NakReceiverWindowTest2 {
         win=new NakReceiverWindow(self, new Retransmitter.RetransmitCommand() {
             public void retransmit(long first_seqno, long last_seqno, Address sender) {
             }
-        }, 0, 0, new DefaultTimeScheduler(2));
+        }, 0, new DefaultTimeScheduler(2));
     }
 
     @AfterMethod

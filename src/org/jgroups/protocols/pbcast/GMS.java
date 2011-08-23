@@ -831,7 +831,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                             if(entry != null) {
                                 // only return my own digest information, but nobody else's !
                                 // https://jira.jboss.org/jira/browse/JGRP-948
-                                Digest retval=new Digest(local_addr, entry.getLow(), entry.getHighestDeliveredSeqno(),
+                                Digest retval=new Digest(local_addr, entry.getHighestDeliveredSeqno(),
                                                          entry.getHighestReceivedSeqno());
                                 GmsHeader rsp_hdr=new GmsHeader(GmsHeader.GET_DIGEST_RSP);
                                 rsp_hdr.my_digest=retval;

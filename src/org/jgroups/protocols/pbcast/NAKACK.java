@@ -1079,7 +1079,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     /**
-     * Returns a message digest: for each member P the lowest, highest delivered and highest received seqno is added
+     * Returns a message digest: for each member P the highest delivered and received seqno is added
      */
     public Digest getDigest() {
         final Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>();
@@ -1087,7 +1087,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             Address sender=entry.getKey(); // guaranteed to be non-null (CCHM)
             NakReceiverWindow win=entry.getValue(); // guaranteed to be non-null (CCHM)
             long[] digest=win.getDigest();
-            map.put(sender, new Digest.Entry(digest[0], digest[1], digest[2]));
+            map.put(sender, new Digest.Entry(digest[0], digest[1]));
         }
         return new Digest(map);
     }
@@ -1131,7 +1131,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 continue;
 
             long highest_delivered_seqno=val.getHighestDeliveredSeqno();
-            long low_seqno=val.getLow();
 
             NakReceiverWindow win=xmit_table.get(sender);
             if(win != null) {
@@ -1142,7 +1141,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 xmit_table.remove(sender);
                 win.destroy(); // stops retransmission
             }
-            win=createNakReceiverWindow(sender, highest_delivered_seqno, low_seqno);
+            win=createNakReceiverWindow(sender, highest_delivered_seqno);
             xmit_table.put(sender, win);
         }
         sb.append("\n").append("resulting digest: " + getDigest());
@@ -1174,7 +1173,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 continue;
 
             long highest_delivered_seqno=val.getHighestDeliveredSeqno();
-            long low_seqno=val.getLow();
 
             NakReceiverWindow win=xmit_table.get(sender);
             if(win != null) {
@@ -1198,7 +1196,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     }
                 }
             }
-            win=createNakReceiverWindow(sender, highest_delivered_seqno, low_seqno);
+            win=createNakReceiverWindow(sender, highest_delivered_seqno);
             xmit_table.put(sender, win);
         }
         sb.append("\n").append("resulting digest: " + getDigest());
@@ -1210,8 +1208,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    private NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno, long lowest_seqno) {
-        NakReceiverWindow win=new NakReceiverWindow(sender, this, initial_seqno, lowest_seqno, timer, use_range_based_retransmitter,
+    private NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno) {
+        NakReceiverWindow win=new NakReceiverWindow(sender, this, initial_seqno, timer, use_range_based_retransmitter,
                                                     xmit_table_num_rows, xmit_table_msgs_per_row,
                                                     xmit_table_resize_factor, xmit_table_max_compaction_time, false);
 

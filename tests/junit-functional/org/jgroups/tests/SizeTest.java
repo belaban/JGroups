@@ -143,8 +143,8 @@ public class SizeTest {
     public static void testDigest() throws Exception {
         Address addr=Util.createRandomAddress();
         MutableDigest mutableDigest=new MutableDigest(2);
-        mutableDigest.add(addr, 100, 200, 205);
-        mutableDigest.add(Util.createRandomAddress(), 102, 104, 105);
+        mutableDigest.add(addr, 200, 205);
+        mutableDigest.add(Util.createRandomAddress(), 104, 105);
         _testSize(mutableDigest);
 
         Digest digest=new Digest();
@@ -153,7 +153,7 @@ public class SizeTest {
         digest=new Digest(10);
         _testSize(digest);
 
-        digest=new Digest(Util.createRandomAddress(), 10, 45, 50);
+        digest=new Digest(Util.createRandomAddress(), 45, 50);
         _testSize(digest);
     }
 
@@ -250,7 +250,7 @@ public class SizeTest {
         org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
         Address addr=UUID.randomUUID();
         Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>();
-        map.put(addr, new Digest.Entry(100, 200, 205));
+        map.put(addr, new Digest.Entry(200, 205));
         Digest digest=new Digest(map);
         hdr=new STABLE.StableHeader(STABLE.StableHeader.STABLE_GOSSIP, digest);
         _testSize(hdr);
@@ -264,7 +264,7 @@ public class SizeTest {
         org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
         MutableDigest digest=new MutableDigest(2);
-        digest.add(addr, 100, 200, 205);
+        digest.add(addr, 200, 205);
         hdr=new STABLE.StableHeader(STABLE.StableHeader.STABLE_GOSSIP, digest);
         _testSize(hdr);
 
@@ -439,8 +439,8 @@ public class SizeTest {
         members.add(new IpAddress(2222));
         View v=new View(new IpAddress(1234), 322649, members);
         MutableDigest d=new MutableDigest(3);
-        d.add(new IpAddress(3524), 1,2,3);
-        d.add(new IpAddress(1324), 3,4,5);
+        d.add(new IpAddress(3524), 2,3);
+        d.add(new IpAddress(1324), 4,5);
         rsp=new JoinRsp();
         _testSize(rsp);
         rsp=new JoinRsp(v, d);
@@ -518,8 +518,8 @@ public class SizeTest {
         _testSize(hdr);
 
         MutableDigest digest=new MutableDigest(2);
-        digest.add(addr, 100, 200, 205);
-        digest.add(new IpAddress(2314), 102, 104, 105);
+        digest.add(addr, 200, 205);
+        digest.add(new IpAddress(2314), 104, 105);
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, digest);
         _testSize(hdr);
     }

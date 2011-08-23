@@ -739,7 +739,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
 
     private ReceiverEntry getOrCreateReceiverEntry(Address sender, long seqno, long conn_id) {
-        NakReceiverWindow win=new NakReceiverWindow(sender, this, seqno-1, seqno-1, timer, use_range_based_retransmitter,
+        NakReceiverWindow win=new NakReceiverWindow(sender, this, seqno-1, timer, use_range_based_retransmitter,
                                                     xmit_table_num_rows, xmit_table_msgs_per_row,
                                                     xmit_table_resize_factor, xmit_table_max_compaction_time,
                                                     xmit_table_automatic_purging);

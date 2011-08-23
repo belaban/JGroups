@@ -394,28 +394,22 @@ public class STABLE extends Protocol {
                     append(votes.size()).append(" votes):\nmine:   ").append(digest.printHighestDeliveredSeqnos())
                     .append("\nother:  ").append(d.printHighestDeliveredSeqnos());
         }
-        Address mbr;
-        long highest_seqno, my_highest_seqno, new_highest_seqno, my_low, low, new_low;
-        long highest_seen_seqno, my_highest_seen_seqno, new_highest_seen_seqno;
-        Digest.Entry val;
+        long highest_delivered, my_highest_delivered, new_highest_delivered;
+        long highest_received, my_highest_received, new_highest_received;
         for(Map.Entry<Address, Digest.Entry> entry: d.getSenders().entrySet()) {
-            mbr=entry.getKey();
-            val=entry.getValue();
-            low=val.getLow();
-            highest_seqno=val.getHighestDeliveredSeqno();      // highest *delivered* seqno
-            highest_seen_seqno=val.getHighestReceivedSeqno();  // highest *received* seqno
-
-            my_low=digest.lowSeqnoAt(mbr);
-            new_low=Math.min(my_low, low);
+            Address mbr=entry.getKey();
+            Digest.Entry val=entry.getValue();
+            highest_delivered=val.getHighestDeliveredSeqno();  // highest *delivered* seqno
+            highest_received=val.getHighestReceivedSeqno();    // highest *received* seqno
 
             // compute the minimum of the highest seqnos deliverable (for garbage collection)
-            my_highest_seqno=digest.highestDeliveredSeqnoAt(mbr);
+            my_highest_delivered=digest.highestDeliveredSeqnoAt(mbr);
             // compute the maximum of the highest seqnos seen (for retransmission of last missing message)
-            my_highest_seen_seqno=digest.highestReceivedSeqnoAt(mbr);
+            my_highest_received=digest.highestReceivedSeqnoAt(mbr);
 
-            new_highest_seqno=Math.min(my_highest_seqno, highest_seqno);
-            new_highest_seen_seqno=Math.max(my_highest_seen_seqno, highest_seen_seqno);
-            digest.setHighestDeliveredAndSeenSeqnos(mbr, new_low, new_highest_seqno, new_highest_seen_seqno);
+            new_highest_delivered=Math.min(my_highest_delivered, highest_delivered);
+            new_highest_received=Math.max(my_highest_received, highest_received);
+            digest.setHighestDeliveredAndSeenSeqnos(mbr, new_highest_delivered, new_highest_received);
         }
         if(log.isTraceEnabled()) {
             sb.append("\nresult: ").append(digest.printHighestDeliveredSeqnos()).append("\n");

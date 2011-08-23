@@ -26,13 +26,13 @@ public class NAKACK_SET_DIGEST_Test {
         c=Util.createRandomAddress("C");
         nak=new NAKACK();
         d1=new MutableDigest(2);
-        d1.add(a, 0, 11, 11);
-        d1.add(b, 0, 30, 35);
+        d1.add(a, 11, 11);
+        d1.add(b, 30, 35);
 
         d2=new MutableDigest(3);
-        d2.add(a, 0, 10, 10);
-        d2.add(b, 0, 30, 30);
-        d2.add(c, 10, 50, 50);
+        d2.add(a, 10, 10);
+        d2.add(b, 30, 30);
+        d2.add(c, 50, 50);
 
         TP transport=new TP() {
             public boolean supportsMulticasting() {return false;}
@@ -48,8 +48,6 @@ public class NAKACK_SET_DIGEST_Test {
         nak.setDownProtocol(transport);
 
         nak.start();
-//        View view=new View(a, 1, new Vector(Arrays.asList(new Address[]{a, b, c})));
-//        nak.down(new Event(Event.VIEW_CHANGE, view));
     }
 
     @AfterMethod

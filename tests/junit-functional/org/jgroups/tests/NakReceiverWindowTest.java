@@ -32,7 +32,7 @@ public class NakReceiverWindowTest {
     public void test1(TimeScheduler timer) throws Exception {
         try {
             NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1, timer);
-            check(win, 0, 1, 1);
+            check(win, 1, 1);
             assert win.get(23) == null;
         }
         finally {
@@ -45,7 +45,7 @@ public class NakReceiverWindowTest {
     public void test2(TimeScheduler timer) throws Exception {
         try {
             NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
-            check(win, 0, 100, 100);
+            check(win, 100, 100);
         }
         finally {
             timer.stop();
@@ -59,14 +59,14 @@ public class NakReceiverWindowTest {
             NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
             win.add(1, new Message());
             assert win.get(1) != null;
-            check(win, 0, 1, 0);
+            check(win, 1, 0);
             win.add(2, new Message());
-            check(win, 0, 2, 0);
+            check(win, 2, 0);
             assert win.get(2) != null;
             win.remove();
-            check(win, 0, 2, 1);
+            check(win, 2, 1);
             win.remove();
-            check(win, 0, 2, 2);
+            check(win, 2, 2);
         }
         finally {
             timer.stop();
@@ -79,7 +79,7 @@ public class NakReceiverWindowTest {
         try {
             NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1, timer);
             win.add(2, new Message());
-            check(win, 0, 2, 1);
+            check(win, 2, 1);
         }
         finally {
             timer.stop();
@@ -93,7 +93,7 @@ public class NakReceiverWindowTest {
             NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
             win.add(101, new Message());
             win.add(100, new Message());
-            check(win, 0, 101, 100);
+            check(win, 101, 100);
         }
         finally {
             timer.stop();
@@ -109,12 +109,12 @@ public class NakReceiverWindowTest {
             System.out.println("win: " + win);
             win.add(100, new Message());
             System.out.println("win: " + win);
-            check(win, 0, 101, 100);
+            check(win, 101, 100);
             win.remove();
             System.out.println("win: " + win);
-            check(win, 0, 101, 101);
+            check(win, 101, 101);
             while((win.remove()) != null);
-            check(win, 0, 101, 101);
+            check(win, 101, 101);
         }
         finally {
             timer.stop();
@@ -125,17 +125,17 @@ public class NakReceiverWindowTest {
     @Test(dataProvider="createTimer")
     public void testLowerBounds(TimeScheduler timer) {
         try {
-            NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, timer);
+            NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
             win.add(101, new Message());
             System.out.println("win: " + win);
             win.add(100, new Message());
             System.out.println("win: " + win);
-            check(win, 50, 101, 100);
+            check(win, 101, 100);
             win.remove();
             System.out.println("win: " + win);
-            check(win, 50, 101, 101);
+            check(win, 101, 101);
             while((win.remove()) != null);
-            check(win, 50, 101, 101);
+            check(win, 101, 101);
         }
         finally {
             timer.stop();
@@ -151,14 +151,14 @@ public class NakReceiverWindowTest {
             win.add(2, new Message());
             win.add(3, new Message());
             win.add(4, new Message());
-            check(win, 0, 4, 0);
+            check(win, 4, 0);
             System.out.println("Note that the subsequent warning is expected:");
             win.stable(4); // no-op because we haven't even removed 4 messages
-            check(win, 0, 4, 0);
+            check(win, 4, 0);
             while(win.remove() != null);
-            check(win, 0, 4, 4);
+            check(win, 4, 4);
             win.stable(4);
-            check(win, 4, 4, 4);
+            check(win, 4, 4);
         }
         finally {
             timer.stop();
@@ -169,21 +169,21 @@ public class NakReceiverWindowTest {
     @Test(dataProvider="createTimer")
     public void testLowerBounds2(TimeScheduler timer) throws Exception {
         try {
-            NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, timer);
+            NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
             win.add(100, new Message());
             win.add(101, new Message());
             win.add(102, new Message());
             win.add(103, new Message());
             System.out.println("win: " + win);
-            check(win, 50, 103, 100);
+            check(win, 103, 100);
             System.out.println("Note that the subsequent warning is expected:");
             win.stable(103); // no-op because we haven't even removed 4 messages
-            check(win, 50, 103, 100);
+            check(win, 103, 100);
             while(win.remove() != null);
-            check(win, 50, 103, 103);
+            check(win, 103, 103);
             win.stable(103);
             System.out.println("win: " + win);
-            check(win, 103, 103, 103);
+            check(win, 103, 103);
         }
         finally {
             timer.stop();
@@ -201,19 +201,19 @@ public class NakReceiverWindowTest {
             win.add(3, new Message());
             win.add(4, new Message());
             win.add(6, new Message());
-            check(win, 0, 6, 0); // haven't delivered a message yet
+            check(win, 6, 0); // haven't delivered a message yet
             while(win.remove() != null);
-            check(win, 0, 6, 4);
+            check(win, 6, 4);
             win.add(5, new Message());
-            check(win, 0, 6, 4);
+            check(win, 6, 4);
             win.remove();
-            check(win, 0, 6, 5);
+            check(win, 6, 5);
             win.remove();
-            check(win, 0, 6, 6);
+            check(win, 6, 6);
             win.stable(4);
-            check(win, 4, 6, 6);
+            check(win, 6, 6);
             win.stable(6);
-            check(win, 6, 6, 6);
+            check(win, 6, 6);
         }
         finally {
             timer.stop();
@@ -225,25 +225,25 @@ public class NakReceiverWindowTest {
     public void testAdd(TimeScheduler timer) throws Exception {
         try {
             NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
-            check(win, 0, 0, 0);
+            check(win, 0, 0);
             win.add(0, new Message()); // discarded, next expected is 1
-            check(win, 0, 0, 0);
+            check(win, 0, 0);
             win.add(1, new Message());
-            check(win, 0, 1, 0);
+            check(win, 1, 0);
             win.add(2, new Message());
             win.add(3, new Message());
             win.add(4, new Message());
-            check(win, 0, 4, 0);
+            check(win, 4, 0);
             win.add(6, new Message());
-            check(win, 0, 6, 0);
+            check(win, 6, 0);
             win.add(5, new Message());
-            check(win, 0, 6, 0);
+            check(win, 6, 0);
             while(win.remove() != null) ;
-            check(win, 0, 6, 6);
+            check(win, 6, 6);
             win.stable(4);
-            check(win, 4, 6, 6);
+            check(win, 6, 6);
             win.stable(6);
-            check(win, 6, 6, 6);
+            check(win, 6, 6);
         }
         finally {
             timer.stop();
@@ -265,13 +265,13 @@ public class NakReceiverWindowTest {
             win.stable(6); // 6 is ignore as it is >= highest delivered message
             System.out.println("win: " + win);
             assert win.get(2) != null;
-            check(win, 0, 6, 4);
+            check(win, 6, 4);
             win.add(5, new Message());
-            check(win, 0, 6, 4);
+            check(win, 6, 4);
             while((win.remove()) != null) ;
-            check(win, 0, 6, 6);
+            check(win, 6, 6);
             win.stable(6);
-            check(win, 6, 6, 6);
+            check(win, 6, 6);
         }
         finally {
             timer.stop();
@@ -287,9 +287,9 @@ public class NakReceiverWindowTest {
             win.add(2, new Message());
             win.add(3, new Message());
             win.add(4, new Message());
-            check(win, 0, 4, 0);
+            check(win, 4, 0);
             win.add(10, new Message());
-            check(win, 0, 10, 0);
+            check(win, 10, 0);
             System.out.println("win: " + win);
             win.add(9, new Message());
             win.add(7, new Message());
@@ -297,15 +297,15 @@ public class NakReceiverWindowTest {
             win.add(6, new Message());
             win.add(5, new Message());
             System.out.println("win: " + win);
-            check(win, 0, 10, 0);
+            check(win, 10, 0);
             while((win.remove()) != null) ;
-            check(win, 0, 10, 10);
+            check(win, 10, 10);
             win.stable(5);
             System.out.println("win: " + win);
-            check(win, 5, 10, 10);
+            check(win, 10, 10);
             win.stable(10);
             System.out.println("win: " + win);
-            check(win, 10, 10, 10);
+            check(win, 10, 10);
         }
         finally {
             timer.stop();
@@ -319,9 +319,9 @@ public class NakReceiverWindowTest {
             NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
             win.add(1, new Message());
             win.add(5, new Message());
-            check(win, 0, 5, 0);
+            check(win, 5, 0);
             win.add(6, new Message());
-            check(win, 0, 6, 0);
+            check(win, 6, 0);
             System.out.println("win: " + win);
         }
         finally {
@@ -336,11 +336,11 @@ public class NakReceiverWindowTest {
             NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
             win.add(1, new Message());
             win.add(5, new Message());
-            check(win, 0, 5, 0);
+            check(win, 5, 0);
             win.add(8, new Message());
-            check(win, 0, 8, 0);
+            check(win, 8, 0);
             win.add(9, new Message());
-            check(win, 0, 9, 0);
+            check(win, 9, 0);
             System.out.println("win: " + win);
         }
         finally {
@@ -355,25 +355,25 @@ public class NakReceiverWindowTest {
             NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
             win.add(1, new Message());
             win.add(5, new Message());
-            check(win, 0, 5, 0);
+            check(win, 5, 0);
             win.add(8, new Message());
-            check(win, 0, 8, 0);
+            check(win, 8, 0);
             win.add(9, new Message());
-            check(win, 0, 9, 0);
+            check(win, 9, 0);
             System.out.println("win: " + win);
             win.add(2, new Message());
-            check(win, 0, 9, 0);
+            check(win, 9, 0);
             win.add(3, new Message());
             win.add(4, new Message());
-            check(win, 0, 9, 0);
+            check(win, 9, 0);
             win.add(7, new Message());
-            check(win, 0, 9, 0);
+            check(win, 9, 0);
             win.add(6, new Message());
-            check(win, 0, 9, 0);
+            check(win, 9, 0);
             win.add(10, new Message());
-            check(win, 0, 10, 0);
+            check(win, 10, 0);
             win.add(11, new Message());
-            check(win, 0, 11, 0);
+            check(win, 11, 0);
             System.out.println("win: " + win);
         }
         finally {
@@ -388,25 +388,25 @@ public class NakReceiverWindowTest {
             NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
             win.add(101, new Message());
             win.add(105, new Message());
-            check(win, 0, 105, 100);
+            check(win, 105, 100);
             win.add(108, new Message());
-            check(win, 0, 108, 100);
+            check(win, 108, 100);
             win.add(109, new Message());
-            check(win, 0, 109, 100);
+            check(win, 109, 100);
             System.out.println("win: " + win);
             win.add(102, new Message());
-            check(win, 0, 109, 100);
+            check(win, 109, 100);
             win.add(103, new Message());
             win.add(104, new Message());
-            check(win, 0, 109, 100);
+            check(win, 109, 100);
             win.add(107, new Message());
-            check(win, 0, 109, 100);
+            check(win, 109, 100);
             win.add(106, new Message());
-            check(win, 0, 109, 100);
+            check(win, 109, 100);
             win.add(110, new Message());
-            check(win, 0, 110, 100);
+            check(win, 110, 100);
             win.add(110, new Message());
-            check(win, 0, 110, 100);
+            check(win, 110, 100);
             System.out.println("win: " + win);
         }
         finally {
@@ -420,27 +420,27 @@ public class NakReceiverWindowTest {
         try {
             NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
             win.add(101, new Message());
-            check(win, 0, 101, 100);
+            check(win, 101, 100);
             win.add(108, new Message());
-            check(win, 0, 108, 100);
+            check(win, 108, 100);
             win.remove();
             win.add(109, new Message());
-            check(win, 0, 109, 101);
+            check(win, 109, 101);
             System.out.println("win: " + win);
             win.add(102, new Message());
-            check(win, 0, 109, 101);
+            check(win, 109, 101);
             win.add(103, new Message());
             win.add(104, new Message());
-            check(win, 0, 109, 101);
+            check(win, 109, 101);
             win.add(107, new Message());
-            check(win, 0, 109, 101);
+            check(win, 109, 101);
             win.add(106, new Message());
             win.add(105, new Message());
-            check(win, 0, 109, 101);
+            check(win, 109, 101);
             win.add(110, new Message());
-            check(win, 0, 110, 101);
+            check(win, 110, 101);
             win.add(110, new Message());
-            check(win, 0, 110, 101);
+            check(win, 110, 101);
             System.out.println("win: " + win);
         }
         finally {
@@ -458,7 +458,7 @@ public class NakReceiverWindowTest {
             win.add(3, new Message());
             win.add(4, new Message());
             while((win.remove()) != null) ;
-            check(win, 0, 4, 4);
+            check(win, 4, 4);
         }
         finally {
             timer.stop();
@@ -476,7 +476,7 @@ public class NakReceiverWindowTest {
             win.add(4, new Message());
             while((win.remove()) != null) ;
             win.stable(4);
-            check(win, 4, 4, 4);
+            check(win, 4, 4);
         }
         finally {
             timer.stop();
@@ -494,7 +494,7 @@ public class NakReceiverWindowTest {
             win.add(4, new Message());
             while((win.remove()) != null) ;
             win.destroy();
-            check(win, 0, 0, 0);
+            check(win, 0, 0);
         }
         finally {
             timer.stop();
@@ -529,14 +529,14 @@ public class NakReceiverWindowTest {
             win.add(2, new Message());
             win.add(3, new Message());
             win.add(4, new Message());
-            check(win, 0, 4, 0);
+            check(win, 4, 0);
             win.remove();
             win.remove();
             win.add(5, new Message());
             win.add(6, new Message());
-            check(win, 0, 6, 2);
+            check(win, 6, 2);
             win.stable(2);
-            check(win, 2, 6, 2);
+            check(win, 6, 2);
         }
         finally {
             timer.stop();
@@ -765,8 +765,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    private static void check(NakReceiverWindow win, long lowest, long highest_received, long highest_delivered) {
-        Assert.assertEquals(win.getLowestSeen(), lowest, "lowest=" + lowest + ", win.lowest=" + win.getLowestSeen());
+    private static void check(NakReceiverWindow win, long highest_received, long highest_delivered) {
         Assert.assertEquals(win.getHighestReceived(), highest_received, "highest_received=" + highest_received + ", win.highest_received=" + win.getHighestReceived());
         Assert.assertEquals(win.getHighestDelivered(), highest_delivered, "highest_delivered=" + highest_delivered + ", win.highest_delivered=" + win.getHighestDelivered());
     }
