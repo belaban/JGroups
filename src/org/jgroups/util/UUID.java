@@ -23,7 +23,7 @@ public class UUID implements Address, Streamable, Comparable<Address> {
     protected static volatile SecureRandom numberGenerator=null;
 
     /** Keeps track of associations between logical addresses (UUIDs) and logical names */
-    protected static LazyRemovalCache<Address,String> cache;
+    protected static final LazyRemovalCache<Address,String> cache;
 
     private static final long serialVersionUID=3972962439975931228L;
 
