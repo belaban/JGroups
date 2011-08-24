@@ -37,8 +37,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     @LocalAddress
     @Property(description="Interface for ICMP pings. Used if use_icmp is true " +
             "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
-              systemProperty={Global.BIND_ADDR},
-              defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
+              systemProperty={Global.BIND_ADDR})
     private InetAddress bind_addr; // interface for ICMP pings
     
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class, 

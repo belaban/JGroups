@@ -17,6 +17,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -46,8 +47,7 @@ public class STATE_SOCK extends StreamingStateTransfer {
     @LocalAddress
     @Property(description="The interface (NIC) used to accept state requests. " +
       "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
-              systemProperty={Global.BIND_ADDR},
-              defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
+              systemProperty={Global.BIND_ADDR})
     protected InetAddress bind_addr;
 
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
@@ -151,7 +151,12 @@ public class STATE_SOCK extends StreamingStateTransfer {
         }
     }
 
-
+    protected void handleConfig(Map<String,Object> config) {
+        super.handleConfig(config);
+        if(bind_addr == null) {
+            bind_addr=(InetAddress)config.get("bind_addr");
+        }
+    }
 
 
     /*

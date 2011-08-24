@@ -43,8 +43,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     @LocalAddress
     @Property(description="The NIC on which the ServerSocket should listen on. " +
             "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
-              systemProperty={Global.BIND_ADDR},
-              defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS)
+              systemProperty={Global.BIND_ADDR})
     InetAddress bind_addr=null; 
     
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class, 

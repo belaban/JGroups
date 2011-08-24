@@ -898,6 +898,8 @@ public class Configurator {
             Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(protocol.getClass(), LocalAddress.class);
             for(int i=0; i < fields.length; i++) {
                 Object val=getValueFromProtocol(protocol, fields[i]);
+                if(val == null)
+                    continue;
                 if(!(val instanceof InetAddress))
                     throw new Exception("field " + protocolName + "." + fields[i].getName() + " is not an InetAddress");
                 Util.checkIfValidAddress((InetAddress)val, protocolName);
