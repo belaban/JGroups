@@ -704,7 +704,7 @@ public class Merger {
         private Digest consolidateDigests(Vector<MergeData> merge_rsps, int num_mbrs) {
             MutableDigest retval=new MutableDigest(num_mbrs);
 
-            for(MergeData data:merge_rsps) {
+            for(MergeData data: merge_rsps) {
                 Digest tmp_digest=data.getDigest();
                 if(tmp_digest == null) {
                     if(log.isErrorEnabled()) log.error("tmp_digest == null; skipping");

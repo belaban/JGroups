@@ -976,11 +976,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * we're waiting for a missing message from P, and P crashes while waiting, we need to exclude P from the wait set.
      */
     private void rebroadcastMessages() {
-        Digest my_digest;
-        Map<Address,Digest.Entry> their_digest;
-        Address sender;
-        Digest.Entry their_entry, my_entry;
-        long their_high, my_high;
+        Digest their_digest;
         long sleep=max_rebroadcast_timeout / NUM_REBROADCAST_MSGS;
         long wait_time=max_rebroadcast_timeout, start=System.currentTimeMillis();
 
@@ -989,31 +985,30 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             try {
                 if(rebroadcast_digest == null)
                     break;
-                their_digest=rebroadcast_digest.getSenders();
+                their_digest=rebroadcast_digest.copy();
             }
             finally {
                 rebroadcast_digest_lock.unlock();
             }
-            my_digest=getDigest();
-
+            Digest my_digest=getDigest();
             boolean xmitted=false;
-            for(Map.Entry<Address,Digest.Entry> entry: their_digest.entrySet()) {
-                sender=entry.getKey();
-                their_entry=entry.getValue();
-                my_entry=my_digest.get(sender);
+
+            for(Digest.DigestEntry entry: their_digest) {
+                Address member=entry.getMember();
+                long[] my_entry=my_digest.get(member);
                 if(my_entry == null)
                     continue;
-                their_high=their_entry.getHighest();
+                long their_high=entry.getHighest();
 
                 // Cannot ask for 0 to be retransmitted because the first seqno in NAKACK and UNICAST(2) is always 1 !
                 // Also, we need to ask for retransmission of my_high+1, because we already *have* my_high, and don't
                 // need it, so the retransmission range is [my_high+1 .. their_high]: *exclude* my_high, but *include*
                 // their_high
-                my_high=Math.max(1, my_entry.getHighest() +1);
+                long my_high=Math.max(1, Math.max(my_entry[0], my_entry[1]) +1);
                 if(their_high > my_high) {
                     if(log.isTraceEnabled())
-                        log.trace("[" + local_addr + "] fetching " + my_high + "-" + their_high + " from " + sender);
-                    retransmit(my_high, their_high, sender, true); // use multicast to send retransmit request
+                        log.trace("[" + local_addr + "] fetching " + my_high + "-" + their_high + " from " + member);
+                    retransmit(my_high, their_high, member, true); // use multicast to send retransmit request
                     xmitted=true;
                 }
             }
@@ -1082,12 +1077,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Returns a message digest: for each member P the highest delivered and received seqno is added
      */
     public Digest getDigest() {
-        final Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>();
+        final Map<Address,long[]> map=new HashMap<Address,long[]>();
         for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
             Address sender=entry.getKey(); // guaranteed to be non-null (CCHM)
             NakReceiverWindow win=entry.getValue(); // guaranteed to be non-null (CCHM)
-            long[] digest=win.getDigest();
-            map.put(sender, new Digest.Entry(digest[0], digest[1]));
+            long[] seqnos=win.getDigest();
+            map.put(sender, seqnos);
         }
         return new Digest(map);
     }
@@ -1124,25 +1119,24 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         StringBuilder sb=new StringBuilder("\n[overwriteDigest()]\n");
         sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
 
-        for(Map.Entry<Address, Digest.Entry> entry: digest.getSenders().entrySet()) {
-            Address sender=entry.getKey();
-            Digest.Entry val=entry.getValue();
-            if(sender == null || val == null)
+        for(Digest.DigestEntry entry: digest) {
+            Address member=entry.getMember();
+            if(member == null)
                 continue;
 
-            long highest_delivered_seqno=val.getHighestDeliveredSeqno();
+            long highest_delivered_seqno=entry.getHighestDeliveredSeqno();
 
-            NakReceiverWindow win=xmit_table.get(sender);
+            NakReceiverWindow win=xmit_table.get(member);
             if(win != null) {
-                if(local_addr.equals(sender)) {
+                if(local_addr.equals(member)) {
                     win.setHighestDelivered(highest_delivered_seqno);
                     continue; // don't destroy my own window
                 }
-                xmit_table.remove(sender);
+                xmit_table.remove(member);
                 win.destroy(); // stops retransmission
             }
-            win=createNakReceiverWindow(sender, highest_delivered_seqno);
-            xmit_table.put(sender, win);
+            win=createNakReceiverWindow(member, highest_delivered_seqno);
+            xmit_table.put(member, win);
         }
         sb.append("\n").append("resulting digest: " + getDigest());
         digest_history.add(sb.toString());
@@ -1166,26 +1160,25 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
 
         boolean set_own_seqno=false;
-        for(Map.Entry<Address, Digest.Entry> entry: digest.getSenders().entrySet()) {
-            Address sender=entry.getKey();
-            Digest.Entry val=entry.getValue();
-            if(sender == null || val == null)
+        for(Digest.DigestEntry entry: digest) {
+            Address member=entry.getMember();
+            if(member == null)
                 continue;
 
-            long highest_delivered_seqno=val.getHighestDeliveredSeqno();
+            long highest_delivered_seqno=entry.getHighestDeliveredSeqno();
 
-            NakReceiverWindow win=xmit_table.get(sender);
+            NakReceiverWindow win=xmit_table.get(member);
             if(win != null) {
                 // We only reset the window if its seqno is lower than the seqno shipped with the digest. Also, we
                 // don't reset our own window (https://jira.jboss.org/jira/browse/JGRP-948, comment 20/Apr/09 03:39 AM)
                 if(!merge
-                        || (local_addr != null && local_addr.equals(sender)) // never overwrite our own entry
+                        || (local_addr != null && local_addr.equals(member)) // never overwrite our own entry
                         || win.getHighestDelivered() >= highest_delivered_seqno) // my seqno is >= digest's seqno for sender
                     continue;
 
-                xmit_table.remove(sender);
+                xmit_table.remove(member);
                 win.destroy(); // stops retransmission
-                if(sender.equals(local_addr)) { // Adjust the seqno: https://jira.jboss.org/browse/JGRP-1251
+                if(member.equals(local_addr)) { // Adjust the seqno: https://jira.jboss.org/browse/JGRP-1251
                     seqno_lock.lock();
                     try {
                         seqno=highest_delivered_seqno;
@@ -1196,8 +1189,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     }
                 }
             }
-            win=createNakReceiverWindow(sender, highest_delivered_seqno);
-            xmit_table.put(sender, win);
+            win=createNakReceiverWindow(member, highest_delivered_seqno);
+            xmit_table.put(member, win);
         }
         sb.append("\n").append("resulting digest: " + getDigest());
         if(set_own_seqno)
@@ -1249,23 +1242,20 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         stability_msgs.add(digest);
 
-        Address sender;
-        Digest.Entry val;
         long high_seqno_delivered, high_seqno_received;
 
-        for(Map.Entry<Address, Digest.Entry> entry: digest.getSenders().entrySet()) {
-            sender=entry.getKey();
-            if(sender == null)
+        for(Digest.DigestEntry entry: digest) {
+            Address member=entry.getMember();
+            if(member == null)
                 continue;
-            val=entry.getValue();
-            high_seqno_delivered=val.getHighestDeliveredSeqno();
-            high_seqno_received=val.getHighestReceivedSeqno();
+            high_seqno_delivered=entry.getHighestDeliveredSeqno();
+            high_seqno_received=entry.getHighestReceivedSeqno();
 
 
             // check whether the last seqno received for a sender P in the stability vector is > last seqno
             // received for P in my digest. if yes, request retransmission (see "Last Message Dropped" topic
             // in DESIGN)
-            recv_win=xmit_table.get(sender);
+            recv_win=xmit_table.get(member);
             if(recv_win != null) {
                 my_highest_rcvd=recv_win.getHighestReceived();
                 stability_highest_rcvd=high_seqno_received;
@@ -1274,9 +1264,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     if(log.isTraceEnabled()) {
                         log.trace("my_highest_rcvd (" + my_highest_rcvd + ") < stability_highest_rcvd (" +
                                 stability_highest_rcvd + "): requesting retransmission of " +
-                                sender + '#' + stability_highest_rcvd);
+                                    member + '#' + stability_highest_rcvd);
                     }
-                    retransmit(stability_highest_rcvd, stability_highest_rcvd, sender);
+                    retransmit(stability_highest_rcvd, stability_highest_rcvd, member);
                 }
             }
 
@@ -1284,7 +1274,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 continue;
 
             if(log.isTraceEnabled())
-                log.trace("deleting msgs <= " + high_seqno_delivered + " from " + sender);
+                log.trace("deleting msgs <= " + high_seqno_delivered + " from " + member);
 
             // delete *delivered* msgs that are stable
             if(recv_win != null)

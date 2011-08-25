@@ -2,15 +2,25 @@ package org.jgroups.util;
 
 import org.jgroups.Address;
 
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.Map;
 
 /**
- * A mutable version of Digest (which is immutable
+ * A mutable version of Digest. This class is not synchronized because only a single thread at a time will access it
  * @author Bela Ban
  */
 public class MutableDigest extends Digest {
-    private boolean sealed=false;
+    protected static final double RESIZE_FACTOR=1.2;
+
+    protected boolean sealed=false;
+
+    protected int current_index=0; // points to the next index to be written
+
+
+    protected MutableDigest(Address[] members, long[] seqnos, int current_index) {
+        super(members, seqnos);
+        this.current_index=current_index;
+    }
 
     /** Used for externalization */
     public MutableDigest() {
@@ -18,72 +28,74 @@ public class MutableDigest extends Digest {
     }
 
     public MutableDigest(int size) {
-        super(size);
+        createArrays(size);
     }
 
 
-    public MutableDigest(Map<Address,Entry> map) {
+    public MutableDigest(Map<Address,long[]> map) {
         super(map);
+        current_index=map.size();
     }
 
 
     public MutableDigest(Digest digest) {
-        super(digest.getSenders());
+        super(digest);
+        current_index=digest.size();
     }
 
 
-    public Map<Address, Entry> getSenders() {
-        return senders;
+
+    public void add(Address member, long highest_delivered_seqno, long highest_received_seqno) {
+        add(member, highest_delivered_seqno, highest_received_seqno, true);
     }
 
-    public void add(Address sender, long highest_delivered_seqno) {
-        checkSealed();
-        add(sender, highest_delivered_seqno, -1);
-    }
-
-
-    public void add(Address sender, long highest_delivered_seqno, long highest_received_seqno) {
-        checkSealed();
-        add(sender, new Digest.Entry(highest_delivered_seqno, highest_received_seqno));
-    }
-
-    private void add(Address sender, Entry entry) {
-        if(sender == null || entry == null) {
-            if(log.isErrorEnabled())
-                log.error("sender (" + sender + ") or entry (" + entry + ")is null, will not add entry");
+    public void add(Address member, long highest_delivered_seqno, long highest_received_seqno, boolean replace) {
+        if(member == null)
             return;
-        }
         checkSealed();
-        senders.put(sender, entry);
+
+        if(replace) {
+            int index=find(member); // see if the member is already present
+            if(index >= 0) {
+                seqnos[index * 2]=highest_delivered_seqno;
+                seqnos[index * 2 +1]=highest_received_seqno;
+                return;
+            }
+        }
+
+        if(current_index >= members.length)
+            resize();
+        
+        members[current_index]=member;
+        seqnos[current_index * 2]=highest_delivered_seqno;
+        seqnos[current_index * 2 +1]=highest_received_seqno;
+        current_index++;
     }
 
 
     public void add(Digest digest) {
-        if(digest != null) {
-            checkSealed();
-            Map.Entry<Address,Entry> entry;
-            Address key;
-            Entry val;
-            for(Iterator<Map.Entry<Address,Entry>> it=digest.senders.entrySet().iterator(); it.hasNext();) {
-                entry=it.next();
-                key=entry.getKey();
-                val=entry.getValue();
-                add(key, val.getHighestDeliveredSeqno(), val.getHighestReceivedSeqno());
-            }
-        }
+        add(digest, true);
+    }
+
+    public void add(Digest digest, boolean replace) {
+        if(digest == null)
+            return;
+        checkSealed();
+        for(DigestEntry entry: digest)
+            add(entry.getMember(), entry.getHighestDeliveredSeqno(), entry.getHighestReceivedSeqno(), replace);
     }
 
     public void replace(Digest d) {
-        if(d != null) {
-            clear();
-            add(d);
-        }
+        if(d == null)
+            return;
+        clear();
+        createArrays(d.size());
+        add(d, false); // don't search for existing elements, because there won't be any !
     }
 
-    public boolean set(Address sender, long highest_delivered_seqno, long highest_received_seqno) {
-        checkSealed();
-        Entry entry=senders.put(sender, new Entry(highest_delivered_seqno, highest_received_seqno));
-        return entry == null;
+
+    public MutableDigest copy() {
+        return new MutableDigest(Arrays.copyOf(members, members.length), Arrays.copyOf(seqnos, seqnos.length), current_index);
     }
 
     /**
@@ -91,22 +103,12 @@ public class MutableDigest extends Digest {
      * message will be written. For each sender in the other digest, the merge() method will be called.
      */
     public void merge(Digest digest) {
-        if(digest == null) {
-            if(log.isErrorEnabled()) log.error("digest to be merged with is null");
+        if(digest == null)
             return;
-        }
         checkSealed();
-        Map.Entry<Address,Entry> entry;
-        Address sender;
-        Entry val;
-        for(Iterator<Map.Entry<Address,Entry>> it=digest.senders.entrySet().iterator(); it.hasNext();) {
-            entry=it.next();
-            sender=entry.getKey();
-            val=entry.getValue();
-            if(val != null) {
-                merge(sender, val.getHighestDeliveredSeqno(), val.getHighestReceivedSeqno());
-            }
-        }
+
+        for(DigestEntry entry: digest)
+            merge(entry.getMember(), entry.getHighestDeliveredSeqno(), entry.getHighestReceivedSeqno());
     }
 
 
@@ -116,82 +118,71 @@ public class MutableDigest extends Digest {
      * <li>this.highest_delivered_seqno=max(this.highest_delivered_seqno, highest_delivered_seqno)
      * <li>this.highest_received_seqno=max(this.highest_received_seqno, highest_received_seqno)
      * </ol>
-     * If the sender doesn not exist, a new entry will be added (provided there is enough space)
+     * If the member doesn not exist, a new entry will be added (provided there is enough space)
      */
-    public void merge(Address sender, long highest_delivered_seqno, long highest_received_seqno) {
-        if(sender == null) {
-            if(log.isErrorEnabled()) log.error("sender == null");
+    public void merge(Address member, long highest_delivered_seqno, long highest_received_seqno) {
+        if(member == null)
             return;
-        }
         checkSealed();
-        Entry entry=senders.get(sender);
-        if(entry == null) {
-            add(sender, highest_delivered_seqno, highest_received_seqno);
-        }
-        else {
-            Entry new_entry=new Entry(Math.max(entry.getHighestDeliveredSeqno(), highest_delivered_seqno),
-                                      Math.max(entry.getHighestReceivedSeqno(), highest_received_seqno));
-            senders.put(sender, new_entry);
+        long[] entry=get(member);
+        if(entry == null)
+            add(member, highest_delivered_seqno, highest_received_seqno, false); // don't replace as member wasn't found
+        else {// replaces existing entry
+            add(member, Math.max(entry[0], highest_delivered_seqno), Math.max(entry[1], highest_received_seqno));
         }
     }
 
 
 
     /** Increments the sender's highest delivered seqno by 1 */
-    public void incrementHighestDeliveredSeqno(Address sender) {
-        Entry entry=senders.get(sender);
+    public void incrementHighestDeliveredSeqno(Address member) {
+        long[] entry=get(member);
         if(entry == null)
             return;
         checkSealed();
 
-        long new_highest_delivered=entry.getHighestDeliveredSeqno() +1;
+        long new_highest_delivered=entry[0] +1;
         
         // highest_received must be >= highest_delivered, but not smaller !
-        long new_highest_received=Math.max(entry.getHighestReceivedSeqno(), new_highest_delivered);
-
-        Entry new_entry=new Entry(new_highest_delivered, new_highest_received);
-        senders.put(sender, new_entry);
+        long new_highest_received=Math.max(entry[1], new_highest_delivered);
+        add(member, new_highest_delivered, new_highest_received, true); // replace
     }
 
-
-    /**
-     * Resets the seqnos for the sender at 'index' to 0. This happens when a member has left the group,
-     * but it is still in the digest. Resetting its seqnos ensures that no-one will request a message
-     * retransmission from the dead member.
-     */
-    public void resetAt(Address sender) {
-        Entry entry=senders.get(sender);
-        if(entry != null)
-            checkSealed();
-            senders.put(sender, new Entry());
-    }
 
 
     public void clear() {
         checkSealed();
-        senders.clear();
+        current_index=0;
     }
 
 
 
-    public void setHighestDeliveredAndSeenSeqnos(Address sender, long highest_delivered_seqno, long highest_received_seqno) {
-        Entry entry=senders.get(sender);
+    public void setHighestDeliveredAndSeenSeqnos(Address member, long highest_delivered_seqno, long highest_received_seqno) {
+        long[] entry=get(member);
         if(entry != null) {
             checkSealed();
-            Entry new_entry=new Entry(highest_delivered_seqno, highest_received_seqno);
-            senders.put(sender, new_entry);
+            add(member, highest_delivered_seqno, highest_received_seqno, true);  // replace existing entry
         }
     }
 
     /** Seals the instance against modifications */
-    public boolean seal() {
-        boolean retval=sealed;
+    public void seal() {
         sealed=true;
-        return retval;
+    }
+
+    public int size() {
+        return current_index;
     }
 
 
-    private final void checkSealed() {
+    protected void resize() {
+        int new_size=Math.max((int)(members.length * RESIZE_FACTOR), members.length +1);
+        members=Arrays.copyOf(members, new_size);
+        seqnos=Arrays.copyOf(seqnos, new_size * 2);
+    }
+
+
+    protected final void checkSealed() {
         if(sealed)
             throw new IllegalAccessError("instance has been sealed and cannot be modified");
     }

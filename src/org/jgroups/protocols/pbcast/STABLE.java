@@ -394,24 +394,25 @@ public class STABLE extends Protocol {
                     append(votes.size()).append(" votes):\nmine:   ").append(digest.printHighestDeliveredSeqnos())
                     .append("\nother:  ").append(d.printHighestDeliveredSeqnos());
         }
-        long highest_delivered, my_highest_delivered, new_highest_delivered;
-        long highest_received, my_highest_received, new_highest_received;
-        for(Map.Entry<Address, Digest.Entry> entry: d.getSenders().entrySet()) {
-            Address mbr=entry.getKey();
-            Digest.Entry val=entry.getValue();
-            highest_delivered=val.getHighestDeliveredSeqno();  // highest *delivered* seqno
-            highest_received=val.getHighestReceivedSeqno();    // highest *received* seqno
+
+        for(Digest.DigestEntry entry: d) {
+            Address mbr=entry.getMember();
+            long highest_delivered=entry.getHighestDeliveredSeqno();
+            long highest_received=entry.getHighestReceivedSeqno();
 
             // compute the minimum of the highest seqnos deliverable (for garbage collection)
-            my_highest_delivered=digest.highestDeliveredSeqnoAt(mbr);
+            long[] seqnos=digest.get(mbr);
+            if(seqnos == null)
+                continue;
+            long my_highest_delivered=seqnos[0];
             // compute the maximum of the highest seqnos seen (for retransmission of last missing message)
-            my_highest_received=digest.highestReceivedSeqnoAt(mbr);
+            long my_highest_received=seqnos[1];
 
-            new_highest_delivered=Math.min(my_highest_delivered, highest_delivered);
-            new_highest_received=Math.max(my_highest_received, highest_received);
+            long new_highest_delivered=Math.min(my_highest_delivered, highest_delivered);
+            long new_highest_received=Math.max(my_highest_received, highest_received);
             digest.setHighestDeliveredAndSeenSeqnos(mbr, new_highest_delivered, new_highest_received);
         }
-        if(log.isTraceEnabled()) {
+        if(sb != null) { // implies log.isTraceEnabled() == true
             sb.append("\nresult: ").append(digest.printHighestDeliveredSeqnos()).append("\n");
             log.trace(sb);
         }

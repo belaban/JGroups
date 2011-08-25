@@ -827,12 +827,11 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                     case GmsHeader.GET_DIGEST_REQ:
                         Digest digest=(Digest)down_prot.down(Event.GET_DIGEST_EVT);
                         if(digest != null) {
-                            Digest.Entry entry=digest.get(local_addr);
+                            long[] entry=digest.get(local_addr);
                             if(entry != null) {
                                 // only return my own digest information, but nobody else's !
                                 // https://jira.jboss.org/jira/browse/JGRP-948
-                                Digest retval=new Digest(local_addr, entry.getHighestDeliveredSeqno(),
-                                                         entry.getHighestReceivedSeqno());
+                                Digest retval=new Digest(local_addr, entry[0], entry[1]);
                                 GmsHeader rsp_hdr=new GmsHeader(GmsHeader.GET_DIGEST_RSP);
                                 rsp_hdr.my_digest=retval;
                                 Message get_digest_rsp=new Message(msg.getSrc(), null, null);

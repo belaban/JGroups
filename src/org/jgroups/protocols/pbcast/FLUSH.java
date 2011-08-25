@@ -817,9 +817,8 @@ public class FLUSH extends Protocol {
         List<Digest> remainingDigests = digests.subList(1, digests.size());
         for (Digest digest : remainingDigests) {
             Digest diff = firstDigest.difference(digest);
-            if (diff != Digest.EMPTY_DIGEST) {
+            if (diff != null)
                 return true;
-            }
         }
         return false;
     }

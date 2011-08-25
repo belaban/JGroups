@@ -147,10 +147,10 @@ public class ClientGmsImpl extends GmsImpl {
                     throw new SecurityException(failure);
 
                 // 2. Install digest
-                if(rsp.getDigest() == null || rsp.getDigest().getSenders() == null) {
+                if(rsp.getDigest() == null || rsp.getDigest().size() == 0) {
                     if(log.isWarnEnabled())
                         log.warn("digest response has no senders: digest=" + rsp.getDigest());
-                    rsp=null; // just skip the response we guess
+                    rsp=null;
                     continue;
                 }
                 MutableDigest tmp_digest=new MutableDigest(rsp.getDigest());

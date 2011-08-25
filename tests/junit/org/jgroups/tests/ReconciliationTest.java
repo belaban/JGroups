@@ -313,10 +313,9 @@ public class ReconciliationTest extends ChannelTestBase {
         Assert.assertEquals(c2.getView().size(), 2, "view: " + c1.getView());
 
         // start adding messages
-        flush(c1, 5000); // flush all pending message out of the system so
-        // everyone receives them
+        flush(c1, 5000); // flush all pending message out of the system so everyone receives them
 
-        for(int i = 1;i <= 20;i++) {
+        for(int i = 1; i <= 20;i++) {
             if(i % 2 == 0)
                 cache_1.put(i, true); // even numbers
             else

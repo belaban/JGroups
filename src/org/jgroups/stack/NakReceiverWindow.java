@@ -398,10 +398,7 @@ public class NakReceiverWindow {
     public long[] getDigest() {
         lock.readLock().lock();
         try {
-            long[] retval=new long[2];
-            retval[0]=highest_delivered;
-            retval[1]=highest_received;
-            return retval;
+            return new long[]{highest_delivered, highest_received};
         }
         finally {
             lock.readLock().unlock();

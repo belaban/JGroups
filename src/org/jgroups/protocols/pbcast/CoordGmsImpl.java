@@ -209,7 +209,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
                     // create a new digest, which contains the new member
                     join_digest=new MutableDigest(tmp.size() + new_mbrs.size());
                     join_digest.add(tmp); // add the existing digest to the new one
-                    for(Address member:new_mbrs)
+                    for(Address member: new_mbrs)
                         join_digest.add(member, 0, 0); // ... and add the new members. their first seqno will be 1
                 }
                 join_rsp=new JoinRsp(new_view, join_digest != null? join_digest.copy() : null);

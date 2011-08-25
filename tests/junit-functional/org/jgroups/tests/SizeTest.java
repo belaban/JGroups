@@ -147,10 +147,7 @@ public class SizeTest {
         mutableDigest.add(Util.createRandomAddress(), 104, 105);
         _testSize(mutableDigest);
 
-        Digest digest=new Digest();
-        _testSize(digest);
-
-        digest=new Digest(10);
+        Digest digest=new MutableDigest(10);
         _testSize(digest);
 
         digest=new Digest(Util.createRandomAddress(), 45, 50);
@@ -249,8 +246,8 @@ public class SizeTest {
     public static void testStableHeader() throws Exception {
         org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
         Address addr=UUID.randomUUID();
-        Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>();
-        map.put(addr, new Digest.Entry(200, 205));
+        Map<Address,long[]> map=new HashMap<Address,long[]>();
+        map.put(addr, new long[]{200, 205});
         Digest digest=new Digest(map);
         hdr=new STABLE.StableHeader(STABLE.StableHeader.STABLE_GOSSIP, digest);
         _testSize(hdr);
