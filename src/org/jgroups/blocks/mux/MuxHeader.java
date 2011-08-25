@@ -38,4 +38,8 @@ public class MuxHeader extends Header {
     public void readFrom(DataInput in) throws IOException {
         id = in.readShort();
     }
+
+    public String toString() {
+        return "MuxHeader(" + id + ")";
+    }
 }
