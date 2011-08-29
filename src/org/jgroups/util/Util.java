@@ -1938,6 +1938,125 @@ public class Util {
             System.out.println('\'' + new String(frags[i]) + '\'');
     }
 
+
+    public static byte[] encode(long num) {
+        if(num == 0)
+            return new byte[]{0};
+
+        byte bytes_needed=determineNumberOfBytesNeeded(num);
+        byte[] buf=new byte[bytes_needed + 1];
+        buf[0]=bytes_needed;
+
+        int index=1;
+        for(int i=0; i < bytes_needed; i++)
+            buf[index++]=getByteAt(num, i);
+        return buf;
+    }
+
+    static protected byte getByteAt(long num, int index) {
+        return (byte)((num >> (index * 8)));
+    }
+
+    public static long decode(byte[] buf) {
+        if(buf[0] == 0)
+            return 0;
+
+        byte length=buf[0];
+        return makeLong(buf, 1, length);
+    }
+
+    static long makeLong(byte[] buf, int offset, int len) {
+        long retval=0;
+        for(int i=0; i < len; i++) {
+            byte b=buf[offset + i];
+            retval |= ((long)b & 0xff) << (i * 8);
+        }
+        return retval;
+    }
+
+
+    /**
+     * Encode the highest delivered and received seqnos. The assumption is that the latter is always >= the former, and
+     * highest received is not much higher than highest delivered.
+     * @param highest_delivered
+     * @param highest_received
+     * @return
+     */
+    public static byte[] encodeSequence(long highest_delivered, long highest_received) {
+        if(highest_received < highest_delivered)
+            throw new IllegalArgumentException("highest_received (" + highest_received +
+                                                 ") has to be >= highest_delivered (" + highest_delivered + ")");
+
+        if(highest_delivered == 0 &&highest_received == 0)
+            return new byte[]{0};
+
+        long delta=highest_received - highest_delivered;
+
+        // encode highest_delivered followed by delta
+        byte num_bytes_for_hd=determineNumberOfBytesNeeded(highest_delivered),
+          num_bytes_for_delta=determineNumberOfBytesNeeded(delta);
+
+        byte[] buf=new byte[num_bytes_for_hd + num_bytes_for_delta + 1];
+
+        buf[0]=encodeLength(num_bytes_for_hd, num_bytes_for_delta);
+
+        int index=1;
+        for(int i=0; i < num_bytes_for_hd; i++)
+            buf[index++]=getByteAt(highest_delivered, i);
+
+        for(int i=0; i < num_bytes_for_delta; i++)
+            buf[index++]=getByteAt(delta, i);
+
+        return buf;
+    }
+
+    public static long[] decodeSequence(byte[] buf) {
+        if(buf[0] == 0)
+            return new long[]{0,0};
+
+        byte[] lengths=decodeLength(buf[0]);
+        long[] seqnos=new long[2];
+        seqnos[0]=makeLong(buf, 1, lengths[0]);
+        seqnos[1]=makeLong(buf, 1 + lengths[0], lengths[1]) + seqnos[0];
+
+        return seqnos;
+    }
+
+
+    /**
+     * Encodes the number of bytes needed into a single byte. The first number is encoded in the first nibble (the
+     * first 4 bits), the second number in the second nibble
+     * @param len1 The number of bytes needed to store a long. Must be between 0 and 8
+     * @param len2 The number of bytes needed to store a long. Must be between 0 and 8
+     * @return The byte storing the 2 numbers len1 and len2
+     */
+    public static byte encodeLength(byte len1, byte len2) {
+        byte retval=len2;
+        retval |= (len1 << 4);
+        return retval;
+    }
+
+    public static byte[] decodeLength(byte len) {
+        byte[] retval={(byte)0,(byte)0};
+        retval[0]=(byte)(len >> 4);
+        retval[1]=(byte)(len << 4);
+        retval[1]=(byte)(retval[1] >> 4);
+        return retval;
+    }
+
+    public static byte determineNumberOfBytesNeeded(long number) {
+        if(number >> 56 != 0) return 8;
+        if(number >> 48 != 0) return 7;
+        if(number >> 40 != 0) return 6;
+        if(number >> 32 != 0) return 5;
+        if(number >> 24 != 0) return 4;
+        if(number >> 16 != 0) return 3;
+        if(number >>  8 != 0) return 2;
+        if(number >>  0 != 0) return 1;
+        return 1;
+    }
+
+
     public static <T> String printListWithDelimiter(Collection<T> list, String delimiter) {
         boolean first=true;
         StringBuilder sb=new StringBuilder();
