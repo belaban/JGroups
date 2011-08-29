@@ -1965,6 +1965,22 @@ public class Util {
         return makeLong(buf, 1, length);
     }
 
+
+    public static void writeLong(long num, DataOutput out) throws IOException {
+        byte[] buf=encode(num);
+        out.write(buf, 0, buf.length);
+    }
+
+    public static long readLong(DataInput in) throws IOException {
+        byte len=in.readByte();
+        if(len == 0)
+            return 0;
+        byte[] buf=new byte[len];
+        in.readFully(buf, 0, len);
+        return makeLong(buf, 0, len);
+    }
+
+
     static long makeLong(byte[] buf, int offset, int len) {
         long retval=0;
         for(int i=0; i < len; i++) {
@@ -1982,7 +1998,7 @@ public class Util {
      * @param highest_received
      * @return
      */
-    public static byte[] encodeSequence(long highest_delivered, long highest_received) {
+    public static byte[] encodeLongSequence(long highest_delivered, long highest_received) {
         if(highest_received < highest_delivered)
             throw new IllegalArgumentException("highest_received (" + highest_received +
                                                  ") has to be >= highest_delivered (" + highest_delivered + ")");
@@ -2010,7 +2026,15 @@ public class Util {
         return buf;
     }
 
-    public static long[] decodeSequence(byte[] buf) {
+
+    public static byte numberOfBytesRequiredForSequence(long hd, long hr) {
+        byte num_bytes_for_hd=determineNumberOfBytesNeeded(hd),
+          num_bytes_for_delta=determineNumberOfBytesNeeded(hr - hd);
+
+        return (byte)(num_bytes_for_hd + num_bytes_for_delta + 1);
+    }
+
+    public static long[] decodeLongSequence(byte[] buf) {
         if(buf[0] == 0)
             return new long[]{0,0};
 
@@ -2019,6 +2043,27 @@ public class Util {
         seqnos[0]=makeLong(buf, 1, lengths[0]);
         seqnos[1]=makeLong(buf, 1 + lengths[0], lengths[1]) + seqnos[0];
 
+        return seqnos;
+    }
+
+
+    public static void writeLongSequence(long highest_delivered, long highest_received, DataOutput out) throws IOException {
+        byte[] buf=encodeLongSequence(highest_delivered, highest_received);
+        out.write(buf, 0, buf.length);
+    }
+
+
+    public static long[] readLongSequence(DataInput in) throws IOException {
+        byte len=in.readByte();
+        if(len == 0)
+            return new long[]{0,0};
+
+        byte[] lengths=decodeLength(len);
+        long[] seqnos=new long[2];
+        byte[] buf=new byte[lengths[0] + lengths[1]];
+        in.readFully(buf, 0, buf.length);
+        seqnos[0]=makeLong(buf, 0, lengths[0]);
+        seqnos[1]=makeLong(buf, lengths[0], lengths[1]) + seqnos[0];
         return seqnos;
     }
 
@@ -2038,9 +2083,10 @@ public class Util {
 
     public static byte[] decodeLength(byte len) {
         byte[] retval={(byte)0,(byte)0};
-        retval[0]=(byte)(len >> 4);
-        retval[1]=(byte)(len << 4);
-        retval[1]=(byte)(retval[1] >> 4);
+        retval[0]=(byte)((len & 0xff) >> 4);
+        retval[1]=(byte)(len & ~0xf0); // 0xff is the first nibble set (11110000)
+        // retval[1]=(byte)(len << 4);
+        // retval[1]=(byte)((retval[1] & 0xff) >> 4);
         return retval;
     }
 

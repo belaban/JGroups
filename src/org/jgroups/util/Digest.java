@@ -346,22 +346,27 @@ public class Digest implements Streamable, Iterable<Digest.DigestEntry> {
 
     public void writeTo(DataOutput out) throws IOException {
         out.writeShort(size());
-        for(DigestEntry entry: this) {
-            Util.writeAddress(entry.getMember(), out);
-            out.writeLong(entry.getHighestDeliveredSeqno());
-            out.writeLong(entry.getHighestReceivedSeqno());
-        }
+        for(int i=0; i < size(); i++)
+            Util.writeAddress(members[i], out);
+
+        for(int i=0; i < size(); i++)
+            Util.writeLongSequence(seqnos[i * 2], seqnos[i * 2 +1], out);
     }
 
 
     public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         short size=in.readShort();
         createArrays(size);
+
         for(int i=0; i < size; i++) {
             Address addr=Util.readAddress(in);
             members[i]=addr;
-            seqnos[i * 2]=in.readLong();
-            seqnos[i * 2 +1]=in.readLong();
+        }
+
+        for(int i=0; i < size; i++) {
+            long[] tmp=Util.readLongSequence(in);
+            seqnos[i * 2]=tmp[0];
+            seqnos[i * 2 +1]=tmp[1];
         }
     }
 
@@ -370,8 +375,11 @@ public class Digest implements Streamable, Iterable<Digest.DigestEntry> {
         long retval=Global.SHORT_SIZE; // number of elements in 'senders'
         if(size() > 0) {
             Address addr=members[0];
-            retval+=Util.size(addr) * size() + size() * 2 * Global.LONG_SIZE; // 2 longs (for highest delivered and received)
+            retval+=Util.size(addr) * size();
         }
+
+        for(int i=0; i < size() * 2; i+=2)
+            retval+=Util.numberOfBytesRequiredForSequence(seqnos[i], seqnos[i+1]);
         return retval;
     }
 
