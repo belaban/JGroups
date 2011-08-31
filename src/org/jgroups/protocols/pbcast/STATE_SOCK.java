@@ -116,9 +116,10 @@ public class STATE_SOCK extends StreamingStateTransfer {
             if(log.isDebugEnabled())
                 log.debug(local_addr + ": connected to state provider " + address.getIpAddress() + ":" + address.getPort());
 
-            // write out our state_id and address
-            ObjectOutputStream out=new ObjectOutputStream(socket.getOutputStream());
-            out.writeObject(local_addr);
+            // write out our address
+            DataOutputStream out=new DataOutputStream(socket.getOutputStream());
+            Util.writeAddress(local_addr, out);
+
             // bis=new BufferedInputStream(new StreamingInputStreamWrapper(socket), buffer_size);
             bis=new BufferedInputStream(socket.getInputStream(), buffer_size);
             setStateInApplication(provider, bis, hdr.getDigest());
@@ -205,14 +206,13 @@ public class STATE_SOCK extends StreamingStateTransfer {
 
         protected void process(Socket socket) {
             OutputStream      output=null;
-            ObjectInputStream ois=null;
             try {
                 socket.setSendBufferSize(buffer_size);
                 if(log.isDebugEnabled())
                     log.debug(local_addr + ": accepted request for state transfer from " + socket.getInetAddress() + ":" + socket.getPort());
 
-                ois=new ObjectInputStream(socket.getInputStream());
-                Address stateRequester=(Address)ois.readObject();
+                DataInput in=new DataInputStream(socket.getInputStream());
+                Address stateRequester=Util.readAddress(in);
                 output=new BufferedOutputStream(socket.getOutputStream(), buffer_size);
                 getStateFromApplication(stateRequester, output, false);
             }
