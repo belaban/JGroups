@@ -453,7 +453,7 @@ public class JChannel extends Channel {
 
 
     @ManagedOperation
-    public void send(Address dst, Serializable obj) throws Exception {
+    public void send(Address dst, Object obj) throws Exception {
         send(new Message(dst, null, obj));
     }
 

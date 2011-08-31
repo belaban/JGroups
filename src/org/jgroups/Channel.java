@@ -2,17 +2,18 @@
 package org.jgroups;
 
 
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.logging.Log;
 import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.logging.Log;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.DefaultSocketFactory;
 import org.jgroups.util.SocketFactory;
 
-import java.io.Serializable;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 
@@ -171,10 +172,10 @@ public abstract class Channel /* implements Transport */ {
     /**
      Helper method. Will create a Message(dst, src, obj) and use send(Message).
      @param dst Destination address for message. If null, message will be sent to all current group members
-     @param obj Serializable object. Will be serialized into the byte buffer of the Message. If it is <em>
-     not</em> serializable, the byte buffer will be null.
+     @param obj A serializable object. Will be marshalled into the byte buffer of the Message. If it is <em>
+     not</em> serializable, an exception will be thrown
      */
-    abstract public void send(Address dst, Serializable obj) throws Exception;
+    abstract public void send(Address dst, Object obj) throws Exception;
 
     /**
      * Sends a message. See {@link #send(Address,byte[],int,int)} for details
