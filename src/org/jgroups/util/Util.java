@@ -1943,7 +1943,7 @@ public class Util {
         if(num == 0)
             return new byte[]{0};
 
-        byte bytes_needed=determineNumberOfBytesNeeded(num);
+        byte bytes_needed=numberOfBytesRequiredForLong(num);
         byte[] buf=new byte[bytes_needed + 1];
         buf[0]=bytes_needed;
 
@@ -2009,8 +2009,8 @@ public class Util {
         long delta=highest_received - highest_delivered;
 
         // encode highest_delivered followed by delta
-        byte num_bytes_for_hd=determineNumberOfBytesNeeded(highest_delivered),
-          num_bytes_for_delta=determineNumberOfBytesNeeded(delta);
+        byte num_bytes_for_hd=numberOfBytesRequiredForLong(highest_delivered),
+          num_bytes_for_delta=numberOfBytesRequiredForLong(delta);
 
         byte[] buf=new byte[num_bytes_for_hd + num_bytes_for_delta + 1];
 
@@ -2026,10 +2026,27 @@ public class Util {
         return buf;
     }
 
+    public static byte numberOfBytesRequiredForLong(long number) {
+        if(number >> 56 != 0) return 8;
+        if(number >> 48 != 0) return 7;
+        if(number >> 40 != 0) return 6;
+        if(number >> 32 != 0) return 5;
+        if(number >> 24 != 0) return 4;
+        if(number >> 16 != 0) return 3;
+        if(number >>  8 != 0) return 2;
+        if(number >>  0 != 0) return 1;
+        return 1;
+    }
 
+    /**
+     * Writes 2 longs, where the second long needs to be >= the first (we only write the delta !)
+     * @param hd
+     * @param hr
+     * @return
+     */
     public static byte numberOfBytesRequiredForSequence(long hd, long hr) {
-        byte num_bytes_for_hd=determineNumberOfBytesNeeded(hd),
-          num_bytes_for_delta=determineNumberOfBytesNeeded(hr - hd);
+        byte num_bytes_for_hd=numberOfBytesRequiredForLong(hd),
+          num_bytes_for_delta=numberOfBytesRequiredForLong(hr - hd);
 
         return (byte)(num_bytes_for_hd + num_bytes_for_delta + 1);
     }
@@ -2090,17 +2107,6 @@ public class Util {
         return retval;
     }
 
-    public static byte determineNumberOfBytesNeeded(long number) {
-        if(number >> 56 != 0) return 8;
-        if(number >> 48 != 0) return 7;
-        if(number >> 40 != 0) return 6;
-        if(number >> 32 != 0) return 5;
-        if(number >> 24 != 0) return 4;
-        if(number >> 16 != 0) return 3;
-        if(number >>  8 != 0) return 2;
-        if(number >>  0 != 0) return 1;
-        return 1;
-    }
 
 
     public static <T> String printListWithDelimiter(Collection<T> list, String delimiter) {
