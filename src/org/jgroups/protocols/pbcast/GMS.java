@@ -794,8 +794,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
                         break;
 
                     case GmsHeader.MERGE_RSP:
-                        MergeData merge_data=new MergeData(msg.getSrc(), hdr.view, hdr.my_digest);
-                        merge_data.merge_rejected=hdr.merge_rejected;
+                        MergeData merge_data=new MergeData(msg.getSrc(), hdr.view, hdr.my_digest, hdr.merge_rejected);
                         if(log.isDebugEnabled()) {
                             log.debug(local_addr + ": got merge response from " + msg.getSrc() +
                                     ", merge_id=" + hdr.merge_id + ", merge data is "+ merge_data);

@@ -6,34 +6,28 @@ import org.jgroups.Address;
 import org.jgroups.View;
 import org.jgroups.util.Digest;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-
 
 /**
- * Encapsulates data sent with a MERGE_RSP (handleMergeResponse()) and INSTALL_MERGE_VIEW
- * (handleMergeView()).
- *
+ * Encapsulates data sent with a MERGE_RSP (handleMergeResponse()) and INSTALL_MERGE_VIEW (handleMergeView()).<p/>
+ * Note that since MergeData is never sent across the network, it doesn't need to be Streamable.
  * @author Bela Ban Oct 22 2001
  */
-public class MergeData implements Externalizable {
-    Address   sender=null;
-    boolean   merge_rejected=false;
-    View      view=null;
-    Digest    digest=null;
+public class MergeData  {
+    protected final Address   sender;
+    protected final boolean   merge_rejected;
+    protected final View      view;
+    protected final Digest    digest;
 
-    /**
-     * Empty constructor needed for externalization
-     */
-    public MergeData() {
-    }
 
-    public MergeData(Address sender, View view, Digest digest) {
+    public MergeData(Address sender, View view, Digest digest, boolean merge_rejected) {
         this.sender=sender;
         this.view=view;
         this.digest=digest;
+        this.merge_rejected=merge_rejected;
+    }
+
+    public MergeData(Address sender, View view, Digest digest) {
+        this(sender, view, digest, false);
     }
 
     public Address getSender() {
@@ -46,33 +40,6 @@ public class MergeData implements Externalizable {
 
     public Digest getDigest() {
         return digest;
-    }
-
-    public void setView(View v) {
-        view=v;
-    }
-
-    public void setDigest(Digest d) {
-        digest=d;
-    }
-
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(sender);
-        out.writeBoolean(merge_rejected);
-        if(!merge_rejected) {
-            out.writeObject(view);
-            out.writeObject(digest);
-        }
-    }
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        sender=(Address)in.readObject();
-        merge_rejected=in.readBoolean();
-        if(!merge_rejected) {
-            view=(View)in.readObject();
-            digest=(Digest)in.readObject();
-        }
     }
 
 
