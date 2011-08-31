@@ -258,21 +258,9 @@ public class ENCRYPT14KeystoreTest {
     }
 
     static class MockAddress implements Address {
-        private static final long serialVersionUID=-2044466632514705356L;
-
-        private boolean isMulticastAddress() {
-            return false;
-        }
 
         public int size() {
             return 0;
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
         }
 
         public void writeTo(DataOutput out) throws IOException {

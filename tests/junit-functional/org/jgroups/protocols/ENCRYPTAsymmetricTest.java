@@ -472,7 +472,6 @@ public class ENCRYPTAsymmetricTest {
     }
 
     static class MockAddress implements Address {
-        private static final long serialVersionUID=-479331506050129599L;
         String name;
 
         public MockAddress(String name) {
@@ -482,20 +481,9 @@ public class ENCRYPTAsymmetricTest {
         public MockAddress() {
         }
 
-        private boolean isMulticastAddress() {
-            return false;
-        }
-
         public int size() {
             return 0;
         }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-        }
-
 
         public int compareTo(Address o) {
             return -1;
