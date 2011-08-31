@@ -43,7 +43,6 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     protected ProtocolAdapter prot_adapter=null;
     protected final Collection<Address> members=new TreeSet<Address>();
     protected Address local_addr=null;
-    protected Serializable id=null;
     protected final Log log=LogFactory.getLog(getClass());
     protected boolean hardware_multicast_supported=false;
 
