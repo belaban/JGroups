@@ -28,10 +28,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @author Bela Ban
  */
 @Unsupported
-public class ReplicatedHashMap<K extends Serializable, V extends Serializable> extends
+public class ReplicatedHashMap<K, V> extends
         AbstractMap<K,V> implements ConcurrentMap<K,V>, Receiver, ReplicatedMap<K,V> {
 
-    public interface Notification<K extends Serializable, V extends Serializable> {
+    public interface Notification<K, V> {
         void entrySet(K key, V value);
 
         void entryRemoved(K key);
@@ -58,23 +58,23 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         try {
             methods=new HashMap<Short,Method>(8);
             methods.put(PUT, ReplicatedHashMap.class.getMethod("_put",
-                                                               Serializable.class,
-                                                               Serializable.class));
+                                                               Object.class,
+                                                               Object.class));
             methods.put(PUT_IF_ABSENT, ReplicatedHashMap.class.getMethod("_putIfAbsent",
-                                                                         Serializable.class,
-                                                                         Serializable.class));
+                                                                         Object.class,
+                                                                         Object.class));
             methods.put(PUT_ALL, ReplicatedHashMap.class.getMethod("_putAll", Map.class));
             methods.put(REMOVE, ReplicatedHashMap.class.getMethod("_remove", Object.class));
             methods.put(REMOVE_IF_EQUALS, ReplicatedHashMap.class.getMethod("_remove",
                                                                             Object.class,
                                                                             Object.class));
             methods.put(REPLACE_IF_EXISTS, ReplicatedHashMap.class.getMethod("_replace",
-                                                                             Serializable.class,
-                                                                             Serializable.class));
+                                                                             Object.class,
+                                                                             Object.class));
             methods.put(REPLACE_IF_EQUALS, ReplicatedHashMap.class.getMethod("_replace",
-                                                                             Serializable.class,
-                                                                             Serializable.class,
-                                                                             Serializable.class));
+                                                                             Object.class,
+                                                                             Object.class,
+                                                                             Object.class));
             methods.put(CLEAR, ReplicatedHashMap.class.getMethod("_clear"));
         }
         catch(NoSuchMethodException e) {
@@ -617,11 +617,11 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
      * @param map
      * @return
      */
-    public static <K extends Serializable, V extends Serializable> ReplicatedMap<K,V> synchronizedMap(ReplicatedMap<K,V> map) {
+    public static <K, V> ReplicatedMap<K,V> synchronizedMap(ReplicatedMap<K,V> map) {
         return new SynchronizedReplicatedMap<K,V>(map);
     }
 
-    private static class SynchronizedReplicatedMap<K extends Serializable, V extends Serializable>
+    private static class SynchronizedReplicatedMap<K, V>
             implements ReplicatedMap<K,V> {
         private final ReplicatedMap<K,V> map;
         private final Object mutex;

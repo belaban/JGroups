@@ -1,13 +1,12 @@
 package org.jgroups.blocks;
 
-import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author Bela Ban
  */
-public interface ReplicatedMap<K extends Serializable, V extends Serializable> extends ConcurrentMap<K, V> {
+public interface ReplicatedMap<K, V> extends ConcurrentMap<K, V> {
     V _put(K key, V value);
 
     void _putAll(Map<? extends K, ? extends V> map);

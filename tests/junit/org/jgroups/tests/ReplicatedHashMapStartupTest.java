@@ -108,7 +108,7 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
             gms.setLogCollectMessages(false);
     }
 
-    private class MyNotification<K extends Serializable, V extends Serializable> implements
+    private class MyNotification<K, V> implements
             org.jgroups.blocks.ReplicatedHashMap.Notification<K,V> {
 
         public void contentsCleared() {}

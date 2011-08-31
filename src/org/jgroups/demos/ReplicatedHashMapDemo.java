@@ -3,18 +3,18 @@
 package org.jgroups.demos;
 
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.JChannel;
+import org.jgroups.View;
 import org.jgroups.blocks.ReplicatedHashMap;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.List;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.util.*;
-import java.io.Serializable;
+import java.util.Map;
 
 
 /**
@@ -24,7 +24,7 @@ import java.io.Serializable;
  * of a group; all hashmaps with the same name find each other and form a group.
  * @author Bela Ban
  */
-public class ReplicatedHashMapDemo extends Frame implements WindowListener, ActionListener, ReplicatedHashMap.Notification<Serializable,Serializable> {
+public class ReplicatedHashMapDemo extends Frame implements WindowListener, ActionListener, ReplicatedHashMap.Notification<Object,Object> {
     ReplicatedHashMap<String,Float>  map=null;
     final JButton                    get=new JButton("Get");
     final JButton                    set=new JButton("Set");
@@ -191,15 +191,15 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
         }
     }
 
-    public void entrySet(Serializable key, Serializable value) {
+    public void entrySet(Object key, Object value) {
         showAll();
     }
 
-    public void entryRemoved(Serializable key) {
+    public void entryRemoved(Object key) {
         showAll();
     }
 
-    public void contentsSet(Map m) {
+    public void contentsSet(Map<Object,Object> m) {
         System.out.println("new contents: " + m);
     }
 
