@@ -122,7 +122,7 @@ public class Message implements Streamable {
      *  @param dest Address of receiver. If it is <em>null</em> then the message sent to the group.
      *              Otherwise, it contains a single destination and is sent to that member.<p>
      *  @param src  Address of sender
-     *  @param obj  The object will be marshalled into the byte buffer. <em>Obj to be serializable (e.g. implementing
+     *  @param obj  The object will be marshalled into the byte buffer. <em>Obj has to be serializable (e.g. implementing
      *              Serializable, Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).</em>!
      *              The resulting buffer must not be modified
      *              (e.g. buf[0]=0 is not allowed), since we don't copy the contents on clopy() or clone().<p/>
