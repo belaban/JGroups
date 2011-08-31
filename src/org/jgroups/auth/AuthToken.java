@@ -1,7 +1,5 @@
 package org.jgroups.auth;
 
-import java.io.Serializable;
-
 import org.jgroups.Message;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -13,11 +11,11 @@ import org.jgroups.util.Streamable;
  * 
  * @author Chris Mills
  */
-public abstract class AuthToken implements Serializable, Streamable {
+public abstract class AuthToken implements Streamable {
     protected final Log log = LogFactory.getLog(this.getClass());
 
     /** A reference to AUTH */
-    protected transient AUTH auth = null;
+    protected AUTH auth = null;
 
     public void setAuth(AUTH auth) {
         this.auth = auth;

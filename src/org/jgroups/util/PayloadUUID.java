@@ -12,13 +12,6 @@ import java.security.SecureRandom;
  * @author Bela Ban
  */
 public class PayloadUUID extends UUID {
-    private static final long serialVersionUID=-7042544908572216601L;
-
-    // don't need this as we already added PayloadUUID to jg-magic-map.xml
-    //    static {
-    //        ClassConfigurator.add((short)2222, PayloadUUID.class);
-    //    }
-
     protected String payload;
 
     public PayloadUUID() {
@@ -74,15 +67,6 @@ public class PayloadUUID extends UUID {
         payload=Util.readString(in);
     }
 
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-        payload=(String)in.readObject();
-    }
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-        out.writeObject(payload);
-    }
 
     public String toString() {
         if(print_uuids)

@@ -55,10 +55,6 @@ public class RegexMembership extends AuthToken {
 
     protected Pattern pattern;
 
-    private static final long serialVersionUID=4717069536900221681L;
-
-
-    
 
     public RegexMembership() {
     }

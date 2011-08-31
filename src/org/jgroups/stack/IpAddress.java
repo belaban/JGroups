@@ -22,13 +22,11 @@ import java.net.Inet6Address;
  */
 public class IpAddress implements PhysicalAddress {
 
-	private static final long serialVersionUID = 2592301708270771474L;
-
     private InetAddress             ip_addr=null;
     private int                     port=0;
     protected static final Log      log=LogFactory.getLog(IpAddress.class);
     static boolean                  resolve_dns=false;
-    transient int                   size=-1;
+    protected int                   size=-1;
 
     static {
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
@@ -171,36 +169,6 @@ public class IpAddress implements PhysicalAddress {
 
 
 
-    public void writeExternal(ObjectOutput out) throws IOException {
-        if(ip_addr != null) {
-            byte[] address=ip_addr.getAddress();
-            out.writeByte(address.length); // 1 byte
-            out.write(address, 0, address.length);
-        }
-        else {
-            out.writeByte(0);
-        }
-        out.writeShort(port);
-    }
-
-
-
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        int len=in.readByte();
-        if(len > 0) {
-            //read the four bytes
-            byte[] a = new byte[len];
-            //in theory readFully(byte[]) should be faster
-            //than read(byte[]) since latter reads
-            // 4 bytes one at a time
-            in.readFully(a);
-            //look up an instance in the cache
-            this.ip_addr=InetAddress.getByAddress(a);
-        }
-        //then read the port
-        port=in.readUnsignedShort();
-    }
 
     public void writeTo(DataOutput out) throws IOException {
         if(ip_addr != null) {

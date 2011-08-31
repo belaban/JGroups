@@ -19,8 +19,7 @@ import java.util.*;
  * The views are sent between members using the VIEW_CHANGE event
  * @author Bela Ban
  */
-public class View implements Externalizable, Cloneable, Streamable {
-    private static final long serialVersionUID=555919142840905496L;
+public class View implements Cloneable, Streamable {
 
     /* A view is uniquely identified by its ViewID
     * The view id contains the creator address and a Lamport time.
@@ -169,17 +168,6 @@ public class View implements Externalizable, Cloneable, Streamable {
         return ret.toString();
     }
 
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(vid);
-        out.writeObject(members);
-    }
-
-    @SuppressWarnings("unchecked")
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        vid=(ViewId)in.readObject();
-        members=(List<Address>)in.readObject();
-    }
 
 
     public void writeTo(DataOutput out) throws IOException {

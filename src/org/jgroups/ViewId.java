@@ -12,7 +12,7 @@ import java.io.*;
  * Ordering between views is important for example in a virtual synchrony protocol where
  * all views seen by a member have to be ordered.
  */
-public class ViewId implements Externalizable, Comparable, Cloneable, Streamable {
+public class ViewId implements Comparable, Cloneable, Streamable {
     Address coord_addr=null;   // Address of the issuer of this view
     long id=0;                 // Lamport time of the view
 
@@ -112,17 +112,6 @@ public class ViewId implements Externalizable, Comparable, Cloneable, Streamable
         return (int)id;
     }
 
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(coord_addr);
-        out.writeLong(id);
-    }
-
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        coord_addr=(Address)in.readObject();
-        id=in.readLong();
-    }
 
     public void writeTo(DataOutput out) throws IOException {
         Util.writeAddress(coord_addr, out);

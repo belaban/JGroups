@@ -13,7 +13,6 @@ import java.security.SecureRandom;
  * @author Bela Ban
  */
 public class TopologyUUID extends UUID {
-    private static final long serialVersionUID = 6057688946243812544L;
     protected String site_id;
     protected String rack_id;
     protected String machine_id;
@@ -103,19 +102,6 @@ public class TopologyUUID extends UUID {
         machine_id=Util.readString(in);
     }
 
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-        site_id=(String)in.readObject();
-        rack_id=(String)in.readObject();
-        machine_id=(String)in.readObject();
-    }
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-        out.writeObject(site_id);
-        out.writeObject(rack_id);
-        out.writeObject(machine_id);
-    }
 
     public String toString() {
         if(print_uuids)

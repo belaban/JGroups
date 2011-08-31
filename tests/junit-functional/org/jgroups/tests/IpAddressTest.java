@@ -185,27 +185,6 @@ public class IpAddressTest {
 
 
 
-    public static void testIPv6WithExternalization() throws IOException, ClassNotFoundException {
-        InetAddress tmp=Util.getNonLoopbackAddress();
-        IpAddress ip=new IpAddress(tmp, 5555);
-
-        ByteArrayOutputStream bos=new ByteArrayOutputStream();
-        ObjectOutputStream    oos=new ObjectOutputStream(bos);
-        byte[]                buf=null;
-        ByteArrayInputStream  bis=null;
-        ObjectInputStream     ois;
-
-        System.out.println("-- address is " + tmp);
-
-        oos.writeObject(ip);
-        buf=bos.toByteArray();
-        bis=new ByteArrayInputStream(buf);
-        ois=new ObjectInputStream(bis);
-        IpAddress ip2=(IpAddress)ois.readObject();
-        Assert.assertEquals(ip, ip2);
-    }
-
-
 
 
     public static void testIPv6WithStreamable() throws IOException, ClassNotFoundException {
@@ -229,71 +208,6 @@ public class IpAddressTest {
         Assert.assertEquals(ip, ip2);
     }
 
-
-    public void testExternalization() throws Exception {
-        ByteArrayOutputStream bos=new ByteArrayOutputStream();
-        ObjectOutputStream    oos=new ObjectOutputStream(bos);
-        byte[]                buf=null;
-        ByteArrayInputStream  bis=null;
-        ObjectInputStream     ois;
-        IpAddress             a2, b2;
-        
-        oos.writeObject(a);
-        oos.writeObject(b);
-
-        buf=bos.toByteArray();        
-        bis=new ByteArrayInputStream(buf);
-        ois=new ObjectInputStream(bis);
-        a2=(IpAddress)ois.readObject();
-        b2=(IpAddress)ois.readObject();
-
-        Assert.assertEquals(a, a2);
-        Assert.assertEquals(b, b2);
-    }
-
-    
-    
-
-    public void testExternalizationAdditionalData() throws Exception {
-        ByteArrayOutputStream bos=new ByteArrayOutputStream();
-        ObjectOutputStream    oos=new ObjectOutputStream(bos);
-        byte[]                buf=null;
-        ByteArrayInputStream  bis=null;
-        ObjectInputStream     ois;
-        IpAddress             a2, b2, c2, d2, e2, f2, g2, h2;
-        
-        oos.writeObject(a);
-        oos.writeObject(b);
-        oos.writeObject(c);
-        oos.writeObject(d);
-        oos.writeObject(e);
-        oos.writeObject(f);
-        oos.writeObject(g);
-        oos.writeObject(h);
-
-
-        buf=bos.toByteArray();
-        bis=new ByteArrayInputStream(buf);
-        ois=new ObjectInputStream(bis);
-        a2=(IpAddress)ois.readObject();
-        b2=(IpAddress)ois.readObject();
-        c2=(IpAddress)ois.readObject();
-        d2=(IpAddress)ois.readObject();
-        e2=(IpAddress)ois.readObject();
-        f2=(IpAddress)ois.readObject();
-        g2=(IpAddress)ois.readObject();
-        h2=(IpAddress)ois.readObject();
-
-        Assert.assertEquals(b2, c2);
-        Assert.assertEquals(a, a2);
-        Assert.assertEquals(b, b2);
-        Assert.assertEquals(c, c2);
-        Assert.assertEquals(d, d2);
-        Assert.assertEquals(e, e2);
-        Assert.assertEquals(f, f2);
-        Assert.assertEquals(g, g2);
-        Assert.assertEquals(h, h2);
-    }
 
 
 

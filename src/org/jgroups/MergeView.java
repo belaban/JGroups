@@ -85,18 +85,6 @@ public class MergeView extends View {
     }
 
 
-    public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-        out.writeObject(subgroups);
-    }
-
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-        subgroups=(List<View>)in.readObject();
-    }
-
-
     public void writeTo(DataOutput out) throws IOException {
         super.writeTo(out);
 

@@ -56,7 +56,6 @@ public class FixedMembershipToken extends AuthToken {
 
     @Property
     private String fixed_members_seperator = ",";
-    private static final long serialVersionUID = 4717069536900221681L;
 
     public FixedMembershipToken() {
     }

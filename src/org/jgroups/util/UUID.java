@@ -25,8 +25,6 @@ public class UUID implements Address, Streamable, Comparable<Address> {
     /** Keeps track of associations between logical addresses (UUIDs) and logical names */
     protected static final LazyRemovalCache<Address,String> cache;
 
-    private static final long serialVersionUID=3972962439975931228L;
-
     protected static boolean print_uuids=false;
 
     protected static final int SIZE=Global.LONG_SIZE * 2;
@@ -276,17 +274,5 @@ public class UUID implements Address, Streamable, Comparable<Address> {
     public Object clone() throws CloneNotSupportedException {
         return new UUID(mostSigBits, leastSigBits);
     }
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(leastSigBits);
-        out.writeLong(mostSigBits);
-    }
-
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        leastSigBits=in.readLong();
-        mostSigBits=in.readLong();
-    }
-
 
 }

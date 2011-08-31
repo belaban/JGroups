@@ -2,28 +2,25 @@
 package org.jgroups.protocols.pbcast;
 
 
-import org.jgroups.View;
 import org.jgroups.Global;
+import org.jgroups.View;
+import org.jgroups.util.Digest;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
-import org.jgroups.util.Digest;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.Serializable;
 import java.io.IOException;
 
 
 /**
  * Result of a JOIN request (sent by the GMS client). Instances of this class are immutable.
  */
-public class JoinRsp implements Serializable, Streamable {
+public class JoinRsp implements Streamable {
     private View view=null;
     private Digest digest=null;
     /** only set if JOIN failed, e.g. in AUTH */
     private String fail_reason=null;
-    private static final long serialVersionUID = -212620440767943314L;
-
 
 
     public JoinRsp() {

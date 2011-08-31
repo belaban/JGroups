@@ -11,7 +11,6 @@ import java.io.*;
 public class SingletonAddress implements Address {
     protected final String cluster_name;
     protected final Address addr;
-    private static final long serialVersionUID=-7139682546627602986L;
 
     public SingletonAddress(String cluster_name, Address addr) {
         this.cluster_name=cluster_name;
@@ -35,14 +34,6 @@ public class SingletonAddress implements Address {
 
     public int size() {
         return 0;
-    }
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        throw new UnsupportedOperationException();
     }
 
     public void writeTo(DataOutput out) throws IOException {
