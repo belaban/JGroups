@@ -115,18 +115,16 @@ public class ViewId implements Comparable, Cloneable, Streamable {
 
     public void writeTo(DataOutput out) throws IOException {
         Util.writeAddress(coord_addr, out);
-        out.writeLong(id);
+        Util.writeLong(id, out);
     }
 
     public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
         coord_addr=Util.readAddress(in);
-        id=in.readLong();
+        id=Util.readLong(in);
     }
 
     public int serializedSize() {
-        int retval=Global.LONG_SIZE; // for the id
-        retval+=Util.size(coord_addr);
-        return retval;
+        return Util.size(id) + Util.size(coord_addr);
     }
 
 }
