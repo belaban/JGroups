@@ -44,7 +44,6 @@ public class UNICAST_ConnectionTests {
         b_addr=b.getAddress();
         b.setReceiver(r2);
         u2=b.getProtocolStack().findProtocol(UNICAST.class);
-        System.out.println("A=" + a_addr + ", B=" + b_addr);
     }
 
 

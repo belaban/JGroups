@@ -55,7 +55,7 @@ public class Range implements Streamable, Comparable<Range> {
     }
 
     public int serializedSize() {
-        return Util.numberOfBytesRequiredForSequence(low, high);
+        return Util.size(low, high);
     }
 
 

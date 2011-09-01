@@ -553,6 +553,22 @@ public class UtilTest {
         System.out.println("all " + combinations + " combinations were encoded / decoded successfully");
     }
 
+    public static void testSize() {
+        int[] shifts={0, 1, 7, 8, 15, 16, 17, 23, 24, 25, 31, 32, 33, 39, 40, 41, 47, 48, 49, 55, 56};
+
+        assert Util.size(0) == 1;
+
+        for(int shift: shifts) {
+            long num=((long)1) << shift;
+            byte size=Util.size(num);
+            System.out.println(num + " needs " + size + " bytes");
+            int num_bytes_required=(shift / 8) +2;
+            assert size == num_bytes_required;
+        }
+
+    }
+
+
     public static void testEncodeAndDecodeLongSequence() {
         long[] numbers=new long[]{0, 1, 50, 127, 128, 254, 255, 256,
           Short.MAX_VALUE, Short.MAX_VALUE +1, Short.MAX_VALUE *2, Short.MAX_VALUE *2 +1,

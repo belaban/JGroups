@@ -2026,7 +2026,7 @@ public class Util {
         return buf;
     }
 
-    public static byte numberOfBytesRequiredForLong(long number) {
+    private static byte numberOfBytesRequiredForLong(long number) {
         if(number >> 56 != 0) return 8;
         if(number >> 48 != 0) return 7;
         if(number >> 40 != 0) return 6;
@@ -2038,13 +2038,20 @@ public class Util {
         return 1;
     }
 
+    public static byte size(long number) {
+        return (byte)(number == 0? 1 : numberOfBytesRequiredForLong(number) +1);
+    }
+
     /**
      * Writes 2 longs, where the second long needs to be >= the first (we only write the delta !)
      * @param hd
      * @param hr
      * @return
      */
-    public static byte numberOfBytesRequiredForSequence(long hd, long hr) {
+    public static byte size(long hd, long hr) {
+        if(hd == 0 && hr == 0)
+            return 1;
+
         byte num_bytes_for_hd=numberOfBytesRequiredForLong(hd),
           num_bytes_for_delta=numberOfBytesRequiredForLong(hr - hd);
 

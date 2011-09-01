@@ -125,6 +125,7 @@ public class SCOPE_Test extends ChannelTestBase {
 
         c1.connect("SCOPE_Test");
         c2.connect("SCOPE_Test");
+        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, c1, c2);
         assert c2.getView().size() == 2 : "c2.view is " + c2.getView();
 
         MyReceiver receiver=new MyReceiver();

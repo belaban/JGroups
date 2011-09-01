@@ -69,7 +69,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
         c3.connect(GROUP);
 
         System.out.println("c1.view=" + c1.getView() + "\nc2.view=" + c2.getView() + "\nc3.view=" + c3.getView());
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, c1, c2, c3);
+        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, c1, c2, c3);
         View view=c3.getView();
         assert view.size() == 3 : "view=" + view;
     }

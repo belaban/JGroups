@@ -242,6 +242,56 @@ public class SizeTest {
         _testSize(hdr);
     }
 
+    public static void testUnicast2Header() throws Exception {
+        UNICAST2.Unicast2Header hdr=UNICAST2.Unicast2Header.createDataHeader(322649, (short)127, false);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST2.Unicast2Header.createDataHeader(322649, Short.MAX_VALUE, false);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST2.Unicast2Header.createDataHeader(322649, (short)(Short.MAX_VALUE -10), true);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST2.Unicast2Header.createSendFirstSeqnoHeader(322649);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST2.Unicast2Header.createStableHeader((short)55, 0, 0);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST2.Unicast2Header.createStableHeader((short)55, 0, 1);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST2.Unicast2Header.createStableHeader((short)55, 70000, 100000);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST2.Unicast2Header.createStableHeader((short)55, Integer.MAX_VALUE, (long)Integer.MAX_VALUE+1000);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST2.Unicast2Header.createXmitReqHeader(0, 0);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST2.Unicast2Header.createXmitReqHeader(70000, 100000);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST2.Unicast2Header.createXmitReqHeader(Integer.MAX_VALUE, (long)Integer.MAX_VALUE +100);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST2.Unicast2Header.createSendFirstSeqnoHeader(322649);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+    }
+
 
     public static void testStableHeader() throws Exception {
         org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
@@ -294,10 +344,12 @@ public class SizeTest {
         ViewId vid=new ViewId();
         _testSize(vid);
 
-        vid=new ViewId(new IpAddress(5555));
+        Address addr=Util.createRandomAddress("A");
+
+        vid=new ViewId(addr);
         _testSize(vid);
 
-        vid=new ViewId(new IpAddress(5555), 322649);
+        vid=new ViewId(addr, 322649);
         _testSize(vid);
     }
 
@@ -443,6 +495,21 @@ public class SizeTest {
         rsp=new JoinRsp(v, d);
         _testSize(rsp);
         rsp=new JoinRsp("this is a failure");
+        _testSize(rsp);
+    }
+
+    public static void testLargeJoinRsp() throws Exception {
+        int NUM=1000;
+        Address[] members=new Address[NUM];
+        for(int i=0; i < members.length; i++)
+            members[i]=Util.createRandomAddress("m" + i);
+
+        View view=Util.createView(members[0], 53, members);
+        MutableDigest digest=new MutableDigest(NUM);
+        for(Address member: members)
+            digest.add(member, 70000, 100000, false);
+
+        JoinRsp rsp=new JoinRsp(view, digest);
         _testSize(rsp);
     }
 
@@ -697,7 +764,16 @@ public class SizeTest {
     }
 
 
+    private static void _testMarshalling(UNICAST2.Unicast2Header hdr) throws Exception {
+        byte[] buf=Util.streamableToByteBuffer(hdr);
+        UNICAST2.Unicast2Header hdr2=(UNICAST2.Unicast2Header)Util.streamableFromByteBuffer(UNICAST2.Unicast2Header.class, buf);
 
+        assert hdr.getType()      == hdr2.getType();
+        assert hdr.getSeqno()     == hdr2.getSeqno();
+        assert hdr.getHighSeqno() == hdr2.getHighSeqno();
+        assert hdr.getConnId()    == hdr2.getConnId();
+        assert hdr.isFirst()      == hdr2.isFirst();
+    }
 
     private static void _testSize(Digest digest) throws Exception {
         long len=digest.serializedSize();
@@ -713,9 +789,6 @@ public class SizeTest {
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
     }
-
-
-
 
 
     private static void _testSize(Address addr) throws Exception {
@@ -759,6 +832,11 @@ public class SizeTest {
         byte[] serialized_form=Util.streamableToByteBuffer(rsp);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
+
+        JoinRsp rsp2=(JoinRsp)Util.streamableFromByteBuffer(JoinRsp.class, serialized_form);
+        assert Util.match(rsp.getDigest(), rsp2.getDigest());
+        assert Util.match(rsp.getView(), rsp2.getView());
+        assert Util.match(rsp.getFailReason(), rsp2.getFailReason());
     }
 
     private static void _testSize(PingData data) throws Exception {

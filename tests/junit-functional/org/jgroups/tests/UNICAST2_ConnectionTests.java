@@ -32,16 +32,17 @@ public class UNICAST2_ConnectionTests {
         r1=new MyReceiver("A");
         r2=new MyReceiver("B");
         a=new JChannel(props);
+        a.setName("A");
         a.connect(CLUSTER);
         a_addr=a.getAddress();
         a.setReceiver(r1);
         u1=(UNICAST2)a.getProtocolStack().findProtocol(UNICAST2.class);
         b=new JChannel(props);
+        b.setName("B");
         b.connect(CLUSTER);
         b_addr=b.getAddress();
         b.setReceiver(r2);
         u2=(UNICAST2)b.getProtocolStack().findProtocol(UNICAST2.class);
-        System.out.println("A=" + a_addr + ", B=" + b_addr);
     }
 
 
@@ -119,8 +120,16 @@ public class UNICAST2_ConnectionTests {
         Drop drop=new Drop(true);
         a.getProtocolStack().insertProtocol(drop, ProtocolStack.BELOW, UNICAST2.class);
 
+
+        u1.setLevel("trace");
+        u2.setLevel("trace");
+
         // then send messages from A to B
-        sendAndCheck(a, b_addr, 10, r2);
+        System.out.println("===================== sending 5 messages from A to B");
+        sendAndCheck(a, b_addr, 5, r2);
+        System.out.println("===================== sending 5 messages from A to B: done");
+
+
     }
 
 
@@ -200,16 +209,23 @@ public class UNICAST2_ConnectionTests {
         assert l2.size() == num;
     }
 
-    private static void sendAndCheck(JChannel channel, Address dest, int num, MyReceiver receiver) throws Exception {
+    private void sendAndCheck(JChannel channel, Address dest, int num, MyReceiver receiver) throws Exception {
         receiver.clear();
-        for(int i=1; i <= num; i++)
+        for(int i=1; i <= num; i++) {
+//            if(i == 2) {
+//                u1.sendStableMessages();
+//                u2.sendStableMessages();
+//            }
             channel.send(dest, "m" + i);
+        }
         List<Message> list=receiver.getMessages();
         for(int i=0; i < 10; i++) {
             if(list.size() == num)
                 break;
             Util.sleep(500);
         }
+        u1.setLevel("warn");
+        u2.setLevel("warn");
         System.out.println("list = " + print(list));
         int size=list.size();
         assert size == num : "list has " + size + " elements";
