@@ -801,15 +801,20 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
 
         public final int size() {
+            int retval=Global.BYTE_SIZE;     // type
             switch(type) {
                 case DATA:
-                    return Global.BYTE_SIZE *2 + Global.LONG_SIZE + Global.SHORT_SIZE;
+                    retval+=Util.size(seqno) // seqno
+                      + Global.SHORT_SIZE    // conn_id
+                      + Global.BYTE_SIZE;    // first
+                    break;
                 case ACK:
-                    return Global.BYTE_SIZE + Global.LONG_SIZE;
+                    retval+=Util.size(seqno); // seqno
+                    break;
                 case SEND_FIRST_SEQNO:
-                    return Global.BYTE_SIZE;
+                    break;
             }
-            return 0;
+            return retval;
         }
 
         public UnicastHeader copy() {
@@ -821,12 +826,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             out.writeByte(type);
             switch(type) {
                 case DATA:
-                    out.writeLong(seqno);
+                    Util.writeLong(seqno, out);
                     out.writeShort(conn_id);
                     out.writeBoolean(first);
                     break;
                 case ACK:
-                    out.writeLong(seqno);
+                    Util.writeLong(seqno, out);
                     break;
                 case SEND_FIRST_SEQNO:
                     break;
@@ -837,12 +842,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             type=in.readByte();
             switch(type) {
                 case DATA:
-                    seqno=in.readLong();
+                    seqno=Util.readLong(in);
                     conn_id=in.readShort();
                     first=in.readBoolean();
                     break;
                 case ACK:
-                    seqno=in.readLong();
+                    seqno=Util.readLong(in);
                     break;
                 case SEND_FIRST_SEQNO:
                     break;
