@@ -570,21 +570,21 @@ public class RequestCorrelator {
 
         public void writeTo(DataOutput out) throws IOException {
             out.writeByte(type);
-            out.writeLong(id);
+            Util.writeLong(id, out);
             out.writeBoolean(rsp_expected);
             out.writeShort(corrId);
         }
 
         public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
-            id=in.readLong();
+            id=Util.readLong(in);
             rsp_expected=in.readBoolean();
             corrId=in.readShort();
         }
 
         public int size() {
             return Global.BYTE_SIZE  // type
-              + Global.LONG_SIZE     // id
+              + Util.size(id)        // id
               + Global.BYTE_SIZE     // rsp_expected
               + Global.SHORT_SIZE;   // corrId
         }
