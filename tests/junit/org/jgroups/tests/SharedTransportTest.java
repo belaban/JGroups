@@ -304,6 +304,38 @@ public class SharedTransportTest extends ChannelTestBase {
     }
 
 
+    /**
+     * Test case for https://issues.jboss.org/browse/JGRP-1356
+     * @throws Exception
+     */
+    public void testFailedFirstChannel() throws Exception {
+        a=createSharedChannel(SINGLETON_1);
+
+        TP transport=a.getProtocolStack().getTransport();
+        transport.setBindPort(128); // set the bind_port to an incorrect value (< 1024), this will fail on connect()
+        a.setReceiver(new MyReceiver("A"));
+        try {
+            a.connect("A");
+        }
+        catch(Exception ex) {
+            System.out.println("caught exception - as expected: " + ex);
+        }
+
+        b=createSharedChannel(SINGLETON_1);
+        b.setReceiver(new MyReceiver("B"));
+
+        try {
+            b.connect("B");
+        }
+        catch(Exception ex) {
+            System.out.println("caught exception - as expected: " + ex);
+        }
+
+        transport.setBindPort(0); // fix the problem by picking an ephemeral port > 1024
+        b.connect("B");
+    }
+
+
     
     public void testReCreationWithSurvivingChannel() throws Exception {
 

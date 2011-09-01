@@ -934,7 +934,14 @@ public class ProtocolStack extends Protocol {
                                 continue;
                             }
                             else {
-                                prot.start();
+                                try {
+                                    prot.start();
+                                }
+                                catch(Exception ex) {
+                                    counter.decrementStartCount();
+                                    up_prots.remove(cluster_name);
+                                    throw ex;
+                                }
                                 above_prot=prot;
                                 continue;
                             }
