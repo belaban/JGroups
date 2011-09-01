@@ -106,7 +106,7 @@ public abstract class TP extends Protocol {
     @Property(description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port",writable=false)
     protected int bind_port=0;
 
-    @Property(description="The range of valid ports, from bind_port to end_port. Infinite if 0")
+    @Property(description="The range of valid ports, from bind_port to end_port. 0 only binds to bind_port and fails if taken")
     protected int port_range=50; // 27-6-2003 bgooren, Only try one port by default
 
   

@@ -26,7 +26,9 @@ public class TCPPING extends Discovery {
     
     /* -----------------------------------------    Properties     --------------------------------------- */
     
-    @Property(description="Number of ports to be probed for initial membership. Default is 1")
+    @Property(description="Number of additional ports to be probed for membership. A port_range of 0 does not " +
+      "probe additional ports. Example: initial_hosts=A[7800] port_range=0 probes A:7800, port_range=1 probes " +
+      "A:7800 and A:7801")
     private int port_range=1; 
     
     @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership", 
