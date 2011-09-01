@@ -379,7 +379,7 @@ public class Digest implements Streamable, Iterable<Digest.DigestEntry> {
         }
 
         for(int i=0; i < size() * 2; i+=2)
-            retval+=Util.numberOfBytesRequiredForSequence(seqnos[i], seqnos[i+1]);
+            retval+=Util.size(seqnos[i], seqnos[i+1]);
         return retval;
     }
 

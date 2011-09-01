@@ -111,8 +111,7 @@ public class NakAckHeader extends Header {
         switch(type) {
             case MSG:
             case XMIT_RSP:
-                return retval + Util.numberOfBytesRequiredForLong(seqno) +
-                  Global.BYTE_SIZE; // byte to store the number of bytes needed for seqno
+                return retval + Util.size(seqno);
 
             case XMIT_REQ:
                 retval+=Global.BYTE_SIZE; // presence for range
