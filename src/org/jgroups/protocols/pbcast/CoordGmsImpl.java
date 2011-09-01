@@ -206,9 +206,13 @@ public class CoordGmsImpl extends ServerGmsImpl {
                     log.error("received null digest from GET_DIGEST: will cause JOIN to fail");
                 }
                 else {
-                    // create a new digest, which contains the new member
+                    // create a new digest, which contains the new members, minus left members
                     join_digest=new MutableDigest(tmp.size() + new_mbrs.size());
-                    join_digest.add(tmp); // add the existing digest to the new one
+                    for(Digest.DigestEntry entry: tmp) {
+                        Address mbr=entry.getMember();
+                        if(new_view.containsMember(mbr))
+                            join_digest.add(mbr, entry.getHighestDeliveredSeqno(), entry.getHighestReceivedSeqno(), false);
+                    }
                     for(Address member: new_mbrs)
                         join_digest.add(member, 0, 0); // ... and add the new members. their first seqno will be 1
                 }

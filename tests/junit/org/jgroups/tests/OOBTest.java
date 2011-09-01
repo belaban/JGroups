@@ -40,7 +40,7 @@ public class OOBTest extends ChannelTestBase {
         c2.connect("OOBTest");
         View view=c2.getView();
         log.info("view = " + view);
-        assert view.size() == 2 : "view is " + view;
+        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, c1, c2);
     }
 
 

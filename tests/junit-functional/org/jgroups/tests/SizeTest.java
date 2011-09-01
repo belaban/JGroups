@@ -482,19 +482,20 @@ public class SizeTest {
 
     public static void testJoinRsp() throws Exception {
         JoinRsp rsp;
-        Vector<Address> members=new Vector<Address>();
+        Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B"), c=Util.createRandomAddress("C");
+        View v=Util.createView(a, 55, a, b, c);
 
-        members.add(new IpAddress(1111));
-        members.add(new IpAddress(2222));
-        View v=new View(new IpAddress(1234), 322649, members);
-        MutableDigest d=new MutableDigest(3);
-        d.add(new IpAddress(3524), 2,3);
-        d.add(new IpAddress(1324), 4,5);
-        rsp=new JoinRsp();
+        MutableDigest digest=new MutableDigest(3);
+        digest.add(a, 1000, 1050);
+        digest.add(b, 700, 700);
+        digest.add(c, 0, 0);
+        rsp=new JoinRsp(v, digest);
         _testSize(rsp);
-        rsp=new JoinRsp(v, d);
+
+        rsp=new JoinRsp(v, null);
         _testSize(rsp);
-        rsp=new JoinRsp("this is a failure");
+
+        rsp=new JoinRsp("boom");
         _testSize(rsp);
     }
 
@@ -510,6 +511,9 @@ public class SizeTest {
             digest.add(member, 70000, 100000, false);
 
         JoinRsp rsp=new JoinRsp(view, digest);
+        _testSize(rsp);
+
+        rsp=new JoinRsp(view, null);
         _testSize(rsp);
     }
 

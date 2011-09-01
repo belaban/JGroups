@@ -19,7 +19,7 @@ import java.util.*;
  * The views are sent between members using the VIEW_CHANGE event
  * @author Bela Ban
  */
-public class View implements Cloneable, Streamable {
+public class View implements Cloneable, Streamable, Iterable<Address> {
 
     /* A view is uniquely identified by its ViewID
     * The view id contains the creator address and a Lamport time.
@@ -206,4 +206,7 @@ public class View implements Cloneable, Streamable {
     }
 
 
+    public Iterator<Address> iterator() {
+        return members.iterator();
+    }
 }
