@@ -31,8 +31,25 @@ Optimizations
 =============
 
 
+Digest: remove low seqno and compress highest_delivered and highest_received seqnos
+-----------------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1331]
 
 
+Umbrella JIRA for a number of optimizations:
+- Removed low seqno from digest (memory and wire size reduction)
+- Compressed longs and long sequences (wire size reduction)
+  - E.g. NakackHeader sequence numbers, retransmission ranges
+- JoinRsp wire size reduction
+  - 1000-node JoinRsp: 40'000 --> 23'000 bytes
+
+
+Discovery: don't send view back with discovery response
+-------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1315]
+
+The view is now omitted from the discovery response, this cause large messages sent by everyone in the cluster,
+especially if we had a large cluster
 
 
 
@@ -53,7 +70,7 @@ Race condition in RspFilter
 [https://issues.jboss.org/browse/JGRP-1193]
 
 
-Incorrect state transfer with STREAMING_STATE_TRANSFER is use_default_transport=true
+Incorrect state transfer with STREAMING_STATE_TRANSFER if use_default_transport=true
 ------------------------------------------------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1339]
 
@@ -64,6 +81,10 @@ BARRIER should not block unicast messages
 -----------------------------------------
 [https://issues.jboss.org/browse/JGRP-1341]
 
+
+Error starting shared transport causes future channels using it to fail
+-----------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1356]
 
 
 
@@ -84,5 +105,5 @@ Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Toronto, Canada
 Sanne Grinovero, Newcastle, Great Britain
 
-July 2011
+Sept 2011
 

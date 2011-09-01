@@ -199,7 +199,7 @@ public class DuplicateTest extends ChannelTestBase {
         c2.connect("DuplicateTest");
         c3.connect("DuplicateTest");
 
-        assert c3.getView().size() == 3 : "view was " + c1.getView() + " but should have been 3";
+        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, c1, c2, c3);
     }
 
 
