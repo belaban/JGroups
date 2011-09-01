@@ -68,8 +68,8 @@ public class RequestOptions {
     }
 
 
-    public static RequestOptions SYNC() {return new RequestOptions(ResponseMode.GET_ALL, 5000);}
-    public static RequestOptions ASYNC() {return new RequestOptions(ResponseMode.GET_NONE, 5000);}
+    public static RequestOptions SYNC() {return new RequestOptions(ResponseMode.GET_ALL, 10000);}
+    public static RequestOptions ASYNC() {return new RequestOptions(ResponseMode.GET_NONE, 10000);}
 
 
     public ResponseMode getMode() {
