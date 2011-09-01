@@ -1,7 +1,10 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.NakReceiverWindow;
@@ -19,7 +22,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -337,7 +339,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                         handleResendingOfFirstMessage(src, hdr.seqno);
                         break;
                     case Unicast2Header.STABLE:
-                        stable(msg.getSrc(), hdr.seqno, hdr.high_seqno);
+                        stable(msg.getSrc(), hdr.conn_id, hdr.seqno, hdr.high_seqno);
                         break;
                     default:
                         log.error("UnicastHeader type " + hdr.type + " not known !");
@@ -376,7 +378,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                         entry=existing;
                     else {
                         if(log.isTraceEnabled())
-                            log.trace(local_addr + ": created connection to " + dst);
+                            log.trace(local_addr + ": created connection to " + dst + " (conn_id=" + entry.send_conn_id + ")");
                         if(cache != null && !members.contains(dst))
                             cache.add(dst);
                     }
@@ -457,15 +459,22 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
      * @param highest_delivered
      * @param highest_seen
      */
-    protected void stable(Address sender, long highest_delivered, long highest_seen) {
+    protected void stable(Address sender, short conn_id, long highest_delivered, long highest_seen) {
         SenderEntry entry=send_table.get(sender);
         AckSenderWindow win=entry != null? entry.sent_msgs : null;
         if(win == null)
             return;
 
         if(log.isTraceEnabled())
-            log.trace(new StringBuilder().append(local_addr).append(" <-- STABLE(").append(sender).
-                    append(": ").append(highest_delivered).append("-").append(highest_seen).append(')'));
+            log.trace(new StringBuilder().append(local_addr).append(" <-- STABLE(").append(sender)
+                        .append(": ").append(highest_delivered).append("-")
+                        .append(highest_seen).append(", conn_id=" + conn_id) +")");
+
+        if(entry.send_conn_id != conn_id) {
+            log.warn(local_addr + ": my conn_id (" + entry.send_conn_id +
+                       ") != received conn_id (" + conn_id + "); discarding STABLE message !");
+            return;
+        }
 
         win.ack(highest_delivered);
         long win_high=win.getHighest();
@@ -500,27 +509,27 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                     val.last_highest=high;
                     val.num_stable_msgs=1;
                 }
-                sendStableMessage(dest, low, high);
+                sendStableMessage(dest, val.recv_conn_id, low, high);
             }
         }
     }
 
-    protected void sendStableMessage(Address dest, long low, long high) {
+    protected void sendStableMessage(Address dest, short conn_id, long low, long high) {
         Message stable_msg=new Message(dest, null, null);
-        Unicast2Header hdr=Unicast2Header.createStableHeader(low, high);
+        Unicast2Header hdr=Unicast2Header.createStableHeader(conn_id, low, high);
         stable_msg.putHeader(this.id, hdr);
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
-            sb.append(local_addr).append(" --> STABLE(").append(dest).append(": ").append(low).append("-").append(high).append(")");
+            sb.append(local_addr).append(" --> STABLE(").append(dest).append(": ")
+              .append(low).append("-").append(high).append(", conn_id=").append(conn_id).append(")");
             log.trace(sb.toString());
         }
         down_prot.down(new Event(Event.MSG, stable_msg));
 
         ReceiverEntry entry=recv_table.get(dest);
         NakReceiverWindow win=entry != null? entry.received_msgs : null;
-        if(win != null) {
+        if(win != null)
             win.stable(win.getHighestDelivered());
-        }
     }
 
 
@@ -564,7 +573,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         if(entry2 != null) {
             NakReceiverWindow win=entry2.received_msgs;
             if(win != null)
-                sendStableMessage(mbr, win.getHighestDelivered(), win.getHighestReceived());
+                sendStableMessage(mbr, entry2.recv_conn_id, win.getHighestDelivered(), win.getHighestReceived());
             entry2.reset();
         }
     }
@@ -612,7 +621,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
      * e.received_msgs is null and <code>first</code> is true: create a new AckReceiverWindow(seqno) and
      * add message. Set e.received_msgs to the new window. Else just add the message.
      */
-    protected void handleDataReceived(Address sender, long seqno, long conn_id, boolean first, Message msg, Event evt) {
+    protected void handleDataReceived(Address sender, long seqno, short conn_id, boolean first, Message msg, Event evt) {
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno);
@@ -669,17 +678,23 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         num_bytes_received+=msg.getLength();
 
         if(added) {
-            int bytes=entry.received_bytes.addAndGet(msg.getLength());
-            if(bytes >= max_bytes) {
-                entry.received_bytes_lock.lock();
+            int len=msg.getLength();
+            if(len > 0) {
+                boolean send_stable_msg=false;
+                entry.lock();
                 try {
-                    entry.received_bytes.set(0);
+                    entry.received_bytes+=len;
+                    if(entry.received_bytes >= max_bytes) {
+                        entry.received_bytes=0;
+                        send_stable_msg=true;
+                    }
                 }
                 finally {
-                    entry.received_bytes_lock.unlock();
+                    entry.unlock();
                 }
 
-                sendStableMessage(sender, win.getHighestDelivered(), win.getHighestReceived());
+                if(send_stable_msg)
+                    sendStableMessage(sender, entry.recv_conn_id, win.getHighestDelivered(), win.getHighestReceived());
             }
         }
 
@@ -738,7 +753,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     }
 
 
-    private ReceiverEntry getOrCreateReceiverEntry(Address sender, long seqno, long conn_id) {
+    private ReceiverEntry getOrCreateReceiverEntry(Address sender, long seqno, short conn_id) {
         NakReceiverWindow win=new NakReceiverWindow(sender, this, seqno-1, timer, use_range_based_retransmitter,
                                                     xmit_table_num_rows, xmit_table_msgs_per_row,
                                                     xmit_table_resize_factor, xmit_table_max_compaction_time,
@@ -788,7 +803,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
      */
     private void handleResendingOfFirstMessage(Address sender, long seqno) {
         if(log.isTraceEnabled())
-            log.trace(local_addr + " <-- SEND_FIRST_SEQNO(" + sender + ")");
+            log.trace(local_addr + " <-- SEND_FIRST_SEQNO(" + sender + "," + seqno + ")");
         SenderEntry entry=send_table.get(sender);
         AckSenderWindow win=entry != null? entry.sent_msgs : null;
         if(win == null) {
@@ -850,7 +865,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         Unicast2Header hdr=Unicast2Header.createSendFirstSeqnoHeader(seqno_received);
         msg.putHeader(this.id, hdr);
         if(log.isTraceEnabled())
-            log.trace(local_addr + " --> SEND_FIRST_SEQNO(" + dest + ")");
+            log.trace(local_addr + " --> SEND_FIRST_SEQNO(" + dest + "," + seqno_received + ")");
         down_prot.down(new Event(Event.MSG, msg));
     }
 
@@ -872,7 +887,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         byte    type;
         long    seqno;       // DATA, XMIT_REQ and STABLE
         long    high_seqno;  // XMIT_REQ and STABLE
-        short   conn_id;     // DATA
+        short   conn_id;     // DATA, STABLE
         boolean first;       // DATA
 
 
@@ -883,14 +898,19 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         }
 
         public static Unicast2Header createXmitReqHeader(long low, long high) {
+            if(low > high)
+                throw new IllegalArgumentException("low (" + low + " needs to be <= high (" + high + ")");
             Unicast2Header retval=new Unicast2Header(XMIT_REQ, low);
             retval.high_seqno=high;
             return retval;
         }
 
-        public static Unicast2Header createStableHeader(long low, long high) {
+        public static Unicast2Header createStableHeader(short conn_id, long low, long high) {
+            if(low > high)
+                throw new IllegalArgumentException("low (" + low + " needs to be <= high (" + high + ")");
             Unicast2Header retval=new Unicast2Header(STABLE, low);
             retval.high_seqno=high;
+            retval.conn_id=conn_id;
             return retval;
         }
 
@@ -911,8 +931,25 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             this.first=first;
         }
 
+        public byte getType() {
+            return type;
+        }
+
         public long getSeqno() {
             return seqno;
+        }
+
+        public long getHighSeqno() {
+            return high_seqno;
+        }
+
+        public short getConnId() {
+            return conn_id;
+        }
+
+
+        public boolean isFirst() {
+            return first;
         }
 
         public String toString() {
@@ -934,16 +971,24 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         }
 
         public final int size() {
+            int retval=Global.BYTE_SIZE; // type
             switch(type) {
                 case DATA:
-                    return Global.BYTE_SIZE *2 + Global.LONG_SIZE + Global.SHORT_SIZE;
+                    retval+=Util.size(seqno) // seqno
+                      + Global.SHORT_SIZE    // conn_id
+                      + Global.BYTE_SIZE;    // first
+                    break;
                 case XMIT_REQ:
+                    retval+=Util.size(seqno, high_seqno);
+                    break;
                 case STABLE:
-                    return Global.BYTE_SIZE + Global.LONG_SIZE *2;
+                    retval+=Util.size(seqno, high_seqno) + Global.SHORT_SIZE; // conn_id
+                    break;
                 case SEND_FIRST_SEQNO:
-                    return Global.BYTE_SIZE;
+                    retval+=Util.size(seqno);
+                    break;
             }
-            return 0;
+            return retval;
         }
 
         public Unicast2Header copy() {
@@ -956,17 +1001,19 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             out.writeByte(type);
             switch(type) {
                 case DATA:
-                    out.writeLong(seqno);
+                    Util.writeLong(seqno, out);
                     out.writeShort(conn_id);
                     out.writeBoolean(first);
                     break;
                 case XMIT_REQ:
+                    Util.writeLongSequence(seqno, high_seqno, out);
+                    break;
                 case STABLE:
-                    out.writeLong(seqno);
-                    out.writeLong(high_seqno);
+                    Util.writeLongSequence(seqno, high_seqno, out);
+                    out.writeShort(conn_id);
                     break;
                 case SEND_FIRST_SEQNO:
-                    out.writeLong(seqno);
+                    Util.writeLong(seqno, out);
                     break;
             }
         }
@@ -975,17 +1022,23 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             type=in.readByte();
             switch(type) {
                 case DATA:
-                    seqno=in.readLong();
+                    seqno=Util.readLong(in);
                     conn_id=in.readShort();
                     first=in.readBoolean();
                     break;
                 case XMIT_REQ:
+                    long[] seqnos=Util.readLongSequence(in);
+                    seqno=seqnos[0];
+                    high_seqno=seqnos[1];
+                    break;
                 case STABLE:
-                    seqno=in.readLong();
-                    high_seqno=in.readLong();
+                    seqnos=Util.readLongSequence(in);
+                    seqno=seqnos[0];
+                    high_seqno=seqnos[1];
+                    conn_id=in.readShort();
                     break;
                 case SEND_FIRST_SEQNO:
-                    seqno=in.readLong();
+                    seqno=Util.readLong(in);
                     break;
             }
         }
@@ -1005,13 +1058,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             sent_msgs=new AckSenderWindow();
         }
 
-        public void lock() {
-            lock.lock();
-        }
-
-        public void unlock() {
-            lock.unlock();
-        }
+        void lock()   {lock.lock();}
+        void unlock() {lock.unlock();}
 
         void reset() {
             if(sent_msgs != null)
@@ -1030,9 +1078,9 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
     private static final class ReceiverEntry {
         private final NakReceiverWindow  received_msgs;  // stores all msgs rcvd by a certain peer in seqno-order
-        private final long               recv_conn_id;
-        final AtomicInteger              received_bytes=new AtomicInteger(0);
-        final Lock                       received_bytes_lock=new ReentrantLock();
+        private final short              recv_conn_id;
+        private int                      received_bytes=0;
+        private final Lock               lock=new ReentrantLock();
 
         private long                     last_highest=-1;
         private int                      num_stable_msgs=0;
@@ -1040,16 +1088,19 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
 
 
-        public ReceiverEntry(NakReceiverWindow received_msgs, long recv_conn_id, final int max_stable_msgs) {
+        public ReceiverEntry(NakReceiverWindow received_msgs, short recv_conn_id, final int max_stable_msgs) {
             this.received_msgs=received_msgs;
             this.recv_conn_id=recv_conn_id;
             this.max_stable_msgs=max_stable_msgs;
         }
 
+        void lock()   {lock.lock();}
+        void unlock() {lock.unlock();}
+
         void reset() {
             if(received_msgs != null)
                 received_msgs.destroy();
-            received_bytes.set(0);
+            received_bytes=0;
             last_highest=-1;
             num_stable_msgs=0;
         }
