@@ -1291,7 +1291,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Implementation of Retransmitter.RetransmitCommand. Called by retransmission thread when gap is detected.
      */
     public void retransmit(long first_seqno, long last_seqno, Address sender) {
-        retransmit(first_seqno, last_seqno, sender, false);
+        if(first_seqno <= last_seqno)
+            retransmit(first_seqno, last_seqno, sender, false);
     }
 
 

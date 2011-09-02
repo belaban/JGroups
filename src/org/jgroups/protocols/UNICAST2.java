@@ -595,6 +595,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
 
     public void retransmit(long first_seqno, long last_seqno, Address sender) {
+        if(last_seqno < first_seqno)
+            return;
         Unicast2Header hdr=Unicast2Header.createXmitReqHeader(first_seqno, last_seqno);
         Message xmit_req=new Message(sender, null, null);
         xmit_req.putHeader(this.id, hdr);
