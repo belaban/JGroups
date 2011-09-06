@@ -257,12 +257,10 @@ public class NakReceiverWindow {
         finally {
             highest_received=Math.max(highest_received, seqno);
             lock.writeLock().unlock();
+            if(listener != null && num_xmits > 0) {
+                try {listener.missingMessageReceived(seqno, msg.getSrc());} catch(Throwable t) {}
+            }
         }
-
-        if(listener != null && num_xmits > 0) {
-            try {listener.missingMessageReceived(seqno, msg.getSrc());} catch(Throwable t) {}
-        }
-
         return true;
     }
 
