@@ -33,17 +33,17 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
         c1=createChannel(true, 3);
         c1.setName("A");
         final String GROUP="RpcDispatcherUnitTest";
-        d1=new RpcDispatcher(c1, null, null, o1);
+        d1=new RpcDispatcher(c1, o1);
         c1.connect(GROUP);
 
         c2=createChannel(c1);
         c2.setName("B");
-        d2=new RpcDispatcher(c2, null, null, o2);
+        d2=new RpcDispatcher(c2, o2);
         c2.connect(GROUP);
 
         c3=createChannel(c1);
         c3.setName("C");
-        d3=new RpcDispatcher(c3, null, null, o3);
+        d3=new RpcDispatcher(c3, o3);
         c3.connect(GROUP);
 
         System.out.println("c1.view=" + c1.getView() + "\nc2.view=" + c2.getView() + "\nc3.view=" + c3.getView());

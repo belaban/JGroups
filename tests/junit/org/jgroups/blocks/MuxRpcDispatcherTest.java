@@ -35,7 +35,7 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
         
         for (int i = 0; i < dispatchers.length; i++) {
 
-            dispatchers[i] = new RpcDispatcher(channels[i], null, null, new Server("dispatcher[" + i + "]"));
+            dispatchers[i] = new RpcDispatcher(channels[i], new Server("dispatcher[" + i + "]"));
 
             channels[i].setUpHandler(new MuxUpHandler(dispatchers[i].getProtocolAdapter()));
 

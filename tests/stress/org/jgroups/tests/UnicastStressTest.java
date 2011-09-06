@@ -62,7 +62,7 @@ public class UnicastStressTest {
         for(int i=0; i < channels.length; i++) {
             channels[i]=new JChannel(props);
             receivers[i]=new Receiver(terminate_barrier, bytes_received, msgs_received, num_expected_msgs, num_total_msgs);
-            dispatchers[i]=new RpcDispatcher(channels[i], null, null, receivers[i]);
+            dispatchers[i]=new RpcDispatcher(channels[i], receivers[i]);
             channels[i].connect("x");
         }
 

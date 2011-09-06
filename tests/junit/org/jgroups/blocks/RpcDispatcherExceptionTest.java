@@ -22,7 +22,7 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
     @BeforeClass
     public void setUp() throws Exception {
         channel=createChannel(true);
-        disp=new RpcDispatcher(channel, null, null, target);
+        disp=new RpcDispatcher(channel, target);
         channel.connect("RpcDispatcherExceptionTest");
     }
 

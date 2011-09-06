@@ -41,6 +41,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         this.server_obj=server_obj;
     }
 
+    public RpcDispatcher(Channel channel, Object server_obj) {
+        this(channel, null, null, server_obj);
+    }
+
 
 
 

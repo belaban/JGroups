@@ -50,7 +50,7 @@ public class Deadlock2Test extends ChannelTestBase {
     public void testOneChannel() throws Exception {
         c1 = createChannel(true);
         ServerObject serverObject = new ServerObject("obj1");
-        RpcDispatcher disp=new RpcDispatcher(c1, null, null, serverObject);
+        RpcDispatcher disp=new RpcDispatcher(c1, serverObject);
         serverObject.setRpcDispatcher(disp);
         c1.connect(name);
         Address localAddress = c1.getAddress();
@@ -91,13 +91,13 @@ public class Deadlock2Test extends ChannelTestBase {
 
         c1 = createChannel(true);
         obj1 = new ServerObject("obj1");
-        RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1);
+        RpcDispatcher disp1=new RpcDispatcher(c1, obj1);
         obj1.setRpcDispatcher(disp1);
         c1.connect(name);
 
         c2 = createChannel(c1);
         obj2 = new ServerObject("obj2");
-        RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2);
+        RpcDispatcher disp2=new RpcDispatcher(c2, obj2);
         obj2.setRpcDispatcher(disp2);
         c2.connect(name);
         Address localAddress2 = c2.getAddress();
@@ -115,13 +115,13 @@ public class Deadlock2Test extends ChannelTestBase {
 
         c1 = createChannel(true);
         obj1 = new ServerObject("obj1");
-        RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1);
+        RpcDispatcher disp1=new RpcDispatcher(c1, obj1);
         obj1.setRpcDispatcher(disp1);
         c1.connect(name);
 
         c2 = createChannel(c1);
         obj2 = new ServerObject("obj2");
-        RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2);
+        RpcDispatcher disp2=new RpcDispatcher(c2, obj2);
         obj2.setRpcDispatcher(disp2);
         c2.connect(name);
 

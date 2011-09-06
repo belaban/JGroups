@@ -27,11 +27,11 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
     @BeforeClass
     protected void setUp() throws Exception {
         channel=createChannel(true);
-        disp=new RpcDispatcher(channel, null, null, target);
+        disp=new RpcDispatcher(channel, target);
         channel.connect("RpcDispatcherSerializationTest");
 
         channel2=createChannel(channel);
-        disp2=new RpcDispatcher(channel2, null, null, target);
+        disp2=new RpcDispatcher(channel2, target);
         channel2.connect("RpcDispatcherSerializationTest");
     }
 

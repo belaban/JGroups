@@ -24,19 +24,19 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
     void setUp() throws Exception {
         ch=createChannel(true,3);
         ServerObject obj=new ServerObject(null);
-        disp=new RpcDispatcher(ch, null, null, obj);
+        disp=new RpcDispatcher(ch, obj);
         ch.connect("RpcDispatcherAnycastTest");
         obj.setAddress(ch.getAddress());
 
         ch2=createChannel(ch);
         ServerObject obj2=new ServerObject(null);
-        disp2=new RpcDispatcher(ch2, null, null, obj2);
+        disp2=new RpcDispatcher(ch2, obj2);
         ch2.connect("RpcDispatcherAnycastTest");
         obj2.setAddress(ch2.getAddress());
 
         ch3=createChannel(ch);
         ServerObject obj3=new ServerObject(null);
-        disp3=new RpcDispatcher(ch3, null, null, obj3);
+        disp3=new RpcDispatcher(ch3, obj3);
         ch3.connect("RpcDispatcherAnycastTest");
         obj3.setAddress(ch3.getAddress());
     }

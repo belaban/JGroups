@@ -45,14 +45,14 @@ public class RelayDemoRpc extends ReceiverAdapter {
         ch=new JChannel(props);
         if(name != null)
             ch.setName(name);
-        disp=new RpcDispatcher(ch, null, this, this);
+        disp=new RpcDispatcher(ch, this);
         ch.connect("RelayDemo");
         local_addr=ch.getAddress();
 
         MethodCall call=new MethodCall(getClass().getMethod("handleMessage", String.class, Address.class));
         for(;;) {
             String line=Util.readStringFromStdin(": ");
-            call.setArgs(new Object[]{line, local_addr});
+            call.setArgs(line, local_addr);
             if(line.equalsIgnoreCase("unicast")) {
 
                 for(Address dest: view.getMembers()) {

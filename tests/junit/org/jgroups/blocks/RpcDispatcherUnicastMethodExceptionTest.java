@@ -19,7 +19,7 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     @BeforeClass
     protected void setUp() throws Exception {
         channel=createChannel(true);
-        disp=new RpcDispatcher(channel, null, null, this);
+        disp=new RpcDispatcher(channel, this);
         channel.connect(getUniqueClusterName("RpcDispatcherUnicastMethodExceptionTest"));
     }
 

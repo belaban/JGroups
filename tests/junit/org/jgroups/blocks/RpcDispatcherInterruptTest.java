@@ -31,12 +31,12 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
         ch=createChannel(true);
         modifyStack(ch);
         ServerObject obj=new ServerObject();
-        disp=new RpcDispatcher(ch, null, null, obj);
+        disp=new RpcDispatcher(ch, obj);
         ch.connect("RpcDispatcherInterruptTest");
 
         ch2=createChannel(ch);
         ServerObject obj2=new ServerObject();
-        disp2=new RpcDispatcher(ch2, null, null, obj2);
+        disp2=new RpcDispatcher(ch2, obj2);
         ch2.connect("RpcDispatcherInterruptTest");
     }
 
