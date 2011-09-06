@@ -2327,7 +2327,13 @@ public class Util {
         return retval;
     }
 
-
+    /**
+     * Returns the rank of a member in a given view
+     * @param view The view
+     * @param addr The address of a member
+     * @return A value between 1 and view.size(). The first member has rank 1, the second 2 and so on. If the
+     * member is not found, 0 is returned
+     */
     public static int getRank(View view, Address addr) {
         if(view == null || addr == null)
             return 0;
