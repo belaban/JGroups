@@ -259,7 +259,7 @@ public class MERGE2 extends Protocol {
                 StringBuilder sb=new StringBuilder();
                 sb.append("Discovery results:\n");
                 for(PingData data: discovery_rsps)
-                    sb.append("[" + data.getAddress() + "]: " + data.getView()).append("\n");
+                    sb.append("[" + data.getAddress() + "]: coord=" + data.getCoordAddress()).append("\n");
                 log.trace(sb);
             }
 
@@ -294,7 +294,7 @@ public class MERGE2 extends Protocol {
                         "; sending up MERGE event with merge participants " + merge_participants + ".\n");
                 sb.append("Discovery results:\n");
                 for(PingData data: discovery_rsps)
-                    sb.append("[" + data.getAddress() + "]: " + data.getView()).append("\n");
+                    sb.append("[" + data.getAddress() + "]: coord=" + data.getCoordAddress()).append("\n");
                 log.debug(sb.toString());
             }
             Event evt=new Event(Event.MERGE, views);
