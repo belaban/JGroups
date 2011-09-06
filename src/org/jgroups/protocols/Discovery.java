@@ -111,10 +111,10 @@ public abstract class Discovery extends Protocol {
             return_entire_cache=true;
         if(stagger_timeout < 0)
             throw new IllegalArgumentException("stagger_timeout cannot be negative");
-        if(stagger_timeout > timeout) {
-            log.debug("stagger_timeout (" + stagger_timeout + ") was greater than timeout (" + timeout +
-                        "); setting it to " + timeout + " ms");
-            stagger_timeout=timeout;
+        if(stagger_timeout > timeout / num_ping_requests) {
+            log.debug("stagger_timeout (" + stagger_timeout + ") was greater than timeout (" + timeout/num_ping_requests +
+                        "); setting it to " + timeout/num_ping_requests + " ms");
+            stagger_timeout=timeout / num_ping_requests;
         }
     }
 
@@ -538,7 +538,7 @@ public abstract class Discovery extends Protocol {
 
 
     protected void sendDiscoveryResponse(Address logical_addr, List<PhysicalAddress> physical_addrs,
-                                         boolean is_server, boolean return_view_only, String logical_name, Address sender) {
+                                         boolean is_server, boolean return_view_only, String logical_name, final Address sender) {
         PingData data;
         if(return_view_only) {
             // data=new PingData(logical_addr, view, is_server, logical_name, physical_addrs);
@@ -549,13 +549,24 @@ public abstract class Discovery extends Protocol {
             data=new PingData(logical_addr, null, view_id, is_server, logical_name, physical_addrs);
         }
 
-        Message rsp_msg=new Message(sender, null, null);
+        final Message rsp_msg=new Message(sender, null, null);
         rsp_msg.setFlag(Message.OOB);
-        PingHeader rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, data);
+        final PingHeader rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, data);
         rsp_msg.putHeader(this.id, rsp_hdr);
 
-        if(stagger_timeout > 0)
-            Util.sleepRandom(0, stagger_timeout);
+        if(stagger_timeout > 0) {
+            int view_size=view != null? view.size() : 10;
+            long sleep_time=rank == 0? Util.random(stagger_timeout)
+                    : stagger_timeout * rank / view_size - (stagger_timeout / view_size);
+            timer.schedule(new Runnable() {
+                public void run() {
+                    if(log.isTraceEnabled())
+                        log.trace("received GET_MBRS_REQ from " + sender + ", sending staggered response " + rsp_hdr);
+                    down_prot.down(new Event(Event.MSG, rsp_msg));
+                }
+            }, sleep_time, TimeUnit.MILLISECONDS);
+            return;
+        }
 
         if(log.isTraceEnabled())
             log.trace("received GET_MBRS_REQ from " + sender + ", sending response " + rsp_hdr);
