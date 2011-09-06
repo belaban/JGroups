@@ -3,8 +3,8 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.Property;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -12,7 +12,6 @@ import org.jgroups.util.UUID;
 
 import java.io.InterruptedIOException;
 import java.util.*;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 
@@ -46,9 +45,6 @@ public abstract class Discovery extends Protocol {
     @Property(description="Return from the discovery phase as soon as we have 1 coordinator response")
     protected boolean break_on_coord_rsp=true;
 
-    @Property(description="Number of discovery requests to be sent distributed over timeout. Default is 2")
-    protected int num_ping_requests=2;
-
     @Property(description="If greater than 0, we'll wait a random number of milliseconds in range [0..stagger_timeout] " +
       "before sending a discovery response. This prevents traffic spikes in large clusters when everyone sends their " +
       "discovery response at the same time")
@@ -74,7 +70,6 @@ public abstract class Discovery extends Protocol {
     protected Address               local_addr=null;
     protected String                group_addr=null;
     protected final Set<Responses>  ping_responses=new HashSet<Responses>();
-    protected  final PingSenderTask sender=new PingSenderTask();
     
 
     
@@ -131,14 +126,6 @@ public abstract class Discovery extends Protocol {
 
     public void setNumInitialMembers(int num_initial_members) {
         this.num_initial_members=num_initial_members;        
-    }
-
-    public int getNumPingRequests() {
-        return num_ping_requests;
-    }
-
-    public void setNumPingRequests(int num_ping_requests) {
-        this.num_ping_requests=num_ping_requests;
     }
 
     public int getNumberOfDiscoveryRequestsSent() {
@@ -200,7 +187,20 @@ public abstract class Discovery extends Protocol {
             ping_responses.add(rsps);
         }
 
-        sender.start(group_addr, promise, view_id);
+        try {
+            sendDiscoveryRequest(group_addr, promise, view_id);
+        }
+        catch(InterruptedIOException ie) {
+            ;
+        }
+        catch(InterruptedException ex) {
+            ;
+        }
+        catch(Throwable ex) {
+            if(log.isErrorEnabled())
+                log.error("failed sending discovery request", ex);
+        }
+
         try {
             return rsps.get(timeout);
         }
@@ -208,7 +208,6 @@ public abstract class Discovery extends Protocol {
             return new LinkedList<PingData>();
         }
         finally {
-        	sender.stop();
             synchronized(ping_responses) {
                 ping_responses.remove(rsps);
             }
@@ -547,7 +546,7 @@ public abstract class Discovery extends Protocol {
 
 
     protected void sendDiscoveryResponse(Address logical_addr, List<PhysicalAddress> physical_addrs,
-                                         boolean is_server, boolean return_view_only, String logical_name, Address sender) {
+                                         boolean is_server, boolean return_view_only, String logical_name, final Address sender) {
         PingData data;
         if(return_view_only) {
             data=new PingData(logical_addr, view, is_server, null, null);
@@ -557,13 +556,25 @@ public abstract class Discovery extends Protocol {
             data=new PingData(logical_addr, null, view_id, is_server, logical_name, physical_addrs);
         }
 
-        Message rsp_msg=new Message(sender, null, null);
+        final Message rsp_msg=new Message(sender, null, null);
         rsp_msg.setFlag(Message.OOB);
-        PingHeader rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, data);
+        final PingHeader rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, data);
         rsp_msg.putHeader(this.id, rsp_hdr);
 
-        if(stagger_timeout > 0)
-            Util.sleepRandom(0, stagger_timeout);
+        if(stagger_timeout > 0) {
+            int view_size=view != null? view.size() : 10;
+            int rank=Util.getRank(view, local_addr); // returns 0 if view or local_addr are null
+            long sleep_time=rank == 0? Util.random(stagger_timeout)
+              : stagger_timeout * rank / view_size - (stagger_timeout / view_size);
+            timer.schedule(new Runnable() {
+                public void run() {
+                    if(log.isTraceEnabled())
+                        log.trace("received GET_MBRS_REQ from " + sender + ", sending staggered response " + rsp_hdr);
+                    down_prot.down(new Event(Event.MSG, rsp_msg));
+                }
+            }, sleep_time, TimeUnit.MILLISECONDS);
+            return;
+        }
 
         if(log.isTraceEnabled())
             log.trace("received GET_MBRS_REQ from " + sender + ", sending response " + rsp_hdr);
@@ -571,41 +582,6 @@ public abstract class Discovery extends Protocol {
     }
 
 
-    protected class PingSenderTask {
-        private Future<?>      senderFuture;
-
-        public PingSenderTask() {}
-
-        public synchronized void start(final String cluster_name, final Promise promise, final ViewId view_id) {
-            long delay = (long)(timeout / (double)num_ping_requests);
-            if(senderFuture == null || senderFuture.isDone()) {
-                senderFuture=timer.scheduleWithFixedDelay(new Runnable() {
-                    public void run() {
-                        try {
-                            sendDiscoveryRequest(cluster_name, promise, view_id);
-                        }
-                        catch(InterruptedIOException ie) {
-                            ;
-                        }
-                        catch(InterruptedException ex) {
-                            ;
-                        }
-                        catch(Throwable ex) {
-                            if(log.isErrorEnabled())
-                                log.error("failed sending discovery request", ex);
-                        }
-                    }
-                }, 0, delay, TimeUnit.MILLISECONDS);
-            }
-        }
-
-        public synchronized void stop() {
-            if(senderFuture != null) {
-                senderFuture.cancel(true);
-                senderFuture=null;
-            }
-        }      
-    }
 
 
     protected static class Responses {

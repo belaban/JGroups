@@ -36,6 +36,8 @@ API changes in 3.0.0
 
 - Removed VIEW_SYNC: not needed anymore, as MERGE2 covers the functionality of merging different views into one
 
+- Removed Discovery.num_ping_requests
+
 - Streamable: DataInputStream --> DataInput, DataOutputStream --> DataOutput
 
 - RpcDispatcher: merged Marshaller and Marshaller2 into Marshaller interface
