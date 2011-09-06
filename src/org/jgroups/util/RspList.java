@@ -11,7 +11,7 @@ import java.util.*;
  * Contains responses from all members. Marks faulty members.
  * A RspList is a response list used in peer-to-peer protocols. This class is unsynchronized
  */
-public class RspList<T extends Object> implements Map<Address,Rsp<T>> {
+public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<Rsp<T>> {
     public static final RspList EMPTY_RSP_LIST=new RspList();
     final Map<Address,Rsp<T>> rsps=new HashMap<Address,Rsp<T>>();
 
@@ -213,4 +213,7 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>> {
     }
 
 
+    public Iterator<Rsp<T>> iterator() {
+        return rsps.values().iterator();
+    }
 }
