@@ -113,7 +113,7 @@ public class TcpTransport implements Transport {
         this.receiver=r;
     }
 
-    public Map dumpStats() {
+    public Map dumpStats(String parameters) {
         return null;
     }
 

@@ -30,8 +30,8 @@ public class UdpTransport implements Transport {
     IpAddress        local_addr=null;
     ReceiverThread   mcast_receiver=null;
     ReceiverThread   ucast_receiver=null;
-    int              max_receiver_buffer_size=500000;
-    int              max_send_buffer_size=500000;
+    int              max_receiver_buffer_size=5000000;
+    int              max_send_buffer_size=5000000;
     int              max_chunk_size=65000;
 
 
@@ -146,7 +146,7 @@ public class UdpTransport implements Transport {
         this.receiver=r;
     }
 
-    public Map dumpStats() {
+    public Map dumpStats(String parameters) {
         return null;
     }
 

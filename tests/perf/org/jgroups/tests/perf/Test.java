@@ -669,7 +669,7 @@ public class Test implements Receiver {
 
 
         if(dump_transport_stats) {
-            Map stats=transport.dumpStats();
+            Map stats=transport.dumpStats(null);
             if(stats != null) {
                 print(stats, sb);
             }
@@ -678,8 +678,8 @@ public class Test implements Receiver {
     }
 
 
-    public String dumpTransportStats() {
-        Map stats=transport.dumpStats();
+    public String dumpTransportStats(String parameters) {
+        Map stats=transport.dumpStats(parameters);
         StringBuilder sb=new StringBuilder(128);
         if(stats != null) {
             Map.Entry entry;
@@ -782,6 +782,7 @@ public class Test implements Receiver {
         boolean sender=false, verbose=false, jmx=false, dump_stats=false; // dumps at end of run
         Test t=null;
         String output=null;
+        String dump_stats_parameters=null;
         long interval=0;
         int interval_nanos=0;
         boolean busy_sleep=false;
@@ -823,8 +824,11 @@ public class Test implements Receiver {
                 jmx=true;
                 continue;
             }
-            if("-dump_stats".equals(args[i])) {
+            if(args[i].startsWith("-dump_stats")) {
                 dump_stats=true;
+                int index=args[i].indexOf("=");
+                if(index != -1)
+                    dump_stats_parameters=args[i].substring(index+1);
                 continue;
             }
             if("-num_threads".equals(args[i])) {
@@ -884,7 +888,7 @@ public class Test implements Receiver {
                 }
             }
             if(dump_stats) {
-                String stats=t.dumpTransportStats();
+                String stats=t.dumpTransportStats(dump_stats_parameters);
                 System.out.println("\nTransport statistics:\n" + stats);
             }
 

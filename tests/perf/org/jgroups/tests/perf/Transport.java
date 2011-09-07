@@ -1,8 +1,7 @@
 package org.jgroups.tests.perf;
 
-import java.util.Properties;
 import java.util.Map;
-import java.util.List;
+import java.util.Properties;
 
 /**
  * Generic transport abstraction for all different transports (JGroups, JMS, UDP, TCP). The lifecycle is
@@ -44,7 +43,7 @@ public interface Transport {
     /** Set the receiver */
     void setReceiver(Receiver r);
 
-    Map dumpStats();
+    Map dumpStats(String parameters);
 
     /**
      * Send a message

@@ -105,8 +105,22 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
         this.receiver=r;
     }
 
-    public Map dumpStats() {
-        return channel != null? channel.dumpStats() : null;
+    public Map dumpStats(String parameters) {
+        if(parameters != null && parameters.length() > 0) {
+            List<String> list=null;
+            int index=0;
+            String protocol_name=parameters;
+            index=protocol_name.indexOf(".");
+            if(index > -1) {
+                String rest=protocol_name;
+                protocol_name=protocol_name.substring(0, index);
+                String attrs=rest.substring(index +1); // e.g. "num_sent,msgs,num_received_msgs"
+                list=Util.parseStringList(attrs, ",");
+            }
+            return channel.dumpStats(protocol_name, list);
+        }
+        else
+            return channel.dumpStats();
     }
 
     public void send(Object destination, byte[] payload, boolean oob) throws Exception {
