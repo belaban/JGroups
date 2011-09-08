@@ -1,10 +1,6 @@
 
 package org.jgroups.stack;
 
-import org.jgroups.annotations.Immutable;
-import org.jgroups.annotations.GuardedBy;
-
-
 /**
  * Interface which returns a time series, one value at a time calling next()
  * @author Bela Ban

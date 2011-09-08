@@ -2810,6 +2810,29 @@ public class Util {
      * Parses comma-delimited longs; e.g., 2000,4000,8000.
      * Returns array of long, or null.
      */
+    public static int[] parseCommaDelimitedInts(String s) {
+        StringTokenizer tok;
+        List<Integer> v=new ArrayList<Integer>();
+        Integer l;
+        int[] retval=null;
+
+        if(s == null) return null;
+        tok=new StringTokenizer(s, ",");
+        while(tok.hasMoreTokens()) {
+            l=new Integer(tok.nextToken());
+            v.add(l);
+        }
+        if(v.isEmpty()) return null;
+        retval=new int[v.size()];
+        for(int i=0; i < v.size(); i++)
+            retval[i]=v.get(i).intValue();
+        return retval;
+    }
+
+    /**
+     * Parses comma-delimited longs; e.g., 2000,4000,8000.
+     * Returns array of long, or null.
+     */
     public static long[] parseCommaDelimitedLongs(String s) {
         StringTokenizer tok;
         Vector<Long> v=new Vector<Long>();

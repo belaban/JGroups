@@ -4,14 +4,14 @@ package org.jgroups.stack;
  * @author Bela Ban
  */
 public class ExponentialInterval implements Interval {
-    private long value=30;
-    private static final long MAX=15000;
+    private int value=30;
+    private static final int MAX=15000;
 
     public ExponentialInterval() {
         
     }
 
-    public ExponentialInterval(long value) {
+    public ExponentialInterval(int value) {
         this.value=value;
     }
 
