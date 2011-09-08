@@ -11,11 +11,11 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -33,32 +33,25 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
-public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener, TP.ProbeHandler {
-
-    /** the weight with which we take the previous smoothed average into account, WEIGHT should be >0 and <= 1 */
-    private static final double WEIGHT=0.9;
-
-    private static final double INITIAL_SMOOTHED_AVG=30.0;
-
+public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, TP.ProbeHandler {
     private static final int NUM_REBROADCAST_MSGS=3;
-
 
     /* -----------------------------------------------------    Properties     --------------------- ------------------------------------ */
 
 
-    @Property(name="retransmit_timeout", converter=PropertyConverters.LongArray.class, description="Timeout before requesting retransmissions. Default is 600, 1200, 2400, 4800")
-    private long[] retransmit_timeouts= { 600, 1200, 2400, 4800 }; // time(s) to wait before requesting retransmission
+    @Property(name="retransmit_timeout", converter=PropertyConverters.IntegerArray.class, description="Timeout before requesting retransmissions")
+    private int[] retransmit_timeouts= { 600, 1200, 2400, 4800 }; // time(s) to wait before requesting retransmission
 
 
     @Property(description="Max number of messages to be removed from a NakReceiverWindow. This property might " +
-            "get removed anytime, so don't use it !")
-    private int max_msg_batch_size=20000;
+      "get removed anytime, so don't use it !")
+    private int max_msg_batch_size=100;
     
     /**
      * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers
      * lost a message, the sender only retransmits once
      */
-    @Property(description="Retransmit messages using multicast rather than unicast")
+    @Property(description="Retransmit retransmit responses (messages) using multicast rather than unicast")
     private boolean use_mcast_xmit=true;
 
     /**
@@ -67,6 +60,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      */
     @Property(description="Use a multicast to request retransmission of missing messages. Default is false")
     private boolean use_mcast_xmit_req=false;
+
+
+    @Property(description="Number of milliseconds to delay the sending of an XMIT request. We pick a random number " +
+      "in the range [1 .. xmit_req_stagger_timeout] and add this to the scheduling time of an XMIT request. " +
+      "When use_mcast_xmit is enabled, if a number of members drop messages from the same member, then chances are that, " +
+      "if staggering is enabled, somebody else already sent the XMIT request (via mcast) and we can cancel the XMIT " +
+      "request once we receive the missing messages. For unicast XMIT responses (use_mcast_xmit=false), we still have " +
+      "an advantage by not overwhelming the receiver with XMIT requests, all at the same time. 0 disabless staggering.")
+    protected long xmit_stagger_timeout=0;
+    
 
     /**
      * Ask a random member for retransmission of a missing message. If set to
@@ -79,15 +82,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * The first value (in milliseconds) to use in the exponential backoff
      * retransmission mechanism. Only enabled if the value is > 0
      */
-    @Property(description="The first value (in milliseconds) to use in the exponential backoff. Enabled if greater than 0. Default is 0")
-    private long exponential_backoff=0;
-
-    /**
-     * If enabled, we use statistics gathered from actual retransmission times
-     * to compute the new retransmission times
-     */
-    @Property(description="Use statistics gathered from actual retransmission times to compute new retransmission times. Default is false")
-    private boolean use_stats_for_retransmission=false;
+    @Property(description="The first value (in milliseconds) to use in the exponential backoff. Enabled if greater than 0")
+    private int exponential_backoff=300;
 
     @Property(description="Whether to use the old retransmitter which retransmits individual messages or the new one " +
             "which uses ranges of retransmitted messages. Default is true. Note that this property will be removed in 3.0; " +
@@ -107,9 +103,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      */
     @Property(description="Should messages delivered to application be discarded")
     private boolean discard_delivered_msgs=false;
-
-    @Property(description="Size of retransmission history. Default is 50 entries")
-    private int xmit_history_max_size=50;
 
     @Property(description="Timeout to rebroadcast messages. Default is 2000 msec")
     private long max_rebroadcast_timeout=2000;
@@ -148,41 +141,19 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     @ManagedAttribute(description="Number of retransmit requests received")
-    private long xmit_reqs_received;
+    private final AtomicLong xmit_reqs_received=new AtomicLong(0);
+
     @ManagedAttribute(description="Number of retransmit requests sent")
-    private long xmit_reqs_sent;
+    private final AtomicLong xmit_reqs_sent=new AtomicLong(0);
+
     @ManagedAttribute(description="Number of retransmit responses received")
-    private long xmit_rsps_received;
+    private final AtomicLong xmit_rsps_received=new AtomicLong(0);
+
     @ManagedAttribute(description="Number of retransmit responses sent")
-    private long xmit_rsps_sent;
-    @ManagedAttribute(description="Number of missing messages received")
-    private long missing_msgs_received;
-
-
-    /** Captures stats on XMIT_REQS, XMIT_RSPS per sender */
-    private ConcurrentMap<Address, StatsEntry> sent=Util.createConcurrentMap();
-
-    /** Captures stats on XMIT_REQS, XMIT_RSPS per receiver */
-    private ConcurrentMap<Address, StatsEntry> received=Util.createConcurrentMap();
-
-    /** Per-sender map of seqnos and timestamps, to keep track of avg times for retransmission of messages */
-    private final ConcurrentMap<Address, ConcurrentMap<Long, Long>> xmit_stats=Util.createConcurrentMap();
-
-    /** Maintains a list of the last N retransmission times (duration to retransmit a message) for all members */
-    private final ConcurrentMap<Address, BoundedList<Long>> xmit_times_history=Util.createConcurrentMap();
-
-    /**
-     * Maintains a smoothed average of the retransmission times per sender,
-     * these are the actual values that are used for new retransmission requests
-     */
-    private final Map<Address,Double> smoothed_avg_xmit_times=new HashMap<Address,Double>();
-
-    /** Keeps the last 50 retransmit requests */
-    private final BoundedList<String> xmit_history=new BoundedList<String>(50);
+    private final AtomicLong xmit_rsps_sent=new AtomicLong(0);
 
 
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
-
     private boolean is_server=false;
     private Address local_addr=null;
     private final List<Address> members=new CopyOnWriteArrayList<Address>();
@@ -221,11 +192,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    public long getXmitRequestsReceived() {return xmit_reqs_received;}
-    public long getXmitRequestsSent() {return xmit_reqs_sent;}
-    public long getXmitResponsesReceived() {return xmit_rsps_received;}
-    public long getXmitResponsesSent() {return xmit_rsps_sent;}
-    public long getMissingMessagesReceived() {return missing_msgs_received;}
+    public long getXmitRequestsReceived() {return xmit_reqs_received.get();}
+    public long getXmitRequestsSent() {return xmit_reqs_sent.get();}
+    public long getXmitResponsesReceived() {return xmit_rsps_received.get();}
+    public long getXmitResponsesSent() {return xmit_rsps_sent.get();}
 
     @ManagedAttribute(description="Total number of missing messages")
     public int getPendingXmitRequests() {
@@ -286,12 +256,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
     public void resetStats() {
-        xmit_reqs_received=xmit_reqs_sent=xmit_rsps_received=xmit_rsps_sent=missing_msgs_received=0;
-        sent.clear();
-        received.clear();
+        xmit_reqs_received.set(0);
+        xmit_reqs_sent.set(0);
+        xmit_rsps_received.set(0);
+        xmit_rsps_sent.set(0);
         stability_msgs.clear();
         digest_history.clear();
-        xmit_history.clear();
     }
 
     public void init() throws Exception {
@@ -365,23 +335,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     public String printStats() {
         StringBuilder sb=new StringBuilder();
-        sb.append("sent:\n");
-        for(Iterator<Map.Entry<Address, StatsEntry>> it=sent.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<Address, StatsEntry> entry=it.next();
-            Object key=entry.getKey();
-            if(key == null || key == Global.NULL) key="<mcast dest>";
-            StatsEntry val=entry.getValue();
-            sb.append(key).append(": ").append(val).append("\n");
-        }
-        sb.append("\nreceived:\n");
-        for(Iterator<Map.Entry<Address, StatsEntry>> it=received.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<Address, StatsEntry> entry=it.next();
-            Object key=entry.getKey();
-            if(key == null || key == Global.NULL) key="<mcast dest>";
-            StatsEntry val=entry.getValue();
-            sb.append(key).append(": ").append(val).append("\n");
-        }
-
         sb.append("\nStability messages received\n");
         sb.append(printStabilityMessages()).append("\n");
 
@@ -443,33 +396,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             NakReceiverWindow win=entry.getValue();
             win.compact();
         }
-    }
-
-
-    @ManagedAttribute
-    public double getAverageLossRate() {
-        double retval=0.0;
-        int count=0;
-        if(xmit_table.isEmpty())
-            return 0.0;
-        for(NakReceiverWindow win: xmit_table.values()) {
-            retval+=win.getLossRate();
-            count++;
-        }
-        return retval / (double)count;
-    }
-
-    @ManagedAttribute
-    public double getAverageSmoothedLossRate() {
-        double retval=0.0;
-        int count=0;
-        if(xmit_table.isEmpty())
-            return 0.0;
-        for(NakReceiverWindow win: xmit_table.values()) {
-            retval+=win.getSmoothedLossRate();
-            count++;
-        }
-        return retval / (double)count;
     }
 
 
@@ -551,11 +477,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
                 Set<Address> tmp=new LinkedHashSet<Address>(members);
                 tmp.add(null); // for null destination (= mcast)
-                sent.keySet().retainAll(tmp);
-                received.keySet().retainAll(tmp);
-
-                xmit_stats.keySet().retainAll(tmp);
-                // in_progress.keySet().retainAll(mbrs); // remove elements which are not in the membership
                 break;
 
             case Event.BECOME_SERVER:
@@ -831,10 +752,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             log.trace(sb.toString());
         }
 
-        if(stats) {
-            xmit_reqs_received+=last_seqno - first_seqno +1;
-            updateStats(received, xmit_requester, 1, 0, 0);
-        }
+        if(stats)
+            xmit_reqs_received.addAndGet(last_seqno - first_seqno +1);
 
         NakReceiverWindow win=xmit_table.get(original_sender);
         if(win == null) {
@@ -897,19 +816,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    private static void updateStats(ConcurrentMap<Address,StatsEntry> map, Address key, int req, int rsp, int missing) {
-        StatsEntry entry=map.get(key);
-        if(entry == null) {
-            entry=new StatsEntry();
-            StatsEntry tmp=map.putIfAbsent(key, entry);
-            if(tmp != null)
-                entry=tmp;
-        }
-        entry.xmit_reqs+=req;
-        entry.xmit_rsps+=rsp;
-        entry.missing_msgs_rcvd+=missing;
-    }
-
 
 
     /**
@@ -925,10 +831,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         }
 
-        if(stats) {
-            xmit_rsps_sent++;
-            updateStats(sent, dest, 0, 1, 0);
-        }
+        if(stats)
+            xmit_rsps_sent.incrementAndGet();
 
         if(msg.getSrc() == null)
             msg.setSrc(local_addr);
@@ -951,10 +855,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
 
         try {
-            if(stats) {
-                xmit_rsps_received++;
-                updateStats(received, msg.getSrc(), 0, 1, 0);
-            }
+            if(stats)
+                xmit_rsps_received.incrementAndGet();
 
             msg.setDest(null);
             hdr.type=NakAckHeader.MSG; // change the type back from XMIT_RSP --> MSG
@@ -1206,14 +1108,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                                                     xmit_table_num_rows, xmit_table_msgs_per_row,
                                                     xmit_table_resize_factor, xmit_table_max_compaction_time, false);
 
-        if(use_stats_for_retransmission)
-            win.setRetransmitTimeouts(new ActualInterval(sender));
-        else if(exponential_backoff > 0)
+        if(exponential_backoff > 0)
             win.setRetransmitTimeouts(new ExponentialInterval(exponential_backoff));
         else
             win.setRetransmitTimeouts(new StaticInterval(retransmit_timeouts));
-        if(stats)
-            win.setListener(this);
+
+        if(xmit_stagger_timeout > 0)
+            win.setXmitStaggerTimeout(xmit_stagger_timeout);
         return win;
     }
 
@@ -1323,73 +1224,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + dest);
         retransmit_msg.putHeader(this.id, hdr);
 
-        ConcurrentMap<Long,Long> tmp=xmit_stats.get(sender);
-        if(tmp == null) {
-            tmp=new ConcurrentHashMap<Long,Long>();
-            ConcurrentMap<Long,Long> tmp2=xmit_stats.putIfAbsent(sender, tmp);
-            if(tmp2 != null)
-                tmp=tmp2;
-        }
-        for(long seq=first_seqno; seq < last_seqno; seq++) {
-            tmp.putIfAbsent(seq, System.currentTimeMillis());
-        }
-
         down_prot.down(new Event(Event.MSG, retransmit_msg));
-        if(stats) {
-            xmit_reqs_sent+=last_seqno - first_seqno +1;
-            updateStats(sent, sender, 1, 0, 0);
-        }
-
-        xmit_history.add(sender + ": " + first_seqno + "-" + last_seqno);
+        if(stats)
+            xmit_reqs_sent.addAndGet(last_seqno - first_seqno +1);
     }
     /* ------------------- End of Interface Retransmitter.RetransmitCommand -------------------- */
 
 
-
-    /* ----------------------- Interface NakReceiverWindow.Listener ---------------------- */
-
-    public void missingMessageReceived(long seqno, final Address original_sender) {
-        ConcurrentMap<Long,Long> tmp=xmit_stats.get(original_sender);
-        if(tmp != null) {
-            Long timestamp=tmp.remove(seqno);
-            if(timestamp != null) {
-                long diff=System.currentTimeMillis() - timestamp;
-                BoundedList<Long> list=xmit_times_history.get(original_sender);
-                if(list == null) {
-                    list=new BoundedList<Long>(xmit_history_max_size);
-                    BoundedList<Long> list2=xmit_times_history.putIfAbsent(original_sender, list);
-                    if(list2 != null)
-                        list=list2;
-                }
-                list.add(diff);
-
-                // compute the smoothed average for retransmission times for original_sender
-                // needs to be synchronized because we rely on the previous value for computation of the next value
-                synchronized(smoothed_avg_xmit_times) {
-                    Double smoothed_avg=smoothed_avg_xmit_times.get(original_sender);
-                    if(smoothed_avg == null)
-                        smoothed_avg=INITIAL_SMOOTHED_AVG;
-                    // the smoothed avg takes 90% of the previous value, 100% of the new value and averages them
-                    // then, we add 10% to be on the safe side (an xmit value should rather err on the higher than lower side)
-                    smoothed_avg=((smoothed_avg * WEIGHT) + diff) / 2;
-                    smoothed_avg=smoothed_avg * (2 - WEIGHT);
-                    smoothed_avg_xmit_times.put(original_sender, smoothed_avg);
-                }
-            }
-        }
-
-        if(stats) {
-            missing_msgs_received++;
-            updateStats(received, original_sender, 0, 0, 1);
-        }
-    }
-
-    /** Called when a message gap is detected */
-    public void messageGapDetected(long from, long to, Address src) {
-        ;
-    }
-
-    /* ------------------- End of Interface NakReceiverWindow.Listener ------------------- */
 
     private void reset() {
         seqno_lock.lock();
@@ -1407,7 +1248,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    @ManagedOperation(description="TODO")
+    @ManagedOperation(description="Prints the contents of the receiver windows for all members")
     public String printMessages() {
         StringBuilder ret=new StringBuilder(local_addr + ":\n");
         for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
@@ -1418,95 +1259,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return ret.toString();
     }
 
-
-    @ManagedOperation(description="TODO")
-    public String printRetransmissionAvgs() {
-        StringBuilder sb=new StringBuilder();
-
-        for(Map.Entry<Address,BoundedList<Long>> entry: xmit_times_history.entrySet()) {
-            Address sender=entry.getKey();
-            BoundedList<Long> list=entry.getValue();
-            long tmp=0;
-            int i=0;
-            for(Long val: list) {
-                tmp+=val;
-                i++;
-            }
-            double avg=i > 0? tmp / i: -1;
-            sb.append(sender).append(": ").append(avg).append("\n");
-        }
-        return sb.toString();
-    }
-
-    @ManagedOperation(description="TODO")
-    public String printSmoothedRetransmissionAvgs() {
-        StringBuilder sb=new StringBuilder();
-        for(Map.Entry<Address,Double> entry: smoothed_avg_xmit_times.entrySet()) {
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-        }
-        return sb.toString();
-    }
-
-    @ManagedOperation(description="TODO")
-    public String printRetransmissionTimes() {
-        StringBuilder sb=new StringBuilder();
-
-        for(Map.Entry<Address,BoundedList<Long>> entry: xmit_times_history.entrySet()) {
-            Address sender=entry.getKey();
-            BoundedList<Long> list=entry.getValue();
-            sb.append(sender).append(": ").append(list).append("\n");
-        }
-        return sb.toString();
-    }
-
-    @ManagedOperation(description="Prints the last N retransmission requests")
-    public String printXmitHistory() {
-        StringBuilder sb=new StringBuilder();
-        for(String req: xmit_history)
-            sb.append(req).append("\n");
-        return sb.toString();
-    }
-
-    @ManagedAttribute
-    public double getTotalAverageRetransmissionTime() {
-        long total=0;
-        int i=0;
-
-        for(BoundedList<Long> list: xmit_times_history.values()) {
-            for(Long val: list) {
-                total+=val;
-                i++;
-            }
-        }
-        return i > 0? total / i: -1;
-    }
-
-    @ManagedAttribute
-    public double getTotalAverageSmoothedRetransmissionTime() {
-        double total=0.0;
-        int cnt=0;
-        synchronized(smoothed_avg_xmit_times) {
-            for(Double val: smoothed_avg_xmit_times.values()) {
-                if(val != null) {
-                    total+=val;
-                    cnt++;
-                }
-            }
-        }
-        return cnt > 0? total / cnt : -1;
-    }
-
-    /** Returns the smoothed average retransmission time for a given sender */
-    public double getSmoothedAverageRetransmissionTime(Address sender) {
-        synchronized(smoothed_avg_xmit_times) {
-            Double retval=smoothed_avg_xmit_times.get(sender);
-            if(retval == null) {
-                retval=INITIAL_SMOOTHED_AVG;
-                smoothed_avg_xmit_times.put(sender, retval);
-            }
-            return retval;
-        }
-    }
 
 
     // ProbeHandler interface
@@ -1525,35 +1277,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     // ProbeHandler interface
     public String[] supportedKeys() {
         return new String[]{"digest-history", "dump-digest"};
-    }
-
-
-
-    private class ActualInterval implements Interval {
-        private final Address sender;
-
-        public ActualInterval(Address sender) {
-            this.sender=sender;
-        }
-
-        public long next() {
-            return (long)getSmoothedAverageRetransmissionTime(sender);
-        }
-
-        public Interval copy() {
-            return this;
-        }
-    }
-
-    static class StatsEntry {
-        long xmit_reqs, xmit_rsps, missing_msgs_rcvd;
-
-        public String toString() {
-            StringBuilder sb=new StringBuilder();
-            sb.append(xmit_reqs).append(" xmit_reqs").append(", ").append(xmit_rsps).append(" xmit_rsps");
-            sb.append(", ").append(missing_msgs_rcvd).append(" missing msgs");
-            return sb.toString();
-        }
     }
 
 

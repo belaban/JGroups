@@ -56,7 +56,7 @@
     <VERIFY_SUSPECT timeout="1500"  />
     <BARRIER />
     <pbcast.NAKACK exponential_backoff="300"
-                   xmit_req_stagger_timeout="200"
+                   xmit_stagger_timeout="200"
                    use_mcast_xmit="true"
                    discard_delivered_msgs="true"/>
     <UNICAST2 exponential_backoff="500"/>
