@@ -5,6 +5,7 @@ import org.jgroups.Address;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -27,10 +28,11 @@ import java.util.concurrent.TimeUnit;
 public abstract class Retransmitter {
 
     /** Default retransmit intervals (ms) - exponential approx. */
-    protected Interval                       RETRANSMIT_TIMEOUTS=new StaticInterval(300, 600, 1200, 2400);
+    protected Interval                       retransmit_timeouts=new ExponentialInterval(300);
     protected final Address                  sender;
     protected final RetransmitCommand        cmd;
     protected final TimeScheduler            timer;
+    protected long                           xmit_stagger_timeout=0;
     protected static final Log log=LogFactory.getLog(Retransmitter.class);
 
 
@@ -65,9 +67,16 @@ public abstract class Retransmitter {
 
     public void setRetransmitTimeouts(Interval interval) {
         if(interval != null)
-            RETRANSMIT_TIMEOUTS=interval;
+            retransmit_timeouts=interval;
     }
 
+    public long getXmitStaggerTimeout() {
+        return xmit_stagger_timeout;
+    }
+
+    public void setXmitStaggerTimeout(long xmit_stagger_timeout) {
+        this.xmit_stagger_timeout=xmit_stagger_timeout;
+    }
 
     /**
      * Add messages from <code>first_seqno</code> to <code>last_seqno</code/> for retransmission
@@ -77,7 +86,7 @@ public abstract class Retransmitter {
     /**
      * Remove the given sequence number from retransmission
      */
-    public abstract int remove(long seqno);
+    public abstract void remove(long seqno);
 
     /**
      * Reset the retransmitter: clear all msgs and cancel all the respective tasks
@@ -100,7 +109,6 @@ public abstract class Retransmitter {
         protected final Interval       intervals;
         protected volatile Future      future;
         protected Address              msg_sender=null;
-        protected int                  num_retransmits=0;
         protected RetransmitCommand    command;
         protected volatile boolean     cancelled=false;
 
@@ -108,10 +116,6 @@ public abstract class Retransmitter {
             this.intervals=intervals;
             this.command=cmd;
             this.msg_sender=msg_sender;
-        }
-
-        public int getNumRetransmits() {
-            return num_retransmits;
         }
 
         public long nextInterval() {
@@ -123,6 +127,12 @@ public abstract class Retransmitter {
                 return;
             }
             long delay=intervals.next();
+
+            if(xmit_stagger_timeout > 0) {
+                long stagger_time=Util.random(xmit_stagger_timeout);
+                delay+=stagger_time;
+            }
+
             future=timer.schedule(this, delay, TimeUnit.MILLISECONDS);
         }
 
@@ -140,7 +150,6 @@ public abstract class Retransmitter {
             }
             try {
                 callRetransmissionCommand();
-                num_retransmits++;
             }
             catch(Throwable t) {
                 if(log.isErrorEnabled())
