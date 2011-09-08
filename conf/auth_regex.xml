@@ -10,92 +10,25 @@
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd">
-    <UDP 
-         mcast_port="${jgroups.udp.mcast_port:45511}"
-         tos="8"
-         ucast_recv_buf_size="20000000"
-         ucast_send_buf_size="640000"
-         mcast_recv_buf_size="25000000"
-         mcast_send_buf_size="640000"
-         loopback="false"
-         discard_incompatible_packets="true"
-         max_bundle_size="64000"
-         max_bundle_timeout="30"
-         ip_ttl="${jgroups.udp.ip_ttl:8}"
-         enable_bundling="true"
-         bundler_capacity="50000"
-         enable_unicast_bundling="true"
-         enable_diagnostics="true"
-         thread_naming_pattern="cl"
-
-         timer_type="new"
-         timer.min_threads="4"
-         timer.max_threads="10"
-         timer.keep_alive_time="3000"
-         timer.queue_max_size="1000"
-         timer.wheel_size="200"
-         timer.tick_time="50"
-
-         thread_pool.enabled="true"
-         thread_pool.min_threads="2"
-         thread_pool.max_threads="8"
-         thread_pool.keep_alive_time="5000"
-         thread_pool.queue_enabled="true"
-         thread_pool.queue_max_size="100000"
-         thread_pool.rejection_policy="discard"
-
-         oob_thread_pool.enabled="true"
-         oob_thread_pool.min_threads="1"
-         oob_thread_pool.max_threads="8"
-         oob_thread_pool.keep_alive_time="5000"
-         oob_thread_pool.queue_enabled="false"
-         oob_thread_pool.queue_max_size="100"
-         oob_thread_pool.rejection_policy="discard"/>
-
-
-    <PING timeout="2000"
-            num_initial_members="3"/>
-
-
-
-    <MERGE2 max_interval="30000"
-            min_interval="10000"/>
-
-    <!--DAISYCHAIN loopback="true" /--> 
-
+    <UDP/>
+    <PING/>
+    <MERGE2/>
     <FD_SOCK/>
-    <!--FD_ALL/-->
-    <VERIFY_SUSPECT timeout="1500"  />
+    <FD_ALL/>
+    <VERIFY_SUSPECT/>
     <BARRIER />
-    <pbcast.NAKACK use_stats_for_retransmission="false"
-                   use_mcast_xmit="true"
-                   retransmit_timeout="100,300,600,1200"
-                   discard_delivered_msgs="true"/>
-    <UNICAST2 timeout="300,600,1200"/>
-    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                   max_bytes="4m"/>
-
-    <!--AUTH auth_class="org.jgroups.auth.RegexMembership"
-          match_string="groucho | marx"
-          match_ip_address="false"
-          match_logical_name="true"
-          /-->
+    <pbcast.NAKACK/>
+    <UNICAST2/>
+    <pbcast.STABLE/>
 
     <!-- Allow only hosts in the 192.168 or 10.5 network to join -->
      <AUTH auth_class="org.jgroups.auth.RegexMembership"
           match_string="(192\.168|10\.5)\.\d{1,3}\.\d{1,3}(:\d{1,5})?"
           match_ip_address="true"
           match_logical_name="false"  />
-
-
-    <pbcast.GMS print_local_addr="true" join_timeout="5000"
-                max_bundling_time="200"
-                view_bundling="true"/>
-    <UFC max_credits="2m"
-        min_threshold="0.6"/>
-    <MFC max_credits="2m"
-        min_threshold="0.6"/>
-    <FRAG2 frag_size="60000"  />
-
+    <pbcast.GMS/>
+    <UFC/>
+    <MFC/>
+    <FRAG2/>
     <pbcast.STATE_TRANSFER  />
 </config>
