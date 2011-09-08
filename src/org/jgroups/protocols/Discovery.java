@@ -36,7 +36,7 @@ public abstract class Discovery extends Protocol {
     protected long timeout=3000;
 
     @Property(description="Minimum number of initial members to get a response from. Default is 2")
-    protected int num_initial_members=2;
+    protected int num_initial_members=4;
 
     @Property(description="Minimum number of server responses (PingData.isServer()=true). If this value is " +
             "greater than 0, we'll ignore num_initial_members")

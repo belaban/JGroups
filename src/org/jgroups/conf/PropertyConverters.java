@@ -118,6 +118,34 @@ public class PropertyConverters {
             return (String) value ;
         }
     }
+
+    public static class IntegerArray implements PropertyConverter {
+
+        public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
+            int[] tmp=Util.parseCommaDelimitedInts(propertyValue);
+            if(tmp != null && tmp.length > 0){
+                return tmp;
+            }
+            else
+                return null;
+        }
+
+        public String toString(Object value) {
+            if(value == null)
+                return null;
+            int[] val=(int[])value;
+            StringBuilder sb=new StringBuilder();
+            boolean first=true;
+            for(int l: val) {
+                if(first)
+                    first=false;
+                else
+                    sb.append(",");
+                sb.append(l);
+            }
+            return sb.toString();
+        }
+    }
     
     public static class LongArray implements PropertyConverter {
 
