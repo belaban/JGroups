@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.LocalAddress;
+import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
@@ -21,6 +22,7 @@ import java.util.*;
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
  */
+@MBean(description="Double-checks suspicions reports")
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
