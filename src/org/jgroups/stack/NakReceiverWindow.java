@@ -85,10 +85,6 @@ public class NakReceiverWindow {
     /** The highest stable() seqno received */
     long highest_stability_seqno=0;
 
-    /** The loss rate (70% of the new value and 30% of the old value) */
-    private double smoothed_loss_rate=0.0;
-
-
     /**
      * Creates a new instance with the given retransmit command
      *
@@ -114,7 +110,7 @@ public class NakReceiverWindow {
     }
 
 
-    public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd,
+    public NakReceiverWindow(final Address sender, Retransmitter.RetransmitCommand cmd,
                              long highest_delivered_seqno, TimeScheduler sched,
                              boolean use_range_based_retransmitter,
                              int num_rows, int msgs_per_row, double resize_factor, long max_compaction_time,
@@ -123,10 +119,11 @@ public class NakReceiverWindow {
         highest_received=highest_delivered;
         if(sched == null)
             throw new IllegalStateException("timer has to be provided and cannot be null");
-        if(cmd != null)
+        if(cmd != null) {
             retransmitter=use_range_based_retransmitter?
-                    new RangeBasedRetransmitter(sender, cmd, sched) :
-                    new DefaultRetransmitter(sender, cmd, sched);
+              new RangeBasedRetransmitter(sender, cmd, sched) :
+              new DefaultRetransmitter(sender, cmd, sched);
+        }
 
         xmit_table=new RetransmitTable(num_rows, msgs_per_row, highest_delivered, resize_factor, max_compaction_time, automatic_purging);
     }
@@ -142,6 +139,11 @@ public class NakReceiverWindow {
         retransmitter.setRetransmitTimeouts(timeouts);
     }
 
+    public void setXmitStaggerTimeout(long timeout) {
+        if(retransmitter != null)
+            retransmitter.setXmitStaggerTimeout(timeout);
+    }
+
 
     public void setListener(Listener l) {
         this.listener=l;
@@ -150,36 +152,6 @@ public class NakReceiverWindow {
     public int getPendingXmits() {
         return retransmitter!= null? retransmitter.size() : 0;
     }
-
-    /**
-     * Returns the loss rate, which is defined as the number of pending retransmission requests / the total number of
-     * messages in xmit_table
-     * @return The loss rate
-     */
-    public double getLossRate() {
-        int total_msgs=size();
-        int pending_xmits=getPendingXmits();
-        if(pending_xmits == 0 || total_msgs == 0)
-            return 0.0;
-
-        return pending_xmits / (double)total_msgs;
-    }
-
-    public double getSmoothedLossRate() {
-        return smoothed_loss_rate;
-    }
-
-    /** Set the new smoothed_loss_rate value to 70% of the new value and 30% of the old value */
-    private void setSmoothedLossRate() {
-        double new_loss_rate=getLossRate();
-        if(smoothed_loss_rate == 0) {
-            smoothed_loss_rate=new_loss_rate;
-        }
-        else {
-            smoothed_loss_rate=smoothed_loss_rate * .3 + new_loss_rate * .7;
-        }
-    }
-
 
     public int getRetransmitTableSize() {return xmit_table.size();}
 
@@ -209,7 +181,7 @@ public class NakReceiverWindow {
      */
     public boolean add(final long seqno, final Message msg) {
         long old_next, next_to_add;
-        int num_xmits=0;
+        boolean missing_msg_received=false;
 
         lock.writeLock().lock();
         try {
@@ -238,7 +210,9 @@ public class NakReceiverWindow {
                 Message existing=xmit_table.putIfAbsent(seqno, msg);
                 if(existing != null)
                     return false; // key/value was present
-                num_xmits=retransmitter.remove(seqno);
+                retransmitter.remove(seqno);
+                missing_msg_received=true;
+
                 if(log.isTraceEnabled())
                     log.trace(new StringBuilder("added missing msg ").append(msg.getSrc()).append('#').append(seqno));
                 return true;
@@ -257,7 +231,7 @@ public class NakReceiverWindow {
         finally {
             highest_received=Math.max(highest_received, seqno);
             lock.writeLock().unlock();
-            if(listener != null && num_xmits > 0) {
+            if(listener != null && missing_msg_received) {
                 try {listener.missingMessageReceived(seqno, msg.getSrc());} catch(Throwable t) {}
             }
         }
@@ -547,8 +521,7 @@ public class NakReceiverWindow {
         int num_received=size();
         int total=num_missing + num_received;
         sb.append("total=").append(total).append(" (received=").append(num_received).append(", missing=")
-                .append(num_missing).append("), loss rate=").append(getLossRate())
-                .append(", smoothed loss rate=").append(smoothed_loss_rate);
+          .append(num_missing).append(")");
         return sb.toString();
     }
 
