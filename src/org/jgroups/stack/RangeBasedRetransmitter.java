@@ -71,7 +71,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
             num_single_msgs.incrementAndGet();
 
         // each task needs its own retransmission interval, as they are stateful *and* mutable, so we *need* to copy !
-        RangeTask new_task=new RangeTask(range, RETRANSMIT_TIMEOUTS.copy(), cmd, sender);
+        RangeTask new_task=new RangeTask(range, retransmit_timeouts.copy(), cmd, sender);
 
         Seqno old_range=ranges.put(range, range);
         if(old_range != null)
@@ -90,38 +90,30 @@ public class RangeBasedRetransmitter extends Retransmitter {
      * respective entry, cancel the entry from the retransmission
      * scheduler and remove it from the pending entries
      */
-    public int remove(long seqno) {
-        int retval=0;
+    public void remove(long seqno) {
         Seqno range=ranges.get(new Seqno(seqno, true));
         if(range == null)
-            return 0;
+            return;
         
         range.set(seqno);
-        if(log.isTraceEnabled())
-            log.trace("removed " + sender + " #" + seqno + " from retransmitter");
 
         // if the range has no missing messages, get the associated task and cancel it
         if(range.getNumberOfMissingMessages() == 0) {
             Task task=tasks.remove(range);
-            if(task != null) {
+            if(task != null)
                 task.cancel();
-                retval=task.getNumRetransmits();
-            }
             else
                 log.error("task for range " + range + " not found");
             ranges.remove(range);
             if(log.isTraceEnabled())
                 log.trace("all messages for " + sender + " [" + range + "] have been received; removing range");
         }
-
-        return retval;
     }
 
 
 
     /**
-     * Reset the retransmitter: clear all msgs and cancel all the
-     * respective tasks
+     * Reset the retransmitter: clear all msgs and cancel all the respective tasks
      */
     public void reset() {
         synchronized(ranges) {
@@ -150,12 +142,15 @@ public class RangeBasedRetransmitter extends Retransmitter {
     public String toString() {
         int missing_msgs=0;
 
-        for(Seqno range: ranges.keySet())
+        int size=0;
+        for(Seqno range: ranges.keySet()) {
             missing_msgs+=range.getNumberOfMissingMessages();
+            size++;
+        }
 
         StringBuilder sb=new StringBuilder();
         sb.append(missing_msgs).append(" messages to retransmit");
-        if(missing_msgs < 50) {
+        if(size < 50) {
             Collection<Range> all_missing_msgs=new LinkedList<Range>();
             for(Seqno range: ranges.keySet()) {
                 all_missing_msgs.addAll(range.getMessagesToRetransmit());

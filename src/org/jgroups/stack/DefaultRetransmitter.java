@@ -58,7 +58,7 @@ public class DefaultRetransmitter extends Retransmitter {
         Task new_task;
         for(long seqno=first_seqno; seqno <= last_seqno; seqno++) {
             // each task needs its own retransmission interval, as they are stateful *and* mutable, so we *need* to copy !
-            new_task=new SeqnoTask(seqno, RETRANSMIT_TIMEOUTS.copy(), cmd, sender);
+            new_task=new SeqnoTask(seqno, retransmit_timeouts.copy(), cmd, sender);
             Task old_task=msgs.putIfAbsent(seqno, new_task);
             if(old_task == null) // only schedule if we actually *added* the new task !
                 new_task.doSchedule(); // Entry adds itself to the timer
@@ -72,13 +72,10 @@ public class DefaultRetransmitter extends Retransmitter {
      * respective entry, cancel the entry from the retransmission
      * scheduler and remove it from the pending entries
      */
-    public int remove(long seqno) {
+    public void remove(long seqno) {
         Task task=msgs.remove(seqno);
-        if(task != null) {
+        if(task != null)
             task.cancel();
-            return task.getNumRetransmits();
-        }
-        return -1;
     }
 
     /**
@@ -87,24 +84,22 @@ public class DefaultRetransmitter extends Retransmitter {
      * @param remove_all_below If true, all seqnos below seqno are removed, too
      * @return
      */
-    public int remove(long seqno, boolean remove_all_below) {
-        if(!remove_all_below)
-            return remove(seqno);
+    public void remove(long seqno, boolean remove_all_below) {
+        if(!remove_all_below) {
+            remove(seqno);
+            return;
+        }
         if(msgs.isEmpty())
-            return 0;
+            return;
         ConcurrentNavigableMap<Long,Task> to_be_removed=msgs.headMap(seqno, true);
         if(to_be_removed.isEmpty())
-            return 0;
+            return;
         Collection<Task> values=to_be_removed.values();
-        int num_xmits=0;
         for(Task task: values) {
-            if(task != null) {
+            if(task != null)
                 task.cancel();
-                num_xmits+=task.getNumRetransmits();
-            }
         }
         to_be_removed.clear();
-        return num_xmits;
     }
 
     /**
