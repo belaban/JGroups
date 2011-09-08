@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
@@ -28,6 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * direction. This is done by releasing the WL.
  * @author Bela Ban
  */
+@MBean(description="Blocks all multicast threads when closed")
 public class BARRIER extends Protocol {
     
     @Property(description="Max time barrier can be closed. Default is 60000 ms")
