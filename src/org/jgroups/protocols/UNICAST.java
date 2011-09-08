@@ -48,7 +48,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
 
-    private long[] timeout= { 400, 800, 1600, 3200 }; // for AckSenderWindow: max time to wait for missing acks
+    private int[] timeout= { 400, 800, 1600, 3200 }; // for AckSenderWindow: max time to wait for missing acks
 
     @Property(description="Max number of messages to be removed from the AckReceiverWindow. This property might " +
             "get removed anytime, so don't use it !")
@@ -87,10 +87,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     private AgeOutCache<Address> cache=null;
 
 
-    public long[] getTimeout() {return timeout;}
+    public int[] getTimeout() {return timeout;}
 
-    @Property(name="timeout",converter=PropertyConverters.LongArray.class)
-    public void setTimeout(long[] val) {
+    @Property(name="timeout",converter=PropertyConverters.IntegerArray.class)
+    public void setTimeout(int[] val) {
         if(val != null)
             timeout=val;
     }
@@ -864,7 +864,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         final short             send_conn_id;
         final Lock              lock=new ReentrantLock();
 
-        public SenderEntry(short send_conn_id, AckSenderWindow.RetransmitCommand cmd, long[] timeout,
+        public SenderEntry(short send_conn_id, AckSenderWindow.RetransmitCommand cmd, int[] timeout,
                            TimeScheduler timer, Address local_addr) {
             this.send_conn_id=send_conn_id;
             sent_msgs=new AckSenderWindow(cmd, new StaticInterval(timeout), timer, local_addr);
