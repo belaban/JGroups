@@ -6,10 +6,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.stack.AckSenderWindow;
-import org.jgroups.stack.NakReceiverWindow;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.Retransmitter;
+import org.jgroups.stack.*;
 import org.jgroups.util.AgeOutCache;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
@@ -44,7 +41,15 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
     
-    private long[] timeout= { 400, 800, 1600, 3200 }; // for NakSenderWindow: max time to wait for missing acks
+    private int[] timeout= { 400, 800, 1600, 3200 }; // for NakSenderWindow: max time to wait for missing acks
+
+    /**
+     * The first value (in milliseconds) to use in the exponential backoff
+     * retransmission mechanism. Only enabled if the value is > 0
+     */
+    @Property(description="The first value (in milliseconds) to use in the exponential backoff. Enabled if greater than 0")
+    private int exponential_backoff=300;
+
 
     @Property(description="Max number of messages to be removed from a NakReceiverWindow. This property might " +
             "get removed anytime, so don't use it !")
@@ -111,10 +116,10 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     private Future<?> stable_task_future=null; // bcasts periodic STABLE message (added to timer below)
 
 
-    public long[] getTimeout() {return timeout;}
+    public int[] getTimeout() {return timeout;}
 
-    @Property(name="timeout",converter=PropertyConverters.LongArray.class)
-    public void setTimeout(long[] val) {
+    @Property(name="timeout",converter=PropertyConverters.IntegerArray.class,description="list of timeouts")
+    public void setTimeout(int[] val) {
         if(val != null)
             timeout=val;
     }
@@ -760,6 +765,12 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                                                     xmit_table_num_rows, xmit_table_msgs_per_row,
                                                     xmit_table_resize_factor, xmit_table_max_compaction_time,
                                                     xmit_table_automatic_purging);
+
+        if(exponential_backoff > 0)
+            win.setRetransmitTimeouts(new ExponentialInterval(exponential_backoff));
+        else
+            win.setRetransmitTimeouts(new StaticInterval(timeout));
+
         ReceiverEntry entry=new ReceiverEntry(win, conn_id, max_stable_msgs);
         ReceiverEntry entry2=recv_table.putIfAbsent(sender, entry);
         if(entry2 != null)
