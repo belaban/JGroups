@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Test(groups=Global.TIME_SENSITIVE,dataProvider="createTimer",sequential=true)
 public class TimeSchedulerTest {
     static final int NUM_MSGS=1000;
-    static long[] xmit_timeouts={1000, 2000, 4000, 8000};
-    static double PERCENTAGE_OFF=0.3; // how much can expected xmit_timeout and real timeout differ to still be okay ?
+    static int[]     xmit_timeouts={1000, 2000, 4000, 8000};
+    static double    PERCENTAGE_OFF=0.3; // how much can expected xmit_timeout and real timeout differ to still be okay ?
 
 
     @DataProvider(name="createTimer")

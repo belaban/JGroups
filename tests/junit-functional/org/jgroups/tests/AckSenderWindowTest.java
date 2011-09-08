@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class AckSenderWindowTest {
     static final int          NUM_MSGS=100;
-    final static long[]       xmit_timeouts={1000, 2000, 4000, 8000};
+    final static int[]        xmit_timeouts={1000, 2000, 4000, 8000};
     static final double       PERCENTAGE_OFF=1.3; // how much can expected xmit_timeout and real timeout differ to still be okay ?
     final Map<Long,Entry>     msgs=new ConcurrentHashMap<Long,Entry>(); // keys=seqnos (Long), values=Entries
 
