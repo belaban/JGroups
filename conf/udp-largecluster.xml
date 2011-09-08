@@ -46,23 +46,20 @@
          oob_thread_pool.keep_alive_time="5000"
          oob_thread_pool.rejection_policy="Run"/>
 
-    <!-- Reset ergonomics to true once https://issues.jboss.org/browse/JGRP-1309 is fixed -->
     <PING timeout="2000"
           num_initial_members="100"
-          break_on_coord_rsp="true"
-          max_rank="0"
-          ergonomics="false" />
+          break_on_coord_rsp="true" />
     <MERGE2 max_interval="30000"
             min_interval="10000"/>
     <FD_SOCK/>
     <FD_ALL/>
     <VERIFY_SUSPECT timeout="1500"  />
     <BARRIER />
-    <pbcast.NAKACK use_stats_for_retransmission="false"
-                   exponential_backoff="500"
+    <pbcast.NAKACK exponential_backoff="300"
+                   xmit_req_stagger_timeout="200"
                    use_mcast_xmit="true"
                    discard_delivered_msgs="true"/>
-    <UNICAST2 timeout="300,600,1200"/>
+    <UNICAST2 exponential_backoff="500"/>
     <pbcast.STABLE stability_delay="2000" desired_avg_gossip="60000"
                    max_bytes="4M"
                    cap="0.1"/>

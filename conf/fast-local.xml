@@ -57,16 +57,14 @@
     <FD_ALL/>
     <VERIFY_SUSPECT timeout="1500"  />
     <BARRIER />
-    <pbcast.NAKACK use_stats_for_retransmission="false"
-                   exponential_backoff="300"
+    <pbcast.NAKACK exponential_backoff="300"
+                   xmit_req_stagger_timeout="200"
                    use_mcast_xmit="true"
-                   retransmit_timeout="300,600,1200"
                    discard_delivered_msgs="true"/>
-    <UNICAST timeout="300,600,1200"/>
+    <UNICAST2 exponential_backoff="500"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="8m"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
-                
                 view_bundling="true"/>
     <UFC max_credits="2M"
          min_threshold="0.4"/>
