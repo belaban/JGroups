@@ -161,6 +161,9 @@ public class TUNNEL extends TP {
                  local = adapter.local_addr;
              }
              
+             if(stubManager != null) {
+                stubManager.destroyStubs();
+             }
              stubManager = new TUNNELStubManager(this,group,local,getReconnectInterval());
              for (InetSocketAddress gr : gossip_router_hosts) {
                  RouterStub stub = stubManager.createAndRegisterStub(gr.getHostName(), gr.getPort(), bind_addr);
