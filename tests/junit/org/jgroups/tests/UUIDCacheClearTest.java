@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
+import org.jgroups.protocols.UNICAST2;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -60,20 +61,26 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             r1.clear();
             r2.clear();
 
+            r1.enablePrinting(true); r2.enablePrinting(true);
+
             // send one unicast message from c1 to c2 and vice versa
-            c1.send(c2_addr, "two");
+            c1.send(c2_addr, "one");
             c2.send(c1_addr, "two");
             for(int i=0; i < 10; i++) { // poor man's way of waiting until we have 1 message in each receiver... :-)
                 if(!c1_list.isEmpty() && !c2_list.isEmpty())
                     break;
+                stable(c1, c2);
                 Util.sleep(1000);
             }
+
+            r1.enablePrinting(false); r2.enablePrinting(false);
+
             assert c1_list.size() == 1 && c2_list.size() == 1;
             Message msg_from_1=c2_list.get(0);
             Message msg_from_2=c1_list.get(0);
 
             assert msg_from_1.getSrc().equals(c1_addr);
-            assert msg_from_1.getObject().equals("two");
+            assert msg_from_1.getObject().equals("one");
 
             assert msg_from_2.getSrc().equals(c2_addr);
             assert msg_from_2.getObject().equals("two");
@@ -90,6 +97,14 @@ public class UUIDCacheClearTest extends ChannelTestBase {
         }
     }
 
+    protected static void stable(JChannel... channels) {
+        for(JChannel ch: channels) {
+            UNICAST2 unicast2=(UNICAST2)ch.getProtocolStack().findProtocol(UNICAST2.class);
+            if(unicast2 != null)
+                unicast2.sendStableMessages();
+        }
+    }
+
     private static void printCaches(JChannel ... channels) {
         System.out.println("chaches:\n");
         for(JChannel ch: channels) {
@@ -100,12 +115,16 @@ public class UUIDCacheClearTest extends ChannelTestBase {
 
     private static class MyReceiver extends ReceiverAdapter {
         private final List<Message> msgs=new ArrayList<Message>(4);
+        private boolean print_msgs=false;
 
         public void receive(Message msg) {
             msgs.add(msg);
+            if(print_msgs)
+                System.out.println("<< " + msg.getObject() + " from " + msg.getSrc());
         }
 
         public void clear() {msgs.clear();}
+        public void enablePrinting(boolean flag) {print_msgs=flag;}
         public List<Message> getList() {return msgs;}
     }
 
