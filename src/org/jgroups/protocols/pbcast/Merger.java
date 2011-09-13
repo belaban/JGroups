@@ -567,7 +567,7 @@ public class Merger {
                     throw new Exception("merge leader rejected merge request");
 
                 /* 4. Combine all views and digests into 1 View/1 Digest */
-                Vector<MergeData> merge_data=new Vector<MergeData>(merge_rsps.getResults().values());
+                List<MergeData> merge_data=new ArrayList<MergeData>(merge_rsps.getResults().values());
                 MergeData combined_merge_data=consolidateMergeData(merge_data);
                 if(combined_merge_data == null)
                     throw new Exception("could not consolidate merge");
@@ -654,10 +654,10 @@ public class Merger {
          * @param merge_rsps A list of MergeData items. Elements with merge_rejected=true were removed before. Is guaranteed
          *          not to be null and to contain at least 1 member.
          */
-        private MergeData consolidateMergeData(Vector<MergeData> merge_rsps) {
+        private MergeData consolidateMergeData(List<MergeData> merge_rsps) {
             long logical_time=0; // for new_vid
             Membership new_mbrs=new Membership();
-            Vector<View> subgroups=new Vector<View>(11); // contains a list of Views, each View is a subgroup
+            List<View> subgroups=new ArrayList<View>(11); // contains a list of Views, each View is a subgroup
 
             for(MergeData tmp_data: merge_rsps) {
                 View tmp_view=tmp_data.getView();
@@ -669,7 +669,7 @@ public class Merger {
                     }
                     // merge all membership lists into one (prevent duplicates)
                     new_mbrs.add(tmp_view.getMembers());
-                    subgroups.addElement((View)tmp_view.clone());
+                    subgroups.add((View)tmp_view.clone());
                 }
             }
 
@@ -698,10 +698,10 @@ public class Merger {
         }
 
         /**
-         * Merge all digests into one. For each sender, the new value is min(low_seqno), max(high_seqno),
-         * max(high_seqno_seen). This method has a lock on merge_rsps
+         * Merge all digests into one. For each sender, the new value is max(highest_delivered),
+         * max(highest_received). This method has a lock on merge_rsps
          */
-        private Digest consolidateDigests(Vector<MergeData> merge_rsps, int num_mbrs) {
+        private Digest consolidateDigests(List<MergeData> merge_rsps, int num_mbrs) {
             MutableDigest retval=new MutableDigest(num_mbrs);
 
             for(MergeData data: merge_rsps) {
