@@ -6,7 +6,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Replaces words that start with args passed to thei program with A, B, C and so on. Useful to convert a view of
+ * Replaces words that start with args passed to the program with A, B, C and so on. Useful to convert a view of
  * long names into shorter ones, e.g. for parsing logs
  * @author Bela Ban
  * @since 3.0
