@@ -619,14 +619,12 @@ public abstract class TP extends Protocol {
     public long getNumMessagesReceived() {return num_msgs_received;}
     public long getNumBytesSent()        {return num_bytes_sent;}
     public long getNumBytesReceived()    {return num_bytes_received;}
-    public String getBindAddress() {return bind_addr != null? bind_addr.toString() : "null";}
-    public void setBindAddress(String bind_addr) throws UnknownHostException {
-        this.bind_addr=InetAddress.getByName(bind_addr);
-    }
-    public InetAddress getBindAddressAsInetAddress() {return bind_addr;}
-    public int getBindPort() {return bind_port;}
-    public void setBindPort(int port) {this.bind_port=port;}
-    public void setBindToAllInterfaces(boolean flag) {this.receive_on_all_interfaces=flag;}
+
+    public InetAddress getBindAddress()               {return bind_addr;}
+    public void setBindAddress(InetAddress bind_addr) {this.bind_addr=bind_addr;}
+    public int getBindPort()                          {return bind_port;}
+    public void setBindPort(int port)                 {this.bind_port=port;}
+    public void setBindToAllInterfaces(boolean flag)  {this.receive_on_all_interfaces=flag;}
 
     public boolean isReceiveOnAllInterfaces() {return receive_on_all_interfaces;}
     public List<NetworkInterface> getReceiveInterfaces() {return receive_interfaces;}

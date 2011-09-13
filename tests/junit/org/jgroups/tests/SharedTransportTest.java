@@ -516,7 +516,7 @@ public class SharedTransportTest extends ChannelTestBase {
     protected static void makeUnique(Channel channel, int num) throws Exception {
         ProtocolStack stack=channel.getProtocolStack();
         TP transport=stack.getTransport();
-        InetAddress bind_addr=transport.getBindAddressAsInetAddress();
+        InetAddress bind_addr=transport.getBindAddress();
 
         if(transport instanceof UDP) {
             String mcast_addr=ResourceManager.getNextMulticastAddress();
