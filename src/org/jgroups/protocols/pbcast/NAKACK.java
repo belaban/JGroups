@@ -58,7 +58,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Use a multicast to request retransmission of missing messages. This may
      * be costly as every member in the cluster will send a response
      */
-    @Property(description="Use a multicast to request retransmission of missing messages. Default is false")
+    @Property(description="Use a multicast to request retransmission of missing messages")
     private boolean use_mcast_xmit_req=false;
 
 
@@ -665,7 +665,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(leaving)
                 return;
             if(log.isWarnEnabled() && log_discard_msgs)
-                log.warn(local_addr + ": dropped message from " + sender + " (not in table " + xmit_table.keySet() +"), view=" + view);
+                log.warn(local_addr + ": dropped message " + hdr.seqno + " from " + sender +
+                           " (sender not in table " + xmit_table.keySet() +"), view=" + view);
             return;
         }
 
@@ -1031,6 +1032,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             NakReceiverWindow win=xmit_table.get(member);
             if(win != null) {
                 if(local_addr.equals(member)) {
+                    // Adjust the highest_delivered seqno (to send msgs again): https://jira.jboss.org/browse/JGRP-1251
                     win.setHighestDelivered(highest_delivered_seqno);
                     continue; // don't destroy my own window
                 }
@@ -1080,6 +1082,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
                 xmit_table.remove(member);
                 win.destroy(); // stops retransmission
+                // to get here, merge must be false !
                 if(member.equals(local_addr)) { // Adjust the seqno: https://jira.jboss.org/browse/JGRP-1251
                     seqno_lock.lock();
                     try {
