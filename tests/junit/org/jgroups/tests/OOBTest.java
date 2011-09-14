@@ -349,6 +349,7 @@ public class OOBTest extends ChannelTestBase {
             if(list.size() == NUM-1)
                 break;
             System.out.println("list = " + list);
+            sendStableMessages(c1, c2);
             Util.sleep(1000); // give the asynchronous msgs some time to be received
         }
 
@@ -415,6 +416,9 @@ public class OOBTest extends ChannelTestBase {
             STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
             if(stable != null)
                 stable.runMessageGarbageCollection();
+            UNICAST2 uni=(UNICAST2)ch.getProtocolStack().findProtocol(UNICAST2.class);
+            if(uni != null)
+                uni.sendStableMessages();
         }
     }
 

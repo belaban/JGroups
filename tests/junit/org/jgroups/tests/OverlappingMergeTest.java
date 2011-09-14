@@ -191,8 +191,9 @@ public class OverlappingMergeTest extends ChannelTestBase {
         views.put(b.getAddress(), b.getView());
         views.put(c.getAddress(), c.getView());
         Event merge_evt=new Event(Event.MERGE, views);
-        System.out.println("\n==== Injecting a merge event (leader=" + a.getAddress() + ") ====");
-        injectMergeEvent(merge_evt, a);
+        JChannel merge_leader=determineMergeLeader(a, b, c);
+        System.out.println("\n==== Injecting a merge event (leader=" + merge_leader.getAddress() + ") ====");
+        injectMergeEvent(merge_evt, merge_leader);
 
         System.out.println("\n==== checking views after merge ====:");
         for(int i=0; i < 10; i++) {
