@@ -68,7 +68,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
       "if staggering is enabled, somebody else already sent the XMIT request (via mcast) and we can cancel the XMIT " +
       "request once we receive the missing messages. For unicast XMIT responses (use_mcast_xmit=false), we still have " +
       "an advantage by not overwhelming the receiver with XMIT requests, all at the same time. 0 disabless staggering.")
-    protected long xmit_stagger_timeout=0;
+    protected long xmit_stagger_timeout=200;
     
 
     /**
@@ -268,7 +268,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(xmit_from_random_member) {
             if(discard_delivered_msgs) {
                 discard_delivered_msgs=false;
-                log.warn("xmit_from_random_member set to true: changed discard_delivered_msgs to false");
+                log.debug("xmit_from_random_member set to true: changed discard_delivered_msgs to false");
             }
         }
 
