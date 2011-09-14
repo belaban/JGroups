@@ -1097,7 +1097,6 @@ public abstract class TP extends Protocol {
 
     /**
      * Subclasses must call this method when a unicast or multicast message has been received.
-     * Declared final so subclasses cannot override this method.
      *
      * @param sender
      * @param data
