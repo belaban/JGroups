@@ -57,7 +57,7 @@ public class AgeOutCacheTest {
         cache.remove(5);
         cache.remove(6); // not existent
 
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 20; i++) {
             if(cache.size() == 3)
                 break;
             Util.sleep(500);

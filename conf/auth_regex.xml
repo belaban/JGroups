@@ -18,7 +18,7 @@
     <VERIFY_SUSPECT/>
     <BARRIER />
     <pbcast.NAKACK/>
-    <UNICAST2/>
+    <UNICAST/>
     <pbcast.STABLE/>
 
     <!-- Allow only hosts in the 192.168 or 10.5 network to join -->

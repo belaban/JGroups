@@ -13,7 +13,7 @@
     <FD_ALL/>
     <VERIFY_SUSPECT/>
     <pbcast.NAKACK/>
-    <UNICAST2/>
+    <UNICAST/>
     <pbcast.STABLE/>
     <pbcast.GMS/>
     <UFC/>

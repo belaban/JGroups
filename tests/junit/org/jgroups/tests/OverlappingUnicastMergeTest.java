@@ -25,13 +25,13 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
     @BeforeMethod
     void start() throws Exception {
         ra=new MyReceiver("A"); rb=new MyReceiver("B"); rc=new MyReceiver("C");
-        a=createChannel(true, 3);
+        a=createChannel(true, 3, "A");
         a.setReceiver(ra);
 
-        b=createChannel(a);
+        b=createChannel(a, "B");
         b.setReceiver(rb);
 
-        c=createChannel(a); 
+        c=createChannel(a, "C");
         c.setReceiver(rc);
 
         modifyConfigs(a, b, c);

@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.STABLE;
@@ -164,7 +165,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
      *      been implemented: B and C's MERGE2 protocols will never send out merge requests as they see A as coord 
      * </ol>
      */
-    @Test(enabled=true)
+    @Test
     public void testOverlappingMergeWithABC() throws Exception {
         sendMessages(5, a, b, c);
         checkReceivedMessages(make(ra, 15), make(rb,15), make(rc,15));
@@ -191,9 +192,14 @@ public class OverlappingMergeTest extends ChannelTestBase {
         views.put(b.getAddress(), b.getView());
         views.put(c.getAddress(), c.getView());
         Event merge_evt=new Event(Event.MERGE, views);
-        JChannel merge_leader=determineMergeLeader(a, b, c);
-        System.out.println("\n==== Injecting a merge event (leader=" + merge_leader.getAddress() + ") ====");
-        injectMergeEvent(merge_evt, merge_leader);
+
+        for(JChannel ch: new JChannel[]{a,b,c}) {
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            gms.setLevel("trace");
+        }
+
+        System.out.println("\n==== Injecting a merge event into A, B and C ====");
+        injectMergeEvent(merge_evt, a,b,c);
 
         System.out.println("\n==== checking views after merge ====:");
         for(int i=0; i < 10; i++) {
@@ -204,6 +210,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
             System.out.print(".");
             for(JChannel ch: new JChannel[]{a,b,c})
                 runStableProtocol(ch);
+            injectMergeEvent(merge_evt, a,b,c);
             Util.sleep(1000);
         }
 
@@ -220,6 +227,11 @@ public class OverlappingMergeTest extends ChannelTestBase {
         System.out.println("\n==== Sending messages after merge ====");
         sendMessages(5, a, b, c);
         checkReceivedMessages(make(ra, 15), make(rb,15), make(rc,15));
+
+        for(JChannel ch: new JChannel[]{a,b,c}) {
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            gms.setLevel("warn");
+        }
     }
 
 
