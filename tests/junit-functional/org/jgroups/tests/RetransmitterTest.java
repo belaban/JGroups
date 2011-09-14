@@ -5,45 +5,59 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.stack.DefaultRetransmitter;
+import org.jgroups.stack.ExponentialInterval;
+import org.jgroups.stack.RangeBasedRetransmitter;
 import org.jgroups.stack.Retransmitter;
-import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.DefaultTimeScheduler;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,sequential=true,dataProvider="createRetransmitter")
 public class RetransmitterTest {
     private final Address sender=Util.createRandomAddress();
     private TimeScheduler timer;
-    private Retransmitter xmitter;
 
-
-    @BeforeMethod
-    void initTimer() {
+    @BeforeClass
+    void createTimer() {
+        System.out.println("<< create timer");
         timer=new DefaultTimeScheduler();
-        xmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
-        xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
-        xmitter.reset();
     }
 
-    @AfterMethod
+
+    @DataProvider(name="createRetransmitter")
+    protected Retransmitter[][] createRetransmitter() {
+        Retransmitter range_based_retransmitter=new RangeBasedRetransmitter(sender, new MyXmitter(), timer);
+        Retransmitter old_retransmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
+
+        range_based_retransmitter.setRetransmitTimeouts(new ExponentialInterval(1000));
+        range_based_retransmitter.reset();
+        old_retransmitter.setRetransmitTimeouts(new ExponentialInterval(1000));
+        old_retransmitter.reset();
+
+        return new Retransmitter[][] {
+          {range_based_retransmitter},
+          {old_retransmitter}
+        };
+    }
+
+
+    @AfterClass
     void destroyTimer() throws InterruptedException {
+        System.out.println("<< destroy timer");
         timer.stop();
     }
 
-    public void testNoEntry() {
+    public void testNoEntry(Retransmitter xmitter) {
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
         Assert.assertEquals(0, size);
     }
 
 
-    public void testSingleEntry() {
+    public void testSingleEntry(Retransmitter xmitter) {
         xmitter.add(1, 1);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
@@ -51,7 +65,7 @@ public class RetransmitterTest {
     }
 
 
-    public void testEntry() {
+    public void testEntry(Retransmitter xmitter) {
         xmitter.add(1, 10);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
@@ -59,7 +73,7 @@ public class RetransmitterTest {
     }
 
 
-    public void testMultipleEntries() {
+    public void testMultipleEntries(Retransmitter xmitter) {
         xmitter.add(1, 10);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
@@ -110,6 +124,14 @@ public class RetransmitterTest {
         size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
         Assert.assertEquals(0, size);
+    }
+
+
+    public void testRanges(Retransmitter xmitter) {
+        xmitter.add(200, 500);
+        xmitter.add(100, 300);
+        System.out.println("xmitter: " + xmitter);
+        assert xmitter.size() == 401;
     }
 
 
