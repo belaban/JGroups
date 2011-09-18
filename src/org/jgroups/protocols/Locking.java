@@ -502,6 +502,8 @@ abstract public class Locking extends Protocol {
     protected void handleDeleteLockRequest(String lock_name) {
         synchronized(server_locks) {
             ServerLock lock = server_locks.get(lock_name);
+            if(lock == null)
+                return;
             synchronized (lock.condition) {
                 if (lock.condition.queue.isEmpty()) {
                     server_locks.remove(lock_name);
