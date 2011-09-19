@@ -75,24 +75,21 @@ public abstract class Channel /* implements Transport */ {
 
     /**
      Connects the channel to a group. The client is now able to receive group
-     messages, views and block events (depending on the options set) and to send
-     messages to (all or single) group members.  This is a null operation if already
-     connected.<p>
+     messages, views and to send messages to (all or single) group members.  This is a null operation if
+     already connected.<p>
 
      All channels with the same name form a group, that means all messages
-     sent to the group will be received by all channels connected to the same
-     channel name.<p>
+     sent to the group will be received by all channels connected to the same cluster name.<p>
 
      @param cluster_name The name of the chanel to connect to.
      @exception Exception The protocol stack cannot be started
-     @exception IllegalStateException The channel is closed or not connected
+     @exception IllegalStateException The channel is closed
      */
     abstract public void connect(String cluster_name) throws Exception;
 
 
     /**
-     * Connects this channel to a group and gets a state from a specified member
-     * provider.
+     * Connects this channel to a group and gets a state from a specified state provider.
      * <p/>
      *
      * This method essentially invokes
@@ -100,8 +97,7 @@ public abstract class Channel /* implements Transport */ {
      * If FLUSH protocol is in channel's stack definition only one flush is executed for both connecting and
      * fetching state rather than two flushes if we invoke <code>connect<code> and <code>getState<code> in succesion.
      *
-     * If the channel is already connected, an error message will be printed to the error log.
-     * If the channel is closed a ChannelClosed exception will be thrown.
+     * If the channel is closed an exception will be thrown.
      *
      *
      * @param cluster_name  the cluster name to connect to. Cannot be null.
@@ -109,7 +105,7 @@ public abstract class Channel /* implements Transport */ {
      * @param timeout the timeout for state transfer.
      *
      * @exception Exception Connecting to the cluster or state transfer was not successful
-     * @exception IllegalStateException The channel is closed or disconnected and therefore cannot be used
+     * @exception IllegalStateException The channel is closed and therefore cannot be used
      *
      */
     abstract public void connect(String cluster_name, Address target, long timeout) throws Exception;
@@ -164,7 +160,7 @@ public abstract class Channel /* implements Transport */ {
      </ol>
      @param msg The message to be sent. Destination and buffer should be set. A null destination
      means to send to all group members.
-     @exception IllegalStateException thrown if the state is disconnected or closed
+     @exception IllegalStateException thrown if the channel is disconnected or closed
      */
     abstract public void send(Message msg) throws Exception;
 
