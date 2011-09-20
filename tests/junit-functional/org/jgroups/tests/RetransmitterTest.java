@@ -50,6 +50,7 @@ public class RetransmitterTest {
         timer.stop();
     }
 
+    @Test(dataProvider="createRetransmitter")
     public void testNoEntry(Retransmitter xmitter) {
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
@@ -57,6 +58,7 @@ public class RetransmitterTest {
     }
 
 
+    @Test(dataProvider="createRetransmitter")
     public void testSingleEntry(Retransmitter xmitter) {
         xmitter.add(1, 1);
         int size=xmitter.size();
@@ -65,6 +67,7 @@ public class RetransmitterTest {
     }
 
 
+    @Test(dataProvider="createRetransmitter")
     public void testEntry(Retransmitter xmitter) {
         xmitter.add(1, 10);
         int size=xmitter.size();
@@ -73,6 +76,7 @@ public class RetransmitterTest {
     }
 
 
+    @Test(dataProvider="createRetransmitter")
     public void testMultipleEntries(Retransmitter xmitter) {
         xmitter.add(1, 10);
         int size=xmitter.size();
@@ -127,6 +131,7 @@ public class RetransmitterTest {
     }
 
 
+    @Test(dataProvider="createRetransmitter")
     public void testRanges(Retransmitter xmitter) {
         xmitter.add(200, 500);
         xmitter.add(100, 300);
