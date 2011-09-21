@@ -1,15 +1,14 @@
 package org.jgroups.blocks.locking;
 
+import org.jgroups.Event;
+import org.jgroups.JChannel;
+import org.jgroups.protocols.Locking;
+
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
-
-import org.jgroups.Event;
-import org.jgroups.JChannel;
-import org.jgroups.annotations.Experimental;
-import org.jgroups.protocols.Locking;
 
 /**
  * LockService is the main class for to use for distributed locking functionality. LockService needs access to a
