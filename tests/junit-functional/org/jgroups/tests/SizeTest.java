@@ -635,7 +635,7 @@ public class SizeTest {
 
 
 
-    public static void testWriteAddress() throws IOException, IllegalAccessException, InstantiationException {
+    public static void testWriteAddress() throws Exception {
         Address uuid=UUID.randomUUID();
         _testWriteAddress(uuid);
 
@@ -646,7 +646,7 @@ public class SizeTest {
         _testWriteAddress(addr);
     }
 
-    private static void _testWriteAddress(Address addr) throws IOException, InstantiationException, IllegalAccessException {
+    private static void _testWriteAddress(Address addr) throws Exception {
         int len=Util.size(addr);
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);
@@ -665,7 +665,7 @@ public class SizeTest {
 
 
 
-    public static void testWriteAddresses() throws IOException, IllegalAccessException, InstantiationException {
+    public static void testWriteAddresses() throws Exception {
         List<Address> list=new ArrayList<Address>();
         for(int i=0; i < 3; i++)
             list.add(UUID.randomUUID());
@@ -678,7 +678,7 @@ public class SizeTest {
         _testWriteAddresses(list);
     }
 
-    private static void _testWriteAddresses(List<Address> list) throws IOException, InstantiationException, IllegalAccessException {
+    private static void _testWriteAddresses(List<Address> list) throws Exception {
         long len=Util.size(list);
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);

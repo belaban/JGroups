@@ -31,11 +31,11 @@ public class AuthHeader extends Header {
     }
 
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         Util.writeAuthToken(this.token, out);
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         this.token = Util.readAuthToken(in);
     }
     public int size(){

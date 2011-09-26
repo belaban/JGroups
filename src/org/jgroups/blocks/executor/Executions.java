@@ -129,7 +129,7 @@ public class Executions {
         }
 
         @Override
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             Util.writeClass(_classCallable, out);
             out.writeByte(_constructorNumber);
             out.writeByte(_args.length);
@@ -145,8 +145,7 @@ public class Executions {
 
         @SuppressWarnings("unchecked")
         @Override
-        public void readFrom(DataInput in) throws IOException,
-                IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             try {
                 _classCallable = (Class<? extends Callable<?>>)Util.readClass(in);
             }

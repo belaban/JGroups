@@ -4,7 +4,6 @@ package org.jgroups.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 
 
 public class Range implements Streamable, Comparable<Range> {
@@ -44,11 +43,11 @@ public class Range implements Streamable, Comparable<Range> {
 
 
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         Util.writeLongSequence(low, high, out);
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         long[] seqnos=Util.readLongSequence(in);
         low=seqnos[0];
         high=seqnos[1];

@@ -57,12 +57,12 @@ public class PayloadUUID extends UUID {
         return retval;
     }
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         super.writeTo(out);
         Util.writeString(payload, out);
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         super.readFrom(in);
         payload=Util.readString(in);
     }

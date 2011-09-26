@@ -317,12 +317,12 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
 
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeShort(type);
             Util.writeAddress(from, out);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             type=in.readShort();
             from=Util.readAddress(in);
         }

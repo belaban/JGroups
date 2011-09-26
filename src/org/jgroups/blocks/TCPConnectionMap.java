@@ -527,9 +527,9 @@ public class TCPConnectionMap{
          * doesn't match the receiver's cookie, the receiver will reject the
          * connection and close it.
          * 
-         * @throws IOException
+         * @throws Exception
          */
-        private void sendLocalAddress(Address local_addr) throws IOException {           
+        private void sendLocalAddress(Address local_addr) throws Exception {
             // write the cookie
             out.write(cookie, 0, cookie.length);
 

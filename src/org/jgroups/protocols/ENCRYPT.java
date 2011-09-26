@@ -1192,13 +1192,13 @@ public class ENCRYPT extends Protocol {
         }
 
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeShort(type);
             Util.writeString(version, out);
             out.writeBoolean(encrypt_entire_msg);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             type=in.readShort();
             version=Util.readString(in);
             encrypt_entire_msg=in.readBoolean();

@@ -32,11 +32,11 @@ public class TpHeader extends Header {
         return size;
     }
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         out.writeUTF(channel_name);
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         channel_name=in.readUTF();
         if(channel_name != null)
             size=channel_name.length()+2; // +2 for writeUTF()

@@ -365,14 +365,14 @@ public class GridFile extends File {
             return sb.toString();
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeInt(length);
             out.writeLong(modification_time);
             out.writeInt(chunk_size);
             out.writeByte(flags);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             length=in.readInt();
             modification_time=in.readLong();
             chunk_size=in.readInt();

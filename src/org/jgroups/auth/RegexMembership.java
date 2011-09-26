@@ -30,7 +30,6 @@ import org.jgroups.util.UUID;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -107,17 +106,16 @@ public class RegexMembership extends AuthToken {
 
    
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
     }
 
     /**
      * Required to deserialize the object when read in from the wire
      *
+     *
      * @param in
-     * @throws java.io.IOException
-     * @throws IllegalAccessException
-     * @throws InstantiationException
+     * @throws Exception
      */
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
     }
 }

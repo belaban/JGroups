@@ -188,11 +188,11 @@ public class COMPRESS extends Protocol {
             return Global.INT_SIZE;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeInt(original_size);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             original_size=in.readInt();
         }
     }

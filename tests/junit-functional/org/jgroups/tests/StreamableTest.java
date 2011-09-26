@@ -3,7 +3,6 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;

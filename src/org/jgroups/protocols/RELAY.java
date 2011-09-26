@@ -10,7 +10,6 @@ import org.jgroups.util.UUID;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -635,7 +634,7 @@ public class RELAY extends Protocol {
             return retval;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type.ordinal());
             switch(type) {
                 case DISSEMINATE:
@@ -648,7 +647,7 @@ public class RELAY extends Protocol {
             }
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             type=Type.values()[in.readByte()];
             switch(type) {
                 case DISSEMINATE:
@@ -699,7 +698,7 @@ public class RELAY extends Protocol {
         }
 
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             Util.writeView(remote_view, out);
             Util.writeView(global_view, out);
             out.writeInt(uuids.size());
@@ -709,7 +708,7 @@ public class RELAY extends Protocol {
             }
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             remote_view=Util.readView(in);
             global_view=Util.readView(in);
             int size=in.readInt();

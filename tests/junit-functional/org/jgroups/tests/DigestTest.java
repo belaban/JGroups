@@ -537,7 +537,7 @@ public class DigestTest {
 
 
 
-    public void testStreamable() throws IOException, IllegalAccessException, InstantiationException {
+    public void testStreamable() throws Exception {
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
         d.writeTo(dos);

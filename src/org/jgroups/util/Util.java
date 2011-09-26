@@ -778,12 +778,12 @@ public class Util {
 
 
 
-    public static void writeAuthToken(AuthToken token, DataOutput out) throws IOException{
+    public static void writeAuthToken(AuthToken token, DataOutput out) throws Exception{
         Util.writeString(token.getName(), out);
         token.writeTo(out);
     }
 
-    public static AuthToken readAuthToken(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public static AuthToken readAuthToken(DataInput in) throws Exception {
         try{
             String type = Util.readString(in);
             Object obj = Class.forName(type).newInstance();
@@ -791,13 +791,13 @@ public class Util {
             token.readFrom(in);
             return token;
         }
-        catch(ClassNotFoundException cnfe){
+        catch(ClassNotFoundException cnfe) {
             return null;
         }
     }
 
 
-    public static void writeView(View view, DataOutput out) throws IOException {
+    public static void writeView(View view, DataOutput out) throws Exception {
         if(view == null) {
             out.writeBoolean(false);
             return;
@@ -808,7 +808,7 @@ public class Util {
     }
 
 
-    public static View readView(DataInput in) throws IOException, InstantiationException, IllegalAccessException {
+    public static View readView(DataInput in) throws Exception {
         if(in.readBoolean() == false)
             return null;
         boolean isMergeView=in.readBoolean();
@@ -821,7 +821,7 @@ public class Util {
         return view;
     }
 
-    public static void writeViewId(ViewId vid, DataOutput out) throws IOException {
+    public static void writeViewId(ViewId vid, DataOutput out) throws Exception {
         if(vid == null) {
             out.writeBoolean(false);
             return;
@@ -830,7 +830,7 @@ public class Util {
         vid.writeTo(out);
     }
 
-    public static ViewId readViewId(DataInput in) throws IOException, InstantiationException, IllegalAccessException {
+    public static ViewId readViewId(DataInput in) throws Exception {
         if(in.readBoolean() == false)
             return null;
         ViewId retval=new ViewId();
@@ -839,7 +839,7 @@ public class Util {
     }
 
 
-    public static void writeAddress(Address addr, DataOutput out) throws IOException {
+    public static void writeAddress(Address addr, DataOutput out) throws Exception {
         byte flags=0;
         boolean streamable_addr=true;
 
@@ -867,7 +867,7 @@ public class Util {
             writeOtherAddress(addr, out);
     }
 
-    public static Address readAddress(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public static Address readAddress(DataInput in) throws Exception {
         byte flags=in.readByte();
         if(Util.isFlagSet(flags, Address.NULL))
             return null;
@@ -914,7 +914,7 @@ public class Util {
         return retval;
     }
 
-    private static Address readOtherAddress(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    private static Address readOtherAddress(DataInput in) throws Exception {
         short magic_number=in.readShort();
         Class cl=ClassConfigurator.get(magic_number);
         if(cl == null)
@@ -924,7 +924,7 @@ public class Util {
         return addr;
     }
 
-    private static void writeOtherAddress(Address addr, DataOutput out) throws IOException {
+    private static void writeOtherAddress(Address addr, DataOutput out) throws Exception {
         short magic_number=ClassConfigurator.getMagicNumber(addr.getClass());
 
         // write the class info
@@ -940,9 +940,9 @@ public class Util {
      *
      * @param v A Collection<Address>
      * @param out
-     * @throws IOException
+     * @throws Exception
      */
-    public static void writeAddresses(Collection<? extends Address> v, DataOutput out) throws IOException {
+    public static void writeAddresses(Collection<? extends Address> v, DataOutput out) throws Exception {
         if(v == null) {
             out.writeShort(-1);
             return;
@@ -959,11 +959,9 @@ public class Util {
      * @param in
      * @param cl The type of Collection, e.g. Vector.class
      * @return Collection of Address objects
-     * @throws IOException
-     * @throws IllegalAccessException
-     * @throws InstantiationException
+     * @throws Exception
      */
-    public static Collection<? extends Address> readAddresses(DataInput in, Class cl) throws IOException, IllegalAccessException, InstantiationException {
+    public static Collection<? extends Address> readAddresses(DataInput in, Class cl) throws Exception {
         short length=in.readShort();
         if(length < 0) return null;
         Collection<Address> retval=(Collection<Address>)cl.newInstance();
@@ -994,7 +992,7 @@ public class Util {
 
 
 
-    public static void writeStreamable(Streamable obj, DataOutput out) throws IOException {
+    public static void writeStreamable(Streamable obj, DataOutput out) throws Exception {
         if(obj == null) {
             out.writeBoolean(false);
             return;
@@ -1004,7 +1002,7 @@ public class Util {
     }
 
 
-    public static Streamable readStreamable(Class clazz, DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public static Streamable readStreamable(Class clazz, DataInput in) throws Exception {
         Streamable retval=null;
         if(in.readBoolean() == false)
             return null;
@@ -1014,7 +1012,7 @@ public class Util {
     }
 
 
-    public static void writeGenericStreamable(Streamable obj, DataOutput out) throws IOException {
+    public static void writeGenericStreamable(Streamable obj, DataOutput out) throws Exception {
         short magic_number;
         String classname;
 
@@ -1042,7 +1040,7 @@ public class Util {
 
 
 
-    public static Streamable readGenericStreamable(DataInput in) throws IOException {
+    public static Streamable readGenericStreamable(DataInput in) throws Exception {
         Streamable retval=null;
         int b=in.readByte();
         if(b == 0)
@@ -1052,32 +1050,25 @@ public class Util {
         String classname;
         Class clazz;
 
-        try {
-            if(use_magic_number) {
-                short magic_number=in.readShort();
-                clazz=ClassConfigurator.get(magic_number);
-                if (clazz==null) {
-                   throw new ClassNotFoundException("Class for magic number "+magic_number+" cannot be found.");
-                }
-            }
-            else {
-                classname=in.readUTF();
-                clazz=ClassConfigurator.get(classname);
-                if (clazz==null) {
-                   throw new ClassNotFoundException(classname);
-                }
-            }
+        if(use_magic_number) {
+            short magic_number=in.readShort();
+            clazz=ClassConfigurator.get(magic_number);
+            if (clazz==null)
+                throw new ClassNotFoundException("Class for magic number "+magic_number+" cannot be found.");
+        }
+        else {
+            classname=in.readUTF();
+            clazz=ClassConfigurator.get(classname);
+            if (clazz==null)
+                throw new ClassNotFoundException(classname);
+        }
 
-            retval=(Streamable)clazz.newInstance();
-            retval.readFrom(in);
-            return retval;
-        }
-        catch(Exception ex) {
-            throw new IOException("failed reading object: " + ex.toString());
-        }
+        retval=(Streamable)clazz.newInstance();
+        retval.readFrom(in);
+        return retval;
     }
 
-    public static void writeClass(Class<?> classObject, DataOutput out) throws IOException {
+    public static void writeClass(Class<?> classObject, DataOutput out) throws Exception {
         short magic_number=ClassConfigurator.getMagicNumber(classObject);
         // write the magic number or the class name
         if(magic_number == -1) {
@@ -1090,22 +1081,20 @@ public class Util {
         }
     }
 
-    public static Class<?> readClass(DataInput in) throws IOException, ClassNotFoundException {
+    public static Class<?> readClass(DataInput in) throws Exception {
         Class<?> clazz;
         boolean use_magic_number = in.readBoolean();
         if(use_magic_number) {
             short magic_number=in.readShort();
             clazz=ClassConfigurator.get(magic_number);
-            if (clazz==null) {
-               throw new ClassNotFoundException("Class for magic number "+magic_number+" cannot be found.");
-            }
+            if(clazz == null)
+                throw new ClassNotFoundException("Class for magic number "+magic_number+" cannot be found.");
         }
         else {
             String classname=in.readUTF();
             clazz=ClassConfigurator.get(classname);
-            if (clazz==null) {
-               throw new ClassNotFoundException(classname);
-            }
+            if(clazz == null)
+                throw new ClassNotFoundException(classname);
         }
 
         return clazz;
@@ -1135,7 +1124,7 @@ public class Util {
 
 
 
-    public static void writeString(String s, DataOutput out) throws IOException {
+    public static void writeString(String s, DataOutput out) throws Exception {
         if(s != null) {
             out.write(1);
             out.writeUTF(s);
@@ -1146,7 +1135,7 @@ public class Util {
     }
 
 
-    public static String readString(DataInput in) throws IOException {
+    public static String readString(DataInput in) throws Exception {
         int b=in.readByte();
         if(b == 1)
             return in.readUTF();
@@ -1250,11 +1239,11 @@ public class Util {
     }
 
 
-    public static void writeByteBuffer(byte[] buf, DataOutput out) throws IOException {
+    public static void writeByteBuffer(byte[] buf, DataOutput out) throws Exception {
         writeByteBuffer(buf, 0, buf.length, out);
     }
 
-     public static void writeByteBuffer(byte[] buf, int offset, int length, DataOutput out) throws IOException {
+     public static void writeByteBuffer(byte[] buf, int offset, int length, DataOutput out) throws Exception {
         if(buf != null) {
             out.write(1);
             out.writeInt(length);
@@ -1265,7 +1254,7 @@ public class Util {
         }
     }
 
-    public static byte[] readByteBuffer(DataInput in) throws IOException {
+    public static byte[] readByteBuffer(DataInput in) throws Exception {
         int b=in.readByte();
         if(b == 1) {
             b=in.readInt();
@@ -1277,7 +1266,7 @@ public class Util {
     }
 
 
-    public static Buffer messageToByteBuffer(Message msg) throws IOException {
+    public static Buffer messageToByteBuffer(Message msg) throws Exception {
         ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(512);
         DataOutputStream out=new ExposedDataOutputStream(output);
 
@@ -1309,9 +1298,9 @@ public class Util {
        * Marshalls a list of messages.
        * @param xmit_list LinkedList<Message>
        * @return Buffer
-       * @throws IOException
+       * @throws Exception
        */
-    public static Buffer msgListToByteBuffer(List<Message> xmit_list) throws IOException {
+    public static Buffer msgListToByteBuffer(List<Message> xmit_list) throws Exception {
         ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(512);
         DataOutputStream out=new ExposedDataOutputStream(output);
         Buffer retval=null;
@@ -1966,12 +1955,12 @@ public class Util {
     }
 
 
-    public static void writeLong(long num, DataOutput out) throws IOException {
+    public static void writeLong(long num, DataOutput out) throws Exception {
         byte[] buf=encode(num);
         out.write(buf, 0, buf.length);
     }
 
-    public static long readLong(DataInput in) throws IOException {
+    public static long readLong(DataInput in) throws Exception {
         byte len=in.readByte();
         if(len == 0)
             return 0;
@@ -2071,13 +2060,13 @@ public class Util {
     }
 
 
-    public static void writeLongSequence(long highest_delivered, long highest_received, DataOutput out) throws IOException {
+    public static void writeLongSequence(long highest_delivered, long highest_received, DataOutput out) throws Exception {
         byte[] buf=encodeLongSequence(highest_delivered, highest_received);
         out.write(buf, 0, buf.length);
     }
 
 
-    public static long[] readLongSequence(DataInput in) throws IOException {
+    public static long[] readLongSequence(DataInput in) throws Exception {
         byte len=in.readByte();
         if(len == 0)
             return new long[]{0,0};
@@ -2531,7 +2520,7 @@ public class Util {
     /**
      Makes sure that we detect when a peer connection is in the closed state (not closed while we send data,
      but before we send data). Two writes ensure that, if the peer closed the connection, the first write
-     will send the peer from FIN to RST state, and the second will cause a signal (IOException).
+     will send the peer from FIN to RST state, and the second will cause a signal (Exception).
      */
     public static void doubleWrite(byte[] buf, OutputStream out) throws Exception {
         if(buf.length > 1) {
@@ -2548,7 +2537,7 @@ public class Util {
     /**
      Makes sure that we detect when a peer connection is in the closed state (not closed while we send data,
      but before we send data). Two writes ensure that, if the peer closed the connection, the first write
-     will send the peer from FIN to RST state, and the second will cause a signal (IOException).
+     will send the peer from FIN to RST state, and the second will cause a signal (Exception).
      */
     public static void doubleWrite(byte[] buf, int offset, int length, OutputStream out) throws Exception {
         if(length > 1) {
@@ -2568,7 +2557,7 @@ public class Util {
     * Instead of the above approach this method will continuously write to the
     * channel until the buffer sent fully.
     */
-    public static void writeFully(ByteBuffer buf, WritableByteChannel out) throws IOException {
+    public static void writeFully(ByteBuffer buf, WritableByteChannel out) throws Exception {
         int written = 0;
         int toWrite = buf.limit();
         while (written < toWrite) {

@@ -566,13 +566,13 @@ public abstract class StreamingStateTransfer extends Protocol {
         }
 
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             Util.writeStreamable(my_digest, out);
             Util.writeStreamable(bind_addr, out);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
             my_digest=(Digest)Util.readStreamable(Digest.class, in);
             bind_addr=(IpAddress)Util.readStreamable(IpAddress.class, in);

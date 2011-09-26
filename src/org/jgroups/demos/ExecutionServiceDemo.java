@@ -2,7 +2,6 @@ package org.jgroups.demos;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -94,15 +93,14 @@ public class ExecutionServiceDemo {
         }
 
         @Override
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             int size = buffer.limit() - buffer.position();
             out.writeInt(size);
             out.write(buffer.array(), buffer.position(), size);
         }
 
         @Override
-        public void readFrom(DataInput in) throws IOException,
-                IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             buffer = ByteBuffer.allocate(in.readInt());
             in.readFully(buffer.array());
         }
@@ -152,13 +150,12 @@ public class ExecutionServiceDemo {
 
         // We copy over as a single array with no offset
         @Override
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             Util.writeStreamable(new ByteBufferStreamable(buffer), out);
         }
 
         @Override
-        public void readFrom(DataInput in) throws IOException,
-                IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             buffer = ((ByteBufferStreamable)Util.readStreamable(
                 ByteBufferStreamable.class, in)).buffer;
         }
@@ -210,14 +207,13 @@ public class ExecutionServiceDemo {
         }
         
         @Override
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             Util.writeStreamable(new ByteBufferStreamable(bytes1), out);
             Util.writeStreamable(new ByteBufferStreamable(bytes2), out);
         }
 
         @Override
-        public void readFrom(DataInput in) throws IOException,
-                IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             bytes1 = ((ByteBufferStreamable)Util.readStreamable(
                 ByteBufferStreamable.class, in)).buffer;
             

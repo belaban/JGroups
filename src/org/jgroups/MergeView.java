@@ -85,7 +85,7 @@ public class MergeView extends View {
     }
 
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         super.writeTo(out);
 
         // write subgroups
@@ -102,7 +102,7 @@ public class MergeView extends View {
         }
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         super.readFrom(in);
         short len=in.readShort();
         if(len > 0) {

@@ -5,7 +5,6 @@ import org.jgroups.Header;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 
 /**
  * Header used by various flow control protocols
@@ -29,11 +28,11 @@ public class FcHeader extends Header {
         return Global.BYTE_SIZE;
     }
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         out.writeByte(type);
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         type=in.readByte();
     }
 

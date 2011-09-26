@@ -13,7 +13,6 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,7 +61,7 @@ public class JoinRsp implements Streamable {
     }
 
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         byte flags=0;
         if(view != null)
             flags|=VIEW_PRESENT;
@@ -97,7 +96,7 @@ public class JoinRsp implements Streamable {
             out.writeUTF(fail_reason);
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         byte flags=in.readByte();
 
         int size=0;

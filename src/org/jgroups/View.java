@@ -170,7 +170,7 @@ public class View implements Cloneable, Streamable, Iterable<Address> {
 
 
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         // vid
         if(vid != null) {
             out.writeBoolean(true);
@@ -184,7 +184,7 @@ public class View implements Cloneable, Streamable, Iterable<Address> {
     }
 
     @SuppressWarnings("unchecked") 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         boolean b;
         // vid:
         b=in.readBoolean();

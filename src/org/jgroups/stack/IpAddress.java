@@ -170,7 +170,7 @@ public class IpAddress implements PhysicalAddress {
 
 
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         if(ip_addr != null) {
             byte[] address=ip_addr.getAddress();  // 4 bytes (IPv4) or 16 bytes (IPv6)
             out.writeByte(address.length); // 1 byte
@@ -184,7 +184,7 @@ public class IpAddress implements PhysicalAddress {
         out.writeShort(port);
     }
 
-    public void readFrom(DataInput in) throws IOException {
+    public void readFrom(DataInput in) throws Exception {
         int len=in.readByte();
         if(len > 0 && (len != Global.IPV4_SIZE && len != Global.IPV6_SIZE))
             throw new IOException("length has to be " + Global.IPV4_SIZE + " or " + Global.IPV6_SIZE + " bytes (was " +

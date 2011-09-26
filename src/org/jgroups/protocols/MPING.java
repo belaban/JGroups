@@ -300,7 +300,7 @@ public class MPING extends PING implements Runnable {
                     mcast_sock.send(packet);
             }
         }
-        catch(IOException ex) {
+        catch(Exception ex) {
             log.error("failed sending discovery request", ex);
         }
         finally {

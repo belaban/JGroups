@@ -386,7 +386,7 @@ public class UtilTest {
     }
 
 
-    public static void testWriteStreamable() throws IOException, IllegalAccessException, InstantiationException {
+    public static void testWriteStreamable() throws Exception {
         Message m=new Message(null, null, "Hello");
         ViewId vid=new ViewId(null, 12345);
         ViewId vid2=new ViewId(Util.createRandomAddress(), 35623);
@@ -410,7 +410,7 @@ public class UtilTest {
         Assert.assertEquals(vid2, v4);
     }
 
-    public static void testWriteViewIdWithNullCoordinator() throws IOException, IllegalAccessException, InstantiationException {
+    public static void testWriteViewIdWithNullCoordinator() throws Exception {
         ViewId vid=new ViewId(null, 12345);
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -424,7 +424,7 @@ public class UtilTest {
     }
 
 
-    public static void testWriteView() throws IOException, IllegalAccessException, InstantiationException {
+    public static void testWriteView() throws Exception {
         ViewId vid=new ViewId(null, 12345);
         Vector<Address> members=new Vector<Address>();
         View v;
@@ -451,7 +451,7 @@ public class UtilTest {
     }
 
 
-    public static void testWriteString() throws IOException {
+    public static void testWriteString() throws Exception {
         String s1="Bela Ban", s2="Michelle Ban";
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -467,7 +467,7 @@ public class UtilTest {
         Assert.assertEquals(s2, s4);
     }
 
-    public static void writeAddress() throws IOException, IllegalAccessException, InstantiationException {
+    public static void writeAddress() throws Exception {
         Address a1=Util.createRandomAddress();
         Address a2=Util.createRandomAddress();
         Address a4=Util.createRandomAddress();
@@ -487,7 +487,7 @@ public class UtilTest {
         Assert.assertEquals(a4, Util.readAddress(dis));
     }
 
-    public static void writeNullAddress() throws IOException, IllegalAccessException, InstantiationException {
+    public static void writeNullAddress() throws Exception {
         Address a1=null;
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -500,7 +500,7 @@ public class UtilTest {
     }
 
 
-    public static void testWriteByteBuffer() throws IOException {
+    public static void testWriteByteBuffer() throws Exception {
         byte[] buf=new byte[1024], tmp;
         for(int i=0; i < buf.length; i++)
             buf[i]=0;

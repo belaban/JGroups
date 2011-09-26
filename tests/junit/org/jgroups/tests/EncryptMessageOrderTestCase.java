@@ -294,11 +294,11 @@ public class EncryptMessageOrderTestCase {
             return Global.LONG_SIZE;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeLong(seqno);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             seqno=in.readLong();
         }
 

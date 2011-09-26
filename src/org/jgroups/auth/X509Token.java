@@ -145,15 +145,14 @@ public class X509Token extends AuthToken {
         return false;
     }
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("X509Token writeTo()");
         }
         Util.writeByteBuffer(this.encryptedToken, out);
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException,
-                    InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("X509Token readFrom()");
         }

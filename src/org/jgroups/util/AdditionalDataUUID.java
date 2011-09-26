@@ -50,12 +50,12 @@ public class AdditionalDataUUID extends UUID {
         return retval;
     }
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         super.writeTo(out);
         Util.writeByteBuffer(payload, out);
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         super.readFrom(in);
         payload=Util.readByteBuffer(in);
     }

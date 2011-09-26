@@ -77,7 +77,7 @@ public class NakAckHeader extends Header {
     }
 
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         out.writeByte(type);
         switch(type) {
             case MSG:
@@ -91,7 +91,7 @@ public class NakAckHeader extends Header {
         }
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         type=in.readByte();
         switch(type) {
             case MSG:

@@ -2,7 +2,6 @@ package org.jgroups.protocols;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1252,7 +1251,7 @@ abstract public class Locking extends Protocol {
             this.is_trylock=is_trylock;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type.ordinal());
             Util.writeString(lock_name, out);
             Util.writeStreamable(owner, out);
@@ -1260,7 +1259,7 @@ abstract public class Locking extends Protocol {
             out.writeBoolean(is_trylock);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             type=Type.values()[in.readByte()];
             lock_name=Util.readString(in);
             owner=(Owner)Util.readStreamable(Owner.class, in);
@@ -1304,10 +1303,10 @@ abstract public class Locking extends Protocol {
             return 0;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
         }
     }
 

@@ -5,7 +5,6 @@ import org.jgroups.Global;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 
 /** ID to uniquely identify a merge
  * @author Bela Ban
@@ -41,12 +40,12 @@ public class MergeId implements Streamable {
         return Util.size(initiator) + Global.INT_SIZE;
     }
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         Util.writeAddress(initiator, out);
         out.writeInt(id);
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         initiator=Util.readAddress(in);
         id=in.readInt();
     }

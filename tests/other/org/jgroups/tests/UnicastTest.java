@@ -281,11 +281,11 @@ public class UnicastTest extends ReceiverAdapter {
             this.num_values=num_values;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeLong(num_values);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             num_values=in.readLong();
         }
     }
@@ -304,7 +304,7 @@ public class UnicastTest extends ReceiverAdapter {
         }
 
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeLong(value);
             if(buf != null) {
                 out.writeInt(buf.length);
@@ -315,7 +315,7 @@ public class UnicastTest extends ReceiverAdapter {
             }
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             value=in.readLong();
             int len=in.readInt();
             if(len > 0) {

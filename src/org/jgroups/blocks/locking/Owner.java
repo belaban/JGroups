@@ -7,8 +7,6 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
-
 
 
 /**
@@ -35,12 +33,12 @@ public class Owner implements Streamable {
         return thread_id;
     }
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         Util.writeAddress(address, out);
         out.writeLong(thread_id);
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         address=Util.readAddress(in);
         thread_id=in.readLong();
     }

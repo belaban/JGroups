@@ -444,12 +444,12 @@ public class STATE_TRANSFER extends Protocol {
         }
 
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             Util.writeStreamable(my_digest, out);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
             my_digest=(Digest)Util.readStreamable(Digest.class, in);
         }

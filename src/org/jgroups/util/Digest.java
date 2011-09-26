@@ -6,7 +6,6 @@ import org.jgroups.annotations.Immutable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -344,7 +343,7 @@ public class Digest implements Streamable, Iterable<Digest.DigestEntry> {
     }
 
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         out.writeShort(size());
         for(int i=0; i < size(); i++)
             Util.writeAddress(members[i], out);
@@ -354,7 +353,7 @@ public class Digest implements Streamable, Iterable<Digest.DigestEntry> {
     }
 
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         short size=in.readShort();
         createArrays(size);
 

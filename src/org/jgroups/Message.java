@@ -526,10 +526,11 @@ public class Message implements Streamable {
     /**
      * Streams all members (dest and src addresses, buffer and headers) to the output stream.
      *
+     *
      * @param out
-     * @throws IOException
+     * @throws Exception
      */
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         byte leading=0;
 
         if(dest_addr != null)
@@ -579,9 +580,9 @@ public class Message implements Streamable {
      * as argument is different from the message's src address
      * @param src
      * @param out
-     * @throws IOException
+     * @throws Exception
      */
-    public void writeToNoAddrs(Address src, DataOutputStream out) throws IOException {
+    public void writeToNoAddrs(Address src, DataOutputStream out) throws Exception {
         byte leading=0;
 
         boolean write_src_addr=src == null || src_addr != null && !src_addr.equals(src);
@@ -622,7 +623,7 @@ public class Message implements Streamable {
     }
 
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
 
         // 1. read the leading byte first
         byte leading=in.readByte();
@@ -750,29 +751,22 @@ public class Message implements Streamable {
         return sb.toString();
     }
 
-    private static void writeHeader(Header hdr, DataOutput out) throws IOException {
+    private static void writeHeader(Header hdr, DataOutput out) throws Exception {
         short magic_number=ClassConfigurator.getMagicNumber(hdr.getClass());
         out.writeShort(magic_number);
         hdr.writeTo(out);
     }
 
 
-    private static Header readHeader(DataInput in) throws IOException {
-        try {
-            short magic_number=in.readShort();
-            Class clazz=ClassConfigurator.get(magic_number);
-            if(clazz == null)
-                throw new IllegalArgumentException("magic number " + magic_number + " is not available in magic map");
+    private static Header readHeader(DataInput in) throws Exception {
+        short magic_number=in.readShort();
+        Class clazz=ClassConfigurator.get(magic_number);
+        if(clazz == null)
+            throw new IllegalArgumentException("magic number " + magic_number + " is not available in magic map");
 
-            Header hdr=(Header)clazz.newInstance();
-            hdr.readFrom(in);
-            return hdr;
-        }
-        catch(Exception ex) {
-            IOException io_ex=new IOException("failed reading header");
-            io_ex.initCause(ex);
-            throw io_ex;
-        }
+        Header hdr=(Header)clazz.newInstance();
+        hdr.readFrom(in);
+        return hdr;
     }
 
     private static Headers createHeaders(int size) {

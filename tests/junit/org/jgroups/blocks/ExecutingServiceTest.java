@@ -215,13 +215,12 @@ public class ExecutingServiceTest extends ChannelTestBase {
         }
 
         @Override
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeLong(millis);
         }
 
         @Override
-        public void readFrom(DataInput in) throws IOException,
-                IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             millis = in.readLong();
         }
 
@@ -270,7 +269,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         }
 
         @Override
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             try {
                 Util.writeObject(_object, out);
             }
@@ -284,8 +283,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
 
         @SuppressWarnings("unchecked")
         @Override
-        public void readFrom(DataInput in) throws IOException,
-                IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             try {
                 _object = (V)Util.readObject(in);
             }

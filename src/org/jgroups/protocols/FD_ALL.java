@@ -9,7 +9,6 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.Future;
@@ -324,8 +323,8 @@ public class FD_ALL extends Protocol {
         public HeartbeatHeader() {}
         public String toString() {return "heartbeat";}
         public int size() {return 0;}
-        public void writeTo(DataOutput out) throws IOException {}
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {}
+        public void writeTo(DataOutput out) throws Exception {}
+        public void readFrom(DataInput in) throws Exception {}
     }
 
 

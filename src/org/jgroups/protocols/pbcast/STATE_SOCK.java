@@ -124,7 +124,7 @@ public class STATE_SOCK extends StreamingStateTransfer {
             bis=new BufferedInputStream(socket.getInputStream(), buffer_size);
             setStateInApplication(provider, bis, hdr.getDigest());
         }
-        catch(IOException e) {
+        catch(Exception e) {
             if(log.isWarnEnabled())
                 log.warn(local_addr + ": state reader socket thread spawned abnormally", e);
             handleException(e);

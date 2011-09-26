@@ -2,7 +2,6 @@ package org.jgroups.auth;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
@@ -120,15 +119,14 @@ public class MD5Token extends AuthToken {
         return false;
     }
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("MD5Token writeTo()");
         }
         Util.writeString(this.auth_value, out);
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException,
-                    InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("MD5Token readFrom()");
         }

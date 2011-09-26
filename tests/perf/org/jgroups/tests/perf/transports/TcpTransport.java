@@ -196,7 +196,7 @@ public class TcpTransport implements Transport {
              this.to=addr;
          }
 
-         void createSocket() throws IOException {
+         void createSocket() throws Exception {
              sock=new Socket(to.getAddress(), to.getPort());
              sock.setSendBufferSize(max_send_buffer_size);
              sock.setReceiveBufferSize(max_receiver_buffer_size);

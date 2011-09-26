@@ -13,7 +13,6 @@ import org.jgroups.util.*;
 import javax.management.MBeanServer;
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.text.NumberFormat;
@@ -517,13 +516,13 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
 
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeLong(num_gets);
             out.writeLong(num_puts);
             out.writeLong(time);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             num_gets=in.readLong();
             num_puts=in.readLong();
             time=in.readLong();
@@ -560,7 +559,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
         }
 
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeBoolean(oob);
             out.writeBoolean(sync);
             out.writeInt(num_threads);
@@ -570,7 +569,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             out.writeDouble(read_percentage);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             oob=in.readBoolean();
             sync=in.readBoolean();
             num_threads=in.readInt();

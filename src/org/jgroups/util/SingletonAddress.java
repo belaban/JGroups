@@ -36,11 +36,11 @@ public class SingletonAddress implements Address {
         return 0;
     }
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         throw new UnsupportedOperationException();
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         throw new UnsupportedOperationException();
     }
 

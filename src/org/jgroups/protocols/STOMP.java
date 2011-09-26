@@ -715,7 +715,7 @@ public class STOMP extends Protocol implements Runnable {
             return retval;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeInt(type.ordinal());
             out.writeInt(headers.size());
             for(Map.Entry<String,String> entry: headers.entrySet()) {
@@ -724,7 +724,7 @@ public class STOMP extends Protocol implements Runnable {
             }
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             type=Type.values()[in.readInt()];
             int size=in.readInt();
             for(int i=0; i < size; i++) {

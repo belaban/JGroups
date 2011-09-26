@@ -12,7 +12,6 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 
@@ -568,14 +567,14 @@ public class RequestCorrelator {
         }
 
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             Util.writeLong(id, out);
             out.writeBoolean(rsp_expected);
             out.writeShort(corrId);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
             id=Util.readLong(in);
             rsp_expected=in.readBoolean();
@@ -605,12 +604,12 @@ public class RequestCorrelator {
         }
 
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             super.writeTo(out);
             Util.writeAddresses(exclusion_list, out);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             super.readFrom(in);
             exclusion_list=Util.readAddresses(in, LinkedList.class);
         }

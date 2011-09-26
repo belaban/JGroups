@@ -47,8 +47,14 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
         c3.connect(GROUP);
 
         System.out.println("c1.view=" + c1.getView() + "\nc2.view=" + c2.getView() + "\nc3.view=" + c3.getView());
-        View view=c3.getView();
-        assert view.size() == 3 : "view=" + view;
+        View view=null;
+        for(int i=0; i < 10; i++) {
+            view=c3.getView();
+            if(view.size() == 3)
+                break;
+            Util.sleep(1000);
+        }
+        assert view != null && view.size() == 3 : "view=" + view;
 
         a1=c1.getAddress();
         a2=c2.getAddress();

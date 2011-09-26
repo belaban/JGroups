@@ -77,10 +77,11 @@ public class SimpleToken extends AuthToken {
      * Required to serialize the object to pass across the wire
      * 
      *
+     *
      * @param out
-     * @throws IOException
+     * @throws Exception
      */
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("SimpleToken writeTo()");
         }
@@ -91,13 +92,11 @@ public class SimpleToken extends AuthToken {
      * Required to deserialize the object when read in from the wire
      * 
      *
+     *
      * @param in
-     * @throws IOException
-     * @throws IllegalAccessException
-     * @throws InstantiationException
+     * @throws Exception
      */
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException,
-                    InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("SimpleToken readFrom()");
         }

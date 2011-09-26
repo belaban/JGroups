@@ -187,7 +187,7 @@ public class IpAddressTest {
 
 
 
-    public static void testIPv6WithStreamable() throws IOException, ClassNotFoundException {
+    public static void testIPv6WithStreamable() throws Exception {
         InetAddress tmp=Util.getNonLoopbackAddress();
         IpAddress ip=new IpAddress(tmp, 5555);
 

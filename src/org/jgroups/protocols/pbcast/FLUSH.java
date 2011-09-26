@@ -997,7 +997,7 @@ public class FLUSH extends Protocol {
         }
 
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             out.writeLong(viewID);
             Util.writeAddresses(flushParticipants, out);
@@ -1005,8 +1005,7 @@ public class FLUSH extends Protocol {
         }
 
         @SuppressWarnings("unchecked")
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException,
-                        InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             type = in.readByte();
             viewID = in.readLong();
             flushParticipants =(Collection<Address>)Util.readAddresses(in, ArrayList.class);

@@ -122,7 +122,7 @@ public class BPING extends PING implements Runnable {
                 sock.send(packet);
             }
         }
-        catch(IOException ex) {
+        catch(Exception ex) {
             log.error("failed sending discovery request", ex);
         }
         finally {

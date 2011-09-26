@@ -550,7 +550,7 @@ public class GossipRouter {
         }
     }
 
-    private static void sendToMember(Address dest, final DataOutputStream out, byte[] msg) throws IOException {
+    private static void sendToMember(Address dest, final DataOutputStream out, byte[] msg) throws Exception {
         if(out == null)
             return;
         synchronized(out) {
@@ -857,7 +857,7 @@ public class GossipRouter {
             try {                
                 data.writeTo(output);
                 output.flush();                
-            } catch (IOException e1) {
+            } catch (Exception e1) {
                 //ignored
             }
         }

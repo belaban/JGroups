@@ -113,12 +113,12 @@ public class ViewId implements Comparable, Cloneable, Streamable {
     }
 
 
-    public void writeTo(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws Exception {
         Util.writeAddress(coord_addr, out);
         Util.writeLong(id, out);
     }
 
-    public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+    public void readFrom(DataInput in) throws Exception {
         coord_addr=Util.readAddress(in);
         id=Util.readLong(in);
     }
