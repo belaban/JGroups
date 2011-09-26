@@ -9,7 +9,7 @@ import java.util.concurrent.locks.Lock;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.LockNotification;
 import org.jgroups.blocks.locking.LockService;
-import org.jgroups.blocks.locking.Owner;
+import org.jgroups.util.Owner;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 

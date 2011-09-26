@@ -8,11 +8,10 @@ import java.util.Queue;
 
 import org.jgroups.Address;
 import org.jgroups.View;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.locking.LockNotification;
-import org.jgroups.blocks.locking.Owner;
+import org.jgroups.util.Owner;
 import org.jgroups.util.Util;
 
 

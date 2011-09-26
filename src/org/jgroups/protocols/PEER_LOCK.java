@@ -10,8 +10,7 @@ import java.util.Map;
 
 import org.jgroups.Address;
 import org.jgroups.View;
-import org.jgroups.annotations.Experimental;
-import org.jgroups.blocks.locking.Owner;
+import org.jgroups.util.Owner;
 
 /**
  * Implementation of a locking protocol which acquires locks by contacting <em>all</em> of the nodes of a cluster.</p>

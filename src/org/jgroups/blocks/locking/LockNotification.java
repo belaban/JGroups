@@ -1,5 +1,7 @@
 package org.jgroups.blocks.locking;
 
+import org.jgroups.util.Owner;
+
 /**
  * @author Bela Ban
  */
