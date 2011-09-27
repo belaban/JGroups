@@ -40,7 +40,9 @@ API changes in 3.0.0
 
 - Removed Discovery.num_ping_requests
 
-- Streamable: DataInputStream --> DataInput, DataOutputStream --> DataOutput
+- Streamable:
+  - DataInputStream --> DataInput, DataOutputStream --> DataOutput
+  - readFrom() and writeTo() only throw Exception now
 
 - RpcDispatcher: merged Marshaller and Marshaller2 into Marshaller interface
 
