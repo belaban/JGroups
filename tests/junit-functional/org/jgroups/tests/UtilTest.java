@@ -291,7 +291,7 @@ public class UtilTest {
         System.out.println("list=" + list + ", list2=" + list2);
         Assert.assertEquals(list, list2);
 
-        byte[] buffer=new byte[]{'B', 'e', 'l', 'a', ' ', 'B', 'a', 'n'};
+        byte[] buffer={'B', 'e', 'l', 'a', ' ', 'B', 'a', 'n'};
         buf=Util.objectToByteBuffer(buffer);
 
         byte[] buffer2=(byte[])Util.objectFromByteBuffer(buf);
@@ -305,7 +305,7 @@ public class UtilTest {
         obj=Util.objectFromByteBuffer(buf);
         assert obj == null;
 
-        Object[] values=new Object[]{
+        Object[] values={
                 Boolean.TRUE,
                 Boolean.FALSE,
                 new Byte((byte)22),
@@ -426,7 +426,7 @@ public class UtilTest {
 
     public static void testWriteView() throws Exception {
         ViewId vid=new ViewId(null, 12345);
-        Vector<Address> members=new Vector<Address>();
+        List<Address> members=new ArrayList<Address>();
         View v;
         Address a1=Util.createRandomAddress();
         Address a2=Util.createRandomAddress();
@@ -518,7 +518,7 @@ public class UtilTest {
 
 
     public static void testEncodeAndDecode() {
-        long[] numbers=new long[]{0, 1, 50, 127, 128, 254, 255, 256,
+        long[] numbers={0, 1, 50, 127, 128, 254, 255, 256,
           Short.MAX_VALUE, Short.MAX_VALUE +1, Short.MAX_VALUE *2, Short.MAX_VALUE *2 +1,
           100000, 500000, 100000,
           Integer.MAX_VALUE, (long)Integer.MAX_VALUE +1, (long)Integer.MAX_VALUE *2, (long)Integer.MAX_VALUE +10,
@@ -570,7 +570,7 @@ public class UtilTest {
 
 
     public static void testEncodeAndDecodeLongSequence() {
-        long[] numbers=new long[]{0, 1, 50, 127, 128, 254, 255, 256,
+        long[] numbers={0, 1, 50, 127, 128, 254, 255, 256,
           Short.MAX_VALUE, Short.MAX_VALUE +1, Short.MAX_VALUE *2, Short.MAX_VALUE *2 +1,
           100000, 500000, 100000,
           Integer.MAX_VALUE, (long)Integer.MAX_VALUE +1, (long)Integer.MAX_VALUE *2, (long)Integer.MAX_VALUE +10,
@@ -616,13 +616,13 @@ public class UtilTest {
     public static void testLeftMembers() {
         final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
 
-        Vector<Address> v1=new Vector<Address>();
+        List<Address> v1=new ArrayList<Address>();
         v1.add(a);
         v1.add(b);
         v1.add(c);
         v1.add(d);
 
-        Vector<Address> v2=new Vector<Address>();
+        List<Address> v2=new ArrayList<Address>();
         v2.add(c);
         v2.add(d);
 
@@ -639,13 +639,13 @@ public class UtilTest {
     public static void testLeftMembers2() {
         final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
 
-        Vector<Address> v1=new Vector<Address>();
+        List<Address> v1=new ArrayList<Address>();
         v1.add(a);
         v1.add(b);
         v1.add(c);
         v1.add(d);
 
-        Vector<Address> v2=new Vector<Address>();
+        List<Address> v2=new ArrayList<Address>();
         v2.add(c);
         v2.add(d);
         v2.add(a);
@@ -684,7 +684,7 @@ public class UtilTest {
     }
 
     public static void testPickRandomElement() {
-        Vector<Integer> v=new Vector<Integer>();
+        List<Integer> v=new ArrayList<Integer>();
         for(int i=0; i < 10; i++) {
             v.add(new Integer(i));
         }
@@ -833,9 +833,9 @@ public class UtilTest {
 
     public static void testDetermineMergeParticipantsAndMergeCoords() {
         Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress();
-        org.jgroups.util.UUID.add((UUID)a, "A");
-        org.jgroups.util.UUID.add((UUID)b, "B");
-        org.jgroups.util.UUID.add((UUID)c, "C");
+        org.jgroups.util.UUID.add(a, "A");
+        org.jgroups.util.UUID.add(b, "B");
+        org.jgroups.util.UUID.add(c, "C");
 
         View v1=Util.createView(b, 1, b, a, c);
         View v2=Util.createView(b, 2, b, c);
@@ -862,10 +862,10 @@ public class UtilTest {
 
     public static void testDetermineMergeParticipantsAndMergeCoords2() {
         Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
-        org.jgroups.util.UUID.add((UUID)a, "A");
-        org.jgroups.util.UUID.add((UUID)b, "B");
-        org.jgroups.util.UUID.add((UUID)c, "C");
-        org.jgroups.util.UUID.add((UUID)d, "D");
+        org.jgroups.util.UUID.add(a, "A");
+        org.jgroups.util.UUID.add(b, "B");
+        org.jgroups.util.UUID.add(c, "C");
+        org.jgroups.util.UUID.add(d, "D");
 
         View v1=Util.createView(a, 1, a, b);
         View v2=Util.createView(a, 1, a, b);
@@ -894,10 +894,10 @@ public class UtilTest {
 
     public static void testDetermineMergeParticipantsAndMergeCoords3() {
         Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
-        org.jgroups.util.UUID.add((UUID)a, "A");
-        org.jgroups.util.UUID.add((UUID)b, "B");
-        org.jgroups.util.UUID.add((UUID)c, "C");
-        org.jgroups.util.UUID.add((UUID)d, "D");
+        org.jgroups.util.UUID.add(a, "A");
+        org.jgroups.util.UUID.add(b, "B");
+        org.jgroups.util.UUID.add(c, "C");
+        org.jgroups.util.UUID.add(d, "D");
 
         View v1=Util.createView(a, 1, a, b, c, d);
         View v2=Util.createView(a, 1, a, b, c, d);
@@ -925,10 +925,10 @@ public class UtilTest {
 
     public static void testDetermineMergeParticipantsAndMergeCoords4() {
         Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
-        org.jgroups.util.UUID.add((UUID)a, "A");
-        org.jgroups.util.UUID.add((UUID)b, "B");
-        org.jgroups.util.UUID.add((UUID)c, "C");
-        org.jgroups.util.UUID.add((UUID)d, "D");
+        org.jgroups.util.UUID.add(a, "A");
+        org.jgroups.util.UUID.add(b, "B");
+        org.jgroups.util.UUID.add(c, "C");
+        org.jgroups.util.UUID.add(d, "D");
 
         View v1=Util.createView(a, 1, a, b);
         View v2=Util.createView(c, 1, c, d);

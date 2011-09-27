@@ -44,7 +44,7 @@ public class Util {
 
     private static  NumberFormat f;
 
-    private static Map<Class,Byte> PRIMITIVE_TYPES=new HashMap<Class,Byte>(15);
+    private static Map<Class<? extends Object>,Byte> PRIMITIVE_TYPES=new HashMap<Class<? extends Object>,Byte>(15);
     private static final byte TYPE_NULL         =  0;
     private static final byte TYPE_STREAMABLE   =  1;
     private static final byte TYPE_SERIALIZABLE =  2;
@@ -100,7 +100,7 @@ public class Util {
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
         * running in an untrusted environment  with JNLP */
         try {
-            resolve_dns=Boolean.valueOf(System.getProperty("resolve.dns", "false")).booleanValue();
+            resolve_dns=Boolean.valueOf(System.getProperty("resolve.dns","false"));
         }
         catch (SecurityException ex){
             resolve_dns=false;
@@ -110,16 +110,16 @@ public class Util {
         // f.setMinimumFractionDigits(2);
         f.setMaximumFractionDigits(2);
 
-        PRIMITIVE_TYPES.put(Boolean.class, new Byte(TYPE_BOOLEAN));
-        PRIMITIVE_TYPES.put(Byte.class, new Byte(TYPE_BYTE));
-        PRIMITIVE_TYPES.put(Character.class, new Byte(TYPE_CHAR));
-        PRIMITIVE_TYPES.put(Double.class, new Byte(TYPE_DOUBLE));
-        PRIMITIVE_TYPES.put(Float.class, new Byte(TYPE_FLOAT));
-        PRIMITIVE_TYPES.put(Integer.class, new Byte(TYPE_INT));
-        PRIMITIVE_TYPES.put(Long.class, new Byte(TYPE_LONG));
-        PRIMITIVE_TYPES.put(Short.class, new Byte(TYPE_SHORT));
-        PRIMITIVE_TYPES.put(String.class, new Byte(TYPE_STRING));
-        PRIMITIVE_TYPES.put(byte[].class, new Byte(TYPE_BYTEARRAY));
+        PRIMITIVE_TYPES.put(Boolean.class, TYPE_BOOLEAN);
+        PRIMITIVE_TYPES.put(Byte.class, TYPE_BYTE);
+        PRIMITIVE_TYPES.put(Character.class, TYPE_CHAR);
+        PRIMITIVE_TYPES.put(Double.class, TYPE_DOUBLE);
+        PRIMITIVE_TYPES.put(Float.class, TYPE_FLOAT);
+        PRIMITIVE_TYPES.put(Integer.class, TYPE_INT);
+        PRIMITIVE_TYPES.put(Long.class, TYPE_LONG);
+        PRIMITIVE_TYPES.put(Short.class, TYPE_SHORT);
+        PRIMITIVE_TYPES.put(String.class, TYPE_STRING);
+        PRIMITIVE_TYPES.put(byte[].class, TYPE_BYTEARRAY);
 
         if(ip_stack_type == StackType.Unknown)
             ip_stack_type=StackType.IPv6;
@@ -466,29 +466,29 @@ public class Util {
             return out_stream.toByteArray();
         }
 
-        switch(type.byteValue()) {
+        switch(type) {
             case TYPE_BOOLEAN:
                 return ByteBuffer.allocate(Global.BYTE_SIZE * 2).put(TYPE_BOOLEAN)
-                        .put(((Boolean)obj).booleanValue()? (byte)1 : (byte)0).array();
+                  .put((Boolean)obj? (byte)1 : (byte)0).array();
             case TYPE_BYTE:
-                return ByteBuffer.allocate(Global.BYTE_SIZE *2).put(TYPE_BYTE).put(((Byte)obj).byteValue()).array();
+                return ByteBuffer.allocate(Global.BYTE_SIZE *2).put(TYPE_BYTE).put((Byte)obj).array();
             case TYPE_CHAR:
-                return ByteBuffer.allocate(Global.BYTE_SIZE *3).put(TYPE_CHAR).putChar(((Character)obj).charValue()).array();
+                return ByteBuffer.allocate(Global.BYTE_SIZE *3).put(TYPE_CHAR).putChar((Character)obj).array();
             case TYPE_DOUBLE:
                 return ByteBuffer.allocate(Global.BYTE_SIZE + Global.DOUBLE_SIZE).put(TYPE_DOUBLE)
-                        .putDouble(((Double)obj).doubleValue()).array();
+                        .putDouble((Double)obj).array();
             case TYPE_FLOAT:
                 return ByteBuffer.allocate(Global.BYTE_SIZE + Global.FLOAT_SIZE).put(TYPE_FLOAT)
-                        .putFloat(((Float)obj).floatValue()).array();
+                        .putFloat((Float)obj).array();
             case TYPE_INT:
                 return ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE).put(TYPE_INT)
-                        .putInt(((Integer)obj).intValue()).array();
+                        .putInt((Integer)obj).array();
             case TYPE_LONG:
                 return ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE).put(TYPE_LONG)
-                        .putLong(((Long)obj).longValue()).array();
+                        .putLong((Long)obj).array();
             case TYPE_SHORT:
                 return ByteBuffer.allocate(Global.BYTE_SIZE + Global.SHORT_SIZE).put(TYPE_SHORT)
-                        .putShort(((Short)obj).shortValue()).array();
+                        .putShort((Short)obj).array();
             case TYPE_STRING:
                 String str=(String)obj;
                 byte[] buf=new byte[str.length()];
@@ -504,90 +504,6 @@ public class Util {
         }
 
     }
-
-
-   /* public static Buffer objectToBuffer(Object obj) throws Exception {
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
-
-        if(obj == null) {
-            out_stream.write(TYPE_NULL);
-            out_stream.flush();
-            return out_stream.getBuffer();
-        }
-
-        OutputStream out=null;
-        Byte type;
-        try {
-            if(obj instanceof Streamable) {  // use Streamable if we can
-                out_stream.write(TYPE_STREAMABLE);
-                out=new ExposedDataOutputStream(out_stream);
-                writeGenericStreamable((Streamable)obj, (DataOutputStream)out);
-            }
-            else if((type=PRIMITIVE_TYPES.get(obj.getClass())) != null) {
-                out_stream.write(type.byteValue());
-                out=new ExposedDataOutputStream(out_stream);
-                switch(type.byteValue()) {
-                    case TYPE_BOOLEAN:
-                        ((DataOutputStream)out).writeBoolean(((Boolean)obj).booleanValue());
-                        break;
-                    case TYPE_BYTE:
-                        ((DataOutputStream)out).writeByte(((Byte)obj).byteValue());
-                        break;
-                    case TYPE_CHAR:
-                        ((DataOutputStream)out).writeChar(((Character)obj).charValue());
-                        break;
-                    case TYPE_DOUBLE:
-                        ((DataOutputStream)out).writeDouble(((Double)obj).doubleValue());
-                        break;
-                    case TYPE_FLOAT:
-                        ((DataOutputStream)out).writeFloat(((Float)obj).floatValue());
-                        break;
-                    case TYPE_INT:
-                        ((DataOutputStream)out).writeInt(((Integer)obj).intValue());
-                        break;
-                    case TYPE_LONG:
-                        ((DataOutputStream)out).writeLong(((Long)obj).longValue());
-                        break;
-                    case TYPE_SHORT:
-                        ((DataOutputStream)out).writeShort(((Short)obj).shortValue());
-                        break;
-                    case TYPE_STRING:
-                        String str=(String)obj;
-                        if(str.length() > Short.MAX_VALUE) {
-                            ((DataOutputStream)out).writeBoolean(true);
-                            ObjectOutputStream oos=new ObjectOutputStream(out);
-                            try {
-                                oos.writeObject(str);
-                            }
-                            finally {
-                                oos.close();
-                            }
-                        }
-                        else {
-                            ((DataOutputStream)out).writeBoolean(false);
-                            ((DataOutputStream)out).writeUTF(str);
-                        }
-                        break;
-                    case TYPE_BYTEARRAY:
-                        byte[] buf=(byte[])obj;
-                        ((DataOutputStream)out).writeInt(buf.length);
-                        out.write(buf, 0, buf.length);
-                        break;
-                    default:
-                        throw new IllegalArgumentException("type " + type + " is invalid");
-                }
-            }
-            else { // will throw an exception if object is not serializable
-                out_stream.write(TYPE_SERIALIZABLE);
-                out=new ObjectOutputStream(out_stream);
-                ((ObjectOutputStream)out).writeObject(obj);
-            }
-        }
-        finally {
-            Util.close(out);
-        }
-        return out_stream.getBuffer();
-    }*/
 
 
 
@@ -732,24 +648,24 @@ public class Util {
 
 
 
-    public static Streamable streamableFromByteBuffer(Class cl, byte[] buffer) throws Exception {
+    public static Streamable streamableFromByteBuffer(Class<? extends Streamable> cl, byte[] buffer) throws Exception {
         if(buffer == null) return null;
         Streamable retval=null;
         ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer);
         DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
-        retval=(Streamable)cl.newInstance();
+        retval=cl.newInstance();
         retval.readFrom(in);
         in.close();
         return retval;
     }
 
 
-    public static Streamable streamableFromByteBuffer(Class cl, byte[] buffer, int offset, int length) throws Exception {
+    public static Streamable streamableFromByteBuffer(Class<? extends Streamable> cl, byte[] buffer, int offset, int length) throws Exception {
         if(buffer == null) return null;
         Streamable retval=null;
         ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
         DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
-        retval=(Streamable)cl.newInstance();
+        retval=cl.newInstance();
         retval.readFrom(in);
         in.close();
         return retval;
@@ -849,7 +765,7 @@ public class Util {
             return;
         }
 
-        Class clazz=addr.getClass();
+        Class<? extends Address> clazz=addr.getClass();
         if(clazz.equals(UUID.class)) {
             flags=Util.setFlag(flags, Address.UUID_ADDR);
         }
@@ -916,10 +832,10 @@ public class Util {
 
     private static Address readOtherAddress(DataInput in) throws Exception {
         short magic_number=in.readShort();
-        Class cl=ClassConfigurator.get(magic_number);
+        Class<Address> cl=ClassConfigurator.get(magic_number);
         if(cl == null)
             throw new RuntimeException("class for magic number " + magic_number + " not found");
-        Address addr=(Address)cl.newInstance();
+        Address addr=cl.newInstance();
         addr.readFrom(in);
         return addr;
     }
@@ -1180,7 +1096,7 @@ public class Util {
                     return null; // eof
                 }
                 if(Character.isWhitespace(ch)) {
-                    if(false && ch == '\n')
+                    if(ch == '\n')
                         return null;
                 }
                 else {
@@ -1339,7 +1255,7 @@ public class Util {
         if(a1 == null || a2 == null)
             return false;
 
-        if(a1 == a2) // identity
+        if(a1.hashCode() == a2.hashCode()) // identity
             return true;
 
         // at this point, a1 != null and a2 != null
@@ -2023,7 +1939,7 @@ public class Util {
         if(number >> 24 != 0) return 4;
         if(number >> 16 != 0) return 3;
         if(number >>  8 != 0) return 2;
-        if(number >>  0 != 0) return 1;
+        if(number != 0) return 1;
         return 1;
     }
 
@@ -2387,7 +2303,7 @@ public class Util {
 
 
     public static View createView(Address coord, long id, Address ... members) {
-        Vector<Address> mbrs=new Vector<Address>();
+        List<Address> mbrs=new ArrayList<Address>();
         mbrs.addAll(Arrays.asList(members));
         return new View(coord, id, mbrs);
     }
@@ -2824,7 +2740,7 @@ public class Util {
      */
     public static long[] parseCommaDelimitedLongs(String s) {
         StringTokenizer tok;
-        Vector<Long> v=new Vector<Long>();
+        List<Long> v=new ArrayList<Long>();
         Long l;
         long[] retval=null;
 
@@ -2832,12 +2748,12 @@ public class Util {
         tok=new StringTokenizer(s, ",");
         while(tok.hasMoreTokens()) {
             l=new Long(tok.nextToken());
-            v.addElement(l);
+            v.add(l);
         }
         if(v.isEmpty()) return null;
         retval=new long[v.size()];
         for(int i=0; i < v.size(); i++)
-            retval[i]=v.elementAt(i).longValue();
+            retval[i]=v.get(i).longValue();
         return retval;
     }
 

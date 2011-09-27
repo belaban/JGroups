@@ -48,13 +48,13 @@ public class Message implements Streamable {
 
 
 
-    static final byte DEST_SET         =  1 << 0;
+    static final byte DEST_SET         =  1;
     static final byte SRC_SET          =  1 << 1;
     static final byte BUF_SET          =  1 << 2;
 
 
     // =============================== Flags ====================================
-    public static final byte OOB               =  1 << 0; // message is out-of-band
+    public static final byte OOB               =  1;      // message is out-of-band
     public static final byte DONT_BUNDLE       =  1 << 1; // don't bundle message at the transport
     public static final byte NO_FC             =  1 << 2; // bypass flow control
     public static final byte SCOPED            =  1 << 3; // when a message has a scope
@@ -66,7 +66,7 @@ public class Message implements Streamable {
 
 
     // =========================== Transient flags ==============================
-    public static final byte OOB_DELIVERED     =  1 << 0; // OOB which has already been delivered up the stack
+    public static final byte OOB_DELIVERED     =  1; // OOB which has already been delivered up the stack
 
 
 
