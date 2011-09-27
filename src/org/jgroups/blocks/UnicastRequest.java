@@ -158,12 +158,7 @@ public class UnicastRequest<T> extends Request {
     public T getValue() throws ExecutionException {
         if(!result.hasException())
             return result.getValue();
-
-        Throwable exception=result.getException();
-        if(exception instanceof Error) throw (Error)exception;
-        else if(exception instanceof RuntimeException) throw (RuntimeException)exception;
-        else if(exception instanceof Exception) throw new ExecutionException(exception);
-        else throw new RuntimeException(exception);
+        throw new ExecutionException(result.getException());
     }
 
 
