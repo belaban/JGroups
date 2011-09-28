@@ -63,7 +63,8 @@ public abstract class Discovery extends Protocol {
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    protected  volatile boolean     is_server=false;
+    protected volatile boolean      is_server=false;
+    protected volatile boolean      is_leaving=false;
     protected TimeScheduler         timer=null;
     protected View                  view;
     protected final List<Address>   members=new ArrayList<Address>(11);
@@ -140,11 +141,11 @@ public abstract class Discovery extends Protocol {
     }
 
 
-    public Vector<Integer> providedUpServices() {
-        Vector<Integer> ret=new Vector<Integer>(3);
-        ret.addElement(Event.FIND_INITIAL_MBRS);
-        ret.addElement(Event.FIND_ALL_VIEWS);
-        ret.addElement(Event.GET_PHYSICAL_ADDRESS);
+    public List<Integer> providedUpServices() {
+        List<Integer> ret=new ArrayList<Integer>(3);
+        ret.add(Event.FIND_INITIAL_MBRS);
+        ret.add(Event.FIND_ALL_VIEWS);
+        ret.add(Event.GET_PHYSICAL_ADDRESS);
         return ret;
     }
     

@@ -286,27 +286,27 @@ public abstract class Protocol {
 
     /** List of events that are required to be answered by some layer above.
      @return Vector (of Integers) */
-    public Vector<Integer> requiredUpServices() {
+    public List<Integer> requiredUpServices() {
         return null;
     }
 
     /** List of events that are required to be answered by some layer below.
      @return Vector (of Integers) */
-    public Vector<Integer> requiredDownServices() {
+    public List<Integer> requiredDownServices() {
         return null;
     }
 
     /** List of events that are provided to layers above (they will be handled when sent down from
      above).
      @return Vector (of Integers) */
-    public Vector<Integer> providedUpServices() {
+    public List<Integer> providedUpServices() {
         return null;
     }
 
     /** List of events that are provided to layers below (they will be handled when sent down from
      below).
      @return Vector<Integer (of Integers) */
-    public Vector<Integer> providedDownServices() {
+    public List<Integer> providedDownServices() {
         return null;
     }
 

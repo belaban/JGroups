@@ -399,12 +399,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    public Vector<Integer> providedUpServices() {
-        Vector<Integer> retval=new Vector<Integer>(5);
-        retval.addElement(new Integer(Event.GET_DIGEST));
-        retval.addElement(new Integer(Event.SET_DIGEST));
-        retval.addElement(new Integer(Event.OVERWRITE_DIGEST));
-        retval.addElement(new Integer(Event.MERGE_DIGEST));
+    public List<Integer> providedUpServices() {
+        List<Integer> retval=new ArrayList<Integer>(5);
+        retval.add(Event.GET_DIGEST);
+        retval.add(Event.SET_DIGEST);
+        retval.add(Event.OVERWRITE_DIGEST);
+        retval.add(Event.MERGE_DIGEST);
         return retval;
     }
 

@@ -78,7 +78,7 @@ public class FLUSH extends Protocol {
      */
 
     @GuardedBy("sharedLock")
-    private View currentView=new View(new ViewId(), new Vector<Address>());
+    private View currentView=new View(new ViewId(), new ArrayList<Address>());
 
     private Address localAddress;
 
@@ -132,9 +132,6 @@ public class FLUSH extends Protocol {
 
     private final AtomicBoolean sentUnblock = new AtomicBoolean(false);
 
-    public FLUSH() {
-    }
-
 
     public long getStartFlushTimeout() {
         return start_flush_timeout;
@@ -169,7 +166,7 @@ public class FLUSH extends Protocol {
 
     public void stop() {
         synchronized (sharedLock) {
-            currentView = new View(new ViewId(), new Vector<Address>());
+            currentView = new View(new ViewId(), new ArrayList<Address>());
             flushCompletedMap.clear();
             flushNotCompletedMap.clear();
             flushMembers.clear();
@@ -553,10 +550,10 @@ public class FLUSH extends Protocol {
         }
     }
 
-    public Vector<Integer> providedDownServices() {
-        Vector<Integer> retval = new Vector<Integer>(2);
-        retval.addElement(new Integer(Event.SUSPEND));
-        retval.addElement(new Integer(Event.RESUME));
+    public List<Integer> providedDownServices() {
+        List<Integer> retval=new ArrayList<Integer>(2);
+        retval.add(Event.SUSPEND);
+        retval.add(Event.RESUME);
         return retval;
     }
 
@@ -894,7 +891,7 @@ public class FLUSH extends Protocol {
       private final Exception failureCause;
       
 
-      public FlushStartResult(Boolean result, Exception failureCause) {
+      private FlushStartResult(Boolean result, Exception failureCause) {
          this.result = result;
          this.failureCause = failureCause;
       }

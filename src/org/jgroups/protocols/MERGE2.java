@@ -124,9 +124,9 @@ public class MERGE2 extends Protocol {
         max_interval=l;
     }  
 
-    public Vector<Integer> requiredDownServices() {
-        Vector<Integer> retval=new Vector<Integer>(1);
-        retval.addElement(new Integer(Event.FIND_INITIAL_MBRS));
+    public List<Integer> requiredDownServices() {
+        List<Integer> retval=new ArrayList<Integer>(1);
+        retval.add(Event.FIND_INITIAL_MBRS);
         return retval;
     }
 

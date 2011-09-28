@@ -276,11 +276,11 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     }
 
 
-    public Vector<Integer> requiredDownServices() {
-        Vector<Integer> retval=new Vector<Integer>(3);
-        retval.addElement(new Integer(Event.GET_DIGEST));
-        retval.addElement(new Integer(Event.SET_DIGEST));
-        retval.addElement(new Integer(Event.FIND_INITIAL_MBRS));
+    public List<Integer> requiredDownServices() {
+        List<Integer> retval=new ArrayList<Integer>(3);
+        retval.add(Event.GET_DIGEST);
+        retval.add(Event.SET_DIGEST);
+        retval.add(Event.FIND_INITIAL_MBRS);
         return retval;
     }
 

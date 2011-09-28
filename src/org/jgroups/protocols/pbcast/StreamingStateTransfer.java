@@ -105,11 +105,6 @@ public abstract class StreamingStateTransfer extends Protocol {
     protected final Lock state_lock=new ReentrantLock();
 
 
-
-    public StreamingStateTransfer() {
-    }
-    
-
     @ManagedAttribute
     public int getNumberOfStateRequests() {
         return num_state_reqs.get();
@@ -128,10 +123,10 @@ public abstract class StreamingStateTransfer extends Protocol {
     @ManagedAttribute public int  getThreadPoolSize() {return thread_pool.getPoolSize();}
     @ManagedAttribute public long getThreadPoolCompletedTasks() {return thread_pool.getCompletedTaskCount();}
 
-    public Vector<Integer> requiredDownServices() {
-        Vector<Integer> retval=new Vector<Integer>();
-        retval.addElement(new Integer(Event.GET_DIGEST));
-        retval.addElement(new Integer(Event.OVERWRITE_DIGEST));
+    public List<Integer> requiredDownServices() {
+        List<Integer> retval=new ArrayList<Integer>(2);
+        retval.add(Event.GET_DIGEST);
+        retval.add(Event.OVERWRITE_DIGEST);
         return retval;
     }
 

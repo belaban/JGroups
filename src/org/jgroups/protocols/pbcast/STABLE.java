@@ -181,9 +181,9 @@ public class STABLE extends Protocol {
     }
 
 
-    public Vector<Integer> requiredDownServices() {
-        Vector<Integer> retval=new Vector<Integer>();
-        retval.addElement(Event.GET_DIGEST);  // NAKACK layer
+    public List<Integer> requiredDownServices() {
+        List<Integer> retval=new ArrayList<Integer>();
+        retval.add(Event.GET_DIGEST);  // from the NAKACK layer
         return retval;
     }
 

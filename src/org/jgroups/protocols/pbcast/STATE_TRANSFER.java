@@ -62,9 +62,6 @@ public class STATE_TRANSFER extends Protocol {
     /** Used to prevent spurious open and close barrier calls */
     @ManagedAttribute(description="whether or not the barrier is closed")
     protected AtomicBoolean barrier_closed=new AtomicBoolean(false);
-    
-
-    public STATE_TRANSFER() {}
 
 
     @ManagedAttribute
@@ -83,10 +80,10 @@ public class STATE_TRANSFER extends Protocol {
         return avg_state_size;
     }
 
-    public Vector<Integer> requiredDownServices() {
-        Vector<Integer> retval=new Vector<Integer>();
-        retval.addElement(new Integer(Event.GET_DIGEST));
-        retval.addElement(new Integer(Event.OVERWRITE_DIGEST));
+    public List<Integer> requiredDownServices() {
+        List<Integer> retval=new ArrayList<Integer>();
+        retval.add(Event.GET_DIGEST);
+        retval.add(Event.OVERWRITE_DIGEST);
         return retval;
     }
 
