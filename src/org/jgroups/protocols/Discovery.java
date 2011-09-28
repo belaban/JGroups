@@ -337,6 +337,9 @@ public abstract class Discovery extends Protocol {
                 PingData data=hdr.data;
                 Address logical_addr=data != null? data.getAddress() : null;
 
+                if(is_leaving)
+                    return null; // prevents merging back a leaving member (https://issues.jboss.org/browse/JGRP-1336)
+
                 switch(hdr.type) {
 
                     case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
@@ -495,12 +498,14 @@ public abstract class Discovery extends Protocol {
             case Event.CONNECT_WITH_STATE_TRANSFER:
             case Event.CONNECT_USE_FLUSH:
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                is_leaving=false;
                 group_addr=(String)evt.getArg();
                 Object ret=down_prot.down(evt);
                 handleConnect();
                 return ret;
 
             case Event.DISCONNECT:
+                is_leaving=true;
                 handleDisconnect();
                 return down_prot.down(evt);
 
@@ -514,10 +519,6 @@ public abstract class Discovery extends Protocol {
     /* -------------------------- Private methods ---------------------------- */
 
 
-    @SuppressWarnings("unchecked")
-    protected final View makeView(Vector<Address> mbrs) {
-        return new View(new ViewId(local_addr), mbrs);
-    }
 
     /**
      * Creates a byte[] representation of the PingData, but DISCARDING the view it contains.
@@ -592,7 +593,7 @@ public abstract class Discovery extends Protocol {
         final int               num_expected_srv_rsps;
         final boolean           break_on_coord_rsp;
 
-        public Responses(int num_expected_rsps, int num_expected_srv_rsps, boolean break_on_coord_rsp, Promise<JoinRsp> promise) {
+        protected Responses(int num_expected_rsps, int num_expected_srv_rsps, boolean break_on_coord_rsp, Promise<JoinRsp> promise) {
             this.num_expected_rsps=num_expected_rsps;
             this.num_expected_srv_rsps=num_expected_srv_rsps;
             this.break_on_coord_rsp=break_on_coord_rsp;
