@@ -96,9 +96,16 @@ public class MuxRpcDispatcher extends RpcDispatcher {
         super.stop();
     }
 
+    /**
     @Override
     protected GroupRequest cast(Collection<Address> dests, Message msg, RequestOptions options, boolean blockForResults) {
         RspFilter filter = options.getRspFilter();
         return super.cast(dests, msg, options.setRspFilter((filter != null) ? new NoMuxHandlerRspFilter(filter) : new NoMuxHandlerRspFilter()), blockForResults);
+    }*/
+
+    @Override
+    protected GroupRequest cast(Collection<Address> dests, Message msg, RequestOptions options, boolean blockForResults) {
+        RspFilter filter = options.getRspFilter();
+        return super.cast(dests, msg, options.setRspFilter(NoMuxHandlerRspFilter.createInstance(filter)), blockForResults);
     }
 }

@@ -18,7 +18,17 @@ public class NoMuxHandlerRspFilter implements RspFilter {
     public NoMuxHandlerRspFilter(RspFilter filter) {
         this.filter = filter;
     }
-    
+
+    public static RspFilter createInstance(RspFilter filter) {
+        if(filter instanceof NoMuxHandlerRspFilter)
+            return filter;
+        return new NoMuxHandlerRspFilter(filter) ;
+    }
+
+    public RspFilter getFilter() {
+        return filter;
+    }
+
     @Override
     public boolean isAcceptable(Object response, Address sender) {
         return !(response instanceof NoMuxHandler) && ((filter == null) || filter.isAcceptable(response, sender));
