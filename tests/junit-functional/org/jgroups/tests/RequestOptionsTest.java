@@ -35,7 +35,7 @@ public class RequestOptionsTest {
         MuxRpcDispatcher muxRpc = new MuxRpcDispatcher((short) 1, channel, null, null, new Server());
         channel.connect("group");
         for(int i=0; i < 20; i++)
-            muxRpc.callRemoteMethods(null, new MethodCall(Server.class.getMethod("foo", null)), reqOpt);
+            muxRpc.callRemoteMethods(null, new MethodCall(Server.class.getMethod("foo")), reqOpt);
 
         RspFilter filter=reqOpt.getRspFilter();
         int count=count(filter);
