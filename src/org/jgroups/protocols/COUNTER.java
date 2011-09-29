@@ -55,11 +55,6 @@ public class COUNTER extends Protocol {
     }
 
 
-
-    public COUNTER() {
-    }
-
-
     public boolean getBypassBundling() {
         return bypass_bundling;
     }
@@ -180,7 +175,7 @@ public class COUNTER extends Protocol {
         protected final String name;
         protected final COUNTER counter_prot;
 
-        public CounterImpl(String name, COUNTER counter_prot) {
+        protected CounterImpl(String name, COUNTER counter_prot) {
             this.name = name;
             this.counter_prot = counter_prot;
         }
@@ -227,10 +222,10 @@ public class COUNTER extends Protocol {
         protected int     value;
 
 
-        public Request() {
+        protected Request() {
         }
 
-        public Request(Type type, String name) {
+        protected Request(Type type, String name) {
             this.type=type;
             this.name=name;
         }
@@ -254,9 +249,6 @@ public class COUNTER extends Protocol {
 
 
     public static class CounterHeader extends Header {
-
-        public CounterHeader() {
-        }
 
         public int size() {
             return 0;
