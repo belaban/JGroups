@@ -1827,7 +1827,7 @@ public abstract class TP extends Protocol {
 
 
 
-        public TransferQueueBundler(int capacity) {
+        private TransferQueueBundler(int capacity) {
             if(capacity <=0) throw new IllegalArgumentException("Bundler capacity cannot be " + capacity);
             buffer=new LinkedBlockingQueue<Message>(capacity);
             threshold=(int)(capacity * .9); // 90% of capacity
