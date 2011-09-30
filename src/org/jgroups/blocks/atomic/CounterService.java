@@ -4,7 +4,7 @@ import org.jgroups.JChannel;
 import org.jgroups.protocols.COUNTER;
 
 /**
- * Provides a distributed counter (similar to AtomicInteger) which can be atomically updated across a cluster.
+ * Provides a distributed counter (similar to AtomicLong) which can be atomically updated across a cluster.
  * @author Bela Ban
  * @since 3.0.0
  */
@@ -30,8 +30,8 @@ public class CounterService {
      * if the counter already exists
      * @return The counter implementation
      */
-    public Counter getOrCreateCounter(String name, int initial_value) {
-        return null;
+    public Counter getOrCreateCounter(String name, long initial_value) {
+        return counter_prot.getOrCreateCounter(name, initial_value);
     }
 
   
@@ -40,7 +40,7 @@ public class CounterService {
      * @param name The name of the counter. No-op if the counter doesn't exist
      */
     public void deleteCounter(String name) {
-
+        counter_prot.deleteCounter(name);
     }
 
 

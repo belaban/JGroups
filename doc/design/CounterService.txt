@@ -74,8 +74,8 @@ On getting a response from the coordinator:
 
 
 
-On getting a backup request:
-----------------------------
+On getting an update request:
+-----------------------------
 - Update the server counters map with the new value and version
 
 
@@ -104,4 +104,11 @@ On reception of a reconciliation request from P:
 - For all counterd in the client counters map:
   - Add the named counter, its value and version to a list
 - Send the list with the response back to the new coordinator P
+
+
+
+Issues:
+-------
+- Int or long counters ? Do we let the users choose ?
+
 

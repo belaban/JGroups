@@ -7,18 +7,12 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.atomic.Counter;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Owner;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.util.HashMap;
+import java.io.*;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -32,26 +26,59 @@ public class COUNTER extends Protocol {
     @Property(description="bypasses message bundling if set")
     protected boolean bypass_bundling=true;
 
+    @Property(description="Request timeouts")
+    protected long timeout=60000;
+
 
     protected Address local_addr;
 
-    protected View view;
+    protected View    view;
+
+    /** The address of the cluster coordinator. Updated on view changes */
+    protected Address coord;
 
     // server side counters
-    protected final ConcurrentMap<String,AtomicInteger> counters=Util.createConcurrentMap(20);
+    protected final ConcurrentMap<String,VersionedValue> counters=Util.createConcurrentMap(20);
 
     // client side counters
-    protected final Map<String,Map<Owner,CounterImpl>> client_locks=new HashMap<String,Map<Owner,CounterImpl>>();
+    protected final Map<Owner,Tuple<Request,Promise>> pending_requests=Util.createConcurrentMap(20);
 
+    protected static final byte REQUEST  = 1;
+    protected static final byte RESPONSE = 2;
+    
 
-
-    protected static enum Type {
-        CREATE_OR_GET,
+    protected static enum RequestType {
+        GET_OR_CREATE,
         GET,
         SET,
         COMPARE_AND_SET,
         INCR_AND_GET,
         DECR_AND_GET
+    }
+
+    protected static enum ResponseType {
+        VOID,
+        GET_OR_CREATE,
+        BOOLEAN,
+        VALUE
+    }
+
+    protected static RequestType requestToRequestType(Request req) {
+        if(req instanceof GetOrCreateRequest)   return RequestType.GET_OR_CREATE;
+        if(req instanceof GetRequest)           return RequestType.GET;
+        if(req instanceof SetRequest)           return RequestType.SET;
+        if(req instanceof CompareAndSetRequest) return RequestType.COMPARE_AND_SET;
+        if(req instanceof IncrAndGetRequest)    return RequestType.INCR_AND_GET;
+        if(req instanceof DecrAndGetRequest)    return RequestType.DECR_AND_GET;
+        return null;
+    }
+
+    protected static ResponseType responseToResponseType(Response rsp) {
+        if(rsp instanceof GetOrCreateResponse) return ResponseType.GET_OR_CREATE;
+        if(rsp instanceof BooleanResponse) return ResponseType.BOOLEAN;
+        if(rsp instanceof ValueResponse) return ResponseType.VALUE;
+        if(rsp != null) return ResponseType.VOID;
+        return null;
     }
 
 
@@ -74,9 +101,35 @@ public class COUNTER extends Protocol {
         return view != null? view.toString() : null;
     }
 
-   
-    @Override
+
+    public Counter getOrCreateCounter(String name, long initial_value) {
+        Owner owner=getOwner();
+        GetOrCreateRequest req=new GetOrCreateRequest(owner, name, initial_value);
+        Promise<Long> promise=new Promise<Long>();
+        pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
+        sendRequest(coord, req);
+        Long value=promise.getResult(timeout);
+        if(value == null)
+            return null;
+        if(!coord.equals(local_addr))
+            counters.put(name, new VersionedValue(value));
+        return new CounterImpl(name);
+    }
+
+    public void deleteCounter(String name) {
+
+    }
+
+
+
+
+
     public Object down(Event evt) {
+        switch(evt.getType()) {
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
+        }
         return down_prot.down(evt);
     }
 
@@ -88,14 +141,23 @@ public class COUNTER extends Protocol {
                 if(hdr == null)
                     break;
 
-                Request req=(Request)msg.getObject();
-                if(log.isTraceEnabled())
-                    log.trace("[" + local_addr + "] <-- [" + msg.getSrc() + "] " + req);
-                switch(req.type) {
-                   
-                    default:
-                        log.error("Request of type " + req.type + " not known");
-                        break;
+                try {
+                    Object obj=streamableFromBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                    if(log.isTraceEnabled())
+                        log.trace("[" + local_addr + "] <-- [" + msg.getSrc() + "] " + obj);
+
+                    if(obj instanceof Request) {
+                        handleRequest((Request)obj, msg.getSrc());
+                    }
+                    else if(obj instanceof Response) {
+                        handleResponse((Response)obj);
+                    }
+                    else {
+                        log.error("received object is neither a Request nor a Response: " + obj);
+                    }
+                }
+                catch(Exception ex) {
+                    log.error("failed unmarshalling message", ex);
                 }
                 return null;
 
@@ -106,13 +168,73 @@ public class COUNTER extends Protocol {
         return up_prot.up(evt);
     }
 
+    
+    protected void handleRequest(Request req, Address sender) {
+        RequestType type=requestToRequestType(req);
+        switch(type) {
+            case GET_OR_CREATE:
+                GetOrCreateRequest tmp=(GetOrCreateRequest)req;
+                VersionedValue new_val=new VersionedValue(tmp.initial_value);
+                VersionedValue val=counters.putIfAbsent(tmp.name, new_val);
+                if(val == null)
+                    val=new_val;
+                Response rsp=new GetOrCreateResponse(tmp.owner, val.version, val.value);
+                sendResponse(sender, rsp);
+                break;
+            case GET:
+                break;
+            case SET:
+                break;
+            case COMPARE_AND_SET:
+                break;
+            case INCR_AND_GET:
+                val=counters.get(req.name);
+                long value=-1, version=-1;
+                if(val != null) {
+                    long[] result=val.incrAndGet();
+                    value=result[0];
+                    version=result[1];
+                }
+                rsp=new ValueResponse(req.owner, version, value);
+                sendResponse(sender, rsp);
+                break;
+            case DECR_AND_GET:
+                break;
+            default:
+                break;
+        }
+    }
+
+    protected long[] incrAndGet(String name) {
+        VersionedValue val=counters.get(name);
+        return val != null? val.incrAndGet() : new long[]{-1, -1};
+    }
+
+    protected void handleResponse(Response rsp) {
+        Tuple<Request,Promise> tuple=pending_requests.get(rsp.owner);
+        if(tuple == null) {
+            log.warn("response for " + rsp.owner + " didn't have an entry");
+            return;
+        }
+        Promise promise=tuple.getVal2();
+        if(rsp instanceof ValueResponse)
+            promise.setResult(((ValueResponse)rsp).result);
+        else if(rsp instanceof BooleanResponse)
+            promise.setResult(((BooleanResponse)rsp).result);
+        else
+            promise.setResult(null);
+    }
+
+
+    
+
 
 
     @ManagedOperation(description="Dumps all counters")
     public String printCounters() {
         StringBuilder sb=new StringBuilder();
         sb.append("counters:\n");
-        for(Map.Entry<String,AtomicInteger> entry: counters.entrySet()) {
+        for(Map.Entry<String,VersionedValue> entry: counters.entrySet()) {
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         return sb.toString();
@@ -123,6 +245,15 @@ public class COUNTER extends Protocol {
         if(log.isDebugEnabled())
             log.debug("view=" + view);
         List<Address> members=view.getMembers();
+        Address old_coord=coord;
+        if(!members.isEmpty())
+            coord=members.get(0);
+
+        if(old_coord != null && coord != null && !old_coord.equals(coord)) {
+
+            // todo: handle case when the coordinator changed
+            
+        }
 
 
         // todo: if the coordinator failed, we need to get counter information from a backup-coord, or by
@@ -130,83 +261,165 @@ public class COUNTER extends Protocol {
     }
 
 
+    protected Owner getOwner() {
+        return new Owner(local_addr, Thread.currentThread().getId());
+    }
 
 
-
-    protected void sendRequest(Address dest, Type type, String name) {
-        Request req=new Request(type, name);
-        Message msg=new Message(dest, null, req);
-        msg.putHeader(id, new CounterHeader());
-        if(bypass_bundling)
-            msg.setFlag(Message.DONT_BUNDLE);
-        if(log.isTraceEnabled())
-            log.trace("[" + local_addr + "] --> [" + (dest == null? "ALL" : dest) + "] " + req);
+    protected void sendRequest(Address dest, Request req) {
         try {
+            Buffer buffer=requestToBuffer(req);
+            Message msg=new Message(dest, null, buffer);
+            msg.putHeader(id, new CounterHeader());
+            if(bypass_bundling)
+                msg.setFlag(Message.DONT_BUNDLE);
+            if(log.isTraceEnabled())
+                log.trace("[" + local_addr + "] --> [" + (dest == null? "ALL" : dest) + "] " + req);
+
             down_prot.down(new Event(Event.MSG, msg));
         }
         catch(Exception ex) {
-            log.error("failed sending " + type + " request: " + ex);
+            log.error("failed sending " + req + " request: " + ex);
         }
     }
 
 
-    protected void sendLockResponse(Address dest, Type type, String name) {
-        Request rsp=new Request(type, name);
-        Message lock_granted_rsp=new Message(dest, null, rsp);
-        lock_granted_rsp.putHeader(id, new CounterHeader());
-        if(bypass_bundling)
-            lock_granted_rsp.setFlag(Message.DONT_BUNDLE);
-
-        if(log.isTraceEnabled())
-            log.trace("[" + local_addr + "] --> [" + dest + "] " + rsp);
-
+    protected void sendResponse(Address dest, Response rsp) {
         try {
-            down_prot.down(new Event(Event.MSG, lock_granted_rsp));
+            Buffer buffer=responseToBuffer(rsp);
+            Message rsp_msg=new Message(dest, null, buffer);
+            rsp_msg.putHeader(id, new CounterHeader());
+            if(bypass_bundling)
+                rsp_msg.setFlag(Message.DONT_BUNDLE);
+
+            if(log.isTraceEnabled())
+                log.trace("[" + local_addr + "] --> [" + dest + "] " + rsp);
+
+            down_prot.down(new Event(Event.MSG, rsp_msg));
         }
         catch(Exception ex) {
-            log.error("failed sending " + type + " message to " + dest + ": " + ex);
+            log.error("failed sending " + rsp + " message to " + dest + ": " + ex);
         }
     }
 
 
+    protected static Buffer requestToBuffer(Request req) throws IOException {
+        return streamableToBuffer(REQUEST,(byte)requestToRequestType(req).ordinal(), req);
+    }
+
+    protected static Buffer responseToBuffer(Response rsp) throws IOException {
+        return streamableToBuffer(RESPONSE,(byte)responseToResponseType(rsp).ordinal(), rsp);
+    }
+
+    protected static Buffer streamableToBuffer(byte req_or_rsp, byte type, Streamable obj) throws IOException {
+        ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(100);
+        DataOutputStream out=new DataOutputStream(output);
+        out.writeByte(req_or_rsp);
+        out.writeByte(type);
+        obj.writeTo(out);
+        out.flush();
+        return output.getBuffer();
+    }
+
+    protected static Streamable streamableFromBuffer(byte[] buf, int offset, int length) throws IOException, IllegalAccessException, InstantiationException {
+        switch(buf[offset]) {
+            case REQUEST:
+                return requestFromBuffer(buf, offset+1, length-1);
+            case RESPONSE:
+                return responseFromBuffer(buf, offset+1, length-1);
+            default:
+                throw new IllegalArgumentException("type " + buf[offset] + " is invalid (expected Request (1) or RESPONSE (2)");
+        }
+    }
+
+    protected static final Request requestFromBuffer(byte[] buf, int offset, int length) throws IOException, InstantiationException, IllegalAccessException {
+        ByteArrayInputStream input=new ByteArrayInputStream(buf, offset, length);
+        DataInputStream in=new DataInputStream(input);
+        RequestType type=RequestType.values()[in.readByte()];
+        Request retval=createRequest(type);
+        retval.readFrom(in);
+        return retval;
+    }
+
+    protected static Request createRequest(RequestType type) {
+        switch(type) {
+            case COMPARE_AND_SET: return new CompareAndSetRequest();
+            case GET_OR_CREATE: return new GetOrCreateRequest();
+            case GET: return new GetRequest();
+            case INCR_AND_GET: return new IncrAndGetRequest();
+            case DECR_AND_GET: return new DecrAndGetRequest();
+            case SET: return new SetRequest();
+            default: return null;
+        }
+    }
+
+    protected static final Response responseFromBuffer(byte[] buf, int offset, int length) throws IOException, InstantiationException, IllegalAccessException {
+        ByteArrayInputStream input=new ByteArrayInputStream(buf, offset, length);
+        DataInputStream in=new DataInputStream(input);
+        ResponseType type=ResponseType.values()[in.readByte()];
+        Response retval=createResponse(type);
+        retval.readFrom(in);
+        return retval;
+    }
+
+    protected static Response createResponse(ResponseType type) {
+        switch(type) {
+            case VOID:          return new Response();
+            case GET_OR_CREATE: return new GetOrCreateResponse();
+            case BOOLEAN:       return new BooleanResponse();
+            case VALUE:         return new ValueResponse();
+            default: return null;
+        }
+    }
 
 
-    protected static class CounterImpl implements Counter {
-        protected final String name;
-        protected final COUNTER counter_prot;
+    protected class CounterImpl implements Counter {
+        protected final String  name;
 
-        protected CounterImpl(String name, COUNTER counter_prot) {
+        protected CounterImpl(String name) {
             this.name = name;
-            this.counter_prot = counter_prot;
         }
 
         @Override
-        public int get() {
+        public long get() {
             return 0;
         }
 
         @Override
-        public void set(int new_value) {
+        public void set(long new_value) {
         }
 
         @Override
-        public boolean compareAndSet(int expect, int update) {
+        public boolean compareAndSet(long expect, long update) {
             return false;
         }
 
         @Override
-        public int incrementAndGet() {
-            return 0;
+        public long incrementAndGet() {
+            if(local_addr.equals(coord))
+                return incrAndGet(name)[0];
+            Owner owner=getOwner();
+            Request req=new IncrAndGetRequest(owner, name);
+            Promise<Long> promise=new Promise<Long>();
+            pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
+            sendRequest(coord, req);
+            Long value=promise.getResult(timeout);
+            if(value == null)
+                return -1;
+            if(!coord.equals(local_addr))
+                counters.put(name, new VersionedValue(value));
+            return value;
         }
 
         @Override
-        public int decrementAndGet() {
+        public long decrementAndGet() {
             return 0;
         }
 
         @Override
         public String toString() {
-            return String.valueOf(get());
+            VersionedValue val=counters.get(name);
+            return val != null? val.toString() : "n/a";
         }
     }
 
@@ -216,36 +429,241 @@ public class COUNTER extends Protocol {
 
 
 
-    protected static class Request implements Streamable {
-        protected Type    type;
+    protected abstract static class Request implements Streamable {
+        protected Owner   owner;
         protected String  name;
-        protected int     value;
 
 
         protected Request() {
         }
 
-        protected Request(Type type, String name) {
-            this.type=type;
+        protected Request(Owner owner, String name) {
+            this.owner=owner;
             this.name=name;
         }
 
-
         public void writeTo(DataOutput out) throws IOException {
-            out.writeByte(type.ordinal());
+            owner.writeTo(out);
             Util.writeString(name, out);
         }
 
         public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
-            type= Type.values()[in.readByte()];
+            owner=new Owner();
+            owner.readFrom(in);
             name=Util.readString(in);
         }
 
         public String toString() {
-            return type.name() + " [" + name;
+            return owner + " [" + name + "]";
+        }
+    }
+
+    protected static class GetOrCreateRequest extends Request {
+        protected long initial_value;
+
+        protected GetOrCreateRequest() {
         }
 
+        GetOrCreateRequest(Owner owner, String name, long initial_value) {
+            super(owner,name);
+            this.initial_value=initial_value;
+        }
+
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+            super.readFrom(in);
+            initial_value=Util.readLong(in);
+        }
+
+        public void writeTo(DataOutput out) throws IOException {
+            super.writeTo(out);
+            Util.writeLong(initial_value, out);
+        }
     }
+
+    protected static class GetRequest extends Request {
+        protected GetRequest() {
+        }
+
+        protected GetRequest(Owner owner, String name) {
+            super(owner, name);
+        }
+    }
+
+    protected static class IncrAndGetRequest extends Request {
+        protected IncrAndGetRequest() {
+        }
+
+        protected IncrAndGetRequest(Owner owner, String name) {
+            super(owner, name);
+        }
+    }
+
+    protected static class DecrAndGetRequest extends Request {
+        protected DecrAndGetRequest() {
+        }
+
+        protected DecrAndGetRequest(Owner owner, String name) {
+            super(owner, name);
+        }
+    }
+
+
+    protected static class SetRequest extends Request {
+        protected long value;
+
+        protected SetRequest() {
+        }
+
+        protected SetRequest(Owner owner, String name, long value) {
+            super(owner, name);
+            this.value=value;
+        }
+
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+            super.readFrom(in);
+            value=Util.readLong(in);
+        }
+
+        public void writeTo(DataOutput out) throws IOException {
+            super.writeTo(out);
+            Util.writeLong(value, out);
+        }
+
+        public String toString() {
+            return super.toString() + ": " + value;
+        }
+    }
+
+
+    protected static class CompareAndSetRequest extends Request {
+        protected long expected, update;
+
+        protected CompareAndSetRequest() {
+        }
+
+        protected CompareAndSetRequest(Owner owner, String name, long expected, long update) {
+            super(owner, name);
+            this.expected=expected;
+            this.update=update;
+        }
+
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+            super.readFrom(in);
+            expected=Util.readLong(in);
+            update=Util.readLong(in);
+        }
+
+        public void writeTo(DataOutput out) throws IOException {
+            super.writeTo(out);
+            Util.writeLong(expected, out);
+            Util.writeLong(update, out);
+        }
+
+        public String toString() {
+            return super.toString() + ", expected=" + expected + ", update=" + update;
+        }
+    }
+
+
+    
+    /** Response without data */
+    protected static class Response implements Streamable {
+        protected Owner owner;
+        protected long  version;
+
+        protected Response() {
+        }
+
+        protected Response(Owner owner, long version) {
+            this.owner=owner;
+            this.version=version;
+        }
+
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+            owner=new Owner();
+            owner.readFrom(in);
+            version=Util.readLong(in);
+        }
+
+        public void writeTo(DataOutput out) throws IOException {
+            owner.writeTo(out);
+            Util.writeLong(version, out);
+        }
+
+        public String toString() {
+            return "Response";
+        }
+    }
+
+
+    protected static class BooleanResponse extends Response {
+        protected boolean result;
+
+        protected BooleanResponse() {
+        }
+
+        protected BooleanResponse(Owner owner, long version, boolean result) {
+            super(owner, version);
+            this.result=result;
+        }
+
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+            super.readFrom(in);
+            result=in.readBoolean();
+        }
+
+        public void writeTo(DataOutput out) throws IOException {
+            super.writeTo(out);
+            out.writeBoolean(result);
+        }
+
+        public String toString() {
+            return "BooleanResponse(" + result + ")";
+        }
+    }
+
+    protected static class ValueResponse extends Response {
+        protected long result;
+
+
+        protected ValueResponse() {
+        }
+
+        protected ValueResponse(Owner owner, long version, long result) {
+            super(owner, version);
+            this.result=result;
+        }
+
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+            super.readFrom(in);
+            result=Util.readLong(in);
+        }
+
+        public void writeTo(DataOutput out) throws IOException {
+            super.writeTo(out);
+            Util.writeLong(result, out);
+        }
+
+        public String toString() {
+            return "ValueResponse(" + result + ")";
+        }
+    }
+
+
+    protected static class GetOrCreateResponse extends ValueResponse {
+
+        protected GetOrCreateResponse() {
+        }
+
+        protected GetOrCreateResponse(Owner owner, long version, long result) {
+            super(owner,version,result);
+        }
+
+        public String toString() {
+            return "GetOrCreateResponse(" + result + ")";
+        }
+    }
+    
 
 
     public static class CounterHeader extends Header {
@@ -258,6 +676,23 @@ public class COUNTER extends Protocol {
         }
 
         public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        }
+    }
+
+    protected static class VersionedValue {
+        protected long value;
+        protected long version=1;
+
+        protected VersionedValue(long value) {
+            this.value=value;
+        }
+
+        protected synchronized long[] incrAndGet() {
+            return new long[]{++value,++version};
+        }
+
+        public String toString() {
+            return value + " (version=" + version + ")";
         }
     }
 
