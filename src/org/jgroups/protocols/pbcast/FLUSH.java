@@ -315,14 +315,20 @@ public class FLUSH extends Protocol {
             while (isBlockingFlushDown) {
                 if (log.isDebugEnabled())
                     log.debug(localAddress + ": blocking for " + (timeout <= 0 ? "ever" : timeout + "ms"));
-                shouldSuspendByItself = !notBlockedDown.await(timeout, TimeUnit.MILLISECONDS);
-            }
-            if (shouldSuspendByItself) {
-                isBlockingFlushDown = false;      
-                log.warn(localAddress + ": unblocking after " + timeout + "ms");
-                flush_promise.setResult(new FlushStartResult(Boolean.TRUE,null));
-                notBlockedDown.signalAll();
-            }            
+                if(timeout <= 0) {
+                   notBlockedDown.await();
+                }
+                else { 
+                   shouldSuspendByItself = !notBlockedDown.await(timeout, TimeUnit.MILLISECONDS);
+                }
+                
+                if (shouldSuspendByItself) {
+                   isBlockingFlushDown = false;      
+                   log.warn(localAddress + ": unblocking after " + timeout + "ms");
+                   flush_promise.setResult(new FlushStartResult(Boolean.TRUE,null));
+                   notBlockedDown.signalAll();
+               }
+            }                        
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
