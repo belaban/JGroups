@@ -44,6 +44,10 @@ public class CounterService {
     }
 
 
+    public String printCounters() {
+        return counter_prot.printCounters();
+    }
+
 
 
 }

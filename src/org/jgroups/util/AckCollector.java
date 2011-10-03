@@ -31,64 +31,48 @@ public class AckCollector {
         }
     }
 
-    public String printMissing() {
-        synchronized(this) {
-            return missing_acks.toString();
-        }
+    public synchronized String printMissing() {
+        return missing_acks.toString();
     }
 
 
-    public String printSuspected() {
-        synchronized(this) {
-            return suspected_mbrs.toString();
-        }
+    public synchronized String printSuspected() {
+        return suspected_mbrs.toString();
     }
 
-    public void reset(Collection<Address> members) {
-        synchronized(this) {
-            suspected_mbrs.clear();           
-            missing_acks.clear();
-            if(members != null && !members.isEmpty()) {
-                missing_acks.addAll(members);
-                expected_acks=members.size();
-            }
-            missing_acks.removeAll(suspected_mbrs);
-            all_acks_received.reset();
+    public synchronized void reset(Collection<Address> members) {
+        suspected_mbrs.clear();
+        missing_acks.clear();
+        if(members != null && !members.isEmpty()) {
+            missing_acks.addAll(members);
+            expected_acks=members.size();
         }
+        missing_acks.removeAll(suspected_mbrs);
+        all_acks_received.reset();
     }
 
-    public int size() {
-        synchronized(this) {
-            return missing_acks.size();
-        }
+    public synchronized int size() {
+        return missing_acks.size();
     }
 
 
-    public int expectedAcks() {
-        synchronized(this) {
-            return expected_acks;
-        }
+    public synchronized int expectedAcks() {
+        return expected_acks;
     }
 
-    public void ack(Object member) {
-        synchronized(this) {
-            missing_acks.remove(member);
-            if(missing_acks.isEmpty())
-                all_acks_received.setResult(Boolean.TRUE);
-        }
+    public synchronized void ack(Object member) {
+        missing_acks.remove(member);
+        if(missing_acks.isEmpty())
+            all_acks_received.setResult(Boolean.TRUE);
     }
 
-    public void suspect(Address member) {
-        synchronized(this) {
-            ack(member);
-            suspected_mbrs.add(member);
-        }
+    public synchronized void suspect(Address member) {
+        ack(member);
+        suspected_mbrs.add(member);
     }
 
-    public void unsuspect(Address member) {
-        synchronized(this) {
-            suspected_mbrs.remove(member);
-        }
+    public synchronized void unsuspect(Address member) {
+        suspected_mbrs.remove(member);
     }
 
     public void handleView(View v) {

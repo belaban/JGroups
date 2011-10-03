@@ -4,8 +4,9 @@ package org.jgroups;
 /**
  * Thrown if members fail to respond in time.
  */
-public class TimeoutException extends Exception {
-    private static final long serialVersionUID = -3555655828017487825L;
+public class TimeoutException extends RuntimeException {
+
+    private static final long serialVersionUID=-2928348023967934826L;
 
     public TimeoutException() {
         super("TimeoutException");

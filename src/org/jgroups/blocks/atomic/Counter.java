@@ -5,6 +5,9 @@ package org.jgroups.blocks.atomic;
  * @since 3.0.0
  */
 public interface Counter {
+
+    public String getName();
+
     /**
      * Get the current value of the counter
      * @return The current value
@@ -37,4 +40,14 @@ public interface Counter {
      * @return The new value
      */
     public long decrementAndGet();
+
+
+    /**
+     * Atomically adds the given value to the current value.
+     *
+     * @param delta the value to add
+     * @return the updated value
+     */
+    public long addAndGet(long delta);
 }
+

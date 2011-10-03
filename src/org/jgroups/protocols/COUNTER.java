@@ -49,27 +49,26 @@ public class COUNTER extends Protocol {
 
     protected static enum RequestType {
         GET_OR_CREATE,
-        GET,
+        DELETE,
         SET,
         COMPARE_AND_SET,
-        INCR_AND_GET,
-        DECR_AND_GET
+        ADD_AND_GET
     }
 
     protected static enum ResponseType {
         VOID,
         GET_OR_CREATE,
         BOOLEAN,
-        VALUE
+        VALUE,
+        EXCEPTION
     }
 
     protected static RequestType requestToRequestType(Request req) {
         if(req instanceof GetOrCreateRequest)   return RequestType.GET_OR_CREATE;
-        if(req instanceof GetRequest)           return RequestType.GET;
+        if(req instanceof DeleteRequest)        return RequestType.DELETE;
+        if(req instanceof AddAndGetRequest)     return RequestType.ADD_AND_GET;
         if(req instanceof SetRequest)           return RequestType.SET;
         if(req instanceof CompareAndSetRequest) return RequestType.COMPARE_AND_SET;
-        if(req instanceof IncrAndGetRequest)    return RequestType.INCR_AND_GET;
-        if(req instanceof DecrAndGetRequest)    return RequestType.DECR_AND_GET;
         return null;
     }
 
@@ -77,6 +76,7 @@ public class COUNTER extends Protocol {
         if(rsp instanceof GetOrCreateResponse) return ResponseType.GET_OR_CREATE;
         if(rsp instanceof BooleanResponse) return ResponseType.BOOLEAN;
         if(rsp instanceof ValueResponse) return ResponseType.VALUE;
+        if(rsp instanceof ExceptionResponse) return ResponseType.EXCEPTION;
         if(rsp != null) return ResponseType.VOID;
         return null;
     }
@@ -105,22 +105,24 @@ public class COUNTER extends Protocol {
     public Counter getOrCreateCounter(String name, long initial_value) {
         Owner owner=getOwner();
         GetOrCreateRequest req=new GetOrCreateRequest(owner, name, initial_value);
-        Promise<Long> promise=new Promise<Long>();
+        Promise<long[]> promise=new Promise<long[]>();
         pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
         sendRequest(coord, req);
-        Long value=promise.getResult(timeout);
-        if(value == null)
-            return null;
+        long[] result=promise.getResultWithTimeout(timeout);
+        long value=result[0], version=result[1];
         if(!coord.equals(local_addr))
-            counters.put(name, new VersionedValue(value));
+            counters.put(name, new VersionedValue(value, version));
         return new CounterImpl(name);
     }
 
+    /** Sentr asynchronously - we don't wait for an ack */
     public void deleteCounter(String name) {
-
+        Owner owner=getOwner();
+        Request req=new DeleteRequest(owner, name);
+        sendRequest(coord, req);
+        if(!local_addr.equals(coord))
+            counters.remove(name);
     }
-
-
 
 
 
@@ -181,33 +183,50 @@ public class COUNTER extends Protocol {
                 Response rsp=new GetOrCreateResponse(tmp.owner, val.version, val.value);
                 sendResponse(sender, rsp);
                 break;
-            case GET:
+            case DELETE:
+                counters.remove(req.name);
                 break;
             case SET:
+                val=counters.get(req.name);
+                if(val == null) {
+                    sendCounterNotFoundExceptionResponse(sender, req.owner, req.name);
+                    return;
+                }
+                long[] result=val.set(((SetRequest)req).value);
+                rsp=new ValueResponse(req.owner, result[0], result[1]);
+                sendResponse(sender, rsp);
                 break;
             case COMPARE_AND_SET:
                 break;
-            case INCR_AND_GET:
+            case ADD_AND_GET:
                 val=counters.get(req.name);
-                long value=-1, version=-1;
-                if(val != null) {
-                    long[] result=val.incrAndGet();
-                    value=result[0];
-                    version=result[1];
+                if(val == null) {
+                    sendCounterNotFoundExceptionResponse(sender, req.owner, req.name);
+                    return;
                 }
-                rsp=new ValueResponse(req.owner, version, value);
+                result=val.addAndGet(((AddAndGetRequest)req).value);
+                rsp=new ValueResponse(req.owner, result[0], result[1]);
                 sendResponse(sender, rsp);
-                break;
-            case DECR_AND_GET:
                 break;
             default:
                 break;
         }
     }
 
-    protected long[] incrAndGet(String name) {
+
+    protected long[] add(String name, long delta) {
+        return getCounter(name).addAndGet(delta);
+    }
+
+    protected void _set(String name, long value) {
+        getCounter(name).set(value);
+    }
+
+    protected VersionedValue getCounter(String name) {
         VersionedValue val=counters.get(name);
-        return val != null? val.incrAndGet() : new long[]{-1, -1};
+        if(val == null)
+            throw new IllegalStateException("counter \"" + name + "\" not found");
+        return val;
     }
 
     protected void handleResponse(Response rsp) {
@@ -217,10 +236,16 @@ public class COUNTER extends Protocol {
             return;
         }
         Promise promise=tuple.getVal2();
-        if(rsp instanceof ValueResponse)
-            promise.setResult(((ValueResponse)rsp).result);
+        if(rsp instanceof ValueResponse) {
+            ValueResponse tmp=(ValueResponse)rsp;
+            long[] result={tmp.result,tmp.version};
+            promise.setResult(result);
+        }
         else if(rsp instanceof BooleanResponse)
             promise.setResult(((BooleanResponse)rsp).result);
+        else if(rsp instanceof ExceptionResponse) {
+            promise.setResult(new Throwable(((ExceptionResponse)rsp).error_message));
+        }
         else
             promise.setResult(null);
     }
@@ -233,10 +258,8 @@ public class COUNTER extends Protocol {
     @ManagedOperation(description="Dumps all counters")
     public String printCounters() {
         StringBuilder sb=new StringBuilder();
-        sb.append("counters:\n");
-        for(Map.Entry<String,VersionedValue> entry: counters.entrySet()) {
+        for(Map.Entry<String,VersionedValue> entry: counters.entrySet())
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-        }
         return sb.toString();
     }
 
@@ -302,6 +325,11 @@ public class COUNTER extends Protocol {
         }
     }
 
+    protected void sendCounterNotFoundExceptionResponse(Address dest, Owner owner, String counter_name) {
+        Response rsp=new ExceptionResponse(owner, "counter \"" + counter_name + "\" not found");
+        sendResponse(dest, rsp);
+    }
+
 
     protected static Buffer requestToBuffer(Request req) throws IOException {
         return streamableToBuffer(REQUEST,(byte)requestToRequestType(req).ordinal(), req);
@@ -344,12 +372,11 @@ public class COUNTER extends Protocol {
     protected static Request createRequest(RequestType type) {
         switch(type) {
             case COMPARE_AND_SET: return new CompareAndSetRequest();
-            case GET_OR_CREATE: return new GetOrCreateRequest();
-            case GET: return new GetRequest();
-            case INCR_AND_GET: return new IncrAndGetRequest();
-            case DECR_AND_GET: return new DecrAndGetRequest();
-            case SET: return new SetRequest();
-            default: return null;
+            case ADD_AND_GET:     return new AddAndGetRequest();
+            case GET_OR_CREATE:   return new GetOrCreateRequest();
+            case DELETE:          return new DeleteRequest();
+            case SET:             return new SetRequest();
+            default:              return null;
         }
     }
 
@@ -368,6 +395,7 @@ public class COUNTER extends Protocol {
             case GET_OR_CREATE: return new GetOrCreateResponse();
             case BOOLEAN:       return new BooleanResponse();
             case VALUE:         return new ValueResponse();
+            case EXCEPTION:     return new ExceptionResponse();
             default: return null;
         }
     }
@@ -380,13 +408,33 @@ public class COUNTER extends Protocol {
             this.name = name;
         }
 
+        public String getName() {
+            return name;
+        }
+
         @Override
         public long get() {
-            return 0;
+            return addAndGet(0);
         }
 
         @Override
         public void set(long new_value) {
+            if(local_addr.equals(coord)) {
+                _set(name,new_value);
+                return;
+            }
+            Owner owner=getOwner();
+            Request req=new SetRequest(owner, name, new_value);
+            Promise<long[]> promise=new Promise<long[]>();
+            pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
+            sendRequest(coord, req);
+            Object obj=promise.getResultWithTimeout(timeout);
+            if(obj instanceof Throwable)
+                throw new IllegalStateException((Throwable)obj);
+            long[] result=(long[])obj;
+            long value=result[0], version=result[1];
+            if(!coord.equals(local_addr))
+                counters.put(name, new VersionedValue(value, version));
         }
 
         @Override
@@ -396,24 +444,31 @@ public class COUNTER extends Protocol {
 
         @Override
         public long incrementAndGet() {
-            if(local_addr.equals(coord))
-                return incrAndGet(name)[0];
-            Owner owner=getOwner();
-            Request req=new IncrAndGetRequest(owner, name);
-            Promise<Long> promise=new Promise<Long>();
-            pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
-            sendRequest(coord, req);
-            Long value=promise.getResult(timeout);
-            if(value == null)
-                return -1;
-            if(!coord.equals(local_addr))
-                counters.put(name, new VersionedValue(value));
-            return value;
+            return addAndGet(1);
         }
 
         @Override
         public long decrementAndGet() {
-            return 0;
+            return addAndGet(-1);
+        }
+
+        @Override
+        public long addAndGet(long delta) {
+            if(local_addr.equals(coord))
+                return add(name,delta)[0];
+            Owner owner=getOwner();
+            Request req=new AddAndGetRequest(owner, name, delta);
+            Promise<long[]> promise=new Promise<long[]>();
+            pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
+            sendRequest(coord, req);
+            Object obj=promise.getResultWithTimeout(timeout);
+            if(obj instanceof Throwable)
+                throw new IllegalStateException((Throwable)obj);
+            long[] result=(long[])obj;
+            long value=result[0], version=result[1];
+            if(!coord.equals(local_addr))
+                counters.put(name, new VersionedValue(value, version));
+            return value;
         }
 
         @Override
@@ -480,32 +535,35 @@ public class COUNTER extends Protocol {
         }
     }
 
-    protected static class GetRequest extends Request {
-        protected GetRequest() {
+
+    protected static class DeleteRequest extends Request {
+
+        protected DeleteRequest() {
         }
 
-        protected GetRequest(Owner owner, String name) {
-            super(owner, name);
+        protected DeleteRequest(Owner owner, String name) {
+            super(owner,name);
+        }
+
+        public String toString() {
+            return "DeleteRequest: " + super.toString();
         }
     }
 
-    protected static class IncrAndGetRequest extends Request {
-        protected IncrAndGetRequest() {
+
+    protected static class AddAndGetRequest extends SetRequest {
+        protected AddAndGetRequest() {
         }
 
-        protected IncrAndGetRequest(Owner owner, String name) {
-            super(owner, name);
+        protected AddAndGetRequest(Owner owner, String name, long value) {
+            super(owner,name,value);
+        }
+
+        public String toString() {
+            return "AddAndGetRequest: " + super.toString();
         }
     }
 
-    protected static class DecrAndGetRequest extends Request {
-        protected DecrAndGetRequest() {
-        }
-
-        protected DecrAndGetRequest(Owner owner, String name) {
-            super(owner, name);
-        }
-    }
 
 
     protected static class SetRequest extends Request {
@@ -625,11 +683,10 @@ public class COUNTER extends Protocol {
     protected static class ValueResponse extends Response {
         protected long result;
 
-
         protected ValueResponse() {
         }
 
-        protected ValueResponse(Owner owner, long version, long result) {
+        protected ValueResponse(Owner owner, long result, long version) {
             super(owner, version);
             this.result=result;
         }
@@ -655,29 +712,49 @@ public class COUNTER extends Protocol {
         protected GetOrCreateResponse() {
         }
 
-        protected GetOrCreateResponse(Owner owner, long version, long result) {
-            super(owner,version,result);
+        protected GetOrCreateResponse(Owner owner, long result, long version) {
+            super(owner,result, version);
         }
 
         public String toString() {
             return "GetOrCreateResponse(" + result + ")";
         }
     }
+
+    protected static class ExceptionResponse extends Response {
+        protected String error_message;
+
+        protected ExceptionResponse() {
+        }
+
+        protected ExceptionResponse(Owner owner, String error_message) {
+            super(owner, 0);
+            this.error_message=error_message;
+        }
+
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+            super.readFrom(in);
+            error_message=Util.readString(in);
+        }
+
+        public void writeTo(DataOutput out) throws IOException {
+            super.writeTo(out);
+            Util.writeString(error_message, out);
+        }
+
+        public String toString() {
+            return "ExceptionResponse: " + super.toString();
+        }
+    }
     
 
 
     public static class CounterHeader extends Header {
-
-        public int size() {
-            return 0;
-        }
-
-        public void writeTo(DataOutput out) throws IOException {
-        }
-
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
-        }
+        public int size() {return 0;}
+        public void writeTo(DataOutput out) throws IOException {}
+        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {}
     }
+    
 
     protected static class VersionedValue {
         protected long value;
@@ -687,8 +764,27 @@ public class COUNTER extends Protocol {
             this.value=value;
         }
 
-        protected synchronized long[] incrAndGet() {
-            return new long[]{++value,++version};
+        protected VersionedValue(long value, long version) {
+            this.value=value;
+            this.version=version;
+        }
+
+        /** num == 0 --> GET */
+        protected synchronized long[] addAndGet(long num) {
+            return num == 0? new long[]{value, version} : new long[]{value+=num, ++version};
+        }
+
+        protected synchronized long[] set(long value) {
+            return new long[]{this.value=value,++version};
+        }
+
+        protected synchronized boolean compareAndSet(long expected, long update) {
+            if(value == expected) {
+                value=update;
+                ++version;
+                return true;
+            }
+            return false;
         }
 
         public String toString() {
