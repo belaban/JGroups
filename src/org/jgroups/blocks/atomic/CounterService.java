@@ -49,5 +49,7 @@ public class CounterService {
     }
 
 
+    public String dumpPendingRequests() {return counter_prot.dumpPendingRequests();}
+
 
 }

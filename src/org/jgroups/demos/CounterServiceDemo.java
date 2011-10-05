@@ -34,8 +34,10 @@ public class CounterServiceDemo {
         boolean looping=true;
         while(looping) {
             try {
-                int key=Util.keyPress("[1] Increment [2] Decrement [3] Create counter [4] Delete counter\n" +
-                                      "[5] Print counters [8] Increment 1M times [x] Exit\n");
+                int key=Util.keyPress("[1] Increment [2] Decrement [3] Compare and set\n" +
+                                        "[4] Create counter [5] Delete counter\n" +
+                                        "[6] Print counters [7] Get counter\n" +
+                                        "[8] Increment 1M times [9] Dump pending requests [x] Exit\n");
                 switch(key) {
                     case '1':
                         long val=counter.incrementAndGet();
@@ -46,15 +48,29 @@ public class CounterServiceDemo {
                         System.out.println("counter: " + val);
                         break;
                     case '3':
+                        long expect=Util.readLongFromStdin("expected value: ");
+                        long update=Util.readLongFromStdin("update: ");
+                        if(counter.compareAndSet(expect, update)) {
+                            System.out.println("-- set counter \"" + counter.getName() + "\" to " + update + "\n");
+                        }
+                        else {
+                            System.err.println("failed setting counter \"" + counter.getName() + "\" from " + expect +
+                              " to " + update + ", current value is " + counter.get() + "\n");
+                        }
+                        break;
+                    case '4':
                         String counter_name=Util.readStringFromStdin("counter name: ");
                         counter=counter_service.getOrCreateCounter(counter_name, 1);
                         break;
-                    case '4':
+                    case '5':
                         counter_name=Util.readStringFromStdin("counter name: ");
                         counter_service.deleteCounter(counter_name);
                         break;
-                    case '5':
+                    case '6':
                         System.out.println("Counters (current=" + counter.getName() + "):\n\n" + counter_service.printCounters());
+                        break;
+                    case '7':
+                        counter.get();
                         break;
                     case '8':
                         int NUM=Util.readIntFromStdin("num: ");
@@ -69,6 +85,9 @@ public class CounterServiceDemo {
                         }
                         long diff=System.currentTimeMillis() - start;
                         System.out.println("\n" + NUM + " incrs took " + diff + " ms; " + (NUM / (diff / 1000.0)) + " ops /sec\n");
+                        break;
+                    case '9':
+                        System.out.println("Pending requests:\n" + counter_service.dumpPendingRequests());
                         break;
                     case 'x':
                         looping=false;

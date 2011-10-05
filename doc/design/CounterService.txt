@@ -22,8 +22,9 @@ based on the highest version number.
 (Note: if we only provide a unique ID generator, then we can set the new counter to be the max of all
 received values, and don't need the version).
 
-When members receive a reconciliation request, after sending their current counters, they also re-send all pending
-counter requests, which are requests that were sent, but never got a response.
+After the new coordinator has received and incorporated all current values and versions, it accepts new requests and
+sends a message to all members to resend their pending requests, which are requests that were sent,
+but never got a response.
 
 We may maintain a number of backup coordinators, to which the coordinator sends counter changes, to prevent the case
 where the coordinator and client update a value, then both leave and the cluster doesn't know about it and hands out
