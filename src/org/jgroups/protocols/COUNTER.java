@@ -263,10 +263,6 @@ public class COUNTER extends Protocol {
                     sendCounterNotFoundExceptionResponse(sender, ((SimpleRequest)req).owner, ((SimpleRequest)req).name);
                     return;
                 }
-
-                System.out.println("<< INCR " + val);
-
-
                 result=val.addAndGet(((AddAndGetRequest)req).value);
                 rsp=new ValueResponse(((SimpleRequest)req).owner, result[0], result[1]);
                 sendResponse(sender, rsp);
@@ -289,8 +285,6 @@ public class COUNTER extends Protocol {
 
                 // return all values except those with lower or same versions than the ones in the ReconcileRequest
                 ReconcileRequest reconcile_req=(ReconcileRequest)req;
-                System.out.println(local_addr + " <-- RECONCILE from " + sender);
-
                 Map<String,VersionedValue> map=new HashMap<String,VersionedValue>(counters);
                 if(reconcile_req.names !=  null) {
                     for(int i=0; i < reconcile_req.names.length; i++) {
@@ -317,14 +311,13 @@ public class COUNTER extends Protocol {
                 }
 
                 rsp=new ReconcileResponse(names, values, versions);
-                System.out.println(local_addr + " --> RECONCILE-RSP to " + sender);
                 sendResponse(sender, rsp);
                 break;
             case RESEND_PENDING_REQUESTS:
-                System.out.println("-- resending " + pending_requests.values().size() + " requests:");
                 for(Tuple<Request,Promise> tuple: pending_requests.values()) {
                     Request request=tuple.getVal1();
-                    System.out.println("-- resending " + request);
+                    if(log.isTraceEnabled())
+                        log.trace("[" + local_addr + "] --> [" + coord + "] resending " + request);
                     sendRequest(coord, request);
                 }
                 break;
@@ -342,12 +335,12 @@ public class COUNTER extends Protocol {
         return val;
     }
 
+    @SuppressWarnings("unchecked")
     protected void handleResponse(Response rsp, Address sender) {
         if(rsp instanceof ReconcileResponse) {
-
-            System.out.println(local_addr + " <-- RECONCILE-RSP from " + sender + ": " +
-                                 dump(((ReconcileResponse)rsp).names, ((ReconcileResponse)rsp).values, ((ReconcileResponse)rsp).versions));
-
+            if(log.isTraceEnabled() && ((ReconcileResponse)rsp).names != null && ((ReconcileResponse)rsp).names.length > 0)
+                log.trace("[" + local_addr + "] <-- [" + sender + "] RECONCILE-RSP: " +
+                            dump(((ReconcileResponse)rsp).names, ((ReconcileResponse)rsp).values, ((ReconcileResponse)rsp).versions));
             if(reconciliation_task != null)
                 reconciliation_task.add((ReconcileResponse)rsp, sender);
             return;
@@ -409,8 +402,19 @@ public class COUNTER extends Protocol {
         if(!members.isEmpty())
             coord=members.get(0);
 
-        if(coord != null && coord.equals(local_addr))
+        if(coord != null && coord.equals(local_addr)) {
+            List<Address> old_backups=backup_coords != null? new ArrayList<Address>(backup_coords) : null;
             backup_coords=new CopyOnWriteArrayList<Address>(Util.pickNext(members, local_addr, num_backups));
+
+            // send the current values to all *new* backups
+            List<Address> new_backups=Util.newElements(old_backups,backup_coords);
+            for(Address new_backup: new_backups) {
+                for(Map.Entry<String,VersionedValue> entry: counters.entrySet()) {
+                    UpdateRequest update=new UpdateRequest(entry.getKey(), entry.getValue().value, entry.getValue().version);
+                    sendRequest(new_backup, update);
+                }
+            }
+        }
         else
             backup_coords=null;
 
@@ -1092,7 +1096,8 @@ public class COUNTER extends Protocol {
         }
 
         public String toString() {
-            return "ReconcileResponse (" + names.length + ") entries";
+            int num=names != null? names.length : 0;
+            return "ReconcileResponse (" + num + ") entries";
         }
     }
     
@@ -1180,7 +1185,6 @@ public class COUNTER extends Protocol {
             targets.remove(local_addr);
             responses=new ResponseCollector<ReconcileResponse>(targets); // send to everyone but us
             Request req=new ReconcileRequest(names, values, versions);
-            System.out.println(local_addr + ": --> RECONCILE mcast");
             sendRequest(null, req);
 
             responses.waitForAllResponses(reconciliation_timeout);

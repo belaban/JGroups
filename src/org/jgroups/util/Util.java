@@ -2144,6 +2144,15 @@ public class Util {
         return retval;
     }
 
+    public static <T> List<T> newElements(List<T> old_list, List<T> new_list) {
+        if(new_list == null)
+            return new ArrayList<T>();
+        List<T> retval=new ArrayList<T>(new_list);
+        if(old_list != null)
+            retval.removeAll(old_list);
+        return retval;
+    }
+
 
     /**
      * Selects a random subset of members according to subset_percentage and returns them.
@@ -2351,22 +2360,6 @@ public class Util {
             if(!new_mbrs.contains(mbr))
                 retval.add(mbr);
         }
-        return retval;
-    }
-
-
-    /**
-     * Returns the members which joined between 2 subsequent views
-     * @param old_mbrs
-     * @param new_mbrs
-     * @return
-     */
-    public static List<Address> determineNewMembers(List<Address> old_mbrs, List<Address> new_mbrs) {
-        if(old_mbrs == null || new_mbrs == null)
-            return new ArrayList<Address>();
-
-        List<Address> retval=new ArrayList<Address>(new_mbrs);
-        retval.removeAll(old_mbrs);
         return retval;
     }
 
