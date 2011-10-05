@@ -226,7 +226,7 @@ public class COUNTER extends Protocol {
                 counters.remove(((SimpleRequest)req).name);
                 break;
             case SET:
-                if(!local_addr.equals(coord))
+                if(!local_addr.equals(coord) || discard_requests)
                     return;
                 val=counters.get(((SimpleRequest)req).name);
                 if(val == null) {
@@ -648,7 +648,10 @@ public class COUNTER extends Protocol {
         @Override
         public void set(long new_value) {
             if(local_addr.equals(coord)) {
-                getCounter(name).set(new_value);
+                VersionedValue val=getCounter(name);
+                val.set(new_value);
+                if(backup_coords != null)
+                    updateBackups(name, val.value, val.version);
                 return;
             }
             Owner owner=getOwner();
@@ -667,8 +670,13 @@ public class COUNTER extends Protocol {
 
         @Override
         public boolean compareAndSet(long expect, long update) {
-           if(local_addr.equals(coord))
-                return getCounter(name).compareAndSet(expect, update) != null;
+            if(local_addr.equals(coord)) {
+                VersionedValue val=getCounter(name);
+                boolean retval=val.compareAndSet(expect, update) != null;
+                if(backup_coords != null)
+                    updateBackups(name, val.value, val.version);
+                return retval;
+            }
             Owner owner=getOwner();
             Request req=new CompareAndSetRequest(owner, name, expect, update);
             Promise<long[]> promise=new Promise<long[]>();
@@ -698,8 +706,13 @@ public class COUNTER extends Protocol {
 
         @Override
         public long addAndGet(long delta) {
-            if(local_addr.equals(coord))
-                return getCounter(name).addAndGet(delta)[0];
+            if(local_addr.equals(coord)) {
+                VersionedValue val=getCounter(name);
+                long retval=val.addAndGet(delta)[0];
+                if(backup_coords != null)
+                    updateBackups(name, val.value, val.version);
+                return retval;
+            }
             Owner owner=getOwner();
             Request req=new AddAndGetRequest(owner, name, delta);
             Promise<long[]> promise=new Promise<long[]>();
