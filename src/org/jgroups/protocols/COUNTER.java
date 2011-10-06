@@ -1,10 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.blocks.atomic.Counter;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -25,13 +22,14 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  * @since 3.0.0
  */
+@Experimental
 @MBean(description="Protocol to maintain distributed atomic counters")
 public class COUNTER extends Protocol {
 
-    @Property(description="bypasses message bundling if true")
+    @Property(description="Bypasses message bundling if true")
     protected boolean bypass_bundling=true;
 
-    @Property(description="Request timeouts (in ms)")
+    @Property(description="Request timeouts (in ms). If the timeout elapses, a Timeout (runtime) exception will be thrown")
     protected long timeout=60000;
 
     @Property(description="Number of milliseconds to wait for reconciliation responses from all current members")

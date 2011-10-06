@@ -1397,6 +1397,14 @@ keytool -genseckey -alias myKey -keypass changeit -storepass changeit  -keyalg B
             ${CENTRAL_EXECUTOR}
         </section>
 
+        <section id="COUNTER">
+            <title>COUNTER</title>
+            <para>
+                COUNTER is the implementation of cluster wide counters, used by the CounterService.
+            </para>
+            ${COUNTER}
+        </section>
+
     </section>
 
    

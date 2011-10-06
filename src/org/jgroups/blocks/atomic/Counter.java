@@ -9,7 +9,7 @@ public interface Counter {
     public String getName();
 
     /**
-     * Get the current value of the counter
+     * Gets the current value of the counter
      * @return The current value
      */
     public long get();
