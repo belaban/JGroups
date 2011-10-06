@@ -497,15 +497,15 @@ public class COUNTER extends Protocol {
     }
 
 
-    protected static Buffer requestToBuffer(Request req) throws IOException {
+    protected static Buffer requestToBuffer(Request req) throws Exception {
         return streamableToBuffer(REQUEST,(byte)requestToRequestType(req).ordinal(), req);
     }
 
-    protected static Buffer responseToBuffer(Response rsp) throws IOException {
+    protected static Buffer responseToBuffer(Response rsp) throws Exception {
         return streamableToBuffer(RESPONSE,(byte)responseToResponseType(rsp).ordinal(), rsp);
     }
 
-    protected static Buffer streamableToBuffer(byte req_or_rsp, byte type, Streamable obj) throws IOException {
+    protected static Buffer streamableToBuffer(byte req_or_rsp, byte type, Streamable obj) throws Exception {
         ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(100);
         DataOutputStream out=new DataOutputStream(output);
         out.writeByte(req_or_rsp);
@@ -515,7 +515,7 @@ public class COUNTER extends Protocol {
         return output.getBuffer();
     }
 
-    protected static Streamable streamableFromBuffer(byte[] buf, int offset, int length) throws IOException, IllegalAccessException, InstantiationException {
+    protected static Streamable streamableFromBuffer(byte[] buf, int offset, int length) throws Exception {
         switch(buf[offset]) {
             case REQUEST:
                 return requestFromBuffer(buf, offset+1, length-1);
@@ -526,7 +526,7 @@ public class COUNTER extends Protocol {
         }
     }
 
-    protected static final Request requestFromBuffer(byte[] buf, int offset, int length) throws IOException, InstantiationException, IllegalAccessException {
+    protected static final Request requestFromBuffer(byte[] buf, int offset, int length) throws Exception {
         ByteArrayInputStream input=new ByteArrayInputStream(buf, offset, length);
         DataInputStream in=new DataInputStream(input);
         RequestType type=RequestType.values()[in.readByte()];
@@ -549,7 +549,7 @@ public class COUNTER extends Protocol {
         }
     }
 
-    protected static final Response responseFromBuffer(byte[] buf, int offset, int length) throws IOException, InstantiationException, IllegalAccessException {
+    protected static final Response responseFromBuffer(byte[] buf, int offset, int length) throws Exception {
         ByteArrayInputStream input=new ByteArrayInputStream(buf, offset, length);
         DataInputStream in=new DataInputStream(input);
         ResponseType type=ResponseType.values()[in.readByte()];
@@ -588,7 +588,7 @@ public class COUNTER extends Protocol {
     }
 
 
-    protected static void writeReconciliation(DataOutput out, String[] names, long[] values, long[] versions) throws IOException {
+    protected static void writeReconciliation(DataOutput out, String[] names, long[] values, long[] versions) throws Exception {
         if(names == null) {
             out.writeInt(0);
             return;
@@ -602,14 +602,14 @@ public class COUNTER extends Protocol {
             Util.writeLong(version, out);
     }
 
-    protected static String[] readReconciliationNames(DataInput in, int len) throws IOException {
+    protected static String[] readReconciliationNames(DataInput in, int len) throws Exception {
         String[] retval=new String[len];
         for(int i=0; i < len; i++)
             retval[i]=Util.readString(in);
         return retval;
     }
 
-    protected static long[] readReconciliationLongs(DataInput in, int len) throws IOException {
+    protected static long[] readReconciliationLongs(DataInput in, int len) throws Exception {
         long[] retval=new long[len];
         for(int i=0; i < len; i++)
             retval[i]=Util.readLong(in);
@@ -754,12 +754,12 @@ public class COUNTER extends Protocol {
             this.name=name;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             owner.writeTo(out);
             Util.writeString(name, out);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             owner=new Owner();
             owner.readFrom(in);
             name=Util.readString(in);
@@ -771,8 +771,8 @@ public class COUNTER extends Protocol {
     }
 
     protected static class ResendPendingRequests extends Request {
-        public void writeTo(DataOutput out) throws IOException {}
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {}
+        public void writeTo(DataOutput out) throws Exception {}
+        public void readFrom(DataInput in) throws Exception {}
         public String toString() {return "ResendPendingRequests";}
     }
 
@@ -786,12 +786,12 @@ public class COUNTER extends Protocol {
             this.initial_value=initial_value;
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             super.readFrom(in);
             initial_value=Util.readLong(in);
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             super.writeTo(out);
             Util.writeLong(initial_value, out);
         }
@@ -800,30 +800,24 @@ public class COUNTER extends Protocol {
 
     protected static class DeleteRequest extends SimpleRequest {
 
-        protected DeleteRequest() {
-        }
+        protected DeleteRequest() {}
 
         protected DeleteRequest(Owner owner, String name) {
             super(owner,name);
         }
 
-        public String toString() {
-            return "DeleteRequest: " + super.toString();
-        }
+        public String toString() {return "DeleteRequest: " + super.toString();}
     }
 
 
     protected static class AddAndGetRequest extends SetRequest {
-        protected AddAndGetRequest() {
-        }
+        protected AddAndGetRequest() {}
 
         protected AddAndGetRequest(Owner owner, String name, long value) {
             super(owner,name,value);
         }
 
-        public String toString() {
-            return "AddAndGetRequest: " + super.toString();
-        }
+        public String toString() {return "AddAndGetRequest: " + super.toString();}
     }
 
 
@@ -831,35 +825,31 @@ public class COUNTER extends Protocol {
     protected static class SetRequest extends SimpleRequest {
         protected long value;
 
-        protected SetRequest() {
-        }
+        protected SetRequest() {}
 
         protected SetRequest(Owner owner, String name, long value) {
             super(owner, name);
             this.value=value;
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             super.readFrom(in);
             value=Util.readLong(in);
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             super.writeTo(out);
             Util.writeLong(value, out);
         }
 
-        public String toString() {
-            return super.toString() + ": " + value;
-        }
+        public String toString() {return super.toString() + ": " + value;}
     }
 
 
     protected static class CompareAndSetRequest extends SimpleRequest {
         protected long expected, update;
 
-        protected CompareAndSetRequest() {
-        }
+        protected CompareAndSetRequest() {}
 
         protected CompareAndSetRequest(Owner owner, String name, long expected, long update) {
             super(owner, name);
@@ -867,21 +857,19 @@ public class COUNTER extends Protocol {
             this.update=update;
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             super.readFrom(in);
             expected=Util.readLong(in);
             update=Util.readLong(in);
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             super.writeTo(out);
             Util.writeLong(expected, out);
             Util.writeLong(update, out);
         }
 
-        public String toString() {
-            return super.toString() + ", expected=" + expected + ", update=" + update;
-        }
+        public String toString() {return super.toString() + ", expected=" + expected + ", update=" + update;}
     }
 
 
@@ -890,8 +878,7 @@ public class COUNTER extends Protocol {
         protected long[]   values;
         protected long[]   versions;
 
-        protected ReconcileRequest() {
-        }
+        protected ReconcileRequest() {}
 
         protected ReconcileRequest(String[] names, long[] values, long[] versions) {
             this.names=names;
@@ -899,11 +886,11 @@ public class COUNTER extends Protocol {
             this.versions=versions;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             writeReconciliation(out, names, values, versions);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             int len=in.readInt();
             if(len == 0) return;
             names=readReconciliationNames(in, len);
@@ -911,9 +898,7 @@ public class COUNTER extends Protocol {
             versions=readReconciliationLongs(in,len);
         }
 
-        public String toString() {
-            return "ReconcileRequest (" + names.length + ") entries";
-        }
+        public String toString() {return "ReconcileRequest (" + names.length + ") entries";}
     }
 
 
@@ -922,8 +907,7 @@ public class COUNTER extends Protocol {
         protected long   value;
         protected long   version;
 
-        protected UpdateRequest() {
-        }
+        protected UpdateRequest() {}
 
         protected UpdateRequest(String name, long value, long version) {
             this.name=name;
@@ -931,28 +915,24 @@ public class COUNTER extends Protocol {
             this.version=version;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             Util.writeString(name, out);
             Util.writeLong(value, out);
             Util.writeLong(version, out);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             name=Util.readString(in);
             value=Util.readLong(in);
             version=Util.readLong(in);
         }
 
-        public String toString() {
-            return "UpdateRequest(" + name + ": "+ value + " (" + version + ")";
-        }
+        public String toString() {return "UpdateRequest(" + name + ": "+ value + " (" + version + ")";}
     }
 
 
 
-    protected static abstract class Response implements Streamable {
-
-    }
+    protected static abstract class Response implements Streamable {}
 
     
     /** Response without data */
@@ -960,122 +940,107 @@ public class COUNTER extends Protocol {
         protected Owner owner;
         protected long  version;
 
-        protected SimpleResponse() {
-        }
+        protected SimpleResponse() {}
 
         protected SimpleResponse(Owner owner, long version) {
             this.owner=owner;
             this.version=version;
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             owner=new Owner();
             owner.readFrom(in);
             version=Util.readLong(in);
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             owner.writeTo(out);
             Util.writeLong(version, out);
         }
 
-        public String toString() {
-            return "Response";
-        }
+        public String toString() {return "Response";}
     }
 
 
     protected static class BooleanResponse extends SimpleResponse {
         protected boolean result;
 
-        protected BooleanResponse() {
-        }
+        protected BooleanResponse() {}
 
         protected BooleanResponse(Owner owner, long version, boolean result) {
             super(owner, version);
             this.result=result;
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             super.readFrom(in);
             result=in.readBoolean();
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             super.writeTo(out);
             out.writeBoolean(result);
         }
 
-        public String toString() {
-            return "BooleanResponse(" + result + ")";
-        }
+        public String toString() {return "BooleanResponse(" + result + ")";}
     }
 
     protected static class ValueResponse extends SimpleResponse {
         protected long result;
 
-        protected ValueResponse() {
-        }
+        protected ValueResponse() {}
 
         protected ValueResponse(Owner owner, long result, long version) {
             super(owner, version);
             this.result=result;
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             super.readFrom(in);
             result=Util.readLong(in);
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             super.writeTo(out);
             Util.writeLong(result, out);
         }
 
-        public String toString() {
-            return "ValueResponse(" + result + ")";
-        }
+        public String toString() {return "ValueResponse(" + result + ")";}
     }
 
 
     protected static class GetOrCreateResponse extends ValueResponse {
 
-        protected GetOrCreateResponse() {
-        }
+        protected GetOrCreateResponse() {}
 
         protected GetOrCreateResponse(Owner owner, long result, long version) {
             super(owner,result, version);
         }
 
-        public String toString() {
-            return "GetOrCreateResponse(" + result + ")";
-        }
+        public String toString() {return "GetOrCreateResponse(" + result + ")";}
     }
 
     protected static class ExceptionResponse extends SimpleResponse {
         protected String error_message;
 
-        protected ExceptionResponse() {
-        }
+        protected ExceptionResponse() {}
 
         protected ExceptionResponse(Owner owner, String error_message) {
             super(owner, 0);
             this.error_message=error_message;
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             super.readFrom(in);
             error_message=Util.readString(in);
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             super.writeTo(out);
             Util.writeString(error_message, out);
         }
 
-        public String toString() {
-            return "ExceptionResponse: " + super.toString();
-        }
+        public String toString() {return "ExceptionResponse: " + super.toString();}
     }
 
 
@@ -1085,8 +1050,7 @@ public class COUNTER extends Protocol {
         protected long[]   values;
         protected long[]   versions;
 
-        protected ReconcileResponse() {
-        }
+        protected ReconcileResponse() {}
 
         protected ReconcileResponse(String[] names, long[] values, long[] versions) {
             this.names=names;
@@ -1094,11 +1058,11 @@ public class COUNTER extends Protocol {
             this.versions=versions;
         }
 
-        public void writeTo(DataOutput out) throws IOException {
+        public void writeTo(DataOutput out) throws Exception {
             writeReconciliation(out,names,values,versions);
         }
 
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {
+        public void readFrom(DataInput in) throws Exception {
             int len=in.readInt();
             if(len == 0) return;
             names=readReconciliationNames(in, len);
@@ -1116,8 +1080,8 @@ public class COUNTER extends Protocol {
 
     public static class CounterHeader extends Header {
         public int size() {return 0;}
-        public void writeTo(DataOutput out) throws IOException {}
-        public void readFrom(DataInput in) throws IOException, IllegalAccessException, InstantiationException {}
+        public void writeTo(DataOutput out) throws Exception {}
+        public void readFrom(DataInput in) throws Exception {}
     }
     
 
@@ -1157,9 +1121,7 @@ public class COUNTER extends Protocol {
             }
         }
 
-        public String toString() {
-            return value + " (version=" + version + ")";
-        }
+        public String toString() {return value + " (version=" + version + ")";}
     }
 
 
