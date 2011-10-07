@@ -45,7 +45,7 @@ public class TUNNEL_Test extends ChannelTestBase{
             else
                 bind_addr="127.0.0.1";
         }
-        gossipRouter=new GossipRouter(12001, bind_addr);
+        gossipRouter=new GossipRouter(12001, null);
         gossipRouter.start();
     }
     

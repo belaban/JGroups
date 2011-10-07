@@ -8,9 +8,7 @@ import org.jgroups.stack.DefaultRetransmitter;
 import org.jgroups.stack.ExponentialInterval;
 import org.jgroups.stack.RangeBasedRetransmitter;
 import org.jgroups.stack.Retransmitter;
-import org.jgroups.util.DefaultTimeScheduler;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
@@ -22,8 +20,12 @@ public class RetransmitterTest {
 
     @BeforeClass
     void createTimer() {
-        System.out.println("<< create timer");
-        timer=new DefaultTimeScheduler();
+        timer=new MockTimeScheduler();
+    }
+
+    @AfterClass
+    void destroyTimer() {
+        timer.stop();
     }
 
 
@@ -38,17 +40,13 @@ public class RetransmitterTest {
         old_retransmitter.reset();
 
         return new Retransmitter[][] {
-          {range_based_retransmitter},
-          {old_retransmitter}
+          {old_retransmitter},
+          {range_based_retransmitter}
         };
     }
 
 
-    @AfterClass
-    void destroyTimer() throws InterruptedException {
-        System.out.println("<< destroy timer");
-        timer.stop();
-    }
+
 
     @Test(dataProvider="createRetransmitter")
     public void testNoEntry(Retransmitter xmitter) {
