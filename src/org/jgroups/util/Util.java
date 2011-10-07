@@ -873,7 +873,7 @@ public class Util {
      *
      *
      * @param in
-     * @param cl The type of Collection, e.g. Vector.class
+     * @param cl The type of Collection, e.g. ArrayList.class
      * @return Collection of Address objects
      * @throws Exception
      */
