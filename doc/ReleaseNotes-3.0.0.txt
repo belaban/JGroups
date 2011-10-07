@@ -22,7 +22,23 @@ New features
 ============
 
 
-*** No new feature, mainly API changes and bug fixes, see API_Changes.txt above ***
+API changes
+-----------
+[https://issues.jboss.org/browse/JGRP-206]
+
+Not really a feature, however, this impacts application code using JGroups; some code will have to be changed as we
+implemented a lot of the API changes we've always wanted to do, but couldn't due to backwards compatibility reasons.
+API changes have really been the focus of 3.0; some work also went into optimizations for running in large clusters.
+More optimization work will be done in 3.1.
+The changes are described in https://github.com/belaban/JGroups/blob/master/doc/API_Changes.txt.
+
+
+CounterService
+--------------
+[https://issues.jboss.org/browse/JGRP-1366]
+
+The is a cluster wide atomic counter, for details see the documentation at
+http://www.jgroups.org/manual-3.x/html/user-building-blocks.html#CounterService
 
 
 
@@ -48,7 +64,7 @@ Discovery: don't send view back with discovery response
 -------------------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1315]
 
-The view is now omitted from the discovery response, this cause large messages sent by everyone in the cluster,
+The view is now omitted from the discovery response, this causes large messages sent by everyone in the cluster,
 especially if we had a large cluster
 
 
@@ -105,5 +121,5 @@ Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Toronto, Canada
 Sanne Grinovero, Newcastle, Great Britain
 
-Sept 2011
+Oct 2011
 
