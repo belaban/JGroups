@@ -15,6 +15,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
+import org.jgroups.util.UUID;
 import org.w3c.dom.Element;
 
 import java.io.*;
@@ -22,10 +23,7 @@ import java.lang.reflect.Method;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 
@@ -851,8 +849,8 @@ public class JChannel extends Channel {
         prot_stack.startStack(cluster_name, local_addr); // calls start() in all protocols, from top to bottom
 
         /*create a temporary view, assume this channel is the only member and is the coordinator*/
-        Vector<Address> t=new Vector<Address>(1);
-        t.addElement(local_addr);
+        List<Address> t=new ArrayList<Address>(1);
+        t.add(local_addr);
         my_view=new View(local_addr, 0, t);  // create a dummy view
 
         TP transport=prot_stack.getTransport();

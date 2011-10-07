@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractConnectionMap<V extends Connection> implements ConnectionMap<V> {
         
-    protected final Vector<ConnectionMapListener<V>> conn_listeners=new Vector<ConnectionMapListener<V>>();
+    protected final List<ConnectionMapListener<V>> conn_listeners=new ArrayList<ConnectionMapListener<V>>();
     protected final Map<Address,V> conns=new HashMap<Address,V>();
     protected final Lock lock = new ReentrantLock();
     protected final ThreadFactory factory; 
@@ -76,7 +76,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
 
     public void addConnectionMapListener(ConnectionMapListener<V> cml) {
         if(cml != null && !conn_listeners.contains(cml))
-            conn_listeners.addElement(cml);
+            conn_listeners.add(cml);
     } 
     
     public int getNumConnections() {
@@ -123,7 +123,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
 
     public void removeConnectionMapListener(ConnectionMapListener<V> cml) {
         if(cml != null)
-            conn_listeners.removeElement(cml);
+            conn_listeners.remove(cml);
     }
 
     /**

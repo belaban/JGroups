@@ -323,14 +323,14 @@ public class ClientGmsImpl extends GmsImpl {
     void becomeSingletonMember(Address mbr) {
         Digest initial_digest;
         ViewId view_id;
-        Vector<Address> mbrs=new Vector<Address>(1);
+        List<Address> mbrs=new ArrayList<Address>(1);
 
         // set the initial digest (since I'm the first member)
         initial_digest=new Digest(gms.local_addr, 0, 0); // initial seqno mcast by me will be 1 (highest seen +1)
         gms.setDigest(initial_digest);
 
         view_id=new ViewId(mbr);       // create singleton view with mbr as only member
-        mbrs.addElement(mbr);
+        mbrs.add(mbr);
 
         View new_view=new View(view_id, mbrs);
         gms.up(new Event(Event.PREPARE_VIEW,new_view));

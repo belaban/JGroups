@@ -139,7 +139,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             return;
         }
 
-        Vector<Address> current_members=gms.members.getMembers();
+        List<Address> current_members=gms.members.getMembers();
         leaving_mbrs.retainAll(current_members); // remove all elements of leaving_mbrs which are not current members
         if(suspected_mbrs.remove(gms.local_addr)) {
             if(log.isWarnEnabled()) log.warn("I am the coord and I'm being suspected -- will probably leave shortly");

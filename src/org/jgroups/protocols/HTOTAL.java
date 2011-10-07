@@ -8,8 +8,10 @@ import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
-import java.io.*;
-import java.util.Vector;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -24,16 +26,10 @@ public class HTOTAL extends Protocol {
     Address coord=null;
     Address neighbor=null; // to whom do we forward the message (member to the right, or null if we're at the tail)
     Address local_addr=null;
-    Vector  mbrs=new Vector();
+    List<Address> mbrs=new ArrayList<Address>();
     boolean is_coord=false;
     @Property
     private boolean use_multipoint_forwarding=false;
-
-
-
-
-    public HTOTAL() {
-    }
 
 
     public Object down(Event evt) {
@@ -114,19 +110,19 @@ public class HTOTAL extends Protocol {
         mbrs.clear();
         mbrs.addAll(v.getMembers());
 
-        coord=(Address)(mbrs != null && !mbrs.isEmpty()? mbrs.firstElement() : null);
+        coord=mbrs != null && !mbrs.isEmpty()? mbrs.get(0) : null;
         is_coord=coord != null && local_addr != null && coord.equals(local_addr);
 
         if(mbrs == null || mbrs.size() < 2 || local_addr == null)
             neighbor=null;
         else {
             for(int i=0; i < mbrs.size(); i++) {
-                tmp=mbrs.elementAt(i);
+                tmp=mbrs.get(i);
                 if(local_addr.equals(tmp)) {
                     if(i + 1 >= mbrs.size())
                         retval=null; // we don't wrap, last member is null
                     else
-                        retval=(Address)mbrs.elementAt(i + 1);
+                        retval=mbrs.get(i + 1);
                     break;
                 }
             }

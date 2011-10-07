@@ -48,12 +48,12 @@ public class Membership implements Cloneable {
      * ie, modifying the vector that is being returned in this method
      * will not modify this membership object.
      *
-     * @return a list of members,
+     * @return a list of members
      */
-    public Vector<Address> getMembers() {
+    public List<Address> getMembers() {
         /*clone so that this objects members can not be manipulated from the outside*/
         synchronized(members) {
-            return new Vector<Address>(members);
+            return new ArrayList<Address>(members);
         }
     }
 

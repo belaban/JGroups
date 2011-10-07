@@ -12,7 +12,6 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Vector;
 
 /**
  * Author: Bela Ban
@@ -112,7 +111,7 @@ public class MembershipTest {
 
     public void testGetMembers() {
         testAdd();
-        Vector v=m1.getMembers();
+        List<Address> v=m1.getMembers();
         assert v.size() == 2;
     }
 

@@ -6,9 +6,7 @@ import org.jgroups.ReceiverAdapter;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
 public class RpcDispatcherAnycastServerObject extends ReceiverAdapter {
     int i=0;
@@ -29,7 +27,7 @@ public class RpcDispatcherAnycastServerObject extends ReceiverAdapter {
     public void callRemote(boolean useAnycast, boolean excludeSelf) throws Exception {
         // we need to copy the vector, otherwise the modification below will throw an exception because the underlying
         // vector is unmodifiable
-        Vector<Address> v=new Vector<Address>(c.getView().getMembers());
+        List<Address> v=new ArrayList<Address>(c.getView().getMembers());
         if(excludeSelf) v.remove(c.getAddress());
         RspList rsps=d.callRemoteMethods(v, "doSomething", new Object[]{}, new Class[]{}, new RequestOptions(ResponseMode.GET_ALL, 10000, useAnycast));
         Map.Entry entry;

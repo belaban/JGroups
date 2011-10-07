@@ -101,7 +101,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     
     private GmsImpl impl=null;
     private final Object impl_mutex=new Object(); // synchronizes event entry into impl
-    private final Hashtable<String,GmsImpl> impls=new Hashtable<String,GmsImpl>(3);
+    private final Map<String,GmsImpl> impls=new HashMap<String,GmsImpl>(3);
 
     // Handles merge related tasks
     final Merger merger=new Merger(this, log);
@@ -388,27 +388,22 @@ public class GMS extends Protocol implements TP.ProbeHandler {
      * <code>suspected_mbrs</code> removed and <code>new_mbrs</code> added.
      */
     public View getNextView(Collection<Address> new_mbrs, Collection<Address> old_mbrs, Collection<Address> suspected_mbrs) {
-        Vector<Address> mbrs;
-        long vid;
-        View v;
-        Membership tmp_mbrs;       
-
         synchronized(members) {
             if(view_id == null) {
                 log.error("view_id is null");
                 return null; // this should *never* happen !
             }
-            vid=Math.max(view_id.getId(), ltime) + 1;
+            long vid=Math.max(view_id.getId(), ltime) + 1;
             ltime=vid;
-            tmp_mbrs=tmp_members.copy();  // always operate on the temporary membership
+            Membership tmp_mbrs=tmp_members.copy();  // always operate on the temporary membership
             tmp_mbrs.remove(suspected_mbrs);
             tmp_mbrs.remove(old_mbrs);
             tmp_mbrs.add(new_mbrs);
-            mbrs=tmp_mbrs.getMembers();
+            List<Address> mbrs=tmp_mbrs.getMembers();
             Address new_coord=local_addr;
             if(!mbrs.isEmpty())
-                new_coord=mbrs.firstElement();
-            v=new View(new_coord, vid, mbrs);
+                new_coord=mbrs.get(0);
+            View v=new View(new_coord, vid, mbrs);
 
             // Update membership (see DESIGN for explanation):
             tmp_members.set(mbrs);

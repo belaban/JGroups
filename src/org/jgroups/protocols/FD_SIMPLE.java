@@ -10,10 +10,7 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -43,7 +40,7 @@ public class FD_SIMPLE extends Protocol {
     long interval=3000;            // interval in msecs between are-you-alive messages
     @Property
     long timeout=3000;             // time (in msecs) to wait for a response to are-you-alive
-    final Vector<Address> members=new Vector<Address>();
+    final List<Address> members=new ArrayList<Address>();
     final Map<Address,Integer> counters=new HashMap<Address,Integer>();   // keys=Addresses, vals=Integer (count)
     @Property
     int max_missed_hbs=5;         // max number of missed responses until a member is suspected
@@ -185,15 +182,14 @@ public class FD_SIMPLE extends Protocol {
     Address getHeartbeatDest() {
         Address retval=null;
         int r, size;
-        Vector<Address> members_copy;
 
         if(members == null || members.size() < 2 || local_addr == null)
             return null;
-        members_copy=(Vector)members.clone();
-        members_copy.removeElement(local_addr); // don't select myself as heartbeat destination
+        List<Address> members_copy=new ArrayList<Address>(members);
+        members_copy.remove(local_addr); // don't select myself as heartbeat destination
         size=members_copy.size();
         r=((int)(Math.random() * (size + 1))) % size;
-        retval=members_copy.elementAt(r);
+        retval=members_copy.get(r);
         return retval;
     }
 

@@ -113,7 +113,7 @@ public class Merger {
             sendMergeRejectedResponse(sender, merge_id);
             return;
         }
-        View view=new View(tmp_vid, new Vector<Address>(members));
+        View view=new View(tmp_vid, new ArrayList<Address>(members));
 
         //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
         //[JGRP-770] - Concurrent startup of many channels doesn't stabilize
@@ -163,7 +163,7 @@ public class Merger {
 
         //we have to send new view only to current members and we should not wait
         //for view acks from newly merged mebers
-        List<Address> newViewMembers=new Vector<Address>(data.view.getMembers());
+        List<Address> newViewMembers=new ArrayList<Address>(data.view.getMembers());
         newViewMembers.removeAll(gms.members.getMembers());
 
 

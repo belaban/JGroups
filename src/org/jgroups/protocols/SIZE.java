@@ -1,6 +1,7 @@
 
 package org.jgroups.protocols;
 
+import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
@@ -10,7 +11,8 @@ import org.jgroups.util.ExposedByteArrayOutputStream;
 import org.jgroups.util.ExposedDataOutputStream;
 import org.jgroups.util.Util;
 
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -22,7 +24,7 @@ import java.util.Vector;
  */
 @Unsupported
 public class SIZE extends Protocol {
-    final Vector members=new Vector();
+    final List<Address> members=new ArrayList<Address>();
     @Property
     boolean print_msg=false;
     @Property

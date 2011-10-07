@@ -404,7 +404,7 @@ public class FD extends Protocol {
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            mbrs=(Collection<Address>)Util.readAddresses(in, Vector.class);
+            mbrs=(Collection<Address>)Util.readAddresses(in, ArrayList.class);
             from=Util.readAddress(in);
         }
 
@@ -480,7 +480,7 @@ public class FD extends Protocol {
      * any longer. Then the task terminates.
      */
     protected final class Broadcaster {
-        final Vector<Address> suspected_mbrs=new Vector<Address>(7);
+        final List<Address> suspected_mbrs=new ArrayList<Address>(7);
         final Lock bcast_lock=new ReentrantLock();
         @GuardedBy("bcast_lock")
         Future<?> bcast_future=null;
@@ -488,7 +488,7 @@ public class FD extends Protocol {
         BroadcastTask task;
 
 
-        Vector<Address> getSuspectedMembers() {
+        List<Address> getSuspectedMembers() {
             return suspected_mbrs;
         }
 
@@ -538,7 +538,7 @@ public class FD extends Protocol {
             if(!members.contains(mbr)) return;
             synchronized(suspected_mbrs) {
                 if(!suspected_mbrs.contains(mbr)) {
-                    suspected_mbrs.addElement(mbr);
+                    suspected_mbrs.add(mbr);
                     startBroadcastTask(mbr);
                 }
             }
@@ -548,7 +548,7 @@ public class FD extends Protocol {
             if(suspected_mbr == null) return;
             if(log.isDebugEnabled()) log.debug("member is " + suspected_mbr);
             synchronized(suspected_mbrs) {
-                suspected_mbrs.removeElement(suspected_mbr);
+                suspected_mbrs.remove(suspected_mbr);
                 if(suspected_mbrs.isEmpty())
                     stopBroadcastTask();
             }
@@ -568,10 +568,10 @@ public class FD extends Protocol {
 
 
     protected final class BroadcastTask implements Runnable {
-        private final Vector<Address> suspected_members=new Vector<Address>();
+        private final List<Address> suspected_members=new ArrayList<Address>();
 
 
-        BroadcastTask(Vector<Address> suspected_members) {
+        BroadcastTask(List<Address> suspected_members) {
             this.suspected_members.addAll(suspected_members);
         }
 
@@ -593,7 +593,7 @@ public class FD extends Protocol {
                 }
 
                 hdr=new FdHeader(FdHeader.SUSPECT);
-                hdr.mbrs=new Vector<Address>(suspected_members);
+                hdr.mbrs=new ArrayList<Address>(suspected_members);
                 hdr.from=local_addr;
             }
             suspect_msg=new Message();       // mcast SUSPECT to all members

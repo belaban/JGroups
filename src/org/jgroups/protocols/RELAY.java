@@ -366,7 +366,7 @@ public class RELAY extends Protocol {
     }
 
     protected View generateGlobalView(View local_view, View remote_view, boolean merge) {
-        Vector<View> views=new Vector<View>(2);
+        List<View> views=new ArrayList<View>(2);
         if(local_view != null) views.add(local_view);
         if(remote_view != null) views.add(remote_view);
         Collections.sort(views, new Comparator<View>() {
@@ -381,7 +381,7 @@ public class RELAY extends Protocol {
             }
         });
 
-        Vector<Address> combined_members=new Vector<Address>();
+        List<Address> combined_members=new ArrayList<Address>();
         for(View view: views)
             combined_members.addAll(view.getMembers());
 
@@ -389,7 +389,7 @@ public class RELAY extends Protocol {
         synchronized(this) {
             new_view_id=global_view_id++;
         }
-        Address view_creator=combined_members.isEmpty()? local_addr : combined_members.firstElement();
+        Address view_creator=combined_members.isEmpty()? local_addr : combined_members.get(0);
         if(merge)
             return new MergeView(view_creator, new_view_id, combined_members, views);
         else
@@ -681,7 +681,7 @@ public class RELAY extends Protocol {
         protected View                global_view;
         protected Map<Address,String> uuids;
 
-        public ViewData() {
+        protected ViewData() {
         }
 
         private ViewData(View remote_view, View global_view, Map<Address,String> uuids) {

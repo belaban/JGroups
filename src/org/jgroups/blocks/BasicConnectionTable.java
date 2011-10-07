@@ -36,7 +36,7 @@ public abstract class BasicConnectionTable {
     int                   srv_port=7800;
     int                   recv_buf_size=120000;
     int                   send_buf_size=60000;
-    final Vector<ConnectionListener>        conn_listeners=new Vector<ConnectionListener>(); // listeners to be notified when a conn is established/torn down
+    final List<ConnectionListener>        conn_listeners=new ArrayList<ConnectionListener>(); // listeners to be notified when a conn is established/torn down
     Reaper                reaper=null;                 // closes conns that have been idle for more than n secs
     long                  reaper_interval=60000;       // reap unused conns once a minute
     long                  conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
@@ -77,11 +77,11 @@ public abstract class BasicConnectionTable {
 
     public void addConnectionListener(ConnectionListener l) {
         if(l != null && !conn_listeners.contains(l))
-            conn_listeners.addElement(l);
+            conn_listeners.add(l);
     }
 
     public void removeConnectionListener(ConnectionListener l) {
-        if(l != null) conn_listeners.removeElement(l);
+        if(l != null) conn_listeners.remove(l);
     }
 
     public Address getLocalAddress() {
@@ -268,13 +268,13 @@ public abstract class BasicConnectionTable {
    void notifyConnectionOpened(Address peer) {
        if(peer == null) return;
        for(int i=0; i < conn_listeners.size(); i++)
-           conn_listeners.elementAt(i).connectionOpened(peer);
+           conn_listeners.get(i).connectionOpened(peer);
    }
 
    void notifyConnectionClosed(Address peer) {
        if(peer == null) return;
        for(int i=0; i < conn_listeners.size(); i++)
-           conn_listeners.elementAt(i).connectionClosed(peer);
+           conn_listeners.get(i).connectionClosed(peer);
    }
 
    void addConnection(Address peer, Connection c) {

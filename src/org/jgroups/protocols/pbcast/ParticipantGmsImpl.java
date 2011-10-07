@@ -163,10 +163,10 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
      */
     boolean wouldIBeCoordinator() {
         Address new_coord;
-        Vector<Address> mbrs=gms.members.getMembers(); // getMembers() returns a *copy* of the membership vector
+        List<Address> mbrs=gms.members.getMembers(); // getMembers() returns a *copy* of the membership vector
         mbrs.removeAll(suspected_mbrs);
         if(mbrs.size() < 1) return false;
-        new_coord=mbrs.firstElement();
+        new_coord=mbrs.get(0);
         return gms.local_addr.equals(new_coord);
     }
 
