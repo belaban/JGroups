@@ -127,13 +127,6 @@ public class UDP extends TP {
     // private boolean null_src_addresses=true;
 
 
-
-    /**
-     * Creates the UDP protocol, and initializes the state variables, does however not start any sockets or threads.
-     */
-    public UDP() {
-    }
-
     public boolean supportsMulticasting() {
         return ip_mcast;
     }
