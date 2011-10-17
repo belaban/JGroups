@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.QueueClosedException;
@@ -10,10 +11,7 @@ import org.jgroups.util.Util;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.X509EncodedKeySpec;
@@ -101,6 +99,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Steve Woodcock
  * @author Bela Ban
  */
+@MBean(description="Protocol which encrypts and decrypts cluster traffic")
 public class ENCRYPT extends Protocol {
     Observer observer;
 
@@ -154,7 +153,8 @@ public class ENCRYPT extends Protocol {
     private String storePassword="changeit"; //JDK default
 
     @Property(name="key_password", description="Password for recovering the key. Change the default")
-    private String keyPassword="changeit"; //JDK default
+    private String keyPassword=null; // allows to assign keypwd=storepwd if not set (https://issues.jboss.org/browse/JGRP-1375)
+
 
     @Property(name="alias", description="Alias used for recovering the key. Change the default")
     private String alias="mykey"; // JDK default
@@ -201,8 +201,6 @@ public class ENCRYPT extends Protocol {
     /** determines whether to encrypt the entire message, or just the buffer */
     @Property
     private boolean encrypt_entire_message=false;
-
-    public ENCRYPT() {}
 
     public void setObserver(Observer o) {
         observer=o;
@@ -261,6 +259,8 @@ public class ENCRYPT extends Protocol {
             inputStream=Thread.currentThread()
                               .getContextClassLoader()
                               .getResourceAsStream(keyStoreName);
+            if(inputStream == null)
+                inputStream=new FileInputStream(keyStoreName);
             // we can't find a keystore here -
             if(inputStream == null) {
                 throw new Exception("Unable to load keystore " + keyStoreName
@@ -787,7 +787,7 @@ public class ENCRYPT extends Protocol {
             tmp=Cipher.getInstance(asymAlgorithm, asymProvider);
         else
             tmp=Cipher.getInstance(asymAlgorithm);
-        tmp.init(Cipher.ENCRYPT_MODE, pubKey);
+        tmp.init(Cipher.ENCRYPT_MODE,pubKey);
 
         //encrypt current secret key
         byte[] encryptedKey=tmp.doFinal(secret.getEncoded());
@@ -803,7 +803,7 @@ public class ENCRYPT extends Protocol {
 
         if(log.isDebugEnabled())
             log.debug(" Sending version " + getSymVersion() + " encoded key to client");
-        passItDown(new Event(Event.MSG, newMsg));
+        passItDown(new Event(Event.MSG,newMsg));
     }
 
 
