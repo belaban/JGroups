@@ -134,7 +134,7 @@ public class RetransmitterTest {
         xmitter.add(200, 500);
         xmitter.add(100, 300);
         System.out.println("xmitter: " + xmitter);
-        assert xmitter.size() == 401;
+        assert xmitter.size() == 401 : "size was " + xmitter.size();
     }
 
 

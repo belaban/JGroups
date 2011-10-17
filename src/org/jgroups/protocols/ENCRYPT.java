@@ -717,7 +717,7 @@ public class ENCRYPT extends Protocol {
     private Message decryptMessage(Cipher cipher, Message msg) throws Exception {
         EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
         if(!hdr.getVersion().equals(getSymVersion())) {
-            log.warn("attempting to use stored cipher as message does not uses current encryption version ");
+            log.warn("attempting to use stored cipher as message does not use current encryption version ");
             cipher=keyMap.get(hdr.getVersion());
             if(cipher == null) {
                 log.warn("Unable to find a matching cipher in previous key map");
