@@ -419,15 +419,13 @@ public class ENCRYPT extends Protocol {
             case Event.VIEW_CHANGE:
                 View view=(View)evt.getArg();
                 if(log.isInfoEnabled())
-                    log.info("handling view-change up: " + view);
+                    log.info("new view: " + view);
                 if(!suppliedKey) {
                     handleViewChange(view, false);
                 }
                 break;
             case Event.TMP_VIEW:
                 view=(View)evt.getArg();
-                if(log.isInfoEnabled())
-                    log.info("handling tmp-view up: " + view);
                 if(!suppliedKey) {
                     // if a tmp_view then we are trying to become coordinator so
                     // make us keyserver
@@ -460,7 +458,7 @@ public class ENCRYPT extends Protocol {
         // if view is a bit broken set me as keyserver
         List<Address> members = view.getMembers();
         if (members == null || members.isEmpty() || members.get(0) == null) { 
-            becomeKeyServer(local_addr);
+            becomeKeyServer(local_addr, false);
             return;
         }
         // otherwise get keyserver from view controller
@@ -469,10 +467,10 @@ public class ENCRYPT extends Protocol {
         //I am new keyserver - either first member of group or old key server is no more and
         // I have been voted new controller
         if(makeServer || (tmpKeyServer.equals(local_addr) && (keyServerAddr == null || (!tmpKeyServer.equals(keyServerAddr))))) {
-            becomeKeyServer(tmpKeyServer);
+            becomeKeyServer(tmpKeyServer, makeServer);
             // a new keyserver has been set and it is not me
         }
-        else if(keyServerAddr == null || (!tmpKeyServer.equals(keyServerAddr))) {
+        else if(keyServerAddr == null || (!tmpKeyServer.equals(keyServerAddr)) || (keyServer && !tmpKeyServer.equals(local_addr))) {
             handleNewKeyServer(tmpKeyServer);
         }
         else {
@@ -487,11 +485,11 @@ public class ENCRYPT extends Protocol {
      * 
      * @param tmpKeyServer
      */
-    private void becomeKeyServer(Address tmpKeyServer) {
+    private void becomeKeyServer(Address tmpKeyServer, boolean forced) {
         keyServerAddr=tmpKeyServer;
         keyServer=true;
-        if(log.isInfoEnabled())
-            log.info("I have become key server " + keyServerAddr);
+        if(log.isInfoEnabled() && !forced)
+            log.info("[" + local_addr + "] I have become the new key server ");
         queue_down=false;
         queue_up=false;
     }
@@ -512,7 +510,7 @@ public class ENCRYPT extends Protocol {
         keyServerAddr=newKeyServer;
         keyServer=false;
         if(log.isInfoEnabled())
-            log.info("Sending key request");
+            log.info("[" + local_addr + "] " + keyServerAddr + " has become the new key server, sending key request to it");
 
         // create a key request message
         sendKeyRequest();
@@ -541,8 +539,8 @@ public class ENCRYPT extends Protocol {
         // try and get the encryption header
         if(hdr == null) {
             if(log.isTraceEnabled())
-                log.trace("dropping message as ENCRYPT header is null  or has not been recognized, msg will not be passed up, " + "headers are "
-                          + msg.printHeaders());
+                log.trace("dropping message as ENCRYPT header is null  or has not been recognized, msg will not be passed up, " +
+                            "headers are " + msg.printHeaders());
             return;
         }
 
@@ -657,21 +655,19 @@ public class ENCRYPT extends Protocol {
      * @throws Exception
      */
     private void drainUpQueue() throws Exception {
-        //we do not synchronize here as we only have one up thread so we should never get an issue
-        //synchronized(upLock){
+        if(log.isTraceEnabled()) {
+            int size=upMessageQueue.size();
+            if(size > 0)
+                log.trace("draining " + size + " messages from the up queue");
+        }
         Event tmp=null;
         while((tmp=upMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null) {
             Message msg=decryptMessage(symDecodingCipher, ((Message)tmp.getArg()).copy());
 
-            if(msg != null) {
-                if(log.isTraceEnabled()) {
-                    log.trace("passing up message from drain " + msg);
-                }
+            if(msg != null)
                 passItUp(new Event(Event.MSG, msg));
-            }
-            else {
+            else
                 log.warn("discarding message in queue up drain as cannot decode it");
-            }
         }
     }
 
@@ -855,7 +851,7 @@ public class ENCRYPT extends Protocol {
             case Event.VIEW_CHANGE:
                 View view=(View)evt.getArg();
                 if(log.isInfoEnabled())
-                    log.info("handling view-change down: " + view);
+                    log.info("new view: " + view);
                 if(!suppliedKey) {
                     handleViewChange(view, false);
                 }
@@ -869,8 +865,6 @@ public class ENCRYPT extends Protocol {
 
             case Event.TMP_VIEW:
                 view=(View)evt.getArg();
-                if(log.isInfoEnabled())
-                    log.info("handling tmp-view down: " + view);
                 if(!suppliedKey) {
                     // if a tmp_view then we are trying to become coordinator so
                     // make us keyserver
@@ -894,8 +888,11 @@ public class ENCRYPT extends Protocol {
      * @throws QueueClosedException
      */
     private void drainDownQueue() throws Exception {
-        //	we do not synchronize here as we only have one down thread so we should never get an issue
-        //  first lets replay any oustanding events
+        if(log.isTraceEnabled()) {
+            int size=downMessageQueue.size();
+            if(size > 0)
+                log.trace("draining " + size + " messages from the down queue");
+        }
         Event tmp=null;
         while((tmp=downMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null) {
             sendDown(tmp);

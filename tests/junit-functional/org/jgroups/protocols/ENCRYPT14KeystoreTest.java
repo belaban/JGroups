@@ -34,7 +34,6 @@ public class ENCRYPT14KeystoreTest {
         }
         catch(Exception e) {
             System.out.println("didn't find incorrect keystore (as expected): " + e.getMessage());
-            assert e.getMessage().equals("Unable to load keystore " +  "unkownKeystore.keystore" + " ensure file is on classpath");
         }
     }
 
