@@ -12,6 +12,10 @@ import org.jgroups.util.*;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 
 @Test(groups=Global.FUNCTIONAL,sequential=true,dataProvider="createRetransmitter")
 public class RetransmitterTest {
@@ -128,13 +132,58 @@ public class RetransmitterTest {
         Assert.assertEquals(0, size);
     }
 
-
+    /**
+     * Note that we do not have overlapping ranges due to the way {@link org.jgroups.stack.NakReceiverWindow} adds
+     * missing messages !
+     * @param xmitter
+     */
     @Test(dataProvider="createRetransmitter")
     public void testRanges(Retransmitter xmitter) {
-        xmitter.add(200, 500);
-        xmitter.add(100, 300);
-        System.out.println("xmitter: " + xmitter);
-        assert xmitter.size() == 401 : "size was " + xmitter.size();
+        xmitter.add(100, 200);
+        xmitter.add(300, 400);
+        System.out.println("xmitter (" + xmitter.getClass().getCanonicalName() + "): " + xmitter);
+        assert xmitter.size() == 202 : "size was " + xmitter.size();
+    }
+
+    @Test(dataProvider="createRetransmitter")
+    public void testAddAndRemoveIndividualSeqnos(Retransmitter xmitter) {
+        int NUM=100;
+        List<Long> seqnos=new ArrayList<Long>(NUM);
+        for(long i=1; i <= NUM; i++) {
+            seqnos.add(i);
+            xmitter.add(i, i);
+        }
+        
+        System.out.println("xmitter = " + xmitter);
+        assert xmitter.size() == NUM;
+        Collections.shuffle(seqnos);
+        while(!seqnos.isEmpty()) {
+            long seqno=seqnos.remove(0);
+            xmitter.remove(seqno);
+        }
+        System.out.println("xmitter = " + xmitter);
+        assert xmitter.size() == 0 : "expected size of 0, but size is " + xmitter.size();
+    }
+
+
+    @Test(dataProvider="createRetransmitter")
+    public void testAddAndRemoveRanges(Retransmitter xmitter) {
+        int NUM=100;
+        List<Long> seqnos=new ArrayList<Long>(NUM);
+        for(long i=1; i <= NUM; i++)
+            seqnos.add(i);
+
+        xmitter.add(1, NUM);
+
+        System.out.println("xmitter = " + xmitter);
+        assert xmitter.size() == NUM;
+        Collections.shuffle(seqnos);
+        while(!seqnos.isEmpty()) {
+            long seqno=seqnos.remove(0);
+            xmitter.remove(seqno);
+        }
+        System.out.println("xmitter = " + xmitter);
+        assert xmitter.size() == 0 : "expected size of 0, but size is " + xmitter.size();
     }
 
 
