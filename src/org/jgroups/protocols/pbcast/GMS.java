@@ -71,6 +71,9 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     
     @Property(description="Max number of old members to keep in history. Default is 50")
     protected int num_prev_mbrs=50;
+
+     @Property(description="Number of views to store in history")
+    int num_prev_views=20;
     
     @Property(description="Time in ms to wait for all VIEW acks (0 == wait forever. Default is 2000 msec" )
     long view_ack_collection_timeout=2000;
@@ -91,7 +94,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     private int num_views=0;
 
     /** Stores the last 20 views */
-    private final BoundedList<View> prev_views=new BoundedList<View>(20);
+    private BoundedList<Tuple<View,Long>> prev_views;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
@@ -231,8 +234,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     @ManagedOperation
     public String printPreviousViews() {
         StringBuilder sb=new StringBuilder();
-        for(View view: prev_views) {
-            sb.append(view).append("\n");
+        for(Tuple<View,Long> tmp: prev_views) {
+            sb.append(new Date(tmp.getVal2())).append(": ").append(tmp.getVal1()).append("\n");
         }
         return sb.toString();
     }
@@ -304,6 +307,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         if(view_ack_collection_timeout <= 0)
             throw new IllegalArgumentException("view_ack_collection_timeout has to be greater than 0");
         prev_members=new BoundedList<Address>(num_prev_mbrs);
+        prev_views=new BoundedList<Tuple<View,Long>>(num_prev_views);
         TP transport=getTransport();
         timer=transport.getTimer();
         if(timer == null)
@@ -548,7 +552,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         if(log.isDebugEnabled()) log.debug(local_addr + ": view is " + new_view);
         if(stats) {
             num_views++;
-            prev_views.add(new_view);
+            prev_views.add(new Tuple<View,Long>(new_view, System.currentTimeMillis()));
         }
 
         ack_collector.handleView(new_view);
@@ -1406,7 +1410,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         final ViewHandler                 handler;
 
 
-        public Resumer(final MergeId token, final Map<MergeId,Future> t, final ViewHandler handler) {
+        Resumer(final MergeId token, final Map<MergeId,Future> t, final ViewHandler handler) {
             this.token=token;
             this.tasks=t;
             this.handler=handler;
