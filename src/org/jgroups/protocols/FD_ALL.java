@@ -5,6 +5,7 @@ import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -71,17 +72,12 @@ public class FD_ALL extends Protocol {
     @GuardedBy("lock")
     private Future<?> timeout_checker_future=null;    
 
-    private final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
+    private final BoundedList<Tuple<Address,Long>> suspect_history=new BoundedList<Tuple<Address,Long>>(20);
     
     private final Lock lock=new ReentrantLock();
 
 
-
-
-    public FD_ALL() {}
-    
-    
-    @ManagedAttribute(description="Member address")    
+    @ManagedAttribute(description="Member address")
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     @ManagedAttribute(description="Lists members of a cluster")
     public String getMembers() {return members.toString();}
@@ -109,8 +105,8 @@ public class FD_ALL extends Protocol {
     @ManagedOperation(description="Prints suspect history")
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
-        for(Address tmp: suspect_history) {
-            sb.append(new Date()).append(": ").append(tmp).append("\n");
+        for(Tuple<Address,Long> tmp: suspect_history) {
+            sb.append(new Date(tmp.getVal2())).append(": ").append(tmp.getVal1()).append("\n");
         }
         return sb.toString();
     }
@@ -297,7 +293,7 @@ public class FD_ALL extends Protocol {
         final List<Address> eligible_mbrs=new ArrayList<Address>();
         synchronized(this) {
             for(Address suspect: suspects) {
-                suspect_history.add(suspect);
+                suspect_history.add(new Tuple<Address,Long>(suspect, System.currentTimeMillis()));
                 suspected_mbrs.add(suspect);
             }
             eligible_mbrs.addAll(members);
