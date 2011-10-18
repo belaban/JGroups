@@ -311,26 +311,33 @@ public class FLUSH extends Protocol {
     }
 
     private void blockMessageDuringFlush() {
-        boolean shouldSuspendByItself = false;
-        blockMutex.lock();
-        try {
-            while (isBlockingFlushDown) {
-                if (log.isDebugEnabled())
-                    log.debug(localAddress + ": blocking for " + (timeout <= 0 ? "ever" : timeout + "ms"));
-                shouldSuspendByItself = !notBlockedDown.await(timeout, TimeUnit.MILLISECONDS);
-            }
-            if (shouldSuspendByItself) {
-                isBlockingFlushDown = false;      
-                log.warn(localAddress + ": unblocking after " + timeout + "ms");
-                flush_promise.setResult(Boolean.TRUE);
-                notBlockedDown.signalAll();
-            }            
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } finally {
-            blockMutex.unlock();
-        }        
-    }
+       boolean shouldSuspendByItself = false;
+       blockMutex.lock();
+       try {
+           while (isBlockingFlushDown) {
+               if (log.isDebugEnabled())
+                   log.debug(localAddress + ": blocking for " + (timeout <= 0 ? "ever" : timeout + "ms"));
+               if(timeout <= 0) {
+                  notBlockedDown.await();
+               }
+               else { 
+                  shouldSuspendByItself = !notBlockedDown.await(timeout, TimeUnit.MILLISECONDS);
+               }
+               
+               if (shouldSuspendByItself) {
+                  isBlockingFlushDown = false;      
+                  log.warn(localAddress + ": unblocking after " + timeout + "ms");
+                  flush_promise.setResult(Boolean.TRUE);
+                  notBlockedDown.signalAll();
+              }
+           }                        
+       } catch (InterruptedException e) {
+           Thread.currentThread().interrupt();
+       } finally {
+           blockMutex.unlock();
+       }        
+   }
+
 
     public Object up(Event evt) {
 
