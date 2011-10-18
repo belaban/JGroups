@@ -787,12 +787,6 @@ public class ENCRYPT extends Protocol {
 
         //encrypt current secret key
         byte[] encryptedKey=tmp.doFinal(secret.getEncoded());
-
-        //SW logout encrypted bytes we are sending so we
-        // can match the clients log to see if they match
-        if(log.isDebugEnabled())
-            log.debug(" Generated encoded key which only client can decode:" + formatArray(encryptedKey));
-
         newMsg=new Message(source, local_addr, encryptedKey);
 
         newMsg.putHeader(this.id, new EncryptHeader(EncryptHeader.SECRETKEY, getSymVersion()));
@@ -1001,17 +995,6 @@ public class ENCRYPT extends Protocol {
         return pubKey;
     }
 
-    /*
-      * simple helper method so we can see the format of the byte arrays in a
-      * readable form could be better to use Base64 but will do for now
-      */
-    private static String formatArray(byte[] array) {
-        StringBuilder buf=new StringBuilder();
-        for(int i=0;i < array.length;i++) {
-            buf.append(Integer.toHexString(array[i]));
-        }
-        return buf.toString();
-    }
 
     /**
      * @return Returns the asymInit.
