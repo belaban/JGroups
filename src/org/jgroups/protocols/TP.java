@@ -589,6 +589,15 @@ public abstract class TP extends Protocol {
 
     public TimeScheduler getTimer() {return timer;}
 
+    /**
+     * Sets a new timer. This should be done before the transport is initialized; be very careful, as replacing a
+     * running timer with tasks in it can wreak havoc !
+     * @param timer
+     */
+    public void setTimer(TimeScheduler timer) {
+        this.timer=timer;
+    }
+
     public ThreadFactory getThreadFactory() {
         return global_thread_factory;
     }
