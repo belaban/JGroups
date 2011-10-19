@@ -57,14 +57,19 @@ public class AgeOutCacheTest {
         cache.remove(5);
         cache.remove(6); // not existent
 
+        boolean correct_size=false;
         for(int i=0; i < 20; i++) {
-            if(cache.size() == 3)
+            if(cache.size() == 3) {
+                correct_size=true;
                 break;
+            }
             Util.sleep(500);
         }
-        
-        System.out.println("cache:\n" + cache);
-        assert cache.size() == 3 : "cache size should be 3 but is " + cache;
+
+        if(!correct_size) {
+            System.out.println("cache:\n" + cache);
+            assert cache.size() == 3 : "cache size should be 3 but is " + cache.size();
+        }
 
         for(int i=0; i < 10; i++) {
             if(cache.size() == 0)
