@@ -3,7 +3,6 @@ package org.jgroups.util;
 
 
 import org.jgroups.Global;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -392,7 +391,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         private boolean          completed=false; // set to true when the task has been executed
 
 
-        public Entry(Runnable task) {
+        private Entry(Runnable task) {
             last=this.task=new MyTask(task);
         }
 
@@ -490,7 +489,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         protected volatile boolean done=false;
         protected MyTask           next;
 
-        public MyTask(Runnable task) {
+        protected MyTask(Runnable task) {
             this.task=task;
         }
 
@@ -548,7 +547,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         protected volatile boolean    cancelled=false;
 
 
-        public RecurringTask(Runnable task) {
+        private RecurringTask(Runnable task) {
             this.task=task;
         }
 
@@ -633,7 +632,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     private class FixedIntervalTask<V> extends RecurringTask<V> {
         final long interval;
 
-        public FixedIntervalTask(Runnable task, long interval) {
+        private FixedIntervalTask(Runnable task, long interval) {
             super(task);
             this.interval=interval;
         }
@@ -648,7 +647,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         final long first_execution;
         int num_executions=0;
 
-        public FixedRateTask(Runnable task, long interval) {
+        private FixedRateTask(Runnable task, long interval) {
             super(task);
             this.interval=interval;
             this.first_execution=System.currentTimeMillis();
@@ -665,7 +664,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
    private class DynamicIntervalTask<V> extends RecurringTask<V> {
 
-       public DynamicIntervalTask(Task task) {
+       private DynamicIntervalTask(Task task) {
            super(task);
        }
 
