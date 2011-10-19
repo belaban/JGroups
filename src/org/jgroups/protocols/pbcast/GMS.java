@@ -93,6 +93,9 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     @Property(description="Logs failures for collecting all view acks if true")
     boolean log_collect_msgs=true;
 
+    @Property(description="Logs warnings for reception of views less than the current, and for views which don't include self")
+    boolean log_view_warnings=true;
+
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
     
@@ -572,7 +575,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         if(view_id != null) {
             rc=vid.compareTo(view_id);
             if(rc <= 0) {
-                if(log.isWarnEnabled() && rc < 0) // only scream if view is smaller, silently discard same views
+                if(log.isWarnEnabled() && rc < 0 && log_view_warnings) // only scream if view is smaller, silently discard same views
                     log.warn(local_addr + ": received view < current view;" +
                             " discarding it (current vid: " + view_id + ", new vid: " + vid + ')');
                 return;
@@ -600,7 +603,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
            This ensures that messages sent in view V1 are only received by members of V1 */
         if(checkSelfInclusion(mbrs) == false) {
-            if(log.isWarnEnabled()) log.warn(local_addr + ": not member of view " + new_view + "; discarding it");
+            if(log.isWarnEnabled() && log_view_warnings) log.warn(local_addr + ": not member of view " + new_view + "; discarding it");
             return;
         }
 
