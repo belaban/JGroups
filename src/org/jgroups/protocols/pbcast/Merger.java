@@ -34,6 +34,11 @@ public class Merger {
     @GuardedBy("merge_lock")
     private MergeId                            merge_id=null;
 
+    /** Timestamp when the last merge was started, ie. merge_id was set. Used by the merge canceller
+     (see https://issues.jboss.org/browse/JGRP-1377) */
+    @GuardedBy("merge_lock")
+    protected long                             merge_id_timestamp=0;
+
     @GuardedBy("merge_canceller_lock")
     private Future<?>                          merge_canceller_future=null;
 
@@ -43,6 +48,12 @@ public class Merger {
     public Merger(GMS gms, Log log) {
         this.gms=gms;
         this.log=log;
+    }
+
+   public String getMergeIdAsString() {return merge_id != null? merge_id.toString() : null;}
+
+    public long getMergeIdTimestamp() {
+        return merge_id_timestamp;
     }
 
 
@@ -166,17 +177,20 @@ public class Merger {
         List<Address> newViewMembers=new ArrayList<Address>(data.view.getMembers());
         newViewMembers.removeAll(gms.members.getMembers());
 
-
-        gms.castViewChangeWithDest(data.view, data.digest, null, newViewMembers);
-         // if we have flush in stack send ack back to merge coordinator
-        if(gms.flushProtocolInStack) {
-            Message ack=new Message(data.getSender(), null, null);
-            ack.setFlag(Message.OOB);
-            GMS.GmsHeader ack_hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW_OK);
-            ack.putHeader(gms.getId(), ack_hdr);
-            gms.getDownProtocol().down(new Event(Event.MSG, ack));
+        try {
+            gms.castViewChangeWithDest(data.view, data.digest, null, newViewMembers);
+            // if we have flush in stack send ack back to merge coordinator
+            if(gms.flushProtocolInStack) {
+                Message ack=new Message(data.getSender(), null, null);
+                ack.setFlag(Message.OOB);
+                GMS.GmsHeader ack_hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW_OK);
+                ack.putHeader(gms.getId(), ack_hdr);
+                gms.getDownProtocol().down(new Event(Event.MSG, ack));
+            }
         }
-        cancelMerge(merge_id);
+        finally {
+            cancelMerge(merge_id);
+        }
     }
 
     public void handleMergeCancelled(MergeId merge_id) {
@@ -391,21 +405,35 @@ public class Merger {
     }
 
 
-    void cancelMerge(MergeId id) {
+    boolean cancelMerge(MergeId id) {
         if(setMergeId(id, null)) {
             merge_task.stop();
             merge_rsps.reset();
             gms.getViewHandler().resume(id);
+            return true;
+        }
+        return false;
+    }
+
+
+    boolean forceCancelMerge() {
+        merge_lock.lock();
+        try {
+            return this.merge_id != null && cancelMerge(this.merge_id);
+        }
+        finally {
+            merge_lock.unlock();
         }
     }
 
 
-    private boolean setMergeId(MergeId expected, MergeId new_value) {
+    boolean setMergeId(MergeId expected, MergeId new_value) {
         merge_lock.lock();
         try {
             boolean match=Util.match(this.merge_id, expected);
             if(match) {
                 this.merge_id=new_value;
+                this.merge_id_timestamp=new_value == null? 0 : System.currentTimeMillis();
                 stopMergeCanceller();
                 if(this.merge_id != null)
                     startMergeCanceller();
@@ -453,7 +481,7 @@ public class Merger {
         try {
             if(merge_canceller_future == null || merge_canceller_future.isDone()) {
                 MergeCanceller task=new MergeCanceller(this.merge_id);
-                merge_canceller_future=gms.timer.schedule(task, (long)(gms.merge_timeout * 1.5), TimeUnit.MILLISECONDS);
+                merge_canceller_future=gms.timer.schedule(task, (long)(gms.merge_timeout * 2), TimeUnit.MILLISECONDS);
             }
         }
         finally {
@@ -496,35 +524,36 @@ public class Merger {
          * @param views Guaranteed to be non-null and to have >= 2 members, or else this thread would not be started
          */
         public synchronized void start(Map<Address, View> views) {
-            if(thread == null || thread.isAlive()) {
-                this.coords.clear();
+            if(thread != null && thread.isAlive()) // the merge thread is already running
+                return;
 
-                // now remove all members which don't have us in their view, so RPCs won't block (e.g. FLUSH)
-                // https://jira.jboss.org/browse/JGRP-1061
-                sanitizeViews(views);
+            this.coords.clear();
+
+            // now remove all members which don't have us in their view, so RPCs won't block (e.g. FLUSH)
+            // https://jira.jboss.org/browse/JGRP-1061
+            sanitizeViews(views);
                 
-                // Add all different coordinators of the views into the hashmap and sets their members:
-                Collection<Address> coordinators=Util.determineMergeCoords(views);
-                for(Address coord: coordinators) {
-                    View view=views.get(coord);
-                    if(view != null)
-                        this.coords.put(coord, new ArrayList<Address>(view.getMembers()));
-                }
-
-                // For the merge participants which are not coordinator, we simply add them, and the associated
-                // membership list consists only of themselves
-                Collection<Address> merge_participants=Util.determineMergeParticipants(views);
-                merge_participants.removeAll(coordinators);
-                for(Address merge_participant: merge_participants) {
-                    Collection<Address> tmp=new ArrayList<Address>();
-                    tmp.add(merge_participant);
-                    coords.putIfAbsent(merge_participant, tmp);
-                }
-
-                thread=gms.getThreadFactory().newThread(this, "MergeTask");
-                thread.setDaemon(true);
-                thread.start();
+            // Add all different coordinators of the views into the hashmap and sets their members:
+            Collection<Address> coordinators=Util.determineMergeCoords(views);
+            for(Address coord: coordinators) {
+                View view=views.get(coord);
+                if(view != null)
+                    this.coords.put(coord, new ArrayList<Address>(view.getMembers()));
             }
+
+            // For the merge participants which are not coordinator, we simply add them, and the associated
+            // membership list consists only of themselves
+            Collection<Address> merge_participants=Util.determineMergeParticipants(views);
+            merge_participants.removeAll(coordinators);
+            for(Address merge_participant: merge_participants) {
+                Collection<Address> tmp=new ArrayList<Address>();
+                tmp.add(merge_participant);
+                coords.putIfAbsent(merge_participant, tmp);
+            }
+
+            thread=gms.getThreadFactory().newThread(this, "MergeTask");
+            thread.setDaemon(true);
+            thread.start();
         }
 
 
@@ -579,6 +608,7 @@ public class Merger {
                 if(log.isWarnEnabled())
                     log.warn(gms.local_addr + ": " + ex.getLocalizedMessage() + ", merge is cancelled");
                 sendMergeCancelledMessage(coordsCopy, new_merge_id);
+                cancelMerge(new_merge_id); // the message above cancels the merge, too, but this is a 2nd line of defense
             }
             finally {
                 gms.getViewHandler().resume(new_merge_id);

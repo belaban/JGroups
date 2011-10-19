@@ -22,9 +22,10 @@ public class MergeId implements Streamable {
     }
 
     public synchronized static MergeId create(Address addr) {
-        int id=LAST_ID++;
         if(addr == null)
             throw new IllegalArgumentException("initiator has to be non null");
+
+        int id=LAST_ID++;
         return new MergeId(addr, id);
     }
 

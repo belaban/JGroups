@@ -105,7 +105,7 @@ public class GMS_MergeTest extends ChannelTestBase {
             System.out.println("starting merge");
             gms.up(new Event(Event.MSG, merge_request));
 
-            long timeout=gms.getMergeTimeout() * 2;
+            long timeout=gms.getMergeTimeout() * 10;
             System.out.println("sleeping for " + timeout + " ms, then fetching merge_id: should be null (cancelled by the MergeCanceller)");
             long target_time=System.currentTimeMillis() + timeout;
             while(System.currentTimeMillis() < target_time) {
@@ -575,14 +575,14 @@ public class GMS_MergeTest extends ChannelTestBase {
     }
 
     private static View createView(String[] partition, JChannel[] channels) throws Exception {
-        Vector<Address> members=new Vector<Address>(partition.length);
+        List<Address> members=new ArrayList<Address>(partition.length);
         for(String tmp: partition) {
             Address addr=findAddress(tmp, channels);
             if(addr == null)
                 throw new Exception(tmp + " not associated with a channel");
             members.add(addr);
         }
-        return new View(members.firstElement(), 10, members);
+        return new View(members.get(0), 10, members);
     }
 
     private static void checkViews(JChannel[] channels, String channel_name, String ... members) {
@@ -682,31 +682,31 @@ public class GMS_MergeTest extends ChannelTestBase {
     private static class MyChannel extends JChannel {
         protected int id=0;
 
-        public MyChannel() throws Exception {
+        private MyChannel() throws Exception {
             super();
         }
 
-        public MyChannel(File properties) throws Exception {
+        private MyChannel(File properties) throws Exception {
             super(properties);
         }
 
-        public MyChannel(Element properties) throws Exception {
+        private MyChannel(Element properties) throws Exception {
             super(properties);
         }
 
-        public MyChannel(URL properties) throws Exception {
+        private MyChannel(URL properties) throws Exception {
             super(properties);
         }
 
-        public MyChannel(String properties) throws Exception {
+        private MyChannel(String properties) throws Exception {
             super(properties);
         }
 
-        public MyChannel(ProtocolStackConfigurator configurator) throws Exception {
+        private MyChannel(ProtocolStackConfigurator configurator) throws Exception {
             super(configurator);
         }
 
-        public MyChannel(JChannel ch) throws Exception {
+        private MyChannel(JChannel ch) throws Exception {
             super(ch);
         }
 
@@ -737,7 +737,7 @@ public class GMS_MergeTest extends ChannelTestBase {
         private final String name;
         private AtomicInteger num_msgs=new AtomicInteger(0);
 
-        public MyReceiver(String name) {
+        private MyReceiver(String name) {
             this.name=name;
         }
 

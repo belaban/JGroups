@@ -40,8 +40,14 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     @Property(description="Leave timeout")
     long leave_timeout=5000;
     
-    @Property(description="Timeout to complete merge")
+    @Property(description="Timeout (in ms) to complete merge")
     long merge_timeout=5000; // time to wait for all MERGE_RSPS
+
+    @Property(description="Max time (in ms) a merge is allowed to run before it will be force-killed")
+    protected long max_merge_time=2 * 60 * 1000; // 2 minutes by default
+
+    @Property(description="Interval (in ms) the MergeKiller task runs at, must be less than max_merge_time. 0 disables it.")
+    protected long merge_killer_task_timeout=60 * 1000;
 
     @Property(description="Print local address of this member after connect. Default is true")
     private boolean print_local_addr=true;
@@ -108,6 +114,8 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
     // Handles merge related tasks
     final Merger merger=new Merger(this, log);
+
+    protected Future<?> merge_killer;
     
     protected Address local_addr=null;
     protected final Membership members=new Membership(); // real membership
@@ -159,12 +167,16 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     public int getNumMembers() {return members.size();}
     public long getJoinTimeout() {return join_timeout;}
     public void setJoinTimeout(long t) {join_timeout=t;}
+    public long getMergeTimeout() {return merge_timeout;}
+    public void setMergeTimeout(long timeout) {merge_timeout=timeout;}
 
-    public long getMergeTimeout() {
-        return merge_timeout;
+    @ManagedAttribute(description="Whether the merge killer task is running")
+    public boolean getMergeKillerRunning() {
+        return !(merge_killer.isCancelled() || merge_killer.isDone());
     }
 
-    public void setMergeTimeout(long timeout) {merge_timeout=timeout;}
+    @ManagedAttribute(description="Stringified version of merge_id")
+    public String getMergeIdAsString() {return merger.getMergeIdAsString();}
 
     @ManagedOperation
     public String printPreviousMembers() {
@@ -318,10 +330,26 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     }
 
     public void start() throws Exception {
-        if(impl != null) impl.start();        
+        if(impl != null) impl.start();
+        if(merge_killer_task_timeout > 0) {
+            merge_killer=timer.scheduleWithFixedDelay(new Runnable() {
+                public void run() {
+                    long timestamp=merger.getMergeIdTimestamp();
+                    if(timestamp > 0) {
+                        long diff=System.currentTimeMillis() - timestamp;
+                        if(diff >= max_merge_time) {
+                            if(merger.forceCancelMerge())
+                                log.warn("force-cancelled merge task after " + diff + " ms");
+                        }
+                    }
+                }
+            }, merge_killer_task_timeout, merge_killer_task_timeout, TimeUnit.MILLISECONDS);
+        }
     }
 
     public void stop() {
+        if(merge_killer != null)
+            merge_killer.cancel(true);
         view_handler.stop(true);
         if(impl != null) impl.stop();
         if(prev_members != null)
@@ -385,6 +413,15 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     public void fixDigests() {
         if(impl instanceof CoordGmsImpl)
             ((CoordGmsImpl)impl).fixDigests();
+    }
+
+    @ManagedOperation(description="Forces cancellation of current merge task")
+    public boolean cancelMerge() {
+        boolean result=merger.forceCancelMerge();
+        if(log.isDebugEnabled()) {
+            log.debug(result? "Merge was cancelled" : "There was no merge to be cancelled");
+        }
+        return result;
     }
 
     /**
