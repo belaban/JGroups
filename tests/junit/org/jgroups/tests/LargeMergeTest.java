@@ -6,16 +6,14 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.util.DefaultThreadFactory;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.TimeScheduler2;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.*;
 
 
 /**
@@ -33,28 +31,43 @@ public class LargeMergeTest {
     void setUp() throws Exception {
 
         ThreadGroup test_group=new ThreadGroup("LargeMergeTest");
-        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory(test_group, "merge-", true, true),
+        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory(test_group, "Timer", true, true),
                                                5,10,
                                                3000, 1000);
+
+        ThreadPoolExecutor oob_thread_pool=new ThreadPoolExecutor(1, 500, 3000, TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>());
+        oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+
+        ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(5, 10, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(10000));
+        thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+
+
+
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
             SHARED_LOOPBACK shared_loopback=(SHARED_LOOPBACK)new SHARED_LOOPBACK().setValue("enable_bundling", false);
-            shared_loopback.setValue("enable_diagnostics",false);
-            shared_loopback.setValue("timer_min_threads",1).setValue("timer_max_threads", 2);
+            // shared_loopback.setValue("enable_diagnostics",false);
             shared_loopback.setTimer(timer);
+            shared_loopback.setOOBThreadPool(oob_thread_pool);
+            shared_loopback.setDefaultThreadPool(thread_pool);
+            
 
             channels[i]=Util.createChannel(shared_loopback,
-                                           new DISCARD().setValue("discard_all", true),
-                                           new PING().setValue("timeout", 100),
-                                           new MERGE2().setValue("min_interval", 2000).setValue("max_interval", 10000),
+                                           new DISCARD().setValue("discard_all",true),
+                                           new PING().setValue("timeout",100),
+                                           new MERGE2().setValue("min_interval",2000).setValue("max_interval",10000),
                                            // new FD_ALL(),
-                                           new NAKACK().setValue("use_mcast_xmit", false)
-                                             .setValue("log_discard_msgs", false).setValue("log_not_found_msgs", false),
+                                           new NAKACK().setValue("use_mcast_xmit",false)
+                                             .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
                                            new UNICAST(),
-                                           new STABLE().setValue("max_bytes", 50000),
-                                           new GMS().setValue("print_local_addr", false)
-                                             .setValue("leave_timeout", 100)
-                                             .setValue("log_view_warnings", false));
+                                           new STABLE().setValue("max_bytes",50000),
+                                           new GMS().setValue("print_local_addr",false)
+                                             .setValue("leave_timeout",100)
+                                             .setValue("log_view_warnings",false)
+                                             .setValue("view_ack_collection_timeout",50)
+                                             .setValue("log_collect_msgs",false)
+                                             .setValue("merge_kill_timeout",10000)
+                                             .setValue("merge_killer_interval",5000));
             channels[i].setName(String.valueOf((i + 1)));
             channels[i].connect("LargeMergeTest");
             System.out.print(i + 1 + " ");
@@ -73,6 +86,8 @@ public class LargeMergeTest {
     public void testClusterFormationAfterMerge() {
         System.out.println("\nEnabling message traffic between members to start the merge");
         for(JChannel ch: channels) {
+            Discovery ping=(Discovery)ch.getProtocolStack().findProtocol(PING.class);
+            ping.setTimeout(3000);
             DISCARD discard=(DISCARD)ch.getProtocolStack().findProtocol(DISCARD.class);
             discard.setDiscardAll(false);
         }

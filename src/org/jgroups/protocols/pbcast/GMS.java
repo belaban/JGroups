@@ -44,10 +44,10 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     long merge_timeout=5000; // time to wait for all MERGE_RSPS
 
     @Property(description="Max time (in ms) a merge is allowed to run before it will be force-killed")
-    protected long max_merge_time=2 * 60 * 1000; // 2 minutes by default
+    protected long merge_kill_timeout=2 * 60 * 1000; // 2 minutes by default
 
-    @Property(description="Interval (in ms) the MergeKiller task runs at, must be less than max_merge_time. 0 disables it.")
-    protected long merge_killer_task_timeout=60 * 1000;
+    @Property(description="Interval (in ms) the MergeKiller task runs at, must be less than merge_kill_timeout. 0 disables it.")
+    protected long merge_killer_interval=60 * 1000;
 
     @Property(description="Print local address of this member after connect. Default is true")
     private boolean print_local_addr=true;
@@ -334,19 +334,19 @@ public class GMS extends Protocol implements TP.ProbeHandler {
 
     public void start() throws Exception {
         if(impl != null) impl.start();
-        if(merge_killer_task_timeout > 0) {
+        if(merge_killer_interval > 0) {
             merge_killer=timer.scheduleWithFixedDelay(new Runnable() {
                 public void run() {
                     long timestamp=merger.getMergeIdTimestamp();
                     if(timestamp > 0) {
                         long diff=System.currentTimeMillis() - timestamp;
-                        if(diff >= max_merge_time) {
+                        if(diff >= merge_kill_timeout) {
                             if(merger.forceCancelMerge())
                                 log.warn("force-cancelled merge task after " + diff + " ms");
                         }
                     }
                 }
-            }, merge_killer_task_timeout, merge_killer_task_timeout, TimeUnit.MILLISECONDS);
+            },merge_killer_interval,merge_killer_interval, TimeUnit.MILLISECONDS);
         }
     }
 
