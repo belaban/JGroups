@@ -1,9 +1,9 @@
 package org.jgroups;
 
-
-
 /**
- * Used for inter-stack and intra-stack communication.
+ * Event is a JGroups internal class used for inter-stack and intra-stack communication. 
+ * 
+ * @since 2.0
  * @author Bela Ban
  */
 public class Event {

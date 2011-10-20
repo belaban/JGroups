@@ -1,13 +1,12 @@
 package org.jgroups;
 
-
 /**
- * <code>StateTransferException</code> is thrown to indicate failure of 
- * state transfer between cluster members.
+ * <code>StateTransferException</code> is thrown to indicate a failure of a state transfer between
+ * cluster members.
  * <p>
  * 
- * @author  Vladimir Blagojevic  
- * @since   2.6
+ * @author Vladimir Blagojevic
+ * @since 2.6
  * 
  */
 public class StateTransferException extends Exception {

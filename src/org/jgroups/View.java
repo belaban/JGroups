@@ -8,38 +8,36 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.*;
 
-
 /**
- * A view is a local representation of the current membership of a group.
- * Only one view is installed in a channel at a time.
- * Views contain the address of its creator, an ID and a list of member addresses.
- * These addresses are ordered, and the first address is always the coordinator of the view.
- * This way, each member of the group knows who the new coordinator will be if the current one
- * crashes or leaves the group.
- * The views are sent between members using the VIEW_CHANGE event
+ * A view is a local representation of the current membership of a group. Only one view is installed
+ * in a channel at a time. Views contain the address of its creator, an ID and a list of member
+ * addresses. These addresses are ordered, and the first address is always the coordinator of the
+ * view. This way, each member of the group knows who the new coordinator will be if the current one
+ * crashes or leaves the group. The views are sent between members using the VIEW_CHANGE event
+ * 
+ * @since 2.0
  * @author Bela Ban
  */
 public class View implements Cloneable, Streamable, Iterable<Address> {
 
-    /* A view is uniquely identified by its ViewID
-    * The view id contains the creator address and a Lamport time.
-    * The Lamport time is the highest timestamp seen or sent from a view.
-    * if a view change comes in with a lower Lamport time, the event is discarded.
+   /**
+    * A view is uniquely identified by its ViewID. The view id contains the creator address and a
+    * Lamport time. The Lamport time is the highest timestamp seen or sent from a view. if a view
+    * change comes in with a lower Lamport time, the event is discarded.
     */
     protected ViewId vid=null;
 
-    /**
-     * A list containing all the members of the view
-     * This list is always ordered, with the coordinator being the first member.
-     * the second member will be the new coordinator if the current one disappears
-     * or leaves the group.
-     */
+   /**
+    * A list containing all the members of the view.This list is always ordered, with the
+    * coordinator being the first member. the second member will be the new coordinator if the
+    * current one disappears or leaves the group.
+    */
     protected List<Address> members=null;
 
 
 
     /**
-     * creates an empty view, should not be used
+     * Creates an empty view, should not be used
      */
     public View() {
     }
@@ -69,7 +67,7 @@ public class View implements Cloneable, Streamable, Iterable<Address> {
 
 
     /**
-     * returns the view ID of this view
+     * Returns the view ID of this view
      * if this view was created with the empty constructur, null will be returned
      *
      * @return the view ID of this view
@@ -81,7 +79,7 @@ public class View implements Cloneable, Streamable, Iterable<Address> {
     public ViewId getViewId() {return vid;}
 
     /**
-     * returns the creator of this view
+     * Returns the creator of this view
      * if this view was created with the empty constructur, null will be returned
      *
      * @return the creator of this view in form of an Address object
@@ -102,7 +100,7 @@ public class View implements Cloneable, Streamable, Iterable<Address> {
     }
 
     /**
-     * returns true, if this view contains a certain member
+     * Returns true, if this view contains a certain member
      *
      * @param mbr - the address of the member,
      * @return true if this view contains the member, false if it doesn't
@@ -137,7 +135,7 @@ public class View implements Cloneable, Streamable, Iterable<Address> {
     }
 
     /**
-     * returns the number of members in this view
+     * Returns the number of members in this view
      *
      * @return the number of members in this view 0..n
      */
@@ -153,7 +151,7 @@ public class View implements Cloneable, Streamable, Iterable<Address> {
 
 
     /**
-     * creates a copy of this view
+     * Creates a copy of this view
      * @return a copy of this view
      */
     public Object clone() {

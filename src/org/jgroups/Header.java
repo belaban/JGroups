@@ -3,10 +3,12 @@ package org.jgroups;
 
 import org.jgroups.util.Streamable;
 
-
 /**
- * Abstract base class for all headers to be added to a Message.
+ * Header is a JGroups internal base class for all JGroups headers. Client normally do not need to
+ * interact with headers unless they are developing their custom protocols.
+ * 
  * @author Bela Ban
+ * @since 2.0
  */
 public abstract class Header implements Streamable {
 

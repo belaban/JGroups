@@ -24,14 +24,15 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 
-
 /**
- * JChannel is a pure Java implementation of Channel.<p/>
- * When a JChannel object is instantiated it automatically builds the associated protocol stack.<p/>
- * The configuration of a JChannel is done via XML, e.g. udp.xml inside the JGroups JAR. This file lists all the
- * protocols to be used, and for each protocol, its properties (e.g. fragmentation size for the fragmentation
- * protocol).
+ * JChannel is a default implementation of a Channel abstraction.
+ * <p/>
+ * 
+ * JChannel is instantiated using an appropriate form of a protocol stack description. Protocol
+ * stack can be described using a file, URL or a stream containing XML stack description.
+ * 
  * @author Bela Ban
+ * @since 2.0
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -148,8 +149,8 @@ public class JChannel extends Channel {
     }
 
     /**
-     * Creates a channel with a configurtation based on an input stream.
-     * @param input An input stream, pointing to a streamed configurtaion
+     * Creates a channel with a configuration based on an input stream.
+     * @param input An input stream, pointing to a streamed configuration
      * @throws Exception
      */
     public JChannel(InputStream input) throws Exception {
@@ -171,7 +172,7 @@ public class JChannel extends Channel {
 
     /**
      * Creates a channel with the same configuration as the channel passed to this constructor. This is used by
-     * testing code, and should not be used by any other code !
+     * testing code, and should not be used by clients !
      * @param ch
      * @throws Exception
      */

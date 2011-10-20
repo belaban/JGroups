@@ -9,10 +9,11 @@ import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Map;
 
-/** Logical address which is unique over space and time.
- * <br/>
+/**
+ * Logical address which is unique over space and time. <br/>
  * Copied from java.util.UUID, but unneeded fields from the latter have been removed. UUIDs needs to
  * have a small memory footprint.
+ * 
  * @author Bela Ban
  */
 public class UUID implements Address, Streamable, Comparable<Address> {

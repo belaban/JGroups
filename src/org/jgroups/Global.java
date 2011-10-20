@@ -4,9 +4,10 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.SCOPE;
 
 /**
- * Globals used by JGroups packages.
+ * Global is a JGroups internal class defining global variables.
  * 
- * @author Bela Ban Mar 29, 2004
+ * @since 2.0
+ * @author Bela Ban 
  */
 public class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1

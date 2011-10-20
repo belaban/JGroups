@@ -3,6 +3,9 @@ package org.jgroups;
 
 /**
  * Thrown if a message is sent to a suspected member.
+ * 
+ * @since 2.0
+ * @author Bela Ban
  */
 public class SuspectedException extends Exception {
     final Object suspect;

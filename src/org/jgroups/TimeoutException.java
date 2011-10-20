@@ -3,6 +3,9 @@ package org.jgroups;
 
 /**
  * Thrown if members fail to respond in time.
+ * 
+ * @since 2.0
+ * @author Bela Ban
  */
 public class TimeoutException extends RuntimeException {
 

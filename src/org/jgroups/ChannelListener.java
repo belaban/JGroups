@@ -1,13 +1,43 @@
-
 package org.jgroups;
 
-
 /**
- * Allows a listener to be notified when important channel events occur. For example, when
- * a channel is closed, a PullPushAdapter can be notified, and stop accordingly.
+ * Allows a listener to be notified when an important channel lifecycle event occurs.
+ * <p>
+ * 
+ * Usually clients do not need to implement ChannelListener interface. However, this interface can
+ * useful in scenarios when an application opens multiple channels and needs to tracks major
+ * lifecycle events on those channels from a single location or in scenarios when channel is wrapped
+ * by JGroups building block installed on top of a channel (RpcDispatcher etc) while a client needs
+ * to be notified about major channel lifecycle events.
+ * 
+ * @see Channel#addChannelListener(ChannelListener)
+ * @see Channel#removeChannelListener(ChannelListener)
+ * @see Channel#clearChannelListeners()
+ * 
+ * @author Bela Ban
+ * @since 2.0
+ * 
  */
 public interface ChannelListener {
-    void channelConnected(Channel channel);
-    void channelDisconnected(Channel channel);
-    void channelClosed(Channel channel);
+
+   /**
+    * Channel has been connected notification callback
+    * 
+    * @param channel the channel that has been connected
+    */
+   void channelConnected(Channel channel);
+
+   /**
+    * Channel has been disconnected notification callback
+    * 
+    * @param channel the disconnected channel
+    */
+   void channelDisconnected(Channel channel);
+
+   /**
+    * Channel has been closed notification callback
+    * 
+    * @param channel the closed channel
+    */
+   void channelClosed(Channel channel);
 }

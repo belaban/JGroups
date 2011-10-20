@@ -6,17 +6,17 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-
 /**
- * A view that is sent as a result of a merge.
- * Whenever a group splits into subgroups, e.g., due to a network partition, 
- * and later the subgroups merge back together, a MergeView instead of a View 
- * will be received by the application. The MergeView class is a subclass of 
- * View and contains as additional instance variable: the list of views that 
- * were merged. For example, if the group denoted by view V1:(p,q,r,s,t) 
- * splits into subgroups V2:(p,q,r) and V2:(s,t), the merged view might be 
- * V3:(p,q,r,s,t). In this case the MergeView would contain a list of 2 views: 
- * V2:(p,q,r) and V2:(s,t).
+ * A view that is sent as a result of a cluster merge. Whenever a group splits into subgroups, e.g., due to
+ * a network partition, and later the subgroups merge back together, a MergeView instead of a View
+ * will be received by the application. The MergeView class is a subclass of View and contains as
+ * additional instance variable: the list of views that were merged. For example, if the group
+ * denoted by view V1:(p,q,r,s,t) splits into subgroups V2:(p,q,r) and V2:(s,t), the merged view
+ * might be V3:(p,q,r,s,t). In this case the MergeView would contain a list of 2 views: V2:(p,q,r)
+ * and V2:(s,t).
+ * 
+ * @since 2.0
+ * @author Bela Ban
  */
 public class MergeView extends View {
     protected List<View> subgroups=null; // subgroups that merged into this single view (a list of Views)
@@ -29,27 +29,34 @@ public class MergeView extends View {
     }
 
 
-    /**
-     * Creates a new view
-     *
-     * @param vid       The view id of this view (can not be null)
-     * @param members   Contains a list of all the members in the view, can be empty but not null.
-     * @param subgroups A list of Views representing the former subgroups
-     */
+   /**
+    * Creates a new view
+    * 
+    * @param vid
+    *           The view id of this view (can not be null)
+    * @param members
+    *           Contains a list of all the members in the view, can be empty but not null.
+    * @param subgroups
+    *           A list of Views representing the former subgroups
+    */
     public MergeView(ViewId vid, List<Address> members, List<View> subgroups) {
         super(vid, members);
         this.subgroups=subgroups;
     }
 
 
-    /**
-     * Creates a new view
-     *
-     * @param creator   The creator of this view (can not be null)
-     * @param id        The lamport timestamp of this view
-     * @param members   Contains a list of all the members in the view, can be empty but not null.
-     * @param subgroups A list of Views representing the former subgroups
-     */
+   /**
+    * Creates a new view
+    * 
+    * @param creator
+    *           The creator of this view (can not be null)
+    * @param id
+    *           The lamport timestamp of this view
+    * @param members
+    *           Contains a list of all the members in the view, can be empty but not null.
+    * @param subgroups
+    *           A list of Views representing the former subgroups
+    */
     public MergeView(Address creator, long id, List<Address> members, List<View> subgroups) {
         super(creator, id, members);
         this.subgroups=subgroups;
@@ -60,12 +67,11 @@ public class MergeView extends View {
         return subgroups;
     }
 
-
-    /**
-     * creates a copy of this view
-     *
-     * @return a copy of this view
-     */
+   /**
+    * Creates a copy of this view
+    * 
+    * @return a copy of this view
+    */
     public Object clone() {
         ViewId vid2=vid != null ? (ViewId)vid.clone() : null;
         List<Address> members2=members != null ? new ArrayList<Address>(members) : null;
