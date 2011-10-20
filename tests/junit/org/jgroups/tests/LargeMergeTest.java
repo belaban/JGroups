@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
@@ -16,6 +17,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.management.MBeanServer;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.HashMap;
@@ -40,23 +42,24 @@ public class LargeMergeTest {
     @BeforeMethod
     void setUp() throws Exception {
         handler=new MyDiagnosticsHandler(InetAddress.getByName("224.0.75.75"), 7500,
-                                         LogFactory.getLog("DiagnosticsHandler"),
+                                         LogFactory.getLog(DiagnosticsHandler.class),
                                          new DefaultSocketFactory(),
                                          new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false));
+        handler.start();
         
         ThreadGroup test_group=new ThreadGroup("LargeMergeTest");
         TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory(test_group, "Timer", true, true),
                                                5,10,
                                                3000, 1000);
 
-        ThreadPoolExecutor oob_thread_pool=new ThreadPoolExecutor(1, 500, 3000, TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>());
+        ThreadPoolExecutor oob_thread_pool=new ThreadPoolExecutor(5, 50, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(1000));
         oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
         ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(5, 10, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(10000));
         thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
 
 
-
+        MBeanServer server=Util.getMBeanServer();
 
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
@@ -83,6 +86,8 @@ public class LargeMergeTest {
                                              .setValue("merge_kill_timeout",10000)
                                              .setValue("merge_killer_interval",5000));
             channels[i].setName(String.valueOf((i + 1)));
+
+            JmxConfigurator.registerChannel(channels[i], server, "channel-" + (i+1), channels[i].getClusterName(), true);
             channels[i].connect("LargeMergeTest");
             System.out.print(i + 1 + " ");
         }
@@ -158,7 +163,7 @@ public class LargeMergeTest {
 
 
 
-    protected class MyDiagnosticsHandler extends DiagnosticsHandler {
+    protected static class MyDiagnosticsHandler extends DiagnosticsHandler {
 
         protected MyDiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port, Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
             super(diagnostics_addr,diagnostics_port,log,socket_factory,thread_factory);
