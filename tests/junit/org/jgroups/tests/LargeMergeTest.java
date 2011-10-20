@@ -6,6 +6,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -22,7 +23,7 @@ import java.util.concurrent.*;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class LargeMergeTest {
-    static final int NUM=40; // number of members
+    static final int NUM=50; // number of members
 
     protected final JChannel[] channels=new JChannel[NUM];
 
@@ -77,8 +78,13 @@ public class LargeMergeTest {
 
     @AfterMethod
     void tearDown() throws Exception {
-        for(int i=NUM-1; i >= 0; i--)
-            Util.close(channels[i]);
+        for(int i=NUM-1; i >= 0; i--) {
+            // Util.close(channels[i]);
+            ProtocolStack stack=channels[i].getProtocolStack();
+            String cluster_name=channels[i].getClusterName();
+            stack.stopStack(cluster_name);
+            stack.destroy();
+        }
     }
 
 

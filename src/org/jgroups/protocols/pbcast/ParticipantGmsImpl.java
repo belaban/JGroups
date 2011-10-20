@@ -2,11 +2,13 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
-import org.jgroups.util.Promise;
 import org.jgroups.util.Digest;
-import org.jgroups.util.MergeId;
+import org.jgroups.util.Promise;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 
 /**
