@@ -791,24 +791,26 @@ public abstract class TP extends Protocol {
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
 
-        if(timer_type.equalsIgnoreCase("old")) {
-            if(timer_min_threads < 2) {
-                log.warn("timer.min_threads should not be less than 2 for timer_type=\"old\"; setting value to 2 (from " +
-                        timer_min_threads + ")");
-                timer_min_threads=2;
+        if(timer == null) {
+            if(timer_type.equalsIgnoreCase("old")) {
+                if(timer_min_threads < 2) {
+                    log.warn("timer.min_threads should not be less than 2 for timer_type=\"old\"; setting value to 2 (from " +
+                               timer_min_threads + ")");
+                    timer_min_threads=2;
+                }
+                timer=new DefaultTimeScheduler(timer_thread_factory, timer_min_threads);
             }
-            timer=new DefaultTimeScheduler(timer_thread_factory, timer_min_threads);
-        }
-        else if(timer_type.equalsIgnoreCase("new")) {
-            timer=new TimeScheduler2(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
-                                     timer_queue_max_size);
-        }
-        else if(timer_type.equalsIgnoreCase("wheel")) {
-            timer=new HashedTimingWheel(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
-                                        timer_queue_max_size, wheel_size, tick_time);
-        }
-        else {
-            throw new Exception("timer_type has to be either \"old\", \"new\" or \"wheel\"");
+            else if(timer_type.equalsIgnoreCase("new")) {
+                timer=new TimeScheduler2(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
+                                         timer_queue_max_size);
+            }
+            else if(timer_type.equalsIgnoreCase("wheel")) {
+                timer=new HashedTimingWheel(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
+                                            timer_queue_max_size, wheel_size, tick_time);
+            }
+            else {
+                throw new Exception("timer_type has to be either \"old\", \"new\" or \"wheel\"");
+            }
         }
 
         who_has_cache=new AgeOutCache<Address>(timer, 5000L);
