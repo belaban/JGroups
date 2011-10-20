@@ -924,6 +924,7 @@ public abstract class TP extends Protocol {
             throw new Exception("timer is null");
 
         if(enable_diagnostics) {
+            boolean diag_handler_created=diag_handler == null;
             if(diag_handler == null)
                 diag_handler=new DiagnosticsHandler(diagnostics_addr, diagnostics_port, log, getSocketFactory(),
                                                     getThreadFactory());
@@ -966,8 +967,8 @@ public abstract class TP extends Protocol {
                     return new String[]{"dump", "keys", "uuids", "info"};
                 }
             });
-
-            diag_handler.start();
+            if(diag_handler_created)
+                diag_handler.start();
             
             for(DiagnosticsHandler.ProbeHandler handler: preregistered_probe_handlers)
                 diag_handler.registerProbeHandler(handler);
