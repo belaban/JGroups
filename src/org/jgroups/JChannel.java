@@ -10,10 +10,7 @@ import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
-import org.jgroups.stack.AddressGenerator;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
-import org.jgroups.stack.StateTransferInfo;
+import org.jgroups.stack.*;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 import org.w3c.dom.Element;
@@ -83,7 +80,7 @@ public class JChannel extends Channel {
 
     protected long sent_msgs=0, received_msgs=0, sent_bytes=0, received_bytes=0;
 
-    private final TP.ProbeHandler probe_handler=new MyProbeHandler();
+    private final DiagnosticsHandler.ProbeHandler probe_handler=new MyProbeHandler();
 
 
 
@@ -1015,7 +1012,7 @@ public class JChannel extends Channel {
 
     /* ------------------------------- End of Private Methods ---------------------------------- */
 
-    class MyProbeHandler implements TP.ProbeHandler {
+    class MyProbeHandler implements DiagnosticsHandler.ProbeHandler {
 
         public Map<String, String> handleProbe(String... keys) {
             Map<String, String> map=new HashMap<String, String>(2);

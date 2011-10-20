@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
-public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, TP.ProbeHandler {
+public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, DiagnosticsHandler.ProbeHandler {
     private static final int NUM_REBROADCAST_MSGS=3;
 
     /* -----------------------------------------------------    Properties     --------------------- ------------------------------------ */
@@ -185,11 +185,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /** Keeps a bounded list of the last N digest sets */
     protected final BoundedList<String> digest_history=new BoundedList<String>(10);
-
-
-
-    public NAKACK() {
-    }
 
 
     public long getXmitRequestsReceived() {return xmit_reqs_received.get();}

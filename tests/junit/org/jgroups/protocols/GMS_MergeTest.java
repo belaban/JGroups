@@ -100,7 +100,7 @@ public class GMS_MergeTest extends ChannelTestBase {
             merge_request.putHeader(GMS_ID, hdr);
             GMS gms=(GMS)c1.getProtocolStack().findProtocol(GMS.class);
             gms.setMergeTimeout(2000);
-            MergeId merge_id=gms.getMergeId();
+            MergeId merge_id=gms._getMergeId();
             assert merge_id == null;
             System.out.println("starting merge");
             gms.up(new Event(Event.MSG, merge_request));
@@ -109,13 +109,13 @@ public class GMS_MergeTest extends ChannelTestBase {
             System.out.println("sleeping for " + timeout + " ms, then fetching merge_id: should be null (cancelled by the MergeCanceller)");
             long target_time=System.currentTimeMillis() + timeout;
             while(System.currentTimeMillis() < target_time) {
-                merge_id=gms.getMergeId();
+                merge_id=gms._getMergeId();
                 if(merge_id == null)
                     break;
                 Util.sleep(500);
             }
 
-            merge_id=gms.getMergeId();
+            merge_id=gms._getMergeId();
             System.out.println("merge_id = " + merge_id);
             assert merge_id == null : "MergeCanceller didn't kick in";
         }

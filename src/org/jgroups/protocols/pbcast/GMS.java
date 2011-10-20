@@ -7,6 +7,7 @@ import org.jgroups.conf.PropertyConverters;
 import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GmsImpl.Request;
+import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
@@ -27,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  */
 @MBean(description="Group membership protocol")
-public class GMS extends Protocol implements TP.ProbeHandler {
+public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     private static final String CLIENT="Client";
     private static final String COORD="Coordinator";
     private static final String PART="Participant";
@@ -179,7 +180,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
     }
 
     @ManagedAttribute(description="Stringified version of merge_id")
-    public String getMergeIdAsString() {return merger.getMergeIdAsString();}
+    public String getMergeId() {return merger.getMergeIdAsString();}
 
     @ManagedOperation
     public String printPreviousMembers() {
@@ -275,7 +276,7 @@ public class GMS extends Protocol implements TP.ProbeHandler {
         return coord != null && local_addr != null && local_addr.equals(coord);
     }
 
-    public MergeId getMergeId() {
+    public MergeId _getMergeId() {
         return impl instanceof CoordGmsImpl? ((CoordGmsImpl)impl).getMergeId() : null;
     }
 

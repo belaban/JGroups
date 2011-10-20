@@ -6,6 +6,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
+import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
@@ -628,10 +629,10 @@ public class RequestCorrelator {
 
 
 
-    private static class MyProbeHandler implements TP.ProbeHandler {
+    private static class MyProbeHandler implements DiagnosticsHandler.ProbeHandler {
         private final ConcurrentMap<Long,RspCollector> requests;
 
-        public MyProbeHandler(ConcurrentMap<Long, RspCollector> requests) {
+        private MyProbeHandler(ConcurrentMap<Long,RspCollector> requests) {
             this.requests=requests;
         }
 

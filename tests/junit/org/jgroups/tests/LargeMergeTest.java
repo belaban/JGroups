@@ -2,16 +2,22 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
+import org.jgroups.util.ThreadFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -23,14 +29,21 @@ import java.util.concurrent.*;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class LargeMergeTest {
-    static final int NUM=50; // number of members
+    static final int NUM=80; // number of members
 
     protected final JChannel[] channels=new JChannel[NUM];
+
+    protected MyDiagnosticsHandler handler;
+
 
 
     @BeforeMethod
     void setUp() throws Exception {
-
+        handler=new MyDiagnosticsHandler(InetAddress.getByName("224.0.75.75"), 7500,
+                                         LogFactory.getLog("DiagnosticsHandler"),
+                                         new DefaultSocketFactory(),
+                                         new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false));
+        
         ThreadGroup test_group=new ThreadGroup("LargeMergeTest");
         TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory(test_group, "Timer", true, true),
                                                5,10,
@@ -44,14 +57,14 @@ public class LargeMergeTest {
 
 
 
+
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
             SHARED_LOOPBACK shared_loopback=(SHARED_LOOPBACK)new SHARED_LOOPBACK().setValue("enable_bundling", false);
-            // shared_loopback.setValue("enable_diagnostics",false);
             shared_loopback.setTimer(timer);
             shared_loopback.setOOBThreadPool(oob_thread_pool);
             shared_loopback.setDefaultThreadPool(thread_pool);
-            
+            shared_loopback.setDiagnosticsHandler(handler);
 
             channels[i]=Util.createChannel(shared_loopback,
                                            new DISCARD().setValue("discard_all",true),
@@ -85,11 +98,13 @@ public class LargeMergeTest {
             stack.stopStack(cluster_name);
             stack.destroy();
         }
+        handler.destroy();
     }
 
 
 
     public void testClusterFormationAfterMerge() {
+        // Util.keyPress("<enter>");
         System.out.println("\nEnabling message traffic between members to start the merge");
         for(JChannel ch: channels) {
             Discovery ping=(Discovery)ch.getProtocolStack().findProtocol(PING.class);
@@ -142,4 +157,22 @@ public class LargeMergeTest {
     }
 
 
+
+    protected class MyDiagnosticsHandler extends DiagnosticsHandler {
+
+        protected MyDiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port, Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
+            super(diagnostics_addr,diagnostics_port,log,socket_factory,thread_factory);
+        }
+
+        public void start() throws IOException {
+            super.start();
+        }
+
+        public void stop() {
+        }
+
+        public void destroy() {
+            super.stop();
+        }
+    }
 }

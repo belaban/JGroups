@@ -46,7 +46,7 @@ public class ProtocolStack extends Protocol {
     private volatile boolean              stopped=true;
 
 
-    private final TP.ProbeHandler props_handler=new TP.ProbeHandler() {
+    private final DiagnosticsHandler.ProbeHandler props_handler=new DiagnosticsHandler.ProbeHandler() {
 
         public Map<String, String> handleProbe(String... keys) {
             for(String key: keys) {
