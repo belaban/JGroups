@@ -322,6 +322,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public void init() throws Exception {
         if(view_ack_collection_timeout <= 0)
             throw new IllegalArgumentException("view_ack_collection_timeout has to be greater than 0");
+        if(merge_kill_timeout > 0 && merge_kill_timeout < merge_timeout)
+            throw new IllegalArgumentException("merge_kill_timeout (" + merge_kill_timeout +
+                                                 ") needs to be less than merge_timeout (" +merge_timeout+")");
         prev_members=new BoundedList<Address>(num_prev_mbrs);
         prev_views=new BoundedList<Tuple<View,Long>>(num_prev_views);
         TP transport=getTransport();
