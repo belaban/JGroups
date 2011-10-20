@@ -89,11 +89,6 @@ public class MERGE2 extends Protocol {
     private int num_inconsistent_views=0;
 
 
-
-    public MERGE2() {
-    }
-
-
     public void init() throws Exception {
         timer=getTransport().getTimer();
         if(timer == null)
