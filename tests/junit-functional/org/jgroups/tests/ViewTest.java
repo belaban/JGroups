@@ -10,14 +10,14 @@ import org.jgroups.util.Util;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Vector;
 
 
 @Test(groups=Global.FUNCTIONAL)
 public class ViewTest {
-    Address a, b, c, d, e, f, g, h, i, j, k;
+    Address a, b, c, d, e, f, g, h, i;
     View view;
     List<Address> members;
     
@@ -61,18 +61,13 @@ public class ViewTest {
     }
 
     public void testEquals2() {
-        View v1=new View(new ViewId(a, 12345), new Vector<Address>(members));
-        View v2=new View(a, 12345, new Vector<Address>(members));
+        View v1=new View(new ViewId(a, 12345), new ArrayList<Address>(members));
+        View v2=new View(a, 12345, new ArrayList<Address>(members));
         assert v1.equals(v2);
-        View v3=new View(a, 12543, new Vector<Address>(members));
+        View v3=new View(a, 12543, new ArrayList<Address>(members));
         assert !v1.equals(v3);
     }
  
-
-    public static void testEquals3() {
-        View v1=new View(), v2=new View();
-        assert v1.equals(v2);
-    }
 
     public void testCopy() {
         View view2=view.copy();

@@ -217,7 +217,7 @@ public class IpAddress implements PhysicalAddress {
         return tmp_size;
     }
 
-    public Object clone() throws CloneNotSupportedException {
+    public IpAddress copy() {
         return new IpAddress(ip_addr, port);
     }
 

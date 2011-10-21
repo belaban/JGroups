@@ -18,26 +18,26 @@ import java.util.*;
  * @since 2.0
  * @author Bela Ban
  */
-public class View implements Cloneable, Streamable, Iterable<Address> {
+public class View implements Streamable, Iterable<Address> {
 
    /**
     * A view is uniquely identified by its ViewID. The view id contains the creator address and a
     * Lamport time. The Lamport time is the highest timestamp seen or sent from a view. if a view
     * change comes in with a lower Lamport time, the event is discarded.
     */
-    protected ViewId vid=null;
+    protected ViewId vid;
 
    /**
     * A list containing all the members of the view.This list is always ordered, with the
     * coordinator being the first member. the second member will be the new coordinator if the
     * current one disappears or leaves the group.
     */
-    protected List<Address> members=null;
+    protected List<Address> members;
 
 
 
     /**
-     * Creates an empty view, should not be used
+     * Creates an empty view, should not be used, only used by (de-)serialization
      */
     public View() {
     }
@@ -72,10 +72,7 @@ public class View implements Cloneable, Streamable, Iterable<Address> {
      *
      * @return the view ID of this view
      */
-    public ViewId getVid() {
-        return vid;
-    }
-
+    public ViewId getVid()    {return vid;}
     public ViewId getViewId() {return vid;}
 
     /**
@@ -85,7 +82,7 @@ public class View implements Cloneable, Streamable, Iterable<Address> {
      * @return the creator of this view in form of an Address object
      */
     public Address getCreator() {
-        return vid != null ? vid.getCoordAddress() : null;
+        return vid.getCoordAddress();
     }
 
     /**
@@ -114,24 +111,13 @@ public class View implements Cloneable, Streamable, Iterable<Address> {
     public boolean equals(Object obj) {
         if(!(obj instanceof View))
             return false;
-        if(vid != null) {
-            int rc=vid.compareTo(((View)obj).vid);
-            if(rc != 0)
-                return false;
-            if(members != null && ((View)obj).members != null) {
-                return members.equals(((View)obj).members);
-            }
-        }
-        else {
-            if(((View)obj).vid == null)
-                return true;
-        }
-        return false;
+        int rc=vid.compareTo(((View)obj).vid);
+        return rc == 0 && members != null && ((View)obj).members != null && members.equals(((View)obj).members);
     }
 
 
     public int hashCode() {
-        return vid != null? vid.hashCode() : 0;
+        return vid.hashCode();
     }
 
     /**
@@ -145,19 +131,9 @@ public class View implements Cloneable, Streamable, Iterable<Address> {
 
 
     public View copy() {
-        ViewId vid2=vid != null ? (ViewId)vid.clone() : null;
-        return new View(vid2, new ArrayList<Address>(members));
+        return new View(vid.copy(), new ArrayList<Address>(members));
     }
 
-
-    /**
-     * Creates a copy of this view
-     * @return a copy of this view
-     */
-    public Object clone() {
-        ViewId vid2=vid != null ? (ViewId)vid.clone() : null;
-        return new View(vid2, new ArrayList<Address>(members));
-    }
 
 
     public String toString() {
@@ -169,38 +145,19 @@ public class View implements Cloneable, Streamable, Iterable<Address> {
 
 
     public void writeTo(DataOutput out) throws Exception {
-        // vid
-        if(vid != null) {
-            out.writeBoolean(true);
-            vid.writeTo(out);
-        }
-        else
-            out.writeBoolean(false);
-
-        // members:
+        vid.writeTo(out);
         Util.writeAddresses(members, out);
     }
 
     @SuppressWarnings("unchecked") 
     public void readFrom(DataInput in) throws Exception {
-        boolean b;
-        // vid:
-        b=in.readBoolean();
-        if(b) {
-            vid=new ViewId();
-            vid.readFrom(in);
-        }
-
-        // members:
+        vid=new ViewId();
+        vid.readFrom(in);
         members=(List<Address>)Util.readAddresses(in, ArrayList.class);
     }
 
     public int serializedSize() {
-        int retval=Global.BYTE_SIZE; // presence for vid
-        if(vid != null)
-            retval+=vid.serializedSize();
-        retval+=Util.size(members);
-        return retval;
+        return (int)(vid.serializedSize() + Util.size(members));
     }
 
 

@@ -699,7 +699,7 @@ public class Merger {
                     }
                     // merge all membership lists into one (prevent duplicates)
                     new_mbrs.add(tmp_view.getMembers());
-                    subgroups.add((View)tmp_view.clone());
+                    subgroups.add(tmp_view.copy());
                 }
             }
 

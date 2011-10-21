@@ -31,7 +31,7 @@ import java.util.concurrent.*;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class LargeMergeTest {
-    static final int NUM=80; // number of members
+    static final int NUM=50; // number of members
 
     protected final JChannel[] channels=new JChannel[NUM];
 
@@ -179,5 +179,14 @@ public class LargeMergeTest {
         public void destroy() {
             super.stop();
         }
+    }
+
+
+    @Test(enabled=false)
+    public static void main(String args[]) throws Exception {
+    		LargeMergeTest test=new LargeMergeTest();
+    		test.setUp();
+    		test.testClusterFormationAfterMerge();
+    		test.tearDown();
     }
 }

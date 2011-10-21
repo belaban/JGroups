@@ -20,7 +20,7 @@ public class ViewIdTest {
     public void setUp() throws UnknownHostException {
         v1=new ViewId(Util.createRandomAddress(), 22);
         v2=new ViewId(Util.createRandomAddress(), 21);
-        v3=(ViewId)v1.clone();
+        v3=v1.copy();
     }
 
 
@@ -34,7 +34,7 @@ public class ViewIdTest {
 
 
     public void test2() {
-        ViewId v4=(ViewId)v1.clone();
+        ViewId v4=v1.copy();
         assert v1.equals(v4);
     }
 

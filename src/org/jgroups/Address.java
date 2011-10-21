@@ -16,7 +16,7 @@ import org.jgroups.util.UUID;
  * @see PhysicalAddress
  * @see UUID
  */
-public interface Address extends Streamable, Comparable<Address>, Cloneable {
+public interface Address extends Streamable, Comparable<Address> {
     // flags used for marshalling
     public static final byte NULL       = 1 << 0;
     public static final byte UUID_ADDR  = 1 << 1;

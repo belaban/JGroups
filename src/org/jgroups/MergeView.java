@@ -67,23 +67,15 @@ public class MergeView extends View {
         return subgroups;
     }
 
-   /**
-    * Creates a copy of this view
-    * 
-    * @return a copy of this view
-    */
-    public Object clone() {
-        ViewId vid2=vid != null ? (ViewId)vid.clone() : null;
+
+    public View copy() {
+        ViewId vid2=vid.copy();
         List<Address> members2=members != null ? new ArrayList<Address>(members) : null;
         List<View> subgroups2=subgroups != null ? new ArrayList<View>(subgroups) : null;
         return new MergeView(vid2, members2, subgroups2);
     }
 
-
-    public View copy() {
-        return (MergeView)clone();
-    }
-
+    
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append("MergeView::").append(super.toString()).append(", subgroups=").append(subgroups);

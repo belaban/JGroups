@@ -341,13 +341,17 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         if(merge_killer_interval > 0) {
             merge_killer=timer.scheduleWithFixedDelay(new Runnable() {
                 public void run() {
-                    long timestamp=merger.getMergeIdTimestamp();
-                    if(timestamp > 0) {
-                        long diff=System.currentTimeMillis() - timestamp;
-                        if(diff >= merge_kill_timeout) {
-                            if(merger.forceCancelMerge())
-                                log.warn("force-cancelled merge task after " + diff + " ms");
+                    try {
+                        long timestamp=merger.getMergeIdTimestamp();
+                        if(timestamp > 0) {
+                            long diff=System.currentTimeMillis() - timestamp;
+                            if(diff >= merge_kill_timeout) {
+                                if(merger.forceCancelMerge())
+                                    log.warn("force-cancelled merge task after " + diff + " ms");
+                            }
                         }
+                    }
+                    catch(Throwable t) {
                     }
                 }
             },merge_killer_interval,merge_killer_interval, TimeUnit.MILLISECONDS);

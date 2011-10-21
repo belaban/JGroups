@@ -167,7 +167,7 @@ public class SizeTest {
 
         IpAddress a1=new IpAddress("127.0.0.1", 5555);
         IpAddress a2=new IpAddress("127.0.0.1", 6666);
-        Vector<Address> suspects=new Vector<Address>();
+        List<Address> suspects=new ArrayList<Address>();
         suspects.add(a1);
         suspects.add(a2);
         hdr=new FD.FdHeader(FD.FdHeader.SUSPECT, suspects, a1);
@@ -186,7 +186,7 @@ public class SizeTest {
         _testSize(sockhdr);
 
 
-        Map<Address,IpAddress> cache=new Hashtable<Address,IpAddress>();
+        Map<Address,IpAddress> cache=new HashMap<Address,IpAddress>();
         cache.put(a1, a2);
         cache.put(a2, a1);
         sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, cache);
@@ -209,7 +209,7 @@ public class SizeTest {
         hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE, set);
         _testSize(hdr);
 
-        Hashtable<Address,IpAddress> map=new Hashtable<Address,IpAddress>();
+        Map<Address,IpAddress> map=new HashMap<Address,IpAddress>();
         map.put(new IpAddress("127.0.0.1", 5000), new IpAddress(4553));
         map.put(new IpAddress("127.0.0.1", 6000), new IpAddress(4523));
         map.put(new IpAddress(7000), new IpAddress(4553));
@@ -331,7 +331,7 @@ public class SizeTest {
 
 
     public static void testAddressVector() throws Exception {
-        Vector<Address> v=new Vector<Address>();
+        List<Address> v=new ArrayList<Address>();
         _testSize(v);
         v.add(new IpAddress(1111));
         _testSize(v);
@@ -379,27 +379,27 @@ public class SizeTest {
 
 
     public static void testView() throws Exception {
-        View v=new View();
+        Address one=Util.createRandomAddress("A");
+        ViewId vid=new ViewId(one, 322649);
+        List<Address> mbrs=new ArrayList<Address>();
+        mbrs.add(one);
+        View v=new View(vid, mbrs);
         _testSize(v);
-
-        ViewId vid=new ViewId(UUID.randomUUID(), 322649);
-        Vector<Address> mbrs=new Vector<Address>();
+        
+        mbrs.add(Util.createRandomAddress("B"));
         v=new View(vid, mbrs);
         _testSize(v);
-        mbrs.add(UUID.randomUUID());
-        _testSize(v);
-        mbrs.add(UUID.randomUUID());
+
+        mbrs.add(Util.createRandomAddress("C"));
+        v=new View(vid, mbrs);
         _testSize(v);
     }
 
 
     public static void testMergeView() throws Exception {
-        View v=new MergeView();
-        _testSize(v);
-
         ViewId vid=new ViewId(UUID.randomUUID(), 322649);
-        Vector<Address> mbrs=new Vector<Address>();
-        v=new MergeView(vid, mbrs, null);
+        List<Address> mbrs=new ArrayList<Address>();
+        View v=new MergeView(vid, mbrs, null);
         _testSize(v);
         mbrs.add(UUID.randomUUID());
         _testSize(v);
@@ -410,8 +410,8 @@ public class SizeTest {
 
 
     public static void testMergeView2() throws Exception {
-        Vector<Address> m1, m2 , m3, all;
-        Vector<View> subgroups;
+        List<Address> m1, m2 , m3, all;
+        List<View> subgroups;
         Address a,b,c,d,e,f;
         View v1, v2, v3, view_all;
 
@@ -422,8 +422,8 @@ public class SizeTest {
         e=Util.createRandomAddress();
         f=Util.createRandomAddress();
 
-        m1=new Vector<Address>(); m2=new Vector<Address>(); m3=new Vector<Address>(); all=new Vector<Address>();
-        subgroups=new Vector<View>();
+        m1=new ArrayList<Address>(); m2=new ArrayList<Address>(); m3=new ArrayList<Address>(); all=new ArrayList<Address>();
+        subgroups=new ArrayList<View>();
         m1.add(a); m1.add(b); m1.add(c);
         m2.add(d);
         m3.add(e); m3.add(f);
@@ -444,8 +444,8 @@ public class SizeTest {
 
 
     public static void testMergeView3() throws Exception {
-        Vector<Address> m1, m2 , m3, all;
-        Vector<View> subgroups;
+        List<Address> m1, m2 , m3, all;
+        List<View> subgroups;
         Address a,b,c,d,e,f;
         View v1, v2, v3, v4, view_all;
 
@@ -456,15 +456,15 @@ public class SizeTest {
         e=new IpAddress(5000);
         f=new IpAddress(6000);
 
-        m1=new Vector<Address>(); m2=new Vector<Address>(); m3=new Vector<Address>(); all=new Vector<Address>();
-        subgroups=new Vector<View>();
+        m1=new ArrayList<Address>(); m2=new ArrayList<Address>(); m3=new ArrayList<Address>(); all=new ArrayList<Address>();
+        subgroups=new ArrayList<View>();
         m1.add(a); m1.add(b); m1.add(c);
         m2.add(d);
         m3.add(e); m3.add(f);
         all.add(a); all.add(b); all.add(c); all.add(d); all.add(e); all.add(f);
 
         v1=new View(a, 1, m1);
-        v2=new MergeView(d, 2, m2, new Vector<View>());
+        v2=new MergeView(d, 2, m2, new ArrayList<View>());
         v3=new View(e, 3, m3);
         v4=new MergeView(e, 4, m3, null);
         subgroups.add(v1);
@@ -523,7 +523,7 @@ public class SizeTest {
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, addr);
         _testSize(hdr);
 
-        Vector<Address> members=new Vector<Address>();
+        List<Address> members=new ArrayList<Address>();
         members.add(addr);
         members.add(addr);
         View v=new View(addr, 33, members);

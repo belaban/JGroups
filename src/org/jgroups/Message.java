@@ -516,10 +516,6 @@ public class Message implements Streamable {
     }
 
 
-    protected Object clone() throws CloneNotSupportedException {
-        return copy();
-    }
-
     public Message makeReply() {
         return new Message(src_addr);
     }

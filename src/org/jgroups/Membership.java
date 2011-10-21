@@ -15,7 +15,7 @@ import java.util.*;
  * @since 2.0
  * @author Bela Ban
  */
-public class Membership implements Cloneable {
+public class Membership {
     /* private vector to hold all the addresses */
     private final List<Address> members=new LinkedList<Address>();
     protected static final Log log=LogFactory.getLog(Membership.class);
@@ -212,16 +212,9 @@ public class Membership implements Cloneable {
      * @return an exact copy of this membership
      */
     public Membership copy() {
-        return ((Membership)clone());
-    }
-
-
-   /**
-    * Returns a clone of this object. The list of members is copied to a new container
-    */
-    public Object clone() {
         return new Membership(this.members);
     }
+
 
    /**
     * Returns the number of addresses in this membership

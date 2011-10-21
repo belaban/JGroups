@@ -272,7 +272,7 @@ public class UUID implements Address, Streamable, Comparable<Address> {
         return SIZE;
     }
 
-    public Object clone() throws CloneNotSupportedException {
+    public UUID copy() {
         return new UUID(mostSigBits, leastSigBits);
     }
 
