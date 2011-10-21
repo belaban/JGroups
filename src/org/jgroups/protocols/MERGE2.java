@@ -88,6 +88,9 @@ public class MERGE2 extends Protocol {
     @ManagedAttribute(description="Number of inconsistent 1-coord views until a MERGE event is sent up the stack")
     private int num_inconsistent_views=0;
 
+    @ManagedAttribute(description="Number of times a MERGE event was sent up the stack")
+    protected int num_merge_events=0;
+
 
     public void init() throws Exception {
         timer=getTransport().getTimer();
@@ -294,6 +297,7 @@ public class MERGE2 extends Protocol {
             Event evt=new Event(Event.MERGE, views);
             try {
                 up_prot.up(evt);
+                num_merge_events++;
             }
             catch(Throwable t) {
                 log.error("failed sending up MERGE event", t);
