@@ -10,9 +10,6 @@ import org.jgroups.util.Streamable;
  */
 public abstract class Header implements Streamable {
 
-    public Header() {
-    }
-
 
     /**
      * To be implemented by subclasses. Return the size of this object for the serialized version of it.

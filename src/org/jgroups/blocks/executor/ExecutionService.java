@@ -706,7 +706,7 @@ public class ExecutionService extends AbstractExecutorService {
         protected Runnable task;
         protected T result;
         
-        protected RunnableAdapter() {
+        public RunnableAdapter() {
             
         }
         protected RunnableAdapter(Runnable  task, T result) {
