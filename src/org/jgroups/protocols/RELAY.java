@@ -681,7 +681,7 @@ public class RELAY extends Protocol {
         protected View                global_view;
         protected Map<Address,String> uuids;
 
-        protected ViewData() {
+        public ViewData() {
         }
 
         private ViewData(View remote_view, View global_view, Map<Address,String> uuids) {
