@@ -15,7 +15,7 @@ import java.util.*;
  * 
  * @author vlada
  */
-@Test(groups=Global.FLUSH,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class MergeTest extends ChannelTestBase {
    
     @Test
@@ -141,12 +141,12 @@ public class MergeTest extends ChannelTestBase {
 
 
     private static View createView(String partition, JChannel[] channels) throws Exception {
-        Vector<Address> members=new Vector<Address>();
+        List<Address> members=new ArrayList<Address>();
         Address addr=findAddress(partition, channels);
         if(addr == null)
             throw new Exception(partition + " not associated with a channel");
         members.add(addr);
-        return new View(members.firstElement(), 10, members);
+        return new View(members.get(0), 10, members);
     }
 
 

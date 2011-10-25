@@ -322,9 +322,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public void init() throws Exception {
         if(view_ack_collection_timeout <= 0)
             throw new IllegalArgumentException("view_ack_collection_timeout has to be greater than 0");
+        if(merge_timeout <= 0)
+            throw new IllegalArgumentException("merge_timeout has to be greater than 0");
         if(merge_kill_timeout > 0 && merge_kill_timeout < merge_timeout)
             throw new IllegalArgumentException("merge_kill_timeout (" + merge_kill_timeout +
-                                                 ") needs to be less than merge_timeout (" +merge_timeout+")");
+                                                 ") needs to be greater than merge_timeout (" +merge_timeout+")");
         prev_members=new BoundedList<Address>(num_prev_mbrs);
         prev_views=new BoundedList<Tuple<View,Long>>(num_prev_views);
         TP transport=getTransport();
@@ -1332,8 +1334,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 Future<?> old_future=resume_tasks.put(merge_id, future);
                 if(old_future != null)
                     old_future.cancel(true);
-                if(log.isTraceEnabled())
-                    log.trace(local_addr + ": view handler for merge_id " + merge_id + " was suspended");
             }
         }
 
@@ -1355,8 +1355,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             if(queue.closed())
                 queue.reset();
             suspended=false;
-            if(log.isTraceEnabled())
-                log.trace("view handler was resumed");
         }
 
         public void run() {

@@ -12,7 +12,6 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
-import org.jgroups.util.ThreadFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -22,7 +21,9 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 /**

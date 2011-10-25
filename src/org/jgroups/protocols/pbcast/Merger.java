@@ -75,7 +75,7 @@ public class Merger {
         tmp.sort();
         Address merge_leader=tmp.elementAt(0);
         if(log.isDebugEnabled())
-            log.debug("determining merge leader from " + merge_participants);
+            log.debug(gms.local_addr + ": determining merge leader from " + merge_participants);
         if(merge_leader.equals(gms.local_addr)) {
             if(log.isDebugEnabled())
                 log.debug("I (" + gms.local_addr + ") will be the leader. Starting the merge task for " + merge_participants);
@@ -99,7 +99,7 @@ public class Merger {
     public void handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs) {
         boolean success=matchMergeId(merge_id) || setMergeId(null, merge_id);
         if(!success) {
-            if(log.isWarnEnabled()) log.warn(gms.local_addr + ": merge is already in progress");
+            if(log.isWarnEnabled()) log.warn(gms.local_addr + ": merge (id=" + merge_id + ") is already in progress");
             sendMergeRejectedResponse(sender, merge_id);
             return;
         }
@@ -335,13 +335,13 @@ public class Merger {
         if(coords == null || merge_id == null)
             return;
 
-        for(Address coord:coords) {
+        if(log.isDebugEnabled()) log.debug(gms.local_addr + ": sending cancel merge to " + coords);
+        for(Address coord: coords) {
             Message msg=new Message(coord, null, null);
             // msg.setFlag(Message.OOB);
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.CANCEL_MERGE);
             hdr.merge_id=merge_id;
             msg.putHeader(gms.getId(), hdr);
-            if(log.isDebugEnabled()) log.debug(gms.local_addr + ": sending cancel merge to " + coord);
             gms.getDownProtocol().down(new Event(Event.MSG, msg));
         }
     }
@@ -578,16 +578,28 @@ public class Merger {
                     log.warn("failed to set my own merge_id (" + merge_id + ") to " + new_merge_id);
                     return;
                 }
+                if(log.isTraceEnabled())
+                    log.trace(gms.local_addr + ": merge_id is " + merge_id);
 
                 coordsCopy=new ArrayList<Address>(coords.keySet());
 
                 /* 2. Fetch the current Views/Digests from all subgroup coordinators */
                 success=getMergeDataFromSubgroupCoordinators(coords, new_merge_id, gms.merge_timeout);
-                if(!success)
-                    throw new Exception("merge leader did not get data from all partition coordinators " + coords.keySet());
+                List<Address> missing=null;
+                if(!success) {
+                    missing=merge_rsps.getMissing();
+                    log.debug("merge leader " + gms.local_addr + " did not get responses from all partition coordinators " +
+                                coords.keySet() + "; missing responses from " + missing + ", removing them from the merge");
+                    merge_rsps.remove(missing);
+                }
 
-                /* 3. Remove rejected MergeData elements from merge_rsp and coords (so we'll send the new view
+                /* 3. Remove null or rejected merge responses from merge_rsp and coords (so we'll send the new view
                  * only to members who accepted the merge request) */
+                if(missing != null && !missing.isEmpty()) {
+                    coords.keySet().removeAll(missing);
+                    coordsCopy.removeAll(missing);
+                }
+
                 removeRejectedMergeRequests(coords.keySet());
                 if(merge_rsps.size() == 0)
                     throw new Exception("did not get any merge responses from partition coordinators");
@@ -606,7 +618,7 @@ public class Merger {
             }
             catch(Throwable ex) {
                 if(log.isWarnEnabled())
-                    log.warn(gms.local_addr + ": " + ex.getLocalizedMessage() + ", merge is cancelled");
+                    log.warn(gms.local_addr + ": " + ex + ", merge is cancelled");
                 sendMergeCancelledMessage(coordsCopy, new_merge_id);
                 cancelMerge(new_merge_id); // the message above cancels the merge, too, but this is a 2nd line of defense
             }
@@ -656,7 +668,8 @@ public class Merger {
             gotAllResponses=merge_rsps.hasAllResponses();
             long stop=System.currentTimeMillis();
             if(log.isDebugEnabled())
-                log.debug(gms.local_addr + ": collected " + merge_rsps.size() + " merge response(s) in " + (stop-start) + " ms");
+                log.debug(gms.local_addr + ": collected " + merge_rsps.numberOfValidResponses() + " merge response(s) in " +
+                            (stop-start) + " ms");
             return gotAllResponses;
         }
 
@@ -722,7 +735,7 @@ public class Merger {
                 if(log.isErrorEnabled()) log.error("Merge leader " + gms.local_addr + ": could not consolidate digest for merge");
                 return null;
             }
-            if(log.isDebugEnabled()) log.debug("Merge leader " + gms.local_addr + ": consolidated view=" + new_view +
+            if(log.isDebugEnabled()) log.debug("merge leader " + gms.local_addr + ": consolidated view=" + new_view +
                     "\nconsolidated digest=" + new_digest);
             return new MergeData(gms.local_addr, new_view, new_digest);
         }

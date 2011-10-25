@@ -104,6 +104,10 @@ public class Message implements Streamable {
         setBuffer(buf);
     }
 
+    public Message(Address dest, byte[] buf) {
+        this(dest, null, buf);
+    }
+
 
    /**
     * Constructs a message. The index and length parameters allow to provide a <em>reference</em> to
@@ -136,6 +140,10 @@ public class Message implements Streamable {
         setBuffer(buf, offset, length);
     }
 
+    public Message(Address dest, byte[] buf, int offset, int length) {
+        this(dest, null, buf, offset, length);
+    }
+
 
    /**
     * Constructs a Message given a destination Address, a source Address and the payload Object
@@ -158,6 +166,10 @@ public class Message implements Streamable {
         this(dest);
         setSrc(src);
         setObject(obj);
+    }
+
+    public Message(Address dest, Object obj) {
+        this(dest, null, obj);
     }
 
 

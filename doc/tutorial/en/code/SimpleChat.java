@@ -31,6 +31,7 @@ public class SimpleChat extends ReceiverAdapter {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public void setState(InputStream input) throws Exception {
         List<String> list=(List<String>)Util.objectFromStream(new DataInputStream(input));
         synchronized(state) {

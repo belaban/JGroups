@@ -425,7 +425,7 @@ channel.send(msg);
         <programlisting language="Java">
 View view=channel.getView();
 Address first=view.getMembers().get(0);
-Message msg=new Message(first, null, "Hello world");
+Message msg=new Message(first, "Hello world");
 channel.send(msg);
         </programlisting>
 

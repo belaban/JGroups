@@ -3,10 +3,7 @@ package org.jgroups.util;
 import org.jgroups.Address;
 import org.jgroups.annotations.GuardedBy;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Collections;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
@@ -68,6 +65,20 @@ public class ResponseCollector<T> {
         }
     }
 
+    public void remove(List<Address> members) {
+        if(members == null || members.isEmpty())
+            return;
+        lock.lock();
+        try {
+            for(Address member: members)
+                responses.remove(member);
+            cond.signalAll();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
     public void suspect(Address member) {
         if(member == null)
             return;
@@ -94,6 +105,32 @@ public class ResponseCollector<T> {
             lock.unlock();
         }
     }
+
+    public int numberOfValidResponses() {
+        int retval=0;
+        lock.lock();
+        try {
+            for(Map.Entry<Address,T> entry: responses.entrySet()) {
+                if(entry.getValue() != null)
+                    retval++;
+            }
+            return retval;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /** Returns a list of members which didn't send a valid response */
+    public List<Address> getMissing() {
+        List<Address> retval=new ArrayList<Address>();
+        for(Map.Entry<Address,T> entry: responses.entrySet()) {
+            if(entry.getValue() == null)
+                retval.add(entry.getKey());
+        }
+        return retval;
+    }
+
 
     public Map<Address,T> getResults() {
         return Collections.unmodifiableMap(responses);
