@@ -27,6 +27,7 @@
     <class id="25" name="org.jgroups.protocols.ENCRYPT"/>
     <class id="26" name="org.jgroups.protocols.SEQUENCER"/>
     <class id="27" name="org.jgroups.protocols.FD_SIMPLE"/>
+    <class id="28" name="org.jgroups.protocols.FD_ICMP"/>
     <class id="29" name="org.jgroups.protocols.FD_ALL"/>
     <class id="31" name="org.jgroups.protocols.pbcast.FLUSH"/>
     <class id="33" name="org.jgroups.protocols.AUTH"/>

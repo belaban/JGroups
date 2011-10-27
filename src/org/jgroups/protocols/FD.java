@@ -192,6 +192,9 @@ public class FD extends Protocol {
         }
     }
 
+    @ManagedAttribute(description="Whether the failure detection monitor is running",writable=false)
+    public boolean isMonitorRunning() {return monitor_future != null && !monitor_future.isDone();}
+
     /** Restarts the monitor if the ping destination has changed. If not, this is a no-op.
      * Requires lock to be held by the caller */
     @GuardedBy("lock")
