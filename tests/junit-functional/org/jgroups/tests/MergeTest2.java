@@ -106,7 +106,7 @@ public class MergeTest2 {
     }
 
 
-    public void testMergeWithMissingMergeResponseFromD() {
+    public void testMergeWithMissingMergeResponse() {
         JChannel merge_leader=findMergeLeader(a,b,c,d);
         List<Address> non_faulty_members=new ArrayList<Address>();
         non_faulty_members.addAll(Arrays.asList(a.getAddress(),b.getAddress(),c.getAddress(),d.getAddress()));

@@ -71,7 +71,7 @@ public abstract class Discovery extends Protocol {
     protected Address               local_addr=null;
     protected String                group_addr=null;
     protected final Set<Responses>  ping_responses=new HashSet<Responses>();
-    
+
 
     
     public void init() throws Exception {
@@ -140,6 +140,10 @@ public abstract class Discovery extends Protocol {
         return view != null? view.getViewId() : null;
     }
 
+    protected boolean isMergeRunning() {
+        Object retval=up_prot.up(new Event(Event.IS_MERGE_IN_PROGRESS));
+        return retval instanceof Boolean && ((Boolean)retval).booleanValue();
+    }
 
     public List<Integer> providedUpServices() {
         List<Integer> ret=new ArrayList<Integer>(3);
@@ -380,6 +384,12 @@ public abstract class Discovery extends Protocol {
                                 return null;
                         }
 
+                        if(isMergeRunning()) {
+                            if(log.isTraceEnabled())
+                                log.trace("suppressing merge response as a merge is already in progress");
+                            return null;
+                        }
+
                         List<PhysicalAddress> physical_addrs=hdr.view_id != null? null :
                           Arrays.asList((PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)));
                         sendDiscoveryResponse(local_addr, physical_addrs, is_server, hdr.view_id != null,
@@ -420,7 +430,6 @@ public abstract class Discovery extends Protocol {
             case Event.GET_PHYSICAL_ADDRESS:
                 try {
                     sendDiscoveryRequest(group_addr, null, null);
-                    // sendGetMembersRequest(group_addr, null, null);
                 }
                 catch(InterruptedIOException ie) {
                     if(log.isWarnEnabled()){

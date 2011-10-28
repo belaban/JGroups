@@ -2321,8 +2321,10 @@ public class Util {
         JChannel ch=new JChannel(false);
         ProtocolStack stack=new ProtocolStack();
         ch.setProtocolStack(stack);
-        for(Protocol prot: prots)
+        for(Protocol prot: prots) {
             stack.addProtocol(prot);
+            prot.setProtocolStack(stack);
+        }
         stack.init();
         return ch;
     }

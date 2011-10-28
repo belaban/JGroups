@@ -133,7 +133,7 @@ public class ResponseCollector<T> {
 
 
     public Map<Address,T> getResults() {
-        return Collections.unmodifiableMap(responses);
+        return responses;
     }
 
     public int size() {

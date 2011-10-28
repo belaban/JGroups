@@ -415,6 +415,8 @@ public class Merger {
         return false;
     }
 
+    boolean isMergeTaskRunning() {return merge_task.isRunning();}
+
 
     boolean forceCancelMerge() {
         merge_lock.lock();
@@ -456,7 +458,7 @@ public class Merger {
         }
     }
 
-    private boolean isMergeInProgress() {
+    public boolean isMergeInProgress() {
         merge_lock.lock();
         try {
             return merge_id != null;
@@ -565,6 +567,11 @@ public class Merger {
         }
 
 
+        public synchronized boolean isRunning() {
+            return thread != null && thread.isAlive();
+        }
+
+
         /** Runs the merge protocol as a leader */
         public void run() {
 
@@ -572,6 +579,7 @@ public class Merger {
             MergeId new_merge_id=MergeId.create(gms.local_addr);
             Collection<Address> coordsCopy=null;
 
+            long start=System.currentTimeMillis();
             try {
                 boolean success=setMergeId(null, new_merge_id);
                 if(!success) {
@@ -624,13 +632,16 @@ public class Merger {
             }
             finally {
                 gms.getViewHandler().resume(new_merge_id);
-                stopMergeCanceller(); // this is probably not necessary
+                // stopMergeCanceller(); // this is probably not necessary
 
                 /*5. if flush is in stack stop the flush for entire cluster [JGRP-700] - FLUSH: flushing should span merge */
                 gms.stopFlush();
                 if(log.isDebugEnabled())
                     log.debug(gms.local_addr + ": merge leader completed merge task");
                 thread=null;
+                long diff=System.currentTimeMillis() - start;
+                if(log.isTraceEnabled())
+                    log.trace(gms.local_addr + ": merge " + new_merge_id + " took " + diff + " ms");
             }
         }
 
@@ -676,13 +687,13 @@ public class Merger {
 
         /** Removed rejected merge requests from merge_rsps and coords. This method has a lock on merge_rsps */
         private void removeRejectedMergeRequests(Collection<Address> coords) {
-            for(Map.Entry<Address,MergeData> entry: merge_rsps.getResults().entrySet()) {
-                Address member=entry.getKey();
+            for(Iterator<Map.Entry<Address,MergeData>> it=merge_rsps.getResults().entrySet().iterator(); it.hasNext();) {
+                Map.Entry<Address,MergeData> entry=it.next();
                 MergeData data=entry.getValue();
                 if(data.merge_rejected) {
                     if(data.getSender() != null)
                         coords.remove(data.getSender());
-                    merge_rsps.remove(member);
+                    it.remove();
                 }
             }
         }

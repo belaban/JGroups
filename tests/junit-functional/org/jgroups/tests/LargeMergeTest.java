@@ -72,9 +72,9 @@ public class LargeMergeTest {
 
             channels[i]=Util.createChannel(shared_loopback,
                                            new DISCARD().setValue("discard_all",true),
-                                           new PING().setValue("timeout",100),
-                                           new MERGE2().setValue("min_interval",2000).setValue("max_interval",10000),
-                                           // new FD_ALL(),
+                                           new PING().setValue("timeout",100).setValue("num_initial_members", 10),
+                                           new MERGE2().setValue("min_interval",8000)
+                                             .setValue("max_interval",15000).setValue("merge_fast", false),
                                            new NAKACK().setValue("use_mcast_xmit",false)
                                              .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
                                            new UNICAST(),

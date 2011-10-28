@@ -182,6 +182,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @ManagedAttribute(description="Stringified version of merge_id")
     public String getMergeId() {return merger.getMergeIdAsString();}
 
+    @ManagedAttribute(description="Is a merge currently running")
+    public boolean isMergeInProgress() {return merger.isMergeInProgress();}
+
     @ManagedOperation
     public String printPreviousMembers() {
         StringBuilder sb=new StringBuilder();
@@ -296,20 +299,18 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
     public List<Integer> requiredDownServices() {
-        List<Integer> retval=new ArrayList<Integer>(3);
-        retval.add(Event.GET_DIGEST);
-        retval.add(Event.SET_DIGEST);
-        retval.add(Event.FIND_INITIAL_MBRS);
-        return retval;
+        return Arrays.asList(Event.GET_DIGEST, Event.SET_DIGEST, Event.FIND_INITIAL_MBRS, Event.FIND_ALL_VIEWS);
     }
 
+    public List<Integer> providedDownServices() {
+        return Arrays.asList(Event.IS_MERGE_IN_PROGRESS);
+    }
+    
     public void setImpl(GmsImpl new_impl) {
         synchronized(impl_mutex) {
             if(impl == new_impl) // unnecessary ?
                 return;
             impl=new_impl;
-            if(log.isDebugEnabled())
-                log.debug(local_addr != null? local_addr + ": " : "" + "changed role to " + new_impl.getClass().getName());
         }
     }
 
@@ -436,6 +437,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
         return result;
     }
+
+    @ManagedAttribute(description="Is the merge task running")
+    public boolean isMergeTaskRunning() {return merger.isMergeTaskRunning();}
 
     /**
      * Computes the next view. Returns a copy that has <code>old_mbrs</code> and
@@ -915,6 +919,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             case Event.MERGE:
                 view_handler.add(new Request(Request.MERGE, null, false, (Map<Address,View>)evt.getArg()));
                 return null;                              // don't pass up
+
+            case Event.IS_MERGE_IN_PROGRESS:
+                return merger.isMergeInProgress();
         }
         return up_prot.up(evt);
     }
