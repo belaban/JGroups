@@ -27,9 +27,9 @@ public class AUTH extends Protocol {
     /**
      * used on the coordinator to authentication joining member requests against
      */
-    private AuthToken auth_plugin=null;
+    protected AuthToken auth_token=null;
 
-    private static final short gms_id=ClassConfigurator.getProtocolId(GMS.class);
+    protected static final short gms_id=ClassConfigurator.getProtocolId(GMS.class);
 
     
     public AUTH() {
@@ -41,26 +41,30 @@ public class AUTH extends Protocol {
     @Property(name="auth_class")
     public void setAuthClass(String class_name) throws Exception {
         Object obj=Class.forName(class_name).newInstance();
-        auth_plugin=(AuthToken)obj;
-        auth_plugin.setAuth(this);
+        auth_token=(AuthToken)obj;
+        auth_token.setAuth(this);
     }
 
-    public String getAuthClass() {return auth_plugin != null? auth_plugin.getClass().getName() : null;}
+    public String getAuthClass() {return auth_token != null? auth_token.getClass().getName() : null;}
+
+    public AuthToken getAuthToken() {return auth_token;}
+    public void setAuthToken(AuthToken token) {this.auth_token=token;}
+
 
     protected List<Object> getConfigurableObjects() {
         List<Object> retval=new LinkedList<Object>();
-        if(auth_plugin != null)
-            retval.add(auth_plugin);
+        if(auth_token != null)
+            retval.add(auth_token);
         return retval;
     }
 
     public void init() throws Exception {
         super.init();
-        if(auth_plugin instanceof X509Token) {
-            X509Token tmp=(X509Token)auth_plugin;
+        if(auth_token instanceof X509Token) {
+            X509Token tmp=(X509Token)auth_token;
             tmp.setCertificate();
         }
-        auth_plugin.init();
+        auth_token.init();
     }
 
 
@@ -87,7 +91,7 @@ public class AUTH extends Protocol {
 
                 if(authHeader != null) {
                     //Now we have the AUTH Header we need to validate it
-                    if(this.auth_plugin.authenticate(authHeader.getToken(), msg)) {
+                    if(this.auth_token.authenticate(authHeader.getToken(), msg)) {
                         return up_prot.up(evt);
                     }
                     else {
@@ -122,7 +126,7 @@ public class AUTH extends Protocol {
                 sendJoinRejectionMessage(dest, error_msg);
                 break;
             case GMS.GmsHeader.MERGE_REQ:
-                sendMergeRejectionMessage(dest, error_msg);
+                sendMergeRejectionMessage(dest);
                 break;
             default:
                 log.error("type " + type + " unknown");
@@ -142,7 +146,7 @@ public class AUTH extends Protocol {
         down_prot.down(new Event(Event.MSG, msg));
     }
 
-    protected void sendMergeRejectionMessage(Address dest, String error_msg) {
+    protected void sendMergeRejectionMessage(Address dest) {
         Message msg=new Message(dest, null, null);
         msg.setFlag(Message.OOB);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
@@ -168,7 +172,7 @@ public class AUTH extends Protocol {
             //we found a join request message - now add an AUTH Header
             Message msg = (Message)evt.getArg();
             AuthHeader authHeader = new AuthHeader();
-            authHeader.setToken(this.auth_plugin);
+            authHeader.setToken(this.auth_token);
             msg.putHeader(this.id, authHeader);
         }
         return down_prot.down(evt);
@@ -179,7 +183,7 @@ public class AUTH extends Protocol {
      * @param evt The event object passed in to AUTH
      * @return A GmsHeader object or null if the event contains a message of a different type
      */
-    private static GMS.GmsHeader getGMSHeader(Event evt){
+    protected static GMS.GmsHeader getGMSHeader(Event evt){
         Message msg;
         switch(evt.getType()){
           case Event.MSG:
