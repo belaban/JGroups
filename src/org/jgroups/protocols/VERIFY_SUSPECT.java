@@ -89,8 +89,15 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
     public Object down(Event evt) {
-        if(evt.getType() == Event.SHUTDOWN) {
-            shutting_down=true;
+        switch(evt.getType()) {
+            case Event.SHUTDOWN:
+                shutting_down=true;
+                break;
+
+            case Event.VIEW_CHANGE:
+                View v=(View)evt.getArg();
+                adjustSuspectedMembers(v.getMembers());
+                break;
         }
         return down_prot.down(evt);
     }
@@ -285,6 +292,17 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
     }
 
+    /**
+     * Removes all elements from suspects that are <em>not</em> in the new membership
+     */
+    void adjustSuspectedMembers(List new_mbrship) {
+        synchronized(suspects) {
+            for ( Object s : suspects.keySet() ) {
+                if ( ! new_mbrship.contains ( s ) )
+                    suspects.remove ( s );
+            }
+        }
+    }
 
     private synchronized void startTimer() {
         if(timer == null || !timer.isAlive()) {            

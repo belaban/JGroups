@@ -8,9 +8,12 @@ import org.jgroups.View;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
+import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -268,6 +271,12 @@ public class Simulator {
             catch(QueueClosedException e) {
             }
             return null;
+        }
+
+        public ThreadFactory getThreadFactory() {
+            if(global_thread_factory==null)
+                global_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false);
+            return global_thread_factory;
         }
     }
 
