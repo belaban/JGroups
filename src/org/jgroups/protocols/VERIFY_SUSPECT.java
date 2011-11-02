@@ -50,14 +50,14 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     
     
     /** network interface to be used to send the ICMP packets */
-    private NetworkInterface intf=null;
+    protected NetworkInterface intf=null;
     
-    private Address local_addr=null;
+    protected Address local_addr=null;
     
     /**keys=Addresses, vals=time in mcses since added **/
-    private final Hashtable<Address,Long> suspects=new Hashtable<Address,Long>();
+    protected final Map<Address,Long> suspects=new HashMap<Address,Long>();
     
-    private Thread timer=null;
+    protected Thread timer=null;
     
     
     
@@ -65,8 +65,14 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     }
 
     public Object down(Event evt) {
-        if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
-            local_addr=(Address)evt.getArg();
+        switch(evt.getType()) {
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
+            case Event.VIEW_CHANGE:
+                View v=(View)evt.getArg();
+                adjustSuspectedMembers(v.getMembers());
+                break;
         }
         return down_prot.down(evt);
     }
@@ -134,6 +140,19 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         return up_prot.up(evt);
     }
 
+    /**
+     * Removes all elements from suspects that are <em>not</em> in the new membership
+     */
+    protected void adjustSuspectedMembers(List<Address> new_mbrship) {
+        synchronized(suspects) {
+            for(Iterator<Map.Entry<Address,Long>> it=suspects.entrySet().iterator(); it.hasNext();) {
+                Map.Entry<Address,Long> entry=it.next();
+                if(!new_mbrship.contains(entry.getKey()))
+                    it.remove();
+            }
+        }
+    }
+
 
     /**
      * Will be started when a suspect is added to the suspects hashtable. Continually iterates over the
@@ -150,8 +169,10 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
             List<Address> confirmed_suspects=new LinkedList<Address>();
             synchronized(suspects) {
-                for(Enumeration<Address> e=suspects.keys(); e.hasMoreElements();) {
-                    Address mbr=e.nextElement();
+                for(Iterator<Map.Entry<Address,Long>> it=suspects.entrySet().iterator(); it.hasNext();) {
+                    Map.Entry<Address,Long> entry=it.next();
+                    Address mbr=entry.getKey();
+
                     val=suspects.get(mbr).longValue();                    
                     diff=System.currentTimeMillis() - val;
                     if(diff >= timeout) {  // haven't been unsuspected, pass up SUSPECT
@@ -159,7 +180,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                             log.trace("diff=" + diff + ", mbr " + mbr + " is dead (passing up SUSPECT event)");                      
                         
                         confirmed_suspects.add(mbr);
-                        suspects.remove(mbr);
+                        it.remove();
                         continue;
                     }
                     diff=Math.max(diff, timeout - diff);
