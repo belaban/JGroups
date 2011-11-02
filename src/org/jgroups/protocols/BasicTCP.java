@@ -10,6 +10,7 @@ import org.jgroups.util.Util;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
@@ -262,8 +263,12 @@ public abstract class BasicTCP extends TP {
         Object ret=super.handleDownEvent(evt);
         if(evt.getType() == Event.VIEW_CHANGE) {
             suspected_mbrs.clear();
-            retainAll(members); // remove all connections from the ConnectionTable which are not members
+            HashSet<Address> copy;
+            synchronized(members) {
+                copy=new HashSet<Address>(members);
             }
+            retainAll(copy);
+        }
         else if(evt.getType() == Event.UNSUSPECT) {
             Address suspected_mbr=(Address)evt.getArg();
             suspected_mbrs.remove(suspected_mbr);
