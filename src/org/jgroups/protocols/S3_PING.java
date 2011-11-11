@@ -128,7 +128,7 @@ public class S3_PING extends FILE_PING {
                                 PingData data=(PingData)Util.objectFromByteBuffer(buf);
                                 retval.add(data);
                             }
-                            catch(Exception e) {
+                            catch(Throwable e) {
                                 log.error("failed marshalling buffer to address", e);
                             }
                         }
