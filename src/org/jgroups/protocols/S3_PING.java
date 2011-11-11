@@ -124,7 +124,7 @@ public class S3_PING extends FILE_PING {
                     GetResponse val=conn.get(location, key.key, null);
                     if(val.object != null) {
                         byte[] buf=val.object.data;
-                        if(buf != null) {
+                        if(buf != null && buf.length > 0) {
                             try {
                                 PingData data=(PingData)Util.objectFromByteBuffer(buf);
                                 retval.add(data);
