@@ -113,7 +113,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     @ManagedAttribute
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     @ManagedAttribute
-    public String getMembers() {return members != null? members.toString() : "[]";}
+    public String getMembers() {
+        synchronized(members) {
+            return members.toString();
+        }
+    }
 
     @ManagedAttribute(description="Whether the ConnectionReaper task is running")
     public boolean isConnectionReaperRunning() {return connection_reaper != null && !connection_reaper.isDone();}
