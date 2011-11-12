@@ -85,6 +85,10 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
       "which uses ranges of retransmitted messages. Default is true. Note that this property will be removed in 3.0; " +
       "it is only used to switch back to the old (and proven) retransmitter mechanism if issues occur")
     private boolean use_range_based_retransmitter=true;
+
+    @Property(description="Time (in milliseconds) after which an idle incoming or outgoing connection is closed. The " +
+      "connection will get re-established when used again. 0 disables connection reaping")
+    protected long conn_expiry_timeout=60000;
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
@@ -93,8 +97,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
-    private final ConcurrentMap<Address, SenderEntry>   send_table=Util.createConcurrentMap();
-    private final ConcurrentMap<Address, ReceiverEntry> recv_table=Util.createConcurrentMap();
+    private final ConcurrentMap<Address,SenderEntry>   send_table=Util.createConcurrentMap();
+    private final ConcurrentMap<Address,ReceiverEntry> recv_table=Util.createConcurrentMap();
 
     protected final ReentrantLock recv_table_lock=new ReentrantLock();
 
@@ -113,6 +117,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     private AgeOutCache<Address> cache=null;
 
     private Future<?> stable_task_future=null; // bcasts periodic STABLE message (added to timer below)
+
+    protected Future<?> connection_reaper; // closes idle connections
 
 
     public int[] getTimeout() {return timeout;}
@@ -134,6 +140,22 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
     @ManagedAttribute
     public String getMembers() {return members != null? members.toString() : "[]";}
 
+
+    @ManagedAttribute(description="Returns the number of outgoing (send) connections")
+    public int getNumSendConnections() {
+        return send_table.size();
+    }
+
+    @ManagedAttribute(description="Returns the number of incoming (receive) connections")
+    public int getNumReceiveConnections() {
+        return recv_table.size();
+    }
+
+    @ManagedAttribute(description="Returns the total number of outgoing (send) and incoming (receive) connections")
+    public int getNumConnections() {
+        return getNumReceiveConnections() + getNumSendConnections();
+    }
+
     @ManagedOperation
     public String printConnections() {
         StringBuilder sb=new StringBuilder();
@@ -152,6 +174,10 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         }
         return sb.toString();
     }
+
+    @ManagedAttribute(description="Whether the ConnectionReaper task is running")
+    public boolean isConnectionReaperRunning() {return connection_reaper != null && !connection_reaper.isDone();}
+
 
     @ManagedAttribute
     public long getNumMessagesSent() {
@@ -300,14 +326,16 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         if(max_retransmit_time > 0)
             cache=new AgeOutCache<Address>(timer, max_retransmit_time, this);
         started=true;
-        if(stable_interval > 0) {
+        if(stable_interval > 0)
             startStableTask();
-        }
+        if(conn_expiry_timeout > 0)
+            startConnectionReaper();
     }
 
     public void stop() {
         started=false;
         stopStableTask();
+        stopConnectionReaper();
         removeAllConnections();
     }
 
@@ -400,6 +428,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                     msg.putHeader(this.id, hdr);
                     entry.sent_msgs.addToMessages(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
                     entry.sent_msgs_seqno++;
+                    entry.update();
                 }
                 finally {
                     entry.unlock();
@@ -562,17 +591,33 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             stable_task_future=null;
         }
     }
-    
+
+    protected synchronized void startConnectionReaper() {
+        if(connection_reaper == null || connection_reaper.isDone())
+            connection_reaper=timer.scheduleWithFixedDelay(new ConnectionReaper(), conn_expiry_timeout, conn_expiry_timeout, TimeUnit.MILLISECONDS);
+    }
+
+    protected synchronized void stopConnectionReaper() {
+        if(connection_reaper != null)
+            connection_reaper.cancel(false);
+    }
 
     /**
      * Removes and resets from connection table (which is already locked). Returns true if member was found, otherwise
      * false. This method is public only so it can be invoked by unit testing, but should not otherwise be used !
      */
     public void removeConnection(Address mbr) {
+        removeSendConnection(mbr);
+        removeReceiveConnection(mbr);
+    }
+
+    public void removeSendConnection(Address mbr) {
         SenderEntry entry=send_table.remove(mbr);
         if(entry != null)
             entry.reset();
+    }
 
+    public void removeReceiveConnection(Address mbr) {
         ReceiverEntry entry2=recv_table.remove(mbr);
         if(entry2 != null) {
             NakReceiverWindow win=entry2.received_msgs;
@@ -581,6 +626,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             entry2.reset();
         }
     }
+
 
     /**
      * This method is public only so it can be invoked by unit testing, but should not otherwise be used !
@@ -604,7 +650,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         Unicast2Header hdr=Unicast2Header.createXmitReqHeader(first_seqno, last_seqno);
         Message xmit_req=new Message(sender, null, null);
         xmit_req.putHeader(this.id, hdr);
-        down_prot.down(new Event(Event.MSG, xmit_req));
+        down_prot.down(new Event(Event.MSG,xmit_req));
     }
 
     
@@ -679,6 +725,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
                 recv_table_lock.unlock();
         }
 
+        entry.update();
         boolean added=win.add(seqno, msg); // win is guaranteed to be non-null if we get here
         num_msgs_received++;
         num_bytes_received+=msg.getLength();
@@ -881,6 +928,33 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         down_prot.down(new Event(Event.MSG, msg));
     }
 
+    @ManagedOperation(description="Closes connections that have been idle for more than conn_expiry_timeout ms")
+    public void reapIdleConnections() {
+        // remove expired connections from send_table
+        for(Map.Entry<Address,SenderEntry> entry: send_table.entrySet()) {
+            SenderEntry val=entry.getValue();
+            long age=val.age();
+            if(age >= conn_expiry_timeout) {
+                removeSendConnection(entry.getKey());
+                if(log.isDebugEnabled())
+                    log.debug(local_addr + ": removed expired connection for " + entry.getKey() +
+                                " (" + age + " ms old) from send_table");
+            }
+        }
+
+        // remove expired connections from recv_table
+        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+            ReceiverEntry val=entry.getValue();
+            long age=val.age();
+            if(age >= conn_expiry_timeout) {
+                removeReceiveConnection(entry.getKey());
+                if(log.isDebugEnabled())
+                    log.debug(local_addr + ": removed expired connection for " + entry.getKey() +
+                                " (" + age + " ms old) from recv_table");
+            }
+        }
+    }
+
 
     /**
      * The following types and fields are serialized:
@@ -1063,11 +1137,13 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         final AckSenderWindow   sent_msgs;
         long                    sent_msgs_seqno=DEFAULT_FIRST_SEQNO;   // seqno for msgs sent by us
         final short             send_conn_id;
+        private long            timestamp;
         final Lock              lock=new ReentrantLock();
 
         public SenderEntry(short send_conn_id) {
             this.send_conn_id=send_conn_id;
             sent_msgs=new AckSenderWindow();
+            update();
         }
 
         void lock()   {lock.lock();}
@@ -1079,11 +1155,15 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             sent_msgs_seqno=DEFAULT_FIRST_SEQNO;
         }
 
+        void update() {timestamp=System.currentTimeMillis();}
+        long age() {return System.currentTimeMillis() - timestamp;}
+
         public String toString() {
             StringBuilder sb=new StringBuilder();
             if(sent_msgs != null)
                 sb.append(sent_msgs).append(", ");
             sb.append("send_conn_id=" + send_conn_id);
+            sb.append(" (" + age() + " ms old)");
             return sb.toString();
         }
     }
@@ -1092,6 +1172,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         private final NakReceiverWindow  received_msgs;  // stores all msgs rcvd by a certain peer in seqno-order
         private final short              recv_conn_id;
         private int                      received_bytes=0;
+        private long                     timestamp;
         private final Lock               lock=new ReentrantLock();
 
         private long                     last_highest=-1;
@@ -1104,6 +1185,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             this.received_msgs=received_msgs;
             this.recv_conn_id=recv_conn_id;
             this.max_stable_msgs=max_stable_msgs;
+            update();
         }
 
         void lock()   {lock.lock();}
@@ -1117,13 +1199,23 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             num_stable_msgs=0;
         }
 
+        void update() {timestamp=System.currentTimeMillis();}
+        long age() {return System.currentTimeMillis() - timestamp;}
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
             if(received_msgs != null)
                 sb.append(received_msgs).append(", ");
             sb.append("recv_conn_id=" + recv_conn_id);
+            sb.append(" (" + age() + " ms old)");
             return sb.toString();
+        }
+    }
+
+
+    protected class ConnectionReaper implements Runnable {
+        public void run() {
+            reapIdleConnections();
         }
     }
 
