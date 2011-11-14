@@ -160,7 +160,7 @@ public class Digest implements Streamable, Iterable<Digest.DigestEntry> {
                 long low=Math.min(e1[0], e2[0]);
                 long high=max(e1[0], e2[0]);
 
-                long[] r=new long[]{low, high};
+                long[] r={low, high};
                 resultMap.put(address, r);
             }
         }
@@ -208,7 +208,7 @@ public class Digest implements Streamable, Iterable<Digest.DigestEntry> {
                     
             long high=max(e1[0], e2[0]);
 
-            long[] r=new long[]{0, high};
+            long[] r={0, high};
             resultMap.put(address, r);
         }
 
@@ -292,6 +292,7 @@ public class Digest implements Streamable, Iterable<Digest.DigestEntry> {
         boolean first=true;
         if(size() == 0) return "[]";
 
+        int count=0, size=size();
         for(DigestEntry entry: this) {
             Address key=entry.getMember();
             if(!first)
@@ -302,6 +303,11 @@ public class Digest implements Streamable, Iterable<Digest.DigestEntry> {
             if(entry.getHighestReceivedSeqno() >= 0)
                 sb.append(" (").append(entry.getHighestReceivedSeqno()).append(")");
             sb.append("]");
+            if(Util.MAX_LIST_PRINT_SIZE > 0 && ++count >= Util.MAX_LIST_PRINT_SIZE) {
+                if(size > count)
+                    sb.append(", ...");
+                break;
+            }
         }
         return sb.toString();
     }
@@ -318,10 +324,11 @@ public class Digest implements Streamable, Iterable<Digest.DigestEntry> {
         TreeMap<Address,long[]> copy=new TreeMap<Address,long[]>();
         for(int i=0; i < size(); i++) {
             Address addr=members[i];
-            long[] tmp=new long[]{seqnos[i * 2], seqnos[i * 2 +1]};
+            long[] tmp={seqnos[i * 2], seqnos[i * 2 +1]};
             copy.put(addr, tmp);
         }
 
+        int count=0, size=copy.size();
         for(Map.Entry<Address,long[]> entry: copy.entrySet()) {
             Address key=entry.getKey();
             long[] val=entry.getValue();
@@ -333,6 +340,11 @@ public class Digest implements Streamable, Iterable<Digest.DigestEntry> {
             if(print_highest_received)
                 sb.append(" (").append(val[1]).append(")");
             sb.append("]");
+            if(Util.MAX_LIST_PRINT_SIZE > 0 && ++count >= Util.MAX_LIST_PRINT_SIZE) {
+                if(size > count)
+                    sb.append(", ...");
+                break;
+            }
         }
         return sb.toString();
     }

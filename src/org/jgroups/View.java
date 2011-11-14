@@ -18,7 +18,7 @@ import java.util.*;
  * @since 2.0
  * @author Bela Ban
  */
-public class View implements Streamable, Iterable<Address> {
+public class View implements Comparable<View>, Streamable, Iterable<Address> {
 
    /**
     * A view is uniquely identified by its ViewID. The view id contains the creator address and a
@@ -82,7 +82,7 @@ public class View implements Streamable, Iterable<Address> {
      * @return the creator of this view in form of an Address object
      */
     public Address getCreator() {
-        return vid.getCoordAddress();
+        return vid.getCreator();
     }
 
     /**
@@ -108,11 +108,12 @@ public class View implements Streamable, Iterable<Address> {
     }
 
 
+    public int compareTo(View o) {
+        return vid.compareTo(o.vid);
+    }
+
     public boolean equals(Object obj) {
-        if(!(obj instanceof View))
-            return false;
-        int rc=vid.compareTo(((View)obj).vid);
-        return rc == 0 && members != null && ((View)obj).members != null && members.equals(((View)obj).members);
+        return obj instanceof View && (this == obj || compareTo((View)obj) == 0);
     }
 
 
@@ -131,15 +132,16 @@ public class View implements Streamable, Iterable<Address> {
 
 
     public View copy() {
-        return new View(vid.copy(), new ArrayList<Address>(members));
+        return new View(vid.copy(), members);
     }
 
 
 
     public String toString() {
-        StringBuilder ret=new StringBuilder(64);
-        ret.append(vid).append(" ").append(members);
-        return ret.toString();
+        StringBuilder sb=new StringBuilder(64);
+        sb.append(vid).append(" ");
+        sb.append("[").append(Util.printListWithDelimiter(members, ", ", Util.MAX_LIST_PRINT_SIZE)).append("]");
+        return sb.toString();
     }
 
 
