@@ -65,11 +65,13 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     }
 
 
-    public TimeScheduler2(ThreadFactory factory, int min_threads, int max_threads, long keep_alive_time, int max_queue_size) {
+    public TimeScheduler2(ThreadFactory factory, int min_threads, int max_threads, long keep_alive_time, int max_queue_size,
+                          String rejection_policy) {
         timer_thread_factory=factory;
+        RejectedExecutionHandler tmp=Util.parseRejectionPolicy(rejection_policy);
         pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
                                                  new LinkedBlockingQueue<Runnable>(max_queue_size),
-                                                 factory, new ThreadPoolExecutor.CallerRunsPolicy());
+                                                 factory, tmp);
         init();
     }
 
@@ -160,6 +162,8 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             }
             if((retval=existing.add(work)) != null)
                 break;
+            else // entry has completed; remove it. This will create a new Entry at the top of the loop
+                tasks.remove(key);
         }
 
         if(key < next_execution_time || no_tasks.compareAndSet(true, false)) {
@@ -288,11 +292,20 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             for(Map.Entry<Long,Entry> entry: head_map.entrySet()) {
                 final Long key=entry.getKey();
                 final Entry val=entry.getValue();
-                pool.execute(new Runnable() {
+                Runnable task=new Runnable() {
                     public void run() {
                         val.execute();
                     }
-                });
+                };
+                try {
+                    pool.execute(task);
+                }
+                catch(RejectedExecutionException rejected) { // only thrown if rejection policy is "abort"
+                    Thread thread=timer_thread_factory != null?
+                      timer_thread_factory.newThread(task, "Timer temp thread")
+                      : new Thread(task, "Timer temp thread");
+                    thread.start();
+                }
                 keys.add(key);
             }
             tasks.keySet().removeAll(keys);
