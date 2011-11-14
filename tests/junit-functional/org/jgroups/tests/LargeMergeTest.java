@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.ViewId;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -50,14 +51,14 @@ public class LargeMergeTest {
         
         ThreadGroup test_group=new ThreadGroup("LargeMergeTest");
         TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory(test_group, "Timer", true, true),
-                                               5,10,
-                                               3000, 1000);
+                                               5,20,
+                                               3000, 5000, "abort");
 
-        ThreadPoolExecutor oob_thread_pool=new ThreadPoolExecutor(5, 50, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(1000));
-        oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        ThreadPoolExecutor oob_thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/10), 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(NUM * NUM));
+        oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
 
-        ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(5, 10, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(10000));
-        thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+        ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/10), 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(NUM * 5));
+        thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
 
         MBeanServer server=Util.getMBeanServer();
@@ -65,6 +66,8 @@ public class LargeMergeTest {
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
             SHARED_LOOPBACK shared_loopback=(SHARED_LOOPBACK)new SHARED_LOOPBACK().setValue("enable_bundling", false);
+            // UDP shared_loopback=(UDP)new UDP().setValue("enable_bundling", false);
+            shared_loopback.setLoopback(false);
             shared_loopback.setTimer(timer);
             shared_loopback.setOOBThreadPool(oob_thread_pool);
             shared_loopback.setDefaultThreadPool(thread_pool);
@@ -72,23 +75,32 @@ public class LargeMergeTest {
 
             channels[i]=Util.createChannel(shared_loopback,
                                            new DISCARD().setValue("discard_all",true),
-                                           new PING().setValue("timeout",100).setValue("num_initial_members", 10),
+                                           new PING().setValue("timeout",1).setValue("num_initial_members",10)
+                                             .setValue("force_sending_discovery_rsps", true),
                                            new MERGE2().setValue("min_interval",8000)
-                                             .setValue("max_interval",15000).setValue("merge_fast", false),
+                                             .setValue("max_interval",15000).setValue("merge_fast",false),
                                            new NAKACK().setValue("use_mcast_xmit",false)
-                                             .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
-                                           new UNICAST(),
-                                           new STABLE().setValue("max_bytes",50000),
+                                             .setValue("discard_delivered_msgs",true)
+                                             .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false)
+                                             .setValue("xmit_table_num_rows",5)
+                                             .setValue("xmit_table_msgs_per_row",10),
+                                           //new UNICAST().setValue("segment_capacity", 100)
+                                           //.setValue("conn_expiry_timeout", 10000),
+                                           new UNICAST2().setValue("xmit_table_num_rows",5)
+                                             .setValue("xmit_table_msgs_per_row",10)
+                                             .setValue("conn_expiry_timeout", 10000)
+                                             .setValue("stable_interval", 30000)
+                                             .setValue("max_bytes", 50000),
+                                           new STABLE().setValue("max_bytes",500000),
                                            new GMS().setValue("print_local_addr",false)
                                              .setValue("leave_timeout",100)
+                                               // .setValue("merge_timeout", 10000)
                                              .setValue("log_view_warnings",false)
-                                             .setValue("view_ack_collection_timeout",50)
-                                             .setValue("log_collect_msgs",false)
-                                             .setValue("merge_kill_timeout",10000)
-                                             .setValue("merge_killer_interval",5000));
+                                             .setValue("view_ack_collection_timeout",2000)
+                                             .setValue("log_collect_msgs",false));
             channels[i].setName(String.valueOf((i + 1)));
 
-            JmxConfigurator.registerChannel(channels[i], server, "channel-" + (i+1), channels[i].getClusterName(), true);
+            JmxConfigurator.registerChannel(channels[i], server, "channel-" + (i+1), "LargeMergeTest", true);
             channels[i].connect("LargeMergeTest");
             System.out.print(i + 1 + " ");
         }
@@ -98,7 +110,6 @@ public class LargeMergeTest {
     @AfterMethod
     void tearDown() throws Exception {
         for(int i=NUM-1; i >= 0; i--) {
-            // Util.close(channels[i]);
             ProtocolStack stack=channels[i].getProtocolStack();
             String cluster_name=channels[i].getClusterName();
             stack.stopStack(cluster_name);
@@ -110,7 +121,6 @@ public class LargeMergeTest {
 
 
     public void testClusterFormationAfterMerge() {
-        // Util.keyPress("<enter>");
         System.out.println("\nEnabling message traffic between members to start the merge");
         for(JChannel ch: channels) {
             Discovery ping=(Discovery)ch.getProtocolStack().findProtocol(PING.class);
@@ -121,27 +131,42 @@ public class LargeMergeTest {
 
         boolean merge_completed=true;
         for(int i=0; i < NUM; i++) {
+        //int i=0;
+        //for(;;) {
             merge_completed=true;
             System.out.println();
 
-            Map<Integer,Integer> votes=new HashMap<Integer,Integer>();
+            Map<ViewId,Integer> views=new HashMap<ViewId,Integer>();
 
             for(JChannel ch: channels) {
-                int size=ch.getView().size();
+                ViewId view_id=ch.getView().getViewId();
+                Integer val=views.get(view_id);
+                if(val == null) {
+                    views.put(view_id, 1);
+                }
+                else {
+                    views.put(view_id, val +1);
+                }
 
-                Integer val=votes.get(size);
-                if(val == null)
-                    votes.put(size, 1);
-                else
-                    votes.put(size, val.intValue() +1);
+
+                int size=ch.getView().size();
                 if(size != NUM)
                     merge_completed=false;
             }
 
-            if(i > 0) {
-                for(Map.Entry<Integer,Integer> entry: votes.entrySet()) {
-                    System.out.println("==> " + entry.getValue() + " members have a view of " + entry.getKey());
+            if(i++ > 0) {
+                int num_singleton_views=0;
+                for(Map.Entry<ViewId,Integer> entry: views.entrySet()) {
+                    if(entry.getValue().intValue() == 1)
+                        num_singleton_views++;
+                    else {
+                        System.out.println("==> " + entry.getKey() + ": " + entry.getValue() + " members");
+                    }
                 }
+                if(num_singleton_views > 0)
+                    System.out.println("==> " + num_singleton_views + " singleton views");
+
+                System.out.println("------------------\n" + getStats());
             }
 
             if(merge_completed)
@@ -164,6 +189,33 @@ public class LargeMergeTest {
 
 
 
+    protected String getStats() {
+        StringBuilder sb=new StringBuilder();
+        int merge_task_running=0;
+        int merge_canceller_running=0;
+        int merge_in_progress=0;
+        int gms_merge_task_running=0;
+
+        for(JChannel ch:  channels) {
+            MERGE2 merge=(MERGE2)ch.getProtocolStack().findProtocol(MERGE2.class);
+            if(merge.isMergeTaskRunning())
+                merge_task_running++;
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            if(gms.isMergeKillerRunning())
+                merge_canceller_running++;
+            if(gms.isMergeInProgress())
+                merge_in_progress++;
+            if(gms.isMergeTaskRunning())
+                gms_merge_task_running++;
+        }
+        sb.append("merge tasks running: " + merge_task_running).append("\n");
+        sb.append("merge killers running: " + merge_canceller_running).append("\n");
+        sb.append("merge in progress: " + merge_in_progress).append("\n");
+        sb.append("gms.merge tasks running: " + gms_merge_task_running).append("\n");
+
+        return sb.toString();
+    }
+
     protected static class MyDiagnosticsHandler extends DiagnosticsHandler {
 
         protected MyDiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port, Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
@@ -185,9 +237,9 @@ public class LargeMergeTest {
 
     @Test(enabled=false)
     public static void main(String args[]) throws Exception {
-    		LargeMergeTest test=new LargeMergeTest();
-    		test.setUp();
-    		test.testClusterFormationAfterMerge();
-    		test.tearDown();
+        LargeMergeTest test=new LargeMergeTest();
+        test.setUp();
+        test.testClusterFormationAfterMerge();
+        test.tearDown();
     }
 }
