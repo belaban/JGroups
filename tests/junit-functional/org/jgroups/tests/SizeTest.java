@@ -322,10 +322,9 @@ public class SizeTest {
 
     public static void testSequencerHeader() throws Exception {
         org.jgroups.protocols.SEQUENCER.SequencerHeader hdr;
-        IpAddress addr=new IpAddress("127.0.0.1", 5555);
-        hdr=new SEQUENCER.SequencerHeader((byte)1, addr, 1L);
+        hdr=new SEQUENCER.SequencerHeader((byte)1, Util.createRandomAddress("A"), 1L);
         _testSize(hdr);
-        hdr=new SEQUENCER.SequencerHeader((byte)2, null, -1L);
+        hdr=new SEQUENCER.SequencerHeader((byte)2, Util.createRandomAddress("B"), -1L);
         _testSize(hdr);
     }
 
