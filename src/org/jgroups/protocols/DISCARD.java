@@ -45,13 +45,13 @@ public class DISCARD extends Protocol {
 
     final Collection<Address> members=new ArrayList<Address>();
 
-    @ManagedAttribute(description="drop all messages (up or down)", writable=true)
+    @Property(description="drop all messages (up or down)",writable=true)
     boolean discard_all=false;
 
-    @ManagedAttribute(description="Number of subsequent unicasts to drop in the down direction",writable=true)
+    @Property(description="Number of subsequent unicasts to drop in the down direction",writable=true)
     int drop_down_unicasts=0;
 
-    @ManagedAttribute(description="Number of subsequent multicasts to drop in the down direction",writable=true)
+    @Property(description="Number of subsequent multicasts to drop in the down direction",writable=true)
     int drop_down_multicasts=0;
 
     private DiscardDialog discard_dialog=null;
