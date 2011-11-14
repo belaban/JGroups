@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import org.jgroups.*;
+import org.jgroups.TimeoutException;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.blocks.Connection;
 import org.jgroups.conf.ClassConfigurator;
@@ -29,9 +30,7 @@ import java.nio.channels.WritableByteChannel;
 import java.security.MessageDigest;
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -73,6 +72,10 @@ public class Util {
     protected static int   CCHM_INITIAL_CAPACITY=16;
     protected static float CCHM_LOAD_FACTOR=0.75f;
     protected static int   CCHM_CONCURRENCY_LEVEL=16;
+
+    /** The max size of an address list, e.g. used in View or Digest when toString() is called. Limiting this
+     * reduces the amount of log data */
+    public static int MAX_LIST_PRINT_SIZE=20;
 
     /**
      * Global thread group to which all (most!) JGroups threads belong
@@ -141,6 +144,13 @@ public class Util {
             if(cchm_concurrency_level != null)
                 CCHM_CONCURRENCY_LEVEL=Integer.valueOf(cchm_concurrency_level);
         } catch(SecurityException ex) {}
+
+        try {
+            String tmp=System.getProperty(Global.MAX_LIST_PRINT_SIZE);
+            if(tmp != null)
+                MAX_LIST_PRINT_SIZE=Integer.valueOf(tmp);
+        } catch(SecurityException ex) {
+        }
     }
 
 
@@ -1244,9 +1254,6 @@ public class Util {
             return obj2.equals(obj1);
     }
 
-    public static boolean sameViewId(ViewId one, ViewId two) {
-        return one.getId() == two.getId() && one.getCoordAddress().equals(two.getCoordAddress());
-    }
 
 
     public static boolean match(long[] a1, long[] a2) {
@@ -2020,10 +2027,15 @@ public class Util {
     }
 
 
-
     public static <T> String printListWithDelimiter(Collection<T> list, String delimiter) {
+        return printListWithDelimiter(list, delimiter, 0);
+    }
+
+
+    public static <T> String printListWithDelimiter(Collection<T> list, String delimiter, int limit) {
         boolean first=true;
         StringBuilder sb=new StringBuilder();
+        int count=0, size=list.size();
         for(T el: list) {
             if(first) {
                 first=false;
@@ -2032,6 +2044,11 @@ public class Util {
                 sb.append(delimiter);
             }
             sb.append(el);
+            if(limit > 0 && ++count >= limit) {
+                if(size > count)
+                    sb.append(" ...");
+                break;
+            }
         }
         return sb.toString();
     }
@@ -2181,13 +2198,11 @@ public class Util {
     public static boolean containsViewId(Collection<View> views, ViewId vid) {
         for(View view: views) {
             ViewId tmp=view.getVid();
-            if(Util.sameViewId(vid, tmp))
+            if(tmp.equals(vid))
                 return true;
         }
         return false;
     }
-
-
 
     /**
      * Determines the members which take part in a merge. The resulting list consists of all merge coordinators
@@ -2703,6 +2718,26 @@ public class Util {
 
     public static boolean fileExists(String fname) {
         return (new File(fname)).exists();
+    }
+
+    public static void verifyRejectionPolicy(String str) throws Exception{
+        if(!(str.equalsIgnoreCase("run") || str.equalsIgnoreCase("abort")|| str.equalsIgnoreCase("discard")|| str.equalsIgnoreCase("discardoldest"))) {
+            throw new Exception("Unknown rejection policy " + str);
+        }
+    }
+
+    public static RejectedExecutionHandler parseRejectionPolicy(String rejection_policy) {
+        if(rejection_policy == null)
+            throw new IllegalArgumentException("rejection policy is null");
+        if(rejection_policy.equalsIgnoreCase("abort"))
+            return new ThreadPoolExecutor.AbortPolicy();
+        if(rejection_policy.equalsIgnoreCase("discard"))
+            return new ThreadPoolExecutor.DiscardPolicy();
+        if(rejection_policy.equalsIgnoreCase("discardoldest"))
+            return new ThreadPoolExecutor.DiscardOldestPolicy();
+        if(rejection_policy.equalsIgnoreCase("run"))
+            return new ThreadPoolExecutor.CallerRunsPolicy();
+        throw new IllegalArgumentException("rejection policy \"" + rejection_policy + "\" not known");
     }
 
 
