@@ -50,7 +50,7 @@ public class MergeTest2 {
         ThreadGroup test_group=new ThreadGroup("MergeTest2");
         TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory(test_group, "Timer", true, true),
                                                5,10,
-                                               3000, 1000);
+                                               3000, 1000, "abort");
 
         ThreadPoolExecutor oob_thread_pool=new ThreadPoolExecutor(5, 50, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(1000));
         oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
@@ -84,9 +84,7 @@ public class MergeTest2 {
                                              .setValue("merge_timeout",3000)
                                              .setValue("log_view_warnings",false)
                                              .setValue("view_ack_collection_timeout",50)
-                                             .setValue("log_collect_msgs",false)
-                                             .setValue("merge_kill_timeout",10000)
-                                             .setValue("merge_killer_interval",5000));
+                                             .setValue("log_collect_msgs",false));
         retval.setName(name);
         JmxConfigurator.registerChannel(retval, Util.getMBeanServer(), name, retval.getClusterName(), true);
         retval.connect("MergeTest2");
