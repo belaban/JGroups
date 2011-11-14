@@ -31,6 +31,7 @@
          timer.max_threads="10"
          timer.keep_alive_time="5000"
          timer.queue_max_size="500"
+         timer.rejection_policy="abort"
 
          thread_pool.enabled="true"
          thread_pool.min_threads="10"
