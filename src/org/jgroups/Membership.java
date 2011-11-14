@@ -2,9 +2,6 @@
 package org.jgroups;
 
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-
 import java.util.*;
 
 /**
@@ -18,10 +15,9 @@ import java.util.*;
 public class Membership {
     /* private vector to hold all the addresses */
     private final List<Address> members=new LinkedList<Address>();
-    protected static final Log log=LogFactory.getLog(Membership.class);
 
+    
    /**
-    * 
     * Creates a member ship object with zero members
     */
     public Membership() {
@@ -84,12 +80,9 @@ public class Membership {
     * 
     */
     public final void add(Collection<Address> v) {
-        if(v != null) {
-            for(Iterator<Address> it=v.iterator(); it.hasNext();) {
-                Address addr=it.next();
+        if(v != null)
+            for(Address addr: v)
                 add(addr);
-            }
-        }
     }
 
 
@@ -143,9 +136,7 @@ public class Membership {
     */
     public void set(Collection<Address> v) {
         clear();
-        if(v != null) {
-            add(v);
-        }
+        add(v);
     }
 
 
@@ -159,9 +150,8 @@ public class Membership {
     */
     public void set(Membership m) {
         clear();
-        if(m != null) {
+        if(m != null)
             add(m.getMembers());
-        }
     }
 
 
@@ -196,7 +186,6 @@ public class Membership {
     }
 
 
-    /* Simple inefficient bubble sort, but not used very often (only when merging) */
     public void sort() {
         synchronized(members) {
             Collections.sort(members);
