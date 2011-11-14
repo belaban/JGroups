@@ -4,7 +4,6 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
-import org.jgroups.util.UUID;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -388,12 +387,10 @@ public class UtilTest {
 
     public static void testWriteStreamable() throws Exception {
         Message m=new Message(null, null, "Hello");
-        ViewId vid=new ViewId(null, 12345);
         ViewId vid2=new ViewId(Util.createRandomAddress(), 35623);
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
         Util.writeGenericStreamable(m, dos);
-        Util.writeGenericStreamable(vid, dos);
         Util.writeGenericStreamable(vid2, dos);
         dos.close();
         byte[] buf=outstream.toByteArray();
@@ -401,36 +398,20 @@ public class UtilTest {
         DataInputStream dis=new DataInputStream(instream);
         Message m2=(Message)Util.readGenericStreamable(dis);
         ViewId v3=(ViewId)Util.readGenericStreamable(dis);
-        ViewId v4=(ViewId)Util.readGenericStreamable(dis);
         assert m2.getBuffer() != null;
         Assert.assertEquals(m.getLength(), m2.getLength());
         assert v3 != null;
-        Assert.assertEquals(vid, v3);
-        assert v4 != null;
-        Assert.assertEquals(vid2, v4);
     }
 
-    public static void testWriteViewIdWithNullCoordinator() throws Exception {
-        ViewId vid=new ViewId(null, 12345);
-        ByteArrayOutputStream outstream=new ByteArrayOutputStream();
-        DataOutputStream dos=new DataOutputStream(outstream);
-        Util.writeGenericStreamable(vid, dos);
-        dos.close();
-        byte[] buf=outstream.toByteArray();
-        ByteArrayInputStream instream=new ByteArrayInputStream(buf);
-        DataInputStream dis=new DataInputStream(instream);
-        ViewId v4=(ViewId)Util.readGenericStreamable(dis);
-        Assert.assertEquals(vid, v4);
-    }
 
 
     public static void testWriteView() throws Exception {
-        ViewId vid=new ViewId(null, 12345);
         List<Address> members=new ArrayList<Address>();
         View v;
         Address a1=Util.createRandomAddress();
         Address a2=Util.createRandomAddress();
         Address a4=Util.createRandomAddress();
+        ViewId vid=new ViewId(a1, 12345);
         members.add(a1);
         members.add(a2);
         members.add(a4);
