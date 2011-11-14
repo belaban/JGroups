@@ -551,6 +551,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         Message stable_msg=new Message(dest, null, null);
         Unicast2Header hdr=Unicast2Header.createStableHeader(conn_id, low, high);
         stable_msg.putHeader(this.id, hdr);
+        stable_msg.setFlag(Message.OOB);
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(" --> STABLE(").append(dest).append(": ")
