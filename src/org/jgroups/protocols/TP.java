@@ -168,7 +168,7 @@ public abstract class TP extends Protocol {
     protected int thread_pool_queue_max_size=500;
 
     @Property(name="thread_pool.rejection_policy",
-              description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run. Default is Discard")
+              description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
     protected String thread_pool_rejection_policy="Discard";
 
     @Property(description="Type of timer to be used. Valid values are \"old\" (DefaultTimeScheduler, used up to 2.10), " +
@@ -184,6 +184,9 @@ public abstract class TP extends Protocol {
 
     @Property(name="timer.queue_max_size", description="Max number of elements on a timer queue")
     protected int timer_queue_max_size=500;
+
+    @Property(name="timer.rejection_policy",description="Timer rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
+    protected String timer_rejection_policy="run";
 
     // hashed timing wheel specific props
     @Property(name="timer.wheel_size",
@@ -688,7 +691,7 @@ public abstract class TP extends Protocol {
 
 
     public void setOOBRejectionPolicy(String rejection_policy) {
-        RejectedExecutionHandler handler=parseRejectionPolicy(rejection_policy);
+        RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
         if(oob_thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)oob_thread_pool).setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
     }
@@ -733,7 +736,7 @@ public abstract class TP extends Protocol {
     }
 
     public void setRegularRejectionPolicy(String rejection_policy) {
-        RejectedExecutionHandler handler=parseRejectionPolicy(rejection_policy);
+        RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
     }
@@ -819,7 +822,7 @@ public abstract class TP extends Protocol {
             }
             else if(timer_type.equalsIgnoreCase("new")) {
                 timer=new TimeScheduler2(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
-                                         timer_queue_max_size);
+                                         timer_queue_max_size, timer_rejection_policy);
             }
             else if(timer_type.equalsIgnoreCase("wheel")) {
                 timer=new HashedTimingWheel(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
@@ -832,8 +835,8 @@ public abstract class TP extends Protocol {
 
         who_has_cache=new AgeOutCache<Address>(timer, 5000L);
 
-        verifyRejectionPolicy(oob_thread_pool_rejection_policy);
-        verifyRejectionPolicy(thread_pool_rejection_policy);
+        Util.verifyRejectionPolicy(oob_thread_pool_rejection_policy);
+        Util.verifyRejectionPolicy(thread_pool_rejection_policy);
 
         // ========================================== OOB thread pool ==============================
 
@@ -1550,7 +1553,7 @@ public abstract class TP extends Protocol {
 
         ThreadPoolExecutor pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
         pool.setThreadFactory(factory);
-        RejectedExecutionHandler handler=parseRejectionPolicy(rejection_policy);
+        RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
         pool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
         return pool;
     }
@@ -1568,26 +1571,6 @@ public abstract class TP extends Protocol {
         }
     }
 
-    protected void verifyRejectionPolicy(String str) throws Exception{
-        if(!(str.equalsIgnoreCase("run") || str.equalsIgnoreCase("abort")|| str.equalsIgnoreCase("discard")|| str.equalsIgnoreCase("discardoldest"))) {
-            log.error("rejection policy of " + str + " is unknown");
-            throw new Exception("Unknown rejection policy " + str);
-        }
-    }
-
-    protected static RejectedExecutionHandler parseRejectionPolicy(String rejection_policy) {
-        if(rejection_policy == null)
-            throw new IllegalArgumentException("rejection policy is null");
-        if(rejection_policy.equalsIgnoreCase("abort"))
-            return new ThreadPoolExecutor.AbortPolicy();
-        if(rejection_policy.equalsIgnoreCase("discard"))
-            return new ThreadPoolExecutor.DiscardPolicy();
-        if(rejection_policy.equalsIgnoreCase("discardoldest"))
-            return new ThreadPoolExecutor.DiscardOldestPolicy();
-        if(rejection_policy.equalsIgnoreCase("run"))
-            return new ThreadPoolExecutor.CallerRunsPolicy();
-        throw new IllegalArgumentException("rejection policy \"" + rejection_policy + "\" not known");
-    }
 
 
     protected void passToAllUpProtocols(Event evt) {
