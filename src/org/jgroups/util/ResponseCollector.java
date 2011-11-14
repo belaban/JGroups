@@ -94,6 +94,8 @@ public class ResponseCollector<T> {
 
     public boolean hasAllResponses() {
         lock.lock();
+        if(responses.isEmpty())
+            return true;
         try {
             for(Map.Entry<Address,T> entry: responses.entrySet()) {
                 if(entry.getValue() == null)
