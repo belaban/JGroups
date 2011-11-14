@@ -372,7 +372,7 @@ public class RELAY extends Protocol {
         Collections.sort(views, new Comparator<View>() {
             public int compare(View v1, View v2) {
                 ViewId vid1=v1.getViewId(), vid2=v2.getViewId();
-                Address creator1=vid1.getCoordAddress(), creator2=vid2.getCoordAddress();
+                Address creator1=vid1.getCreator(), creator2=vid2.getCreator();
                 int rc=creator1.compareTo(creator2);
                 if(rc != 0)
                     return rc;
