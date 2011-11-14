@@ -60,6 +60,7 @@ public class MergeStressTest extends ChannelTestBase {
             else {
                 tmp=createChannel(first);
             }
+            tmp.setName(String.valueOf(i+1));
             modifyStack(tmp);
             threads[i]=new MyThread(i, tmp);
             threads[i].start();
