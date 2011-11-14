@@ -43,7 +43,7 @@ public class AckReceiverWindow {
 
 
     public AckReceiverWindow(long initial_seqno) {
-        this(initial_seqno, 20000);
+        this(initial_seqno, 1000);
     }
     
 
