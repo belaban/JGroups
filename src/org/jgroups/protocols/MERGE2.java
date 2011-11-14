@@ -160,7 +160,7 @@ public class MERGE2 extends Protocol {
                 members.clear();
                 members.addAll(mbrs);
                 merge_candidates.removeAll(members);
-                Address coord=mbrs.isEmpty()? null : mbrs.iterator().next();
+                Address coord=mbrs.isEmpty()? null : mbrs.get(0);
                 if(coord != null && coord.equals(local_addr)) {
                     is_coord=true;
                     task.start(); // start task if we became coordinator (doesn't start if already running)
@@ -168,9 +168,7 @@ public class MERGE2 extends Protocol {
                 else {
                     // if we were coordinator, but are no longer, stop task. this happens e.g. when we merge and someone
                     // else becomes the new coordinator of the merged group
-                    if(is_coord) {
-                        is_coord=false;
-                    }
+                    is_coord=false;
                     task.stop();
                 }
                 return ret;
@@ -218,7 +216,7 @@ public class MERGE2 extends Protocol {
         private Lock      lock=new ReentrantLock();
 
         public synchronized void start() {
-            if(future == null || future.isDone() || future.isCancelled()) { // isCancelled() not really needed
+            if(future == null || future.isDone()) {
                 future=timer.scheduleWithDynamicInterval(new TimeScheduler.Task() {
                     public long nextInterval() {
                         return computeInterval();
@@ -239,7 +237,7 @@ public class MERGE2 extends Protocol {
         }
 
         public synchronized boolean isRunning() {
-            return future != null && !future.isDone() && !future.isCancelled();
+            return future != null && !future.isDone();
         }
 
 
@@ -249,6 +247,9 @@ public class MERGE2 extends Protocol {
             if(lock.tryLock()) {
                 try {
                     _findAndNotify();
+                }
+                catch(Throwable t) {
+                    log.error("FindSubgroupsTask failed", t);
                 }
                 finally {
                     lock.unlock();
@@ -263,7 +264,7 @@ public class MERGE2 extends Protocol {
                 StringBuilder sb=new StringBuilder();
                 sb.append("Discovery results:\n");
                 for(PingData data: discovery_rsps)
-                    sb.append("[" + data.getAddress() + "]: coord=" + data.getCoordAddress()).append("\n");
+                    sb.append("[" + data.getAddress() + "]: " + data.printViewId()).append("\n");
                 log.trace(sb);
             }
 
@@ -280,9 +281,9 @@ public class MERGE2 extends Protocol {
             if(merge_participants.size() == 1) {
                 if(num_inconsistent_views < inconsistent_view_threshold) {
                     if(log.isDebugEnabled())
-                        log.debug("dropping MERGE for inconsistent views " + Util.printViews(different_views) +
-                                " as inconsistent view threshold (" + inconsistent_view_threshold +
-                                ") has not yet been reached (" + num_inconsistent_views + ")");
+                        log.debug(local_addr + ": dropping MERGE for inconsistent views " + Util.printViews(different_views) +
+                                    " as inconsistent view threshold (" + inconsistent_view_threshold +
+                                    ") has not yet been reached (" + num_inconsistent_views + ")");
                     num_inconsistent_views++;
                     return;
                 }
