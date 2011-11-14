@@ -10,6 +10,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.CyclicBarrier;
@@ -32,8 +33,19 @@ public class ConnectStressTest extends ChannelTestBase {
         System.out.println("-- [" + Thread.currentThread().getName() + "] " + msg);
     }
 
+    @AfterMethod
+    void destroy() {
+        for(int i=0; i < threads.length; i++) {
+            MyThread thread=threads[i];
+            JChannel ch=thread.getChannel();
+            ProtocolStack stack=ch.getProtocolStack();
+            stack.stopStack(ch.getClusterName());
+            stack.destroy();
+        }
+    }
 
-    public void testConcurrentJoinsAndLeaves() throws Exception {
+
+    public void testConcurrentJoining() throws Exception {
         JChannel first=null;
         channel_conf="udp.xml";
         
@@ -45,7 +57,7 @@ public class ConnectStressTest extends ChannelTestBase {
             }
             else
                 ch=createChannel(first);
-            ch.setName("C" + i);
+            ch.setName(String.valueOf(i + 1));
             changeProperties(ch);
             threads[i]=new MyThread(ch, i+1, barrier);
             threads[i].start();
@@ -63,7 +75,7 @@ public class ConnectStressTest extends ChannelTestBase {
                 if(size >= NUM)
                     break;
             }
-            Util.sleep(1000L);
+            Util.sleep(2000L);
         }
 
         for(MyThread thread: threads) {
@@ -76,16 +88,6 @@ public class ConnectStressTest extends ChannelTestBase {
             View view=thread.getChannel().getView();
             int size=view.size();
             assert size == NUM : "view doesn't have size of " + NUM + " (has " + size + "): " + view;
-        }
-
-
-        System.out.println("*** Starting the disconnect phase ***");
-
-        for(int i=0; i < threads.length; i++) {
-            MyThread thread=threads[i];
-            System.out.print("disconnecting " + thread.getName());
-            thread.disconnect();
-            System.out.println(" OK");
         }
     }
 
