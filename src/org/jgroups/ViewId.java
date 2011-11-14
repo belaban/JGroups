@@ -12,9 +12,9 @@ import java.io.*;
  * Ordering between views is important for example in a virtual synchrony protocol where
  * all views seen by a member have to be ordered.
  */
-public class ViewId implements Comparable, Streamable {
-    Address coord_addr=null;   // Address of the issuer of this view
-    long id=0;                 // Lamport time of the view
+public class ViewId implements Comparable<ViewId>, Streamable {
+    protected Address creator;   // Address of the creator of this view
+    protected long    id=0;      // Lamport time of the view
 
 
     public ViewId() { // used for externalization
@@ -24,21 +24,33 @@ public class ViewId implements Comparable, Streamable {
     /**
      * Creates a ViewID with the coordinator address and a Lamport timestamp of 0.
      *
-     * @param coord_addr the address of the member that issued this view
+     * @param creator the address of the member that issued this view
      */
-    public ViewId(Address coord_addr) {
-        this.coord_addr=coord_addr;
+    public ViewId(Address creator) {
+        this.creator=creator;
+        if(this.creator == null)
+            throw new IllegalArgumentException("creator cannot be null");
     }
 
     /**
      * Creates a ViewID with the coordinator address and the given Lamport timestamp.
      *
-     * @param coord_addr - the address of the member that issued this view
+     * @param creator - the address of the member that issued this view
      * @param id         - the Lamport timestamp of the view
      */
-    public ViewId(Address coord_addr, long id) {
-        this.coord_addr=coord_addr;
+    public ViewId(Address creator, long id) {
+        this(creator);
         this.id=id;
+    }
+
+
+    /**
+     * Returns the address of the member that issued this view
+     *
+     * @return the Address of the the creator
+     */
+    public Address getCreator() {
+        return creator;
     }
 
     /**
@@ -50,71 +62,56 @@ public class ViewId implements Comparable, Streamable {
         return id;
     }
 
-
-    /**
-     * returns the address of the member that issued this view
-     *
-     * @return the Address of the the issuer
-     */
-    public Address getCoordAddress() {
-        return coord_addr;
-    }
-
-
     public String toString() {
-        return "[" + coord_addr + '|' + id + ']';
+        return "[" + creator + '|' + id + ']';
     }
 
 
     public ViewId copy() {
-        return new ViewId(coord_addr, id);
+        return new ViewId(creator, id);
     }
 
     /**
-     * Establishes an order between 2 ViewIds. First compare on id. <em>Compare on coord_addr
-     * only if necessary</em> (i.e. ids are equal) !
+     * Establishes an order between 2 ViewIds. The comparison is done on the IDs, if they are equal, we use the creator.
      *
      * @return 0 for equality, value less than 0 if smaller, greater than 0 if greater.
      */
-    public int compareTo(Object other) {
-        if(other == null) return 1; //+++ Maybe necessary to throw an exception
-
-        if(!(other instanceof ViewId)) {
-            throw new ClassCastException("ViewId.compareTo(): view id is not comparable with different Objects");
-        }
-        return id > ((ViewId)other).id ? 1 : id < ((ViewId)other).id ? -1 : 0;
+    public int compareTo(ViewId other) {
+        return id > other.id ? 1 : id < other.id ? -1 : creator.compareTo(other.creator);
     }
 
     /**
-     * Old Compare
+     * Establishes an order between 2 ViewIds. <em>Note that we compare only on IDs !</em>
+     *
+     * @return 0 for equality, value less than 0 if smaller, greater than 0 if greater.
      */
-    public int compare(Object o) {
-        return compareTo(o);
+    public int compareToIDs(ViewId other) {
+        return id > other.id ? 1 : id < other.id ? -1 : 0;
     }
 
 
-    public boolean equals(Object other_view) {
-        return compareTo(other_view) == 0;
+    public boolean equals(Object other) {
+        return other instanceof ViewId && (this == other  || compareTo((ViewId)other) == 0);
     }
 
 
     public int hashCode() {
-        return (int)id;
+        return (int)(creator.hashCode() + id);
     }
 
 
     public void writeTo(DataOutput out) throws Exception {
-        Util.writeAddress(coord_addr, out);
+        Util.writeAddress(creator, out);
         Util.writeLong(id, out);
     }
 
     public void readFrom(DataInput in) throws Exception {
-        coord_addr=Util.readAddress(in);
+        creator=Util.readAddress(in);
         id=Util.readLong(in);
     }
 
     public int serializedSize() {
-        return Util.size(id) + Util.size(coord_addr);
+        return Util.size(id) + Util.size(creator);
     }
 
 }
