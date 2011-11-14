@@ -66,8 +66,8 @@ public class PingData implements Streamable {
 
     public Address getCoordAddress() {
         if(view_id != null)
-            return view_id.getCoordAddress();
-        return view != null? view.getVid().getCoordAddress() : null;
+            return view_id.getCreator();
+        return view != null? view.getVid().getCreator() : null;
     }
 
     public Collection<Address> getMembers() {
@@ -117,20 +117,30 @@ public class PingData implements Streamable {
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append("own_addr=").append(own_addr);
-        if(view_id != null)
-            sb.append(", view_id=").append(view_id);
-        if(view != null) {
-            sb.append(", view=");
-            if(view.size() > 10)
-                sb.append(view.size() + " mbrs");
-            else
-                sb.append(view);
-        }
+        sb.append(", " + printViewId());
         sb.append(", is_server=").append(is_server).append(", is_coord=" + isCoord());
         if(logical_name != null)
             sb.append(", logical_name=").append(logical_name);
         if(physical_addrs != null && !physical_addrs.isEmpty())
             sb.append(", physical_addrs=").append(Util.printListWithDelimiter(physical_addrs, ", "));
+        return sb.toString();
+    }
+
+    public String printViewId() {
+        StringBuilder sb=new StringBuilder();
+        sb.append("view_id=");
+        if(view_id != null)
+            sb.append(view_id);
+        else {
+            if(view != null) {
+                sb.append(view.getViewId()).append(" (");
+                if(view.size() > 10)
+                    sb.append(view.size() + " mbrs");
+                else
+                    sb.append(view);
+                sb.append(")");
+            }
+        }
         return sb.toString();
     }
 

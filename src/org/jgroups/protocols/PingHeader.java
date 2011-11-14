@@ -14,7 +14,7 @@ import java.io.*;
  */
 public class PingHeader extends Header {
     public static final byte GET_MBRS_REQ=1;   // arg = null
-    public static final byte GET_MBRS_RSP=2;   // arg = PingData (local_addr, coord_addr)
+    public static final byte GET_MBRS_RSP=2;   // arg = PingData (local_addr, creator)
 
     public byte     type=0;
     public PingData data=null;
