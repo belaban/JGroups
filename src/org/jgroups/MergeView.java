@@ -2,6 +2,8 @@
 
 package org.jgroups;
 
+import org.jgroups.util.Util;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,7 +80,11 @@ public class MergeView extends View {
     
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append("MergeView::").append(super.toString()).append(", subgroups=").append(subgroups);
+        sb.append("MergeView::").append(super.toString());
+        if(subgroups != null && !subgroups.isEmpty()) {
+            sb.append(", subgroups=");
+            sb.append(Util.printListWithDelimiter(subgroups, ", ", Util.MAX_LIST_PRINT_SIZE));
+        }
         return sb.toString();
     }
 
@@ -105,7 +111,7 @@ public class MergeView extends View {
         short len=in.readShort();
         if(len > 0) {
             View v;
-            subgroups=new ArrayList<View>();
+            subgroups=new ArrayList<View>(len);
             for(int i=0; i < len; i++) {
                 boolean is_merge_view=in.readBoolean();
                 v=is_merge_view? new MergeView() : new View();
