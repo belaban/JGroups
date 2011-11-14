@@ -102,7 +102,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * garbage collection to remove them.
      */
     @Property(description="Should messages delivered to application be discarded")
-    private boolean discard_delivered_msgs=false;
+    private boolean discard_delivered_msgs=true;
 
     @Property(description="Timeout to rebroadcast messages. Default is 2000 msec")
     private long max_rebroadcast_timeout=2000;
@@ -606,7 +606,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         NakReceiverWindow win=xmit_table.get(local_addr);
         if(win == null) {  // discard message if there is no entry for local_addr
             if(log.isWarnEnabled() && log_discard_msgs)
-                log.warn(local_addr + ": discarded message from " + local_addr + " with no window, my view is " + view);
+                log.warn(local_addr + ": discarded message to " + local_addr + " with no window, my view is " + view);
             return;
         }
 
@@ -963,9 +963,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 if(local_addr != null && local_addr.equals(member))
                     continue;
                 NakReceiverWindow win=xmit_table.remove(member);
-                win.destroy();
-                if(log.isDebugEnabled())
-                    log.debug("removed " + member + " from xmit_table (not member anymore)");
+                if(win != null) {
+                    win.destroy();
+                    if(log.isDebugEnabled())
+                        log.debug("removed " + member + " from xmit_table (not member anymore)");
+                }
             }
         }
     }
