@@ -341,7 +341,7 @@ public class ClientGmsImpl extends GmsImpl {
 
         gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
         gms.getDownProtocol().down(new Event(Event.BECOME_SERVER));
-        if(log.isDebugEnabled()) log.debug("created group (first member). My view is " + gms.view_id +
-                                           ", impl is " + gms.getImpl().getClass().getName());
+        if(log.isDebugEnabled()) log.debug("created group (first member). My view is " + gms.getViewId() +
+                                             ", impl is " + gms.getImpl().getClass().getName());
     }
 }

@@ -130,7 +130,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
 
         new_mbrs.remove(gms.local_addr); // remove myself - cannot join myself (already joined)        
 
-        if(gms.view_id == null) {
+        if(gms.getViewId() == null) {
             // we're probably not the coord anymore (we just left ourselves), let someone else do it
             // (client will retry when it doesn't get a response)
             if(log.isDebugEnabled())
@@ -152,7 +152,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             if(gms.members.contains(mbr)) { // already joined: return current digest and membership
                 if(log.isWarnEnabled())
                     log.warn(mbr + " already present; returning existing view " + gms.view);
-                JoinRsp join_rsp=new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
+                JoinRsp join_rsp=new JoinRsp(new View(gms.getViewId(), gms.members.getMembers()), gms.getDigest());
                 gms.sendJoinResponse(join_rsp, mbr);
                 it.remove();
             }
