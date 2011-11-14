@@ -188,12 +188,13 @@ public class GMS_MergeTest extends ChannelTestBase {
             checkViews(channels, "C", "C", "D");
             checkViews(channels, "D", "C", "D");
 
+            Address merge_leader=determineLeader(channels, "A", "C");
+
             long end_time=System.currentTimeMillis() + 30000;
             do {
                 System.out.println("\n==== injecting merge events into A and C concurrently ====");
-                injectMergeEvent(channels, "C", "A", "C");
-                injectMergeEvent(channels, "A", "A", "C");
-                Util.sleep(1000);
+                injectMergeEvent(channels, merge_leader, "A", "C");
+                Util.sleep(2000);
                 if(allChannelsHaveViewOf(channels, 4))
                     break;
             }
@@ -234,14 +235,13 @@ public class GMS_MergeTest extends ChannelTestBase {
             checkViews(channels, "G", "G", "H");
             checkViews(channels, "H", "G", "H");
 
+            Address merge_leader=determineLeader(channels, "A", "C", "E", "G");
+
             long end_time=System.currentTimeMillis() + 30000;
             do {
-                System.out.println("\n==== injecting merge event into A, C, E and G concurrently ====");
-                injectMergeEvent(channels, "G", "A", "C", "E", "G");
-                injectMergeEvent(channels, "E", "A", "C", "E", "G");
-                injectMergeEvent(channels, "A", "A", "C", "E", "G");
-                injectMergeEvent(channels, "C", "A", "C", "E", "G");
-                Util.sleep(1000);
+                System.out.println("\n==== injecting merge event into " + merge_leader + " ====");
+                injectMergeEvent(channels, merge_leader, "A", "C", "E", "G");
+                Util.sleep(2000);
                 if(allChannelsHaveViewOf(channels, 8))
                     break;
             }
@@ -249,6 +249,7 @@ public class GMS_MergeTest extends ChannelTestBase {
 
             print(channels);
             assertAllChannelsHaveViewOf(channels, 8);
+            disableTracing(channels);
         }
         finally {
             close(channels);
@@ -418,24 +419,17 @@ public class GMS_MergeTest extends ChannelTestBase {
              Digest db=((NAKACK)b.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
              System.out.println("(after purging)\nDigest A: " + da + "\nDigest B: " + db);
 
+             Address merge_leader=determineLeader(channels, "A", "B");
+
              long end_time=System.currentTimeMillis() + 12000;
              do {
-                 System.out.println("\n==== injecting merge event ====");
-                 injectMergeEvent(channels, a.getAddress(), "A", "B");
-                  injectMergeEvent(channels, b.getAddress(), "A", "B");
+                 System.out.println("\n==== injecting merge event into " + merge_leader + " ====");
+                 injectMergeEvent(channels, merge_leader, "A", "B");
                  Util.sleep(3000);
                  if(allChannelsHaveView(channels, a.getView()))
                      break;
              }
              while(end_time > System.currentTimeMillis());
-
-            /* long end_time=System.currentTimeMillis() + 12000;
-             do {
-                 if(allChannelsHaveView(channels, a.getView()))
-                     break;
-                 Util.sleep(3000);
-             }
-             while(end_time > System.currentTimeMillis());*/
 
              System.out.println("\n");
              print(channels);
@@ -571,6 +565,13 @@ public class GMS_MergeTest extends ChannelTestBase {
                 if(!set.add(tmp))
                     throw new Exception("partitions are overlapping: element " + tmp + " is in multiple partitions");
             }
+        }
+    }
+
+    protected static void disableTracing(JChannel[] channels) {
+        for(JChannel ch: channels) {
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            gms.setLevel("warn");
         }
     }
 
