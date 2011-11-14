@@ -49,6 +49,15 @@ public abstract class Discovery extends Protocol {
       "before sending a discovery response. This prevents traffic spikes in large clusters when everyone sends their " +
       "discovery response at the same time")
     protected long stagger_timeout=0;
+
+    @ManagedAttribute(description="Always sends a discovery response, no matter what",writable=true)
+    protected boolean force_sending_discovery_rsps=true;
+
+
+    @ManagedOperation(description="Sets force_sending_discovery_rsps")
+    public void setForceSendingDiscoveryRsps(boolean flag) {
+        force_sending_discovery_rsps=flag;
+    }
     
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
 
@@ -68,7 +77,10 @@ public abstract class Discovery extends Protocol {
     protected TimeScheduler         timer=null;
     protected View                  view;
     protected final List<Address>   members=new ArrayList<Address>(11);
+    @ManagedAttribute(description="Whether this member is the current coordinator")
+    protected boolean               is_coord;
     protected Address               local_addr=null;
+    protected Address               current_coord;
     protected String                group_addr=null;
     protected final Set<Responses>  ping_responses=new HashSet<Responses>();
 
@@ -139,6 +151,9 @@ public abstract class Discovery extends Protocol {
     public ViewId getViewId() {
         return view != null? view.getViewId() : null;
     }
+
+    @ManagedAttribute(description="The address of the current coordinator")
+    public String getCurrentCoord() {return current_coord != null? current_coord.toString() : "n/a";}
 
     protected boolean isMergeRunning() {
         Object retval=up_prot.up(new Event(Event.IS_MERGE_IN_PROGRESS));
@@ -377,16 +392,25 @@ public abstract class Discovery extends Protocol {
                         }
 
                         if(hdr.view_id != null) {
-                            // If the discovery request is merge-triggered, and we the ViewId shipped with it
+                            // If the discovery request is merge-triggered, and the ViewId shipped with it
                             // is the same as ours, we don't respond (JGRP-1315).
                             ViewId my_view_id=view != null? view.getViewId() : null;
-                            if(my_view_id != null && Util.sameViewId(my_view_id, hdr.view_id))
+                            if(my_view_id != null && my_view_id.equals(hdr.view_id))
                                 return null;
+
+                            boolean send_discovery_rsp=force_sending_discovery_rsps || is_coord
+                              || current_coord == null || current_coord.equals(msg.getSrc());
+                            if(!send_discovery_rsp) {
+                                if(log.isTraceEnabled())
+                                    log.trace(local_addr + ": suppressing merge response as I'm not a coordinator and the " +
+                                                "discovery request was not sent by a coordinator");
+                                return null;
+                            }
                         }
 
                         if(isMergeRunning()) {
                             if(log.isTraceEnabled())
-                                log.trace("suppressing merge response as a merge is already in progress");
+                                log.trace(local_addr + ": suppressing merge response as a merge is already in progress");
                             return null;
                         }
 
@@ -411,7 +435,7 @@ public abstract class Discovery extends Protocol {
                                 UUID.add(logical_addr, data.getLogicalName());
 
                             if(log.isTraceEnabled())
-                                log.trace("received GET_MBRS_RSP from " + response_sender + ": " + data);
+                                log.trace(local_addr + ": received GET_MBRS_RSP from " + response_sender + ": " + data);
                             boolean overwrite=logical_addr != null && logical_addr.equals(response_sender);
                             synchronized(ping_responses) {
                                 for(Responses response: ping_responses) {
@@ -492,6 +516,9 @@ public abstract class Discovery extends Protocol {
                         members.addAll(tmp);
                     }
                 }
+                current_coord=!members.isEmpty()? members.get(0) : null;
+                is_coord=current_coord != null && local_addr != null && current_coord.equals(local_addr);
+
                 return down_prot.down(evt);
 
             case Event.BECOME_SERVER: // called after client has joined and is fully working group member
@@ -580,7 +607,7 @@ public abstract class Discovery extends Protocol {
             timer.schedule(new Runnable() {
                 public void run() {
                     if(log.isTraceEnabled())
-                        log.trace("received GET_MBRS_REQ from " + sender + ", sending staggered response " + rsp_hdr);
+                        log.trace(local_addr + ": received GET_MBRS_REQ from " + sender + ", sending staggered response " + rsp_hdr);
                     down_prot.down(new Event(Event.MSG, rsp_msg));
                 }
             }, sleep_time, TimeUnit.MILLISECONDS);
@@ -591,7 +618,6 @@ public abstract class Discovery extends Protocol {
             log.trace("received GET_MBRS_REQ from " + sender + ", sending response " + rsp_hdr);
         down_prot.down(new Event(Event.MSG, rsp_msg));
     }
-
 
 
 
