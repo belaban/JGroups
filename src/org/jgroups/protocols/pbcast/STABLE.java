@@ -123,7 +123,7 @@ public class STABLE extends Protocol {
      * When true, don't take part in garbage collection: neither send STABLE messages nor handle STABILITY messages
      */
     @ManagedAttribute
-    protected boolean suspended=false;
+    protected volatile boolean suspended=false;
 
     private boolean initialized=false;
 
@@ -335,6 +335,10 @@ public class STABLE extends Protocol {
         sendStableMessage(copy);
     }
 
+    @ManagedOperation(description="Sends a STABLE message; when every member has received a STABLE message from everybody else, " +
+      "a STABILITY message will be sent")
+    public void gc() {runMessageGarbageCollection();}
+
 
 
     /* --------------------------------------- Private Methods ---------------------------------------- */
@@ -484,7 +488,7 @@ public class STABLE extends Protocol {
         synchronized(resume_task_mutex) {
             if(resume_task_future == null || resume_task_future.isDone()) {
                 ResumeTask resume_task=new ResumeTask();
-                resume_task_future=timer.schedule(resume_task, max_suspend_time, TimeUnit.MILLISECONDS); // fixed-rate scheduling
+                resume_task_future=timer.schedule(resume_task, max_suspend_time, TimeUnit.MILLISECONDS);
                 if(log.isDebugEnabled())
                     log.debug("resume task started, max_suspend_time=" + max_suspend_time);
             }
