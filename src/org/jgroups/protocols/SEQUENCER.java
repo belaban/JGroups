@@ -359,7 +359,7 @@ public class SEQUENCER extends Protocol {
         }
 
         public Address getOriginalSender() {
-            return tag != null? tag.getCoordAddress() : null;
+            return tag != null? tag.getCreator() : null;
         }
 
         public long getSeqno() {
