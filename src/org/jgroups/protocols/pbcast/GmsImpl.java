@@ -1,14 +1,16 @@
 
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.logging.Log;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MergeId;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Vector;
 
 
 public abstract class GmsImpl {
@@ -70,17 +72,6 @@ public abstract class GmsImpl {
 
 
 
-    /**
-       Returns potential coordinator based on lexicographic ordering of member addresses. Another
-       approach would be to keep track of the primary partition and return the first member if we
-       are the primary partition.
-     */
-    protected boolean iWouldBeCoordinator(Vector<Address> new_mbrs) {
-        Membership tmp_mbrs=gms.members.copy();
-        tmp_mbrs.merge(new_mbrs, null);
-        tmp_mbrs.sort();
-        return !(tmp_mbrs.size() <= 0 || gms.local_addr == null) && gms.local_addr.equals(tmp_mbrs.elementAt(0));
-    }
 
 
     public static class Request {
