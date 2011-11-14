@@ -43,15 +43,14 @@ public class MergeTest extends ChannelTestBase {
                 assert ch.getView().size() == 1 : "view of " + ch.getAddress() + ": " + ch.getView();
             }
 
-            System.out.println("\n==== injecting merge event ====");
-            for(String member: members) {
-                injectMergeEvent(channels, member, members);
-            }
-            for(int i=0; i < 20; i++) {
+            Address merge_leader=determineLeader(channels, members);
+            System.out.println("\n==== injecting merge event into merge leader : " + merge_leader + " ====");
+            injectMergeEvent(channels, merge_leader, members);
+            for(int i=0; i < 40; i++) {
                 System.out.print(".");
                 if(allChannelsHaveViewOf(channels, members.length))
                     break;
-                Util.sleep(500);
+                Util.sleep(1000);
             }
             System.out.println("\n");
             print(channels);
