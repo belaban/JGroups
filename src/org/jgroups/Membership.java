@@ -105,13 +105,21 @@ public class Membership {
    /**
     * Removes all the members contained in v from this membership
     * 
-    * @param v
-    *           - a vector containing all the members to be removed
+    * @param v a list of all the members to be removed
     */
     public void remove(Collection<Address> v) {
         if(v != null) {
             synchronized(members) {
                 members.removeAll(v);
+            }
+        }
+    }
+
+
+    public void retainAll(Collection<Address> v) {
+        if(v != null) {
+            synchronized(members) {
+                members.retainAll(v);
             }
         }
     }
