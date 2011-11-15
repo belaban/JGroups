@@ -408,6 +408,28 @@ public class RetransmitTable {
         return sb.toString();
     }
 
+    /**
+     * Computes the size of all messages currently in the table. This includes messages that haven't been purged or
+     * compacted yet.
+     * @param include_headers If true, {@link org.jgroups.Message#size()} is used, which will include the size of all
+     * headers and the dest and src addresses. Else {@link org.jgroups.Message#getLength()} is used to compute.
+     * Note that the latter is way more efficient.
+     * @return Number of bytes of all messages.
+     */
+    public long sizeOfAllMessages(boolean include_headers) {
+        long retval=0;
+        for(int i=0; i < matrix.length; i++) {
+            Message[] row=matrix[i];
+            if(row == null)
+                continue;
+            for(int j=0; j < row.length; j++) {
+                Message msg=row[j];
+                if(msg != null)
+                    retval+=include_headers? msg.size() : msg.getLength();
+            }
+        }
+        return retval;
+    }
 
 
     /**

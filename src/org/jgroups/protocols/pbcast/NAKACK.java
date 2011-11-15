@@ -220,6 +220,25 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
+    @ManagedAttribute(description="Returns the number of bytes of all messages in all NakReceiverWindows. To compute " +
+      "the size, Message.getLength() is used")
+    public long getSizeOfAllMessages() {
+        long retval=0;
+        for(NakReceiverWindow win: xmit_table.values())
+            retval+=win.sizeOfAllMessages(false);
+        return retval;
+    }
+
+    @ManagedAttribute(description="Returns the number of bytes of all messages in all NakReceiverWindows. To compute " +
+      "the size, Message.size() is used")
+    public long getSizeOfAllMessagesInclHeaders() {
+        long retval=0;
+        for(NakReceiverWindow win: xmit_table.values())
+            retval+=win.sizeOfAllMessages(true);
+        return retval;
+    }
+
+
     @ManagedAttribute
     public long getCurrentSeqno() {return seqno;}
 

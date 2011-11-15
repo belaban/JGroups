@@ -288,6 +288,29 @@ public class RetransmitTableTest {
         assert table.capacity() == 40;
     }
 
+    public void testSizeOfAllMessages() {
+        RetransmitTable table=new RetransmitTable(3, 10, 0);
+        long size=table.sizeOfAllMessages(false);
+        assert size == 0;
+        size=table.sizeOfAllMessages(true);
+        assert size == 0;
+
+        byte[] buf=new byte[100];
+        Message msg=new Message(null, null, buf);
+        table.put(2,msg);
+
+        size=table.sizeOfAllMessages(false);
+        System.out.println("Size(): " + table.sizeOfAllMessages(true) + ", getLength(): " + size);
+        assert size == 100;
+
+        for(long i=5; i < 10; i++)
+            table.put(i, new Message(null, null, buf));
+
+        size=table.sizeOfAllMessages(false);
+        System.out.println("Size(): " + table.sizeOfAllMessages(true) + ", getLength(): " + size);
+        assert size == 6 * 100;
+    }
+
 
     protected static void addAndGet(RetransmitTable table, long seqno, String message) {
         boolean added=table.put(seqno, new Message(null, null, message));

@@ -470,6 +470,21 @@ public class NakReceiverWindow {
         }
     }
 
+    /**
+     * Returns the number of bytes taken up by all of the messages in the RetransmitTable
+     * @param include_headers
+     * @return
+     */
+    public long sizeOfAllMessages(boolean include_headers) {
+        lock.readLock().lock();
+        try {
+            return xmit_table.sizeOfAllMessages(include_headers);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
     public int getMissingMessages() {
         lock.readLock().lock();
         try {
