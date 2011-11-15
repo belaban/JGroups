@@ -173,6 +173,12 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @ManagedAttribute(description="Is a merge currently running")
     public boolean isMergeInProgress() {return merger.isMergeInProgress();}
 
+    /** Only used for internal testing, don't use this method ! */
+    public Merger getMerger() {return merger;}
+
+    @ManagedOperation(description="Prints the last (max 20) MergeIds")
+    public String printMergeIdHistory() {return merger.getMergeIdHistory();}
+
     @ManagedOperation
     public String printPreviousMembers() {
         StringBuilder sb=new StringBuilder();
@@ -563,7 +569,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
            This ensures that messages sent in view V1 are only received by members of V1 */
-        if(checkSelfInclusion(mbrs) == false) {
+        if(!mbrs.contains(local_addr)) {
             if(log.isWarnEnabled() && log_view_warnings)
                 log.warn(local_addr + ": not member of view " + new_view.getViewId() + "; discarding it");
             return;
@@ -587,7 +593,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             view_event=new Event(Event.VIEW_CHANGE, new_view);
 
             // Set the membership. Take into account joining members
-            if(mbrs != null && !mbrs.isEmpty()) {
+            if(!mbrs.isEmpty()) {
                 members.set(mbrs);
                 tmp_members.set(members);
                 joining.removeAll(mbrs);  // remove all members in mbrs from joining
@@ -625,6 +631,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         ack_collector.handleView(new_view);
         merge_ack_collector.handleView(new_view);
 
+        if(new_view instanceof MergeView)
+            merger.forceCancelMerge();
+
         if(stats) {
             num_views++;
             prev_views.add(new Tuple<View,Long>(new_view, System.currentTimeMillis()));
@@ -648,19 +657,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             return new_coord != null && new_coord.equals(potential_new_coord);
         }
     }
-
-
-    /** Returns true if local_addr is member of mbrs, else false */
-    protected boolean checkSelfInclusion(List<Address> mbrs) {
-        if(mbrs == null)
-            return false;
-        for(Address mbr: mbrs) {
-            if(mbr != null && local_addr.equals(mbr))
-                return true;
-        }
-        return false;
-    }
-
 
 
     /** Send down a SET_DIGEST event */
@@ -838,20 +834,22 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                                 break;
                         }
 
-                        Digest digest=(Digest)down_prot.down(Event.GET_DIGEST_EVT);
+                        // discard my own request:
+                        if(msg.getSrc().equals(local_addr))
+                            return null;
+
+                        if(hdr.merge_id !=null && !(merger.matchMergeId(hdr.merge_id) || merger.setMergeId(null, hdr.merge_id)))
+                            return null;
+
+                        // fetch only my own digest
+                        Digest digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST, local_addr));
                         if(digest != null) {
-                            long[] entry=digest.get(local_addr);
-                            if(entry != null) {
-                                // only return my own digest information, but nobody else's !
-                                // https://jira.jboss.org/jira/browse/JGRP-948
-                                Digest retval=new Digest(local_addr, entry[0], entry[1]);
-                                GmsHeader rsp_hdr=new GmsHeader(GmsHeader.GET_DIGEST_RSP);
-                                rsp_hdr.my_digest=retval;
-                                Message get_digest_rsp=new Message(msg.getSrc(), null, null);
-                                get_digest_rsp.setFlag(Message.OOB);
-                                get_digest_rsp.putHeader(this.id, rsp_hdr);
-                                down_prot.down(new Event(Event.MSG, get_digest_rsp));
-                            }
+                            GmsHeader rsp_hdr=new GmsHeader(GmsHeader.GET_DIGEST_RSP);
+                            rsp_hdr.my_digest=digest;
+                            Message get_digest_rsp=new Message(msg.getSrc(), null, null);
+                            get_digest_rsp.setFlag(Message.OOB);
+                            get_digest_rsp.putHeader(this.id, rsp_hdr);
+                            down_prot.down(new Event(Event.MSG, get_digest_rsp));
                         }
                         break;
 
