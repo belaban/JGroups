@@ -528,8 +528,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
             ReceiverEntry val=entry.getValue();
             NakReceiverWindow win=val != null? val.received_msgs : null;
             if(win != null) {
-                long low=win.getHighestDelivered();
-                long high=win.getHighestReceived();
+                long[] tmp=win.getDigest();
+                long low=tmp[0], high=tmp[1];
 
                 if(val.last_highest == high) {
                     if(val.num_stable_msgs >= val.max_stable_msgs) {
@@ -994,7 +994,7 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
         public static Unicast2Header createStableHeader(short conn_id, long low, long high) {
             if(low > high)
-                throw new IllegalArgumentException("low (" + low + " needs to be <= high (" + high + ")");
+                throw new IllegalArgumentException("low (" + low + ") needs to be <= high (" + high + ")");
             Unicast2Header retval=new Unicast2Header(STABLE, low);
             retval.high_seqno=high;
             retval.conn_id=conn_id;

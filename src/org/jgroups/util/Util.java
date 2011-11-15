@@ -2028,7 +2028,7 @@ public class Util {
 
 
     public static <T> String printListWithDelimiter(Collection<T> list, String delimiter) {
-        return printListWithDelimiter(list, delimiter, 0);
+        return printListWithDelimiter(list, delimiter, MAX_LIST_PRINT_SIZE);
     }
 
 

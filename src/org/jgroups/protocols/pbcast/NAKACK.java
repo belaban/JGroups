@@ -440,7 +440,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 return null;  // do not pass down further (Bela Aug 7 2001)
 
             case Event.GET_DIGEST:
-                return getDigest();
+                return getDigest((Address)evt.getArg());
 
             case Event.SET_DIGEST:
                 setDigest((Digest)evt.getArg());
@@ -987,6 +987,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return new Digest(map);
     }
 
+
+    public Digest getDigest(Address mbr) {
+        if(mbr == null)
+            return getDigest();
+        NakReceiverWindow win=xmit_table.get(mbr);
+        if(win == null)
+            return null;
+        long[] seqnos=win.getDigest();
+        return new Digest(mbr, seqnos[0], seqnos[1]);
+    }
 
 
     /**
