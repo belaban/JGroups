@@ -94,9 +94,9 @@ public class ResponseCollector<T> {
 
     public boolean hasAllResponses() {
         lock.lock();
-        if(responses.isEmpty())
-            return true;
         try {
+            if(responses.isEmpty())
+                return true;
             for(Map.Entry<Address,T> entry: responses.entrySet()) {
                 if(entry.getValue() == null)
                     return false;
@@ -128,6 +128,15 @@ public class ResponseCollector<T> {
         List<Address> retval=new ArrayList<Address>();
         for(Map.Entry<Address,T> entry: responses.entrySet()) {
             if(entry.getValue() == null)
+                retval.add(entry.getKey());
+        }
+        return retval;
+    }
+
+    public List<Address> getValidResults() {
+        List<Address> retval=new ArrayList<Address>();
+        for(Map.Entry<Address,T> entry: responses.entrySet()) {
+            if(entry.getValue() != null)
                 retval.add(entry.getKey());
         }
         return retval;
