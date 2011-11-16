@@ -970,7 +970,7 @@ public class ENCRYPT extends Protocol {
             temp.init(Cipher.SECRET_KEY, keySpec);
         }
         catch(Exception e) {
-            log.fatal(e.toString());
+            log.error(e.toString());
             keySpec=null;
         }
         return keySpec;

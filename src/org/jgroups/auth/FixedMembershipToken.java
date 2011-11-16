@@ -21,18 +21,17 @@
  */
 package org.jgroups.auth;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringTokenizer;
-
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Util;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
 
 /**
  * <p>

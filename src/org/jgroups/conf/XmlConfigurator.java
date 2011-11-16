@@ -156,12 +156,10 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                 }
 
                 public void fatalError(SAXParseException exception) throws SAXException {
-                    log.fatal("Error during parse", exception);
                     exceptionRef.set(exception);
                 }
 
                 public void error(SAXParseException exception) throws SAXException {
-                    log.error("Error during parse", exception);
                     exceptionRef.set(exception);
                 }
             });
@@ -207,11 +205,8 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
          */
         try {
             String root_name=root_element.getNodeName();
-            if(!"config".equals(root_name.trim().toLowerCase())) {
-                log.fatal("XML protocol stack configuration does not start with a '<config>' element; " + "maybe the XML configuration needs to be converted to the new format ?\n"
-                          + "use 'java org.jgroups.conf.XmlConfigurator <old XML file> -new_format' to do so");
-                throw new IOException("invalid XML configuration");
-            }
+            if(!"config".equals(root_name.trim().toLowerCase()))
+                throw new IOException("the configuration does not start with a <config> element");
 
             NodeList prots=root_element.getChildNodes();
             for(int i=0;i < prots.getLength();i++) {

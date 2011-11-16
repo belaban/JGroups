@@ -919,7 +919,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 }
                 down_prot.down(evt);
                 if(local_addr == null)
-                    if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
+                    throw new IllegalStateException("local_addr is null");
                 try {
                     if(state_transfer)
                         impl.joinWithStateTransfer(local_addr, use_flush);
