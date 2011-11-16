@@ -50,12 +50,7 @@ public abstract class BasicTCP extends TP {
     @Property(description="SO_LINGER in msec. Default of -1 disables it")
     int linger=-1; // SO_LINGER (number of ms, -1 disables it)
 
-    @Property(description="Use \"external_addr\" if you have hosts on different networks, behind " +
-            "firewalls. On each firewall, set up a port forwarding rule (sometimes called \"virtual server\") to " +
-            "the local IP (e.g. 192.168.1.100) of the host then on each host, set \"external_addr\" TCP transport " +
-            "parameter to the external (public IP) address of the firewall.")
-    InetAddress external_addr = null ;
-    
+
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
 

@@ -30,6 +30,7 @@ public class Global {
 
 
     public static final String BIND_ADDR="jgroups.bind_addr";
+    public static final String EXTERNAL_ADDR="jgroups.external_addr";
     public static final String BIND_INTERFACE="jgroups.bind_interface";
     public static final String IGNORE_BIND_ADDRESS_PROPERTY="jgroups.ignore.bind_addr";
 

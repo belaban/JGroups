@@ -47,8 +47,15 @@ public class STATE_SOCK extends StreamingStateTransfer {
     @LocalAddress
     @Property(description="The interface (NIC) used to accept state requests. " +
       "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
-              systemProperty={Global.BIND_ADDR})
+              systemProperty={Global.BIND_ADDR},writable=false)
     protected InetAddress bind_addr;
+
+    @Property(description="Use \"external_addr\" if you have hosts on different networks, behind " +
+      "firewalls. On each firewall, set up a port forwarding rule (sometimes called \"virtual server\") to " +
+      "the local IP (e.g. 192.168.1.100) of the host then on each host, set \"external_addr\" TCP transport " +
+      "parameter to the external (public IP) address of the firewall.",
+              systemProperty=Global.EXTERNAL_ADDR,writable=false)
+    protected InetAddress external_addr=null ;
 
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
               description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr")
@@ -154,9 +161,10 @@ public class STATE_SOCK extends StreamingStateTransfer {
 
     protected void handleConfig(Map<String,Object> config) {
         super.handleConfig(config);
-        if(bind_addr == null) {
+        if(bind_addr == null)
             bind_addr=(InetAddress)config.get("bind_addr");
-        }
+        if(external_addr == null)
+            external_addr=(InetAddress)config.get("external_addr");
     }
 
 
@@ -174,7 +182,10 @@ public class STATE_SOCK extends StreamingStateTransfer {
             super();
             this.pool=pool;
             this.serverSocket=stateServingSocket;
-            this.address=new IpAddress(STATE_SOCK.this.bind_addr, serverSocket.getLocalPort());
+            if(external_addr != null)
+                this.address=new IpAddress(external_addr, serverSocket.getLocalPort());
+            else
+                this.address=new IpAddress(bind_addr, serverSocket.getLocalPort());
         }
 
         public IpAddress getServerSocketAddress() {return address;}

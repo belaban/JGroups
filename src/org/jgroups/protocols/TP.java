@@ -79,6 +79,13 @@ public abstract class TP extends Protocol {
               systemProperty={Global.BIND_ADDR},writable=false)
     protected InetAddress bind_addr=null;
 
+    @Property(description="Use \"external_addr\" if you have hosts on different networks, behind " +
+      "firewalls. On each firewall, set up a port forwarding rule (sometimes called \"virtual server\") to " +
+      "the local IP (e.g. 192.168.1.100) of the host then on each host, set \"external_addr\" TCP transport " +
+      "parameter to the external (public IP) address of the firewall.",
+              systemProperty=Global.EXTERNAL_ADDR,writable=false)
+    protected InetAddress external_addr=null ;
+
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
     		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr",
             exposeAsManagedAttribute=false)
@@ -870,11 +877,13 @@ public abstract class TP extends Protocol {
             }
         }
 
-        if(bind_addr != null) {
-            Map<String, Object> m=new HashMap<String, Object>(1);
+        Map<String, Object> m=new HashMap<String, Object>(2);
+        if(bind_addr != null)
             m.put("bind_addr", bind_addr);
+        if(external_addr != null)
+            m.put("external_addr", external_addr);
+        if(!m.isEmpty())
             up(new Event(Event.CONFIG, m));
-        }
 
         logical_addr_cache=new LazyRemovalCache<Address,PhysicalAddress>(logical_addr_cache_max_size, logical_addr_cache_expiration);
         

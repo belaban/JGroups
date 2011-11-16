@@ -42,9 +42,16 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     @LocalAddress
     @Property(description="The NIC on which the ServerSocket should listen on. " +
-            "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
-              systemProperty={Global.BIND_ADDR})
-    InetAddress bind_addr=null; 
+      "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
+              systemProperty={Global.BIND_ADDR},writable=false)
+    InetAddress bind_addr=null;
+
+    @Property(description="Use \"external_addr\" if you have hosts on different networks, behind " +
+      "firewalls. On each firewall, set up a port forwarding rule (sometimes called \"virtual server\") to " +
+      "the local IP (e.g. 192.168.1.100) of the host then on each host, set \"external_addr\" TCP transport " +
+      "parameter to the external (public IP) address of the firewall.",
+              systemProperty=Global.EXTERNAL_ADDR,writable=false)
+    protected InetAddress external_addr=null ;
     
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class, 
     		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr")
@@ -266,6 +273,10 @@ public class FD_SOCK extends Protocol implements Runnable {
                 if(bind_addr == null) {
                     Map<String,Object> config=(Map<String,Object>)evt.getArg();
                     bind_addr=(InetAddress)config.get("bind_addr");
+                }
+                if(external_addr == null) {
+                    Map<String,Object> config=(Map<String,Object>)evt.getArg();
+                    external_addr=(InetAddress)config.get("external_addr");
                 }
                 break;
         }
@@ -558,7 +569,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     void startServerSocket() throws Exception {
         srv_sock=Util.createServerSocket(getSocketFactory(),
                                          Global.FD_SOCK_SRV_SOCK, bind_addr, start_port, start_port+port_range); // grab a random unused port above 10000
-        srv_sock_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
+        srv_sock_addr=new IpAddress(external_addr != null? external_addr : bind_addr, srv_sock.getLocalPort());
         if(srv_sock_handler != null) {
             srv_sock_handler.start(); // won't start if already running            
         }
