@@ -479,9 +479,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         view_change_msg.putHeader(this.id, hdr);
 
         List<Address> ackMembers = new ArrayList<Address>(new_view.getMembers());
-        if(newMembers != null && !newMembers.isEmpty()) {
+        if(newMembers != null && !newMembers.isEmpty())
             ackMembers.removeAll(newMembers);
-        }
         if(!ackMembers.isEmpty())
             ack_collector.reset(ackMembers);
         else
@@ -583,9 +582,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
 
         if(log.isDebugEnabled()) log.debug(local_addr + ": view is " + new_view);
-
-        ack_collector.handleView(new_view);
-        merge_ack_collector.handleView(new_view);
 
         Event view_event;
         synchronized(members) {

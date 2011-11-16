@@ -279,9 +279,11 @@ public class Merger {
             return;
         }
 
-        gms.merge_ack_collector.reset(coords);
-        int size=gms.merge_ack_collector.size();
-        long timeout=gms.view_ack_collection_timeout;
+        int size=0;
+        if(gms.flushProtocolInStack) {
+            gms.merge_ack_collector.reset(coords);
+            size=gms.merge_ack_collector.size();
+        }
 
         long start=System.currentTimeMillis();
         for(Address coord: coords) {
@@ -298,14 +300,15 @@ public class Merger {
         // if flush is in stack wait for acks from separated island coordinators
         if(gms.flushProtocolInStack) {
             try {
-                gms.merge_ack_collector.waitForAllAcks(timeout);
+                gms.merge_ack_collector.waitForAllAcks(gms.view_ack_collection_timeout);
                 long stop=System.currentTimeMillis();
                 if(log.isTraceEnabled())
                     log.trace(gms.local_addr + ": received all ACKs (" + size + ") for merge view " + view + " in " + (stop - start) + "ms");
             }
             catch(TimeoutException e) {
-                log.warn(gms.local_addr + ": failed to collect all ACKs for merge (" + size + ") for view " + view
-                        + " after " + timeout + "ms, missing ACKs from " + gms.merge_ack_collector.printMissing());
+                log.warn(gms.local_addr + ": failed to collect all ACKs (" + size + ") for merge view " + view
+                           + " after " + gms.view_ack_collection_timeout +
+                           "ms, missing ACKs from " + gms.merge_ack_collector.printMissing());
             }
         }
     }
