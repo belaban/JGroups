@@ -366,7 +366,7 @@ public class ENCRYPT extends Protocol {
         }
     }
 
-    protected static String byteArrayToHexString(byte[] b){
+    public static String byteArrayToHexString(byte[] b){
         StringBuilder sb = new StringBuilder(b.length * 2);
         for (int i = 0; i < b.length; i++){
             int v = b[i] & 0xff;

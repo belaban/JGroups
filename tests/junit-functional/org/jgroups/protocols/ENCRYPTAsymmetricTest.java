@@ -19,9 +19,7 @@ import javax.crypto.Cipher;
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.Security;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * @author xenephon
@@ -131,7 +129,8 @@ public class ENCRYPTAsymmetricTest {
         digest.reset();
         digest.update(encrypt.getDesKey().getEncoded());
 
-        String symVersion=new String(digest.digest(), "UTF-8");
+        // String symVersion=new String(digest.digest(), "UTF-8");
+        String symVersion=ENCRYPT.byteArrayToHexString(digest.digest());
 
         encrypt.keyServer=false;
         Message msg=new Message();
@@ -149,7 +148,7 @@ public class ENCRYPTAsymmetricTest {
 
         // send a view change to trigger the become key server
         // we use the fact that our address is now the controller one
-        Vector tempVector=new Vector();
+        List<Address> tempVector=new ArrayList<Address>() ;
         tempVector.add(tempAddress);
         View tempView=new View(new ViewId(tempAddress, 1), tempVector);
         Event event=new Event(Event.VIEW_CHANGE, tempView);
@@ -199,7 +198,7 @@ public class ENCRYPTAsymmetricTest {
 
         server.setLocal_addr(serverAddress);
         //set the server up as keyserver
-        Vector serverVector=new Vector();
+        List<Address> serverVector=new ArrayList<Address>();
         serverVector.add(serverAddress);
         View tempView=new View(new ViewId(serverAddress, 1), serverVector);
         Event serverEvent=new Event(Event.VIEW_CHANGE, tempView);
@@ -217,7 +216,8 @@ public class ENCRYPTAsymmetricTest {
         digest.reset();
         digest.update(server.getDesKey().getEncoded());
 
-        String symVersion=new String(digest.digest(), "UTF-8");
+        // String symVersion=new String(digest.digest(), "UTF-8");
+        String symVersion=ENCRYPT.byteArrayToHexString(digest.digest());
 
         // encrypt and send an initial message to peer
         Cipher cipher=server.getSymEncodingCipher();
@@ -307,7 +307,7 @@ public class ENCRYPTAsymmetricTest {
         server.setLocal_addr(serverAddress);
 
         //	set the server up as keyserver
-        Vector serverVector=new Vector();
+        List<Address> serverVector=new ArrayList<Address>() ;
         serverVector.add(serverAddress);
         View tempView=new View(new ViewId(serverAddress, 1), serverVector);
         Event serverEvent=new Event(Event.VIEW_CHANGE, tempView);
@@ -347,7 +347,7 @@ public class ENCRYPTAsymmetricTest {
         Util.assertTrue(peerObserver.getUpMessages().isEmpty());
 
         // send a view change to peer where peer2 is  controller
-        Vector peerVector=new Vector();
+        List<Address> peerVector=new ArrayList<Address>() ;
         peerVector.add(peer2Address);
         View tempPeerView=new View(new ViewId(peer2Address, 1), peerVector);
         Event event=new Event(Event.VIEW_CHANGE, tempPeerView);
@@ -371,7 +371,7 @@ public class ENCRYPTAsymmetricTest {
 //		 send a view change to trigger the become key server
         // we use the fact that our address is now the controller one
         // send a view change where we are not the controller
-        Vector peer2Vector=new Vector();
+        List<Address> peer2Vector=new ArrayList<Address>() ;
         peer2Vector.add(peer2Address);
         View tempPeer2View=new View(new ViewId(peer2Address, 1), peer2Vector);
         Event event2=new Event(Event.VIEW_CHANGE, tempPeer2View);
