@@ -360,20 +360,20 @@ public class ENCRYPT extends Protocol {
         digest.reset();
         digest.update(secret.getEncoded());
 
-        symVersion=new String(digest.digest(), "UTF-8");
+        symVersion = byteArrayToHexString(digest.digest());
         if(log.isDebugEnabled()) {
             log.debug(" Initialized symmetric ciphers with secret key (" + symVersion.length() + " bytes)");
-	    /*
-            StringBuilder sb=new StringBuilder(" Initialized symmetric ciphers with secret key (" + symVersion.length()
-                                               + " bytes) ");
-            char[] arr=symVersion.toCharArray();
-            for(int i=0;i < arr.length;i++) {
-                char c=arr[i];
-                sb.append((int)c);
-            }
-            log.debug(sb.toString());
-	    */
         }
+    }
+
+    protected static String byteArrayToHexString(byte[] b){
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (int i = 0; i < b.length; i++){
+            int v = b[i] & 0xff;
+            if (v < 16) { sb.append('0'); }
+            sb.append(Integer.toHexString(v));
+        }
+        return sb.toString().toUpperCase();
     }
 
     /**
