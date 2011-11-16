@@ -46,7 +46,7 @@ public class DELAY extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:         // Only delay messages, not other events !
 
-                if(log.isInfoEnabled()) log.info("delaying incoming message for " + delay + " milliseconds");
+                if(log.isTraceEnabled()) log.trace("delaying incoming message for " + delay + " milliseconds");
                 Util.sleep(delay);
                 break;
         }
@@ -62,7 +62,7 @@ public class DELAY extends Protocol {
 
             case Event.MSG:         // Only delay messages, not other events !
 
-                if(log.isInfoEnabled()) log.info("delaying outgoing message for " + delay + " milliseconds");
+                if(log.isTraceEnabled()) log.trace("delaying outgoing message for " + delay + " milliseconds");
                 Util.sleep(delay);
                 break;
         }

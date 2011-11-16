@@ -22,7 +22,6 @@ public interface Log {
     void fatal(String msg);
     void fatal(String msg, Throwable throwable);
     void info(String msg);
-    void info(String msg, Throwable throwable);
     void trace(Object msg);
     void trace(Object msg, Throwable throwable);
     void trace(String msg);

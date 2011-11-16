@@ -84,10 +84,6 @@ public class JDKLogImpl implements Log {
         logger.log(Level.FINE, msg, t);
     }
 
-    public void info(String msg, Throwable t) {
-        logger.log(Level.INFO, msg, t);
-    }
-
     public void warn(String msg, Throwable t) {
         logger.log(Level.WARNING, msg, t);
     }

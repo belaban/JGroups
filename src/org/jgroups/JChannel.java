@@ -786,9 +786,6 @@ public class JChannel extends Channel {
     }
 
     protected final void init(ProtocolStackConfigurator configurator) throws Exception {
-        if(log.isInfoEnabled())
-            log.info("JGroups version: " + Version.description);
-
         List<ProtocolConfiguration> configs=configurator.getProtocolStack();
         for(ProtocolConfiguration config: configs)
             config.substituteVariables();  // replace vars with system props
@@ -802,9 +799,6 @@ public class JChannel extends Channel {
     protected final void init(JChannel ch) throws Exception {
         if(ch == null)
             throw new IllegalArgumentException("channel is null");
-        if(log.isInfoEnabled())
-            log.info("JGroups version: " + Version.description);
-
         synchronized(JChannel.class) {
             prot_stack=new ProtocolStack(this);
             prot_stack.setup(ch.getProtocolStack()); // Setup protocol stack (creates protocol, calls init() on them)

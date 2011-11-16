@@ -222,8 +222,8 @@ public class ENCRYPT extends Protocol {
         if(keyPassword == null && storePassword != null) {
             keyPassword=storePassword;
 
-            if(log.isInfoEnabled())
-                log.info("key_password used is same as store_password");
+            if(log.isDebugEnabled())
+                log.debug("key_password used is same as store_password");
         }
         if(keyStoreName == null) {
             initSymKey();
@@ -326,8 +326,8 @@ public class ENCRYPT extends Protocol {
 
         setSecretKey(secretKey);
 
-        if(log.isInfoEnabled())
-            log.info(" Symmetric key generated ");
+        if(log.isDebugEnabled())
+            log.debug(" Symmetric key generated ");
     }
 
     /**
@@ -340,8 +340,8 @@ public class ENCRYPT extends Protocol {
      */
     private void initSymCiphers(String algorithm, SecretKey secret) throws Exception {
 
-        if(log.isInfoEnabled())
-            log.info(" Initializing symmetric ciphers");
+        if(log.isDebugEnabled())
+            log.debug(" Initializing symmetric ciphers");
 
         if(symProvider != null && symProvider.trim().length() > 0) {
             symEncodingCipher=Cipher.getInstance(algorithm, symProvider);
@@ -361,8 +361,8 @@ public class ENCRYPT extends Protocol {
         digest.update(secret.getEncoded());
 
         symVersion=new String(digest.digest(), "UTF-8");
-        if(log.isInfoEnabled()) {
-            log.info(" Initialized symmetric ciphers with secret key (" + symVersion.length() + " bytes)");
+        if(log.isDebugEnabled()) {
+            log.debug(" Initialized symmetric ciphers with secret key (" + symVersion.length() + " bytes)");
 	    /*
             StringBuilder sb=new StringBuilder(" Initialized symmetric ciphers with secret key (" + symVersion.length()
                                                + " bytes) ");
@@ -371,7 +371,7 @@ public class ENCRYPT extends Protocol {
                 char c=arr[i];
                 sb.append((int)c);
             }
-            log.info(sb.toString());
+            log.debug(sb.toString());
 	    */
         }
     }
@@ -404,8 +404,8 @@ public class ENCRYPT extends Protocol {
 
         asymCipher.init(Cipher.DECRYPT_MODE, Kpair.getPrivate());
 
-        if(log.isInfoEnabled())
-            log.info(" asym algo initialized");
+        if(log.isDebugEnabled())
+            log.debug(" asym algo initialized");
     }
 
     /** Just remove if you don't need to reset any state */
@@ -418,8 +418,8 @@ public class ENCRYPT extends Protocol {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
                 View view=(View)evt.getArg();
-                if(log.isInfoEnabled())
-                    log.info("new view: " + view);
+                if(log.isDebugEnabled())
+                    log.debug("new view: " + view);
                 if(!suppliedKey) {
                     handleViewChange(view, false);
                 }
@@ -488,8 +488,8 @@ public class ENCRYPT extends Protocol {
     private void becomeKeyServer(Address tmpKeyServer, boolean forced) {
         keyServerAddr=tmpKeyServer;
         keyServer=true;
-        if(log.isInfoEnabled() && !forced)
-            log.info("[" + local_addr + "] I have become the new key server ");
+        if(log.isDebugEnabled() && !forced)
+            log.debug("[" + local_addr + "] I have become the new key server ");
         queue_down=false;
         queue_up=false;
     }
@@ -509,8 +509,8 @@ public class ENCRYPT extends Protocol {
         // set new keyserver address
         keyServerAddr=newKeyServer;
         keyServer=false;
-        if(log.isInfoEnabled())
-            log.info("[" + local_addr + "] " + keyServerAddr + " has become the new key server, sending key request to it");
+        if(log.isDebugEnabled())
+            log.debug("[" + local_addr + "] " + keyServerAddr + " has become the new key server, sending key request to it");
 
         // create a key request message
         sendKeyRequest();
@@ -599,8 +599,8 @@ public class ENCRYPT extends Protocol {
                 switch(hdr.getType()) {
                     // if a key request
                     case EncryptHeader.KEY_REQUEST:
-                        if(log.isInfoEnabled()) {
-                            log.info("received a key request from peer");
+                        if(log.isDebugEnabled()) {
+                            log.debug("received a key request from peer");
                         }
 
                         //if a key request send response key back
@@ -615,8 +615,8 @@ public class ENCRYPT extends Protocol {
                         }
                         break;
                     case EncryptHeader.SECRETKEY:
-                        if(log.isInfoEnabled()) {
-                            log.info("received a secretkey response from keyserver");
+                        if(log.isDebugEnabled()) {
+                            log.debug("received a secretkey response from keyserver");
                         }
 
                         try {
@@ -630,8 +630,8 @@ public class ENCRYPT extends Protocol {
                                 // otherwise lets set the reurned key
                                 // as the shared key
                                 setKeys(tmp, hdr.getVersion());
-                                if(log.isInfoEnabled()) {
-                                    log.info("Decoded secretkey response");
+                                if(log.isDebugEnabled()) {
+                                    log.debug("Decoded secretkey response");
                                 }
                             }
                         }
@@ -693,7 +693,7 @@ public class ENCRYPT extends Protocol {
         setSymVersion(version);
 
         // drain the up queue
-        log.info("setting queue up to false in setKeys");
+        log.debug("setting queue up to false in setKeys");
         queue_up=false;
         drainUpQueue();
 
@@ -844,8 +844,8 @@ public class ENCRYPT extends Protocol {
 
             case Event.VIEW_CHANGE:
                 View view=(View)evt.getArg();
-                if(log.isInfoEnabled())
-                    log.info("new view: " + view);
+                if(log.isDebugEnabled())
+                    log.debug("new view: " + view);
                 if(!suppliedKey) {
                     handleViewChange(view, false);
                 }

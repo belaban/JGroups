@@ -576,8 +576,8 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         final List<Address> old_nodes=this.view != null? new ArrayList<Address>(this.view.getMembers()) : null;
 
         this.view=new_view;
-        if(log.isInfoEnabled())
-            log.info("new view: " + new_view);
+        if(log.isDebugEnabled())
+            log.debug("new view: " + new_view);
 
         if(hash_function != null)
             hash_function.installNodes(new_view.getMembers());

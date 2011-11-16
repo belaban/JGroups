@@ -232,7 +232,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
                         Entry<Address,V> entry=it.next();
                         V c=entry.getValue();
                         if(c.isExpired(System.currentTimeMillis())) {
-                            log.info("Connection " + c.toString() + " reaped");
+                            log.debug("Connection " + c.toString() + " reaped");
                             Util.close(c);                                            
                             it.remove();                           
                         }

@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.net.InetAddress;
+import java.sql.SQLOutput;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -68,7 +69,6 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
             // Wait for all channels to finish connecting
             successConnecting=latch.await(timeoutToConverge, TimeUnit.SECONDS);            
             if(successConnecting) {
-                log.info("All connected. Converging...");
                 for(Task t:tasks) {
                     Throwable ex=t.getException();
                     if(ex != null)
@@ -87,14 +87,12 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
                 }
 
                 final long duration=System.currentTimeMillis() - start;
-                log.info("Converged to a single group after " + duration
-                                   + " ms; group is:\n");
                 for(int i=0;i < channels.length;i++) {
-                    log.info("#" + (i + 1)
-                                       + ": "
-                                       + channels[i].getAddress()
-                                       + ": "
-                                       + channels[i].getView());
+                    System.out.println("#" + (i + 1)
+                                         + ": "
+                                         + channels[i].getAddress()
+                                         + ": "
+                                         + channels[i].getView());
                 }                
             }         
 
@@ -106,7 +104,6 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
         finally {
             Util.sleep(2500);
             executor.shutdownNow();
-            log.info("closing channels: ");            
             for(JChannel ch:channels) {
                 ch.close();                               
                 //there are sometimes big delays until entire cluster shuts down

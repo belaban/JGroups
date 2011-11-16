@@ -50,7 +50,7 @@ public class BSH extends Protocol implements Runnable {
 
     public void start() throws Exception {
         srv_sock=Util.createServerSocket(getSocketFactory(), Global.BSH_SRV_SOCK, null, bind_port);
-        log.info("Server socket listening at " + srv_sock.getLocalSocketAddress());
+        log.debug("Server socket listening at " + srv_sock.getLocalSocketAddress());
         acceptor=new Thread(this);
         acceptor.start();
     }

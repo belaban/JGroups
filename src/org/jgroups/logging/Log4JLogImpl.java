@@ -76,10 +76,6 @@ public class Log4JLogImpl implements Log {
         logger.log(FQCN, Level.INFO, msg, null);
     }
 
-    public void info(String msg, Throwable throwable) {
-        logger.log(FQCN, Level.INFO, msg, throwable);
-    }
-
     public void trace(Object msg) {
         logger.log(FQCN, Level.TRACE, msg, null);
     }

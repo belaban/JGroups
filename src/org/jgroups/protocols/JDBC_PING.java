@@ -106,7 +106,7 @@ public class JDBC_PING extends FILE_PING {
 
     protected void attemptSchemaInitialization() {
         if (stringIsEmpty(initialize_sql)) {
-            log.info("Table creation step skipped: initialize_sql property is missing");
+            log.debug("Table creation step skipped: initialize_sql property is missing");
             return;
         }
         Connection connection = getConnection();
@@ -116,14 +116,14 @@ public class JDBC_PING extends FILE_PING {
                     PreparedStatement preparedStatement =
                         connection.prepareStatement(initialize_sql);
                     preparedStatement.execute();
-                    log.info("Table created for JDBC_PING Discovery Protocol");
+                    log.debug("Table created for JDBC_PING Discovery Protocol");
                 } catch (SQLException e) {
                     if (log.isDebugEnabled()) {
                         log.debug("Could not execute initialize_sql statement; not necessarily an error.", e);
                     }
                     else {
                         //avoid printing out the stacktrace
-                        log.info("Could not execute initialize_sql statement; not necessarily an error. Set to debug logging level for details.");
+                        log.debug("Could not execute initialize_sql statement; not necessarily an error. Set to debug logging level for details.");
                     }
                 }
             } finally {

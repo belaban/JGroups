@@ -384,7 +384,7 @@ public class ChannelTestBase {
 
         public void viewAccepted(View new_view) {
             events.append('v');
-            log.info(getLocalAddress() + ": view=" + new_view);
+            System.out.println(getLocalAddress() + ": view=" + new_view);
         }
     }
 
