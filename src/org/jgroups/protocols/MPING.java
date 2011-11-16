@@ -6,10 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.ExposedByteArrayInputStream;
-import org.jgroups.util.ExposedByteArrayOutputStream;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -243,10 +240,13 @@ public class MPING extends PING implements Runnable {
             NetworkInterface i=(NetworkInterface)it.next();
             for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
                 InetAddress addr=(InetAddress)en2.nextElement();
-                s.joinGroup(tmp_mcast_addr, i);
-                if(log.isTraceEnabled())
-                    log.trace("joined " + tmp_mcast_addr + " on " + i.getName() + " (" + addr + ")");
-                break;
+                if ((Util.getIpStackType() == StackType.IPv4 && addr instanceof Inet4Address)
+                  || (Util.getIpStackType() == StackType.IPv6 && addr instanceof Inet6Address)) {
+                    s.joinGroup(tmp_mcast_addr, i);
+                    if(log.isTraceEnabled())
+                        log.trace("joined " + tmp_mcast_addr + " on " + i.getName() + " (" + addr + ")");
+                    break;
+                }
             }
         }
     }
