@@ -57,7 +57,7 @@ public class GroupRequest<T> extends Request {
     private final Map<Address,Rsp<T>> requests;
 
     @GuardedBy("lock")
-    int num_received, num_not_received, num_suspected;
+    int num_valid, num_received, num_suspected;
 
 
 
@@ -105,6 +105,7 @@ public class GroupRequest<T> extends Request {
      * Adds a response to the response table. When all responses have been received,
      * <code>execute()</code> returns.
      */
+    @SuppressWarnings("unchecked")
     public void receiveResponse(Object response_value, Address sender, boolean is_exception) {
         if(done)
             return;
@@ -118,6 +119,7 @@ public class GroupRequest<T> extends Request {
         lock.lock();
         try {
             if(!rsp.wasReceived()) {
+                num_received++;
                 if((responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender))) {
                     if(is_exception && response_value instanceof Throwable)
                         rsp.setException((Throwable)response_value);
@@ -128,8 +130,8 @@ public class GroupRequest<T> extends Request {
             }
 
             if(responseReceived)
-                num_received++;
-            done=rsp_filter == null? responsesComplete() : !rsp_filter.needMoreResponses();
+                num_valid++;
+            done=responsesComplete() || (rsp_filter != null && !rsp_filter.needMoreResponses());
             if(responseReceived || done)
                 completed.signalAll(); // wakes up execute()
             if(done && corr != null)
@@ -282,13 +284,11 @@ public class GroupRequest<T> extends Request {
 
     private void setTarget(Address mbr) {
         requests.put(mbr, new Rsp<T>(mbr));
-        num_not_received=1;
     }
 
     private void setTargets(Collection<Address> mbrs) {
         for(Address mbr: mbrs)
             requests.put(mbr, new Rsp<T>(mbr));
-        num_not_received=requests.size();
     }
 
     private static int determineMajority(int i) {
@@ -317,27 +317,15 @@ public class GroupRequest<T> extends Request {
 
         switch(options.getMode()) {
             case GET_FIRST:
-                if(num_received > 0)
-                    return true;
-                if(num_suspected >= num_total)
-                // e.g. 2 members, and both suspected
-                    return true;
-                break;
+                return num_valid >= 1 || num_suspected >= num_total || num_received >= num_total;
             case GET_ALL:
-                return num_received + num_suspected >= num_total;
+                return num_valid + num_suspected >= num_total || num_received >= num_total;
             case GET_MAJORITY:
                 int majority=determineMajority(num_total);
-                if(num_received + num_suspected >= majority)
-                    return true;
-                break;
-            case GET_ABS_MAJORITY:
-                majority=determineMajority(num_total);
-                if(num_received >= majority)
-                    return true;
-                break;
+                return num_valid + num_suspected >= majority || num_received >= num_total;
             case GET_NONE:
                 return true;
-            default :
+            default:
                 if(log.isErrorEnabled()) log.error("rsp_mode " + options.getMode() + " unknown !");
                 break;
         }

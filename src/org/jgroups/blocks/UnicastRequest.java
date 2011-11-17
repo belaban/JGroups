@@ -21,6 +21,7 @@ import java.util.concurrent.TimeoutException;
 public class UnicastRequest<T> extends Request {
     protected final Rsp<T>     result;
     protected final Address    target;
+    protected int              num_received=0;
 
 
 
@@ -64,6 +65,7 @@ public class UnicastRequest<T> extends Request {
             if(done)
                 return;
             if(!result.wasReceived()) {
+                num_received++;
                 boolean responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender);
                 if(is_exception && response_value instanceof Throwable)
                     result.setException((Throwable)response_value);
@@ -81,7 +83,7 @@ public class UnicastRequest<T> extends Request {
                     log.trace(sb.toString());
                 }
             }
-            done=rsp_filter == null? responsesComplete() : !rsp_filter.needMoreResponses();
+            done=responsesComplete() || (rsp_filter != null && !rsp_filter.needMoreResponses());
             if(done && corr != null)
                 corr.done(req_id);
         }
@@ -198,7 +200,8 @@ public class UnicastRequest<T> extends Request {
 
     @GuardedBy("lock")
     protected boolean responsesComplete() {
-        return done || options.getMode() == ResponseMode.GET_NONE || result.wasReceived() || result.wasSuspected();
+        return done || options.getMode() == ResponseMode.GET_NONE || result.wasReceived() ||
+          result.wasSuspected() || num_received >= 1;
     }
 
 

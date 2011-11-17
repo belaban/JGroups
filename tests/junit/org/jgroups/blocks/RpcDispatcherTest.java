@@ -214,10 +214,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
      *
      */
     public void testResponseFilter() throws Exception {
-    	
-    	final long timeout = 10 * 1000 ;
-
-        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, timeout, false,
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 10000, false,
                                                   new RspFilter() {
                                                       int num=0;
                                                       public boolean isAcceptable(Object response, Address sender) {
@@ -238,10 +235,49 @@ public class RpcDispatcherTest extends ChannelTestBase {
         assertEquals("number of responses received should be 2", 2, rsps.numReceived());
     }
 
+    /**
+     * Tests an incorrect response filter which always returns false for isAcceptable() and true for needsMoreResponses().
+     * The call should return anyway after having received all responses, even if none of them was accepted by the
+     * filter.
+     */
+    public void testNonTerminatingResponseFilter() throws Exception {
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 10000, false,
+                                                  new RspFilter() {
+                                                      public boolean isAcceptable(Object response, Address sender) {
+                                                          return false;
+                                                      }
+                                                      public boolean needMoreResponses() {return true;}
+                                                  });
+
+        RspList rsps=disp1.callRemoteMethods(null, "foo", null, null, options);
+        System.out.println("responses are:\n" + rsps);
+        assertEquals("there should be three response values", 3, rsps.size());
+        assertEquals("number of responses received should be 3", 0, rsps.numReceived());
+    }
+
+    /**
+     * Runs with response mode of GET_FIRST and the response filter accepts only the last response
+     * @throws Exception
+     */
+    public void testAcceptLastResponseFilter() throws Exception {
+        RequestOptions options=new RequestOptions(ResponseMode.GET_FIRST, 10000, false,
+                                                  new RspFilter() {
+                                                      int count=0;
+                                                      public boolean isAcceptable(Object response, Address sender) {
+                                                          return ++count >= 3;
+                                                      }
+                                                      public boolean needMoreResponses() {return count < 3;}
+                                                  });
+
+        RspList rsps=disp1.callRemoteMethods(null, "foo", null, null, options);
+        System.out.println("responses are:\n" + rsps);
+        assertEquals("there should be three response values", 3, rsps.size());
+        assertEquals("number of responses received should be 3", 1, rsps.numReceived());
+    }
+
 
     public void testFuture() throws Exception {
         MethodCall sleep=new MethodCall("sleep", new Object[]{1000L}, new Class[]{long.class});
-        //Future<RspList> future;
         Future<RspList<Object>> future=disp1.callRemoteMethodsWithFuture(null, sleep, new RequestOptions(ResponseMode.GET_ALL, 5000L, false, null));
         assert !future.isDone();
         assert !future.isCancelled();

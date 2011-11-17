@@ -1,7 +1,10 @@
 
 package org.jgroups.blocks;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -11,7 +14,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Bela Ban
@@ -65,9 +71,9 @@ public class GroupRequestTest {
 
     @Test(groups=Global.FUNCTIONAL)
     public void testGetFirstWithResponseFilter() throws Exception {
-        Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
-                new Message(null, a2, new Long(2)),
-                new Message(null, a3, new Long(3))};
+        Object[] responses={new Message(null, a1, new Long(1)),
+          new Message(null, a2, new Long(2)),
+          new Message(null, a3, new Long(3))};
         MyCorrelator corr=new MyCorrelator(true, responses, 500);
         dests.add(a3);
         GroupRequest<Long> req=new GroupRequest<Long>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_FIRST, 0));
@@ -99,9 +105,9 @@ public class GroupRequestTest {
 
     @Test(groups=Global.FUNCTIONAL)
     public void testGetAllWithResponseFilter() throws Exception {
-        Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
-                new Message(null, a2, new Long(2)),
-                new Message(null, a3, new Long(3))};
+        Object[] responses={new Message(null, a1, new Long(1)),
+          new Message(null, a2, new Long(2)),
+          new Message(null, a3, new Long(3))};
         MyCorrelator corr=new MyCorrelator(true, responses, 500);
         dests.add(a3);
         GroupRequest<Long> req=new GroupRequest<Long>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
@@ -131,7 +137,11 @@ public class GroupRequestTest {
         Assert.assertEquals(2, results.numReceived());
     }
 
-
+    /**
+     * Tests reception of 3 null values, which are all rejected by the NonNullFilter. However, isDone() returns true
+     * because we received responses for all 3 requests, even though all of them were rejected. If we continued here,
+     * we'd block until we run into the timeout. See https://issues.jboss.org/browse/JGRP-1330 for details.
+     */
     public void testAllNullResponsesWithFilter() {
         dests.add(a3);
         GroupRequest<Boolean> req=new GroupRequest<Boolean>(new Message(), null, dests,
@@ -143,7 +153,7 @@ public class GroupRequestTest {
         for(Address sender: dests)
             req.receiveResponse(null, sender, false);
 
-        assert !req.isDone();
+        assert req.isDone();
     }
     
 
@@ -199,7 +209,7 @@ public class GroupRequestTest {
         final long delay = 75L;
         Object[] responses = new Message[destCount];
         
-        dests = new Vector<Address>();
+        dests = new ArrayList<Address>();
         for (int i = 0; i < destCount; i++) {
             Address addr = Util.createRandomAddress();
             dests.add(addr);
@@ -223,7 +233,7 @@ public class GroupRequestTest {
 
 
     private void _testMessageReception(boolean async) throws Exception {
-        Object[] responses=new Message[]{new Message(null, a1, new Long(1)),new Message(null, a2, new Long(2))};
+        Object[] responses={new Message(null, a1, new Long(1)),new Message(null, a2, new Long(2))};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
         GroupRequest<Object> req=new GroupRequest<Object>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         corr.setGroupRequest(req);
@@ -238,13 +248,13 @@ public class GroupRequestTest {
 
 
     private void _testMessageReceptionWithViewChange(boolean async) throws Exception {
-        Vector<Address> new_dests=new Vector<Address>();
+        List<Address> new_dests=new ArrayList<Address>();
         new_dests.add(a1);
         new_dests.add(a2);
         new_dests.add(a1);
-        Object[] responses=new Object[]{new Message(null, a1, new Long(1)),
-                                        new View(Util.createRandomAddress(), 322649, new_dests),
-                                        new Message(null, a2, new Long(2))};
+        Object[] responses={new Message(null, a1, new Long(1)),
+          new View(Util.createRandomAddress(), 322649, new_dests),
+          new Message(null, a2, new Long(2))};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
         GroupRequest<Long> req=new GroupRequest<Long>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         corr.setGroupRequest(req);
@@ -258,10 +268,10 @@ public class GroupRequestTest {
 
 
     private void _testMessageReceptionWithViewChangeMemberLeft(boolean async) throws Exception {
-        Vector<Address> new_dests=new Vector<Address>();
+        List<Address> new_dests=new ArrayList<Address>();
         new_dests.add(a2);
-        Object[] responses=new Object[]{new Message(null, a2, new Long(1)),
-                                        new View(Util.createRandomAddress(), 322649, new_dests)};
+        Object[] responses={new Message(null, a2, new Long(1)),
+          new View(Util.createRandomAddress(), 322649, new_dests)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
         GroupRequest<Object> req=new GroupRequest<Object>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
 
