@@ -20,9 +20,9 @@ import org.jgroups.annotations.Immutable;
 @Immutable
 public class Version {
     public static final short major = 3;
-    public static final short minor = 0;
+    public static final short minor = 1;
     public static final short micro = 0;
-    public static final String description="3.0.0.Final";
+    public static final String description="3.1.0.Alpha1";
 
     public static final short version=encode(major, minor, micro);
     public static final String string_version=print(version);
