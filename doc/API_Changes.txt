@@ -6,9 +6,7 @@ API changes in 3.0.0
 
 - Removed package org.jgroups.persistence and changed dependent demos accordingly (e.g. ReplicatedHashMap)
 
-- Removed all options except for Channel.LOCAL
-- Removed JChannel.getOpt()/setOpt()
-- Discarding of own messages can now be set via setDiscardOwnMessages(true)
+- Removed all options (JChannel.getOpt()/setOpt()), discarding of own messages can now be set via setDiscardOwnMessages(true)
 
 - Removed package org.jgroups.mux (e.g. Multiplexer and MuxChannel). Use a shared transport instead. If you have to,
   use classes from package org.jgroups.blocks.mux (only if you're an expert though !)
@@ -16,7 +14,7 @@ API changes in 3.0.0
 - Removed (J)ChannelFactory. Inject the channel yourself, e.g. through CDI
 
 - Removed JChannel.receive(). Use a Receiver or ReceiverAdapter and JChannel.setReceiver(Receiver) to switch from a
-  pull based approach of receiving messages to a push-based approach
+  pull based approach of receiving messages to a push based approach
 
 - Removed JChannel.receive(), peek(), shutdown(), open(), returnState(), getAllStates(), blockOK()
 

@@ -881,7 +881,7 @@ for (int i = 0; i &lt; runnerCount; ++i) {
                     Add protocol COUNTER to the top of the stack configuration
                 </listitem>
                 <listitem>
-                    Create an instanceof CounterService
+                    Create an instance of CounterService
                 </listitem>
                 <listitem>
                     Create a new or get an existing named counter

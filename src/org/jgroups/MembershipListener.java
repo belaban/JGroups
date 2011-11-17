@@ -39,7 +39,7 @@ public interface MembershipListener {
     * messages. Any messages sent after returning from this callback might get blocked by the FLUSH
     * protocol. When the FLUSH protocol is done, and messages can be sent again, the FLUSH protocol
     * will simply unblock all pending messages. If a callback for unblocking is desired, implement
-    * {@link org.jgroups.ExtendedMembershipListener#unblock()}. Note that block() is the equivalent
+    * {@link org.jgroups.MembershipListener#unblock()}. Note that block() is the equivalent
     * of reception of a BlockEvent in the pull mode.
     */
     void block();

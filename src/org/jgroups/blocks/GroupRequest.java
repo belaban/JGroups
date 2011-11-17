@@ -125,12 +125,11 @@ public class GroupRequest<T> extends Request {
                         rsp.setException((Throwable)response_value);
                     else
                         rsp.setValue((T)response_value);
+                    rsp.setReceived(true);
+                    num_valid++;
                 }
-                rsp.setReceived(responseReceived);
             }
 
-            if(responseReceived)
-                num_valid++;
             done=responsesComplete() || (rsp_filter != null && !rsp_filter.needMoreResponses());
             if(responseReceived || done)
                 completed.signalAll(); // wakes up execute()

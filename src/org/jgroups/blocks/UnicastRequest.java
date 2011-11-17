@@ -66,21 +66,22 @@ public class UnicastRequest<T> extends Request {
                 return;
             if(!result.wasReceived()) {
                 num_received++;
-                boolean responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender);
-                if(is_exception && response_value instanceof Throwable)
-                    result.setException((Throwable)response_value);
-                else
-                    result.setValue((T)response_value);
-                result.setReceived(responseReceived);
-                if(log.isTraceEnabled()) {
-                    StringBuilder sb=new StringBuilder("received response for request ");
-                    sb.append(req_id).append(", sender=").append(sender);
+                if(rsp_filter == null || rsp_filter.isAcceptable(response_value, sender)) {
                     if(is_exception && response_value instanceof Throwable)
-                        sb.append(", exception=");
+                        result.setException((Throwable)response_value);
                     else
-                        sb.append(", val=");
-                    sb.append(response_value);
-                    log.trace(sb.toString());
+                        result.setValue((T)response_value);
+                    result.setReceived(true);
+                    if(log.isTraceEnabled()) {
+                        StringBuilder sb=new StringBuilder("received response for request ");
+                        sb.append(req_id).append(", sender=").append(sender);
+                        if(is_exception && response_value instanceof Throwable)
+                            sb.append(", exception=");
+                        else
+                            sb.append(", val=");
+                        sb.append(response_value);
+                        log.trace(sb.toString());
+                    }
                 }
             }
             done=responsesComplete() || (rsp_filter != null && !rsp_filter.needMoreResponses());
@@ -93,6 +94,8 @@ public class UnicastRequest<T> extends Request {
         }
         checkCompletion(this);
     }
+
+    public boolean responseReceived() {return num_received >= 1;}
 
 
     /**

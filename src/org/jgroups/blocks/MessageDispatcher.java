@@ -369,7 +369,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
             else throw new RuntimeException(exception);
         }
 
-        if(!rsp.wasReceived())
+        if(!rsp.wasReceived() && !req.responseReceived())
             throw new TimeoutException("timeout sending message to " + dest);
         return rsp.getValue();
     }

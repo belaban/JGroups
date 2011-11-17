@@ -29,7 +29,7 @@ API changes
 Not really a feature, however, this impacts application code using JGroups; some code will have to be changed as we
 implemented a lot of the API changes we've always wanted to do, but couldn't due to backwards compatibility reasons.
 API changes have really been the focus of 3.0; some work also went into optimizations for running in large clusters.
-More optimization work will be done in 3.1.
+More optimization work will be done in 3.0.x and 3.1.
 The changes are described in https://github.com/belaban/JGroups/blob/master/doc/API_Changes.txt.
 
 
@@ -39,6 +39,28 @@ CounterService
 
 The is a cluster wide atomic counter, for details see the documentation at
 http://www.jgroups.org/manual-3.x/html/user-building-blocks.html#CounterService
+
+
+JChannel: input stream constructor
+----------------------------------
+[https://issues.jboss.org/browse/JGRP-1349]
+
+A new JChannel can now be created by passing it an input stream to a config.
+
+
+UNICAST / UNICAST2: close idle connections
+------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1384]
+
+Added property conn_expiry_timeout which closes idle connections after this timeout. Useful in large clusters, to
+reduce memory (each connection has a retransmit table).
+
+
+Add support for Amazon EC2 inter-region nodes (NAT support)
+-----------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1388]
+
+Added external_addr to UDP, FD_SOCK and STATE_SOCK. This allows nodes behind a NAT to be accessed from other members.
 
 
 
@@ -67,6 +89,13 @@ Discovery: don't send view back with discovery response
 The view is now omitted from the discovery response, this causes large messages sent by everyone in the cluster,
 especially if we had a large cluster
 
+
+Make merging more scalable / robust
+-----------------------------------
+[https://issues.jboss.org/browse/JGRP-1379]
+
+Various optimizations with respect to large clusters, e.g. reducing the number of cluster wide calls made, decreasing
+the size of various merge-related messages, better handling of concurrent merges etc.
 
 
 
@@ -103,6 +132,13 @@ Error starting shared transport causes future channels using it to fail
 [https://issues.jboss.org/browse/JGRP-1356]
 
 
+RspFilter: incorrect implementation can block an RPC
+----------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1330]
+
+When an incorrect RspFilter doesn't terminate the RPC even though all responses have been received, the RPC is
+nevertheless terminated.
+
 
 
 Manual
@@ -121,5 +157,5 @@ Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Toronto, Canada
 Sanne Grinovero, Newcastle, Great Britain
 
-Oct 2011
+Nov 2011
 

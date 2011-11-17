@@ -3,7 +3,7 @@
 	       ---------------------------------------
 
 Pre-release:
-- Do a cvs update -dP and commit all pending changes
+- Do a git pull origin master and commit all pending changes
 - Run all unit tests: ./build clean all-tests reports
 - Run the manual tests in doc/tests/ManualTests.txt
 - Run the performance tests to see whether performance is about the same
@@ -12,20 +12,16 @@ Pre-release:
 
 Release:
 - Update the ReleaseNotes-xxx.txt for the given release
-- Set version in: Version.java, manifest.mf, build.xml and pom.xml
+- Set version in: Version.java, build.xml and pom.xml
   * Note that the version needs to conform to the version standards, e.g. 2.6.2.GA or 2.6.4.CR2, 2.5.4.Beta1
-- Create a CVS tag: JGroups_x_y_z
-- Add tag information to wiki: http://wiki.jboss.org/wiki/Wiki.jsp?page=Branches
+- Create a Git tag: JGroups_x_y_z
 - Create a distribution: ./build.sh jar
-  - the distribution files are dist/jgroups-x.y.z.jar, dist/jgroups-sources.jar
+  - the distribution files are dist/jgroups-x.y.z.jar, dist/jgroups-sources.jar and dist/README
 - Upload distribution files to web site:
-  - Go to http://sourceforge.net/projects/javagroups/
-  - Log in and pick http://sourceforge.net/project/admin/editpackages.php?group_id=6081
-  - Add release to JGroups (new version)
-  - Release notes are included in dist, change log obtained from JIRA
+  - Go to http://sourceforge.net/projects/javagroups/files/ (requires admin)
 - Create PDF and HTML documentation: ./build.sh docs and upload to web site
   - these files update the JGroups web page (http://www.jgroups.org/javagroupsnew/docs/index.html),
-  specifically the links to manual and tutorial documentation  
+    specifically the links to manual and tutorial documentation
   - see JGroups/bin/upload_manual.sh
 - Create javadoc: ./build.sh javadoc and upload to web site
   - use process similar to pdf and html (script is bin/upload_javadocs.sh)

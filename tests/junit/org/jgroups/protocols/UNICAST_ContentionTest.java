@@ -97,10 +97,10 @@ public class UNICAST_ContentionTest {
 
         long NUM_EXPECTED_MSGS=NUM_THREADS * NUM_MSGS;
 
-        for(int i=0; i < 100; i++) {
+        for(int i=0; i < 20; i++) {
             if(r1.getNum() == NUM_EXPECTED_MSGS && r2.getNum() == NUM_EXPECTED_MSGS)
                 break;
-            Util.sleep(500);
+            Util.sleep(2000);
             UNICAST2 unicast2=(UNICAST2)c1.getProtocolStack().findProtocol(UNICAST2.class);
             if(unicast2 != null)
                 unicast2.sendStableMessages();
