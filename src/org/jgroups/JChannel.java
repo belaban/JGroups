@@ -16,6 +16,7 @@ import org.jgroups.util.UUID;
 import org.w3c.dom.Element;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
@@ -1013,25 +1014,7 @@ public class JChannel extends Channel {
             Map<String, String> map=new HashMap<String, String>(2);
             for(String key: keys) {
                 if(key.startsWith("jmx")) {
-                    Map<String, Object> tmp_stats;
-                    int index=key.indexOf("=");
-                    if(index > -1) {
-                        List<String> list=null;
-                        String protocol_name=key.substring(index +1);
-                        index=protocol_name.indexOf(".");
-                        if(index > -1) {
-                            String rest=protocol_name;
-                            protocol_name=protocol_name.substring(0, index);
-                            String attrs=rest.substring(index +1); // e.g. "num_sent,msgs,num_received_msgs"
-                            list=Util.parseStringList(attrs, ",");
-                        }
-
-                        tmp_stats=dumpStats(protocol_name, list);
-                    }
-                    else
-                        tmp_stats=dumpStats();
-
-                    map.put("jmx", tmp_stats != null? Util.mapToString(tmp_stats) : "null");
+                    handleJmx(map, key);
                     continue;
                 }
                 if(key.equals("socks")) {
@@ -1066,36 +1049,47 @@ public class JChannel extends Channel {
             return new String[]{"jmx", "invoke=<operation>[<args>]", "\nop=<operation>[<args>]", "socks"};
         }
 
-        String getOpenSockets() {
-            Map<Object, String> socks=getSocketFactory().getSockets();
-            TP transport=getProtocolStack().getTransport();
-            if(transport != null && transport.isSingleton()) {
-                Map<Object,String> tmp=transport.getSocketFactory().getSockets();
-                if(tmp != null)
-                    socks.putAll(tmp);
-            }
+        protected void handleJmx(Map<String, String> map, String input) {
+            Map<String, Object> tmp_stats;
+            int index=input.indexOf("=");
+            if(index > -1) {
+                List<String> list=null;
+                String protocol_name=input.substring(index +1);
+                index=protocol_name.indexOf(".");
+                if(index > -1) {
+                    String rest=protocol_name;
+                    protocol_name=protocol_name.substring(0, index);
+                    String attrs=rest.substring(index +1); // e.g. "num_sent,msgs,num_received_msgs"
+                    list=Util.parseStringList(attrs, ",");
 
-            StringBuilder sb=new StringBuilder();
-            if(socks != null) {
-                for(Map.Entry<Object,String> entry: socks.entrySet()) {
-                    Object key=entry.getKey();
-                    if(key instanceof ServerSocket) {
-                        ServerSocket tmp=(ServerSocket)key;
-                        sb.append(tmp.getInetAddress()).append(":").append(tmp.getLocalPort())
-                                .append(" ").append(entry.getValue()).append(" [tcp]");
+                    // check if there are any attribute-sets in the list
+                    for(Iterator<String> it=list.iterator(); it.hasNext();) {
+                        String tmp=it.next();
+                        index=tmp.indexOf("=");
+                        if(index != -1) {
+                            String attrname=tmp.substring(0, index);
+                            String attrvalue=tmp.substring(index+1);
+                            Protocol prot=prot_stack.findProtocol(protocol_name);
+                            Field field=Util.getField(prot.getClass(), attrname);
+                            if(field != null) {
+                                Object value=MethodCall.convert(attrvalue, field.getType());
+                                  if(value != null)
+                                      prot.setValue(attrname, value);
+                            }
+                            else {
+                                if(log.isWarnEnabled())
+                                    log.warn("Field \"" + attrname + "\" not found in protocol " + protocol_name);
+                            }
+                            it.remove();
+                        }
                     }
-                    else if(key instanceof DatagramSocket) {
-                        DatagramSocket sock=(DatagramSocket)key;
-                        sb.append(sock.getLocalAddress()).append(":").append(sock.getLocalPort())
-                                .append(" ").append(entry.getValue()).append(" [udp]");
-                    }
-                    else {
-                        sb.append(key).append(" ").append(entry.getValue());
-                    }
-                    sb.append("\n");
                 }
+                tmp_stats=dumpStats(protocol_name, list);
             }
-            return sb.toString();
+            else
+                tmp_stats=dumpStats();
+
+            map.put("jmx", tmp_stats != null? Util.mapToString(tmp_stats) : "null");
         }
 
         /**
@@ -1143,6 +1137,38 @@ public class JChannel extends Channel {
             Object retval=call.invoke(prot, converted_args);
             if(retval != null)
                 map.put(prot_name + "." + method_name, retval.toString());
+        }
+
+        String getOpenSockets() {
+            Map<Object, String> socks=getSocketFactory().getSockets();
+            TP transport=getProtocolStack().getTransport();
+            if(transport != null && transport.isSingleton()) {
+                Map<Object,String> tmp=transport.getSocketFactory().getSockets();
+                if(tmp != null)
+                    socks.putAll(tmp);
+            }
+
+            StringBuilder sb=new StringBuilder();
+            if(socks != null) {
+                for(Map.Entry<Object,String> entry: socks.entrySet()) {
+                    Object key=entry.getKey();
+                    if(key instanceof ServerSocket) {
+                        ServerSocket tmp=(ServerSocket)key;
+                        sb.append(tmp.getInetAddress()).append(":").append(tmp.getLocalPort())
+                                .append(" ").append(entry.getValue()).append(" [tcp]");
+                    }
+                    else if(key instanceof DatagramSocket) {
+                        DatagramSocket sock=(DatagramSocket)key;
+                        sb.append(sock.getLocalAddress()).append(":").append(sock.getLocalPort())
+                                .append(" ").append(entry.getValue()).append(" [udp]");
+                    }
+                    else {
+                        sb.append(key).append(" ").append(entry.getValue());
+                    }
+                    sb.append("\n");
+                }
+            }
+            return sb.toString();
         }
     }
 

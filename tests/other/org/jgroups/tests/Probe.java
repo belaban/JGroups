@@ -172,12 +172,13 @@ public class Probe {
 
     static void help() {
         System.out.println("Probe [-help] [-addr <addr>] [-ipv6] [-bind_addr <addr>] " +
-                "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-weed_out_duplicates] [-match pattern]" +
-                "[key[=value]]*\n\n" +
-                "Examples:\n" +
-                "probe.sh keys // dumps all valid commands\n" +
-                "probe.sh jmx=NAKACK // dumps JMX info about all NAKACK protocols\n" +
-                "probe.sh op=STABLE.runMessageGarbageCollection // invokes the method in all STABLE protocols\n" +
-                "probe.sh jmx=UDP.oob,thread_pool // dumps all attrs of UDP starting with oob* or thread_pool*");
+                             "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-weed_out_duplicates] [-match pattern]" +
+                             "[key[=value]]*\n\n" +
+                             "Examples:\n" +
+                             "probe.sh keys // dumps all valid commands\n" +
+                             "probe.sh jmx=NAKACK // dumps JMX info about all NAKACK protocols\n" +
+                             "probe.sh op=STABLE.runMessageGarbageCollection // invokes the method in all STABLE protocols\n" +
+                             "probe.sh jmx=UDP.oob,thread_pool // dumps all attrs of UDP starting with oob* or thread_pool*\n" +
+                             "probe.sh jmx=FLUSH.bypass=true\n");
     }
 }
