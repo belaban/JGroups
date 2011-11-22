@@ -119,6 +119,7 @@ public class FLUSH extends Protocol {
      * Indicates if FLUSH.down() is currently blocking threads Condition predicate associated with
      * blockMutex
      */
+    @ManagedAttribute(description="Is message sending currently blocked")
     @GuardedBy("blockMutex")
     private volatile boolean isBlockingFlushDown = true;
 
