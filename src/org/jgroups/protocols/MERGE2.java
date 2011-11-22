@@ -46,7 +46,7 @@ public class MERGE2 extends Protocol {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
-    @Property(description="Minimum time in msbetween runs to discover other clusters")
+    @Property(description="Minimum time in ms between runs to discover other clusters")
     protected long min_interval=5000;
     
     @Property(description="Maximum time in ms between runs to discover other clusters")
