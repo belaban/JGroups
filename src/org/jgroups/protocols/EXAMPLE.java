@@ -1,27 +1,18 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 
-import java.io.Serializable;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.util.ArrayList;
 import java.util.List;
 
 
-class ExampleHeader implements Serializable {
-    private static final long serialVersionUID=-8802317525466899597L;
-    // your variables
 
-    public String toString() {
-        return "[EXAMPLE: <variables> ]";
-    }
-}
 
 
 /**
@@ -75,6 +66,27 @@ public class EXAMPLE extends Protocol {
         }
 
         return down_prot.down(evt);          // Pass on to the layer below us
+    }
+
+
+    public static class ExampleHeader extends Header {
+        // your variables
+
+        public int size() {
+            return 0; // return serialized size of all variables sent across the wire
+        }
+
+        public String toString() {
+            return "[EXAMPLE: <variables> ]";
+        }
+
+        public void writeTo(DataOutput out) throws Exception {
+            // write variables to stream
+        }
+
+        public void readFrom(DataInput in) throws Exception {
+            // initialize variables from stream
+        }
     }
 
 
