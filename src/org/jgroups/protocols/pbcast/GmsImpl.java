@@ -38,7 +38,7 @@ public abstract class GmsImpl {
     public void               unsuspect(Address mbr) {}
 
     public void               merge(Map<Address,View> views)                               {} // only processed by coord
-    public void               handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs)  {} // only processed by coords
+    public void               handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs)  {}
     public void               handleMergeResponse(MergeData data, MergeId merge_id) {} // only processed by coords
     public void               handleMergeView(MergeData data, MergeId merge_id)     {} // only processed by coords
     public void               handleMergeCancelled(MergeId merge_id)                {} // only processed by coords
