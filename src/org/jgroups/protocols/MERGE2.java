@@ -272,7 +272,7 @@ public class MERGE2 extends Protocol {
             Map<Address,View> views=getViews(discovery_rsps);
 
             // A list of different views
-            List<View> different_views=detectDifferentViews(views);
+            List<View> different_views=Util.detectDifferentViews(views);
             if(different_views.size() <= 1) {
                 num_inconsistent_views=0;
                 return;
@@ -350,18 +350,6 @@ public class MERGE2 extends Protocol {
             return retval;
         }
 
-
-        public List<View> detectDifferentViews(Map<Address,View> map) {
-            final List<View> ret=new ArrayList<View>();
-            for(View view: map.values()) {
-                if(view == null)
-                    continue;
-                ViewId vid=view.getVid();
-                if(!Util.containsViewId(ret, vid))
-                    ret.add(view);
-            }
-            return ret;
-        }
 
     }
 }

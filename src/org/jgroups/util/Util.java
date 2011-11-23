@@ -2204,6 +2204,19 @@ public class Util {
         return false;
     }
 
+    public static List<View> detectDifferentViews(Map<Address,View> map) {
+        final List<View> ret=new ArrayList<View>();
+        for(View view: map.values()) {
+            if(view == null)
+                continue;
+            ViewId vid=view.getVid();
+            if(!Util.containsViewId(ret, vid))
+                ret.add(view);
+        }
+        return ret;
+    }
+
+
     /**
      * Determines the members which take part in a merge. The resulting list consists of all merge coordinators
      * plus members outside a merge partition, e.g. for views A={B,A,C}, B={B,C} and C={B,C}, the merge coordinator
