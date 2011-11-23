@@ -15,6 +15,7 @@ import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
 
 
@@ -63,7 +64,7 @@ public class MERGE3 extends Protocol {
     protected Future<?>     view_consistency_checker;
 
     // hashmap to keep track of view-id sent in INFO messages
-    protected final ConcurrentMap<ViewId,Set<Address>> views=new ConcurrentHashMap<ViewId,Set<Address>>(view != null? view.size() : 16);
+    protected final ConcurrentMap<ViewId,SortedSet<Address>> views=new ConcurrentHashMap<ViewId,SortedSet<Address>>(view != null? view.size() : 16);
 
     protected final ResponseCollector<View> view_rsps=new ResponseCollector<View>();
 
@@ -93,7 +94,7 @@ public class MERGE3 extends Protocol {
     @ManagedOperation(description="Lists the contents of the cached views")
     public String dumpViews() {
         StringBuilder sb=new StringBuilder();
-        for(Map.Entry<ViewId,Set<Address>> entry: views.entrySet())
+        for(Map.Entry<ViewId,SortedSet<Address>> entry: views.entrySet())
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         return sb.toString();
     }
@@ -255,10 +256,10 @@ public class MERGE3 extends Protocol {
                                 down(new Event(Event.SET_PHYSICAL_ADDRESS,
                                                new Tuple<Address,PhysicalAddress>(sender, physical_addr)));
                         }
-                        Set<Address> existing=views.get(hdr.view_id);
+                        SortedSet<Address> existing=views.get(hdr.view_id);
                         if(existing == null) {
-                            existing=new HashSet<Address>();
-                            Set<Address> tmp=views.putIfAbsent(hdr.view_id, existing);
+                            existing=new ConcurrentSkipListSet<Address>();
+                            SortedSet<Address> tmp=views.putIfAbsent(hdr.view_id, existing);
                             if(tmp != null)
                                 existing=tmp;
                         }
@@ -362,10 +363,9 @@ public class MERGE3 extends Protocol {
                 log.debug("I (" + local_addr + ") will be the merge leader");
 
             // add merge participants
-            for(Set<Address> set: views.values()) {
-                SortedSet<Address> addrs=new TreeSet<Address>(set);
-                if(!addrs.isEmpty())
-                    coords.add(addrs.first());
+            for(SortedSet<Address> set: views.values()) {
+                if(!set.isEmpty())
+                    coords.add(set.first());
             }
 
             if(log.isTraceEnabled())
@@ -389,9 +389,6 @@ public class MERGE3 extends Protocol {
                 System.out.println("--->> " + local_addr + " cleaned out coords (" + old_size + ") to "
                                      + max_participants_in_merge + " coords");
             }
-
-
-
 
             // grab views from all members in coords
             view_rsps.reset(coords);
