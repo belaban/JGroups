@@ -50,6 +50,7 @@
     <class id="51" name="org.jgroups.protocols.PEER_LOCK"/>
     <class id="52" name="org.jgroups.protocols.CENTRAL_EXECUTOR"/>
     <class id="53" name="org.jgroups.protocols.COUNTER"/>
+    <class id="54" name="org.jgroups.protocols.MERGE3"/>
     
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
