@@ -34,10 +34,14 @@ import java.util.concurrent.TimeUnit;
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class LargeMergeTest {
     static final int NUM=50; // number of members
+    static final int MAX_PARTICIPANTS_IN_MERGE=Math.max(50, NUM / 3);
 
     protected final JChannel[] channels=new JChannel[NUM];
 
     protected MyDiagnosticsHandler handler;
+
+    protected ThreadPoolExecutor oob_thread_pool;
+    protected ThreadPoolExecutor thread_pool;
 
 
 
@@ -54,10 +58,12 @@ public class LargeMergeTest {
                                                5,20,
                                                3000, 5000, "abort");
 
-        ThreadPoolExecutor oob_thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/10), 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(NUM * NUM));
+        oob_thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/4), 3000, TimeUnit.MILLISECONDS,
+                                                                  new ArrayBlockingQueue<Runnable>(NUM * NUM));
         oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
 
-        ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/10), 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(NUM * 5));
+        thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/4), 3000, TimeUnit.MILLISECONDS,
+                                                              new ArrayBlockingQueue<Runnable>(NUM * NUM));
         thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
 
@@ -77,8 +83,11 @@ public class LargeMergeTest {
                                            new DISCARD().setValue("discard_all",true),
                                            new PING().setValue("timeout",1).setValue("num_initial_members",50)
                                              .setValue("force_sending_discovery_rsps", true),
-                                           new MERGE2().setValue("min_interval",8000)
-                                             .setValue("max_interval",15000).setValue("merge_fast",false),
+                                           //new MERGE2().setValue("min_interval",8000)
+                                             //.setValue("max_interval",15000).setValue("merge_fast",false),
+                                           new MERGE3().setValue("min_interval",1000)
+                                             .setValue("max_interval",10000)
+                                             .setValue("max_participants_in_merge", MAX_PARTICIPANTS_IN_MERGE),
                                            new NAKACK().setValue("use_mcast_xmit",false)
                                              .setValue("discard_delivered_msgs",true)
                                              .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false)
@@ -198,8 +207,13 @@ public class LargeMergeTest {
 
         for(JChannel ch:  channels) {
             MERGE2 merge=(MERGE2)ch.getProtocolStack().findProtocol(MERGE2.class);
-            if(merge.isMergeTaskRunning())
+            if(merge != null && merge.isMergeTaskRunning())
                 merge_task_running++;
+
+            MERGE3 merge3=(MERGE3)ch.getProtocolStack().findProtocol(MERGE3.class);
+            if(merge3 != null && merge3.isMergeTaskRunning())
+                merge_task_running++;
+
             GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
             if(gms.isMergeKillerRunning())
                 merge_canceller_running++;
@@ -212,7 +226,10 @@ public class LargeMergeTest {
         sb.append("merge killers running: " + merge_canceller_running).append("\n");
         sb.append("merge in progress: " + merge_in_progress).append("\n");
         sb.append("gms.merge tasks running: " + gms_merge_task_running).append("\n");
-
+        sb.append("thread_pool: threads=" + thread_pool.getPoolSize() + ", queue=" + thread_pool.getQueue().size() +
+                    ", largest threads=" + thread_pool.getLargestPoolSize() + "\n");
+        sb.append("oob_thread_pool: threads=" + oob_thread_pool.getPoolSize() + ", queue=" + oob_thread_pool.getQueue().size() +
+                    ", largest threads=" + oob_thread_pool.getLargestPoolSize() + "\n");
         return sb.toString();
     }
 
