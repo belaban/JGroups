@@ -477,6 +477,26 @@ public class SizeTest {
     }
 
 
+    public static void testMergeHeader() throws Exception {
+        MERGE3.MergeHeader hdr=new MERGE3.MergeHeader();
+        _testSize(hdr);
+        ViewId view_id=new ViewId(Util.createRandomAddress("A"), 22);
+        hdr=MERGE3.MergeHeader.createInfo(view_id, null, null);
+        _testSize(hdr);
+        String logical_name="A";
+        hdr=MERGE3.MergeHeader.createInfo(view_id, logical_name, null);
+        _testSize(hdr);
+        List<PhysicalAddress> physical_addr=new ArrayList<PhysicalAddress>();
+        physical_addr.add(new IpAddress(5002));
+        hdr=MERGE3.MergeHeader.createInfo(view_id, logical_name, physical_addr);
+        _testSize(hdr);
+        Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B"), c=Util.createRandomAddress("C");
+        View view=Util.createView(a, 22, a,b,c);
+        hdr=MERGE3.MergeHeader.createViewRequest();
+        _testSize(hdr);
+        hdr=MERGE3.MergeHeader.createViewResponse(view);
+        _testSize(hdr);
+    }
 
 
     public static void testJoinRsp() throws Exception {
@@ -826,6 +846,13 @@ public class SizeTest {
     private static void _testSize(Collection<Address> coll) throws Exception {
         long size=Util.size(coll);
         byte[] serialized_form=Util.collectionToByteBuffer(coll);
+        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
+        Assert.assertEquals(serialized_form.length, size);
+    }
+
+    private static void _testSize(MERGE3.MergeHeader hdr) throws Exception {
+        long size=hdr.size();
+        byte[] serialized_form=Util.streamableToByteBuffer(hdr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
     }
