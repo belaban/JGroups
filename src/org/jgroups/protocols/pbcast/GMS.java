@@ -469,7 +469,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
      * @param digest
      * @param newMembers
      */
-    public void castViewChangeWithDest(View new_view, Digest digest, JoinRsp jr, Collection <Address> newMembers) {
+    public void castViewChangeWithDest(View new_view, Digest digest, JoinRsp jr, Collection<Address> newMembers) {
         if(log.isTraceEnabled())
             log.trace(local_addr + ": mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
        
@@ -478,35 +478,41 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         hdr.my_digest=digest;
         view_change_msg.putHeader(this.id, hdr);
 
-        List<Address> ackMembers = new ArrayList<Address>(new_view.getMembers());
+        List<Address> ackMembers=new ArrayList<Address>(new_view.getMembers());
         if(newMembers != null && !newMembers.isEmpty())
             ackMembers.removeAll(newMembers);
-        if(!ackMembers.isEmpty())
-            ack_collector.reset(ackMembers);
-        else
-            ack_collector.reset(null);
-               
-        
+
+
         // Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
         // in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
         // Check NAKACK's TMP_VIEW handling for details   
         down_prot.up(new Event(Event.TMP_VIEW, new_view));
         down_prot.down(new Event(Event.TMP_VIEW, new_view));
-        down_prot.down(new Event(Event.MSG, view_change_msg));
-        
-        try {
-            if(!ackMembers.isEmpty()) {
-                ack_collector.waitForAllAcks(view_ack_collection_timeout);
-                if(log.isTraceEnabled())
-                    log.trace(local_addr + ": received all ACKs (" + ack_collector.expectedAcks() +
-                                ") from existing members for view " + new_view.getVid());
-            }
+
+        // If we're the only member the VIEW is broadcast to, let's simply install the view directly, without
+        // sending the VIEW multicast ! Or else N-1 members drop the multicast anyway...
+        if(local_addr != null && ackMembers.size() == 1 && ackMembers.get(0).equals(local_addr)) {
+            // System.out.println("--->> " + local_addr + ": installing view " + new_view.getViewId() + " directly");
+            impl.handleViewChange(new_view, digest);
         }
-        catch(TimeoutException e) {
-            if(log_collect_msgs && log.isWarnEnabled()) {
-                log.warn(local_addr + ": failed to collect all ACKs (expected=" + ack_collector.expectedAcks()
-                        + ") for view " + new_view.getViewId() + " after " + view_ack_collection_timeout + "ms, missing ACKs from "
-                           + ack_collector.printMissing());
+        else {
+            if(!ackMembers.isEmpty())
+                ack_collector.reset(ackMembers);
+            down_prot.down(new Event(Event.MSG, view_change_msg));
+            try {
+                if(!ackMembers.isEmpty()) {
+                    ack_collector.waitForAllAcks(view_ack_collection_timeout);
+                    if(log.isTraceEnabled())
+                        log.trace(local_addr + ": received all ACKs (" + ack_collector.expectedAcks() +
+                                    ") from existing members for view " + new_view.getVid());
+                }
+            }
+            catch(TimeoutException e) {
+                if(log_collect_msgs && log.isWarnEnabled()) {
+                    log.warn(local_addr + ": failed to collect all ACKs (expected=" + ack_collector.expectedAcks()
+                               + ") for view " + new_view.getViewId() + " after " + view_ack_collection_timeout + "ms, missing ACKs from "
+                               + ack_collector.printMissing());
+                }
             }
         }
 
