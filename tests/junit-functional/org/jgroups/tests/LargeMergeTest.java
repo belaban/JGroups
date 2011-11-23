@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class LargeMergeTest {
-    static final int NUM=50; // number of members
-    static final int MAX_PARTICIPANTS_IN_MERGE=Math.max(50, NUM / 3);
+    static final int NUM=200; // number of members
+    static final int MAX_PARTICIPANTS_IN_MERGE=Math.max(100, NUM / 3);
 
     protected final JChannel[] channels=new JChannel[NUM];
 
