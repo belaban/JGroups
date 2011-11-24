@@ -178,15 +178,15 @@ public class CoordGmsImpl extends ServerGmsImpl {
         gms.up(new Event(Event.PREPARE_VIEW,new_view));
         gms.down(new Event(Event.PREPARE_VIEW,new_view));
         
-        if(log.isDebugEnabled())
-            log.debug("new=" + new_mbrs + ", suspected=" + suspected_mbrs + ", leaving=" + leaving_mbrs +
-                    ", new view: " + new_view);
+        if(log.isTraceEnabled())
+            log.trace(gms.local_addr + ": new members=" + new_mbrs + ", suspected=" + suspected_mbrs + ", leaving=" + leaving_mbrs +
+                        ", new view: " + new_view);
              
         JoinRsp join_rsp=null;
         boolean hasJoiningMembers=!new_mbrs.isEmpty();
         try {            
             boolean successfulFlush =!useFlushIfPresent || !gms.flushProtocolInStack || gms.startFlush(new_view);
-            if(!successfulFlush && hasJoiningMembers){
+            if(!successfulFlush && hasJoiningMembers) {
                 // Don't send a join response if the flush fails (http://jira.jboss.org/jira/browse/JGRP-759)
                 // The joiner should block until the previous FLUSH completed
                 sendLeaveResponses(leaving_mbrs); // we still have to send potential leave responses
@@ -220,7 +220,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             }
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members                            
-            gms.castViewChangeWithDest(new_view, join_rsp != null? join_rsp.getDigest() : null, join_rsp,new_mbrs);                      
+            gms.castViewChange(new_view,join_rsp != null? join_rsp.getDigest() : null,join_rsp,new_mbrs);
         }
         finally {
             if(hasJoiningMembers)

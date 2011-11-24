@@ -80,14 +80,14 @@ public class ClientGmsImpl extends GmsImpl {
                     rsp=join_promise.getResult(gms.join_timeout); // clears the result
                     continue;
                 }*/
-                if(log.isDebugEnabled())
-                    log.debug("initial_mbrs are " + responses);
                 if(responses.isEmpty()) {
-                    if(log.isDebugEnabled())
-                        log.debug("no initial members discovered: creating group as first member");
+                    if(log.isTraceEnabled())
+                        log.trace(gms.local_addr + ": no initial members discovered: creating group as first member");
                     becomeSingletonMember(mbr);
                     return;
                 }
+                if(log.isTraceEnabled())
+                    log.trace(gms.local_addr + ": initial_mbrs are " + responses);
 
                 coord=determineCoord(responses);
                 if(coord == null) { // e.g. because we have all clients only
@@ -128,7 +128,7 @@ public class ClientGmsImpl extends GmsImpl {
                 }
 
                 if(log.isDebugEnabled())
-                    log.debug("sending handleJoin(" + mbr + ") to " + coord);
+                    log.debug("sending JOIN(" + mbr + ") to " + coord);
                 sendJoinMessage(coord, mbr, joinWithStateTransfer,useFlushIfPresent);
             }
 
@@ -137,7 +137,7 @@ public class ClientGmsImpl extends GmsImpl {
                     rsp=join_promise.getResult(gms.join_timeout);
                 if(rsp == null) {
                     if(log.isWarnEnabled())
-                        log.warn("join(" + mbr + ") sent to " + coord + " timed out (after " + gms.join_timeout + " ms), retrying");
+                        log.warn("JOIN(" + mbr + ") sent to " + coord + " timed out (after " + gms.join_timeout + " ms), retrying");
                     continue;
                 }
                 
@@ -169,8 +169,8 @@ public class ClientGmsImpl extends GmsImpl {
                     tmp_digest.seal();
                     gms.setDigest(tmp_digest);
 
-                    if(log.isDebugEnabled())
-                        log.debug("[" + gms.local_addr + "]: JoinRsp=" + tmp_view + " [size=" + tmp_view.size() + "]\n\n");
+                    if(log.isTraceEnabled())
+                        log.trace(gms.local_addr + ": JOIN-RSP=" + tmp_view + " [size=" + tmp_view.size() + "]\n\n");
 
                     if(!installView(tmp_view)) {
                         if(log.isErrorEnabled())
@@ -232,7 +232,6 @@ public class ClientGmsImpl extends GmsImpl {
      */
     private boolean installView(View new_view) {
         List<Address> mems=new_view.getMembers();
-        if(log.isDebugEnabled()) log.debug("new_view=" + new_view);
         if(gms.local_addr == null || mems == null || !mems.contains(gms.local_addr)) {
             if(log.isErrorEnabled())
                 log.error("I (" + gms.local_addr + ") am not member of " + mems + ", will not install view");
