@@ -71,6 +71,10 @@ public class MERGE3 extends Protocol {
 
     protected final ResponseCollector<View> view_rsps=new ResponseCollector<View>();
 
+    protected boolean        transport_supports_multicasting=true;
+
+    protected String         cluster_name;
+
 
 
     @ManagedAttribute(description="Whether or not the current member is the coordinator")
@@ -121,6 +125,7 @@ public class MERGE3 extends Protocol {
         }
         if(max_interval <= 0)
             throw new Exception("max_interval must be > 0");
+        transport_supports_multicasting=getTransport().supportsMulticasting();
     }
 
     public void stop() {
@@ -192,6 +197,13 @@ public class MERGE3 extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
+
+            case Event.CONNECT:
+            case Event.CONNECT_USE_FLUSH:
+            case Event.CONNECT_WITH_STATE_TRANSFER:
+            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                cluster_name=(String)evt.getArg();
+                break;
 
             case Event.DISCONNECT:
                 stopViewConsistencyChecker();
@@ -307,9 +319,35 @@ public class MERGE3 extends Protocol {
             String logical_name=UUID.get(local_addr);
             ViewId view_id=view.getViewId();
             MergeHeader hdr=MergeHeader.createInfo(view_id, logical_name, Arrays.asList(physical_addr));
-            Message msg=new Message();
-            msg.putHeader(getId(), hdr);
-            down_prot.down(new Event(Event.MSG, msg));
+
+            if(transport_supports_multicasting) {
+                Message msg=new Message();
+                msg.putHeader(getId(), hdr);
+                down_prot.down(new Event(Event.MSG, msg));
+                return;
+            }
+
+            Discovery discovery_protocol=(Discovery)stack.findProtocol(Discovery.class);
+            if(discovery_protocol == null) {
+                log.warn("no discovery protocol found, cannot ask for physical addresses to send INFO message");
+                return;
+            }
+            Collection<PhysicalAddress> physical_addrs=discovery_protocol.fetchClusterMembers(cluster_name);
+            if(physical_addrs == null)
+                physical_addrs=(Collection<PhysicalAddress>)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESSES));
+
+            if(physical_addrs == null || physical_addrs.isEmpty()) {
+                log.trace("discovery protocol " + discovery_protocol.getName() + " returned 0 physical addresses");
+                return;
+            }
+            if(log.isTraceEnabled())
+                log.trace("discovery protocol " + discovery_protocol.getName() + " returned " + physical_addrs.size() +
+                            " physical addresses: " + Util.printListWithDelimiter(physical_addrs, ", ", 10));
+            for(Address addr: physical_addrs) {
+                Message info=new Message(addr);
+                info.putHeader(getId(), hdr);
+                down_prot.down(new Event(Event.MSG, info));
+            }
         }
 
         public long nextInterval() {
