@@ -111,7 +111,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     private final Map<String,GmsImpl> impls=new HashMap<String,GmsImpl>(3);
 
     // Handles merge related tasks
-    final Merger merger=new Merger(this, log);
+    final Merger merger=new Merger(this);
 
     protected Address local_addr=null;
     protected final Membership members=new Membership(); // real membership
@@ -488,8 +488,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
          // If we're the only member the VIEW is broadcast to, let's simply install the view directly, without
          // sending the VIEW multicast ! Or else N-1 members drop the multicast anyway...
         if(local_addr != null && ackMembers.size() == 1 && ackMembers.get(0).equals(local_addr)) {
-            // System.out.println(local_addr + ": installed view " + new_view + " directly");
-
             // we need to add the message to the retransmit window (e.g. in NAKACK), so (1) it can be retransmitted and
             // (2) we increment the seqno (otherwise, we'd return an incorrect digest)
             down_prot.down(new Event(Event.ADD_TO_XMIT_TABLE, view_change_msg));
@@ -504,8 +502,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 if(!ackMembers.isEmpty()) {
                     ack_collector.waitForAllAcks(view_ack_collection_timeout);
                     if(log.isTraceEnabled())
-                        log.trace(local_addr + ": received all ACKs (" + ack_collector.expectedAcks() +
-                                    ") from existing members for view " + new_view.getVid());
+                        log.trace(local_addr + ": received all " + ack_collector.expectedAcks() +
+                                    " ACKs from members for view " + new_view.getVid());
                 }
             }
             catch(TimeoutException e) {
@@ -733,16 +731,16 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     void stopFlush() {
         if(flushProtocolInStack) {
-            if(log.isDebugEnabled()) {
-                log.debug(local_addr + ": sending RESUME event");
+            if(log.isTraceEnabled()) {
+                log.trace(local_addr + ": sending RESUME event");
             }
             up_prot.up(new Event(Event.RESUME));
         }
     }
     
     void stopFlush(List<Address> members) {
-        if(log.isDebugEnabled()){
-            log.debug(local_addr + ": sending RESUME event");
+        if(log.isTraceEnabled()){
+            log.trace(local_addr + ": sending RESUME event");
         }
         up_prot.up(new Event(Event.RESUME,members));
     }
@@ -767,11 +765,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         impl.handleJoinResponse(hdr.join_rsp);
                         break;
                     case GmsHeader.LEAVE_REQ:
-                        if(log.isDebugEnabled())
-                            log.debug("received LEAVE_REQ for " + hdr.mbr + " from " + msg.getSrc());
-                        if(hdr.mbr == null) {
+                        if(hdr.mbr == null)
                             return null;
-                        }
                         view_handler.add(new Request(Request.LEAVE, hdr.mbr, false));
                         break;
                     case GmsHeader.LEAVE_RSP:
@@ -804,9 +799,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
                     case GmsHeader.MERGE_RSP:
                         MergeData merge_data=new MergeData(msg.getSrc(), hdr.view, hdr.my_digest, hdr.merge_rejected);
-                        if(log.isDebugEnabled()) {
-                            log.debug(local_addr + ": got merge response from " + msg.getSrc() +
-                                    ", merge_id=" + hdr.merge_id + ", merge data is "+ merge_data);
+                        if(log.isTraceEnabled()) {
+                            log.trace(local_addr + ": got merge response from " + msg.getSrc() +
+                                        ", merge_id=" + hdr.merge_id + ", merge data is "+ merge_data);
                         } 
                         impl.handleMergeResponse(merge_data, hdr.merge_id);
                         break;
