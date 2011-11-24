@@ -14,10 +14,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast as well as multicast seqno tables.<br/>
@@ -51,8 +48,10 @@ public class OverlappingMergeTest extends ChannelTestBase {
         a.connect("OverlappingMergeTest");
         b.connect("OverlappingMergeTest");
         c.connect("OverlappingMergeTest");
-        View view=c.getView();
-        assert view.size() == 3 : "view is " + view;
+        for(JChannel ch: Arrays.asList(a,b,c)) {
+            View view=ch.getView();
+            assert view.size() == 3 : "view is " + view + " for channel " + ch.getAddress();
+        }
 
         multicast_transport=isMulticastTransport(a);
     }
@@ -368,7 +367,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         ra.clear(); rb.clear(); rc.clear();
         for(JChannel ch: channels) {
             for(int i=1; i <= num_msgs; i++)
-                ch.send(null, "#" + i);
+                ch.send(null, String.valueOf(i));
         }
     }
 
@@ -385,7 +384,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
     @SuppressWarnings("unchecked")
     protected void checkReceivedMessages(Tuple<MyReceiver,Integer> ... expected_messages) {
-        for(int i=0; i < 30; i++) {
+        for(int i=0; i < 15; i++) {
             boolean all_received=true;
             for(Tuple<MyReceiver,Integer> tuple: expected_messages) {
                 MyReceiver receiver=tuple.getVal1();
@@ -400,7 +399,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
             }
             if(all_received)
                 break;
-            Util.sleep(500);
+            Util.sleep(1000);
         }
 
         for(Tuple<MyReceiver,Integer> tuple: expected_messages) {
@@ -438,12 +437,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
     private static void modifyConfigs(JChannel ... channels) throws Exception {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
-            stack.removeProtocol("MERGE2");
-            stack.removeProtocol("FD_SOCK");
-            stack.removeProtocol("FD");
-            stack.removeProtocol("FD_ALL");
-            stack.removeProtocol("FC");
-            stack.removeProtocol("VERIFY_SUSPECT");
+            stack.removeProtocols("MERGE2","MERGE3","FD_SOCK","FD","FD_ALL","FC","MFC","UFC","VERIFY_SUSPECT", "STATE_TRANSFER");
             NAKACK nak=(NAKACK)stack.findProtocol(NAKACK.class);
             if(nak != null)
                 nak.setLogDiscardMessages(false);
