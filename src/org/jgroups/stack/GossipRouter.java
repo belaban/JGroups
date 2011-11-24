@@ -881,7 +881,7 @@ public class GossipRouter {
 
         GossipRouter router=null;
         String bind_addr=null;
-        boolean jmx=false;
+        boolean jmx=true;
 
         for(int i=0; i < args.length; i++) {
             String arg=args[i];
@@ -902,7 +902,7 @@ public class GossipRouter {
                 continue;
             }
             if("-jmx".equals(arg)) {
-                jmx=true;
+                jmx=Boolean.valueOf(args[++i]);
                 continue;
             }
             // this option is not used and should be deprecated/removed in a future release
@@ -963,7 +963,7 @@ public class GossipRouter {
         System.out.println("                            greater than zero or the default of 1000 will be");
         System.out.println("                            used.");
         System.out.println();
-        System.out.println("    -jmx                  - Expose attributes and operations via JMX.");
+        System.out.println("    -jmx <true|false>     - Expose attributes and operations via JMX.");
         System.out.println();
         System.out.println("    -solinger <msecs>     - Time for setting SO_LINGER on connections. 0");
         System.out.println("                            means do not set SO_LINGER. Must be greater than");
