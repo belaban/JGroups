@@ -116,7 +116,7 @@ public class PingData implements Streamable {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append("own_addr=").append(own_addr);
+        sb.append(own_addr);
         sb.append(", " + printViewId());
         sb.append(", is_server=").append(is_server).append(", is_coord=" + isCoord());
         if(logical_name != null)
@@ -153,6 +153,7 @@ public class PingData implements Streamable {
         Util.writeAddresses(physical_addrs, outstream);
     }
 
+    @SuppressWarnings("unchecked")
     public void readFrom(DataInput instream) throws Exception {
         own_addr=Util.readAddress(instream);
         view=Util.readView(instream);
