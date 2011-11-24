@@ -174,7 +174,7 @@ public class Merger {
         newViewMembers.removeAll(gms.members.getMembers());
 
         try {
-            gms.castViewChangeWithDest(data.view, data.digest, null, newViewMembers);
+            gms.castViewChange(data.view,data.digest,null,newViewMembers);
             // if we have flush in stack send ack back to merge coordinator
             if(gms.flushProtocolInStack) { //[JGRP-700] - FLUSH: flushing should span merge
                 Message ack=new Message(data.getSender(), null, null);
@@ -566,11 +566,6 @@ public class Merger {
                 coords.putIfAbsent(merge_participant, tmp);
             }
 
-            if(coords.keySet().size() <= 1) {
-                log.trace(gms.local_addr + ": less than 2 coordinators; merge is not done");
-                return;
-            }
-
             thread=gms.getThreadFactory().newThread(this, "MergeTask");
             thread.setDaemon(true);
             thread.start();
@@ -624,10 +619,8 @@ public class Merger {
                 log.warn("failed to set my own merge_id (" + merge_id + ") to " + new_merge_id);
                 return;
             }
-            if(log.isTraceEnabled())
-                log.trace(gms.local_addr + ": merge_id is " + merge_id);
 
-           List<Address> tmp=new ArrayList<Address>(coords.keySet());
+            List<Address> tmp=new ArrayList<Address>(coords.keySet());
             Collections.sort(tmp, new Comparator<Address>() {
                 public int compare(Address o1, Address o2) {
                     String s1=UUID.get(o1), s2=UUID.get(o2);
