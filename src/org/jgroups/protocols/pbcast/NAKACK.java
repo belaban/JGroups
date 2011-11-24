@@ -523,6 +523,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     }
                 }
                 return null;
+
+            case Event.ADD_TO_XMIT_TABLE:
+                msg=(Message)evt.getArg();
+                dest=msg.getDest();
+                if(dest != null || msg.isFlagSet(Message.NO_RELIABILITY))
+                    return null; // unicast address: not null and not mcast, pass down unchanged
+
+                send(evt, msg, false); // add to retransmit window, but don't send (we want to avoid the unneeded traffic)
+                return null;    // don't pass down the stack
         }
 
         return down_prot.down(evt);
@@ -548,7 +557,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             if(!is_server) { // discard messages while not yet server (i.e., until JOIN has returned)
                 if(log.isTraceEnabled())
-                    log.trace("message " + msg.getSrc() + "::" + hdr.seqno + " was discarded (not yet server)");
+                    log.trace(local_addr + ": message " + msg.getSrc() + "::" + hdr.seqno + " was discarded (not yet server)");
                 return null;
             }
 
@@ -611,13 +620,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Made seqno increment and adding to sent_msgs atomic, e.g. seqno won't get incremented if adding to
      * sent_msgs fails e.g. due to an OOM (see http://jira.jboss.com/jira/browse/JGRP-179). bela Jan 13 2006
      */
-    private void send(Event evt, Message msg) {
+    protected void send(Event evt, Message msg, boolean pass_down) {
         if(msg == null)
             throw new NullPointerException("msg is null; event is " + evt);
 
         if(!running) {
             if(log.isTraceEnabled())
-                log.trace("[" + local_addr + "] discarded message as we're not in the 'running' state, message: " + msg);
+                log.trace(local_addr + ": discarded message as we're not in the 'running' state, message: " + msg);
             return;
         }
 
@@ -648,6 +657,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             seqno_lock.unlock();
         }
 
+        if(!pass_down)
+            return;
+        
         try { // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
             if(log.isTraceEnabled())
                 log.trace("sending " + local_addr + "#" + msg_id);
@@ -660,6 +672,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
     }
 
+    protected void send(Event evt, Message msg) {
+        send(evt, msg, true);
+    }
 
 
     /**
@@ -1086,9 +1101,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(digest == null)
             return;
 
-        StringBuilder sb=new StringBuilder(merge? "\n[mergeDigest()]\n" : "\n[setDigest()]\n");
+        StringBuilder sb=new StringBuilder(merge? "\n[" + local_addr + " mergeDigest()]\n" : "\n["+local_addr + " setDigest()]\n");
         sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
-
+        
         boolean set_own_seqno=false;
         for(Digest.DigestEntry entry: digest) {
             Address member=entry.getMember();
