@@ -429,6 +429,54 @@
             ${MERGE2}
 
         </section>
+
+        <section id="MERGE3">
+            <title>MERGE3</title>
+            <para>
+                MERGE3 was added in JGroups 3.1.
+            </para>
+            <para>
+                In MERGE3, all members periodically send an INFO message with their address (UUID), logical name,
+                physical address and ViewId. The ViewId (<xref linkend="ViewId"/>) is used to see if we have diverging
+                views among the cluster members: periodically, every coordinator looks at the INFO messages received so
+                far and checks if there are any inconsistencies.
+            </para>
+            <para>
+                When inconsistencies are found, the merge leader will be the member with the lowest address (UUID). This
+                is deterministic, and therefore we should at most times only have 1 merge going on.
+            </para>
+            <para>
+                The merge leader then asks the senders of the inconsistent ViewIds for their full Views. Once received,
+                it simply passes a MERGE event up the stack, where the merge will be handled (by GMS) in exactly the same
+                way as if MERGE2 has generated the MERGE event.
+            </para>
+            <para>
+                The advantages of MERGE3 compared to MERGE2 are:
+                <itemizedlist>
+                    <listitem>
+                        Sending of INFO messages is spread out over time, preventing messgage peaks which might cause
+                        packet loss. This is especially important in large clusters.
+                    </listitem>
+                    <listitem>
+                        Only 1 merge should be running at any time. Competing merges, as happening with MERGE2, slow
+                        down the merge process, and don't scale to large clusters.
+                    </listitem>
+                    <listitem>
+                        An INFO message carries the logical name and physical address of a member. Compared to MERGE2,
+                        this allows us to immediately send messages to newly merged members, and not have to solicit
+                        this information first.
+                    </listitem>
+                    <listitem>
+                        On the downside, MERGE3 has constant (small) traffic by all members.
+                    </listitem>
+                    <listitem>
+                        MERGE3 was written for an IP multicast capable transport (UDP), but it also works with other
+                        transports (such as TCP), although it isn't as efficient on TCP as on UDP.
+                    </listitem>
+                </itemizedlist>
+            </para>
+            ${MERGE3}
+        </section>
     </section>
 
     <section id="FailureDetection">
@@ -795,7 +843,7 @@
                     </listitem>
 
                     <listitem>
-                        <para>Add the MERGE2 protocol. This doesn't actually prevent
+                        <para>Add the MERGE2 or MERGE3 protocol. This doesn't actually prevent
                             multiple initial cordinators, but rectifies the problem by merging
                             different subgroups back into one. Note that this might involve state
                             merging which needs to be done by the application.
