@@ -27,7 +27,10 @@ import java.util.concurrent.Future;
  * logical name, physical address and ViewID information. Other members collect this information and see if the ViewIds
  * are different (indication of different subpartitions). If they are, the member with the lowest address (first in the
  * sorted list of collected addresses) sends a MERGE event up the stack, which will be handled by GMS.
- * The others do nothing.
+ * The others do nothing.<p/>
+ * The advantage compared to {@link MERGE2} is that there are no merge collisions caused by multiple merges going on.
+ * Also, the INFO traffic is spread out over max_interval, and every member sends its physical address with INFO, so
+ * we don't need to fetch the physical address first.
  *
  * @author Bela Ban, Nov 2011
  * @since 3.1
@@ -41,8 +44,8 @@ public class MERGE3 extends Protocol {
     
     protected long max_interval=10000;
 
-    @Property(description="The max number to be involved in a merge. 0 sets this to unlimited.")
-    protected int max_participants_in_merge=20;
+    @Property(description="The max number of merge participants to be involved in a merge. 0 sets this to unlimited.")
+    protected int max_participants_in_merge=100;
 
     /* ---------------------------------------------- JMX -------------------------------------------------------- */
     @ManagedAttribute(description="Interval (in ms) after which we check for view inconsistencies",writable=true)
@@ -72,8 +75,6 @@ public class MERGE3 extends Protocol {
 
     @ManagedAttribute(description="Whether or not the current member is the coordinator")
     protected volatile boolean is_coord=false;
-
-
     
     @ManagedAttribute(description="Number of times a MERGE event was sent up the stack")
     protected int           num_merge_events=0;
@@ -192,18 +193,6 @@ public class MERGE3 extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
 
-//            case Event.CONNECT:
-//            case Event.CONNECT_USE_FLUSH:
-//            case Event.CONNECT_WITH_STATE_TRANSFER:
-//            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
-//                try {
-//                    return down_prot.down(evt);
-//                }
-//                finally {
-//                    startInfoSender();
-//                    startViewConsistencyChecker();
-//                }
-
             case Event.DISCONNECT:
                 stopViewConsistencyChecker();
                 stopInfoSender();
@@ -215,6 +204,9 @@ public class MERGE3 extends Protocol {
                 Object ret=down_prot.down(evt);
                 view=(View)evt.getArg();
                 clearViews();
+
+                if(ergonomics && max_participants_in_merge > 0)
+                    max_participants_in_merge=Math.max(100, view.size() / 3);
 
                 startInfoSender();
 
@@ -310,14 +302,11 @@ public class MERGE3 extends Protocol {
                 log.warn("view is null, cannot send INFO message");
                 return;
             }
-
             PhysicalAddress physical_addr=local_addr != null?
               (PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)) : null;
             String logical_name=UUID.get(local_addr);
             ViewId view_id=view.getViewId();
             MergeHeader hdr=MergeHeader.createInfo(view_id, logical_name, Arrays.asList(physical_addr));
-            // if(log.isTraceEnabled())
-               // log.trace(local_addr + ": sending " + hdr);
             Message msg=new Message();
             msg.putHeader(getId(), hdr);
             down_prot.down(new Event(Event.MSG, msg));
@@ -374,7 +363,6 @@ public class MERGE3 extends Protocol {
                 log.trace("cancelling merge as we only have 1 coordinator: " + coords);
                 return;
             }
-
 
             if(max_participants_in_merge > 0 && coords.size() > max_participants_in_merge) {
                 int old_size=coords.size();
