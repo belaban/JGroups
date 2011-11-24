@@ -1458,6 +1458,9 @@ public abstract class TP extends Protocol {
             case Event.GET_PHYSICAL_ADDRESS:
                 return getPhysicalAddressFromCache((Address)evt.getArg());
 
+            case Event.GET_PHYSICAL_ADDRESSES:
+                return getAllPhysicalAddressesFromCache();
+
             case Event.GET_LOGICAL_PHYSICAL_MAPPINGS:
                 return logical_addr_cache.contents();
 
@@ -1603,6 +1606,10 @@ public abstract class TP extends Protocol {
 
     protected PhysicalAddress getPhysicalAddressFromCache(Address logical_addr) {
         return logical_addr != null? logical_addr_cache.get(logical_addr) : null;
+    }
+
+    protected Collection<PhysicalAddress> getAllPhysicalAddressesFromCache() {
+        return logical_addr_cache.nonRemovedValues();
     }
 
     protected void removeLogicalAddressFromCache(Address logical_addr) {
