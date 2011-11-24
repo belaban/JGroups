@@ -612,7 +612,7 @@ public class ProtocolStack extends Protocol {
 
         Protocol neighbor=findProtocol(neighbor_prots);
         if(neighbor == null)
-            throw new IllegalArgumentException("protocol \"" + neighbor_prots.toString() + "\" not found in " + stack.printProtocolSpec(false));
+            throw new IllegalArgumentException("protocol \"" + Arrays.toString(neighbor_prots) + "\" not found in " + stack.printProtocolSpec(false));
         insertProtocolInStack(prot, neighbor,  position);
     }
 
@@ -668,6 +668,11 @@ public class ProtocolStack extends Protocol {
             log.error("failed destroying " + prot.getName() + ": " + t);
         }
         return prot;
+    }
+
+    public void removeProtocols(String ... protocols) throws Exception {
+        for(String protocol: protocols)
+            removeProtocol(protocol);
     }
 
 
@@ -1002,31 +1007,13 @@ public class ProtocolStack extends Protocol {
     }
 
 
-    /*--------------------------- Transport interface ------------------------------*/
-    public void send(Message msg) throws Exception {
-        down(new Event(Event.MSG, msg));
-    }
-
-    public Object receive(long timeout) throws Exception {
-        throw new Exception("ProtocolStack.receive(): not implemented !");
-    }
-    /*------------------------- End of  Transport interface ---------------------------*/
-
-
-
-
 
     /*--------------------------- Protocol functionality ------------------------------*/
     public String getName()  {return "ProtocolStack";}
 
-
-
-
     public Object up(Event evt) {
         return channel.up(evt);
     }
-
-
 
     public Object down(Event evt) {
         if(top_prot != null)
