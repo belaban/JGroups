@@ -336,10 +336,8 @@ public class MERGE3 extends Protocol {
             if(physical_addrs == null)
                 physical_addrs=(Collection<PhysicalAddress>)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESSES));
 
-            if(physical_addrs == null || physical_addrs.isEmpty()) {
-                log.trace("discovery protocol " + discovery_protocol.getName() + " returned 0 physical addresses");
+            if(physical_addrs == null || physical_addrs.isEmpty())
                 return;
-            }
             if(log.isTraceEnabled())
                 log.trace("discovery protocol " + discovery_protocol.getName() + " returned " + physical_addrs.size() +
                             " physical addresses: " + Util.printListWithDelimiter(physical_addrs, ", ", 10));
@@ -385,7 +383,6 @@ public class MERGE3 extends Protocol {
                 return;
             }
 
-            System.out.println("--->> " + local_addr +": I will be the merge leader");
             if(log.isDebugEnabled())
                 log.debug("I (" + local_addr + ") will be the merge leader");
 
@@ -395,12 +392,12 @@ public class MERGE3 extends Protocol {
                     coords.add(set.first());
             }
 
-            if(log.isTraceEnabled())
-                log.trace("merge participants are " + coords);
             if(coords.size() <= 1) {
                 log.trace("cancelling merge as we only have 1 coordinator: " + coords);
                 return;
             }
+            if(log.isTraceEnabled())
+                log.trace("merge participants are " + coords);
 
             if(max_participants_in_merge > 0 && coords.size() > max_participants_in_merge) {
                 int old_size=coords.size();
@@ -411,9 +408,8 @@ public class MERGE3 extends Protocol {
                     if(coords.size() > max_participants_in_merge)
                         it.remove();
                 }
-
-                System.out.println("--->> " + local_addr + " cleaned out coords (" + old_size + ") to "
-                                     + max_participants_in_merge + " coords");
+                if(log.isTraceEnabled())
+                    log.trace(local_addr + ": reduced " + old_size + " coords to " + max_participants_in_merge);
             }
 
             // grab views from all members in coords
