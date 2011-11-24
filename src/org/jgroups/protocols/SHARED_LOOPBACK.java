@@ -22,7 +22,7 @@ public class SHARED_LOOPBACK extends TP {
 
 
     public boolean supportsMulticasting() {
-        return false;
+        return true; // kind of...
     }
 
     public String toString() {
