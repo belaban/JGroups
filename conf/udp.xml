@@ -47,7 +47,7 @@
          oob_thread_pool.rejection_policy="Run"/>
 
     <PING timeout="2000"
-            num_initial_members="3"/>
+            num_initial_members="4"/>
     <MERGE2 max_interval="30000"
             min_interval="10000"/>
     <FD_SOCK/>
