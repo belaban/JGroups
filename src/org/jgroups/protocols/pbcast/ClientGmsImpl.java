@@ -87,7 +87,7 @@ public class ClientGmsImpl extends GmsImpl {
                     return;
                 }
                 if(log.isTraceEnabled())
-                    log.trace(gms.local_addr + ": initial_mbrs are " + responses);
+                    log.trace(gms.local_addr + ": initial_mbrs are " + print(responses));
 
                 coord=determineCoord(responses);
                 if(coord == null) { // e.g. because we have all clients only
@@ -102,7 +102,7 @@ public class ClientGmsImpl extends GmsImpl {
                         log.trace("could not determine coordinator from responses " + responses);
 
                     // so the member to become singleton member (and thus coord) is the first of all clients
-                    Set<Address> clients=new TreeSet<Address>(); // sorted
+                    SortedSet<Address> clients=new TreeSet<Address>(); // sorted
                     clients.add(mbr); // add myself again (was removed by findInitialMembers())
                     for(PingData response: responses) {
                         Address client_addr=response.getAddress();
@@ -111,7 +111,7 @@ public class ClientGmsImpl extends GmsImpl {
                     }
                     if(log.isTraceEnabled())
                         log.trace("clients to choose new coord from are: " + clients);
-                    Address new_coord=clients.iterator().next();
+                    Address new_coord=clients.first();
                     if(new_coord.equals(mbr)) {
                         if(log.isTraceEnabled())
                             log.trace("I (" + mbr + ") am the first of the clients, will become coordinator");
@@ -129,7 +129,7 @@ public class ClientGmsImpl extends GmsImpl {
 
                 if(log.isDebugEnabled())
                     log.debug("sending JOIN(" + mbr + ") to " + coord);
-                sendJoinMessage(coord, mbr, joinWithStateTransfer,useFlushIfPresent);
+                sendJoinMessage(coord,mbr,joinWithStateTransfer,useFlushIfPresent);
             }
 
             try {
@@ -226,6 +226,8 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
 
+    /* --------------------------- Private Methods ------------------------------------ */
+    
     /**
      * Called by join(). Installs the view returned by calling Coord.handleJoin() and
      * becomes coordinator.
@@ -245,9 +247,12 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
 
-
-    /* --------------------------- Private Methods ------------------------------------ */
-
+    protected static String print(List<PingData> rsps) {
+        StringBuilder sb=new StringBuilder();
+        for(PingData rsp: rsps)
+            sb.append(rsp.getAddress() + " ");
+        return sb.toString();
+    }
 
     void sendJoinMessage(Address coord, Address mbr,boolean joinWithTransfer, boolean useFlushIfPresent) {
         Message msg;
@@ -277,7 +282,7 @@ public class ClientGmsImpl extends GmsImpl {
         Map<Address,Integer> votes=new HashMap<Address,Integer>(5);
 
         // count *all* the votes (unlike the 2000 election)
-        for(PingData mbr:mbrs) {
+        for(PingData mbr: mbrs) {
             if(mbr.hasCoord()) {
                 if(!votes.containsKey(mbr.getCoordAddress()))
                     votes.put(mbr.getCoordAddress(), 1);
@@ -288,7 +293,7 @@ public class ClientGmsImpl extends GmsImpl {
             }
         }
         // we have seen members say someone else is coordinator but they disagree
-        for(PingData mbr:mbrs) {
+        for(PingData mbr: mbrs) {
             // remove members who don't agree with the election (Florida)
             if (votes.containsKey(mbr.getAddress()) && (!mbr.isCoord())) {
                 votes.remove(mbr.getAddress());
