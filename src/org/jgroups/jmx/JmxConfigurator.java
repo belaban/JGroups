@@ -162,6 +162,17 @@ public class JmxConfigurator {
 
         try {
             ObjectName objName = getObjectName(obj, name);
+            if(server.isRegistered(objName)) {
+                if(log.isWarnEnabled())
+                    log.warn("unregistering already registered MBean: " + objName);
+                try {
+                    server.unregisterMBean(objName);
+                }
+                catch(InstanceNotFoundException e) {
+                    log.error("failed to unregister MBean " + e.getMessage());
+                }
+            }
+
             ResourceDMBean res = new ResourceDMBean(obj);
             server.registerMBean(res, objName);
         } catch (InstanceAlreadyExistsException e) {
