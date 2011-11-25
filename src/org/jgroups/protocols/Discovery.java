@@ -389,6 +389,12 @@ public abstract class Discovery extends Protocol {
                             if(logical_addr != null && data.getLogicalName() != null)
                                 UUID.add(logical_addr, data.getLogicalName());
                             discoveryRequestReceived(msg.getSrc(), data.getLogicalName(), physical_addrs);
+
+                            synchronized(ping_responses) {
+                                for(Responses response: ping_responses) {
+                                    response.addResponse(data, false);
+                                }
+                            }
                         }
 
                         if(hdr.view_id != null) {
