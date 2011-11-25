@@ -24,7 +24,7 @@ fi;
 
 JG_FLAGS="-Dresolve.dns=false -Djgroups.bind_addr=$IP_ADDR -Djboss.tcpping.initial_hosts=$IP_ADDR[7800]"
 JG_FLAGS="$JG_FLAGS -Djava.net.preferIPv4Stack=true -Djgroups.timer.num_threads=4"
-FLAGS="-server -Xmx900M -Xms900M -Xss128K"
+FLAGS="-server -Xmx500M -Xms500M -Xss128K"
 FLAGS="$FLAGS -XX:CompileThreshold=10000 -XX:+AggressiveHeap -XX:ThreadStackSize=64K -XX:SurvivorRatio=8"
 FLAGS="$FLAGS -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=31"
 FLAGS="$FLAGS -Xshare:off"
