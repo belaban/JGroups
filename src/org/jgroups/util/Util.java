@@ -375,9 +375,11 @@ public class Util {
         return bits |= flag;
     }
 
+
     public static boolean isFlagSet(byte bits, byte flag) {
         return (bits & flag) == flag;
     }
+
 
     public static byte clearFlags(byte bits, byte flag) {
         return bits &= ~flag;

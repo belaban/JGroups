@@ -27,8 +27,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     int                 num_threads=1;
     static final long   TIMEOUT=10000;
     final Method[]      METHODS=new Method[1];
-    final Object[]      EMPTY_OBJECT_ARRAY=new Object[]{};
-    final Class[]       EMPTY_CLASS_ARRAY=new Class[]{};
+    final Object[]      EMPTY_OBJECT_ARRAY={};
+    final Class[]       EMPTY_CLASS_ARRAY={};
     private long        sleep=0;
     private boolean     async, oob;
 
@@ -113,9 +113,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         ResponseMode request_type=async ? ResponseMode.GET_NONE : ResponseMode.GET_ALL;
 
         measure_method_call=new MethodCall((short)0);
-        RequestOptions opts=new RequestOptions(request_type, TIMEOUT,
-                                               false, null, Message.DONT_BUNDLE);
-        opts.setFlags(Message.NO_FC);
+        RequestOptions opts=new RequestOptions(request_type, TIMEOUT, false, null,
+                                               Message.DONT_BUNDLE, Message.NO_FC);
         if(oob)
             opts.setFlags(Message.OOB);
 

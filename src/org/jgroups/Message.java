@@ -41,7 +41,7 @@ public class Message implements Streamable {
     /** All headers are placed here */
     protected Headers headers;
 
-    private volatile byte      flags;
+    private volatile short     flags;
 
     private volatile byte      transient_flags; // transient_flags is neither marshalled nor copied
 
@@ -55,19 +55,44 @@ public class Message implements Streamable {
 
 
     // =============================== Flags ====================================
-    public static final byte OOB               =  1;      // message is out-of-band
-    public static final byte DONT_BUNDLE       =  1 << 1; // don't bundle message at the transport
-    public static final byte NO_FC             =  1 << 2; // bypass flow control
-    public static final byte SCOPED            =  1 << 3; // when a message has a scope
+    public static enum Flag {
+        OOB((short)            1),          // message is out-of-band
+        DONT_BUNDLE(   (short)(1 << 1)),    // don't bundle message at the transport
+        NO_FC(         (short)(1 << 2)),    // bypass flow control
+        SCOPED(        (short)(1 << 3)),    // when a message has a scope
+        NO_RELIABILITY((short)(1 << 4)),    // bypass UNICAST(2) and NAKACK
+        NO_TOTAL_ORDER((short)(1 << 5)),    // bypass total order (e.g. SEQUENCER)
+        NO_RELAY((short)      (1 << 6)),    // bypass relaying (RELAY)
+        RSVP((short)          (1 << 7));    // ack of a multicast (https://issues.jboss.org/browse/JGRP-1389)
 
-    // the following 2 flags might get removed in 3.x, when https://jira.jboss.org/browse/JGRP-1250 is resolved
-    public static final byte NO_RELIABILITY    =  1 << 4; // bypass UNICAST(2) and NAKACK
-    public static final byte NO_TOTAL_ORDER    =  1 << 5; // bypass total order (e.g. SEQUENCER)
-    public static final byte NO_RELAY          =  1 << 6; // bypass relaying (RELAY)
+        final short value;
+        Flag(short value) {this.value=value;}
+
+        public short value() {return value;}
+    }
+
+    public static final Flag OOB=Flag.OOB;
+    public static final Flag DONT_BUNDLE=Flag.DONT_BUNDLE;
+    public static final Flag NO_FC=Flag.NO_FC;
+    public static final Flag SCOPED=Flag.SCOPED;
+    public static final Flag NO_RELIABILITY=Flag.NO_RELIABILITY;
+    public static final Flag NO_TOTAL_ORDER=Flag.NO_TOTAL_ORDER;
+    public static final Flag NO_RELAY=Flag.NO_RELAY;
+    public static final Flag RSVP=Flag.RSVP;
+
 
 
     // =========================== Transient flags ==============================
-    public static final byte OOB_DELIVERED     =  1; // OOB which has already been delivered up the stack
+    public static enum TransientFlag {
+        OOB_DELIVERED((short)1);
+
+        final short value;
+        TransientFlag(short flag) {value=flag;}
+
+        public short value() {return value;}
+    }
+    
+    public static final TransientFlag OOB_DELIVERED=TransientFlag.OOB_DELIVERED; // OOB which has already been delivered up the stack
 
 
 
@@ -351,32 +376,73 @@ public class Message implements Streamable {
         }
     }
 
+    /**
+     * Sets a number of flags in a message
+     * @param flags The flag or flags
+     * @return A reference to the message
+     */
+    public Message setFlag(Flag ... flags) {
+        if(flags != null)
+            for(Flag flag: flags)
+                if(flag != null)
+                    this.flags |= flag.value();
+        return this;
+    }
 
-    public void setFlag(byte flag) {
-        if(flag > Byte.MAX_VALUE || flag < 0)
-            throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
+    /**
+     * Sets the flags from a short. <em>Not recommended</em> (use {@link #setFlag(org.jgroups.Message.Flag...)} instead),
+     * as the internal representation of flags might change anytime.
+     * @param flag
+     * @return
+     */
+    public Message setFlag(short flag) {
         flags |= flag;
+        return this;
     }
 
-    public void clearFlag(byte flag) {
-        if(flag > Byte.MAX_VALUE || flag < 0)
-            throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
-        flags &= ~flag;
+    /**
+     * Returns the internal representation of flags. Don't use this, as the internal format might change at any time !
+     * This is only used by unit test code
+     * @return
+     */
+    public short getFlags() {return flags;}
+
+    /**
+     * Clears a number of flags in a message
+     * @param flags The flags
+     * @return A reference to the message
+     */
+    public Message clearFlag(Flag ... flags) {
+        if(flags != null)
+            for(Flag flag: flags)
+                if(flag != null)
+                    this.flags &= ~flag.value();
+        return this;
     }
 
-    public boolean isFlagSet(byte flag) {
+    public static boolean isFlagSet(short flags, Flag flag) {
+        return flag != null && ((flags & flag.value()) == flag.value());
+    }
+
+    /**
+     * Checks if a given flag is set
+     * @param flag The flag
+     * @return Whether of not the flag is curently set
+     */
+    public boolean isFlagSet(Flag flag) {
         return isFlagSet(flags, flag);
     }
 
    /**
-    * Same as {@link #setFlag(byte)} but transient flags are never marshalled
-    * 
-    * @param flag
+    * Same as {@link #setFlag(Flag...)} except that transient flags are not marshalled
+    * @param flag The flag
     */
-    public void setTransientFlag(byte flag) {
-        if(flag > Byte.MAX_VALUE || flag < 0)
-            throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
-        transient_flags |= flag;
+   public Message setTransientFlag(TransientFlag ... flags) {
+       if(flags != null)
+           for(TransientFlag flag: flags)
+               if(flag != null)
+                   transient_flags |= flag.value();
+       return this;
     }
 
    /**
@@ -387,38 +453,26 @@ public class Message implements Streamable {
     * @param flag
     * @return True if the flag could be set, false if not (was already set)
     */
-    public boolean setTransientFlagIfAbsent(byte flag) {
-        if(flag > Byte.MAX_VALUE || flag < 0)
-            throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
-        synchronized(this) {
-            if(isTransientFlagSet(flag))
-                return false;
-            else
-                setTransientFlag(flag);
-            return true;
-        }
+    public synchronized boolean setTransientFlagIfAbsent(TransientFlag flag) {
+        if(isTransientFlagSet(flag))
+            return false;
+        setTransientFlag(flag);
+        return true;
     }
 
-    public void clearTransientFlag(byte flag) {
-        if(flag > Byte.MAX_VALUE || flag < 0)
-            throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
-        transient_flags &= ~flag;
+    public Message clearTransientFlag(TransientFlag ... flags) {
+        if(flags != null)
+            for(TransientFlag flag: flags)
+                if(flag != null)
+                    transient_flags &= ~flag.value();
+        return this;
     }
 
-    public boolean isTransientFlagSet(byte flag) {
-        return isFlagSet(transient_flags, flag);
+    public boolean isTransientFlagSet(TransientFlag flag) {
+        return flag != null && (transient_flags & flag.value()) == flag.value();
     }
 
-
-    protected static boolean isFlagSet(byte flags, byte flag) {
-        return (flags & flag) == flag;
-    }
-
-    public byte getFlags() {
-        return flags;
-    }
-
-    public byte getTransientFlags() {
+    public short getTransientFlags() {
         return transient_flags;
     }
 
@@ -559,7 +613,7 @@ public class Message implements Streamable {
         if(flags > 0)
             ret.append(", flags=").append(flagsToString(flags));
         if(transient_flags > 0)
-            ret.append(", transient_flags=" + transientFlagsToString(transient_flags));
+            ret.append(", transient_flags=" + transientFlagsToString());
         ret.append(']');
         return ret.toString();
     }
@@ -613,7 +667,7 @@ public class Message implements Streamable {
         out.write(leading);
 
         // 2. the flags (e.g. OOB, LOW_PRIO)
-        out.write(flags);
+        out.writeShort(flags);
 
         // 3. dest_addr
         if(dest_addr != null)
@@ -665,7 +719,7 @@ public class Message implements Streamable {
         out.write(leading);
 
         // 2. the flags (e.g. OOB, LOW_PRIO)
-        out.write(flags);
+        out.writeShort(flags);
 
         // 4. src_addr
         if(write_src_addr)
@@ -697,7 +751,7 @@ public class Message implements Streamable {
         byte leading=in.readByte();
 
         // 2. the flags
-        flags=in.readByte();
+        flags=in.readShort();
 
         // 3. dest_addr
         if(Util.isFlagSet(leading, DEST_SET))
@@ -742,7 +796,7 @@ public class Message implements Streamable {
     */
     public long size() {
         long retval=Global.BYTE_SIZE   // leading byte
-                + Global.BYTE_SIZE;    // flags
+                + Global.SHORT_SIZE;   // flags
         if(dest_addr != null)
             retval+=Util.size(dest_addr);
         if(src_addr != null)
@@ -760,62 +814,69 @@ public class Message implements Streamable {
 
     /* ----------------------------------- Private methods ------------------------------- */
 
-    public static String flagsToString(byte flags) {
+    public static String flagsToString(short flags) {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        if(isFlagSet(flags, OOB)) {
+        if(isFlagSet(flags, Flag.OOB)) {
             first=false;
             sb.append("OOB");
         }
-        if(isFlagSet(flags, DONT_BUNDLE)) {
+        if(isFlagSet(flags, Flag.DONT_BUNDLE)) {
             if(!first)
                 sb.append("|");
             else
                 first=false;
             sb.append("DONT_BUNDLE");
         }
-        if(isFlagSet(flags, NO_FC)) {
+        if(isFlagSet(flags, Flag.NO_FC)) {
             if(!first)
                 sb.append("|");
             else
                 first=false;
             sb.append("NO_FC");
         }
-        if(isFlagSet(flags, SCOPED)) {
+        if(isFlagSet(flags, Flag.SCOPED)) {
             if(!first)
                 sb.append("|");
             else
                 first=false;
             sb.append("SCOPED");
         }
-        if(isFlagSet(flags, NO_RELIABILITY)) {
+        if(isFlagSet(flags, Flag.NO_RELIABILITY)) {
             if(!first)
                 sb.append("|");
             else
                 first=false;
             sb.append("NO_RELIABILITY");
         }
-        if(isFlagSet(flags, NO_TOTAL_ORDER)) {
+        if(isFlagSet(flags, Flag.NO_TOTAL_ORDER)) {
             if(!first)
                 sb.append("|");
             else
                 first=false;
             sb.append("NO_TOTAL_ORDER");
         }
-        if(isFlagSet(flags, NO_RELAY)) {
+        if(isFlagSet(flags, Flag.NO_RELAY)) {
             if(!first)
                 sb.append("|");
             else
                 first=false;
             sb.append("NO_RELAY");
         }
+        if(isFlagSet(flags, Flag.RSVP)) {
+            if(!first)
+                sb.append("|");
+            else
+                first=false;
+            sb.append("RSVP");
+        }
         return sb.toString();
     }
 
 
-    public static String transientFlagsToString(byte flags) {
+    public String transientFlagsToString() {
         StringBuilder sb=new StringBuilder();
-        if(isFlagSet(flags, OOB_DELIVERED))
+        if(isTransientFlagSet(TransientFlag.OOB_DELIVERED))
             sb.append("OOB_DELIVERED");
         return sb.toString();
     }

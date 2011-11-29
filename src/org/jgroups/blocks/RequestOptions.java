@@ -27,7 +27,7 @@ public class RequestOptions {
     private short         scope;
 
     /** The flags set in the message in which a request is sent */
-    private byte          flags; // Message.OOB, Message.DONT_BUNDLE etc
+    private short         flags; // Message.OOB, Message.DONT_BUNDLE etc
 
     /** A list of members which should be excluded from a call */
     private Set<Address>  exclusion_list;
@@ -37,7 +37,12 @@ public class RequestOptions {
     public RequestOptions() {
     }
 
-    public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter, byte flags) {
+    public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter, Message.Flag ... flags) {
+        this(mode, timeout, use_anycasting, rsp_filter,(short)0);
+        setFlags(flags);
+    }
+
+    public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter, short flags) {
         this.mode=mode;
         this.timeout=timeout;
         this.use_anycasting=use_anycasting;
@@ -46,7 +51,7 @@ public class RequestOptions {
     }
 
     public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter) {
-        this(mode, timeout, use_anycasting, rsp_filter, (byte)0);
+        this(mode, timeout, use_anycasting, rsp_filter, (Message.Flag[])null);
     }
 
     public RequestOptions(ResponseMode mode, long timeout) {
@@ -117,17 +122,27 @@ public class RequestOptions {
         return this;
     }
 
-    public byte getFlags() {
+    public short getFlags() {
         return flags;
     }
 
-    public RequestOptions setFlags(byte flags) {
-        this.flags=Util.setFlag(this.flags, flags);
+    public boolean isFlagSet(Message.Flag flag) {
+        return flag != null && ((flags & flag.value()) == flag.value());
+    }
+
+    public RequestOptions setFlags(Message.Flag ... flags) {
+        if(flags != null)
+            for(Message.Flag flag: flags)
+                if(flag != null)
+                    this.flags |= flag.value();
         return this;
     }
 
-    public RequestOptions clearFlags(byte flags) {
-        this.flags=Util.clearFlags(this.flags, flags);
+    public RequestOptions clearFlags(Message.Flag ... flags) {
+        if(flags != null)
+            for(Message.Flag flag: flags)
+                if(flag != null)
+                    this.flags &= ~flag.value();
         return this;
     }
 

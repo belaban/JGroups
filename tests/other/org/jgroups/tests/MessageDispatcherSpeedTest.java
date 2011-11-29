@@ -67,7 +67,7 @@ public class MessageDispatcherSpeedTest implements MembershipListener, RequestHa
 
         if(show <=0) show=1;
         start=System.currentTimeMillis();
-        RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, TIMEOUT).setFlags(Message.DONT_BUNDLE).setFlags(Message.NO_FC);
+        RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, TIMEOUT).setFlags(Message.DONT_BUNDLE, Message.NO_FC);
 
         System.out.println("-- sending " + num + " messages");
         for(int i=1; i <= num; i++) {

@@ -2051,7 +2051,8 @@ On view change V:
         </para>
         <programlisting language="Java">
 Message msg=new Message();
-msg.setFlag((byte)(Message.OOB | Message.NO_FC));
+msg.setFlag(Message.OOB);
+msg.setFlag(Message.NO_FC);
         </programlisting>
         <para>
             Here we tag the message to be OOB (out of band) and to bypass flow control.

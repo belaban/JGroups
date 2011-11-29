@@ -326,9 +326,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     /** Kicks off the benchmark on all cluster nodes */
     void startBenchmark() throws Throwable {
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0);
-        options.setFlags(Message.OOB);
-        options.setFlags(Message.DONT_BUNDLE);
-        options.setFlags(Message.NO_FC);
+        options.setFlags(Message.OOB, Message.DONT_BUNDLE, Message.NO_FC);
         RspList<Object> responses=disp.callRemoteMethods(null, new MethodCall(START), options);
 
         long total_reqs=0;
@@ -435,23 +433,21 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
         public void run() {
             final byte[] buf=new byte[msg_size];
-            Object[] put_args=new Object[]{0, buf};
-            Object[] get_args=new Object[]{0};
+            Object[] put_args={0, buf};
+            Object[] get_args={0};
             MethodCall get_call=new MethodCall(GET, get_args);
             MethodCall put_call=new MethodCall(PUT, put_args);
             RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 20000, false, null);
             RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 20000, true, null);
 
-            byte flags=0;
-            if(oob) flags=Util.setFlag(flags, Message.OOB);
-            if(sync) {
-                flags=Util.setFlag(flags, Message.DONT_BUNDLE);
-                flags=Util.setFlag(flags, Message.NO_FC);
+            if(oob) {
+                get_options.setFlags(Message.OOB);
+                put_options.setFlags(Message.OOB);
             }
-            get_options.setFlags(flags);
-            // get_options.setScope((short)Util.random(Short.MAX_VALUE));
-            put_options.setFlags(flags);
-            // put_options.setScope((short)Util.random(Short.MAX_VALUE));
+            if(sync) {
+                get_options.setFlags(Message.DONT_BUNDLE, Message.NO_FC);
+                put_options.setFlags(Message.DONT_BUNDLE, Message.NO_FC);
+            }
 
             while(true) {
                 long i=num_msgs_sent.getAndIncrement();
