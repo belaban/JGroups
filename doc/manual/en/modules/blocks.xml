@@ -133,7 +133,7 @@
           <programlisting language="Java">
 RpcDispatcher disp;
 RequestOptions opts=new RequestOptions(Request.GET_ALL)
-                    .setFlags(Message.NO_FC | Message.DONT_BUNDLE);
+                    .setFlags(Message.NO_FC).setFlags(Message.DONT_BUNDLE);
 Object val=disp.callRemoteMethod(target, method_call, opts);
           </programlisting>
 

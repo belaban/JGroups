@@ -375,23 +375,13 @@ public class Util {
         return bits |= flag;
     }
 
-    public static short setFlag(short bits, short flag) {
-        return bits |= flag;
-    }
 
     public static boolean isFlagSet(byte bits, byte flag) {
         return (bits & flag) == flag;
     }
 
-    public static boolean isFlagSet(short bits, short flag) {
-        return (bits & flag) == flag;
-    }
 
     public static byte clearFlags(byte bits, byte flag) {
-        return bits &= ~flag;
-    }
-
-    public static short clearFlags(short bits, short flag) {
         return bits &= ~flag;
     }
 

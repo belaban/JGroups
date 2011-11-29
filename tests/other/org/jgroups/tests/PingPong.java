@@ -19,8 +19,8 @@ public class PingPong extends ReceiverAdapter {
     static final byte PING = 1;
     static final byte PONG = 2;
 
-    static final byte[] PING_REQ=new byte[]{PING};
-    static final byte[] PONG_RSP=new byte[]{PONG};
+    static final byte[] PING_REQ={PING};
+    static final byte[] PONG_RSP={PONG};
 
     long start=0;
 
@@ -41,7 +41,7 @@ public class PingPong extends ReceiverAdapter {
                 dest=(Address)Util.pickRandomElement(members);
             
             Message msg=new Message(dest, null, PING_REQ);
-            msg.setFlag((byte)(Message.DONT_BUNDLE | Message.NO_FC));
+            msg.setFlag(Message.DONT_BUNDLE, Message.NO_FC);
             start=System.nanoTime();
             ch.send(msg);
         }
@@ -58,7 +58,7 @@ public class PingPong extends ReceiverAdapter {
         switch(type) {
             case PING:
                 final Message rsp=new Message(msg.getSrc(), null, PONG_RSP);
-                rsp.setFlag((byte)(Message.DONT_BUNDLE | Message.NO_FC));
+                rsp.setFlag(Message.DONT_BUNDLE, Message.NO_FC);
                 try {
                     ch.send(rsp);
                 }

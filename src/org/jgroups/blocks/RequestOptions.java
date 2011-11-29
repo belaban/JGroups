@@ -37,6 +37,11 @@ public class RequestOptions {
     public RequestOptions() {
     }
 
+    public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter, Message.Flag ... flags) {
+        this(mode, timeout, use_anycasting, rsp_filter,(short)0);
+        setFlags(flags);
+    }
+
     public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter, short flags) {
         this.mode=mode;
         this.timeout=timeout;
@@ -46,7 +51,7 @@ public class RequestOptions {
     }
 
     public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter) {
-        this(mode, timeout, use_anycasting, rsp_filter, (byte)0);
+        this(mode, timeout, use_anycasting, rsp_filter, (Message.Flag[])null);
     }
 
     public RequestOptions(ResponseMode mode, long timeout) {
@@ -121,17 +126,23 @@ public class RequestOptions {
         return flags;
     }
 
-    public RequestOptions setFlags(short flags) {
-        if(flags > Short.MAX_VALUE || flags < 0)
-            throw new IllegalArgumentException("flags has to be >= 0 and <= " + Short.MAX_VALUE);
-        this.flags |= flags;
+    public boolean isFlagSet(Message.Flag flag) {
+        return flag != null && ((flags & flag.value()) == flag.value());
+    }
+
+    public RequestOptions setFlags(Message.Flag ... flags) {
+        if(flags != null)
+            for(Message.Flag flag: flags)
+                if(flag != null)
+                    this.flags |= flag.value();
         return this;
     }
 
-    public RequestOptions clearFlags(short flags) {
-        if(flags > Short.MAX_VALUE || flags < 0)
-            throw new IllegalArgumentException("flag has to be >= 0 and <= " + Short.MAX_VALUE);
-        this.flags &= ~flags;
+    public RequestOptions clearFlags(Message.Flag ... flags) {
+        if(flags != null)
+            for(Message.Flag flag: flags)
+                if(flag != null)
+                    this.flags &= ~flag.value();
         return this;
     }
 

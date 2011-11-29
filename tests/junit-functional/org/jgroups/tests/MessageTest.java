@@ -31,13 +31,24 @@ public class MessageTest {
     public static void testFlags() {
         Message m1=new Message();
         assert !(m1.isFlagSet(Message.OOB));
-        try {
-            m1.setFlag((byte)1002);
-            assert false : "1002 is not a byte value";
-        }
-        catch(IllegalArgumentException ex) {
-        }
         assert m1.getFlags() == 0;
+
+        m1.setFlag(null);
+
+        assert !m1.isFlagSet(Message.OOB);
+        assert !m1.isFlagSet(null);
+    }
+
+
+    public static void testSettingMultipleFlags() {
+        Message msg=new Message();
+        msg.setFlag(null);
+        assert msg.getFlags() == 0;
+
+        msg.setFlag(Message.OOB, Message.NO_FC, null, Message.DONT_BUNDLE);
+        assert msg.isFlagSet(Message.OOB);
+        assert msg.isFlagSet(Message.NO_FC);
+        assert msg.isFlagSet(Message.DONT_BUNDLE);
     }
 
 
@@ -45,9 +56,9 @@ public class MessageTest {
         Message m1=new Message();
         m1.setFlag(Message.OOB);
         assert m1.isFlagSet(Message.OOB);
-        assert Message.OOB == (m1.getFlags() & Message.OOB);
+        assert Message.isFlagSet(m1.getFlags(), Message.OOB);
         assert !(m1.isFlagSet(Message.DONT_BUNDLE));
-        Assert.assertNotSame((m1.getFlags() & Message.DONT_BUNDLE), Message.DONT_BUNDLE);
+        assert !Message.isFlagSet(m1.getFlags(), Message.DONT_BUNDLE);
     }
 
     public static void testFlags3() {
