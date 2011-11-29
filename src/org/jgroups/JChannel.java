@@ -505,6 +505,8 @@ public class JChannel extends Channel {
             "the channel is closed")
     public void setName(String name) {
         if(name != null) {
+            if(isConnected())
+                throw new IllegalStateException("name cannot be set if channel is connected (should be done before)");
             this.name=name;
             if(local_addr != null)
                 UUID.add(local_addr, this.name);

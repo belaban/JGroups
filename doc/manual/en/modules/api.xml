@@ -758,7 +758,7 @@ public class ProgrammaticChat {
             <programlisting language="Java">public void setName(String logical_name);</programlisting>
 
             <para>
-                This should be done <emphasis>before</emphasis> connecting a channel. Note that the logical name stays
+                This must be done <emphasis>before</emphasis> connecting a channel. Note that the logical name stays
                 with a channel until the channel is destroyed, whereas a UUID is created on each connection.
             </para>
 
