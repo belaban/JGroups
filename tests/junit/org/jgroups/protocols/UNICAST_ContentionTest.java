@@ -23,7 +23,7 @@ public class UNICAST_ContentionTest {
             "oob_thread_pool.rejection_policy=discard;enable_bundling=true)"+
             ":UNICAST(timeout=300,600,1200)";
     static final String unicast2_props=unicast_props.replace("UNICAST", "UNICAST2");
-    static final int NUM_THREADS=200;
+    static final int NUM_THREADS=100;
     static final int NUM_MSGS=100;
     static final int SIZE=1000; // default size of a message in bytes
 
