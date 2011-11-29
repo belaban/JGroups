@@ -435,14 +435,14 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
 
         public void run() {
             final byte[] buf=new byte[msg_size];
-            Object[] put_args=new Object[]{0, buf};
-            Object[] get_args=new Object[]{0};
+            Object[] put_args={0, buf};
+            Object[] get_args={0};
             MethodCall get_call=new MethodCall(GET, get_args);
             MethodCall put_call=new MethodCall(PUT, put_args);
             RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 20000, false, null);
             RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 20000, true, null);
 
-            byte flags=0;
+            short flags=0;
             if(oob) flags=Util.setFlag(flags, Message.OOB);
             if(sync) {
                 flags=Util.setFlag(flags, Message.DONT_BUNDLE);

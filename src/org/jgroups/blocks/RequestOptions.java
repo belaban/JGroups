@@ -27,7 +27,7 @@ public class RequestOptions {
     private short         scope;
 
     /** The flags set in the message in which a request is sent */
-    private byte          flags; // Message.OOB, Message.DONT_BUNDLE etc
+    private short         flags; // Message.OOB, Message.DONT_BUNDLE etc
 
     /** A list of members which should be excluded from a call */
     private Set<Address>  exclusion_list;
@@ -37,7 +37,7 @@ public class RequestOptions {
     public RequestOptions() {
     }
 
-    public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter, byte flags) {
+    public RequestOptions(ResponseMode mode, long timeout, boolean use_anycasting, RspFilter rsp_filter, short flags) {
         this.mode=mode;
         this.timeout=timeout;
         this.use_anycasting=use_anycasting;
@@ -117,17 +117,21 @@ public class RequestOptions {
         return this;
     }
 
-    public byte getFlags() {
+    public short getFlags() {
         return flags;
     }
 
-    public RequestOptions setFlags(byte flags) {
-        this.flags=Util.setFlag(this.flags, flags);
+    public RequestOptions setFlags(short flags) {
+        if(flags > Short.MAX_VALUE || flags < 0)
+            throw new IllegalArgumentException("flags has to be >= 0 and <= " + Short.MAX_VALUE);
+        this.flags |= flags;
         return this;
     }
 
-    public RequestOptions clearFlags(byte flags) {
-        this.flags=Util.clearFlags(this.flags, flags);
+    public RequestOptions clearFlags(short flags) {
+        if(flags > Short.MAX_VALUE || flags < 0)
+            throw new IllegalArgumentException("flag has to be >= 0 and <= " + Short.MAX_VALUE);
+        this.flags &= ~flags;
         return this;
     }
 
