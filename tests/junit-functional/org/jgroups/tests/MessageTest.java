@@ -33,7 +33,7 @@ public class MessageTest {
         assert !(m1.isFlagSet(Message.OOB));
         assert m1.getFlags() == 0;
 
-        m1.setFlag(null);
+        m1.setFlag((Message.Flag[])null);
 
         assert !m1.isFlagSet(Message.OOB);
         assert !m1.isFlagSet(null);
@@ -42,7 +42,7 @@ public class MessageTest {
 
     public static void testSettingMultipleFlags() {
         Message msg=new Message();
-        msg.setFlag(null);
+        msg.setFlag((Message.Flag[])null);
         assert msg.getFlags() == 0;
 
         msg.setFlag(Message.OOB, Message.NO_FC, null, Message.DONT_BUNDLE);

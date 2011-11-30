@@ -164,7 +164,7 @@ public class Deadlock2Test extends ChannelTestBase {
             log("**** outerMethod() received, calling innerMethod() on all members");
             MethodCall call = new MethodCall("innerMethod", new Object[0], new Class[0]);
             // RspList rspList = disp.callRemoteMethods(null, call, GroupResponseMode.GET_ALL, 5000);
-            RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 0, false, null, null);
+            RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, 0, false, null, (Message.Flag[])null);
             opts.setFlags(Message.OOB);
             RspList<String> rspList = disp.callRemoteMethods(null, call, opts);
             List<String> results = rspList.getResults();
