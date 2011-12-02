@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
- * This retransmitter is specialized in maintaining <em>ranges of seqnos</em>, e.g. [3-20, [89-89], [100-120].
+ * This retransmitter is specialized in maintaining <em>ranges of seqnos</em>, e.g. [3-20], [89-89], [100-120].
  * The ranges are stored in a sorted hashmap and the {@link Comparable#compareTo(Object)} method compares both ranges
  * again ranges, and ranges against seqnos. The latter helps to find a range given a seqno, e.g. seqno 105 will find
  * range [100-120].<p/>
@@ -19,7 +19,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * a seqno is received, that bit set is updated; the bit corresponding to the seqno is set to 1. A task linked to
  * the range periodically retransmits missing messages.<p/>
  * When all bits are 1 (= all messages have been received), the range is removed from the hashmap and the retransmission
- * task is cancelled.
+ * task is cancelled.<p/>
+ * RangeBasedRetransmitter requires sequence numbers and sequence number ranges to be <em>added in ascending and
+ * non-overlapping</em> order: e.g. 1 4 [10-21] 22 [50-60] is ok, while [3-7] [5-8] 20 18 is <em>not</em> !
  *
  * @author Bela Ban
  */
