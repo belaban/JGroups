@@ -550,6 +550,7 @@ public class Message implements Streamable {
         retval.dest_addr=dest_addr;
         retval.src_addr=src_addr;
         retval.flags=flags;
+        retval.transient_flags=transient_flags;
 
         if(copy_buffer && buf != null) {
 

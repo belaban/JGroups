@@ -33,7 +33,7 @@ public class MessageTest {
         assert !(m1.isFlagSet(Message.OOB));
         assert m1.getFlags() == 0;
 
-        m1.setFlag(null);
+        m1.setFlag((Message.Flag[])null);
 
         assert !m1.isFlagSet(Message.OOB);
         assert !m1.isFlagSet(null);
@@ -42,7 +42,7 @@ public class MessageTest {
 
     public static void testSettingMultipleFlags() {
         Message msg=new Message();
-        msg.setFlag(null);
+        msg.setFlag((Message.Flag[])null);
         assert msg.getFlags() == 0;
 
         msg.setFlag(Message.OOB, Message.NO_FC, null, Message.DONT_BUNDLE);
@@ -201,13 +201,15 @@ public class MessageTest {
     }
 
 
-
-
     public static void testCopy() {
         Message m1=new Message(null, null, "Bela Ban");
+        m1.setFlag(Message.Flag.OOB);
+        m1.setTransientFlag(Message.TransientFlag.OOB_DELIVERED);
         Message m2=m1.copy();
         Assert.assertEquals(m1.getOffset(), m2.getOffset());
         Assert.assertEquals(m1.getLength(), m2.getLength());
+        assert m2.isFlagSet(Message.Flag.OOB);
+        assert m2.isTransientFlagSet(Message.TransientFlag.OOB_DELIVERED);
     }
 
 
