@@ -629,8 +629,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         down_prot.down(view_event); // needed e.g. by failure detector or UDP
         up_prot.up(view_event);
 
-        ack_collector.handleView(new_view);
-        merge_ack_collector.handleView(new_view);
+        List<Address> tmp_mbrs=new_view.getMembers();
+        ack_collector.retainAll(tmp_mbrs);
+        merge_ack_collector.retainAll(tmp_mbrs);
 
         if(new_view instanceof MergeView)
             merger.forceCancelMerge();
