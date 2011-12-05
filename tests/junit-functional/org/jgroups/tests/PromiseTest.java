@@ -25,6 +25,17 @@ public class PromiseTest {
         Assert.assertEquals(Boolean.TRUE, result);
     }
 
+    public static final void testRepeatedGet() {
+        final Promise<Integer> p=new Promise<Integer>();
+        p.setResult(10);
+        System.out.println("p: " + p);
+        Integer result=p.getResult(100);
+        System.out.println("result = " + result);
+
+        result=p.getResult(100);
+        System.out.println("result = " + result);
+    }
+
 
     public static void testGetResultNoTimeout_ResultAlreadySet() {
         final Promise p=new Promise();
@@ -75,7 +86,8 @@ public class PromiseTest {
         System.out.println("-- waited for " + (stop-start) + "ms, result is " + result);
         assert result != null;
         Assert.assertEquals("Bela", result);
-        assert !(p.hasResult()) : "promise was reset after getResult()";
+        assert p.hasResult();
+        assert p.getResult().equals("Bela");
     }
 
 

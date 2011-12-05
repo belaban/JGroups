@@ -12,7 +12,9 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Allows a thread to submit an asynchronous request and to wait for the result. The caller may choose to check
  * for the result at a later time, or immediately and it may block or not. Both the caller and responder have to
- * know the promise.
+ * know the promise.<p/>
+ * When the result is available, {@link #hasResult()} will always return true and {@link #getResult()} will return the
+ * same result. In order to block for a different result, {@link #reset()} has to be called first.
  * @author Bela Ban
  */
 public class Promise<T> {
@@ -54,7 +56,6 @@ public class Promise<T> {
      * @throws TimeoutException If a timeout occurred (implies that timeout > 0)
      */
     private T _getResultWithTimeout(long timeout) throws TimeoutException {
-        T       ret=null;
         long    time_to_wait=timeout, start;
         boolean timeout_occurred=false;
 
@@ -75,13 +76,9 @@ public class Promise<T> {
             }
         }
 
-        ret=result;
-        result=null;
-        hasResult=false;
         if(timeout_occurred)
             throw new TimeoutException();
-        else
-            return ret;
+        return result;
     }
 
     public T getResult() {
@@ -166,7 +163,7 @@ public class Promise<T> {
 
 
     public String toString() {
-        return "hasResult=" + Boolean.valueOf(hasResult) + ",result=" + result;
+        return "hasResult=" + Boolean.valueOf(hasResult) + ", result=" + result;
     }
 
 
