@@ -31,13 +31,13 @@ public class RSVP extends Protocol {
 
     @Property(description="Whether an exception should be thrown when the timeout kicks in, and we haven't yet received " +
       "all acks. An exception would be thrown all the way up to JChannel.send()")
-    protected boolean throw_exception_on_timeout;
+    protected boolean throw_exception_on_timeout=true;
 
     @Property(description="When true, we pass the message up to the application and only then send an ack. When false, " +
       "we send an ack first and only then pass the message up to the application.")
     protected boolean ack_on_delivery=true;
 
-    @Property(description="Interval (in milliseconds) at which we resend the RSVP request. Needs to be > timeout. 0 disables it.")
+    @Property(description="Interval (in milliseconds) at which we resend the RSVP request. Needs to be < timeout. 0 disables it.")
     protected long resend_interval=2000;
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     /** ID to be used to identify messages. Short.MAX_VALUE (ca 32K plus 32K negative) should be enough, and wrap-around
@@ -77,6 +77,7 @@ public class RSVP extends Protocol {
                 if(!msg.isFlagSet(Message.Flag.RSVP))
                     break;
 
+                Object retval=null;
                 short next_id=getNextId();
                 RsvpHeader hdr=new RsvpHeader(RsvpHeader.REQ, next_id);
                 msg.putHeader(id, hdr);
@@ -92,19 +93,18 @@ public class RSVP extends Protocol {
                     }
                 }
 
-                synchronized(ids) {
-                    ids.put(next_id, entry);
-                }
-
-                // 2. start timer task
-                entry.startTask(next_id);
-
-                // 3. Send the message
-                Object retval=down_prot.down(evt);
-
-
-                // 4. Block on AckCollector
                 try {
+                    synchronized(ids) {
+                        ids.put(next_id, entry);
+                    }
+
+                    // 2. start timer task
+                    entry.startTask(next_id);
+
+                    // 3. Send the message
+                    retval=down_prot.down(evt);
+
+                    // 4. Block on AckCollector
                     entry.block(timeout);
                 }
                 catch(TimeoutException e) {
