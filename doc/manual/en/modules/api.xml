@@ -311,7 +311,7 @@ public interface Address extends Externalizable, Comparable, Cloneable {
                 <listitem>
                     <para>
                         This is one byte used for flags. The currently recognized flags are OOB, DONT_BUNDLE, NO_FC,
-                        NO_RELIABILITY, NO_TOTAL_ORDER, NO_RELAY. For OOB, see the discussion on the concurrent stack
+                        NO_RELIABILITY, NO_TOTAL_ORDER, NO_RELAY and RSVP. For OOB, see the discussion on the concurrent stack
                         (<xref linkend="ConcurrentStack"/>). For the use of flags see <xref linkend="MessageFlags"/>.
                     </para>
                 </listitem>
@@ -995,6 +995,87 @@ channel.send(receiver, "hello world");
                 <para>
                     Note that this method replaces the old JChannel.setOpt(LOCAL, false) method, which was removed in 3.0.
                 </para>
+            </section>
+
+            <section id="RsvpSection">
+                <title>Synchronous messages</title>
+                <para>
+                    While JGroups guarantees that a message will eventually be delivered at all non-faulty members,
+                    sometimes this might take a while. For example, if we have a retransmission protocol based on
+                    negative acknowledgments, and the last message sent is lost, then the receiver(s) will have to
+                    wait until the stability protocol notices that the message has been lost, before it can be
+                    retransmitted.
+                </para>
+                <para>
+                    This can be changed by setting the Message.RSVP flag in a message: when this flag is encountered,
+                    the message send blocks until all members have acknowledged reception of the message (of course
+                    excluding members which crashed or left meanwhile).
+                </para>
+                <para>
+                    This also serves as another purpose: if we send an RSVP-tagged message, then - when the send()
+                    returns - we're guaranteed that all messages sent <emphasis>before</emphasis> will have been
+                    delivered at all members as well. So, for example, if P sends message 1-10, and marks 10 as RSVP,
+                    then, upon JChannel.send() returning, P will know that all members received messages 1-10 from P.
+                </para>
+                <para>
+                    Note that since RSVP'ing a message is costly, and might block the sender for a while, it should be
+                    used sparingly. For example, when completing a unit of work (ie. member P sending N messages), and
+                    P needs to know that all messages were received by everyone, then RSVP could be used.
+                </para>
+                <para>
+                    To use RSVP, 2 things have to be done:
+                </para>
+                <para>
+                    First, the RSVP protocol has to be in the config, somewhere above the reliable transmission
+                    protocols such as NAKACK or UNICAST(2), e.g.:
+                </para>
+
+        <programlisting language="XML">
+&lt;config&gt;
+    &lt;UDP/&gt;
+    &lt;PING /&gt;
+    &lt;FD_ALL/&gt;
+    &lt;pbcast.NAKACK use_mcast_xmit="true"
+                   discard_delivered_msgs="true"/&gt;
+    &lt;UNICAST timeout="300,600,1200"/&gt;
+    &lt;RSVP /&gt;
+    &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+                   max_bytes="4M"/&gt;
+    &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
+                view_bundling="true"/&gt;
+    ...
+&lt;/config&gt;
+        </programlisting>
+
+                <para>
+                    Secondly, the message we want to get ack'ed must be tagged with RSVP:
+                </para>
+                <programlisting language="Java">
+Message msg=new Message(null, null, "hello world");
+msg.setFlag(Message.RSVP);
+ch.send(msg);
+                </programlisting>
+                <para>
+                    Here, we send a message to all cluster members (dest = null). (Note that RSVP also works for sending
+                    a message to a unicast destination). Method send() will return as soon as it has received acks from
+                    all current members. If there are 4 members A, B, C and D, and A has received acks from itself, B
+                    and C, but D's ack is missing and D crashes before the timeout kicks in, then this will
+                    nevertheless make send() return, as if D had actually sent an ack.
+                </para>
+                <para>
+                    If the <code>timeout</code> property if greater than 0, and we don't receive all acks within
+                    timeout milliseconds, a TimeoutException will be thrown (if RSVP.throw_exception_on_timeout is true).
+                    The application can choose to catch this (runtime) exception and do something with it, e.g. retry.
+                </para>
+                <para>
+                    The configuration of RSVP is described here: <xref linkend="RSVP"/>.
+                </para>
+
+                <note>
+                    <para>
+                        RSVP was added in version 3.1.
+                    </para>
+                </note>
             </section>
         </section>
 

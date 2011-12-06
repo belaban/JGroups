@@ -2016,7 +2016,7 @@ On view change V:
     </section>
 
     <section id="MessageFlags">
-        <title>Using message flags to selectively bypass certain protocols</title>
+        <title>Tagging messages with flags</title>
         <para>
             A message can be tagged with a selection of <emphasis>flags</emphasis>, which alter the way certain
             protocols treat the message. This is done as follows:
@@ -2030,8 +2030,8 @@ msg.setFlag(Message.NO_FC);
             Here we tag the message to be OOB (out of band) and to bypass flow control.
         </para>
         <para>
-            The advantage of tagging messages is that we don't need to change the configuration, but instead can override it
-            on a per-message basis.
+            The advantage of tagging messages is that we don't need to change the configuration, but instead
+            can override it on a per-message basis.
         </para>
         <para>
             The available flags are:
@@ -2118,6 +2118,16 @@ msg.setFlag(Message.NO_FC);
                     <para>
                         If we use RELAY (see <xref linkend="RelayAdvanced"/>) and don't want a message to be relayed to
                         the other site(s), then we can tag the message with NO_RELAY.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>Message.RSVP</term>
+                <listitem>
+                    <para>
+                        When this flag is set, a message send will block until the receiver (unicast) or receivers
+                        (multicast) have acked reception of the message, or until a timeout occurs.
+                        See <xref linkend="RsvpSection"/> for details.
                     </para>
                 </listitem>
             </varlistentry>

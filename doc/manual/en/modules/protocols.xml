@@ -712,6 +712,17 @@
 
             ${UNICAST2}
         </section>
+
+        <section id="RSVP">
+            <title>RSVP</title>
+            <para>
+                The RSVP protocol is not a reliable delivery protocol per se, but augments reliable protocols such
+                as NAKACK, UNICAST or UNICAST2. It should be placed somewhere <emphasis>above</emphasis> these in
+                the stack.
+            </para>
+
+            ${RSVP}
+        </section>
     </section>
 
     <section id="STABLE">
