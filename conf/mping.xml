@@ -7,7 +7,7 @@ Author: Bela Ban
 
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.1.xsd">
     <TCP bind_port="7800"
          sock_conn_timeout="500"/>
     <MPING receive_on_all_interfaces="true"
