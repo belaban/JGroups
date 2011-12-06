@@ -908,15 +908,13 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
 
 
 
-    private short getNewConnectionId() {
-        synchronized(this) {
-            short retval=last_conn_id;
-            if(last_conn_id >= Short.MAX_VALUE || last_conn_id < 0)
-                last_conn_id=0;
-            else
-                last_conn_id++;
-            return retval;
-        }
+    private synchronized short getNewConnectionId() {
+        short retval=last_conn_id;
+        if(last_conn_id >= Short.MAX_VALUE || last_conn_id < 0)
+            last_conn_id=0;
+        else
+            last_conn_id++;
+        return retval;
     }
 
     private void sendRequestForFirstSeqno(Address dest, long seqno_received) {
