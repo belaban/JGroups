@@ -4,13 +4,11 @@ package org.jgroups;
 
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.logging.Log;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.DefaultSocketFactory;
 import org.jgroups.util.SocketFactory;
-
 
 import java.util.List;
 import java.util.Map;
@@ -337,7 +335,6 @@ public abstract class Channel /* implements Transport */ {
     * @param listener
     *           to be notified
     */
-   @ManagedOperation
     public synchronized void addChannelListener(ChannelListener listener) {
         if(listener == null)
             return;
@@ -351,7 +348,6 @@ public abstract class Channel /* implements Transport */ {
     * 
     * @param listener to be removed
     */
-   @ManagedOperation
     public synchronized void removeChannelListener(ChannelListener listener) {
         if(channel_listeners != null && listener != null)
             channel_listeners.remove(listener);

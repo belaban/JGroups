@@ -435,7 +435,6 @@ public class JChannel extends Channel {
     }
 
 
-    @ManagedOperation
     public void send(Message msg) throws Exception {
         checkClosedOrNotConnected();
         if(msg == null)
@@ -449,7 +448,6 @@ public class JChannel extends Channel {
     }
 
 
-    @ManagedOperation
     public void send(Address dst, Object obj) throws Exception {
         send(new Message(dst, null, obj));
     }
