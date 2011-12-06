@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.AckCollector;
@@ -11,6 +12,7 @@ import org.jgroups.util.TimeScheduler;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
+import java.util.concurrent.Future;
 
 /**
  * Protocol which implements synchronous messages (https://issues.jboss.org/browse/JGRP-1389). A send of a message M
@@ -34,7 +36,9 @@ public class RSVP extends Protocol {
     @Property(description="When true, we pass the message up to the application and only then send an ack. When false, " +
       "we send an ack first and only then pass the message up to the application.")
     protected boolean ack_on_delivery=true;
-    
+
+    @Property(description="Interval (in milliseconds) at which we resend the RSVP request. Needs to be > timeout. 0 disables it.")
+    protected long resend_interval=2000;
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     /** ID to be used to identify messages. Short.MAX_VALUE (ca 32K plus 32K negative) should be enough, and wrap-around
      * shouldn't be an issue. Using Message.Flag.RSVP should be the exception, not the rule... */
@@ -49,13 +53,21 @@ public class RSVP extends Protocol {
     /** Used to store IDs and their acks */
     protected final Map<Short,Entry> ids=new HashMap<Short,Entry>();
 
-    
+
+    @ManagedAttribute(description="Number of pending RSVP requests")
+    public int getPendingRsvpRequests() {synchronized(ids) {return ids.size();}}
+
 
 
 
     public void init() throws Exception {
         super.init();
         timer=getTransport().getTimer();
+        if(timeout > 0 && resend_interval > 0 && resend_interval >= timeout) {
+            log.warn("resend_interval (" + resend_interval + ") is >= timeout (" + timeout + "); setting " +
+                       "resend_interval to timeout / 3");
+            resend_interval=timeout / 3;
+        }
     }
 
     public Object down(Event evt) {
@@ -65,9 +77,6 @@ public class RSVP extends Protocol {
                 if(!msg.isFlagSet(Message.Flag.RSVP))
                     break;
 
-                System.out.println(local_addr + ": msg to " + msg.getDest() + " has flag RSVP");
-
-
                 short next_id=getNextId();
                 RsvpHeader hdr=new RsvpHeader(RsvpHeader.REQ, next_id);
                 msg.putHeader(id, hdr);
@@ -76,10 +85,10 @@ public class RSVP extends Protocol {
                 Address target=msg.getDest();
                 Entry entry;
                 if(target != null)
-                    entry=new Entry(false, target);
+                    entry=new Entry(target);
                 else {
                     synchronized(members) {
-                        entry=new Entry(true, members);
+                        entry=new Entry(members);
                     }
                 }
 
@@ -88,7 +97,7 @@ public class RSVP extends Protocol {
                 }
 
                 // 2. start timer task
-
+                entry.startTask(next_id);
 
                 // 3. Send the message
                 Object retval=down_prot.down(evt);
@@ -102,7 +111,14 @@ public class RSVP extends Protocol {
                     if(throw_exception_on_timeout)
                         throw e;
                     else if(log.isWarnEnabled())
-                        log.warn("message ran into a timeout, missing acks: " + entry.ack_collector);
+                        log.warn("message ran into a timeout, missing acks: " + entry);
+                }
+                finally {
+                    synchronized(ids) {
+                        Entry tmp=ids.remove(next_id);
+                        if(tmp != null)
+                            tmp.destroy();
+                    }
                 }
                 return retval;
 
@@ -116,9 +132,11 @@ public class RSVP extends Protocol {
                     for(Iterator<Map.Entry<Short,Entry>> it=ids.entrySet().iterator(); it.hasNext();) {
                         entry=it.next().getValue();
                         if(entry != null) {
-                            entry.ack_collector.retainAll(view.getMembers());
-                            if(entry.ack_collector.size() == 0)
+                            entry.retainAll(view.getMembers());
+                            if(entry.size() == 0) {
+                                entry.destroy();
                                 it.remove();
+                            }
                         }
                     }
                 }
@@ -159,6 +177,11 @@ public class RSVP extends Protocol {
                                 return up_prot.up(evt);
                             }
 
+                        case RsvpHeader.FLUSH:
+                            // single message, doesn't need to be passed up
+                            sendResponse(msg.getSrc(), hdr.id);
+                            return null;
+
                         case RsvpHeader.RSP:
                             handleResponse(msg.getSrc(), hdr.id);
                             return null;
@@ -173,9 +196,11 @@ public class RSVP extends Protocol {
         synchronized(ids) {
             Entry entry=ids.get(id);
             if(entry != null) {
-                entry.ack_collector.ack(member);
-                if(entry.ack_collector.size() == 0)
+                entry.ack(member);
+                if(entry.size() == 0) {
+                    entry.destroy();
                     ids.remove(id);
+                }
             }
         }
     }
@@ -197,29 +222,61 @@ public class RSVP extends Protocol {
     }
 
 
-    protected static class Entry {
+    protected class Entry {
         protected final AckCollector ack_collector;
-        protected final boolean      multicast;
+        protected final Address      target; // if null --> multicast, else --> unicast
+        protected Future<?>          resend_task;
 
-        protected Entry(boolean multicast, Address ... members) {
-            this.multicast=multicast;
+        /** Unicast entry */
+        protected Entry(Address member) {
+            this.target=member;
+            this.ack_collector=new AckCollector(member);
+        }
+
+        /** Multicast entry */
+        protected Entry(Collection<Address> members) {
+            this.target=null;
             this.ack_collector=new AckCollector(members);
         }
 
-        protected Entry(boolean multicast, Collection<Address> members) {
-            this.multicast=multicast;
-            this.ack_collector=new AckCollector(members);
+        protected void startTask(final short rsvp_id) {
+            if(resend_task != null && !resend_task.isDone())
+                resend_task.cancel(false);
+
+            resend_task=timer.scheduleWithDynamicInterval(new TimeScheduler.Task() {
+                public long nextInterval() {return resend_interval;}
+                public void run() {
+                    if(ack_collector.size() == 0) {
+                        cancelTask();
+                        return;
+                    }
+                    Message msg=new Message(target);
+                    msg.setFlag(Message.Flag.RSVP);
+                    RsvpHeader hdr=new RsvpHeader(RsvpHeader.FLUSH, rsvp_id);
+                    msg.putHeader(id, hdr);
+                    down_prot.down(new Event(Event.MSG, msg));
+                }
+            });
         }
 
-        protected void block(long timeout) throws TimeoutException {
-            ack_collector.waitForAllAcks(timeout);
+        protected void cancelTask() {
+            if(resend_task != null)
+                resend_task.cancel(false);
         }
+
+        protected void ack(Address member)                         {ack_collector.ack(member);}
+        protected void retainAll(Collection<Address> members)      {ack_collector.retainAll(members);}
+        protected int  size()                                      {return ack_collector.size();}
+        protected void block(long timeout) throws TimeoutException {ack_collector.waitForAllAcks(timeout);}
+        protected void destroy()                                   {cancelTask();}
+        public String  toString()                                  {return ack_collector.toString();}
     }
 
     
     protected static class RsvpHeader extends Header {
-        protected static final byte REQ = 1;
-        protected static final byte RSP = 2;
+        protected static final byte REQ   = 1;
+        protected static final byte RSP   = 2;
+        protected static final byte FLUSH = 3;
 
         protected byte  type;
         protected short id;
@@ -248,7 +305,8 @@ public class RSVP extends Protocol {
         }
 
         public String toString() {
-            return (type == REQ? "REQ(" : "RSP(") + id + ")";
+            String tmp=type == REQ ? "REQ" : type == RSP? "RSP" : "FLUSH";
+            return tmp + "(" + id + ")";
         }
     }
 

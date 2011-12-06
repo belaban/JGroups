@@ -10,7 +10,6 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
-import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
@@ -32,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class RSVPTest {
-    static final int               NUM=10; // number of members
+    static final int               NUM=5; // number of members
 
     protected final JChannel[]     channels=new JChannel[NUM];
     protected final MyReceiver[]   receivers=new MyReceiver[NUM];
@@ -85,13 +84,14 @@ public class RSVPTest {
                                              .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false)
                                              .setValue("xmit_table_num_rows",5)
                                              .setValue("xmit_table_msgs_per_row",10),
-                                           new UNICAST2().setValue("xmit_table_num_rows",5)
+                                           // new UNICAST(),
+                                           new UNICAST2().setValue("xmit_table_num_rows",5).setValue("exponential_backoff", 300)
                                              .setValue("xmit_table_msgs_per_row",10)
                                              .setValue("conn_expiry_timeout", 10000)
                                              .setValue("stable_interval", 30000)
                                              .setValue("max_bytes", 50000),
-                                           new RSVP().setValue("throw_exception_on_timeout", true),
-                                           new STABLE().setValue("max_bytes",500000),
+                                           new RSVP().setValue("timeout", 10000).setValue("throw_exception_on_timeout", false),
+                                           // new STABLE().setValue("max_bytes",500000).setValue("desired_avg_gossip", 60000),
                                            new GMS().setValue("print_local_addr",false)
                                              .setValue("leave_timeout",100)
                                              .setValue("log_view_warnings",false)
@@ -100,8 +100,8 @@ public class RSVPTest {
             channels[i].setName(String.valueOf((i + 1)));
             receivers[i]=new MyReceiver();
             channels[i].setReceiver(receivers[i]);
-            JmxConfigurator.registerChannel(channels[i], server, "channel-" + (i+1), "LargeMergeTest", true);
-            channels[i].connect("LargeMergeTest");
+            JmxConfigurator.registerChannel(channels[i], server, "channel-" + (i+1), "RSVPTest", true);
+            channels[i].connect("RSVPTest");
             System.out.print(i + 1 + " ");
         }
         System.out.println("");
@@ -112,6 +112,7 @@ public class RSVPTest {
         for(int i=NUM-1; i >= 0; i--) {
             ProtocolStack stack=channels[i].getProtocolStack();
             String cluster_name=channels[i].getClusterName();
+            JmxConfigurator.unregisterChannel(channels[i], Util.getMBeanServer(), "channel-" + (i+1),cluster_name);
             stack.stopStack(cluster_name);
             stack.destroy();
         }
@@ -129,6 +130,9 @@ public class RSVPTest {
         Message msg=new Message(null, null, value);
         msg.setFlag(Message.Flag.RSVP);
 
+        DISCARD discard=(DISCARD)channels[0].getProtocolStack().findProtocol(DISCARD.class);
+        discard.setDropDownMulticasts(1);
+
         long start=System.currentTimeMillis();
         channels[0].send(msg);
 
@@ -141,7 +145,7 @@ public class RSVPTest {
         }
         for(MyReceiver receiver: receivers) {
             long tmp_value=receiver.getValue();
-            assert tmp_value == value;
+            assert tmp_value == value  : "value is " + tmp_value + ", but should be " + value;
         }
     }
 
@@ -154,6 +158,9 @@ public class RSVPTest {
         Message msg=new Message(channels[1].getAddress(), null, value);
         msg.setFlag(Message.Flag.RSVP);
 
+        DISCARD discard=(DISCARD)channels[0].getProtocolStack().findProtocol(DISCARD.class);
+        discard.setDropDownUnicasts(1);
+        
         long start=System.currentTimeMillis();
         channels[0].send(msg);
 
@@ -163,7 +170,7 @@ public class RSVPTest {
         System.out.println("receiver: value=" + receivers[1].getValue());
 
         long tmp_value=receivers[1].getValue();
-        assert tmp_value == value;
+        assert tmp_value == value : "value is " + tmp_value + ", but should be " + value;
     }
 
 
