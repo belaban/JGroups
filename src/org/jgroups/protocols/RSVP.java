@@ -131,12 +131,9 @@ public class RSVP extends Protocol {
                 synchronized(ids) {
                     for(Iterator<Map.Entry<Short,Entry>> it=ids.entrySet().iterator(); it.hasNext();) {
                         entry=it.next().getValue();
-                        if(entry != null) {
-                            entry.retainAll(view.getMembers());
-                            if(entry.size() == 0) {
-                                entry.destroy();
-                                it.remove();
-                            }
+                        if(entry != null && entry.retainAll(view.getMembers()) && entry.size() == 0) {
+                            entry.destroy();
+                            it.remove();
                         }
                     }
                 }
@@ -264,12 +261,12 @@ public class RSVP extends Protocol {
                 resend_task.cancel(false);
         }
 
-        protected void ack(Address member)                         {ack_collector.ack(member);}
-        protected void retainAll(Collection<Address> members)      {ack_collector.retainAll(members);}
-        protected int  size()                                      {return ack_collector.size();}
-        protected void block(long timeout) throws TimeoutException {ack_collector.waitForAllAcks(timeout);}
-        protected void destroy()                                   {cancelTask();}
-        public String  toString()                                  {return ack_collector.toString();}
+        protected void    ack(Address member)                         {ack_collector.ack(member);}
+        protected boolean retainAll(Collection<Address> members)      {return ack_collector.retainAll(members);}
+        protected int     size()                                      {return ack_collector.size();}
+        protected void    block(long timeout) throws TimeoutException {ack_collector.waitForAllAcks(timeout);}
+        protected void    destroy()                                   {cancelTask();}
+        public String     toString()                                  {return ack_collector.toString();}
     }
 
     
