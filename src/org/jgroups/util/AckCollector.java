@@ -62,13 +62,15 @@ public class AckCollector {
         ack(member);
     }
 
-    public void retainAll(Collection<Address> members) {
-        if(members == null) return;
+    public boolean retainAll(Collection<Address> members) {
+        if(members == null) return false;
+        boolean retval=false;
         synchronized(this) {
             suspected_mbrs.retainAll(members);
-            if(missing_acks.retainAll(members) && missing_acks.isEmpty())
+            if((retval=missing_acks.retainAll(members)) && missing_acks.isEmpty())
                 all_acks_received.setResult(Boolean.TRUE);
         }
+        return retval;
     }
 
     public boolean waitForAllAcks() {
