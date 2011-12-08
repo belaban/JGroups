@@ -1716,7 +1716,7 @@ public class Util {
     }
 
 
-   /* public static String[] components(String path, String separator) {
+   /* public static String[] commands(String path, String separator) {
         if(path == null || path.length() == 0)
             return null;
         String[] tmp=path.split(separator + "+"); // multiple separators could be present
@@ -2665,6 +2665,56 @@ public class Util {
             }
         }
         return field;
+    }
+
+    public static <T> Set<Class<T>> findClassesAssignableFrom(String packageName, Class<T> assignableFrom)
+      throws IOException, ClassNotFoundException {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        Set<Class<T>> classes = new HashSet<Class<T>>();
+        String path = packageName.replace('.', '/');
+        URL resource = loader.getResource(path);
+        if (resource != null) {
+            String filePath = resource.getFile();
+            if (filePath != null && new File(filePath).isDirectory()) {
+                for (String file : new File(filePath).list()) {
+                    if (file.endsWith(".class")) {
+                        String name = packageName + '.' + file.substring(0, file.indexOf(".class"));
+                        Class<T> clazz =(Class<T>)Class.forName(name);
+                        if (assignableFrom.isAssignableFrom(clazz))
+                            classes.add(clazz);
+                    }
+                }
+            }
+        }
+        return classes;
+    }
+
+    public static List<Class<?>> findClassesAnnotatedWith(String packageName, Class<? extends Annotation> a) throws IOException, ClassNotFoundException {
+        List<Class<?>> classes = new ArrayList<Class<?>>();
+        recurse(classes, packageName, a);
+        return classes;
+    }
+
+    private static void recurse(List<Class<?>> classes, String packageName, Class<? extends Annotation> a) throws ClassNotFoundException {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        String path = packageName.replace('.', '/');
+        URL resource = loader.getResource(path);
+        if (resource != null) {
+            String filePath = resource.getFile();
+            if (filePath != null && new File(filePath).isDirectory()) {
+                for (String file : new File(filePath).list()) {
+                    if (file.endsWith(".class")) {
+                        String name = packageName + '.' + file.substring(0, file.indexOf(".class"));
+                        Class<?> clazz = Class.forName(name);
+                        if (clazz.isAnnotationPresent(a))
+                            classes.add(clazz);
+                    }
+                    else if (new File(filePath,file).isDirectory()) {
+                        recurse(classes, packageName + "." + file, a);
+                    }
+                }
+            }
+        }
     }
 
 

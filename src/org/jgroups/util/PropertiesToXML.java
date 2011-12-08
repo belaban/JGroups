@@ -20,10 +20,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.util.*;
 
 /**
@@ -58,10 +56,10 @@ public class PropertiesToXML {
             copy(new FileReader(new File(input)), new FileWriter(f));
             String s = fileToString(f);
 
-            Set<Class<?>> classes = findClassesAssignableFrom("org.jgroups.protocols", Protocol.class);
-            classes.addAll(findClassesAssignableFrom("org.jgroups.protocols.pbcast", Protocol.class));
+            Set<Class<Protocol>> classes = Util.findClassesAssignableFrom("org.jgroups.protocols",Protocol.class);
+            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.pbcast",Protocol.class));
             Properties props = new Properties();
-            for (Class<?> clazz : classes) {
+            for (Class<Protocol> clazz : classes) {
                 convertToDocbookTable(props, clazz);
             }
 
@@ -79,9 +77,9 @@ public class PropertiesToXML {
             s = fileToString(f);
             
             props = new Properties();
-            List<Class<?>> unsupportedClasses = findClassesAnnotatedWith("org.jgroups",Unsupported.class);
+            List<Class<?>> unsupportedClasses = Util.findClassesAnnotatedWith("org.jgroups",Unsupported.class);
             convertToDocbookTable(props, unsupportedClasses, "Unsupported");
-            List<Class<?>> experimentalClasses = findClassesAnnotatedWith("org.jgroups",Experimental.class);            
+            List<Class<?>> experimentalClasses = Util.findClassesAnnotatedWith("org.jgroups",Experimental.class);
             convertToDocbookTable(props, experimentalClasses, "Experimental");
             
             result = Util.replaceProperties(s, props);
@@ -99,55 +97,9 @@ public class PropertiesToXML {
         System.out.println("PropertiesToXML <input XML file>");
     }
 
-    private static Set<Class<?>> findClassesAssignableFrom(String packageName, Class<?> assignableFrom)
-                    throws IOException, ClassNotFoundException {
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        Set<Class<?>> classes = new HashSet<Class<?>>();
-        String path = packageName.replace('.', '/');
-        URL resource = loader.getResource(path);
-        if (resource != null) {
-            String filePath = resource.getFile();
-            if (filePath != null && new File(filePath).isDirectory()) {
-                for (String file : new File(filePath).list()) {
-                    if (file.endsWith(".class")) {
-                        String name = packageName + '.' + file.substring(0, file.indexOf(".class"));
-                        Class<?> clazz = Class.forName(name);
-                        if (assignableFrom.isAssignableFrom(clazz))
-                            classes.add(clazz);
-                    }
-                }
-            }
-        }
-        return classes;
-    }
     
-    private static List<Class<?>> findClassesAnnotatedWith(String packageName, Class<? extends Annotation> a) throws IOException, ClassNotFoundException {
-        List<Class<?>> classes = new ArrayList<Class<?>>();
-        recurse(classes, packageName, a);
-        return classes;
-    }
+    
 
-    private static void recurse(List<Class<?>> classes, String packageName, Class<? extends Annotation> a) throws ClassNotFoundException {
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        String path = packageName.replace('.', '/');
-        URL resource = loader.getResource(path);
-        if (resource != null) {
-            String filePath = resource.getFile();
-            if (filePath != null && new File(filePath).isDirectory()) {
-                for (String file : new File(filePath).list()) {
-                    if (file.endsWith(".class")) {
-                        String name = packageName + '.' + file.substring(0, file.indexOf(".class"));
-                        Class<?> clazz = Class.forName(name);
-                        if (clazz.isAnnotationPresent(a))
-                            classes.add(clazz);
-                    }
-                    else if (new File(filePath,file).isDirectory()) {
-                        recurse(classes, packageName + "." + file, a);
-                    }
-                }
-            }
-        }
-    }
     
     private static void convertToDocbookTable(Properties props, List<Class<?>> clazzes, String title)
                     throws ParserConfigurationException, TransformerException {
@@ -187,7 +139,7 @@ public class PropertiesToXML {
         }
     }
 
-    private static void convertToDocbookTable(Properties props, Class<?> clazz) throws Exception {
+    private static void convertToDocbookTable(Properties props, Class<Protocol> clazz) throws Exception {
         boolean isExperimental = clazz.isAnnotationPresent(Experimental.class);
         boolean isUnsupported = clazz.isAnnotationPresent(Unsupported.class);
         if (isUnsupported)
