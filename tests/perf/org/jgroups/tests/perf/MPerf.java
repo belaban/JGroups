@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -36,10 +37,12 @@ public class MPerf extends ReceiverAdapter {
     protected int             num_threads=1;
     protected int             log_interval=num_msgs / 10; // log every 10%
 
+
     /** Maintains stats per sender, will be sent to perf originator when all messages have been received */
     protected final Map<Address,MemberInfo> senders=Util.createConcurrentMap();
     protected final List<Address>           members=new ArrayList<Address>();
     protected final Log                     log=LogFactory.getLog(getClass());
+    protected boolean                       looping=true;
 
     /** Map<Object, MemberInfo>. A hashmap of senders, each value is the 'senders' hashmap */
     protected final Map<Object,MemberInfo>  results=Util.createConcurrentMap();
@@ -81,23 +84,29 @@ public class MPerf extends ReceiverAdapter {
         channel.setReceiver(this);
         channel.connect("mperf");
         local_addr=channel.getAddress();
+
+        // send a CONFIG_REQ to the current coordinator, so we can get the current config
+        Address coord=channel.getView().getMembers().get(0);
+        if(coord != null && !local_addr.equals(coord))
+            sendConfigRequest(coord);
     }
 
 
-    protected void loop() throws Exception {
+    protected void loop() {
         int c;
 
         final String INPUT="[1] Send [2] View\n" +
           "[3] Set num msgs (%d) [4] Set warmup (%d) [5] Set msg size (%s) [6] Set threads (%d)\n" +
           "[x] Exit this [X] Exit all ";
 
-        while(true) {
+        while(looping) {
             try {
                 c=Util.keyPress(String.format(INPUT, num_msgs,warmup, Util.printBytes(msg_size), num_threads));
                 switch(c) {
                     case '1':
                         break;
                     case '2':
+                        System.out.println("view: " + channel.getView() + " (local address=" + channel.getAddress() + ")");
                         break;
                     case '3':
                         configChange("num_msgs");
@@ -111,15 +120,19 @@ public class MPerf extends ReceiverAdapter {
                     case '6':
                         configChange("num_threads");
                         break;
-
                     case 'x':
-                        return;
+                        looping=false;
+                        break;
+                    case 'X':
+                        sendExit();
+                        break;
                 }
             }
             catch(Throwable t) {
                 System.err.println(t);
             }
         }
+        stop();
     }
 
     protected void configChange(String name) throws Exception {
@@ -128,6 +141,26 @@ public class MPerf extends ReceiverAdapter {
         Message msg=new Message(null, null, change);
         msg.setFlag(Message.Flag.RSVP);
         msg.putHeader(ID,new MPerfHeader(MPerfHeader.CONFIG_CHANGE));
+        channel.send(msg);
+    }
+
+    protected void sendExit() throws Exception {
+        Message msg=new Message();
+        msg.putHeader(ID, new MPerfHeader(MPerfHeader.EXIT));
+        channel.send(msg);
+    }
+
+    // Send a CONFIG_REQ to the current coordinator
+    protected void sendConfigRequest(Address coord) throws Exception {
+        Message msg=new Message(coord);
+        msg.setFlag(Message.Flag.RSVP);
+        msg.putHeader(ID, new MPerfHeader(MPerfHeader.CONFIG_REQ));
+        channel.send(msg);
+    }
+
+    protected void sendConfigurationResponse(Address target, Configuration cfg) throws Exception {
+        Message msg=new Message(target, null, cfg);
+        msg.putHeader(ID, new MPerfHeader(MPerfHeader.CONFIG_RSP));
         channel.send(msg);
     }
 
@@ -154,6 +187,7 @@ public class MPerf extends ReceiverAdapter {
     }
 
     public void stop() {
+        looping=false;
         Util.close(channel);
         if(this.output != null) {
             try {
@@ -173,15 +207,27 @@ public class MPerf extends ReceiverAdapter {
 
             case MPerfHeader.CONFIG_CHANGE:
                 ConfigChange config_change=(ConfigChange)msg.getObject();
-                String attr_name=config_change.attr_name;
+                handleConfigChange(config_change);
+                break;
+
+            case MPerfHeader.CONFIG_REQ:
                 try {
-                    Object attr_value=config_change.getValue();
-                    Field field=Util.getField(this.getClass(),attr_name);
-                    Util.setField(field,this,attr_value);
+                    handleConfigRequest(msg.getSrc());
                 }
                 catch(Exception e) {
-                    System.err.println("failed applying config change for attr " + attr_name + ": " + e);
+                    e.printStackTrace();
                 }
+                break;
+
+            case MPerfHeader.CONFIG_RSP:
+                handleConfigResponse((Configuration)msg.getObject());
+                break;
+
+            case MPerfHeader.EXIT:
+                ProtocolStack stack=channel.getProtocolStack();
+                String cluster_name=channel.getClusterName();
+                stack.stopStack(cluster_name);
+                stack.destroy();
                 break;
 
             default:
@@ -189,10 +235,39 @@ public class MPerf extends ReceiverAdapter {
         }
     }
 
+    protected void handleConfigChange(ConfigChange config_change) {
+        String attr_name=config_change.attr_name;
+        try {
+            Object attr_value=config_change.getValue();
+            Field field=Util.getField(this.getClass(), attr_name);
+            Util.setField(field, this, attr_value);
+            System.out.println(config_change.attr_name + "=" + attr_value);
+            log_interval=num_msgs / 10;
+        }
+        catch(Exception e) {
+            System.err.println("failed applying config change for attr " + attr_name + ": " + e);
+        }
+    }
+
+    protected void handleConfigRequest(Address sender) throws Exception {
+        Configuration cfg=new Configuration();
+        cfg.addChange("num_msgs",    num_msgs);
+        cfg.addChange("warmup",      warmup);
+        cfg.addChange("msg_size",    msg_size);
+        cfg.addChange("num_threads", num_threads);
+        sendConfigurationResponse(sender, cfg);
+    }
+
+    protected void handleConfigResponse(Configuration cfg) {
+        for(ConfigChange change: cfg.changes) {
+            handleConfigChange(change);
+        }
+    }
 
 
-
-
+    public void viewAccepted(View view) {
+        System.out.println("** " + view);
+    }
 
     protected class Sender extends Thread {
         CyclicBarrier barrier;
@@ -371,15 +446,49 @@ public class MPerf extends ReceiverAdapter {
         public void writeTo(DataOutput out) throws Exception {
             Util.writeString(attr_name, out);
             Util.writeByteBuffer(attr_value, out);
-            
         }
 
         public void readFrom(DataInput in) throws Exception {
             attr_name=Util.readString(in);
             attr_value=Util.readByteBuffer(in);
         }
+    }
 
 
+    protected static class Configuration implements Streamable {
+        protected List<ConfigChange> changes=new ArrayList<ConfigChange>();
+
+        public Configuration() {
+        }
+
+        public Configuration addChange(String key, Object val) throws Exception {
+            if(key != null && val != null) {
+                changes.add(new ConfigChange(key, val));
+            }
+            return this;
+        }
+
+        public int size() {
+            int retval=Global.INT_SIZE;
+            for(ConfigChange change: changes)
+                retval+=change.size();
+            return retval;
+        }
+
+        public void writeTo(DataOutput out) throws Exception {
+            out.writeInt(changes.size());
+            for(ConfigChange change: changes)
+                change.writeTo(out);
+        }
+
+        public void readFrom(DataInput in) throws Exception {
+            int len=in.readInt();
+            for(int i=0; i < len; i++) {
+                ConfigChange change=new ConfigChange();
+                change.readFrom(in);
+                changes.add(change);
+            }
+        }
     }
 
     protected static class MPerfHeader extends Header {
@@ -391,17 +500,12 @@ public class MPerf extends ReceiverAdapter {
         protected static final byte CONFIG_CHANGE = 6;
         protected static final byte CONFIG_REQ    = 7;
         protected static final byte CONFIG_RSP    = 8;
+        protected static final byte EXIT          = 9;
 
         protected byte         type;
 
-
-        public MPerfHeader() {
-        }
-
-        public MPerfHeader(byte type) {
-            this.type=type;
-        }
-
+        public MPerfHeader() {}
+        public MPerfHeader(byte type) {this.type=type;}
         public int size() {return Global.BYTE_SIZE;}
         public void writeTo(DataOutput out) throws Exception {out.writeByte(type);}
         public void readFrom(DataInput in) throws Exception {type=in.readByte();}
@@ -409,7 +513,6 @@ public class MPerf extends ReceiverAdapter {
 
 
     public static void main(String[] args) {
-        MPerf test=null;
         String props=null, name=null;
 
         for(int i=0; i < args.length; i++) {
@@ -425,16 +528,23 @@ public class MPerf extends ReceiverAdapter {
             return;
         }
 
-        test=new MPerf();
+        final MPerf test=new MPerf();
         try {
             test.start(props,name);
-            test.loop();
+
+            // this kludge is needed in order to terminate the program gracefully when 'X' is pressed
+            // (otherwise System.in.read() would not terminate)
+            Thread thread=new Thread() {
+                public void run() {
+                    test.loop();
+                }
+            };
+            thread.setDaemon(true);
+            thread.start();
+
         }
         catch(Exception e) {
             e.printStackTrace();
-        }
-        finally {
-            test.stop();
         }
     }
 
