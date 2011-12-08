@@ -62,6 +62,7 @@
                    use_mcast_xmit="true"
                    discard_delivered_msgs="true"/>
     <UNICAST2 exponential_backoff="500"/>
+    <RSVP/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="8m"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"

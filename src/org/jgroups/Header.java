@@ -25,7 +25,7 @@ public abstract class Header implements Streamable {
 
 
     public String toString() {
-        return '[' + getClass().getName() + " Header]";
+        return '[' + getClass().getSimpleName() + "]";
     }
 
 }
