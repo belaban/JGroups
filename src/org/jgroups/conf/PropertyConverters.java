@@ -69,7 +69,7 @@ public class PropertyConverters {
 		
         private static int getPortRange(Protocol protocol) throws Exception {
             Field f = protocol.getClass().getDeclaredField("port_range") ;
-            return ((Integer) Configurator.getField(f,protocol)).intValue();
+            return ((Integer) Util.getField(f,protocol)).intValue();
 		}
     }
     
@@ -109,7 +109,7 @@ public class PropertyConverters {
         
         private static void setBindAddress(Protocol protocol, InetAddress bind_addr) throws Exception {
             Field f=Util.getField(protocol.getClass(), "bind_addr");
-			Configurator.setField(f, protocol, bind_addr) ;
+			Util.setField(f, protocol, bind_addr) ;
 		}
         
         

@@ -91,7 +91,7 @@ public abstract class Protocol {
         Field field=Util.getField(getClass(), name);
         if(field == null)
             throw new IllegalArgumentException("field \"" + name + "\n not found");
-        return Configurator.getField(field, this);
+        return Util.getField(field, this);
     }
 
     public Protocol setValues(Map<String,Object> values) {
@@ -102,7 +102,7 @@ public abstract class Protocol {
             Object value=entry.getValue();
             Field field=Util.getField(getClass(), attrname);
             if(field != null) {
-                Configurator.setField(field, this, value);
+                Util.setField(field, this, value);
             }
         }
         return this;
@@ -115,7 +115,7 @@ public abstract class Protocol {
         Field field=Util.getField(getClass(), name);
         if(field == null)
             throw new IllegalArgumentException("field \"" + name + "\n not found");
-        Configurator.setField(field, this, value);
+        Util.setField(field, this, value);
         return this;
     }
 

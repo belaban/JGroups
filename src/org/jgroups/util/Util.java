@@ -24,6 +24,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
@@ -839,6 +840,20 @@ public class Util {
         int retval=Global.BYTE_SIZE; // presence
         if(vid != null)
             retval+=vid.serializedSize();
+        return retval;
+    }
+
+    public static int size(String s) {
+        int retval=Global.BYTE_SIZE;
+        if(s != null)
+            retval+=s.length() +2;
+        return retval;
+    }
+
+    public static int size(byte[] buf) {
+        int retval=Global.BYTE_SIZE + Global.INT_SIZE;
+        if(buf != null)
+            retval+=buf.length;
         return retval;
     }
 
@@ -2666,6 +2681,31 @@ public class Util {
         }
         return field;
     }
+
+    public static void setField(Field field, Object target, Object value) {
+           if(!Modifier.isPublic(field.getModifiers())) {
+               field.setAccessible(true);
+           }
+           try {
+               field.set(target, value);
+           }
+           catch(IllegalAccessException iae) {
+               throw new IllegalArgumentException("Could not set field " + field, iae);
+           }
+       }
+
+       public static Object getField(Field field, Object target) {
+           if(!Modifier.isPublic(field.getModifiers())) {
+               field.setAccessible(true);
+           }
+           try {
+               return field.get(target);
+           }
+           catch(IllegalAccessException iae) {
+               throw new IllegalArgumentException("Could not get field " + field, iae);
+           }
+       }
+
 
     public static <T> Set<Class<T>> findClassesAssignableFrom(String packageName, Class<T> assignableFrom)
       throws IOException, ClassNotFoundException {

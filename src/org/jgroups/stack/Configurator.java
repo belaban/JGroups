@@ -819,7 +819,7 @@ public class Configurator {
                                     else
                                         converted=PropertyHelper.getConvertedValue(protocol, fields[j], properties, defaultValue, true);
                                     if(converted != null)
-                                        setField(fields[j], protocol, converted);
+                                        Util.setField(fields[j], protocol, converted);
                                 }
                                 catch(Exception e) {
                                     throw new Exception("default could not be assigned for field " + propertyName + " in "
@@ -867,7 +867,7 @@ public class Configurator {
                                 else
                                     converted=PropertyHelper.getConvertedValue(protocol, fields[j], defaultValue, true);
                                 if(converted != null)
-                                    setField(fields[j], protocol, converted);
+                                    Util.setField(fields[j], protocol, converted);
                             }
                             catch(Exception e) {
                                 throw new Exception("default could not be assigned for field " + fields[j].getName() + " in "
@@ -1147,7 +1147,7 @@ public class Configurator {
     			try {
     				converted=PropertyHelper.getConvertedValue(obj, field, props, propertyValue, true);
     				if(converted != null)
-    					setField(field, obj, converted);
+    					Util.setField(field, obj, converted);
     			}
     			catch(Exception e) {
     				String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
@@ -1189,30 +1189,7 @@ public class Configurator {
     }
 
 
-    public static void setField(Field field, Object target, Object value) {
-        if(!Modifier.isPublic(field.getModifiers())) {
-            field.setAccessible(true);
-        }
-        try {
-            field.set(target, value);
-        }
-        catch(IllegalAccessException iae) {
-            throw new IllegalArgumentException("Could not set field " + field, iae);
-        }
-    }
-
-    public static Object getField(Field field, Object target) {
-        if(!Modifier.isPublic(field.getModifiers())) {
-            field.setAccessible(true);
-        }
-        try {
-            return field.get(target);
-        }
-        catch(IllegalAccessException iae) {
-            throw new IllegalArgumentException("Could not get field " + field, iae);
-        }
-    }
-
+  
 
     private static String grabSystemProp(Property annotation) {
         String[] system_property_names=annotation.systemProperty();
