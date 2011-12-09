@@ -1120,6 +1120,21 @@
 
         </section>
 
+        <section id="BARRIER">
+            <title>BARRIER</title>
+            <para>
+                BARRIER is used by some of the state transfer protocols, as it lets existing threads complete and blocks
+                new threads to get both the digest and state in one go.
+            </para>
+            <para>
+                In 3.1, a new mechanism for state transfer will be implemented, eliminating the need for BARRIER. Until
+                then, BARRIER should be used when one of the state transfer protocols is used. BARRIER is
+                part of every default stack which contains a state transfer protocol.
+            </para>
+
+            ${BARRIER}
+        </section>
+
     </section>
 
 
