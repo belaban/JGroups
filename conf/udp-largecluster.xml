@@ -50,9 +50,8 @@
     <PING timeout="5000"
           num_initial_members="100"
           break_on_coord_rsp="true" />
-    <MERGE2 max_interval="30000"
-            min_interval="10000"
-            merge_fast="false"/>
+    <MERGE3 max_interval="30000"
+            min_interval="10000"/>
     <FD_SOCK/>
     <FD_ALL/>
     <VERIFY_SUSPECT timeout="1500"  />
