@@ -32,7 +32,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     private JChannel             channel;
     private Address              local_addr;
     private RpcDispatcher        disp;
-    static final String          groupname="UnicastTest-Group";
+    static final String          groupname="uperf";
     private final List<Address>  members=new ArrayList<Address>();
 
 
