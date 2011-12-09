@@ -343,6 +343,10 @@ public class Message implements Streamable {
     */
     final public void setObject(Object obj) {
         if(obj == null) return;
+        if(obj instanceof byte[]) {
+            setBuffer((byte[]) obj);
+            return;
+        }
         if(obj instanceof Buffer) {
             setBuffer((Buffer)obj);
             return;
