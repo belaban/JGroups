@@ -18,10 +18,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 public class Promise<T> {
-    private final Lock lock=new ReentrantLock();
-    private final Condition cond=lock.newCondition();
-    private T result=null;
-    private volatile boolean hasResult=false;
+    private final Lock        lock=new ReentrantLock();
+    private final Condition   cond=lock.newCondition();
+    private T                 result=null;
+    private volatile boolean  hasResult=false;
 
     public Lock getLock() {
         return lock;

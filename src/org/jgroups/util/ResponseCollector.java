@@ -15,8 +15,8 @@ import java.util.concurrent.TimeUnit;
 public class ResponseCollector<T> {
     @GuardedBy("lock")
     private final Map<Address,T> responses;
-    private final Lock lock=new ReentrantLock(false);
-    private final Condition cond=lock.newCondition();
+    private final Lock           lock=new ReentrantLock(false);
+    private final Condition      cond=lock.newCondition();
 
 
     /**
@@ -73,6 +73,19 @@ public class ResponseCollector<T> {
             for(Address member: members)
                 responses.remove(member);
             cond.signalAll();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    public void retainAll(List<Address> members) {
+        if(members == null || members.isEmpty())
+            return;
+        lock.lock();
+        try {
+            if(responses.keySet().retainAll(members))
+                cond.signalAll();
         }
         finally {
             lock.unlock();
