@@ -9,8 +9,7 @@ import org.jgroups.util.ResponseCollector;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import java.io.DataInput;
-import java.io.DataOutput;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.text.NumberFormat;
 import java.util.*;
@@ -31,6 +30,7 @@ public class MPerf extends ReceiverAdapter {
     protected String          props=null;
     protected JChannel        channel;
     protected Address         local_addr=null;
+    protected String          name;
 
     protected int             num_msgs=1000 * 1000;
     protected int             msg_size=1000;
@@ -66,6 +66,7 @@ public class MPerf extends ReceiverAdapter {
 
     public void start(String props, String name) throws Exception {
         this.props=props;
+        this.name=name;
         StringBuilder sb=new StringBuilder();
         sb.append("\n\n----------------------- MPerf -----------------------\n");
         sb.append("Date: ").append(new Date()).append('\n');
@@ -90,12 +91,12 @@ public class MPerf extends ReceiverAdapter {
         int c;
 
         final String INPUT="[1] Send [2] View\n" +
-          "[3] Set num msgs (%d) [4] Set msg size (%s) [5] Set threads (%d)\n" +
+          "[3] Set num msgs (%d) [4] Set msg size (%s) [5] Set threads (%d) [6] New config (%s)\n" +
           "[x] Exit this [X] Exit all ";
 
         while(looping) {
             try {
-                c=Util.keyPress(String.format(INPUT, num_msgs, Util.printBytes(msg_size), num_threads));
+                c=Util.keyPress(String.format(INPUT, num_msgs, Util.printBytes(msg_size), num_threads, props));
                 switch(c) {
                     case '1':
                         results.reset(members);
@@ -116,6 +117,9 @@ public class MPerf extends ReceiverAdapter {
                         break;
                     case '5':
                         configChange("num_threads");
+                        break;
+                    case '6':
+                        newConfig();
                         break;
                     case 'x':
                         looping=false;
@@ -163,7 +167,16 @@ public class MPerf extends ReceiverAdapter {
         if(tmp < 1)
             throw new IllegalArgumentException("illegal value");
         ConfigChange change=new ConfigChange(name, tmp);
-        send(null,change,MPerfHeader.CONFIG_CHANGE,true);
+        send(null, change, MPerfHeader.CONFIG_CHANGE, true);
+    }
+
+    protected void newConfig() throws Exception {
+        String filename=Util.readStringFromStdin("Config file: ");
+        InputStream input=findFile(filename);
+        byte[] contents=Util.readFileContents(input);
+        send(null, contents, MPerfHeader.NEW_CONFIG, false);
+        ConfigChange change=new ConfigChange("props", filename);
+        send(null, change, MPerfHeader.CONFIG_CHANGE, true);
     }
 
 
@@ -177,7 +190,7 @@ public class MPerf extends ReceiverAdapter {
     }
 
 
-    private static String printProperties() {
+    protected static String printProperties() {
         StringBuilder sb=new StringBuilder();
         Properties p=System.getProperties();
         for(Iterator it=p.entrySet().iterator(); it.hasNext();) {
@@ -185,6 +198,24 @@ public class MPerf extends ReceiverAdapter {
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
         }
         return sb.toString();
+    }
+
+   protected static InputStream findFile(String filename) {
+        try {return new FileInputStream(filename);} catch(FileNotFoundException e) {}
+
+        File file=new File(filename);
+        String name=file.getName();
+        try {return new FileInputStream(name);} catch(FileNotFoundException e) {}
+
+        try {
+            String home_dir=System.getProperty("user.home");
+            filename=home_dir + File.separator + name;
+            try {return new FileInputStream(filename);} catch(FileNotFoundException e) {}
+        }
+        catch(Throwable t) {
+        }
+
+        return Util.getResourceAsStream(name, MPerf.class);
     }
 
     public void stop() {
@@ -277,6 +308,10 @@ public class MPerf extends ReceiverAdapter {
                 stack.destroy();
                 break;
 
+            case MPerfHeader.NEW_CONFIG:
+                applyNewConfig(msg.getBuffer());
+                break;
+
             default:
                 System.err.println("Header type " + hdr.type + " not recognized");
         }
@@ -308,6 +343,30 @@ public class MPerf extends ReceiverAdapter {
                                  format.format(msgs_sec) + " msgs/sec, " + Util.printBytes(throughput) + "/sec)");
         }
 
+    }
+
+    protected void applyNewConfig(byte[] buffer) {
+        final InputStream in=new ByteArrayInputStream(buffer);
+        Thread thread=new Thread() {
+            public void run() {
+                try {
+                    JChannel ch=new JChannel(in);
+                    Util.sleepRandom(1000, 5000);
+                    Util.close(channel);
+                    channel=ch;
+                    channel.setName(name);
+                    channel.setReceiver(MPerf.this);
+                    channel.connect("mperf");
+                    local_addr=channel.getAddress();
+                }
+                catch(Exception e) {
+                    System.err.println("failed creating new channel");
+                }
+            }
+        };
+
+        System.out.println("<< restarting channel");
+        thread.start();
     }
 
     protected void handleConfigChange(ConfigChange config_change) {
@@ -566,6 +625,7 @@ public class MPerf extends ReceiverAdapter {
         protected static final byte CONFIG_REQ    =  7;
         protected static final byte CONFIG_RSP    =  8;
         protected static final byte EXIT          =  9;
+        protected static final byte NEW_CONFIG    = 10;
 
 
         protected byte         type;
@@ -596,7 +656,7 @@ public class MPerf extends ReceiverAdapter {
 
         final MPerf test=new MPerf();
         try {
-            test.start(props,name);
+            test.start(props, name);
 
             // this kludge is needed in order to terminate the program gracefully when 'X' is pressed
             // (otherwise System.in.read() would not terminate)

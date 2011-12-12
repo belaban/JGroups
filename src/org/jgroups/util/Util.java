@@ -1110,6 +1110,44 @@ public class Util {
         return sb.toString();
     }
 
+    public static byte[] readFileContents(String filename) throws IOException {
+        File file=new File(filename);
+        if(!file.exists())
+            throw new FileNotFoundException(filename);
+        long length=file.length();
+        byte contents[]=new byte[(int)length];
+        InputStream in=new BufferedInputStream(new FileInputStream(filename));
+        int bytes_read=0;
+
+        for(;;) {
+            int tmp=in.read(contents, bytes_read, (int)(length - bytes_read));
+            if(tmp == -1)
+                break;
+            bytes_read+=tmp;
+            if(bytes_read == length)
+                break;
+        }
+        return contents;
+    }
+
+    public static byte[] readFileContents(InputStream input) throws IOException {
+        byte contents[]=new byte[10000], buf[]=new byte[1024];
+        InputStream in=new BufferedInputStream(input);
+        int bytes_read=0;
+
+        for(;;) {
+            int tmp=in.read(buf, 0, buf.length);
+            if(tmp == -1)
+                break;
+            System.arraycopy(buf, 0, contents, bytes_read, tmp);
+            bytes_read+=tmp;
+        }
+
+        byte[] retval=new byte[bytes_read];
+        System.arraycopy(contents, 0, retval, 0, bytes_read);
+        return retval;
+    }
+
 
     public static String parseString(DataInput in) {
         StringBuilder sb=new StringBuilder();
