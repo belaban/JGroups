@@ -1,5 +1,4 @@
-
-package org.jgroups.tests;
+package org.jgroups.tests.perf;
 
 import org.jgroups.*;
 import org.jgroups.blocks.*;
@@ -28,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Bela Ban
  */
-public class UnicastTestRpcDist extends ReceiverAdapter {
+public class UPerf extends ReceiverAdapter {
     private JChannel             channel;
     private Address              local_addr;
     private RpcDispatcher        disp;
@@ -66,22 +65,19 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     static NumberFormat f;
 
 
-    long tot=0;
-    int num_reqs=0;
-
     static {
         try {
-            METHODS[START]               = UnicastTestRpcDist.class.getMethod("startTest");
-            METHODS[SET_OOB]             = UnicastTestRpcDist.class.getMethod("setOOB", boolean.class);
-            METHODS[SET_SYNC]            = UnicastTestRpcDist.class.getMethod("setSync", boolean.class);
-            METHODS[SET_NUM_MSGS]        = UnicastTestRpcDist.class.getMethod("setNumMessages", int.class);
-            METHODS[SET_NUM_THREADS]     = UnicastTestRpcDist.class.getMethod("setNumThreads", int.class);
-            METHODS[SET_MSG_SIZE]        = UnicastTestRpcDist.class.getMethod("setMessageSize", int.class);
-            METHODS[SET_ANYCAST_COUNT]   = UnicastTestRpcDist.class.getMethod("setAnycastCount", int.class);
-            METHODS[SET_READ_PERCENTAGE] = UnicastTestRpcDist.class.getMethod("setReadPercentage", double.class);
-            METHODS[GET]                 = UnicastTestRpcDist.class.getMethod("get", long.class);
-            METHODS[PUT]                 = UnicastTestRpcDist.class.getMethod("put", long.class, byte[].class);
-            METHODS[GET_CONFIG]          = UnicastTestRpcDist.class.getMethod("getConfig");
+            METHODS[START]               = UPerf.class.getMethod("startTest");
+            METHODS[SET_OOB]             = UPerf.class.getMethod("setOOB", boolean.class);
+            METHODS[SET_SYNC]            = UPerf.class.getMethod("setSync", boolean.class);
+            METHODS[SET_NUM_MSGS]        = UPerf.class.getMethod("setNumMessages", int.class);
+            METHODS[SET_NUM_THREADS]     = UPerf.class.getMethod("setNumThreads", int.class);
+            METHODS[SET_MSG_SIZE]        = UPerf.class.getMethod("setMessageSize", int.class);
+            METHODS[SET_ANYCAST_COUNT]   = UPerf.class.getMethod("setAnycastCount", int.class);
+            METHODS[SET_READ_PERCENTAGE] = UPerf.class.getMethod("setReadPercentage", double.class);
+            METHODS[GET]                 = UPerf.class.getMethod("get", long.class);
+            METHODS[PUT]                 = UPerf.class.getMethod("put", long.class, byte[].class);
+            METHODS[GET_CONFIG]          = UPerf.class.getMethod("getConfig");
 
             ClassConfigurator.add((short)11000, Results.class);
             f=NumberFormat.getNumberInstance();
@@ -406,7 +402,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             return mbrs.get(new_index);
         }
         catch(Exception e) {
-            System.err.println("UnicastTest.getReceiver(): " + e);
+            System.err.println("UPerf.getReceiver(): " + e);
             return null;
         }
     }
@@ -691,9 +687,9 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             return;
         }
 
-        UnicastTestRpcDist test=null;
+        UPerf test=null;
         try {
-            test=new UnicastTestRpcDist();
+            test=new UPerf();
             test.init(props, name);
             test.eventLoop();
         }
@@ -705,7 +701,7 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("UnicastTestRpc [-props <props>] [-name name]");
+        System.out.println("UPerf [-props <props>] [-name name]");
     }
 
 
