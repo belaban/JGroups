@@ -2135,6 +2135,150 @@ msg.setFlag(Message.NO_FC);
         
     </section>
 
+    <section id="PerformanceTests">
+        <title>Performance tests</title>
+        <para>
+            There are a number of performance tests shipped with JGroups. The section below discusses MPerf, which
+            is a replacement for (static) perf.Test. This change was done in 3.1.
+        </para>
+        <section id="MPerf">
+            <title>MPerf</title>
+            <para>
+                MPerf is a test which measures multicast performance. This doesn't mean <emphasis>IP multicast</emphasis>
+                performance, but <emphasis>point-to-multipoint</emphasis> performance. Point-to-multipoint means that
+                we measure performance of one-to-many messages; in other words, messages sent to all cluster members.
+            </para>
+            <para>
+                Compared to the old perf.Test, MPerf is dynamic; it doesn't need a setup file to define the
+                number of senders, number of messages to be sent and message size. Instead, all the configuration
+                needed by an instance of MPerf is an XML stack configuration, and configuration changes done in one
+                member are automatically broadcast to all other members.
+            </para>
+            <para>
+                MPerf can be started as follows:
+            </para>
+            <screen>
+java -cp $CLASSPATH -Djava.net.preferIPv4Stack=true org.jgroups.tests.perf.MPerf -props ./fast.xml
+            </screen>
+            <para>
+                This assumes that we're using IPv4 addresses (otherwise IPv6 addresses are used) and the JGroups JAR on
+                CLASSPATH.
+            </para>
+            <para>
+                A screen shot of MPerf looks like this (could be different, depending on the JGroups version):
+            </para>
+            <screen>
+[linux]/home/bela$ mperf.sh -props ./fast.xml -name B
+
+----------------------- MPerf -----------------------
+Date: Mon Dec 12 15:33:21 CET 2011
+Run by: bela
+JGroups version: 3.1.0.Alpha1
+
+-------------------------------------------------------------------
+GMS: address=B, cluster=mperf, physical address=192.168.1.5:46614
+-------------------------------------------------------------------
+** [A|9] [A, B]
+num_msgs=1000000
+msg_size=1000
+num_threads=1
+[1] Send [2] View
+[3] Set num msgs (1000000) [4] Set msg size (1KB) [5] Set threads (1)
+[6] New config (./fast.xml)
+[x] Exit this [X] Exit all
+            </screen>
+            <para>
+                We're starting MPerf with <code>-props ./fast.xml</code> and <code>-name B</code>. The -props option
+                points to a JGroups configuration file, and -name gives the member the name "B".
+            </para>
+            <para>
+                MPerf can then be run by pressing [1]. In this case, every member in the cluster (in the example, we
+                have members A and B) will send 1 million 1K messages. Once all messages have been received, MPerf will
+                write a summary of the performance results to stdout:
+            </para>
+            <screen>
+[1] Send [2] View
+[3] Set num msgs (1000000) [4] Set msg size (1KB) [5] Set threads (1)
+[6] New config (./fast.xml)
+[x] Exit this [X] Exit all
+1
+-- sending 1000000 msgs
+++ sent 100000
+-- received 200000 msgs (1410 ms, 141843.97 msgs/sec, 141.84MB/sec)
+++ sent 200000
+-- received 400000 msgs (1326 ms, 150829.56 msgs/sec, 150.83MB/sec)
+++ sent 300000
+-- received 600000 msgs (1383 ms, 144613.16 msgs/sec, 144.61MB/sec)
+++ sent 400000
+-- received 800000 msgs (1405 ms, 142348.75 msgs/sec, 142.35MB/sec)
+++ sent 500000
+-- received 1000000 msgs (1343 ms, 148920.33 msgs/sec, 148.92MB/sec)
+++ sent 600000
+-- received 1200000 msgs (1700 ms, 117647.06 msgs/sec, 117.65MB/sec)
+++ sent 700000
+-- received 1400000 msgs (1399 ms, 142959.26 msgs/sec, 142.96MB/sec)
+++ sent 800000
+-- received 1600000 msgs (1359 ms, 147167.03 msgs/sec, 147.17MB/sec)
+++ sent 900000
+-- received 1800000 msgs (1689 ms, 118413.26 msgs/sec, 118.41MB/sec)
+++ sent 1000000
+-- received 2000000 msgs (1519 ms, 131665.57 msgs/sec, 131.67MB/sec)
+
+Results:
+
+B: 2000000 msgs, 2GB received, msgs/sec=137608.37, throughput=137.61MB
+A: 2000000 msgs, 2GB received, msgs/sec=137959.58, throughput=137.96MB
+
+===============================================================================
+ Avg/node:    2000000 msgs, 2GB received, msgs/sec=137788.49, throughput=137.79MB
+ Avg/cluster: 4000000 msgs, 4GB received, msgs/sec=275576.99, throughput=275.58MB
+================================================================================
+
+
+[1] Send [2] View
+[3] Set num msgs (1000000) [4] Set msg size (1KB) [5] Set threads (1) [6] New config (./fast.xml)
+[x] Exit this [X] Exit all
+            </screen>
+            <para>
+                In the sample run above, we see member B's screen. B sends 1 million messages and waits for its
+                1 million and the 1 million messages from B to be received before it dumps some stats to stdout. The
+                stats include the number of messages and bytes received, the time, the message rate and throughput
+                averaged over the 2 members. It also shows the aggregated performance over the entire cluster.
+            </para>
+            <para>
+                In the sample run above, we got an average 137MB of data per member per second, and an aggregated
+                275MB per second for the entire cluster (A and B in this case).
+            </para>
+            <para>
+                Parameters such as the number of messages to be sent, the message size and the number of threads to be
+                used to send the messages can be configured by pressing the corresponding numbers. After pressing return,
+                the change will be broadcast to all cluster members, so that we don't have to go to each member and
+                apply the same change. Also, new members started, will fetch the current configuration and apply it.
+            </para>
+            <para>
+                For example, if we set the message size in A to 2000 bytes, then the change would be sent to B, which
+                would apply it as well. If we started a third member C, it would also have a configuration with a
+                message size of 2000.
+            </para>
+            <para>
+                Another feature is the ability to restart all cluster members with a new configuration. For example, if
+                we modified <code>./fast.xml</code>, we could select [6] to make all cluster members disconnect and
+                close their existing channels and start a new channel based on the modified fast.xml configuration.
+            </para>
+            <para>
+                The new configuration file doesn't even have to be accessible on all cluster members; only on the
+                member which makes the change. The file contents will be read by that member, converted into a byte buffer
+                and shipped to all cluster members, where the new channel will then be created with the byte buffer
+                (converted into an input stream) as config.
+            </para>
+            <para>
+                Being able to dynamically change the test parameters and the JGroups configuration makes MPerf suited to
+                be run in larger clusters; unless a new JGroups version is installed, MPerf will never have to be
+                restarted manually.
+            </para>
+        </section>
+    </section>
+
     <section id="Ergonomics">
         <title>Ergonomics</title>
         <para>
