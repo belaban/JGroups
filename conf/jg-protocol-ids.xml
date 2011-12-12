@@ -56,8 +56,7 @@
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
     <class id="201" name="org.jgroups.blocks.mux.MuxRequestCorrelator"/>
-    <class id="202" name="org.jgroups.demos.dynamic.DTest"/>
-    <class id="203" name="org.jgroups.tests.perf.MPerf"/>
+    <class id="202" name="org.jgroups.tests.perf.MPerf"/>
 
     <!-- User-defined protocols should use IDs >= 1000 -->
 
