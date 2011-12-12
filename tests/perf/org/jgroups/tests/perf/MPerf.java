@@ -5,13 +5,12 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.ResponseCollector;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.NumberFormat;
 import java.util.*;
@@ -41,17 +40,17 @@ public class MPerf extends ReceiverAdapter {
 
 
     /** Maintains stats per sender, will be sent to perf originator when all messages have been received */
-    protected final ConcurrentMap<Address,Result> received_msgs=Util.createConcurrentMap();
+    protected final ConcurrentMap<Address,Stats>  received_msgs=Util.createConcurrentMap();
     protected final AtomicLong                    total_received_msgs=new AtomicLong(0);
     protected final List<Address>                 members=new ArrayList<Address>();
     protected final Log                           log=LogFactory.getLog(getClass());
     protected boolean                             looping=true;
     protected long                                last_interval=0;
-    protected long                                last_msg_count=0;
+    protected final ResponseCollector<Result>     results=new ResponseCollector<Result>();
 
-    /** Map<Object, MemberInfo>. A hashmap of senders, each value is the 'senders' hashmap */
-    protected final Map<Object,MemberInfo>        results=Util.createConcurrentMap();
-    protected FileWriter                          output;
+    // the member which will collect and display the overall results
+    protected volatile Address                    result_collector=null;
+
     protected static  final NumberFormat          format=NumberFormat.getNumberInstance();
     protected static final short                  ID=ClassConfigurator.getProtocolId(MPerf.class);
 
@@ -67,24 +66,12 @@ public class MPerf extends ReceiverAdapter {
 
     public void start(String props, String name) throws Exception {
         this.props=props;
-        if(output != null)
-            this.output=new FileWriter("perf.Test", false);
-
         StringBuilder sb=new StringBuilder();
         sb.append("\n\n----------------------- MPerf -----------------------\n");
         sb.append("Date: ").append(new Date()).append('\n');
         sb.append("Run by: ").append(System.getProperty("user.name")).append("\n");
         sb.append("JGroups version: ").append(Version.description).append('\n');
         System.out.println(sb);
-        output(sb.toString());
-        sb=new StringBuilder();
-        sb.append("\n##### msgs_received");
-        sb.append(", current time (in ms)");
-        sb.append(", msgs/sec");
-        sb.append(", throughput/sec [KB]");
-        sb.append(", free_mem [KB] ");
-        sb.append(", total_mem [KB] ");
-        output(sb);
 
         channel=new JChannel(props);
         channel.setName(name);
@@ -111,8 +98,12 @@ public class MPerf extends ReceiverAdapter {
                 c=Util.keyPress(String.format(INPUT, num_msgs, Util.printBytes(msg_size), num_threads));
                 switch(c) {
                     case '1':
-                        send(null, null, MPerfHeader.CLEAR_RESULTS, true); // clear all results (from prev runs) first
+                        results.reset(members);
+                        send(null,null,MPerfHeader.CLEAR_RESULTS,true); // clear all results (from prev runs) first
                         send(null, null, MPerfHeader.START_SENDING, false);
+                        if(!waitForResults())
+                            System.err.println("failed receiving results from all members");
+                        displayResults();
                         break;
                     case '2':
                         System.out.println("view: " + channel.getView() + " (local address=" + channel.getAddress() + ")");
@@ -141,6 +132,32 @@ public class MPerf extends ReceiverAdapter {
         stop();
     }
 
+    protected boolean waitForResults() {
+        return results.waitForAllResponses(120 * 1000);
+    }
+
+    protected void displayResults() {
+        System.out.println("\nResults:\n");
+        Map<Address,Result> tmp_results=results.getResults();
+        for(Map.Entry<Address,Result> entry: tmp_results.entrySet()) {
+            Result val=entry.getValue();
+            System.out.println(entry.getKey() + ": " + computeStats(val.time, val.msgs, msg_size));
+        }
+
+        long total_msgs=0, total_time=0, num=0;
+
+        for(Result result: tmp_results.values()) {
+            total_time+=result.time;
+            total_msgs+=result.msgs;
+            num++;
+        }
+
+        System.out.println("\n===============================================================================");
+        System.out.println("\033[1m Average/node:    " + computeStats(total_time / num, total_msgs / num, msg_size));
+        System.out.println("\033[0m Average/cluster: " + computeStats(total_time/num, total_msgs, msg_size));
+        System.out.println("================================================================================\n\n");
+    }
+
     protected void configChange(String name) throws Exception {
         int tmp=Util.readIntFromStdin(name + ": ");
         if(tmp < 1)
@@ -160,17 +177,6 @@ public class MPerf extends ReceiverAdapter {
     }
 
 
-    protected void output(Object msg) {
-        if(this.output != null) {
-            try {
-                this.output.write(msg + "\n");
-                this.output.flush();
-            }
-            catch(IOException e) {
-            }
-        }
-    }
-
     private static String printProperties() {
         StringBuilder sb=new StringBuilder();
         Properties p=System.getProperties();
@@ -184,13 +190,6 @@ public class MPerf extends ReceiverAdapter {
     public void stop() {
         looping=false;
         Util.close(channel);
-        if(this.output != null) {
-            try {
-                this.output.close();
-            }
-            catch(IOException e) {
-            }
-        }
     }
 
 
@@ -202,21 +201,55 @@ public class MPerf extends ReceiverAdapter {
                 break;
 
             case MPerfHeader.START_SENDING:
+                result_collector=msg.getSrc();
                 sendMessages();
                 break;
 
             case MPerfHeader.SENDING_DONE:
                 Address sender=msg.getSrc();
-                Result tmp=received_msgs.get(sender);
+                Stats tmp=received_msgs.get(sender);
                 if(tmp != null)
                     tmp.stop();
+
+                boolean all_done=true;
+                for(Stats result: received_msgs.values()) {
+                    if(!result.isDone()) {
+                        all_done=false;
+                        break;
+                    }
+                }
+                // Compute the number messages plus time it took to receive them, for *all* members. The time is computed
+                // as the time the first message was received and the time the last message was received
+                if(all_done && result_collector != null) {
+                    long start=0, stop=0, msgs=0;
+                    for(Stats result: received_msgs.values()) {
+                        if(result.start > 0)
+                            start=start == 0? result.start : Math.min(start, result.start);
+                        if(result.stop > 0)
+                            stop=stop == 0? result.stop : Math.max(stop, result.stop);
+                        msgs+=result.num_msgs_received;
+                    }
+                    Result result=new Result(stop-start, msgs);
+                    try {
+                        if(result_collector != null)
+                            send(result_collector, result, MPerfHeader.RESULT, true);
+                    }
+                    catch(Exception e) {
+                        System.err.println("failed sending results to " + result_collector + ": " +e);
+                    }
+                }
+                break;
+
+            case MPerfHeader.RESULT:
+                Result res=(Result)msg.getObject();
+                results.add(msg.getSrc(), res);
                 break;
 
             case MPerfHeader.CLEAR_RESULTS:
-                for(Result result: received_msgs.values())
+                for(Stats result: received_msgs.values())
                     result.reset();
                 total_received_msgs.set(0);
-                last_interval=last_msg_count=0;
+                last_interval=0;
                 break;
 
             case MPerfHeader.CONFIG_CHANGE:
@@ -252,27 +285,25 @@ public class MPerf extends ReceiverAdapter {
     protected void handleData(Address src, int length) {
         if(length == 0)
             return;
-        Result result=received_msgs.get(src);
+        Stats result=received_msgs.get(src);
         if(result == null) {
-            result=new Result();
-            Result tmp=received_msgs.putIfAbsent(src,result);
+            result=new Stats();
+            Stats tmp=received_msgs.putIfAbsent(src,result);
             if(tmp != null)
                 result=tmp;
         }
-        result.add(length);
+        result.addMessage();
 
         if(last_interval == 0)
             last_interval=System.currentTimeMillis();
-        last_msg_count++;
 
         long received_so_far=total_received_msgs.incrementAndGet();
         if(received_so_far % receive_log_interval == 0) {
             long curr_time=System.currentTimeMillis();
             long diff=curr_time - last_interval;
-            double msgs_sec=last_msg_count / (diff / 1000.0);
+            double msgs_sec=receive_log_interval / (diff / 1000.0);
             double throughput=msgs_sec * msg_size;
             last_interval=curr_time;
-            last_msg_count=0;
             System.out.println("-- received " + received_so_far + " msgs " + "(" + diff + " ms, " +
                                  format.format(msgs_sec) + " msgs/sec, " + Util.printBytes(throughput) + "/sec)");
         }
@@ -311,16 +342,22 @@ public class MPerf extends ReceiverAdapter {
 
     public void viewAccepted(View view) {
         System.out.println("** " + view);
+        final List<Address> mbrs=view.getMembers();
         members.clear();
-        members.addAll(view.getMembers());
-        receive_log_interval=num_msgs * members.size() / 10;
+        members.addAll(mbrs);
+        receive_log_interval=num_msgs * mbrs.size() / 10;
 
-        // Remove non members from results
-        received_msgs.keySet().retainAll(members);
+        // Remove non members from received messages
+        received_msgs.keySet().retainAll(mbrs);
 
         // Add non-existing elements
-        for(Address member: members)
-            received_msgs.putIfAbsent(member, new Result());
+        for(Address member: mbrs)
+            received_msgs.putIfAbsent(member, new Stats());
+
+        results.retainAll(mbrs);
+
+        if(result_collector != null && !mbrs.contains(result_collector))
+            result_collector=null;
     }
 
     protected void sendMessages() {
@@ -343,6 +380,19 @@ public class MPerf extends ReceiverAdapter {
         }
     }
 
+
+    protected static String computeStats(long time, long msgs, int size) {
+        StringBuilder sb=new StringBuilder();
+        double msgs_sec, throughput=0;
+        msgs_sec=msgs / (time/1000.0);
+        throughput=(msgs * size) / (time / 1000.0);
+        sb.append(msgs).append(" msgs, ");
+        sb.append(Util.printBytes(msgs * size)).append(" received");
+        sb.append(", time=").append(format.format(time)).append("ms");
+        sb.append(", msgs/sec=").append(format.format(msgs_sec));
+        sb.append(", throughput=").append(Util.printBytes(throughput));
+        return sb.toString();
+    }
     
     protected class Sender extends Thread {
         protected final CyclicBarrier barrier;
@@ -382,118 +432,6 @@ public class MPerf extends ReceiverAdapter {
     }
 
 
-
-
-
-
-
-    private void dumpResults(Map<Object,MemberInfo> final_results) {
-        Object      member;
-        MemberInfo  val;
-        double      combined_msgs_sec, tmp=0;
-        long        combined_tp;
-        StringBuilder sb=new StringBuilder();
-        sb.append("\n-- results:\n");
-
-        for(Map.Entry<Object,MemberInfo> entry: final_results.entrySet()) {
-            member=entry.getKey();
-            val=entry.getValue();
-            tmp+=val.getMessageSec();
-            sb.append("\n").append(member);
-            if(member.equals(local_addr))
-                sb.append(" (myself)");
-            sb.append(":\n");
-            sb.append(val);
-            sb.append('\n');
-        }
-        combined_msgs_sec=tmp / final_results.size();
-        combined_tp=(long)combined_msgs_sec * msg_size;
-
-        sb.append("\ncombined: ").append(format.format(combined_msgs_sec)).
-                append(" msgs/sec averaged over all receivers (throughput=" + Util.printBytes(combined_tp) + "/sec)\n");
-        System.out.println(sb.toString());
-        output(sb.toString());
-    }
-
-
-
-
-    private static void dump(Map<Object,MemberInfo> map, StringBuilder sb) {
-        Object     mySender;
-        MemberInfo mi;
-        MemberInfo combined=new MemberInfo(0);
-        combined.start = Long.MAX_VALUE;
-        combined.stop = Long.MIN_VALUE;
-
-        sb.append("\n-- local results:\n");
-        for(Map.Entry<Object,MemberInfo> entry: map.entrySet()) {
-            mySender=entry.getKey();
-            mi=entry.getValue();
-            combined.start=Math.min(combined.start, mi.start);
-            combined.stop=Math.max(combined.stop, mi.stop);
-            combined.num_msgs_expected+=mi.num_msgs_expected;
-            combined.num_msgs_received+=mi.num_msgs_received;
-            combined.total_bytes_received+=mi.total_bytes_received;
-            sb.append("sender: ").append(mySender).append(": ").append(mi).append('\n');
-        }
-    }
-
-
-    private String dumpStats(long received_msgs) {
-        double msgs_sec, throughput_sec;
-        long   current;
-
-        StringBuilder sb=new StringBuilder();
-        sb.append(received_msgs).append(' ');
-
-        current=System.currentTimeMillis();
-        sb.append(current).append(' ');
-
-        // msgs_sec=received_msgs / ((current - start) / 1000.0);
-        msgs_sec=322649;
-        throughput_sec=msgs_sec * msg_size;
-
-        sb.append(format.format(msgs_sec)).append(' ').append(format.format(throughput_sec)).append(' ');
-
-        sb.append(Runtime.getRuntime().freeMemory() / 1000.0).append(' ');
-
-        sb.append(Runtime.getRuntime().totalMemory() / 1000.0);
-
-        return sb.toString();
-    }
-
-
-    public String dumpTransportStats(String parameters) {
-        Map stats=channel.dumpStats(parameters);
-        StringBuilder sb=new StringBuilder(128);
-        if(stats != null) {
-            Map.Entry entry;
-            String key;
-            Map value;
-            for(Iterator it=stats.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                key=(String)entry.getKey();
-                value=(Map)entry.getValue();
-                sb.append("\n").append(key).append(":\n");
-                for(Iterator it2=value.entrySet().iterator(); it2.hasNext();) {
-                    sb.append(it2.next()).append("\n");
-                }
-            }
-        }
-        return sb.toString();
-    }
-
-    private static void print(Map stats, StringBuilder sb) {
-        sb.append("\nTransport stats:\n\n");
-        Map.Entry entry;
-        Object key, val;
-        for(Iterator it=stats.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            key=entry.getKey();
-            val=entry.getValue();
-            sb.append(key).append(": ").append(val).append("\n");
-        }
-    }
 
     protected static class ConfigChange implements Streamable {
         protected String attr_name;
@@ -564,57 +502,57 @@ public class MPerf extends ReceiverAdapter {
         }
     }
 
-    protected static class Result implements Streamable {
+    protected class Stats {
         protected long    start=0;
         protected long    stop=0; // done when > 0
         protected long    num_msgs_received=0;
-        protected long    num_bytes_received=0;
 
         public void reset() {
-            start=stop=num_msgs_received=num_bytes_received=0;
+            start=stop=num_msgs_received=0;
         }
 
-        public void stop() {stop=System.currentTimeMillis();}
-
+        public void    stop() {stop=System.currentTimeMillis();}
         public boolean isDone() {return stop > 0;}
 
-        public int size() {
-            return Util.size(start) + Util.size(stop) + Util.size(num_msgs_received) + Util.size(num_bytes_received);
-        }
-
-        public void add(long bytes) {
+        public void addMessage() {
             if(start == 0)
                 start=System.currentTimeMillis();
-            num_bytes_received+=bytes;
             num_msgs_received++;
         }
 
+        public String toString() {
+            return computeStats(stop - start,num_msgs_received,msg_size);
+        }
+    }
+
+    protected static class Result implements Streamable {
+        protected long    time=0;
+        protected long    msgs=0;
+
+        public Result() {
+        }
+
+        public Result(long time, long msgs) {
+            this.time=time;
+            this.msgs=msgs;
+        }
+
+        public int size() {
+            return Util.size(time) + Util.size(msgs);
+        }
+
         public void writeTo(DataOutput out) throws Exception {
-            Util.writeLong(start, out);
-            Util.writeLong(stop, out);
-            Util.writeLong(num_msgs_received, out);
-            Util.writeLong(num_bytes_received, out);
+            Util.writeLong(time, out);
+            Util.writeLong(msgs, out);
         }
 
         public void readFrom(DataInput in) throws Exception {
-            start=Util.readLong(in);
-            stop=Util.readLong(in);
-            num_msgs_received=Util.readLong(in);
-            num_bytes_received=Util.readLong(in);
+            time=Util.readLong(in);
+            msgs=Util.readLong(in);
         }
 
         public String toString() {
-            StringBuilder sb=new StringBuilder();
-            double msgs_sec, throughput=0;
-            long total_time=stop-start;
-            msgs_sec=num_msgs_received / (total_time/1000.0);
-            throughput=num_bytes_received / (total_time / 1000.0);
-            sb.append("num_msgs_received=").append(num_msgs_received);
-            sb.append(", num_bytes_received=").append(Util.printBytes(num_bytes_received));
-            sb.append(", time=").append(format.format(total_time)).append("ms");
-            sb.append(", msgs/sec=").append(format.format(msgs_sec));
-            sb.append(", throughput=").append(Util.printBytes(throughput));
-            return sb.toString();
+            return msgs + " in " + time + " ms";
         }
     }
 
@@ -622,13 +560,12 @@ public class MPerf extends ReceiverAdapter {
         protected static final byte DATA          =  1;
         protected static final byte START_SENDING =  2;
         protected static final byte SENDING_DONE  =  3;
-        protected static final byte RESULTS_REQ   =  4;
-        protected static final byte RESULTS_RSP   =  5;
-        protected static final byte CLEAR_RESULTS =  6;
-        protected static final byte CONFIG_CHANGE =  7;
-        protected static final byte CONFIG_REQ    =  8;
-        protected static final byte CONFIG_RSP    =  9;
-        protected static final byte EXIT          =  10;
+        protected static final byte RESULT        =  4;
+        protected static final byte CLEAR_RESULTS =  5;
+        protected static final byte CONFIG_CHANGE =  6;
+        protected static final byte CONFIG_REQ    =  7;
+        protected static final byte CONFIG_RSP    =  8;
+        protected static final byte EXIT          =  9;
 
 
         protected byte         type;
