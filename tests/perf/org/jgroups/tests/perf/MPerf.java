@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -37,12 +38,13 @@ public class MPerf extends ReceiverAdapter {
     protected int             num_threads=1;
     protected int             log_interval=num_msgs / 10; // log every 10%
     protected int             receive_log_interval=num_msgs / 10;
+    protected int             num_senders=-1; // <= 0: all
 
 
     /** Maintains stats per sender, will be sent to perf originator when all messages have been received */
     protected final ConcurrentMap<Address,Stats>  received_msgs=Util.createConcurrentMap();
     protected final AtomicLong                    total_received_msgs=new AtomicLong(0);
-    protected final List<Address>                 members=new ArrayList<Address>();
+    protected final List<Address>                 members=new CopyOnWriteArrayList<Address>();
     protected final Log                           log=LogFactory.getLog(getClass());
     protected boolean                             looping=true;
     protected long                                last_interval=0;
@@ -92,16 +94,19 @@ public class MPerf extends ReceiverAdapter {
 
         final String INPUT="[1] Send [2] View\n" +
           "[3] Set num msgs (%d) [4] Set msg size (%s) [5] Set threads (%d) [6] New config (%s)\n" +
-          "[x] Exit this [X] Exit all ";
+          "[7] Number of senders (%s)\n" +
+          "[x] Exit this [X] Exit all";
 
         while(looping) {
             try {
-                c=Util.keyPress(String.format(INPUT, num_msgs, Util.printBytes(msg_size), num_threads, props));
+                c=Util.keyPress(String.format(INPUT, num_msgs, Util.printBytes(msg_size), num_threads,
+                                              props == null? "<default>" : props,
+                                              num_senders <= 0? "all" : String.valueOf(num_senders)));
                 switch(c) {
                     case '1':
-                        results.reset(members);
-                        send(null,null,MPerfHeader.CLEAR_RESULTS,true); // clear all results (from prev runs) first
-                        send(null, null, MPerfHeader.START_SENDING, false);
+                        results.reset(getSenders());
+                        send(null,null,MPerfHeader.CLEAR_RESULTS, true); // clear all results (from prev runs) first
+                        send(null, null, MPerfHeader.START_SENDING, true);
                         if(!waitForResults())
                             System.err.println("failed receiving results from all members");
                         displayResults();
@@ -120,6 +125,9 @@ public class MPerf extends ReceiverAdapter {
                         break;
                     case '6':
                         newConfig();
+                        break;
+                    case '7':
+                        configChange("num_senders");
                         break;
                     case 'x':
                         looping=false;
@@ -164,8 +172,6 @@ public class MPerf extends ReceiverAdapter {
 
     protected void configChange(String name) throws Exception {
         int tmp=Util.readIntFromStdin(name + ": ");
-        if(tmp < 1)
-            throw new IllegalArgumentException("illegal value");
         ConfigChange change=new ConfigChange(name, tmp);
         send(null, change, MPerfHeader.CONFIG_CHANGE, true);
     }
@@ -232,6 +238,12 @@ public class MPerf extends ReceiverAdapter {
                 break;
 
             case MPerfHeader.START_SENDING:
+                if(num_senders > 0) {
+                    int my_rank=Util.getRank(members, local_addr);
+                    if(my_rank >= 0 && my_rank > num_senders)
+                        break;
+                }
+
                 result_collector=msg.getSrc();
                 sendMessages();
                 break;
@@ -243,12 +255,18 @@ public class MPerf extends ReceiverAdapter {
                     tmp.stop();
 
                 boolean all_done=true;
-                for(Stats result: received_msgs.values()) {
+                List<Address> senders=getSenders();
+                for(Map.Entry<Address,Stats> entry: received_msgs.entrySet()) {
+                    Address mbr=entry.getKey();
+                    Stats result=entry.getValue();
+                    if(!senders.contains(mbr))
+                        continue;
                     if(!result.isDone()) {
                         all_done=false;
                         break;
                     }
                 }
+
                 // Compute the number messages plus time it took to receive them, for *all* members. The time is computed
                 // as the time the first message was received and the time the last message was received
                 if(all_done && result_collector != null) {
@@ -342,7 +360,16 @@ public class MPerf extends ReceiverAdapter {
             System.out.println("-- received " + received_so_far + " msgs " + "(" + diff + " ms, " +
                                  format.format(msgs_sec) + " msgs/sec, " + Util.printBytes(throughput) + "/sec)");
         }
+    }
 
+    /** Returns all members if num_senders <= 0, or the members with rank <= num_senders */
+    protected List<Address> getSenders() {
+        if(num_senders <= 0)
+            return new ArrayList<Address>(members);
+        List<Address> retval=new ArrayList<Address>();
+        for(int i=0; i < num_senders; i++)
+            retval.add(members.get(i));
+        return retval;
     }
 
     protected void applyNewConfig(byte[] buffer) {
@@ -389,13 +416,13 @@ public class MPerf extends ReceiverAdapter {
         cfg.addChange("num_msgs",    num_msgs);
         cfg.addChange("msg_size",    msg_size);
         cfg.addChange("num_threads", num_threads);
+        cfg.addChange("num_senders", num_senders);
         send(sender,cfg,MPerfHeader.CONFIG_RSP,false);
     }
 
     protected void handleConfigResponse(Configuration cfg) {
-        for(ConfigChange change: cfg.changes) {
+        for(ConfigChange change: cfg.changes)
             handleConfigChange(change);
-        }
     }
 
 
@@ -419,6 +446,7 @@ public class MPerf extends ReceiverAdapter {
             result_collector=null;
     }
 
+    
     protected void sendMessages() {
         final AtomicInteger num_msgs_sent=new AtomicInteger(0); // all threads will increment this
         final Sender[]      senders=new Sender[num_threads];

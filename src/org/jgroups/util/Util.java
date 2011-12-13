@@ -2343,6 +2343,18 @@ public class Util {
         return 0;
     }
 
+    public static int getRank(Collection<Address> members, Address addr) {
+        if(members == null || addr == null)
+            return -1;
+        int index=0;
+        for(Iterator<Address> it=members.iterator(); it.hasNext();) {
+            Address mbr=it.next();
+            if(mbr.equals(addr))
+                return index+1;
+            index++;
+        }
+        return -1;
+    }
 
     public static Object pickRandomElement(List list) {
         if(list == null) return null;
