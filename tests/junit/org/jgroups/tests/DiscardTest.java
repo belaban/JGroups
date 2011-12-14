@@ -1,6 +1,8 @@
 package org.jgroups.tests;
 
 
+import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.MERGE3;
 import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
@@ -63,11 +65,11 @@ public class DiscardTest extends ChannelTestBase {
             Properties properties=new Properties();
             properties.setProperty("down", "0.1");
 
-            ch1.getProtocolStack().insertProtocol(discard_prot, ProtocolStack.BELOW, "MERGE2");
+            ch1.getProtocolStack().insertProtocol(discard_prot, ProtocolStack.BELOW, MERGE2.class, MERGE3.class);
             discard_prot=new DISCARD();
             properties=new Properties();
             properties.setProperty("down", "0.1");
-            ch2.getProtocolStack().insertProtocol(discard_prot, ProtocolStack.BELOW, "MERGE2");
+            ch2.getProtocolStack().insertProtocol(discard_prot, ProtocolStack.BELOW, MERGE2.class, MERGE3.class);
         }
 
         ch1.connect(GROUP);
