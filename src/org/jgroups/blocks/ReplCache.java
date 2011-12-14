@@ -781,7 +781,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         private final static int FACTOR=3737; // to better spread the node out across the space
 
         public List<Address> hash(K key, short replication_count) {
-            int hash=Math.abs(key.hashCode());
+            int hash=Util.abs(key.hashCode());
             int index=hash % HASH_SPACE;
             
             Set<Address> results=new LinkedHashSet<Address>();
@@ -813,7 +813,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
         public void installNodes(List<Address> new_nodes) {
             nodes.clear();
             for(Address node: new_nodes) {
-                int hash=Math.abs(node.hashCode() * FACTOR) % HASH_SPACE;
+                int hash=Util.abs(node.hashCode() * FACTOR) % HASH_SPACE;
                 for(int i=hash; i < hash + HASH_SPACE; i++) {
                     short new_index=(short)(i % HASH_SPACE);
                     if(!nodes.containsKey(new_index)) {

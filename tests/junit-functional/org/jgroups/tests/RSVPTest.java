@@ -126,7 +126,7 @@ public class RSVPTest {
             assert ch.getView().size() == NUM : "channel " + ch.getAddress() + ": view  is " + ch.getView();
 
         // test with a multicast message:
-        short value=(short)Math.abs((short)Util.random(10000));
+        short value=(short)Util.abs((short)Util.random(10000));
         Message msg=new Message(null, null, value);
         msg.setFlag(Message.Flag.RSVP);
 
@@ -154,7 +154,7 @@ public class RSVPTest {
             assert ch.getView().size() == NUM : "channel " + ch.getAddress() + ": view  is " + ch.getView();
 
         // test with a multicast message:
-        short value=(short)Math.abs((short)Util.random(10000));
+        short value=(short)Util.abs((short)Util.random(10000));
         Message msg=new Message(channels[1].getAddress(), null, value);
         msg.setFlag(Message.Flag.RSVP);
 

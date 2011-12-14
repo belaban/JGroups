@@ -793,7 +793,7 @@ public class QueueTest {
             total_reads+=reads[i];
         }
         System.out.println("total writes=" + total_writes + ", total_reads=" + total_reads +
-                ", diff=" + Math.abs(total_writes - total_reads));
+                ", diff=" + Util.abs(total_writes - total_reads));
     }
 
     static class AddOneItem extends Thread {

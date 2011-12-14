@@ -435,7 +435,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         private final static int HASH_SPACE=2000; // must be > max number of nodes in a cluster
 
         public Address hash(K key, List<Address> members) {
-            int hash=Math.abs(key.hashCode());
+            int hash=Util.abs(key.hashCode());
             int index=hash % HASH_SPACE;
 
             if(members != null && !members.isEmpty()) {
@@ -454,7 +454,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         public void viewAccepted(View new_view) {
             nodes.clear();
             for(Address node: new_view.getMembers()) {
-                int hash=Math.abs(node.hashCode()) % HASH_SPACE;
+                int hash=Util.abs(node.hashCode()) % HASH_SPACE;
                 for(int i=hash; i < hash + HASH_SPACE; i++) {
                     short new_index=(short)(i % HASH_SPACE);
                     if(!nodes.containsKey(new_index)) {

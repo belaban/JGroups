@@ -227,25 +227,25 @@ public class AckSenderWindowTest {
 
             t=first_xmit - start_time;
             expected=xmit_timeouts[0];
-            diff=Math.abs(expected - t);
+            diff=Util.abs(expected - t);
             delta=(long)(expected * PERCENTAGE_OFF);
             if(diff <= delta) return true;
 
             t=second_xmit - first_xmit;
             expected=xmit_timeouts[1];
-            diff=Math.abs(expected - t);
+            diff=Util.abs(expected - t);
             delta=(long)(expected * PERCENTAGE_OFF);
             if(diff <= delta) return true;
 
             t=third_xmit - second_xmit;
             expected=xmit_timeouts[2];
-            diff=Math.abs(expected - t);
+            diff=Util.abs(expected - t);
             delta=(long)(expected * PERCENTAGE_OFF);
             if(diff <= delta) return true;
 
             t=fourth_xmit - third_xmit;
             expected=xmit_timeouts[3];
-            diff=Math.abs(expected - t);
+            diff=Util.abs(expected - t);
             delta=(long)(expected * PERCENTAGE_OFF);
             if(diff <= delta) return true;
 

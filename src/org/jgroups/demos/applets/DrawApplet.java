@@ -13,6 +13,7 @@ import java.util.List;
 import org.jgroups.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.util.Util;
 
 
 public class DrawApplet extends Applet implements MouseMotionListener, ActionListener {
@@ -130,9 +131,9 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
 
 
     private void selectColor() {
-        red=(Math.abs(random.nextInt()) % 255);
-        green=(Math.abs(random.nextInt()) % 255);
-        blue=(Math.abs(random.nextInt()) % 255);
+        red=(Util.abs(random.nextInt()) % 255);
+        green=(Util.abs(random.nextInt()) % 255);
+        blue=(Util.abs(random.nextInt()) % 255);
         default_color=new Color(red, green, blue);
     }
 
