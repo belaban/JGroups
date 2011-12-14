@@ -386,13 +386,6 @@ public class Util {
         return bits &= ~flag;
     }
 
-    public static int abs(int num) {
-        return num == Integer.MIN_VALUE ? Math.abs(num-1): Math.abs(num);
-    }
-
-    public static long abs(long num) {
-        return num == Long.MIN_VALUE ? Math.abs(num-1): Math.abs(num);
-    }
 
 
     /**

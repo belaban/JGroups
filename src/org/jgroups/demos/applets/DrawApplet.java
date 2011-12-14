@@ -131,9 +131,9 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
 
 
     private void selectColor() {
-        red=(Util.abs(random.nextInt()) % 255);
-        green=(Util.abs(random.nextInt()) % 255);
-        blue=(Util.abs(random.nextInt()) % 255);
+        red=Math.abs(random.nextInt()) % 255;
+        green=Math.abs(random.nextInt()) % 255;
+        blue=Math.abs(random.nextInt()) % 255;
         default_color=new Color(red, green, blue);
     }
 
