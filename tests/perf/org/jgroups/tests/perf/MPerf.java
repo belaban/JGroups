@@ -2,6 +2,7 @@ package org.jgroups.tests.perf;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.ProtocolStack;
@@ -81,6 +82,7 @@ public class MPerf extends ReceiverAdapter {
         channel.setReceiver(this);
         channel.connect("mperf");
         local_addr=channel.getAddress();
+        JmxConfigurator.registerChannel(channel, Util.getMBeanServer(), "jgroups", "mperf", true);
 
         // send a CONFIG_REQ to the current coordinator, so we can get the current config
         Address coord=channel.getView().getMembers().get(0);
@@ -226,6 +228,12 @@ public class MPerf extends ReceiverAdapter {
 
     public void stop() {
         looping=false;
+        try {
+            JmxConfigurator.unregisterChannel(channel, Util.getMBeanServer(), "jgroups", "mperf");
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
         Util.close(channel);
     }
 
@@ -322,6 +330,11 @@ public class MPerf extends ReceiverAdapter {
             case MPerfHeader.EXIT:
                 ProtocolStack stack=channel.getProtocolStack();
                 String cluster_name=channel.getClusterName();
+                try {
+                    JmxConfigurator.unregisterChannel(channel, Util.getMBeanServer(), "jgroups", "mperf");
+                }
+                catch(Exception e) {
+                }
                 stack.stopStack(cluster_name);
                 stack.destroy();
                 break;
@@ -385,6 +398,7 @@ public class MPerf extends ReceiverAdapter {
                     channel.setReceiver(MPerf.this);
                     channel.connect("mperf");
                     local_addr=channel.getAddress();
+                    JmxConfigurator.registerChannel(channel, Util.getMBeanServer(), "jgroups", "mperf", true);
                 }
                 catch(Exception e) {
                     System.err.println("failed creating new channel");
