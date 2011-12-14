@@ -555,7 +555,7 @@ public class ProtocolStack extends Protocol {
 
         Protocol neighbor=findProtocol(neighbor_prot);
         if(neighbor == null)
-            throw new IllegalArgumentException("protocol \"" + neighbor_prot + "\" not found in " + stack.printProtocolSpec(false));
+            throw new IllegalArgumentException("protocol \"" + neighbor_prot + "\" not found in " + printProtocolSpec(false));
 
         if(position == ProtocolStack.BELOW && neighbor instanceof TP)
             throw new IllegalArgumentException("Cannot insert protocol " + prot.getName() + " below transport protocol");
