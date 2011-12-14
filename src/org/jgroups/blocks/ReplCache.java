@@ -75,7 +75,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
     private static final short REMOVE      = 4;
     private static final short REMOVE_MANY = 5;
 
-    protected static Map<Short, Method> methods=Util.createConcurrentMap(8);
+    protected static final Map<Short, Method> methods=Util.createConcurrentMap(8);
     private TimeScheduler timer;
 
 

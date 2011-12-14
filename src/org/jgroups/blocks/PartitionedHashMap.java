@@ -71,7 +71,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     private static final short GET     = 2;
     private static final short REMOVE  = 3;
 
-    protected static Map<Short,Method> methods=Util.createConcurrentMap(8);
+    protected static final Map<Short,Method> methods=Util.createConcurrentMap(8);
 
      static {
         try {
