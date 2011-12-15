@@ -392,12 +392,15 @@ public class MPerf extends ReceiverAdapter {
                 try {
                     JChannel ch=new JChannel(in);
                     Util.sleepRandom(1000, 5000);
-                    Util.close(channel);
+                    channel.disconnect();
+                    JChannel tmp=channel;
                     channel=ch;
                     channel.setName(name);
                     channel.setReceiver(MPerf.this);
                     channel.connect("mperf");
                     local_addr=channel.getAddress();
+                    JmxConfigurator.unregisterChannel(tmp, Util.getMBeanServer(), "jgroups", "mperf");
+                    Util.close(tmp);
                     JmxConfigurator.registerChannel(channel, Util.getMBeanServer(), "jgroups", "mperf", true);
                 }
                 catch(Exception e) {
