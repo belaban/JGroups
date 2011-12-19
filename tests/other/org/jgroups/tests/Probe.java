@@ -1,5 +1,6 @@
 package org.jgroups.tests;
 
+import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 
 import java.net.DatagramPacket;
@@ -116,7 +117,6 @@ public class Probe {
         List<String> query=new ArrayList<String>();
         String       match=null;
         boolean      weed_out_duplicates=false;
-        boolean      ipv6=false;
 
         try {
             for(int i=0; i < args.length; i++) {
@@ -148,10 +148,6 @@ public class Probe {
                     weed_out_duplicates=true;
                     continue;
                 }
-                if("-ipv6".equals(args[i])) {
-                    ipv6=true;
-                    continue;
-                }
                 if("-help".equals(args[i]) || "-h".equals(args[i]) || "--help".equals(args[i])) {
                     help();
                     return;
@@ -159,8 +155,11 @@ public class Probe {
                 query.add(args[i]);
             }
             Probe p=new Probe();
-            if(addr == null)
+            if(addr == null) {
+                StackType stack_type=Util.getIpStackType();
+                boolean ipv6=stack_type == StackType.IPv6;
                 addr=ipv6? InetAddress.getByName(DEFAULT_DIAG_ADDR_IPv6) : InetAddress.getByName(DEFAULT_DIAG_ADDR);
+            }
             if(port == 0)
                 port=DEFAULT_DIAG_PORT;
             p.start(addr, bind_addr, port, ttl, timeout, query, match, weed_out_duplicates);
@@ -171,7 +170,7 @@ public class Probe {
     }
 
     static void help() {
-        System.out.println("Probe [-help] [-addr <addr>] [-ipv6] [-bind_addr <addr>] " +
+        System.out.println("Probe [-help] [-addr <addr>] [-bind_addr <addr>] " +
                              "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-weed_out_duplicates] [-match pattern]" +
                              "[key[=value]]*\n\n" +
                              "Examples:\n" +
