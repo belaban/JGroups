@@ -1,5 +1,6 @@
 package org.jgroups.util;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -75,10 +76,14 @@ public class RingBuffer<T> {
      * Removes the next element (at hd +1). <em>Note that this method is not concurrent, as
      * RingBuffer can only have 1 remover thread active at any time !</em>
      * @param nullify Nulls the element in the array if true
-     * @return T if there was a non-null element at position hd +1, or null if the element at hd+1 was null.
+     * @return T if there was a non-null element at position hd +1, or null if the element at hd+1 was null, or
+     * hd+1 > hr.
      */
     public T remove(boolean nullify) {
-        int index=index(hd +1);
+        long tmp=hd+1;
+        if(tmp > hr.get())
+            return null;
+        int index=index(tmp);
         T element=buf.get(index);
         if(element == null)
             return null;
@@ -87,6 +92,63 @@ public class RingBuffer<T> {
             buf.compareAndSet(index, element, null);
         return element;
     }
+
+
+     public boolean add2(long seqno, T element, final CountDownLatch one, final CountDownLatch two) throws InterruptedException {
+         validate(seqno);
+
+         if(seqno <= hd)                 // seqno already delivered, includes check seqno <= low
+             return false;
+
+         if(seqno - low > capacity())    // seqno too big
+             return false;
+
+         one.await();
+
+         // now we can set any slow > hd and yet not overwriting low (check #1 above)
+         int index=index(seqno);
+
+         two.await();
+
+         if(!buf.compareAndSet(index, null, element)) // the element at buf[index] was already present
+             return false;
+
+         // now see if hr needs to moved forward
+         for(;;) {
+             long current_hr=hr.get();
+             long new_hr=Math.max(seqno, current_hr);
+             if(new_hr <= current_hr || hr.compareAndSet(current_hr, new_hr))
+                 break;
+         }
+
+         return true;
+     }
+
+    /**
+     * Removes the next element (at hd +1). <em>Note that this method is not concurrent, as
+     * RingBuffer can only have 1 remover thread active at any time !</em>
+     * @param nullify Nulls the element in the array if true
+     * @return T if there was a non-null element at position hd +1, or null if the element at hd+1 was null.
+     */
+    public T remove2(boolean nullify, final CountDownLatch one, final CountDownLatch two) throws InterruptedException {
+        int index=index(hd +1);
+        T element=buf.get(index);
+        if(element == null)
+            return null;
+
+        one.await();
+
+        hd++;
+        if(nullify)
+            buf.compareAndSet(index, element, null);
+
+        two.await();
+
+        return element;
+    }
+
+
+
 
     /**
      * Removes the next element (at hd +1). <em>Note that this method is not concurrent, as

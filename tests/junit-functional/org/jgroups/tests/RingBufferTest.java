@@ -1,9 +1,11 @@
 package org.jgroups.tests;
 
 import org.jgroups.util.RingBuffer;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author Bela Ban
@@ -87,6 +89,81 @@ public class RingBufferTest {
         assert num == null;
     }
 
+    public void testRemovedPastHighestReceived() {
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i=1; i <= 15; i++) {
+            if(i > 10) {
+                assert  !buf.add(i,i);
+                Integer num=buf.remove();
+                assert num == null;
+            }
+            else {
+                assert  buf.add(i,i);
+                Integer num=buf.remove();
+                assert num != null && num == i;
+            }
+        }
+        System.out.println("buf = " + buf);
+        assert buf.size() == 0;
+        assert buf.missing() == 0;
+    }
+
+
+    public void testConcurrentAddAndRemove() throws InterruptedException {
+        final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5,6)) {
+            buf.add(i, i);
+            buf.remove(true);
+        }
+        System.out.println("buf = " + buf);
+        buf.add(7,7);
+
+        final CountDownLatch one=new CountDownLatch(1), two=new CountDownLatch(1);
+
+        Thread adder=new Thread("Adder") {
+            public void run() {
+                try {
+                    boolean success=buf.add2(7,7, one, two);
+                    System.out.println("Adder: adding 7: " + success);
+                }
+                catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        adder.start();
+
+        Thread remover=new Thread("Remover") {
+
+            public void run() {
+                try {
+                    Integer num=buf.remove2(true,one,two);
+                    System.out.println("Remover: removed " + num);
+                }
+                catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        remover.start();
+
+        Util.sleep(1000);
+        System.out.println("buf = " + buf);
+
+        one.countDown();
+        Util.sleep(1000);
+
+        System.out.println("buf = " + buf);
+        two.countDown();
+
+        adder.join();
+        remover.join();
+        System.out.println("buf = " + buf);
+
+        Integer num=buf.remove();
+        assert num == null;
+
+    }
 
 
 }
