@@ -17,15 +17,16 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 
 public class DiagnosticsHandler implements Runnable {
-    public static final String THREAD_NAME = "DiagnosticsHandler";
-    protected Thread thread=null;
-    protected MulticastSocket diag_sock=null;
-    protected InetAddress diagnostics_addr=null;
-    protected int diagnostics_port=7500;
+    public static final String        THREAD_NAME = "DiagnosticsHandler";
+    protected Thread                  thread=null;
+    protected MulticastSocket         diag_sock=null;
+    protected InetAddress             diagnostics_addr=null;
+    protected int                     diagnostics_port=7500;
+    protected List<NetworkInterface>  bind_interfaces=null;
     protected final Set<ProbeHandler> handlers=new CopyOnWriteArraySet<ProbeHandler>();
-    protected final Log log;
-    protected final SocketFactory socket_factory;
-    protected final ThreadFactory thread_factory;
+    protected final Log               log;
+    protected final SocketFactory     socket_factory;
+    protected final ThreadFactory     thread_factory;
 
     public DiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port,
                               Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
@@ -34,6 +35,13 @@ public class DiagnosticsHandler implements Runnable {
         this.log=log;
         this.socket_factory=socket_factory;
         this.thread_factory=thread_factory;
+    }
+
+    public DiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port,
+                              List<NetworkInterface> bind_interfaces,
+                              Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
+        this(diagnostics_addr, diagnostics_port, log, socket_factory, thread_factory);
+        this.bind_interfaces=bind_interfaces;
     }
 
     public Thread getThread(){
@@ -59,9 +67,9 @@ public class DiagnosticsHandler implements Runnable {
         //   diag_sock=Util.createMulticastSocket(getSocketFactory(),
         //                               Global.TP_DIAG_MCAST_SOCK, diagnostics_addr, diagnostics_port, log);
         //else
-        diag_sock=socket_factory.createMulticastSocket(Global.TP_DIAG_MCAST_SOCK,diagnostics_port);
+        diag_sock=socket_factory.createMulticastSocket(Global.TP_DIAG_MCAST_SOCK, diagnostics_port);
 
-        List<NetworkInterface> interfaces=Util.getAllAvailableInterfaces();
+        List<NetworkInterface> interfaces=bind_interfaces != null? bind_interfaces : Util.getAllAvailableInterfaces();
         bindToInterfaces(interfaces, diag_sock);
 
         if(thread == null || !thread.isAlive()) {

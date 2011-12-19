@@ -218,6 +218,11 @@ public abstract class TP extends Protocol {
     		defaultValueIPv4="224.0.75.75",defaultValueIPv6="ff0e::0:75:75")
     protected InetAddress diagnostics_addr=null;
 
+    @Property(converter=PropertyConverters.NetworkInterfaceList.class,
+              description="Comma delimited list of interfaces (IP addresses or interface names) that the " +
+                "diagnostics multicast socket should bind to")
+    protected List<NetworkInterface> diagnostics_bind_interfaces=null;
+
     @Property(description="Port for diagnostic probing. Default is 7500")
     protected int diagnostics_port=7500;
 
@@ -938,8 +943,8 @@ public abstract class TP extends Protocol {
         if(enable_diagnostics) {
             boolean diag_handler_created=diag_handler == null;
             if(diag_handler == null)
-                diag_handler=new DiagnosticsHandler(diagnostics_addr, diagnostics_port, log, getSocketFactory(),
-                                                    getThreadFactory());
+                diag_handler=new DiagnosticsHandler(diagnostics_addr, diagnostics_port, diagnostics_bind_interfaces,
+                                                    log, getSocketFactory(), getThreadFactory());
 
             diag_handler.registerProbeHandler(new DiagnosticsHandler.ProbeHandler() {
                 public Map<String, String> handleProbe(String... keys) {
