@@ -1,17 +1,16 @@
 package org.jgroups.util;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  * Ring buffer (typically of messages), implemented as an array.
- * Optimized for multiple producers (add()) and a single consumer (removeMany()). The buffer
- * has a fixed capacity, and a low (L), highest delivered (HR) and highest received (HR) index.<p/>
+ * Designed for multiple producers (add()) and a single consumer (remove()). <em>Note that the remove() method
+ * is not reentrant, so multiple consumers won't work correctly !</em><p/>
+ * The buffer has a fixed capacity, and a low (L), highest delivered (HR) and highest received (HR) seqno.<p/>
  * A message with a sequence number (seqno) > low + capacity or < HD will get discarded. Removal and addition of
  * messages never block; addition fails to add a message if the above conditions are met, or the message was already
- * received. Removal of a message that not yet received returns null.<p/>
+ * removed. Removal of an element that has not yet been added returns null.<p/>
  * @author Bela Ban
  * @since 3.1
  */
@@ -20,33 +19,40 @@ public class RingBuffer<T> {
     protected final AtomicReferenceArray<T> buf;
 
     /** The lowest seqno. Moved forward by stable() */
-    protected volatile long       low;
+    protected volatile long                 low;
 
     /** The highest delivered seqno. Moved forward by a remove method. The next message to be removed is hd +1 */
-    protected volatile long       hd=0;
+    protected volatile long                 hd=0;
 
     /** The highest received seqno. Moved forward by add(). The next message to be added is hr +1 */
-    protected final AtomicLong    hr=new AtomicLong(0);
+    protected final AtomicLong              hr=new AtomicLong(0);
 
-    protected final long offset;
+    protected final long                    offset;
 
 
-    public RingBuffer(int capacity, long starting_seqno) {
+    /**
+     * Creates a RingBuffer
+     * @param capacity The number of elements the ring buffer's array should hold
+     * @param offset The offset. The first element to be added has to be offset +1.
+     */
+    public RingBuffer(int capacity, long offset) {
+        if(capacity < 1)
+            throw new IllegalArgumentException("incorrect capacity of " + capacity);
+        if(offset < 0)
+            throw new IllegalArgumentException("invalid offset of " + offset);
         this.buf=new AtomicReferenceArray<T>(capacity);
-        this.low=this.hd=starting_seqno;
-        this.hr.set(starting_seqno);
-        this.offset=starting_seqno;
+        this.low=this.hd=this.offset=offset;
+        this.hr.set(offset);
     }
 
 
     public boolean add(long seqno, T element) {
         validate(seqno);
 
-        if(seqno <= hd)                   // seqno already delivered
+        if(seqno <= hd)                 // seqno already delivered, includes check seqno <= low
             return false;
 
-        long tmp_low=low;
-        if(seqno - tmp_low > capacity())  // seqno too big
+        if(seqno - low > capacity())    // seqno too big
             return false;
 
         // now we can set any slow > hd and yet not overwriting low (check #1 above)
@@ -65,16 +71,33 @@ public class RingBuffer<T> {
         return true;
     }
 
-    public T remove() {
-        int index=index(hd) +1;
+    /**
+     * Removes the next element (at hd +1). <em>Note that this method is not concurrent, as
+     * RingBuffer can only have 1 remover thread active at any time !</em>
+     * @param nullify Nulls the element in the array if true
+     * @return T if there was a non-null element at position hd +1, or null if the element at hd+1 was null.
+     */
+    public T remove(boolean nullify) {
+        int index=index(hd +1);
         T element=buf.get(index);
         if(element == null)
             return null;
         hd++;
+        if(nullify)
+            buf.compareAndSet(index, element, null);
         return element;
     }
 
-    public T[] removeMany(int max) {
+    /**
+     * Removes the next element (at hd +1). <em>Note that this method is not concurrent, as
+     * RingBuffer can only have 1 remover thread active at any time !</em>
+     * @return T if there was a non-null element at position hd +1, or null if the element at hd+1 was null.
+     */
+    public T remove() {
+        return remove(false);
+    }
+
+    /*public T[] removeMany(int max) {
         List<T> list=new ArrayList<T>(max);
         long tmp_hr=hr.get();
         long new_hd=hd;
@@ -90,7 +113,7 @@ public class RingBuffer<T> {
         }
         hd=new_hd;
         return (T[])list.toArray();
-    }
+    }*/
 
 
     /** Nulls elements between low and seqno and forwards low */
@@ -117,7 +140,7 @@ public class RingBuffer<T> {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append(low + " | " + hd + " | " + hr + " (" + size() + " elements, " + missing() + " missing)");
+        sb.append("[" + low + " | " + hd + " | " + hr + "] (" + size() + " elements, " + missing() + " missing)");
         return sb.toString();
     }
 

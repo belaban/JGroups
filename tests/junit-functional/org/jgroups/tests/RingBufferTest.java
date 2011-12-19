@@ -3,10 +3,13 @@ package org.jgroups.tests;
 import org.jgroups.util.RingBuffer;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+
 /**
  * @author Bela Ban
  * @since 3.1
  */
+// todo: add tests for long overflow (can become negative)
 @Test(description="Functional tests for the RingBuffer class")
 public class RingBufferTest {
 
@@ -49,10 +52,41 @@ public class RingBufferTest {
         System.out.println("buf = " + buf);
     }
 
-    public void testBeyondCapacity() {
+    public void testAddBeyondCapacity() {
         RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
         for(int i=1; i <=10; i++)
             assert buf.add(i, i);
         System.out.println("buf = " + buf);
     }
+
+    public void testAddMissing() {
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i: Arrays.asList(1,2,4,5,6))
+            buf.add(i, i);
+        System.out.println("buf = " + buf);
+        assert buf.size() == 5 && buf.missing() == 1;
+
+        Integer num=buf.remove();
+        assert num == 1;
+        num=buf.remove();
+        assert num == 2;
+        num=buf.remove();
+        assert num == null;
+
+        buf.add(3, 3);
+        System.out.println("buf = " + buf);
+        assert buf.size() == 4 && buf.missing() == 0;
+
+        for(int i=3; i <= 6; i++) {
+            num=buf.remove();
+            System.out.println("buf = " + buf);
+            assert num == i;
+        }
+
+        num=buf.remove();
+        assert num == null;
+    }
+
+
+
 }
