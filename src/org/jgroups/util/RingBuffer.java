@@ -1,8 +1,12 @@
 package org.jgroups.util;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Ring buffer (typically of messages), implemented as an array.
@@ -30,6 +34,13 @@ public class RingBuffer<T> {
 
     protected final long                    offset;
 
+    /** Lock for adders to block on when the buffer is full */
+    protected final Lock                    lock=new ReentrantLock();
+
+    protected final Condition               buffer_full=lock.newCondition();
+
+    protected volatile boolean              running=true;
+
 
     /**
      * Creates a RingBuffer
@@ -48,12 +59,25 @@ public class RingBuffer<T> {
 
 
     public boolean add(long seqno, T element) {
+        return add(seqno, element, false);
+    }
+
+
+    /**
+     * Adds a new element to the buffer
+     * @param seqno The seqno of the element
+     * @param element The element
+     * @param block If true, add() will block when the buffer is full until there is space. Else, add() will
+     * return immediately, either successfully or unsuccessfully (if the buffer is full)
+     * @return True if the element was added, false otherwise.
+     */
+    public boolean add(long seqno, T element, boolean block) {
         validate(seqno);
 
         if(seqno <= hd)                 // seqno already delivered, includes check seqno <= low
             return false;
 
-        if(seqno - low > capacity())    // seqno too big
+        if(seqno - low > capacity() && (!block || !block(seqno)))  // seqno too big
             return false;
 
         // now we can set any slow > hd and yet not overwriting low (check #1 above)
@@ -71,6 +95,7 @@ public class RingBuffer<T> {
 
         return true;
     }
+
 
     /**
      * Removes the next element (at hd +1). <em>Note that this method is not concurrent, as
@@ -94,62 +119,6 @@ public class RingBuffer<T> {
     }
 
 
-     public boolean add2(long seqno, T element, final CountDownLatch one, final CountDownLatch two) throws InterruptedException {
-         validate(seqno);
-
-         if(seqno <= hd)                 // seqno already delivered, includes check seqno <= low
-             return false;
-
-         if(seqno - low > capacity())    // seqno too big
-             return false;
-
-         one.await();
-
-         // now we can set any slow > hd and yet not overwriting low (check #1 above)
-         int index=index(seqno);
-
-         two.await();
-
-         if(!buf.compareAndSet(index, null, element)) // the element at buf[index] was already present
-             return false;
-
-         // now see if hr needs to moved forward
-         for(;;) {
-             long current_hr=hr.get();
-             long new_hr=Math.max(seqno, current_hr);
-             if(new_hr <= current_hr || hr.compareAndSet(current_hr, new_hr))
-                 break;
-         }
-
-         return true;
-     }
-
-    /**
-     * Removes the next element (at hd +1). <em>Note that this method is not concurrent, as
-     * RingBuffer can only have 1 remover thread active at any time !</em>
-     * @param nullify Nulls the element in the array if true
-     * @return T if there was a non-null element at position hd +1, or null if the element at hd+1 was null.
-     */
-    public T remove2(boolean nullify, final CountDownLatch one, final CountDownLatch two) throws InterruptedException {
-        int index=index(hd +1);
-        T element=buf.get(index);
-        if(element == null)
-            return null;
-
-        one.await();
-
-        hd++;
-        if(nullify)
-            buf.compareAndSet(index, element, null);
-
-        two.await();
-
-        return element;
-    }
-
-
-
-
     /**
      * Removes the next element (at hd +1). <em>Note that this method is not concurrent, as
      * RingBuffer can only have 1 remover thread active at any time !</em>
@@ -159,23 +128,23 @@ public class RingBuffer<T> {
         return remove(false);
     }
 
-    /*public T[] removeMany(int max) {
-        List<T> list=new ArrayList<T>(max);
-        long tmp_hr=hr.get();
-        long new_hd=hd;
-        for(long i=hd +1; i <= tmp_hr; i++) {
-            int index=index(i);
-            T element=buf.get(index);
-            if(element != null) {
+    public List<T> removeMany(boolean nullify, int max_results) {
+        List<T> list=null;
+        int num_results=0;
+
+        while(true) {
+            T element=remove(nullify);
+            if(element != null) { // element exists
+                if(list == null)
+                    list=new ArrayList<T>(max_results > 0? max_results : 20);
                 list.add(element);
-                new_hd=i;
+                if(max_results <= 0 || ++num_results < max_results)
+                    continue;
             }
-            else
-                break;
+            break;
         }
-        hd=new_hd;
-        return (T[])list.toArray();
-    }*/
+        return list;
+    }
 
 
     /** Nulls elements between low and seqno and forwards low */
@@ -186,10 +155,30 @@ public class RingBuffer<T> {
         int from=index(low+1), to=index(seqno);
         for(int i=from; i <= to; i++)
             buf.set(i, null);
-        low=seqno;
+
+        // Releases some of the blocked adders
+        lock.lock();
+        try {
+            low=seqno;
+            buffer_full.signalAll();
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
-    public int capacity() {return buf.length();}
+    public void destroy() {
+        lock.lock();
+        try {
+            running=false;
+            buffer_full.signalAll();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    public final int capacity() {return buf.length();}
 
     public int size() {
         return count(false);
@@ -214,6 +203,24 @@ public class RingBuffer<T> {
 
     protected int index(long seqno) {
         return (int)((seqno - offset -1) % capacity());
+    }
+
+    protected boolean block(long seqno) {
+        lock.lock();
+        try {
+            while(running && seqno - low > capacity()) {
+                try {
+                    buffer_full.await();
+                }
+                catch(InterruptedException e) {
+                    ;
+                }
+            }
+            return running;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     protected int count(boolean missing) {

@@ -89,6 +89,44 @@ public class RingBufferTest {
         assert num == null;
     }
 
+    public void testBlockingAddAndDestroy() {
+        final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i=0; i <= 10; i++)
+            buf.add(i, i, true);
+        System.out.println("buf = " + buf);
+        new Thread() {
+            public void run() {
+                Util.sleep(1000);
+                buf.destroy();
+            }
+        }.start();
+        boolean success=buf.add(11, 11, true);
+        System.out.println("buf=" + buf);
+        assert !success;
+        assert buf.size() == 10;
+        assert buf.missing() == 0;
+    }
+
+    public void testBlockingAddAndStable() {
+        final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i=0; i <= 10; i++)
+            buf.add(i, i, true);
+        System.out.println("buf = " + buf);
+        new Thread() {
+            public void run() {
+                Util.sleep(1000);
+                for(int i=0; i < 3; i++)
+                    buf.remove();
+                buf.stable(3);
+            }
+        }.start();
+        boolean success=buf.add(11, 11, true);
+        System.out.println("buf=" + buf);
+        assert success;
+        assert buf.size() == 8;
+        assert buf.missing() == 0;
+    }
+
     public void testRemovedPastHighestReceived() {
         RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
         for(int i=1; i <= 15; i++) {
@@ -108,62 +146,84 @@ public class RingBufferTest {
         assert buf.missing() == 0;
     }
 
+    public void testRemoveMany() {
+        
+    }
 
-    public void testConcurrentAddAndRemove() throws InterruptedException {
-        final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
-        for(int i: Arrays.asList(1,2,3,4,5,6)) {
+
+    public void testConcurrentAdd() {
+        final int NUM=100;
+        final RingBuffer<Integer> buf=new RingBuffer<Integer>(1000, 0);
+
+        CountDownLatch latch=new CountDownLatch(1);
+        Adder[] adders=new Adder[NUM];
+        for(int i=0; i < adders.length; i++) {
+            adders[i]=new Adder(latch, i+1, buf);
+            adders[i].start();
+        }
+
+        Util.sleep(1000);
+        System.out.println("releasing threads");
+        latch.countDown();
+        System.out.print("waiting for threads to be done: ");
+        for(Adder adder: adders) {
+            try {
+                adder.join();
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("OK");
+        System.out.println("buf = " + buf);
+        assert buf.size() == NUM;
+    }
+
+
+    public void testStable() {
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i=1; i <=7; i++) {
             buf.add(i, i);
-            buf.remove(true);
+            buf.remove();
         }
         System.out.println("buf = " + buf);
-        buf.add(7,7);
+        assert buf.size() == 0;
+        buf.stable(3);
+        buf.stable(6);
+        buf.stable(7);
+        assert buf.size()  == 0;
 
-        final CountDownLatch one=new CountDownLatch(1), two=new CountDownLatch(1);
-
-        Thread adder=new Thread("Adder") {
-            public void run() {
-                try {
-                    boolean success=buf.add2(7,7, one, two);
-                    System.out.println("Adder: adding 7: " + success);
-                }
-                catch(InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-        adder.start();
-
-        Thread remover=new Thread("Remover") {
-
-            public void run() {
-                try {
-                    Integer num=buf.remove2(true,one,two);
-                    System.out.println("Remover: removed " + num);
-                }
-                catch(InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-        remover.start();
-
-        Util.sleep(1000);
-        System.out.println("buf = " + buf);
-
-        one.countDown();
-        Util.sleep(1000);
+        for(int i=7; i <= 12; i++)
+            buf.add(i, i);
 
         System.out.println("buf = " + buf);
-        two.countDown();
-
-        adder.join();
-        remover.join();
-        System.out.println("buf = " + buf);
-
-        Integer num=buf.remove();
-        assert num == null;
-
+        assert buf.size() == 5;
     }
+
+
+    protected static class Adder extends Thread {
+        protected final CountDownLatch latch;
+        protected final int seqno;
+        protected final RingBuffer<Integer> buf;
+
+        public Adder(CountDownLatch latch, int seqno, RingBuffer<Integer> buf) {
+            this.latch=latch;
+            this.seqno=seqno;
+            this.buf=buf;
+        }
+
+        public void run() {
+            try {
+                latch.await();
+                Util.sleepRandom(10, 500);
+                buf.add(seqno, seqno);
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 
 
 }
