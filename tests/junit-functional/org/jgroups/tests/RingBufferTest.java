@@ -7,6 +7,7 @@ import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -167,6 +168,35 @@ public class RingBufferTest {
         assert buf.missing() == 0;
     }
 
+    public void testGet() {
+        final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5))
+            buf.add(i, i);
+        assert buf.get(0) == null;
+        assert buf.get(1) == 1;
+        assert buf.get(10) == null;
+        assert buf.get(5) == 5;
+        assert buf.get(6) == null;
+    }
+
+    public void testGetList() {
+        final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5))
+            buf.add(i, i);
+        List<Integer> elements=buf.get(3,5);
+        System.out.println("elements = " + elements);
+        assert elements != null && elements.size() == 3;
+        assert elements.contains(3) && elements.contains(4) && elements.contains(5);
+
+        elements=buf.get(4, 10);
+        System.out.println("elements = " + elements);
+        assert elements != null && elements.size() == 2;
+        assert elements.contains(4) && elements.contains(5);
+
+        elements=buf.get(10, 20);
+        assert elements == null;
+    }
+
     public void testRemovedPastHighestReceived() {
         RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
         for(int i=1; i <= 15; i++) {
@@ -187,7 +217,24 @@ public class RingBufferTest {
     }
 
     public void testRemoveMany() {
-        
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5,6,7,9,10))
+            buf.add(i, i);
+        List<Integer> list=buf.removeMany(false,3);
+        System.out.println("list = " + list);
+        assert list != null && list.size() == 3;
+
+        list=buf.removeMany(false, 20);
+        System.out.println("list = " + list);
+        assert list != null && list.size() == 4;
+
+        list=buf.removeMany(false, 10);
+        assert list == null;
+
+        buf.add(8, 8);
+        list=buf.removeMany(false, 10);
+        System.out.println("list = " + list);
+        assert list != null && list.size() == 3;
     }
 
 

@@ -146,6 +146,36 @@ public class RingBuffer<T> {
         return list;
     }
 
+    public T get(long seqno) {
+        validate(seqno);
+        if(seqno <= low || seqno > hr.get())
+            return null;
+        int index=index(seqno);
+        return buf.get(index);
+    }
+
+    /**
+     * Returns a list of messages in the range [from .. to], including from and to
+     * @param from
+     * @param to
+     * @return A list of messages, or null if none in range [from .. to] was found
+     */
+    public List<T> get(long from, long to) {
+        if(from > to)
+            throw new IllegalArgumentException("from (" + from + ") has to be <= to (" + to + ")");
+        validate(from);
+        List<T> retval=null;
+        for(long i=from; i <= to; i++) {
+            T element=get(i);
+            if(element != null) {
+                if(retval == null)
+                    retval=new ArrayList<T>();
+                retval.add(element);
+            }
+        }
+        return retval;
+    }
+
 
     /** Nulls elements between low and seqno and forwards low */
     public void stable(long seqno) {
@@ -179,14 +209,8 @@ public class RingBuffer<T> {
     }
 
     public final int capacity() {return buf.length();}
-
-    public int size() {
-        return count(false);
-    }
-
-    public int missing() {
-        return count(true);
-    }
+    public int       size()     {return count(false);}
+    public int       missing()  {return count(true);}
 
     public SeqnoList getMissing() {
         SeqnoList missing=null;
@@ -218,6 +242,7 @@ public class RingBuffer<T> {
     }
 
 
+    
     protected static final void validate(long seqno) {
         if(seqno < 0)
             throw new IllegalArgumentException("seqno " + seqno + " cannot be negative");
@@ -235,7 +260,6 @@ public class RingBuffer<T> {
                     buffer_full.await();
                 }
                 catch(InterruptedException e) {
-                    ;
                 }
             }
             return running;
