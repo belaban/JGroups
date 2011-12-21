@@ -195,16 +195,16 @@ public class RingBuffer<T> {
             if(buf.get(index(i)) == null) {
                 if(missing == null)
                     missing=new SeqnoList();
-
                 long end=i;
                 while(buf.get(index(end+1)) == null && end <= tmp_hr)
                     end++;
 
                 if(end == i)
                     missing.add(i);
-                else
+                else {
                     missing.add(i, end);
-                i=end;
+                    i=end;
+                }
             }
         }
         return missing;
