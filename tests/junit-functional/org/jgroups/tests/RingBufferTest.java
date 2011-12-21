@@ -103,6 +103,32 @@ public class RingBufferTest {
         assert missing_list.size() == missing;
     }
 
+    public void testGetMissing2() {
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        buf.add(1,1);
+        SeqnoList missing=buf.getMissing();
+        System.out.println("missing = " + missing);
+        assert missing == null && buf.missing() == 0;
+
+        buf=new RingBuffer<Integer>(10, 0);
+        buf.add(10,10);
+        missing=buf.getMissing();
+        System.out.println("missing = " + missing);
+        assert buf.missing() == missing.size();
+
+        buf=new RingBuffer<Integer>(10, 0);
+        buf.add(5,5);
+        missing=buf.getMissing();
+        System.out.println("missing = " + missing);
+        assert buf.missing() == missing.size();
+
+        buf=new RingBuffer<Integer>(10, 0);
+        buf.add(5,7);
+        missing=buf.getMissing();
+        System.out.println("missing = " + missing);
+        assert buf.missing() == missing.size();
+    }
+
     public void testBlockingAddAndDestroy() {
         final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
         for(int i=0; i <= 10; i++)
