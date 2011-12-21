@@ -171,6 +171,35 @@ public class FixedSizeBitSet {
     public int size() {return size;}
 
 
+    /**
+     * Flips all bits: 1 --> 0 and 0 --> 1
+     */
+    public void flip() {
+        int fromIndex=0, toIndex=size();
+        if (fromIndex == toIndex)
+            return;
+
+        int startWordIndex = wordIndex(fromIndex);
+        int endWordIndex   = wordIndex(toIndex - 1);
+
+        long firstWordMask = WORD_MASK << fromIndex;
+        long lastWordMask  = WORD_MASK >>> -toIndex;
+        if (startWordIndex == endWordIndex) {
+            // Case 1: One word
+            words[startWordIndex] ^= (firstWordMask & lastWordMask);
+        } else {
+            // Case 2: Multiple words
+            // Handle first word
+            words[startWordIndex] ^= firstWordMask;
+
+            // Handle intermediate words, if any
+            for (int i = startWordIndex+1; i < endWordIndex; i++)
+                words[i] ^= WORD_MASK;
+
+            // Handle last word
+            words[endWordIndex] ^= lastWordMask;
+        }
+    }
 
 
     /**
