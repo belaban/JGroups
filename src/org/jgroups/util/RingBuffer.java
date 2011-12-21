@@ -188,6 +188,28 @@ public class RingBuffer<T> {
         return count(true);
     }
 
+    public SeqnoList getMissing() {
+        SeqnoList missing=null;
+        long tmp_hd=hd, tmp_hr=hr.get();
+        for(long i=tmp_hd+1; i <= tmp_hr; i++) {
+            if(buf.get(index(i)) == null) {
+                if(missing == null)
+                    missing=new SeqnoList();
+
+                long end=i;
+                while(buf.get(index(end+1)) == null && end <= tmp_hr)
+                    end++;
+
+                if(end == i)
+                    missing.add(i);
+                else
+                    missing.add(i, end);
+                i=end;
+            }
+        }
+        return missing;
+    }
+
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
@@ -196,7 +218,7 @@ public class RingBuffer<T> {
     }
 
 
-    protected static void validate(long seqno) {
+    protected static final void validate(long seqno) {
         if(seqno < 0)
             throw new IllegalArgumentException("seqno " + seqno + " cannot be negative");
     }

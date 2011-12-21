@@ -1,6 +1,8 @@
 package org.jgroups.tests;
 
+import org.jgroups.Global;
 import org.jgroups.util.RingBuffer;
+import org.jgroups.util.SeqnoList;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -11,8 +13,7 @@ import java.util.concurrent.CountDownLatch;
  * @author Bela Ban
  * @since 3.1
  */
-// todo: add tests for long overflow (can become negative)
-@Test(description="Functional tests for the RingBuffer class")
+@Test(groups=Global.FUNCTIONAL,description="Functional tests for the RingBuffer class")
 public class RingBufferTest {
 
     public void testConstructor() {
@@ -87,6 +88,19 @@ public class RingBufferTest {
 
         num=buf.remove();
         assert num == null;
+    }
+
+
+    public void testGetMissing() {
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(30, 0);
+        for(int i: Arrays.asList(2,5,10,11,12,13,15,20,28,30))
+            buf.add(i, i);
+        System.out.println("buf = " + buf);
+        int missing=buf.missing();
+        System.out.println("missing=" + missing);
+        SeqnoList missing_list=buf.getMissing();
+        System.out.println("missing_list = " + missing_list);
+        assert missing_list.size() == missing;
     }
 
     public void testBlockingAddAndDestroy() {
