@@ -1,0 +1,43 @@
+Design of RACKSPACE_PING
+========================
+
+Author: Gustavo Fernandes
+
+
+Goal
+----
+
+RACKSPACE_PING is a discovery protocol which persist files in Rackspace Cloud Files Service
+
+http://www.rackspace.co.uk/cloud-hosting/cloud-products/cloud-files/
+
+
+Usage
+-----
+
+It's necessary to provide 3 properties in order to authenticate and use the service:
+
+ * username: the Rackspace's account login
+ * apiKey: the Rackspace API key associated with the account
+ * region: either UK or US, the current existing rackspace locations
+
+
+Design
+------
+
+As it happens with FILE_PING, this protocol also creates a root folder, also known as container in Rackspace terminology.
+PingData is stored as objects, the equivalent of a file in Rackspace, but since there's no support for true hierarchical
+folders, the file names also contains the path. An example of a cluster structure in Rackspace would be:
+
+- jgroups
+    - ChatCluster/e215bbe0-778c-dd28-f27b-0211619ddb2d
+    - ChatCluster/b6d7bd8d-c054-2346-55a2-a0a37df6c443
+
+
+Where 'jgroups' is the root container and each of the children are files belonging to the 'ChatCluster' channel.
+
+Communication with Rackspace is done via an internal ReST client. The client authenticates with RackSpace and obtain an
+auth token and an assigned URL used to do all subsequent file related operations. When the auth token expires after 24h,
+the client automatically obtain a new token.
+
+When a node leaves the channel, a shutdown hook is in place to delete the associated ping data.
