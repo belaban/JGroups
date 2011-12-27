@@ -21,20 +21,73 @@ public class RingBufferTest {
         RingBuffer buf=new RingBuffer(100, 1);
         System.out.println("buf = " + buf);
         assert buf.capacity() == 100;
+        assert buf.size() == 0;
+    }
+
+    public void testIndex() {
+        RingBuffer buf=new RingBuffer(10, 5);
+        assert buf.getHighestDelivered() == 5;
+        assert buf.getHighestReceived() == 5;
+        buf.add(6,6); buf.add(7,7);
+        buf.remove(); buf.remove();
+        long low=buf.getLow();
+        buf.stable(4);
+        buf.stable(5);
+        buf.stable(6);
+        buf.stable(7);
+        System.out.println("buf = " + buf);
+        for(long i=low; i <= 7; i++)
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
     }
 
     public void testAddWithInvalidSeqno() {
         RingBuffer<Integer> buf=new RingBuffer<Integer>(100, 20);
         assert buf.add(10, 0) == false;
         assert buf.add(20, 0) == false;
+        assert buf.size() == 0;
     }
 
     public void testAdd() {
-        RingBuffer<Integer> buf=new RingBuffer<Integer>(100, 0);
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
         buf.add(1, 322649);
         buf.add(2, 100000);
         System.out.println("buf = " + buf);
         assert buf.size() == 2;
+    }
+
+    public void testSaturation() {
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5))
+            buf.add(i, i);
+        System.out.println("buf = " + buf);
+        int size=buf.size(), space_used=buf.spaceUsed();
+        double saturation=buf.saturation();
+        System.out.println("size=" + size + ", space used=" + space_used + ", saturation=" + saturation);
+        assert buf.size() == 5;
+        assert buf.spaceUsed() == 5;
+        assert buf.saturation() == 0.5;
+
+        buf.remove(); buf.remove(); buf.remove();
+        size=buf.size();
+        space_used=buf.spaceUsed();
+        saturation=buf.saturation();
+        System.out.println("size=" + size + ", space used=" + space_used + ", saturation=" + saturation);
+        assert buf.size() == 2;
+        assert buf.spaceUsed() == 5;
+        assert buf.saturation() == 0.5;
+
+        long low=buf.getLow();
+        buf.stable(3);
+        for(long i=low; i <= 3; i++)
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
+
+        size=buf.size();
+        space_used=buf.spaceUsed();
+        saturation=buf.saturation();
+        System.out.println("size=" + size + ", space used=" + space_used + ", saturation=" + saturation);
+        assert buf.size() == 2;
+        assert buf.spaceUsed() == 2;
+        assert buf.saturation() == 0.2;
     }
 
     public void testAddWithWrapAround() {
@@ -49,11 +102,27 @@ public class RingBufferTest {
         }
         System.out.println("buf = " + buf);
 
+        long low=buf.getLow();
         buf.stable(8);
         System.out.println("buf = " + buf);
+        assert buf.getLow() == 8;
+        for(long i=low; i <= 8; i++)
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
+
         for(int i=16; i <= 18; i++)
             assert buf.add(i, i);
         System.out.println("buf = " + buf);
+
+        while(buf.remove() != null)
+            ;
+        System.out.println("buf = " + buf);
+        assert buf.size() == 0;
+        assert buf.missing() == 0;
+        low=buf.getLow();
+        buf.stable(18);
+        assert buf.getLow() == 18;
+        for(long i=low; i <= 18; i++)
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
     }
 
     public void testAddBeyondCapacity() {
@@ -275,16 +344,59 @@ public class RingBufferTest {
         }
         System.out.println("buf = " + buf);
         assert buf.size() == 0;
+        long low=buf.getLow();
         buf.stable(3);
+        assert buf.getLow() == 3;
+        for(long i=low; i <= 3; i++)
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
+
+
         buf.stable(6);
+        assert buf.get(6) == null;
         buf.stable(7);
+        assert buf.get(7) == null;
+        assert buf.getLow() == 7;
         assert buf.size()  == 0;
 
-        for(int i=7; i <= 12; i++)
+        for(int i=7; i <= 14; i++) {
             buf.add(i, i);
+            buf.remove();
+        }
 
         System.out.println("buf = " + buf);
-        assert buf.size() == 5;
+        assert buf.size() == 0;
+
+        low=buf.getLow();
+        buf.stable(12);
+        System.out.println("buf = " + buf);
+        assert buf.getLow() == 12;
+        for(long i=low; i <= 12; i++)
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
+    }
+    
+
+    public void testIterator() {
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5,6,7,9,10))
+            buf.add(i, i);
+        int count=0;
+        for(Integer num: buf) {
+            if(num != null) {
+                count++;
+                System.out.print(num + " ");
+            }
+        }
+        System.out.println();
+        assert count == 9 : "count=" + count;
+        buf.add(8,8);
+        count=0;
+        for(Integer num: buf) {
+            if(num != null) {
+                System.out.print(num + " ");
+                count++;
+            }
+        }
+        assert count == 10 : "count=" + count;
     }
 
 

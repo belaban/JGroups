@@ -1,7 +1,10 @@
 package org.jgroups.util;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.Condition;
@@ -19,7 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  * @since 3.1
  */
-public class RingBuffer<T> {
+public class RingBuffer<T> implements Iterable<T> {
     /** Atomic ref array so that elements can be checked for null and set atomically */
     protected final AtomicReferenceArray<T> buf;
 
@@ -41,6 +44,8 @@ public class RingBuffer<T> {
 
     protected volatile boolean              running=true;
 
+    protected final AtomicBoolean           processing=new AtomicBoolean(false);
+
 
     /**
      * Creates a RingBuffer
@@ -58,6 +63,15 @@ public class RingBuffer<T> {
     }
 
 
+    public long          getLow()                     {return low;}
+    public long          getHighestDelivered()        {return hd;}
+    public void          setHighestDelivered(long hd) {this.hd=hd;}
+    public long          getHighestReceived()         {return hr.get();}
+    public long[]        getDigest()                  {return new long[]{hd, hr.get()};}
+    public AtomicBoolean getProcessing()              {return processing;}
+
+
+    
     public boolean add(long seqno, T element) {
         return add(seqno, element, false);
     }
@@ -129,6 +143,10 @@ public class RingBuffer<T> {
     }
 
     public List<T> removeMany(boolean nullify, int max_results) {
+        return removeMany(null, nullify, max_results);
+    }
+
+    public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results) {
         List<T> list=null;
         int num_results=0;
 
@@ -141,9 +159,10 @@ public class RingBuffer<T> {
                 if(max_results <= 0 || ++num_results < max_results)
                     continue;
             }
-            break;
+            if((list == null || list.isEmpty()) && processing != null)
+                processing.set(false);
+            return list;
         }
-        return list;
     }
 
     public T get(long seqno) {
@@ -153,6 +172,15 @@ public class RingBuffer<T> {
         int index=index(seqno);
         return buf.get(index);
     }
+
+    /** Only used for testing !! */
+    public T _get(long seqno) {
+        int index=index(seqno);
+        if(index < 0)
+            return null;
+        return buf.get(index);
+    }
+
 
     /**
      * Returns a list of messages in the range [from .. to], including from and to
@@ -180,11 +208,21 @@ public class RingBuffer<T> {
     /** Nulls elements between low and seqno and forwards low */
     public void stable(long seqno) {
         validate(seqno);
+        if(seqno <= low)
+            return;
         if(seqno > hd)
             throw new IllegalArgumentException("seqno " + seqno + " cannot be bigger than hd (" + hd + ")");
-        int from=index(low+1), to=index(seqno);
-        for(int i=from; i <= to; i++)
-            buf.set(i, null);
+
+        /*for(long i=low+1; i <= seqno; i++) {
+            int index=index(i);
+            buf.set(index, null);
+        }*/
+
+        int from=index(low+1), length=(int)(seqno - low), capacity=capacity();
+        for(int i=from; i < from+length; i++) {
+            int index=i % capacity;
+            buf.set(index, null);
+        }
 
         // Releases some of the blocked adders
         lock.lock();
@@ -208,9 +246,14 @@ public class RingBuffer<T> {
         }
     }
 
-    public final int capacity() {return buf.length();}
-    public int       size()     {return count(false);}
-    public int       missing()  {return count(true);}
+    public final int capacity()   {return buf.length();}
+    public int       size()       {return count(false);}
+    public int       missing()    {return count(true);}
+    public int       spaceUsed()  {return (int)(hr.get() - low);}
+    public double    saturation() {
+        int space=spaceUsed();
+        return space == 0? 0.0 : space / (double)capacity();
+    }
 
     public SeqnoList getMissing() {
         SeqnoList missing=null;
@@ -234,6 +277,14 @@ public class RingBuffer<T> {
         return missing;
     }
 
+    /**
+     * Returns an iterator over the elements of the ring buffer in the range [HD+1 .. HR]
+     * @return RingBufferIterator
+     * @throws NoSuchElementException is HD is moved forward during the iteration
+     */
+    public Iterator<T> iterator() {
+        return new RingBufferIterator<T>(buf);
+    }
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
@@ -282,4 +333,27 @@ public class RingBuffer<T> {
         }
         return retval;
     }
+
+
+    protected class RingBufferIterator<T> implements Iterator<T> {
+        protected final AtomicReferenceArray<T> buffer;
+        protected long current=hd+1;
+
+        public RingBufferIterator(AtomicReferenceArray<T> buffer) {
+            this.buffer=buffer;
+        }
+
+        public boolean hasNext() {
+            return current <= hr.get();
+        }
+
+        public T next() {
+            if(current <= hd)
+                current=hd+1;
+            return buffer.get(index(current++));
+        }
+
+        public void remove() {}
+    }
+
 }
