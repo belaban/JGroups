@@ -16,7 +16,7 @@ import java.util.Map;
  * 
  * @author Bela Ban
  */
-public class UUID implements Address, Streamable, Comparable<Address> {
+public class UUID implements Address, Streamable, Comparable<Address>, Externalizable {
     protected long   mostSigBits;
     protected long   leastSigBits;
 
@@ -267,6 +267,16 @@ public class UUID implements Address, Streamable, Comparable<Address> {
         mostSigBits=in.readLong();
     }
 
+    public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeLong(leastSigBits);
+        out.writeLong(mostSigBits);
+    }
+
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        leastSigBits=in.readLong();
+        mostSigBits=in.readLong();
+    }
+
 
     public int size() {
         return SIZE;
@@ -275,5 +285,6 @@ public class UUID implements Address, Streamable, Comparable<Address> {
     public UUID copy() {
         return new UUID(mostSigBits, leastSigBits);
     }
+
 
 }
