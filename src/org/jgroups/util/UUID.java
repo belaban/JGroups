@@ -17,6 +17,7 @@ import java.util.Map;
  * @author Bela Ban
  */
 public class UUID implements Address, Streamable, Comparable<Address>, Externalizable {
+    private static final long serialVersionUID=-6194072960039354716L;
     protected long   mostSigBits;
     protected long   leastSigBits;
 
