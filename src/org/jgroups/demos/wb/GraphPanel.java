@@ -56,7 +56,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
             if(nodes.size() < 1)
                 return null;
             for(int i=nodes.size() - 1; i >= 0; i--) {
-                n=(Node)nodes.get(i);
+                n=nodes.get(i);
                 if(x >= n.xloc && x <= (n.xloc + n.width) && y >= n.yloc && y <= (n.yloc + n.height))
                     return n;
             }
@@ -94,7 +94,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
         synchronized(nodes) {
             for(int i=0; i < nodes.size(); i++) {
-                n=(Node)nodes.get(i);
+                n=nodes.get(i);
                 a=n.addr;
                 if(a == null)
                     continue;
@@ -116,7 +116,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
         synchronized(nodes) {
             for(int i=0; i < nodes.size(); i++) {
-                n=(Node)nodes.get(i);
+                n=nodes.get(i);
                 if(!v.contains(n.addr)) {
                     System.out.println("adjustNodes(): node " + n + " was removed");
                     nodes.remove(n);
@@ -170,7 +170,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
         FontMetrics fm=offgraphics.getFontMetrics();
         for(int i=0; i < nodes.size(); i++) {
-            paintNode(offgraphics, (Node)nodes.get(i), fm);
+            paintNode(offgraphics, nodes.get(i), fm);
         }
 
         g.drawImage(offscreen, 0, 0, null);
@@ -209,7 +209,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
 
 
         for(int i=0; i < nodes.size(); i++) {
-            n=(Node)nodes.get(i);
+            n=nodes.get(i);
             dist=(n.x - p.x) * (n.x - p.x) + (n.y - p.y) * (n.y - p.y);
             if(dist < bestdist) {
                 pick=n;

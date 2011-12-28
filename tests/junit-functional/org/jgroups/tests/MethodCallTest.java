@@ -2,6 +2,7 @@
 package org.jgroups.tests;
 
 
+import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.util.Util;
@@ -251,6 +252,15 @@ public class MethodCallTest {
         System.out.println("methodCall: " + methodCall);
         MethodCall m=marshalAndUnmarshal(methodCall);
         System.out.println("m: " + m);
+    }
+
+    public static void testMarshalling2() throws Exception {
+        Address addr=Util.createRandomAddress("A");
+        MethodCall call=new MethodCall("foo",
+                                       new Object[]{"hello", 23, addr},
+                                       new Class[]{String.class, int.class, Address.class});
+        MethodCall m=marshalAndUnmarshal(call);
+        System.out.println("m = " + m);
     }
 
 
