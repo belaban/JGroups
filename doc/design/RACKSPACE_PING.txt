@@ -38,6 +38,6 @@ Where 'jgroups' is the root container and each of the children are files belongi
 
 Communication with Rackspace is done via an internal ReST client. The client authenticates with RackSpace and obtain an
 auth token and an assigned URL used to do all subsequent file related operations. When the auth token expires after 24h,
-the client automatically obtain a new token.
+the client automatically obtains a new token.
 
 When a node leaves the channel, a shutdown hook is in place to delete the associated ping data.

@@ -329,7 +329,7 @@
             <para>
                 RACKSPACE_PING uses Rackspace Cloud Files Storage to discover initial members. Each node writes a small
                 object in a shared Rackspace container. New joiners read all addresses from the container and ping each
-                of the elements of the resulting set of members. When a member leaves, it deletes its corresponding object
+                of the elements of the resulting set of members. When a member leaves, it deletes its corresponding object.
             </para>
 
             <para>
