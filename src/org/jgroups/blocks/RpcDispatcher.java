@@ -142,7 +142,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
             if(log.isTraceEnabled())
                 log.trace("destination list of " + method_call.getName() + "() is empty: no need to send message");
-            return RspList.EMPTY_RSP_LIST;
+            return new RspList();
         }
 
         if(log.isTraceEnabled())
@@ -184,7 +184,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             if(log.isTraceEnabled())
                 log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
                         append("() is empty: no need to send message"));
-            return new NullFuture<RspList<T>>(RspList.EMPTY_RSP_LIST);
+            return new NullFuture<RspList<T>>(new RspList());
         }
 
         if(log.isTraceEnabled())

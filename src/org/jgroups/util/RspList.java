@@ -12,7 +12,6 @@ import java.util.*;
  * A RspList is a response list used in peer-to-peer protocols. This class is unsynchronized
  */
 public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<Rsp<T>> {
-    public static final RspList EMPTY_RSP_LIST=new RspList();
     final Map<Address,Rsp<T>> rsps=new HashMap<Address,Rsp<T>>();
 
 
