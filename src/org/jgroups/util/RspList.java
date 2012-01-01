@@ -112,19 +112,6 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
     }
 
 
-    public void addSuspect(Address sender) {
-        Rsp<T> rsp=get(sender);
-        if(rsp != null) {
-            rsp.sender=sender;
-            rsp.retval=null;
-            rsp.received=false;
-            rsp.suspected=true;
-            return;
-        }
-        rsps.put(sender, new Rsp<T>(sender, true));
-    }
-
-
     public boolean isReceived(Address sender) {
         Rsp<T> rsp=get(sender);
         return rsp != null && rsp.received;

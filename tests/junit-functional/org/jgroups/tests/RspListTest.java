@@ -28,10 +28,12 @@ public class RspListTest {
         a4=Util.createRandomAddress();
         a5=Util.createRandomAddress();
         rsp1=new Rsp(a1);
-        rsp2=new Rsp(a2, true);
+        rsp2=new Rsp(a2);
+        rsp2.setSuspected();
         rsp3=new Rsp(a3, "hello world");
         rsp4=new Rsp(a4, Boolean.TRUE);
-        rsp5=new Rsp(a5, true);
+        rsp5=new Rsp(a5);
+        rsp5.setSuspected();
         rl.put(a1, rsp1);
         rl.put(a2, rsp2);
         rl.put(a3, rsp3);
@@ -88,8 +90,10 @@ public class RspListTest {
 
 
     public void testPut() {
-        Rsp rsp;
-        rsp=rl.put(Util.createRandomAddress(), new Rsp(Util.createRandomAddress(), true));
+        Rsp rsp, tmp;
+        tmp=new Rsp(Util.createRandomAddress());
+        tmp.setSuspected();
+        rsp=rl.put(Util.createRandomAddress(), tmp);
         assert rsp == null;
         rsp=rl.put(a2, rsp2);
         Assert.assertEquals(rsp, rsp2);

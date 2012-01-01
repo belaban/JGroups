@@ -71,7 +71,7 @@ public class UnicastRequest<T> extends Request {
                         result.setException((Throwable)response_value);
                     else
                         result.setValue((T)response_value);
-                    result.setReceived(true);
+                    result.setReceived();
                     if(log.isTraceEnabled()) {
                         StringBuilder sb=new StringBuilder("received response for request ");
                         sb.append(req_id).append(", sender=").append(sender);
@@ -113,7 +113,7 @@ public class UnicastRequest<T> extends Request {
             if(done)
                 return;
             if(result != null && !result.wasReceived())
-                result.setSuspected(true);
+                result.setSuspected();
             done=true;
             if(corr != null)
                 corr.done(req_id);
@@ -138,7 +138,7 @@ public class UnicastRequest<T> extends Request {
         lock.lock();
         try {
             if(!mbrs.contains(target)) {
-                result.setReceived(false);
+                result.setSuspected();
                 done=true;
                 if(corr != null)
                     corr.done(req_id);

@@ -28,10 +28,6 @@ public class Rsp<T> {
         this.sender=sender;
     }
 
-    public Rsp(Address sender, boolean suspected) {
-        this.sender=sender;
-        this.suspected=suspected;
-    }
 
     public Rsp(Address sender, T retval) {
         this.sender=sender;
@@ -88,21 +84,19 @@ public class Rsp<T> {
         return received;
     }
 
-    public void setReceived(boolean received) {
-        this.received=received;
-        if(received)
-            suspected=false;
+    public void setReceived() {
+        received=true;
+        suspected=false;
     }
 
     public boolean wasSuspected() {
         return suspected;
     }
 
-    public boolean setSuspected(boolean suspected) {
-        boolean changed=!this.suspected && suspected;
-        this.suspected=suspected;
-        if(suspected)
-            received=false;
+    public boolean setSuspected() {
+        boolean changed=!suspected;
+        suspected=true;
+        received=false;
         return changed;
     }
 
