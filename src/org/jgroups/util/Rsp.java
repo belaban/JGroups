@@ -58,7 +58,7 @@ public class Rsp<T> {
 
     public void setValue(T val) {
         this.retval=val;
-        received=true;
+        setReceived();
         exception=null;
     }
 
@@ -72,7 +72,7 @@ public class Rsp<T> {
 
     public void setException(Throwable t) {
         this.exception=t;
-        received=true;
+        setReceived();
         retval=null;
     }
 

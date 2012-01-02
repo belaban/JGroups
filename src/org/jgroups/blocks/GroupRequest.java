@@ -158,7 +158,6 @@ public class GroupRequest<T> extends Request {
         Rsp<T> rsp=requests.get(suspected_member);
         if(rsp !=  null) {
             if(rsp.setSuspected()) {
-                rsp.setValue(null);
                 changed=true;
                 lock.lock();
                 try {
@@ -208,7 +207,6 @@ public class GroupRequest<T> extends Request {
                 Address mbr=entry.getKey();
                 if(!mbrs.contains(mbr)) {
                     Rsp<T> rsp=entry.getValue();
-                    rsp.setValue(null);
                     if(rsp.setSuspected()) {
                         num_suspected++;
                         changed=true;
