@@ -3244,8 +3244,15 @@ public class Util {
         try {
             retval=shortName(InetAddress.getLocalHost().getHostName());
         }
-        catch(UnknownHostException e) {
-            retval="localhost";
+        catch(Throwable e) {
+        }
+        if(retval == null) {
+            try {
+                retval=shortName(InetAddress.getByName(null).getHostName());
+            }
+            catch(Throwable e) {
+                retval="localhost";
+            }
         }
 
         long counter=Util.random(Short.MAX_VALUE *2);
