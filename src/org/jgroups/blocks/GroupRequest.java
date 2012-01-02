@@ -125,7 +125,7 @@ public class GroupRequest<T> extends Request {
                         rsp.setException((Throwable)response_value);
                     else
                         rsp.setValue((T)response_value);
-                    rsp.setReceived(true);
+                    rsp.setReceived();
                     num_valid++;
                 }
             }
@@ -157,8 +157,7 @@ public class GroupRequest<T> extends Request {
         boolean changed=false;
         Rsp<T> rsp=requests.get(suspected_member);
         if(rsp !=  null) {
-            if(rsp.setSuspected(true)) {
-                rsp.setValue(null);
+            if(rsp.setSuspected()) {
                 changed=true;
                 lock.lock();
                 try {
@@ -208,8 +207,7 @@ public class GroupRequest<T> extends Request {
                 Address mbr=entry.getKey();
                 if(!mbrs.contains(mbr)) {
                     Rsp<T> rsp=entry.getValue();
-                    rsp.setValue(null);
-                    if(rsp.setSuspected(true)) {
+                    if(rsp.setSuspected()) {
                         num_suspected++;
                         changed=true;
                     }

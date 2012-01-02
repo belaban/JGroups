@@ -247,7 +247,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     public <T> RspList<T> castMessage(final Collection<Address> dests,
                                       Message msg, RequestOptions options) throws Exception {
         GroupRequest<T> req=cast(dests, msg, options, true);
-        return req != null? req.getResults() : RspList.EMPTY_RSP_LIST;
+        return req != null? req.getResults() : new RspList();
     }
 
 
@@ -265,7 +265,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
                                                                  Message msg,
                                                                  RequestOptions options) throws Exception {
         GroupRequest<T> req=cast(dests, msg, options, false);
-        return req != null? req : new NullFuture<RspList>(RspList.EMPTY_RSP_LIST);
+        return req != null? req : new NullFuture<RspList>(new RspList());
     }
 
     protected <T> GroupRequest<T> cast(final Collection<Address> dests, Message msg,
