@@ -22,10 +22,10 @@ import java.net.Inet6Address;
  */
 public class IpAddress implements PhysicalAddress {
 
-    private InetAddress             ip_addr=null;
-    private int                     port=0;
+    private InetAddress             ip_addr;
+    private int                     port;
     protected static final Log      log=LogFactory.getLog(IpAddress.class);
-    static boolean                  resolve_dns=false;
+    static boolean                  resolve_dns;
     protected int                   size=-1;
 
     static {
@@ -63,10 +63,16 @@ public class IpAddress implements PhysicalAddress {
     private void setAddressToLocalHost() {
         try {
             ip_addr=InetAddress.getLocalHost();  // get first NIC found (on multi-homed systems)
-            // size=size();
         }
         catch(Exception e) {
-            if(log.isWarnEnabled()) log.warn("exception: " + e);
+        }
+        if(ip_addr == null) {
+            try {
+                ip_addr=InetAddress.getByName(null);
+            }
+            catch(UnknownHostException e) {
+                if(log.isWarnEnabled()) log.warn("exception: " + e);
+            }
         }
     }
 
