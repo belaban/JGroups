@@ -1,5 +1,7 @@
 package org.jgroups.util;
 
+import org.jgroups.Global;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.ArrayList;
@@ -18,6 +20,14 @@ public class SeqnoList implements Streamable, Iterable<Long> {
     protected final List<Seqno> seqnos=new ArrayList<Seqno>();
 
     public SeqnoList() {
+    }
+
+    public SeqnoList(long seqno) {
+        add(seqno);
+    }
+
+    public SeqnoList(long from, long to) {
+        add(from, to);
     }
 
     /** Adds a single seqno */
@@ -68,6 +78,21 @@ public class SeqnoList implements Streamable, Iterable<Long> {
         }
     }
 
+    public int serializedSize() {
+        int retval=Global.INT_SIZE // number of elements in seqnos
+          + seqnos.size() * Global.BYTE_SIZE; // plus 1 boolean (Seqno or SeqnoRange) per element
+        for(Seqno seqno: seqnos) {
+            if(seqno instanceof SeqnoRange) {
+                SeqnoRange range=(SeqnoRange)seqno;
+                retval+=Util.size(range.from, range.to);
+            }
+            else {
+                retval+=Util.size(seqno.from);
+            }
+        }
+        return retval;
+    }
+
     public int size() {
         int retval=0;
         for(Seqno seqno: seqnos) {
@@ -99,7 +124,7 @@ public class SeqnoList implements Streamable, Iterable<Long> {
             public Long next() {
                 if(range != null) {
                     if(range_index +1 <= range.to)
-                        return range_index++;
+                        return ++range_index;
                     else
                         range=null;
                 }
