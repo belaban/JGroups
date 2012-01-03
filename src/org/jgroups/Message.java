@@ -333,7 +333,7 @@ public class Message implements Streamable {
     }
 
     public int getNumHeaders() {
-        return headers.size();
+        return headers != null? headers.size() : 0;
     }
 
    /**
