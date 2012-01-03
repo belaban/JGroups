@@ -653,7 +653,7 @@ public class STABLE extends Protocol {
                 log.trace(local_addr + ": sending stable msg " + d.printHighestDeliveredSeqnos());
             num_stable_msgs_sent++;
             final Message msg=new Message(); // mcast message
-            msg.setFlag(Message.OOB);
+            msg.setFlag(Message.OOB, Message.Flag.NO_RELIABILITY);
             StableHeader hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
             msg.putHeader(this.id, hdr);
 
@@ -829,9 +829,6 @@ public class STABLE extends Protocol {
         }
 
         public void run() {
-            Message msg;
-            StableHeader hdr;
-
             if(suspended) {
                 if(log.isDebugEnabled()) {
                     log.debug("STABILITY message will not be sent as suspended=" + suspended);
@@ -840,9 +837,9 @@ public class STABLE extends Protocol {
             }
 
             if(stability_digest != null) {
-                msg=new Message();
-                msg.setFlag(Message.OOB);
-                hdr=new StableHeader(StableHeader.STABILITY, stability_digest);
+                Message msg=new Message();
+                msg.setFlag(Message.OOB, Message.Flag.NO_RELIABILITY);
+                StableHeader hdr=new StableHeader(StableHeader.STABILITY, stability_digest);
                 msg.putHeader(id, hdr);
                 if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg " + stability_digest.printHighestDeliveredSeqnos() +
                 " (copy=" + stability_digest.hashCode() + ")");
