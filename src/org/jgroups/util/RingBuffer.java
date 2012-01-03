@@ -12,13 +12,12 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Ring buffer (typically of messages), implemented as an array.
- * Designed for multiple producers (add()) and a single consumer (remove()). <em>Note that the remove() method
- * is not reentrant, so multiple consumers won't work correctly !</em><p/>
+ * Ring buffer, implemented with a circular array.
+ * Designed for multiple producers (add()) and a single consumer (remove()). <em>Note that the remove() methods
+ * are not reentrant, so multiple consumers won't work correctly !</em><p/>
  * The buffer has a fixed capacity, and a low (L), highest delivered (HR) and highest received (HR) seqno.<p/>
- * A message with a sequence number (seqno) > low + capacity or < HD will get discarded. Removal and addition of
- * messages never block; addition fails to add a message if the above conditions are met, or the message was already
- * removed. Removal of an element that has not yet been added returns null.<p/>
+ * A message with a sequence number (seqno) > low + capacity or < HD will get discarded.
+ * Removal of an element that has not yet been added returns null.<p/>
  * @author Bela Ban
  * @since 3.1
  */
@@ -99,7 +98,7 @@ public class RingBuffer<T> implements Iterable<T> {
         if(!buf.compareAndSet(index, null, element)) // the element at buf[index] was already present
             return false;
 
-        // now see if hr needs to moved forward
+        // now see if hr needs to moved forward, this can be concurrent as we may have multiple producers
         for(;;) {
             long current_hr=hr.get();
             long new_hr=Math.max(seqno, current_hr);
@@ -146,7 +145,7 @@ public class RingBuffer<T> implements Iterable<T> {
         return removeMany(null, nullify, max_results);
     }
 
-    public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results) {
+    /*public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results) {
         List<T> list=null;
         int num_results=0;
 
@@ -163,6 +162,36 @@ public class RingBuffer<T> implements Iterable<T> {
                 processing.set(false);
             return list;
         }
+    }*/
+
+    public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results) {
+        List<T> list=null;
+        int num_results=0;
+        long original_hd=hd, start=original_hd, end=hr.get();
+        T element;
+        while(start+1 <= end && (element=buf.get(index(start+1))) != null) {
+            if(list == null)
+                list=new ArrayList<T>(max_results > 0? max_results : 20);
+            list.add(element);
+            start++;
+            if(max_results > 0 && ++num_results >= max_results)
+                break;
+        }
+
+        if(start > original_hd) { // do we need to move HD forward ?
+            hd=start;
+            if(nullify) {
+                int from=index(original_hd+1), length=(int)(start - original_hd), capacity=capacity();
+                for(int i=from; i < from+length; i++) {
+                    int index=i % capacity;
+                    buf.set(index, null);
+                }
+            }
+        }
+        
+        if((list == null || list.isEmpty()) && processing != null)
+            processing.set(false);
+        return list;
     }
 
     public T get(long seqno) {
@@ -176,9 +205,7 @@ public class RingBuffer<T> implements Iterable<T> {
     /** Only used for testing !! */
     public T _get(long seqno) {
         int index=index(seqno);
-        if(index < 0)
-            return null;
-        return buf.get(index);
+        return index < 0? null : buf.get(index);
     }
 
 
@@ -213,11 +240,6 @@ public class RingBuffer<T> implements Iterable<T> {
         if(seqno > hd)
             throw new IllegalArgumentException("seqno " + seqno + " cannot be bigger than hd (" + hd + ")");
 
-        /*for(long i=low+1; i <= seqno; i++) {
-            int index=index(i);
-            buf.set(index, null);
-        }*/
-
         int from=index(low+1), length=(int)(seqno - low), capacity=capacity();
         for(int i=from; i < from+length; i++) {
             int index=i % capacity;
@@ -225,13 +247,15 @@ public class RingBuffer<T> implements Iterable<T> {
         }
 
         // Releases some of the blocked adders
-        lock.lock();
-        try {
+        if(seqno > low) {
             low=seqno;
-            buffer_full.signalAll();
-        }
-        finally {
-            lock.unlock();
+            lock.lock();
+            try {
+                buffer_full.signalAll();
+            }
+            finally {
+                lock.unlock();
+            }
         }
     }
 

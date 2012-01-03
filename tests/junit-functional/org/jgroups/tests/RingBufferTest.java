@@ -293,7 +293,7 @@ public class RingBufferTest {
         System.out.println("list = " + list);
         assert list != null && list.size() == 3;
 
-        list=buf.removeMany(false, 20);
+        list=buf.removeMany(false, 0);
         System.out.println("list = " + list);
         assert list != null && list.size() == 4;
 
@@ -301,7 +301,7 @@ public class RingBufferTest {
         assert list == null;
 
         buf.add(8, 8);
-        list=buf.removeMany(false, 10);
+        list=buf.removeMany(false, 0);
         System.out.println("list = " + list);
         assert list != null && list.size() == 3;
     }
