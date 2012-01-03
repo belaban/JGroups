@@ -87,7 +87,7 @@ public class MPerf extends ReceiverAdapter {
         // send a CONFIG_REQ to the current coordinator, so we can get the current config
         Address coord=channel.getView().getMembers().get(0);
         if(coord != null && !local_addr.equals(coord))
-            send(coord,null,MPerfHeader.CONFIG_REQ,true);
+            send(coord,null,MPerfHeader.CONFIG_REQ, Message.Flag.RSVP);
     }
 
 
@@ -107,8 +107,8 @@ public class MPerf extends ReceiverAdapter {
                 switch(c) {
                     case '1':
                         results.reset(getSenders());
-                        send(null,null,MPerfHeader.CLEAR_RESULTS, true); // clear all results (from prev runs) first
-                        send(null, null, MPerfHeader.START_SENDING, true);
+                        send(null,null,MPerfHeader.CLEAR_RESULTS, Message.Flag.RSVP); // clear all results (from prev runs) first
+                        send(null, null, MPerfHeader.START_SENDING, Message.Flag.RSVP);
                         if(!waitForResults())
                             System.err.println("failed receiving results from all members");
                         displayResults();
@@ -135,12 +135,12 @@ public class MPerf extends ReceiverAdapter {
                         looping=false;
                         break;
                     case 'X':
-                        send(null,null,MPerfHeader.EXIT,false);
+                        send(null,null,MPerfHeader.EXIT);
                         break;
                 }
             }
             catch(Throwable t) {
-                System.err.println(t);
+                t.printStackTrace();
             }
         }
         stop();
@@ -155,15 +155,18 @@ public class MPerf extends ReceiverAdapter {
         Map<Address,Result> tmp_results=results.getResults();
         for(Map.Entry<Address,Result> entry: tmp_results.entrySet()) {
             Result val=entry.getValue();
-            System.out.println(entry.getKey() + ": " + computeStats(val.time, val.msgs, msg_size));
+            if(val != null)
+                System.out.println(entry.getKey() + ": " + computeStats(val.time, val.msgs, msg_size));
         }
 
         long total_msgs=0, total_time=0, num=0;
 
         for(Result result: tmp_results.values()) {
-            total_time+=result.time;
-            total_msgs+=result.msgs;
-            num++;
+            if(result != null) {
+                total_time+=result.time;
+                total_msgs+=result.msgs;
+                num++;
+            }
         }
 
         System.out.println("\n===============================================================================");
@@ -175,23 +178,24 @@ public class MPerf extends ReceiverAdapter {
     protected void configChange(String name) throws Exception {
         int tmp=Util.readIntFromStdin(name + ": ");
         ConfigChange change=new ConfigChange(name, tmp);
-        send(null, change, MPerfHeader.CONFIG_CHANGE, true);
+        send(null, change, MPerfHeader.CONFIG_CHANGE, Message.Flag.RSVP);
     }
 
     protected void newConfig() throws Exception {
         String filename=Util.readStringFromStdin("Config file: ");
         InputStream input=findFile(filename);
         byte[] contents=Util.readFileContents(input);
-        send(null, contents, MPerfHeader.NEW_CONFIG, false);
+        send(null, contents, MPerfHeader.NEW_CONFIG);
         ConfigChange change=new ConfigChange("props", filename);
-        send(null, change, MPerfHeader.CONFIG_CHANGE, true);
+        send(null, change, MPerfHeader.CONFIG_CHANGE, Message.Flag.RSVP);
     }
 
 
-    protected void send(Address target, Object payload, byte header, boolean rsvp) throws Exception {
+    protected void send(Address target, Object payload, byte header, Message.Flag ... flags) throws Exception {
         Message msg=new Message(target, null, payload);
-        if(rsvp)
-            msg.setFlag(Message.Flag.RSVP);
+        if(flags != null)
+            for(Message.Flag flag: flags)
+                msg.setFlag(flag);
         if(header > 0)
             msg.putHeader(ID, new MPerfHeader(header));
         channel.send(msg);
@@ -289,7 +293,7 @@ public class MPerf extends ReceiverAdapter {
                     Result result=new Result(stop-start, msgs);
                     try {
                         if(result_collector != null)
-                            send(result_collector, result, MPerfHeader.RESULT, true);
+                            send(result_collector, result, MPerfHeader.RESULT, Message.Flag.RSVP);
                     }
                     catch(Exception e) {
                         System.err.println("failed sending results to " + result_collector + ": " +e);
@@ -434,7 +438,7 @@ public class MPerf extends ReceiverAdapter {
         cfg.addChange("msg_size",    msg_size);
         cfg.addChange("num_threads", num_threads);
         cfg.addChange("num_senders", num_senders);
-        send(sender,cfg,MPerfHeader.CONFIG_RSP,false);
+        send(sender,cfg,MPerfHeader.CONFIG_RSP);
     }
 
     protected void handleConfigResponse(Configuration cfg) {
@@ -523,11 +527,11 @@ public class MPerf extends ReceiverAdapter {
                     int tmp=num_msgs_sent.incrementAndGet();
                     if(tmp > num_msgs)
                         break;
-                    send(null, payload, MPerfHeader.DATA, false);
+                    send(null, payload, MPerfHeader.DATA);
                     if(tmp % log_interval == 0)
                         System.out.println("++ sent " + tmp);
                     if(tmp == num_msgs) // last message, send SENDING_DONE message
-                        send(null, null, MPerfHeader.SENDING_DONE, true);
+                        send(null, null, MPerfHeader.SENDING_DONE, Message.Flag.RSVP);
                 }
                 catch(Exception e) {
                 }
@@ -705,14 +709,13 @@ public class MPerf extends ReceiverAdapter {
 
             // this kludge is needed in order to terminate the program gracefully when 'X' is pressed
             // (otherwise System.in.read() would not terminate)
-            Thread thread=new Thread() {
+            Thread thread=new Thread("MPerf runner") {
                 public void run() {
                     test.loop();
                 }
             };
             thread.setDaemon(true);
             thread.start();
-
         }
         catch(Exception e) {
             e.printStackTrace();
