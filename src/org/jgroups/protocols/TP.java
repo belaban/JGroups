@@ -18,7 +18,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.lang.management.ManagementFactory;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
@@ -253,7 +254,7 @@ public abstract class TP extends Protocol {
 
     @Experimental
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations")
-    protected int bundler_capacity=20000;
+    protected int bundler_capacity=200000;
 
 
     @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
@@ -1937,24 +1938,26 @@ public abstract class TP extends Protocol {
 
 
         public void run() {
-            next_bundle_time=System.currentTimeMillis() + max_bundle_timeout;
+            long max_bundle_timeout_in_nanos=TimeUnit.MILLISECONDS.toNanos(max_bundle_timeout);
+
+            next_bundle_time=System.nanoTime() + max_bundle_timeout_in_nanos;
             while(running) {
                 Message msg=null;
-                long sleep_time=next_bundle_time - System.currentTimeMillis();
+                long sleep_time=next_bundle_time - System.nanoTime();
 
                 try {
                     if(count == 0)
                         msg=buffer.take();
                     else
-                        msg=buffer.poll(sleep_time, TimeUnit.MILLISECONDS);
+                        msg=buffer.poll(sleep_time, TimeUnit.NANOSECONDS);
 
                     long size=msg != null? msg.size() : 0;
                     boolean send_msgs=(msg != null && count + size >= max_bundle_size) ||
                             buffer.size() >= threshold ||
-                            System.currentTimeMillis() >= next_bundle_time;
+                            System.nanoTime() >= next_bundle_time;
 
                     if(send_msgs) {
-                        next_bundle_time=System.currentTimeMillis() + max_bundle_timeout;
+                        next_bundle_time=System.nanoTime() + max_bundle_timeout_in_nanos;
                         try {
                             if(!msgs.isEmpty()) {
                                 sendBundledMessages(msgs);
