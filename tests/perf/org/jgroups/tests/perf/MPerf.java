@@ -168,11 +168,18 @@ public class MPerf extends ReceiverAdapter {
                 num++;
             }
         }
-
-        System.out.println("\n===============================================================================");
-        System.out.println("\033[1m Average/node:    " + computeStats(total_time / num, total_msgs / num, msg_size));
-        System.out.println("\033[0m Average/cluster: " + computeStats(total_time/num, total_msgs, msg_size));
-        System.out.println("================================================================================\n\n");
+        if(num > 0) {
+            System.out.println("\n===============================================================================");
+            System.out.println("\033[1m Average/node:    " + computeStats(total_time / num, total_msgs / num, msg_size));
+            System.out.println("\033[0m Average/cluster: " + computeStats(total_time/num, total_msgs, msg_size));
+            System.out.println("================================================================================\n\n");
+        }
+        else {
+            System.out.println("\n===============================================================================");
+            System.out.println("\033[1m Received no results");
+            System.out.println("\033[0m");
+            System.out.println("================================================================================\n\n");
+        }
     }
 
     protected void configChange(String name) throws Exception {
