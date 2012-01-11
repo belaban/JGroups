@@ -583,7 +583,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             try { // incrementing seqno and adding the msg to sent_msgs needs to be atomic
                 msg_id=seqno +1;
                 msg.putHeader(this.id, NakAckHeader2.createMessageHeader(msg_id));
-                buf.add(msg_id, msg, true);
+                if(!buf.add(msg_id, msg, true))
+                    throw new IllegalStateException("failed to add message to buffer; was already present");
                 seqno=msg_id;
             }
             catch(Throwable t) {

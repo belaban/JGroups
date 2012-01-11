@@ -1,0 +1,67 @@
+
+Design of RingBuffer
+====================
+Author: Bela Ban
+
+
+The RingBuffer is a structure used by NAKACK2 to deliver messages in correct order and repair lost messages.
+
+There is one RingBuffer per member.
+
+Messages are added to the RingBuffer by a sender, when sending a message, and by receivers when receiving a message.
+The messages are removed as long as there are no gaps (= missing messages), and delivered to the application.
+
+Periodically, a retransmit task iterates over all RingBuffers in NAKACK2 and - if there are missing messages -
+asks their senders to retransmit them.
+
+As the name suggests, RingBuffer is implemented as an array with wrap-around.
+
+It has 3 pointers: LOW, highest_delivered (HD) and highest_received (HR). All 3 point to the same location on creation
+of a RingBuffer.
+
+Message reception advances HR: if a message is not yet present in the array, it is set, otherwise discarded.
+
+Message removal advances HD and potentially LOW (if nullify is true): when NAKACK2.discard_delivered_msgs is true,
+unless the local member is the sender, message removal nulls the element at the given index and advances LOW as well.
+
+A stability event (RingBuffer.stable()) nulls the messages in the array between LOW and HD, and advances LOW. Stability
+id typically done by the STABLE protocol, but it can also be triggered by a threshold being exceeded, or it can be
+triggered manually (though an event).
+
+The following assertions hold for the 3 pointers:
+- LOW <= HD <= HR
+- HR <= LOW
+- All array elements in [LOW .. HD] must be null, or else addition (done with a CAS(null, element)) would fail
+
+
+
+Correctness check #1
+--------------------
+
+Advancing LOW with remove(nullify=true) and a concurrent add() can lead to the scenario (threads T1 and T2):
+
+    * HD=4, HR=5 (5 already exists)
+    * T1 calls add(5)
+    * T2 calls remove() with nullify=true
+    * T1 reads HD, value is 4, continues (would terminate if HD was 5)
+    * T2 checks that element at index HD+1 (5) is not null and gets it
+    * T2 sets HD (from 4) to 5 and nulls the element at index 5
+    * T1 does a CAS(null, 5) and succeeds because T2 just nulled the element
+      ==> We now deliver the message at index 5 TWICE (or multiple times) !
+
+SOLUTION:
+
+    * Interleave the reads and writes of T1 and T2 such that this outcome is impossible:
+    * remove():
+      #1 write HD
+      #2 null element
+      #3 write LOW
+    * add(seqno) [with nullify=true]:
+      #1 read HD (return if seqno <= HD)
+      #2 read element (return if element != null)
+      #3 read HD (again!) (return if seqno <= HD)
+      #4 CAS(null, element): if true: pass message up, else: discard
+
+There is no sequence of add() and remove() with the above solution that ends up with an incorrect delivery !
+
+The test for this is org.jgroups.tests.byteman.RingBufferTest.

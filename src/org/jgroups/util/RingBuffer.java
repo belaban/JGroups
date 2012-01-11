@@ -15,9 +15,23 @@ import java.util.concurrent.locks.ReentrantLock;
  * Ring buffer, implemented with a circular array.
  * Designed for multiple producers (add()) and a single consumer (remove()). <em>Note that the remove() methods
  * are not reentrant, so multiple consumers won't work correctly !</em><p/>
- * The buffer has a fixed capacity, and a low (L), highest delivered (HR) and highest received (HR) seqno.<p/>
- * A message with a sequence number (seqno) > low + capacity or < HD will get discarded.
- * Removal of an element that has not yet been added returns null.<p/>
+ * The buffer has a fixed capacity, and a low (LOW), highest delivered (HD) and highest received (HR) seqno.<p/>
+ * An element with a sequence number (seqno) > low + capacity or < HD will get discarded.
+ * <p/>
+ * Elements are added after HD, but cannot wrap around beyond LOW. Addition doesn't need to be sequential, e.g.
+ * adding 5, 6, 8 is OK (as long as a seqno doesn't pass LOW). Addition may advance HR. Addition of elements that
+ * are already present is a no-op, and will not set the element again.
+ * <p/>
+ * Removal of elements starts at HD+1; any non-null element is removed and HD is advanced accordingly. If a remove
+ * method is called with nullify=true, then removed elements are nulled and LOW is advanced as well (LOW=HD). Note
+ * that <em>all</em> removals in a given RingBuffer must either have nullify=true, or all must be false. It is not
+ * permitted to do some removals with nullify=true, and others with nullify=false, in the same RingBuffer.
+ * <p/>
+ * The {@link #stable(long)} method is called periodically; it nulls all elements between LOW and HD and advances LOW
+ * to HD.
+ * <p/>
+ * The design of RingBuffer is discussed in doc/design/RingBuffer.txt.
+ * <p/>
  * @author Bela Ban
  * @since 3.1
  */
@@ -84,7 +98,7 @@ public class RingBuffer<T> implements Iterable<T> {
      * return immediately, either successfully or unsuccessfully (if the buffer is full)
      * @return True if the element was added, false otherwise.
      */
-    public boolean add(long seqno, T element, boolean block) {
+    public boolean  add(long seqno, T element, boolean block) {
         validate(seqno);
 
         if(seqno <= hd)                 // seqno already delivered, includes check seqno <= low
@@ -95,6 +109,11 @@ public class RingBuffer<T> implements Iterable<T> {
 
         // now we can set any slow > hd and yet not overwriting low (check #1 above)
         int index=index(seqno);
+
+        // Fix for correctness check #1 (see doc/design/RingBuffer.txt)
+        if(buf.get(index) != null || seqno <= hd)
+            return false;
+
         if(!buf.compareAndSet(index, null, element)) // the element at buf[index] was already present
             return false;
 
@@ -125,9 +144,28 @@ public class RingBuffer<T> implements Iterable<T> {
         T element=buf.get(index);
         if(element == null)
             return null;
-        hd++;
-        if(nullify)
-            buf.compareAndSet(index, element, null);
+        hd=tmp;
+
+        if(nullify) {
+            long tmp_low=low;
+            if(tmp == tmp_low +1)
+                buf.compareAndSet(index, element, null);
+            else {
+                int from=index(tmp_low+1), length=(int)(tmp - tmp_low), capacity=capacity();
+                for(int i=from; i < from+length; i++) {
+                    index=i % capacity;
+                    buf.set(index, null);
+                }
+            }
+            low=tmp;
+            lock.lock();
+            try {
+                buffer_full.signalAll();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
         return element;
     }
 
@@ -145,24 +183,6 @@ public class RingBuffer<T> implements Iterable<T> {
         return removeMany(null, nullify, max_results);
     }
 
-    /*public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results) {
-        List<T> list=null;
-        int num_results=0;
-
-        while(true) {
-            T element=remove(nullify);
-            if(element != null) { // element exists
-                if(list == null)
-                    list=new ArrayList<T>(max_results > 0? max_results : 20);
-                list.add(element);
-                if(max_results <= 0 || ++num_results < max_results)
-                    continue;
-            }
-            if((list == null || list.isEmpty()) && processing != null)
-                processing.set(false);
-            return list;
-        }
-    }*/
 
     public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results) {
         List<T> list=null;
@@ -181,10 +201,22 @@ public class RingBuffer<T> implements Iterable<T> {
         if(start > original_hd) { // do we need to move HD forward ?
             hd=start;
             if(nullify) {
-                int from=index(original_hd+1), length=(int)(start - original_hd), capacity=capacity();
+                long tmp_low=low;
+                int from=index(tmp_low+1), length=(int)(start - tmp_low), capacity=capacity();
                 for(int i=from; i < from+length; i++) {
                     int index=i % capacity;
                     buf.set(index, null);
+                }
+                // Releases some of the blocked adders
+                if(start > low) {
+                    low=start;
+                    lock.lock();
+                    try {
+                        buffer_full.signalAll();
+                    }
+                    finally {
+                        lock.unlock();
+                    }
                 }
             }
         }
