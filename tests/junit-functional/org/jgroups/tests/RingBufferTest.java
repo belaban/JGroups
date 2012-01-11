@@ -11,10 +11,11 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 /**
+ * Functional tests of RingBuffer
  * @author Bela Ban
  * @since 3.1
  */
-@Test(groups=Global.FUNCTIONAL,description="Functional tests for the RingBuffer class")
+@Test(groups=Global.FUNCTIONAL,description="Functional tests of RingBuffer")
 public class RingBufferTest {
 
     public void testConstructor() {
@@ -25,7 +26,7 @@ public class RingBufferTest {
     }
 
     public void testIndex() {
-        RingBuffer buf=new RingBuffer(10, 5);
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 5);
         assert buf.getHighestDelivered() == 5;
         assert buf.getHighestReceived() == 5;
         buf.add(6,6); buf.add(7,7);
@@ -38,6 +39,19 @@ public class RingBufferTest {
         System.out.println("buf = " + buf);
         for(long i=low; i <= 7; i++)
             assert buf._get(i) == null : "message with seqno=" + i + " is not null";
+    }
+
+    public void testIndexWithRemoveMany() {
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 5);
+        assert buf.getHighestDelivered() == 5;
+        assert buf.getHighestReceived() == 5;
+        buf.add(6,6); buf.add(7,7);
+        long low=buf.getLow();
+        buf.removeMany(true,0);
+        System.out.println("buf = " + buf);
+        for(long i=low; i <= 7; i++)
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
+        assertIndices(buf, 7, 7, 7);
     }
 
     public void testAddWithInvalidSeqno() {
@@ -123,6 +137,34 @@ public class RingBufferTest {
         assert buf.getLow() == 18;
         for(long i=low; i <= 18; i++)
             assert buf._get(i) == null : "message with seqno=" + i + " is not null";
+    }
+
+    public void testAddWithWrapAroundAndRemoveMany() {
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 5);
+        for(int i=6; i <=15; i++)
+            assert buf.add(i, i) : "addition of seqno " + i + " failed";
+        System.out.println("buf = " + buf);
+        List<Integer> removed=buf.removeMany(true,3);
+        System.out.println("removed " + removed);
+        System.out.println("buf = " + buf);
+        for(int i: removed)
+            assert buf._get(i) == null;
+        assertIndices(buf, 8, 8, 15);
+
+        for(int i=16; i <= 18; i++)
+            assert buf.add(i, i);
+        System.out.println("buf = " + buf);
+
+        removed=buf.removeMany(true, 0);
+        System.out.println("buf = " + buf);
+        System.out.println("removed = " + removed);
+        assert removed.size() == 10;
+        for(int i: removed)
+        assert buf._get(i) == null;
+
+        assert buf.size() == 0;
+        assert buf.missing() == 0;
+        assertIndices(buf, 18, 18, 18);
     }
 
     public void testAddBeyondCapacity() {
@@ -266,6 +308,27 @@ public class RingBufferTest {
         assert elements == null;
     }
 
+    public void testRemove() {
+        final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5))
+            buf.add(i, i);
+        System.out.println("buf = " + buf);
+        assertIndices(buf, 0, 0, 5);
+
+        Integer el=buf.remove(true);
+        System.out.println("el = " + el);
+        assert el.equals(1);
+
+        el=buf.remove(false);  // not encouraged ! nullify should always be true or false
+        System.out.println("el = " + el);
+        assert el.equals(2);
+
+        el=buf.remove(true);
+        System.out.println("el = " + el);
+        assert el.equals(3);
+
+    }
+
     public void testRemovedPastHighestReceived() {
         RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
         for(int i=1; i <= 15; i++) {
@@ -306,10 +369,40 @@ public class RingBufferTest {
         assert list != null && list.size() == 3;
     }
 
+    public void testRemoveManyWithNulling() {
+        RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5,6,7,9,10))
+            buf.add(i, i);
+        List<Integer> list=buf.removeMany(true, 3);
+        System.out.println("list = " + list);
+        assert list != null && list.size() == 3;
+        for(int i: list)
+            assert buf._get(i) == null;
 
+        list=buf.removeMany(true, 0);
+        System.out.println("list = " + list);
+        assert list != null && list.size() == 4;
+        for(int i: list)
+            assert buf._get(i) == null;
+
+        list=buf.removeMany(false, 10);
+        assert list == null;
+
+        buf.add(8, 8);
+        list=buf.removeMany(true, 0);
+        System.out.println("list = " + list);
+        assert list != null && list.size() == 3;
+        for(int i: list)
+            assert buf._get(i) == null;
+    }
+
+    /**
+     * Runs NUM adder threads, each adder adds 1 (unique) seqno. When all adders are done, we should have
+     * NUM elements in the RingBuffer.
+     */
     public void testConcurrentAdd() {
         final int NUM=100;
-        final RingBuffer<Integer> buf=new RingBuffer<Integer>(1000, 0);
+        final RingBuffer<Integer> buf=new RingBuffer<Integer>(NUM, 0);
 
         CountDownLatch latch=new CountDownLatch(1);
         Adder[] adders=new Adder[NUM];
@@ -335,6 +428,57 @@ public class RingBufferTest {
         assert buf.size() == NUM;
     }
 
+    /**
+     * Creates a RingBuffer and fills it to capacity. Then starts a number of adder threads, each trying to add a
+     * seqno, blocking until there is more space. Each adder will block until the remover removes elements, so the
+     * adder threads get unblocked and can then add their elements to the buffer.
+     */
+    public void testConcurrentAddAndRemove() {
+        final int NUM=5;
+        final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        for(int i=1; i <= 10; i++)
+            buf.add(i, i); // fill the buffer, add() will block now
+
+        CountDownLatch latch=new CountDownLatch(1);
+        Adder[] adders=new Adder[NUM];
+        for(int i=0; i < adders.length; i++) {
+            adders[i]=new Adder(latch, i+11, buf);
+            adders[i].start();
+        }
+
+        Util.sleep(1000);
+        System.out.println("releasing threads");
+        latch.countDown();
+        System.out.print("waiting for threads to be done: ");
+
+        new Thread("Remover") {
+            public void run() {
+                Util.sleep(2000);
+                List<Integer> list=buf.removeMany(true, 5);
+                System.out.println("\nremover: removed = " + list);
+            }
+        }.start();
+
+        for(Adder adder: adders) {
+            try {
+                adder.join();
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("OK");
+        System.out.println("buf = " + buf);
+        assert buf.size() == 10;
+        assertIndices(buf, 5, 5, 15);
+
+        List<Integer> list=buf.removeMany(true, 0);
+        System.out.println("removed = " + list);
+        assert list.size() == 10;
+        for(int i=6; i <=15; i++)
+            assert list.contains(i);
+        assertIndices(buf, 15, 15, 15);
+    }
 
     public void testStable() {
         RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
@@ -399,6 +543,11 @@ public class RingBufferTest {
         assert count == 10 : "count=" + count;
     }
 
+    protected static <T> void assertIndices(RingBuffer<T> buf, long low, long hd, long hr) {
+        assert buf.getLow() == low : "expected low=" + low + " but was " + buf.getLow();
+        assert buf.getHighestDelivered() == hd : "expected hd=" + hd + " but was " + buf.getHighestDelivered();
+        assert buf.getHighestReceived()  == hr : "expected hr=" + hr + " but was " + buf.getHighestReceived();
+    }
 
     protected static class Adder extends Thread {
         protected final CountDownLatch latch;
@@ -415,14 +564,13 @@ public class RingBufferTest {
             try {
                 latch.await();
                 Util.sleepRandom(10, 500);
-                buf.add(seqno, seqno);
+                buf.add(seqno, seqno, true);
             }
             catch(InterruptedException e) {
                 e.printStackTrace();
             }
         }
     }
-
 
 
 }

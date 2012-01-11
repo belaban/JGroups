@@ -15,6 +15,7 @@
     <property name="other.dir" value="${tests.dir}/other"/>
     <property name="junit.dir" value="${tests.dir}/junit"/>
     <property name="junit-functional.dir" value="${tests.dir}/junit-functional"/>
+    <property name="byteman.dir"          value="${tests.dir}/byteman"/>
     <property name="time-sensitive.dir" value="${tests.dir}/time-sensitive"/>
     <property name="stress.dir" value="${tests.dir}/stress"/>
     <property name="perf.dir" value="${tests.dir}/perf"/>
@@ -52,6 +53,12 @@
         <fileset dir="${lib.dir}">
             <include name="*.jar"/>
         </fileset>
+    </path>
+
+    <!-- We need to include tools.jar for byteman to inject code into a running agent -->
+    <path id="jg.classpath.byteman">
+        <path refid="jg.classpath"/>
+        <pathelement location="${java.home}/../lib/tools.jar"/>
     </path>
 
     <taskdef resource="testngtasks" classpathref="jg.classpath"/>
@@ -107,6 +114,7 @@
             <src path="${other.dir}"/>
             <src path="${junit.dir}"/>
             <src path="${junit-functional.dir}"/>
+            <src path="${byteman.dir}"/>
             <src path="${stress.dir}"/>
             <src path="${perf.dir}"/>
         </javac>
@@ -362,6 +370,7 @@
     <target name="all-tests">
         <sequential>
         	<antcall target="functional"/>
+            <antcall target="byteman"/>
             <antcall target="time-sensitive"/>
         	<antcall target="stack-independent"/>
             <antcall target="udp"/>
@@ -384,6 +393,21 @@
         	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
         	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
             <xmlfileset dir="${testng.conf.dir}" includes="functional.xml"/>
+        </testng>
+    </target>
+
+    <target name="byteman" depends="postcompile">
+        <mkdir dir="${tmp.dir}/test-results/xml/byteman"/>
+        <testng classpathref="jg.classpath.byteman"
+                usedefaultlisteners="false"
+                outputdir="${tmp.dir}/test-results/xml"
+                listeners="org.jgroups.util.JUnitXMLReporter"
+                threadcount="1"
+                parallel="false"
+                >
+        	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
+        	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
+            <xmlfileset dir="${testng.conf.dir}" includes="byteman.xml"/>
         </testng>
     </target>
 
