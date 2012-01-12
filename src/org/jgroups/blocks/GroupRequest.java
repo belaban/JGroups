@@ -125,7 +125,6 @@ public class GroupRequest<T> extends Request {
                         rsp.setException((Throwable)response_value);
                     else
                         rsp.setValue((T)response_value);
-                    rsp.setReceived();
                     num_valid++;
                 }
             }

@@ -95,10 +95,7 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
     public void addRsp(Address sender, T retval) {
         Rsp<T> rsp=get(sender);
         if(rsp != null) {
-            rsp.sender=sender;
-            rsp.retval=retval;
-            rsp.received=true;
-            rsp.suspected=false;
+            rsp.setValue(retval);
             return;
         }
         rsps.put(sender, new Rsp<T>(sender, retval));
