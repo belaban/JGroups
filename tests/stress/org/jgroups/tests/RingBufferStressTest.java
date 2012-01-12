@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Message;
-//import org.jgroups.util.RingBuffer;
+//import org.jgroups.util.RingBufferLocked;
 import org.jgroups.util.RingBuffer;
 import org.jgroups.util.Util;
 
@@ -89,7 +89,7 @@ public class RingBufferStressTest {
                     num.decrementAndGet();
                     break;
                 }
-                buf.add(seqno, MSG);
+                buf.add(seqno, MSG, true);
             }
         }
     }
