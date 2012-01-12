@@ -37,27 +37,27 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class RingBuffer<T> implements Iterable<T> {
     /** Atomic ref array so that elements can be checked for null and set atomically */
-    protected final T[] buf;
+    protected final T[]            buf;
 
     /** The lowest seqno. Moved forward by stable() */
     protected long                 low;
 
     /** The highest delivered seqno. Moved forward by a remove method. The next message to be removed is hd +1 */
-    protected long                 hd=0;
+    protected long                 hd;
 
     /** The highest received seqno. Moved forward by add(). The next message to be added is hr +1 */
-    protected long                 hr=0;
+    protected long                 hr;
 
-    protected final long                    offset;
+    protected final long           offset;
 
     /** Lock for adders to block on when the buffer is full */
-    protected final Lock                    lock=new ReentrantLock();
+    protected final Lock           lock=new ReentrantLock();
 
-    protected final Condition               buffer_full=lock.newCondition();
+    protected final Condition      buffer_full=lock.newCondition();
 
     protected boolean              running=true;
 
-    protected final AtomicBoolean           processing=new AtomicBoolean(false);
+    protected final AtomicBoolean  processing=new AtomicBoolean(false);
 
 
     /**
@@ -66,7 +66,6 @@ public class RingBuffer<T> implements Iterable<T> {
      * @param offset The offset. The first element to be added has to be offset +1.
      */
     public RingBuffer(int capacity, long offset) {
-        System.out.println("***** LOCKED RingBuffer *****");
         if(capacity < 1)
             throw new IllegalArgumentException("incorrect capacity of " + capacity);
         if(offset < 0)
@@ -99,8 +98,6 @@ public class RingBuffer<T> implements Iterable<T> {
      * @return True if the element was added, false otherwise.
      */
     public boolean add(long seqno, T element, boolean block) {
-        validate(seqno);
-
         lock.lock();
         try {
             if(seqno <= hd)                 // seqno already delivered, includes check seqno <= low
@@ -224,7 +221,6 @@ public class RingBuffer<T> implements Iterable<T> {
     }
 
     public T get(long seqno) {
-        validate(seqno);
         lock.lock();
         try {
             if(seqno <= low || seqno > hr)
@@ -259,7 +255,6 @@ public class RingBuffer<T> implements Iterable<T> {
     public List<T> get(long from, long to) {
         if(from > to)
             throw new IllegalArgumentException("from (" + from + ") has to be <= to (" + to + ")");
-        validate(from);
         List<T> retval=null;
         for(long i=from; i <= to; i++) {
             T element=get(i);
@@ -275,7 +270,6 @@ public class RingBuffer<T> implements Iterable<T> {
 
     /** Nulls elements between low and seqno and forwards low */
     public void stable(long seqno) {
-        validate(seqno);
         lock.lock();
         try {
             if(seqno <= low)
@@ -359,11 +353,6 @@ public class RingBuffer<T> implements Iterable<T> {
 
 
     
-    protected static final void validate(long seqno) {
-        if(seqno < 0)
-            throw new IllegalArgumentException("seqno " + seqno + " cannot be negative");
-    }
-
     protected int index(long seqno) {
         return (int)((seqno - offset -1) % capacity());
     }

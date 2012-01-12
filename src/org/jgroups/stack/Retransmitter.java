@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
  * It can be used e.g. by an ack-based scheme (e.g. AckSenderWindow) to retransmit a message to the receiver, or
  * by a nak-based scheme to send a retransmission request to the sender of the missing message.<br/>
  * @author Bela Ban
- * @version $Revision: 1.33 $
  */
 public abstract class Retransmitter {
 
