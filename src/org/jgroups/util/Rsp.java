@@ -9,19 +9,19 @@ import org.jgroups.Address;
  */
 public class Rsp<T> {
     /** Flag that represents whether the response was received */
-    protected boolean received;
+    protected boolean       received;
 
     /** Flag that represents whether the sender of the response was suspected */
-    protected boolean suspected;
+    protected boolean       suspected;
 
     /** The sender of this response */
-    protected Address sender;
+    protected final Address sender;
 
     /** The value from the response */
-    protected T retval;
+    protected T             retval;
 
     /** If there was an exception, this field will contain it */
-    protected Throwable exception;
+    protected Throwable     exception;
 
 
     public Rsp(Address sender) {
@@ -71,9 +71,11 @@ public class Rsp<T> {
     }
 
     public void setException(Throwable t) {
-        this.exception=t;
-        setReceived();
-        retval=null;
+        if(t != null) {
+            this.exception=t;
+            setReceived();
+            retval=null;
+        }
     }
 
     public Address getSender() {
@@ -86,7 +88,6 @@ public class Rsp<T> {
 
     public void setReceived() {
         received=true;
-        suspected=false;
     }
 
     public boolean wasSuspected() {
@@ -96,7 +97,6 @@ public class Rsp<T> {
     public boolean setSuspected() {
         boolean changed=!suspected;
         suspected=true;
-        received=false;
         return changed;
     }
 
