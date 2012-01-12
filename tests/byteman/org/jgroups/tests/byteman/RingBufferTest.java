@@ -3,7 +3,7 @@ package org.jgroups.tests.byteman;
 import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jboss.byteman.contrib.bmunit.BMScript;
 import org.jgroups.Global;
-import org.jgroups.util.RingBuffer;
+import org.jgroups.util.RingBufferLockless;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -61,7 +61,7 @@ public class RingBufferTest extends BMNGRunner {
      */
     @BMScript(dir="scripts/RingBufferTest", value="testRemoveAndConcurrentAdd")
     public void testRemoveAndConcurrentAdd() throws InterruptedException {
-        final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        final RingBufferLockless<Integer> buf=new RingBufferLockless<Integer>(10, 0);
         for(int i=1; i <= 5; i++)
             buf.add(i, i);
         buf.removeMany(true,4);
@@ -90,7 +90,7 @@ public class RingBufferTest extends BMNGRunner {
      */
     @BMScript(dir="scripts/RingBufferTest", value="testRemoveAndConcurrentAdd2")
     public void testRemoveAndConcurrentAdd2() throws InterruptedException {
-        final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
+        final RingBufferLockless<Integer> buf=new RingBufferLockless<Integer>(10, 0);
         for(int i=1; i <= 10; i++)
             buf.add(i, i);
         buf.removeMany(true, 4);
@@ -119,7 +119,7 @@ public class RingBufferTest extends BMNGRunner {
 
 
 
-    protected static <T> void assertIndices(RingBuffer<T> buf, long low, long hd, long hr) {
+    protected static <T> void assertIndices(RingBufferLockless<T> buf, long low, long hd, long hr) {
         assert buf.getLow() == low : "expected low=" + low + " but was " + buf.getLow();
         assert buf.getHighestDelivered() == hd : "expected hd=" + hd + " but was " + buf.getHighestDelivered();
         assert buf.getHighestReceived()  == hr : "expected hr=" + hr + " but was " + buf.getHighestReceived();
@@ -129,10 +129,10 @@ public class RingBufferTest extends BMNGRunner {
 
     protected static class Adder extends Thread {
         protected final int                 seqno;
-        protected final RingBuffer<Integer> buf;
+        protected final RingBufferLockless<Integer> buf;
         protected final boolean             block;
 
-        public Adder(int seqno, RingBuffer<Integer> buf, boolean block) {
+        public Adder(int seqno, RingBufferLockless<Integer> buf, boolean block) {
             this.seqno=seqno;
             this.buf=buf;
             this.block=block;
@@ -145,10 +145,10 @@ public class RingBufferTest extends BMNGRunner {
     }
 
     protected static class Remover extends Thread {
-        protected final RingBuffer<Integer> buf;
+        protected final RingBufferLockless<Integer> buf;
         protected final int remove_num_elements;
 
-        public Remover(RingBuffer<Integer> buf, int num) {
+        public Remover(RingBufferLockless<Integer> buf, int num) {
             this.buf=buf;
             remove_num_elements=num;
         }
