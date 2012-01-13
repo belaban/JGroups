@@ -2,6 +2,7 @@
 package org.jgroups.blocks;
 
 import org.jgroups.*;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.blocks.mux.Muxer;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -13,6 +14,8 @@ import org.jgroups.util.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -41,7 +44,9 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     protected MembershipListener membership_listener=null;
     protected RequestHandler req_handler=null;
     protected ProtocolAdapter prot_adapter=null;
+    @GuardedBy("membersLock")
     protected final Collection<Address> members=new TreeSet<Address>();
+    protected final ReadWriteLock membersLock = new ReentrantReadWriteLock();
     protected Address local_addr=null;
     protected final Log log=LogFactory.getLog(getClass());
     protected boolean hardware_multicast_supported=false;
@@ -84,8 +89,11 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
 
     /** Returns a copy of members */
     protected Collection<Address> getMembers() {
-        synchronized(members) {
+        membersLock.readLock().lock();
+        try {
             return new ArrayList<Address>(members);
+        } finally {
+            membersLock.readLock().unlock();
         }
     }
 
@@ -96,9 +104,12 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
      */
     private void setMembers(List<Address> new_mbrs) {
         if(new_mbrs != null) {
-            synchronized(members) {
+            membersLock.writeLock().lock();
+            try {
                 members.clear();
                 members.addAll(new_mbrs);
+            } finally {
+                membersLock.writeLock().unlock();
             }
         }
     }
@@ -279,8 +290,11 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
             real_dests.retainAll(this.members);
         }
         else {
-            synchronized(members) {
+            membersLock.readLock().lock();
+            try {
                 real_dests=new ArrayList<Address>(members);
+            } finally {
+                membersLock.readLock().unlock();
             }
         }
 
