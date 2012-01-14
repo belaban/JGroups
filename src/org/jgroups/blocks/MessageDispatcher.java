@@ -41,7 +41,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     protected MembershipListener membership_listener=null;
     protected RequestHandler req_handler=null;
     protected ProtocolAdapter prot_adapter=null;
-    protected final Collection<Address> members=new TreeSet<Address>();
+    protected volatile Collection<Address> members=new HashSet<Address>();
     protected Address local_addr=null;
     protected final Log log=LogFactory.getLog(getClass());
     protected boolean hardware_multicast_supported=false;
@@ -82,25 +82,15 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     }
 
 
-    /** Returns a copy of members */
-    protected Collection<Address> getMembers() {
-        synchronized(members) {
-            return new ArrayList<Address>(members);
-        }
-    }
 
 
     /**
      * If this dispatcher is using a user-provided PullPushAdapter, then need to set the members from the adapter
      * initially since viewChange has most likely already been called in PullPushAdapter.
      */
-    private void setMembers(List<Address> new_mbrs) {
-        if(new_mbrs != null) {
-            synchronized(members) {
-                members.clear();
-                members.addAll(new_mbrs);
-            }
-        }
+    protected void setMembers(List<Address> new_mbrs) {
+        if(new_mbrs != null)
+            members=new HashSet<Address>(new_mbrs); // volatile write - seen by a subsequent read
     }
 
 
@@ -278,11 +268,8 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
             real_dests=new ArrayList<Address>(dests);
             real_dests.retainAll(this.members);
         }
-        else {
-            synchronized(members) {
-                real_dests=new ArrayList<Address>(members);
-            }
-        }
+        else
+            real_dests=new ArrayList<Address>(members);
 
         // if local delivery is off, then we should not wait for the message from the local member.
         // therefore remove it from the membership
