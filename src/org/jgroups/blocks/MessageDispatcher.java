@@ -2,7 +2,6 @@
 package org.jgroups.blocks;
 
 import org.jgroups.*;
-import org.jgroups.annotations.GuardedBy;
 import org.jgroups.blocks.mux.Muxer;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -14,8 +13,6 @@ import org.jgroups.util.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -44,9 +41,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     protected MembershipListener membership_listener=null;
     protected RequestHandler req_handler=null;
     protected ProtocolAdapter prot_adapter=null;
-    @GuardedBy("membersLock")
-    protected final Collection<Address> members=new TreeSet<Address>();
-    protected final ReadWriteLock membersLock = new ReentrantReadWriteLock();
+    protected volatile Collection<Address> members=new HashSet<Address>();
     protected Address local_addr=null;
     protected final Log log=LogFactory.getLog(getClass());
     protected boolean hardware_multicast_supported=false;
@@ -87,31 +82,14 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     }
 
 
-    /** Returns a copy of members */
-    protected Collection<Address> getMembers() {
-        membersLock.readLock().lock();
-        try {
-            return new ArrayList<Address>(members);
-        } finally {
-            membersLock.readLock().unlock();
-        }
-    }
-
 
     /**
      * If this dispatcher is using a user-provided PullPushAdapter, then need to set the members from the adapter
      * initially since viewChange has most likely already been called in PullPushAdapter.
      */
-    private void setMembers(List<Address> new_mbrs) {
-        if(new_mbrs != null) {
-            membersLock.writeLock().lock();
-            try {
-                members.clear();
-                members.addAll(new_mbrs);
-            } finally {
-                membersLock.writeLock().unlock();
-            }
-        }
+    protected void setMembers(List<Address> new_mbrs) {
+        if(new_mbrs != null)
+            members=new HashSet<Address>(new_mbrs); // volatile write - seen by a subsequent read
     }
 
 
@@ -289,14 +267,8 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
             real_dests=new ArrayList<Address>(dests);
             real_dests.retainAll(this.members);
         }
-        else {
-            membersLock.readLock().lock();
-            try {
-                real_dests=new ArrayList<Address>(members);
-            } finally {
-                membersLock.readLock().unlock();
-            }
-        }
+        else
+            real_dests=new ArrayList<Address>(members);
 
         // if local delivery is off, then we should not wait for the message from the local member.
         // therefore remove it from the membership
