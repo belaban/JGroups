@@ -162,7 +162,13 @@ public class NakReceiverWindow {
     public long getRetransmitTableOffset() {return xmit_table.getOffset();}
 
     public void compact() {
-        xmit_table.compact();
+        lock.lock();
+        try {
+            xmit_table.compact();
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
 
