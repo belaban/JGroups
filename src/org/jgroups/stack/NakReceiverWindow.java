@@ -155,21 +155,13 @@ public class NakReceiverWindow {
     }
 
     public int getRetransmitTableSize() {
-        final Lock readLock = lock.readLock();
-        try {
-            return xmit_table.size();
-        } finally {
-            readLock.unlock();
-        }
+        //Exceptionally, #size does not require external locking
+        return xmit_table.size();
     }
 
     public int getRetransmitTableCapacity() {
-        final Lock readLock = lock.readLock();
-        try {
-            return xmit_table.capacity();
-        } finally {
-            readLock.unlock();
-        }
+        //Exceptionally, #capacity does not require external locking
+        return xmit_table.capacity();
     }
 
     public double getRetransmitTableFillFactor() {
@@ -495,13 +487,8 @@ public class NakReceiverWindow {
 
 
     public int size() {
-        lock.readLock().lock();
-        try {
-            return xmit_table.size();
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        //Exceptionally, #size does not require locking
+        return xmit_table.size();
     }
 
     /**

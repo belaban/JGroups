@@ -24,11 +24,12 @@ public class RetransmitTable {
     protected final int    msgs_per_row;
     protected final double resize_factor;
     protected Message[][]  matrix;
+    private volatile int capacity;
 
     /** The first seqno, at matrix[0][0] */
     protected long         offset;
 
-    protected int          size=0;
+    protected volatile int size=0;
 
     /** The highest seqno purged */
     protected long         highest_seqno_purged;
@@ -79,6 +80,7 @@ public class RetransmitTable {
         this.automatic_purging=automatic_purging;
         this.offset=this.highest_seqno_purged=this.highest_seqno=offset;
         matrix=new Message[num_rows][];
+        updateCapacity();
         if(resize_factor <= 1)
             throw new IllegalArgumentException("resize_factor needs to be > 1");
     }
@@ -89,12 +91,13 @@ public class RetransmitTable {
     }
 
     /** Returns the total capacity in the matrix */
-    public int capacity() {return matrix.length * msgs_per_row;}
+    public int capacity() {return this.capacity;}
+    private void updateCapacity() {this.capacity = matrix.length * msgs_per_row;}
 
-    /** Returns the numbers of messages in the table */
+    /** Returns the numbers of messages in the table. Invoking this method does not require external locking. */
     public int size() {return size;}
 
-
+    /** Returns true if there are no messages in the table. Invoking this method does not require external locking. */
     public boolean isEmpty() {return size <= 0;}
 
 
@@ -218,6 +221,7 @@ public class RetransmitTable {
      * it is not used anymore after returning */
     public void clear() {
         matrix=new Message[num_rows][];
+        updateCapacity();
         size=0;
         offset=highest_seqno_purged=highest_seqno=0;
     }
@@ -278,6 +282,7 @@ public class RetransmitTable {
             Message[][] new_matrix=new Message[new_size][];
             System.arraycopy(matrix, num_rows_to_purge, new_matrix, 0, matrix.length - num_rows_to_purge);
             matrix=new_matrix;
+            updateCapacity();
         }
         else if(num_rows_to_purge > 0) {
             move(num_rows_to_purge);
@@ -319,6 +324,7 @@ public class RetransmitTable {
             Message[][] new_matrix=new Message[new_size][];
             System.arraycopy(matrix, from, new_matrix, 0, range);
             matrix=new_matrix;
+            updateCapacity();
             offset+=from * msgs_per_row;
             size=computeSize();
         }
