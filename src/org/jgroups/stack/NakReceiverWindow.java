@@ -14,8 +14,8 @@ import org.jgroups.util.TimeScheduler;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -52,7 +52,7 @@ public class NakReceiverWindow {
         void messageGapDetected(long from, long to, Address src);
     }
 
-    private final ReadWriteLock lock=new ReentrantReadWriteLock();
+    private final Lock lock=new ReentrantLock();
 
     private volatile boolean running=true;
 
@@ -183,7 +183,7 @@ public class NakReceiverWindow {
         long old_next, next_to_add;
         boolean missing_msg_received=false;
 
-        lock.writeLock().lock();
+        lock.lock();
         try {
             if(!running)
                 return false;
@@ -230,7 +230,7 @@ public class NakReceiverWindow {
         }
         finally {
             highest_received=Math.max(highest_received, seqno);
-            lock.writeLock().unlock();
+            lock.unlock();
             if(listener != null && missing_msg_received) {
                 try {listener.missingMessageReceived(seqno, msg.getSrc());} catch(Throwable t) {}
             }
@@ -249,7 +249,7 @@ public class NakReceiverWindow {
         Message retval;
 
         if(acquire_lock)
-            lock.writeLock().lock();
+            lock.lock();
         try {
             long next=highest_delivered +1;
             retval=remove_msg? xmit_table.remove(next) : xmit_table.get(next);
@@ -262,7 +262,7 @@ public class NakReceiverWindow {
         }
         finally {
             if(acquire_lock)
-                lock.writeLock().unlock();
+                lock.unlock();
         }
     }
 
@@ -286,7 +286,7 @@ public class NakReceiverWindow {
         List<Message> retval=null;
         int num_results=0;
 
-        lock.writeLock().lock();
+        lock.lock();
         try {
             while(true) {
                 long next=highest_delivered +1;
@@ -306,7 +306,7 @@ public class NakReceiverWindow {
             }
         }
         finally {
-            lock.writeLock().unlock();
+            lock.unlock();
         }
     }
 
@@ -317,7 +317,7 @@ public class NakReceiverWindow {
      * Stop when a number > seqno is encountered (all messages are ordered on seqnos).
      */
     public void stable(long seqno) {
-        lock.writeLock().lock();
+        lock.lock();
         try {
             if(seqno > highest_delivered) {
                 if(log.isWarnEnabled())
@@ -343,7 +343,7 @@ public class NakReceiverWindow {
             highest_stability_seqno=Math.max(highest_stability_seqno, seqno);
         }
         finally {
-            lock.writeLock().unlock();
+            lock.unlock();
         }
     }
 
@@ -353,7 +353,7 @@ public class NakReceiverWindow {
      * NakReceiverWindow should be used instead. Note that messages can still be <em>removed</em> though.
      */
     public void destroy() {
-        lock.writeLock().lock();
+        lock.lock();
         try {
             running=false;
             retransmitter.reset();
@@ -361,19 +361,19 @@ public class NakReceiverWindow {
             highest_delivered=highest_received=highest_stability_seqno=0;
         }
         finally {
-            lock.writeLock().unlock();
+            lock.unlock();
         }
     }
 
 
     /** Returns the lowest, highest delivered and highest received seqnos */
     public long[] getDigest() {
-        lock.readLock().lock();
+        lock.lock();
         try {
             return new long[]{highest_delivered, highest_received};
         }
         finally {
-            lock.readLock().unlock();
+            lock.unlock();
         }
     }
 
@@ -386,25 +386,25 @@ public class NakReceiverWindow {
      * application (by <code>remove()</code>)
      */
     public long getHighestDelivered() {
-        lock.readLock().lock();
+        lock.lock();
         try {
             return highest_delivered;
         }
         finally {
-            lock.readLock().unlock();
+            lock.unlock();
         }
     }
 
 
     public long setHighestDelivered(long new_val) {
-        lock.writeLock().lock();
+        lock.lock();
         try {
             long retval=highest_delivered;
             highest_delivered=new_val;
             return retval;
         }
         finally {
-            lock.writeLock().unlock();
+            lock.unlock();
         }
     }
 
@@ -417,12 +417,12 @@ public class NakReceiverWindow {
      * @see NakReceiverWindow#getHighestDelivered
      */
     public long getHighestReceived() {
-        lock.readLock().lock();
+        lock.lock();
         try {
             return highest_received;
         }
         finally {
-            lock.readLock().unlock();
+            lock.unlock();
         }
     }
 
@@ -433,12 +433,12 @@ public class NakReceiverWindow {
      * @return Message from xmit_table
      */
     public Message get(long seqno) {
-        lock.readLock().lock();
+        lock.lock();
         try {
             return xmit_table.get(seqno);
         }
         finally {
-            lock.readLock().unlock();
+            lock.unlock();
         }
     }
 
@@ -450,23 +450,23 @@ public class NakReceiverWindow {
      * @return A list of messages, or null if none in range [from .. to] was found
      */
     public List<Message> get(long from, long to) {
-        lock.readLock().lock();
+        lock.lock();
         try {
             return xmit_table.get(from, to);
         }
         finally {
-            lock.readLock().unlock();
+            lock.unlock();
         }
     }
 
 
     public int size() {
-        lock.readLock().lock();
+        lock.lock();
         try {
             return xmit_table.size();
         }
         finally {
-            lock.readLock().unlock();
+            lock.unlock();
         }
     }
 
@@ -476,33 +476,33 @@ public class NakReceiverWindow {
      * @return
      */
     public long sizeOfAllMessages(boolean include_headers) {
-        lock.readLock().lock();
+        lock.lock();
         try {
             return xmit_table.sizeOfAllMessages(include_headers);
         }
         finally {
-            lock.readLock().unlock();
+            lock.unlock();
         }
     }
 
     public int getMissingMessages() {
-        lock.readLock().lock();
+        lock.lock();
         try {
             return xmit_table.getNullMessages(highest_delivered, highest_received);
         }
         finally {
-            lock.readLock().unlock();
+            lock.unlock();
         }
     }
 
 
     public String toString() {
-        lock.readLock().lock();
+        lock.lock();
         try {
             return printMessages();
         }
         finally {
-            lock.readLock().unlock();
+            lock.unlock();
         }
     }
 
@@ -514,7 +514,7 @@ public class NakReceiverWindow {
      */
     protected String printMessages() {
         StringBuilder sb=new StringBuilder();
-        lock.readLock().lock();
+        lock.lock();
         try {
             sb.append('[').append(highest_delivered).append(" (").append(highest_received).append(")");
             if(xmit_table != null && !xmit_table.isEmpty()) {
@@ -526,7 +526,7 @@ public class NakReceiverWindow {
             return sb.toString();
         }
         finally {
-            lock.readLock().unlock();
+            lock.unlock();
         }
     }
 
