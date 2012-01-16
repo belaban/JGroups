@@ -14,6 +14,7 @@ import org.jgroups.util.TimeScheduler;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -153,18 +154,51 @@ public class NakReceiverWindow {
         return retransmitter!= null? retransmitter.size() : 0;
     }
 
-    public int getRetransmitTableSize() {return xmit_table.size();}
-
-    public int getRetransmitTableCapacity() {return xmit_table.capacity();}
-
-    public double getRetransmitTableFillFactor() {return xmit_table.getFillFactor();}
-
-    public long getRetransmitTableOffset() {return xmit_table.getOffset();}
-
-    public void compact() {
-        xmit_table.compact();
+    public int getRetransmitTableSize() {
+        final Lock readLock = lock.readLock();
+        try {
+            return xmit_table.size();
+        } finally {
+            readLock.unlock();
+        }
     }
 
+    public int getRetransmitTableCapacity() {
+        final Lock readLock = lock.readLock();
+        try {
+            return xmit_table.capacity();
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    public double getRetransmitTableFillFactor() {
+        final Lock readLock = lock.readLock();
+        try {
+            return xmit_table.getFillFactor();
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    public long getRetransmitTableOffset() {
+        final Lock readLock = lock.readLock();
+        try {
+            return xmit_table.getOffset();
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    public void compact() {
+        final Lock writeLock = lock.writeLock();
+        writeLock.lock();
+        try {
+            xmit_table.compact();
+        } finally {
+            writeLock.unlock();
+        }
+    }
 
     /**
      * Adds a message according to its seqno (sequence number).
