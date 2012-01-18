@@ -351,7 +351,7 @@ public class RetransmitTable {
             if(row_index < 0 || row_index >= matrix.length)
                 continue;
             Message[] row=matrix[row_index];
-            if(row != null && row[computeIndex(i)] == null)
+            if(row == null || row[computeIndex(i)] == null)
                 retval++;
         }
         return retval;

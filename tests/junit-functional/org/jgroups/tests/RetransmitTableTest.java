@@ -111,6 +111,15 @@ public class RetransmitTableTest {
         assert num_null_msgs == 15;
     }
 
+    public static void testGetNullMessages() {
+        RetransmitTable table=new RetransmitTable(3, 10, 0);
+        table.put(1, MSG);
+        table.put(100, MSG);
+        System.out.println("table = " + table);
+        int num_null_elements=table.getNullMessages(0, 100);
+        assert num_null_elements == 98; // [1 .. 99] excluding 100, as it has been received
+    }
+
     public static void testDumpMatrix() {
         RetransmitTable table=new RetransmitTable(3, 10, 1);
         long[] seqnos={1,3,5,7,9,12,14,16,18,20,21,22,23,24};
