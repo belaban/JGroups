@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
+import org.jgroups.util.SeqnoList;
 import org.jgroups.util.Table;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -237,6 +238,55 @@ public class TableTest {
         assert table.getNullElements() == 10;
     }
 
+    public static void testGetMissing() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int num: Arrays.asList(2,4,6,8))
+            table.add(num, num);
+        System.out.println("table = " + table);
+        SeqnoList missing=table.getMissing();
+        System.out.println("missing=" + missing);
+        assert missing.size() == 4;
+    }
+
+    public static void testGetMissing2() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int num: Arrays.asList(3,4,5))
+            table.add(num, num);
+        System.out.println("table = " + table);
+        SeqnoList missing=table.getMissing();
+        System.out.println("missing=" + missing);
+        assert missing.size() == 2; // the range [1-2]
+    }
+
+    public static void testGetMissing3() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int num: Arrays.asList(8))
+            table.add(num, num);
+        System.out.println("table = " + table);
+        SeqnoList missing=table.getMissing();
+        System.out.println("missing=" + missing);
+        assert missing.size() == 7;
+    }
+
+    public static void testGetMissingLast() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int num: Arrays.asList(1,2,3,4,5,6,8))
+            table.add(num, num);
+        System.out.println("table = " + table);
+        SeqnoList missing=table.getMissing();
+        System.out.println("missing=" + missing);
+        assert missing.size() == 1;
+    }
+
+    public static void testGetMissingFirst() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int num: Arrays.asList(2,3,4,5))
+            table.add(num, num);
+        System.out.println("table = " + table);
+        SeqnoList missing=table.getMissing();
+        System.out.println("missing=" + missing);
+        assert missing.size() == 1;
+    }
 
 
     public static void testMassAddition() {

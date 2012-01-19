@@ -242,44 +242,6 @@ public class Table<T> {
     }
 
 
-   /* public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results) {
-        List<T> retval=null;
-        int num_results=0;
-
-        lock.lock();
-        try {
-            for(long i=hd+1; i <= hr; i++) {
-                int row_index=computeRow(i);
-                if(row_index < 0 || row_index >= matrix.length)
-                    break;
-                T[] row=matrix[row_index];
-                if(row == null)
-                    break;
-                int index=computeIndex(i);
-                T element=row[index];
-                if(element == null)
-                    break;
-                if(retval == null)
-                    retval=new LinkedList<T>();
-                retval.add(element);
-                if(nullify) {
-                    row[index]=null;
-                    if(i > hd)
-                        hd=i;
-                }
-                if(max_results > 0 && ++num_results >= max_results)
-                    break;
-            }
-            if(processing != null && (retval == null || retval.isEmpty()))
-                processing.set(false);
-            return retval;
-        }
-        finally {
-            lock.unlock();
-        }
-    }*/
-
-
     public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results) {
            lock.lock();
            try {
@@ -474,36 +436,15 @@ public class Table<T> {
      * @return
      */
     public SeqnoList getMissing() {
-        SeqnoList missing=null;
-
         lock.lock();
         try {
-            /*long tmp_hd=hd, tmp_hr=hr;
-        for(long i=tmp_hd+1; i <= tmp_hr; i++) {
-            if(buf[index(i)] == null) {
-                if(missing == null)
-                    missing=new SeqnoList();
-                long end=i;
-                while(buf[index(end+1)] == null && end <= tmp_hr)
-                    end++;
-
-                if(end == i)
-                    missing.add(i);
-                else {
-                    missing.add(i, end);
-                    i=end;
-                }
-            }
-        }*/
-            
-             return missing;
+            Missing missing=new Missing();
+            forEach(hd+1, hr, missing);
+            return missing.getMissingElements();
         }
         finally {
             lock.unlock();
         }
-
-
-
     }
 
 
@@ -655,6 +596,41 @@ public class Table<T> {
             }
             return true;
         }
+    }
+
+    protected class Missing implements Visitor<T> {
+        protected SeqnoList missing_elements;
+        protected long      last_missing=-1; // last missing seqno
+
+        protected SeqnoList getMissingElements() {return missing_elements;}
+
+        public boolean visit(long seqno, T element, int row, int column) {
+            if(element == null) {
+                if(last_missing == -1)
+                    last_missing=seqno;
+                else
+                    ;
+            }
+            else {
+                if(last_missing == -1) {
+                    ;
+                }
+                else {
+                    long tmp=seqno-1;
+                    if(missing_elements == null)
+                        missing_elements=new SeqnoList();
+                    if(tmp - last_missing > 0) {
+                        missing_elements.add(last_missing, tmp);
+                    }
+                    else {
+                        missing_elements.add(last_missing);
+                    }
+                    last_missing=-1;
+                }
+            }
+            return true;
+        }
+
     }
 
 }
