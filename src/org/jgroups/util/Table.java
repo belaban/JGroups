@@ -55,6 +55,7 @@ public class Table<T> {
 
     protected final Lock   lock=new ReentrantLock();
 
+    protected final AtomicBoolean  processing=new AtomicBoolean(false);
     
     protected static final long   DEFAULT_MAX_COMPACTION_TIME=2 * 60 * 1000L;
 
@@ -110,24 +111,39 @@ public class Table<T> {
     }
 
 
-    public long getOffset()            {return offset;}
+    public AtomicBoolean getProcessing() {return processing;}
+
+    public long getOffset()              {return offset;}
 
     /** Returns the total capacity in the matrix */
-    public int capacity()              {return matrix.length * elements_per_row;}
+    public int capacity()                {return matrix.length * elements_per_row;}
 
     /** Returns the numbers of elements in the table */
-    public int size()                  {return size;}
-    public boolean isEmpty()           {return size <= 0;}
-    public long getLow()               {return low;}
-    public long getHighestDelivered()  {return hd;}
-    public long getHighestReceived()   {return hr;}
-    public long getMaxCompactionTime() {return max_compaction_time;}
+    public int size()                    {return size;}
+    public boolean isEmpty()             {return size <= 0;}
+    public long getLow()                 {return low;}
+    public long getHighestDelivered()    {return hd;}
+    public long getHighestReceived()     {return hr;}
+    public long getMaxCompactionTime()   {return max_compaction_time;}
     public void setMaxCompactionTime(long max_compaction_time) {this.max_compaction_time=max_compaction_time;}
 
     /** Returns the ratio between size and capacity, as a percentage */
     public double getFillFactor()      {return size == 0? 0.0 : (int)(((double)size / capacity()) * 100);}
 
-
+    /**
+     * Only used internally by JGroups on a state transfer. Please don't use this in application code, or you're on
+     * your own !
+     * @param seqno
+     */
+    public void setHighestDelivered(long seqno) {
+        lock.lock();
+        try {
+            hd=seqno;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
 
     /**
      * Adds an element if the element at the given index is null. Returns true if no element existed at the given index,
@@ -412,7 +428,7 @@ public class Table<T> {
     @GuardedBy("lock")
     public int computeSize() {
         Counter non_null_counter=new Counter(false);
-        forEach(low, hr, non_null_counter);
+        forEach(hd+1, hr, non_null_counter);
         return non_null_counter.result;
     }
 
@@ -441,6 +457,16 @@ public class Table<T> {
             Missing missing=new Missing();
             forEach(hd+1, hr, missing);
             return missing.getMissingElements();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    public long[] getDigest() {
+        lock.lock();
+        try {
+            return new long[]{hd,hr};
         }
         finally {
             lock.unlock();

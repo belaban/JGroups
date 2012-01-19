@@ -39,6 +39,8 @@ public class TableTest {
         addAndGet(table, 29);
         System.out.println("table: " + table.dump());
         assert table.size() == 8;
+        int size=table.computeSize();
+        assert size == 8;
         assert table.size() == table.computeSize();
         assert table.capacity() == 30;
         assertIndices(table, 0, 0, 29);
@@ -94,6 +96,34 @@ public class TableTest {
         assertIndices(table, 0, 0, 10);
     }
 
+
+    public static void testComputeSize() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int num: Arrays.asList(1,2,3,4,5,6,7,8,9,10))
+            table.add(num, num);
+        System.out.println("table = " + table);
+        assert table.computeSize() == 10;
+        table.removeMany(false, 3);
+        System.out.println("table = " + table);
+        assert table.computeSize() == 7;
+
+        table.removeMany(true, 4);
+        System.out.println("table = " + table);
+        assert table.computeSize() == table.size();
+        assert table.computeSize() == 3;
+    }
+
+    public static void testComputeSize2() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        table.add(1, 1);
+        System.out.println("table = " + table);
+        assert table.computeSize() == table.size();
+        assert table.computeSize() == 1;
+        table.remove(false);
+        System.out.println("table = " + table);
+        assert table.computeSize() == table.size();
+        assert table.computeSize() == 0;
+    }
 
     public static void testRemove() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
@@ -423,18 +453,19 @@ public class TableTest {
         for(int seqno=1; seqno <= 25; seqno++)
             table.add(seqno, seqno);
 
-        int[] seqnos={30,31,32,37,38,39, 40,41,42,47,48,49};
+        int[] seqnos={30,31,32,37,38,39,40,41,42,47,48,49};
         for(int seqno: seqnos)
             table.add(seqno, seqno);
 
         System.out.println("table (before remove):\n" + table.dump());
-        for(int seqno=0; seqno <= 22; seqno++)
+        for(int seqno=1; seqno <= 22; seqno++)
             table.remove(false);
 
         System.out.println("\ntable (after remove 22, before purge):\n" + table.dump());
         table.purge(22);
         System.out.println("\ntable: (after purge 22):\n" + table.dump());
         assert table.size() == 3 + seqnos.length;
+        assert table.computeSize() == table.size();
     }
 
 
