@@ -1,8 +1,6 @@
 package org.jgroups.util;
 
 import org.jgroups.annotations.GuardedBy;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -62,9 +60,23 @@ public class Table<T> {
 
     protected static final double DEFAULT_RESIZE_FACTOR=1.2;
 
-    protected static final Log    log=LogFactory.getLog(Table.class);
 
 
+/*    public interface SeqnoExtractor<T> {
+        long extract(T element);
+    }*/
+
+    public interface Visitor<T> {
+        /**
+         * Iteration over the table, used by {@link Table#forEach(long,long,org.jgroups.util.Table.Visitor)}.
+         * @param seqno The current seqno
+         * @param element The element at matrix[row][column]
+         * @param row The current row
+         * @param column The current column
+         * @return True if we should continue the iteration, false if we should break out of the iteration
+         */
+        boolean visit(long seqno, T element, int row, int column);
+    }
 
 
 
@@ -85,6 +97,7 @@ public class Table<T> {
         this(num_rows,elements_per_row, offset, resize_factor, DEFAULT_MAX_COMPACTION_TIME);
     }
 
+    @SuppressWarnings("unchecked")
     public Table(int num_rows, int elements_per_row, long offset, double resize_factor, long max_compaction_time) {
         this.num_rows=num_rows;
         this.elements_per_row=elements_per_row;
@@ -151,7 +164,7 @@ public class Table<T> {
         }
     }
 
-    
+
     public T get(long seqno) {
         lock.lock();
         try {
@@ -172,28 +185,16 @@ public class Table<T> {
     }
 
 
+
     public List<T> get(long from, long to) {
-        List<T> retval=null;
         lock.lock();
         try {
-            for(long seqno=from; seqno <= to; seqno++) {
-                if(seqno <= low || seqno > hr)
-                    continue;
-                int row_index=computeRow(seqno);
-                if(row_index < 0 || row_index >= matrix.length)
-                    continue;
-                T[] row=matrix[row_index];
-                if(row == null)
-                    continue;
-                int index=computeIndex(seqno);
-                T element=index >= 0? row[index] : null;
-                if(element != null) {
-                    if(retval == null)
-                        retval=new LinkedList<T>();
-                    retval.add(element);
-                }
-            }
-            return retval;
+            // boundary check: the get() has to be in range [low+1 .. hr-1]
+            if(from <= low) from=low+1;
+            if(to > hr) to=hr-1;
+            Getter getter=new Getter();
+            forEach(from, to, getter);
+            return getter.getList();
         }
         finally {
             lock.unlock();
@@ -201,17 +202,21 @@ public class Table<T> {
     }
 
 
+    public T remove() {
+        return remove(true);
+    }
+
     /** Removes the next non-null element and nulls the index if nullify=true */
     public T remove(boolean nullify) {
         lock.lock();
         try {
-            int row_index=computeRow(hd);
+            int row_index=computeRow(hd+1);
             if(row_index < 0 || row_index >= matrix.length)
                 return null;
             T[] row=matrix[row_index];
             if(row == null)
                 return null;
-            int index=computeIndex(hd);
+            int index=computeIndex(hd+1);
             if(index < 0)
                 return null;
             T existing_element=row[index];
@@ -237,9 +242,58 @@ public class Table<T> {
     }
 
 
+   /* public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results) {
+        List<T> retval=null;
+        int num_results=0;
+
+        lock.lock();
+        try {
+            for(long i=hd+1; i <= hr; i++) {
+                int row_index=computeRow(i);
+                if(row_index < 0 || row_index >= matrix.length)
+                    break;
+                T[] row=matrix[row_index];
+                if(row == null)
+                    break;
+                int index=computeIndex(i);
+                T element=row[index];
+                if(element == null)
+                    break;
+                if(retval == null)
+                    retval=new LinkedList<T>();
+                retval.add(element);
+                if(nullify) {
+                    row[index]=null;
+                    if(i > hd)
+                        hd=i;
+                }
+                if(max_results > 0 && ++num_results >= max_results)
+                    break;
+            }
+            if(processing != null && (retval == null || retval.isEmpty()))
+                processing.set(false);
+            return retval;
+        }
+        finally {
+            lock.unlock();
+        }
+    }*/
+
+
     public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results) {
-        return null;
-    }
+           lock.lock();
+           try {
+               Remover remover=new Remover(nullify, max_results);
+               forEach(hd+1, hr, remover);
+               List<T> retval=remover.getList();
+               if(processing != null && (retval == null || retval.isEmpty()))
+                   processing.set(false);
+               return retval;
+           }
+           finally {
+               lock.unlock();
+           }
+       }
 
 
     /**
@@ -250,6 +304,8 @@ public class Table<T> {
     public void purge(long seqno) {
         lock.lock();
         try {
+            if(seqno > hd) // we cannot be higher than the highest removed seqno
+                seqno=hd;
             int num_rows_to_remove=(int)(seqno - offset) / elements_per_row;
             for(int i=0; i < num_rows_to_remove; i++) // Null all rows which can be fully removed
                 matrix[i]=null;
@@ -296,11 +352,39 @@ public class Table<T> {
         }
     }
 
+    /**
+     * Iterates over the matrix with range [from .. to] (including from and to), and calls
+     * {@link Visitor#visit(long,Object,int,int)}. If the visit() method returns false, the iteration is terminated.
+     * <p/>
+     * This method must be called with the lock held
+     * @param from The starting seqno
+     * @param to The ending seqno, the range is [from .. to] including from and to
+     * @param visitor An instance of Visitor
+     */
+    @GuardedBy("lock")
+    public void forEach(long from, long to, Visitor<T> visitor) {
+        int row=computeRow(from), column=computeIndex(from);
+        int distance=(int)(to - from +1);
+        T[] current_row=row+1 > matrix.length? null : matrix[row];
 
+        for(int i=0; i < distance; i++) {
+            T element=current_row == null? null : current_row[column];
+            if(!visitor.visit(from, element, row, column))
+                break;
+
+            from++;
+            if(++column >= elements_per_row) {
+                column=0;
+                row++;
+                current_row=row+1 > matrix.length? null : matrix[row];
+            }
+        }
+    }
 
     /** Moves rows down the matrix, by removing purged rows. If resizing to accommodate seqno is still needed, computes
      * a new size. Then either moves existing rows down, or copies them into a new array (if resizing took place).
      * The lock must be held vy the caller of resize(). */
+    @SuppressWarnings("unchecked")
     @GuardedBy("lock")
     protected void resize(long seqno) {
         int num_rows_to_purge=(int)((low - offset) / elements_per_row);
@@ -342,6 +426,7 @@ public class Table<T> {
      * Moves the contents of matrix down by the number of purged rows and resizes the matrix accordingly. The
      * capacity of the matrix should be size * resize_factor. Caller must hold the lock.
      */
+    @SuppressWarnings("unchecked")
     @GuardedBy("lock")
     protected void _compact() {
         // This is the range we need to copy into the new matrix (including from and to)
@@ -351,8 +436,6 @@ public class Table<T> {
         int new_size=(int)Math.max(range * resize_factor, range +1);
         new_size=Math.max(new_size, num_rows); // don't fall below the initial size defined
         if(new_size < matrix.length) {
-            if(log.isTraceEnabled())
-                log.trace("compacting matrix from " + matrix.length + " rows to " + new_size + " rows");
             T[][] new_matrix=(T[][])new Object[new_size][];
             System.arraycopy(matrix, from, new_matrix, 0, range);
             matrix=new_matrix;
@@ -362,42 +445,65 @@ public class Table<T> {
     }
 
 
-    /** Iterate from highest_seqno_purged to highest_seqno and add up non-null values. Caller must hold the lock. */
+
+    /** Iterate from low to hr and add up non-null values. Caller must hold the lock. */
     @GuardedBy("lock")
     public int computeSize() {
-        int retval=0;
-        int from=computeRow(low), to=computeRow(hr);
-        for(int i=from; i <= to; i++) {
-            T[] row=matrix[i];
-            if(row == null)
-                continue;
-            for(int j=0; j < row.length; j++) {
-                if(row[j] != null)
-                    retval++;
-            }
-        }
-        return retval;
+        Counter non_null_counter=new Counter(false);
+        forEach(low, hr, non_null_counter);
+        return non_null_counter.result;
     }
 
 
-    /** Returns the number of null elements in the range [hd+1 .. hr] */
+    /** Returns the number of null elements in the range [hd+1 .. hr-1] excluding hd and hr */
     public int getNullElements() {
-        int retval=0;
         lock.lock();
         try {
-            for(long i=hd+1; i <= hr; i++) {
-                int row_index=computeRow(i);
-                if(row_index < 0 || row_index >= matrix.length)
-                    continue;
-                T[] row=matrix[row_index];
-                if(row != null && row[computeIndex(i)] == null)
-                    retval++;
-            }
-            return retval;
+            Counter null_counter=new Counter(true); // count null values
+            forEach(hd+1, hr-1, null_counter);      // exclude hd and hr
+            return null_counter.result;
         }
         finally {
             lock.unlock();
         }
+    }
+
+
+    /**
+     * Returns a list of missing (= null) messages
+     * @return
+     */
+    public SeqnoList getMissing() {
+        SeqnoList missing=null;
+
+        lock.lock();
+        try {
+            /*long tmp_hd=hd, tmp_hr=hr;
+        for(long i=tmp_hd+1; i <= tmp_hr; i++) {
+            if(buf[index(i)] == null) {
+                if(missing == null)
+                    missing=new SeqnoList();
+                long end=i;
+                while(buf[index(end+1)] == null && end <= tmp_hr)
+                    end++;
+
+                if(end == i)
+                    missing.add(i);
+                else {
+                    missing.add(i, end);
+                    i=end;
+                }
+            }
+        }*/
+            
+             return missing;
+        }
+        finally {
+            lock.unlock();
+        }
+
+
+
     }
 
 
@@ -408,55 +514,14 @@ public class Table<T> {
         return sb.toString();
     }
 
+
     /** Dumps the seqnos in the table as a list */
     public String dump() {
-        StringBuilder sb=new StringBuilder();
-        boolean first=true;
         lock.lock();
         try {
-            for(int i=0; i < matrix.length; i++) {
-                T[] row=matrix[i];
-                if(row == null)
-                    continue;
-                for(int j=0; j < row.length; j++) {
-                    if(row[j] != null) {
-                        long seqno=offset + (i * elements_per_row) + j;
-                        if(first)
-                            first=false;
-                        else
-                            sb.append(", ");
-                        sb.append(seqno);
-                    }
-                }
-            }
-            return sb.toString();
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-
-     /** Dumps the non-null in the table in a pseudo graphic way */
-    public String dumpMatrix() {
-        StringBuilder sb=new StringBuilder();
-        lock.lock();
-        try {
-            for(int i=0; i < matrix.length; i++) {
-                T[] row=matrix[i];
-                sb.append(i + ": ");
-                if(row == null) {
-                    sb.append("\n");
-                    continue;
-                }
-                for(int j=0; j < row.length; j++) {
-                    if(row[j] != null)
-                        sb.append("* ");
-                    else
-                        sb.append("  ");
-                }
-                sb.append("\n");
-            }
-            return sb.toString();
+            Dump dump=new Dump();
+            forEach(low, hr, dump);
+            return dump.getResult();
         }
         finally {
             lock.unlock();
@@ -470,6 +535,7 @@ public class Table<T> {
      * @param index
      * @return A row
      */
+    @SuppressWarnings("unchecked")
     @GuardedBy("lock")
     protected T[] getRow(int index) {
         T[] row=matrix[index];
@@ -499,7 +565,97 @@ public class Table<T> {
         return diff % elements_per_row;
     }
 
-    
+    protected class Counter implements Visitor<T> {
+        protected final boolean count_null_values;
+        protected int           result=0;
+
+        public Counter(boolean count_null_values) {
+            this.count_null_values=count_null_values;
+        }
+
+        public int getResult() {return result;}
+
+        public boolean visit(long seqno, T element, int row, int column) {
+            if(element == null) {
+                if(count_null_values)
+                    result++;
+            }
+            else {
+                if(!count_null_values)
+                    result++;
+            }
+            return true;
+        }
+    }
+
+
+    protected class Getter implements Visitor<T> {
+        protected List<T> list;
+
+        public List<T> getList() {return list;}
+
+        public boolean visit(long seqno, T element, int row, int column) {
+            if(element != null) {
+                if(list == null)
+                    list=new LinkedList<T>();
+                list.add(element);
+            }
+            return true;
+        }
+    }
+
+
+    protected class Remover implements Visitor<T> {
+        protected final boolean nullify;
+        protected final int     max_results;
+        protected List<T>       list;
+        protected int           num_results;
+
+        public Remover(boolean nullify, int max_results) {
+            this.nullify=nullify;
+            this.max_results=max_results;
+        }
+
+        public List<T> getList() {return list;}
+
+        @GuardedBy("lock")
+        public boolean visit(long seqno, T element, int row, int column) {
+            if(element != null) {
+                if(list == null)
+                    list=new LinkedList<T>();
+                list.add(element);
+                if(seqno > hd)
+                    hd=seqno;
+                size=Math.max(size-1, 0); // cannot be < 0 (well that would be a bug, but let's have this 2nd line of defense !)
+                if(nullify) {
+                    matrix[row][column]=null;
+                    if(seqno > low)
+                        low=seqno;
+                }
+                return max_results == 0 || ++num_results < max_results;
+            }
+            return false;
+        }
+    }
+
+    protected class Dump implements Visitor<T> {
+        protected final StringBuilder sb=new StringBuilder();
+        protected boolean             first=true;
+
+        protected String getResult() {return sb.toString();}
+
+        @GuardedBy("lock")
+        public boolean visit(long seqno, T element, int row, int column) {
+            if(element != null) {
+                if(first)
+                    first=false;
+                else
+                    sb.append(", ");
+                sb.append(seqno);
+            }
+            return true;
+        }
+    }
 
 }
 
