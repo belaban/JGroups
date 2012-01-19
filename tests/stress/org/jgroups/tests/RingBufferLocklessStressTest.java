@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Message;
-import org.jgroups.util.Table;
+import org.jgroups.util.RingBufferLockless;
 import org.jgroups.util.Util;
 
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
-public class TableStressTest {
+public class RingBufferLocklessStressTest {
     static int NUM_THREADS=10;
     static int NUM_MSGS=1000000;
 
@@ -22,7 +22,7 @@ public class TableStressTest {
     public static void main(String[] args) throws InterruptedException {
         for(int i=0; i < args.length; i++) {
             if(args[i].startsWith("-h")) {
-                System.out.println("TableStressTest [-num messages] [-adders <number of adder threads>]");
+                System.out.println("RingBufferStressTest [-num messages] [-adders <number of adder threads>]");
                 return;
             }
             if(args[i].equals("-num")) {
@@ -34,7 +34,7 @@ public class TableStressTest {
             }
         }
 
-        Table<Message> buf=new Table<Message>(10000, 10000, 0);
+        RingBufferLockless<Message> buf=new RingBufferLockless<Message>(NUM_MSGS, 0);
 
         final CountDownLatch latch=new CountDownLatch(1);
 
@@ -59,15 +59,16 @@ public class TableStressTest {
 
         System.out.println("added messages: " + added + ", removed messages: " + removed);
         System.out.println("took " + diff + " ms to insert and remove " + NUM_MSGS + " messages");
+        buf.destroy();
     }
 
 
     protected static class Adder extends Thread {
-        protected final Table<Message> buf;
+        protected final RingBufferLockless<Message> buf;
         protected final AtomicInteger num;
         protected final CountDownLatch latch;
 
-        public Adder(Table<Message> buf, CountDownLatch latch, AtomicInteger num) {
+        public Adder(RingBufferLockless<Message> buf, CountDownLatch latch, AtomicInteger num) {
             this.buf=buf;
             this.num=num;
             this.latch=latch;
@@ -88,16 +89,16 @@ public class TableStressTest {
                     num.decrementAndGet();
                     break;
                 }
-                buf.add(seqno, MSG);
+                buf.add(seqno, MSG, true);
             }
         }
     }
 
     protected static class Remover extends Thread {
-        protected final Table<Message> buf;
+        protected final RingBufferLockless<Message> buf;
         protected final CountDownLatch latch;
 
-        public Remover(Table<Message> buf, CountDownLatch latch) {
+        public Remover(RingBufferLockless<Message> buf, CountDownLatch latch) {
             this.buf=buf;
             this.latch=latch;
             setName("Remover");
