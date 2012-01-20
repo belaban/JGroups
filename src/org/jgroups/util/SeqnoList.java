@@ -112,37 +112,7 @@ public class SeqnoList implements Streamable, Iterable<Long> {
     }
 
     public Iterator<Long> iterator() {
-        return new Iterator<Long>() {
-            protected int index=0;
-            protected SeqnoRange range=null;
-            protected long range_index=-1;
-
-            public boolean hasNext() {
-                return index +1 <=  seqnos.size();
-            }
-
-            public Long next() {
-                if(range != null) {
-                    if(range_index +1 <= range.to)
-                        return ++range_index;
-                    else
-                        range=null;
-                }
-                if(index >= seqnos.size())
-                    throw new NoSuchElementException("index " + index + " is >= size " + seqnos.size());
-                Seqno next=seqnos.get(index++);
-                if(next instanceof SeqnoRange) {
-                    range=(SeqnoRange)next;
-                    range_index=range.from;
-                    return range_index;
-                }
-                else
-                    return next.from;
-            }
-
-            public void remove() { // not supported
-            }
-        };
+        return new SeqnoListIterator();
     }
 
     protected static class Seqno {
@@ -169,6 +139,39 @@ public class SeqnoList implements Streamable, Iterable<Long> {
 
         public String toString() {
             return super.toString() + "-" + to;
+        }
+    }
+
+
+    protected class SeqnoListIterator implements Iterator<Long> {
+        protected int         index=0;
+        protected SeqnoRange  range=null;
+        protected long        range_index=-1;
+
+        public boolean hasNext() {
+            return (range != null && range_index +1 <= range.to) || index +1 <=  seqnos.size();
+        }
+
+        public Long next() {
+            if(range != null) {
+                if(range_index +1 <= range.to)
+                    return ++range_index;
+                else
+                    range=null;
+            }
+            if(index >= seqnos.size())
+                throw new NoSuchElementException("index " + index + " is >= size " + seqnos.size());
+            Seqno next=seqnos.get(index++);
+            if(next instanceof SeqnoRange) {
+                range=(SeqnoRange)next;
+                range_index=range.from;
+                return range_index;
+            }
+            else
+                return next.from;
+        }
+
+        public void remove() { // not supported
         }
     }
 }

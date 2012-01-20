@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -40,6 +41,19 @@ public class SeqnoListTest {
         System.out.println("\nexpected list:  " + expected + "\ngenerated list: " + generated);
 
         assert expected.equals(generated);
+    }
+
+
+    public static void testIteration2() {
+        SeqnoList list=new SeqnoList(5, 10);
+        System.out.println("list = " + list);
+        assert list.size() == 6;
+        List<Long> expected=Arrays.asList(5L,6L,7L,8L,9L,10L);
+        List<Long> actual=new ArrayList<Long>(6);
+        for(long i: list)
+            actual.add(i);
+        System.out.println("expected=" + expected + "\nactual:  " + actual);
+        assert expected.equals(actual);
     }
 
     public void testSerialization() throws Exception {
