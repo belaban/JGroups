@@ -53,6 +53,7 @@ public class MPerf extends ReceiverAdapter {
 
     // the member which will collect and display the overall results
     protected volatile Address                    result_collector=null;
+    protected volatile boolean                    initiator=false;
 
     protected static  final NumberFormat          format=NumberFormat.getNumberInstance();
     protected static final short                  ID=ClassConfigurator.getProtocolId(MPerf.class);
@@ -106,12 +107,10 @@ public class MPerf extends ReceiverAdapter {
                                               num_senders <= 0? "all" : String.valueOf(num_senders)));
                 switch(c) {
                     case '1':
+                        initiator=true;
                         results.reset(getSenders());
                         send(null,null,MPerfHeader.CLEAR_RESULTS, Message.Flag.RSVP); // clear all results (from prev runs) first
                         send(null, null, MPerfHeader.START_SENDING, Message.Flag.RSVP);
-                        if(!waitForResults())
-                            System.err.println("failed receiving results from all members");
-                        displayResults();
                         break;
                     case '2':
                         System.out.println("view: " + channel.getView() + " (local address=" + channel.getAddress() + ")");
@@ -146,9 +145,6 @@ public class MPerf extends ReceiverAdapter {
         stop();
     }
 
-    protected boolean waitForResults() {
-        return results.waitForAllResponses(120 * 1000);
-    }
 
     protected void displayResults() {
         System.out.println("\nResults:\n");
@@ -311,6 +307,10 @@ public class MPerf extends ReceiverAdapter {
             case MPerfHeader.RESULT:
                 Result res=(Result)msg.getObject();
                 results.add(msg.getSrc(), res);
+                if(initiator && results.hasAllResponses()) {
+                    initiator=false;
+                    displayResults();
+                }
                 break;
 
             case MPerfHeader.CLEAR_RESULTS:
