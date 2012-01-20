@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /** Tests {@link org.jgroups.util.Table<Integer>}
  * @author Bela Ban
@@ -25,6 +26,14 @@ public class TableTest {
         assertIndices(table, 0, 0, 0);
     }
 
+
+    public void testAdd() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        buf.add(1, 322649);
+        buf.add(2, 100000);
+        System.out.println("buf = " + buf);
+        assert buf.size() == 2;
+    }
 
     public static void testAddition() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
@@ -81,6 +90,98 @@ public class TableTest {
         assert table.size() == 9;
         assertIndices(table, 2, 2, 1029);
     }
+
+    public void testAddWithWrapAround() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 5);
+        for(int i=6; i <=15; i++)
+            assert buf.add(i, i) : "addition of seqno " + i + " failed";
+        System.out.println("buf = " + buf);
+        for(int i=0; i < 3; i++) {
+            Integer val=buf.remove(false);
+            System.out.println("removed " + val);
+            assert val != null;
+        }
+        System.out.println("buf = " + buf);
+
+        long low=buf.getLow();
+        buf.purge(8);
+        System.out.println("buf = " + buf);
+        assert buf.getLow() == 8;
+        for(long i=low; i <= 8; i++)
+            assert buf.get(i) == null : "message with seqno=" + i + " is not null";
+
+        for(int i=16; i <= 18; i++)
+            assert buf.add(i, i);
+        System.out.println("buf = " + buf);
+
+        while(buf.remove(false) != null)
+            ;
+        System.out.println("buf = " + buf);
+        assert buf.isEmpty();
+        assert buf.getNullElements() == 0;
+        low=buf.getLow();
+        buf.purge(18);
+        assert buf.getLow() == 18;
+        for(long i=low; i <= 18; i++)
+            assert buf.get(i) == null : "message with seqno=" + i + " is not null";
+    }
+
+
+    public void testAddWithWrapAroundAndRemoveMany() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 5);
+        for(int i=6; i <=15; i++)
+            assert buf.add(i, i) : "addition of seqno " + i + " failed";
+        System.out.println("buf = " + buf);
+        List<Integer> removed=buf.removeMany(true,3);
+        System.out.println("removed " + removed);
+        System.out.println("buf = " + buf);
+        for(int i: removed)
+            assert buf.get(i) == null;
+        assertIndices(buf, 8, 8, 15);
+
+        for(int i=16; i <= 18; i++)
+            assert buf.add(i, i);
+        System.out.println("buf = " + buf);
+
+        removed=buf.removeMany(true, 0);
+        System.out.println("buf = " + buf);
+        System.out.println("removed = " + removed);
+        assert removed.size() == 10;
+        for(int i: removed)
+            assert buf.get(i) == null;
+
+        assert buf.isEmpty();
+        assert buf.getNullElements() == 0;
+        assertIndices(buf, 18, 18, 18);
+    }
+
+    public void testAddMissing() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        for(int i: Arrays.asList(1,2,4,5,6))
+            buf.add(i, i);
+        System.out.println("buf = " + buf);
+        assert buf.size() == 5 && buf.getNullElements() == 1;
+
+        Integer num=buf.remove();
+        assert num == 1;
+        num=buf.remove();
+        assert num == 2;
+        num=buf.remove();
+        assert num == null;
+
+        buf.add(3, 3);
+        System.out.println("buf = " + buf);
+        assert buf.size() == 4 && buf.getNullElements() == 0;
+
+        for(int i=3; i <= 6; i++) {
+            num=buf.remove();
+            System.out.println("buf = " + buf);
+            assert num == i;
+        }
+
+        num=buf.remove();
+        assert num == null;
+    }
     
     
     public static void testDuplicateAddition() {
@@ -94,6 +195,136 @@ public class TableTest {
         assert table.get(5) == 5;
         assert table.size() == 4;
         assertIndices(table, 0, 0, 10);
+    }
+
+    public void testAddWithInvalidSeqno() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 20);
+        boolean success=buf.add(10, 0);
+        assert !success;
+
+        success=buf.add(20, 0);
+        assert !success;
+        assert buf.isEmpty();
+    }
+
+    /**
+     * Runs NUM adder threads, each adder adds 1 (unique) seqno. When all adders are done, we should have
+     * NUM elements in the table.
+     */
+    public void testConcurrentAdd() {
+        final int NUM=100;
+        final Table<Integer> buf=new Table<Integer>(3, 10, 0);
+
+        CountDownLatch latch=new CountDownLatch(1);
+        Adder[] adders=new Adder[NUM];
+        for(int i=0; i < adders.length; i++) {
+            adders[i]=new Adder(latch, i+1, buf);
+            adders[i].start();
+        }
+
+        System.out.println("starting threads");
+        latch.countDown();
+        System.out.print("waiting for threads to be done: ");
+        for(Adder adder: adders) {
+            try {
+                adder.join();
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("OK");
+        System.out.println("buf = " + buf);
+        assert buf.size() == NUM;
+    }
+
+
+    /**
+        * Creates a table and fills it to capacity. Then starts a number of adder threads, each trying to add a
+        * seqno, blocking until there is more space. Each adder will block until the remover removes elements, so the
+        * adder threads get unblocked and can then add their elements to the buffer.
+        */
+       public void testConcurrentAddAndRemove() throws Exception {
+           final int NUM=5;
+           final Table<Integer> buf=new Table<Integer>(3, 10, 0);
+           for(int i=1; i <= 10; i++)
+               buf.add(i, i); // fill the buffer, add() will block now
+
+           CountDownLatch latch=new CountDownLatch(1);
+           Adder[] adders=new Adder[NUM];
+           for(int i=0; i < adders.length; i++) {
+               adders[i]=new Adder(latch, i+11, buf);
+               adders[i].start();
+           }
+
+           System.out.println("releasing threads");
+           latch.countDown();
+           System.out.print("waiting for threads to be done: ");
+
+           Thread remover=new Thread("Remover") {
+               public void run() {
+                   Util.sleep(2000);
+                   List<Integer> list=buf.removeMany(true, 5);
+                   System.out.println("\nremover: removed = " + list);
+               }
+           };
+           remover.start();
+
+           for(Adder adder: adders) {
+               try {
+                   adder.join();
+               }
+               catch(InterruptedException e) {
+                   e.printStackTrace();
+               }
+           }
+
+           remover.join();
+
+           System.out.println("OK");
+           System.out.println("buf = " + buf);
+           assert buf.size() == 10;
+           assertIndices(buf, 5, 5, 15);
+
+           List<Integer> list=buf.removeMany(true, 0);
+           System.out.println("removed = " + list);
+           assert list.size() == 10;
+           for(int i=6; i <=15; i++)
+               assert list.contains(i);
+           assertIndices(buf, 15, 15, 15);
+       }
+
+
+
+    public void testIndex() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 5);
+        assert buf.getHighestDelivered() == 5;
+        assert buf.getHighestReceived() == 5;
+        buf.add(6,6); buf.add(7,7);
+        buf.remove(false); buf.remove(false);
+        long low=buf.getLow();
+        assert low == 5;
+        buf.purge(4);
+        buf.purge(5);
+        buf.purge(6);
+        buf.purge(7);
+        System.out.println("buf = " + buf);
+        for(long i=low; i <= 7; i++)
+            assert buf.get(i) == null : "message with seqno=" + i + " is not null";
+    }
+
+
+    public void testIndexWithRemoveMany() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 5);
+        assert buf.getHighestDelivered() == 5;
+        assert buf.getHighestReceived() == 5;
+        buf.add(6,6); buf.add(7,7);
+        long low=buf.getLow();
+        buf.removeMany(true,0);
+        System.out.println("buf = " + buf);
+        for(long i=low; i <= 7; i++)
+            assert buf.get(i) == null : "message with seqno=" + i + " is not null";
+        assertIndices(buf, 7, 7, 7);
     }
 
 
@@ -149,6 +380,28 @@ public class TableTest {
         assert num_null_msgs == 10;
     }
 
+    public void testRemove2() {
+        final Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5))
+            buf.add(i, i);
+        System.out.println("buf = " + buf);
+        assertIndices(buf, 0, 0, 5);
+
+        Integer el=buf.remove(true);
+        System.out.println("el = " + el);
+        assert el.equals(1);
+
+        el=buf.remove(false);  // not encouraged ! nullify should always be true or false
+        System.out.println("el = " + el);
+        assert el.equals(2);
+
+        el=buf.remove(true);
+        System.out.println("el = " + el);
+        assert el.equals(3);
+    }
+
+
+
     public static void testRemoveMany() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
         for(int seqno: Arrays.asList(1,2,3,4,5,7,8,9,10))
@@ -162,6 +415,54 @@ public class TableTest {
         for(int num: Arrays.asList(1,2,3,4))
             assert list.contains(num);
         assertIndices(table, 4, 4, 10);
+    }
+
+    public void testRemoveMany2() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5,6,7,9,10))
+            buf.add(i, i);
+        List<Integer> list=buf.removeMany(false,3);
+        System.out.println("list = " + list);
+        assert list != null && list.size() == 3;
+
+        list=buf.removeMany(false, 0);
+        System.out.println("list = " + list);
+        assert list != null && list.size() == 4;
+
+        list=buf.removeMany(false, 10);
+        assert list == null;
+
+        buf.add(8, 8);
+        list=buf.removeMany(false, 0);
+        System.out.println("list = " + list);
+        assert list != null && list.size() == 3;
+    }
+
+    public void testRemoveManyWithNulling() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5,6,7,9,10))
+            buf.add(i, i);
+        List<Integer> list=buf.removeMany(true, 3);
+        System.out.println("list = " + list);
+        assert list != null && list.size() == 3;
+        for(int i: list)
+            assert buf.get(i) == null;
+
+        list=buf.removeMany(true, 0);
+        System.out.println("list = " + list);
+        assert list != null && list.size() == 4;
+        for(int i: list)
+            assert buf.get(i) == null;
+
+        list=buf.removeMany(false, 10);
+        assert list == null;
+
+        buf.add(8, 8);
+        list=buf.removeMany(true, 0);
+        System.out.println("list = " + list);
+        assert list != null && list.size() == 3;
+        for(int i: list)
+            assert buf.get(i) == null;
     }
 
 
@@ -228,6 +529,36 @@ public class TableTest {
             count++;
         }
     }
+
+    public void testGet() {
+        final Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5))
+            buf.add(i, i);
+        assert buf.get(0) == null;
+        assert buf.get(1) == 1;
+        assert buf.get(10) == null;
+        assert buf.get(5) == 5;
+        assert buf.get(6) == null;
+    }
+
+    public void testGetList() {
+        final Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        for(int i: Arrays.asList(1,2,3,4,5))
+            buf.add(i, i);
+        List<Integer> elements=buf.get(3,5);
+        System.out.println("elements = " + elements);
+        assert elements != null && elements.size() == 3;
+        assert elements.contains(3) && elements.contains(4) && elements.contains(5);
+
+        elements=buf.get(4, 10);
+        System.out.println("elements = " + elements);
+        assert elements != null && elements.size() == 2;
+        assert elements.contains(4) && elements.contains(5);
+
+        elements=buf.get(10, 20);
+        assert elements == null;
+    }
+
 
     public static void testGetNullMessages() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
@@ -297,6 +628,46 @@ public class TableTest {
         System.out.println("missing=" + missing);
         assert missing.size() == 7;
     }
+
+    public void testGetMissing4() {
+        Table<Integer> buf=new Table<Integer>(3, 30, 0);
+        for(int i: Arrays.asList(2,5,10,11,12,13,15,20,28,30))
+            buf.add(i, i);
+        System.out.println("buf = " + buf);
+        int missing=buf.getNullElements();
+        System.out.println("missing=" + missing);
+        SeqnoList missing_list=buf.getMissing();
+        System.out.println("missing_list = " + missing_list);
+        assert missing_list.size() == missing;
+    }
+
+    public void testGetMissing5() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        buf.add(1,1);
+        SeqnoList missing=buf.getMissing();
+        System.out.println("missing = " + missing);
+        assert missing == null && buf.getNullElements() == 0;
+
+        buf=new Table<Integer>(3, 10, 0);
+        buf.add(10,10);
+        missing=buf.getMissing();
+        System.out.println("missing = " + missing);
+        assert buf.getNullElements() == missing.size();
+
+        buf=new Table<Integer>(3, 10, 0);
+        buf.add(5,5);
+        missing=buf.getMissing();
+        System.out.println("missing = " + missing);
+        assert buf.getNullElements() == missing.size();
+
+        buf=new Table<Integer>(3, 10, 0);
+        buf.add(5,5); buf.add(7,7);
+        missing=buf.getMissing();
+        System.out.println("missing = " + missing);
+        assert missing.size() == 5;
+        assert buf.getNullElements() == missing.size();
+    }
+
 
     public static void testGetMissingLast() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
@@ -468,6 +839,44 @@ public class TableTest {
         assert table.computeSize() == table.size();
     }
 
+    public void testPurge2() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <=7; i++) {
+            buf.add(i, i);
+            buf.remove(false);
+        }
+        System.out.println("buf = " + buf);
+        assert buf.isEmpty();
+        long low=buf.getLow();
+        buf.purge(3);
+        assert buf.getLow() == 3;
+        for(long i=low; i <= 3; i++)
+            assert buf.get(i) == null : "message with seqno=" + i + " is not null";
+
+
+        buf.purge(6);
+        assert buf.get(6) == null;
+        buf.purge(7);
+        assert buf.get(7) == null;
+        assert buf.getLow() == 7;
+        assert buf.isEmpty();
+
+        for(int i=7; i <= 14; i++) {
+            buf.add(i, i);
+            buf.remove(false);
+        }
+
+        System.out.println("buf = " + buf);
+        assert buf.isEmpty();
+
+        low=buf.getLow(); assert low == 7;
+        buf.purge(12);
+        System.out.println("buf = " + buf);
+        assert buf.getLow() == 12;
+        for(long i=low; i <= 12; i++)
+            assert buf.get(i) == null : "message with seqno=" + i + " is not null";
+    }
+
 
     public void testCompact() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
@@ -517,6 +926,29 @@ public class TableTest {
         assert table.getLow() == low : "expected low=" + low + " but was " + table.getLow();
         assert table.getHighestDelivered() == hd : "expected hd=" + hd + " but was " + table.getHighestDelivered();
         assert table.getHighestReceived()  == hr : "expected hr=" + hr + " but was " + table.getHighestReceived();
+    }
+
+     protected static class Adder extends Thread {
+        protected final CountDownLatch latch;
+        protected final int            seqno;
+        protected final Table<Integer> buf;
+
+         public Adder(CountDownLatch latch, int seqno, Table<Integer> buf) {
+            this.latch=latch;
+            this.seqno=seqno;
+            this.buf=buf;
+        }
+
+        public void run() {
+            try {
+                latch.await();
+                Util.sleepRandom(10, 500);
+                buf.add(seqno, seqno);
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 }

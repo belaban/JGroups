@@ -207,7 +207,7 @@ public class Table<T> {
         try {
             // boundary check: the get() has to be in range [low+1 .. hr-1]
             if(from <= low) from=low+1;
-            if(to > hr) to=hr-1;
+            if(to > hr) to=hr;
             Getter getter=new Getter();
             forEach(from, to, getter);
             return getter.getList();
