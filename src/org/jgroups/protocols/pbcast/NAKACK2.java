@@ -101,7 +101,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected long xmit_interval=1000;
 
     @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
-    int xmit_table_num_rows=10;
+    int xmit_table_num_rows=50;
 
     @Property(description="Number of elements of a row of the matrix in the retransmission table (only for experts). " +
       "The capacity of the matrix is xmit_table_num_rows * xmit_table_msgs_per_row",writable=false)
@@ -112,7 +112,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     @Property(description="Number of milliseconds after which the matrix in the retransmission table " +
       "is compacted (only for experts)",writable=false)
-    long xmit_table_max_compaction_time=10 * 60 * 1000;
+    long xmit_table_max_compaction_time=30000;
 
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
@@ -207,6 +207,18 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         return num;
     }
 
+    @ManagedAttribute(description="Capacity of the retransmit buffer. Computed as xmit_table_num_rows * xmit_table_msgs_per_row")
+    public long getXmitTableCapacity() {
+        Table<Message> table=local_addr != null? xmit_table.get(local_addr) : null;
+        return table != null? table.capacity() : 0;
+    }
+
+    @ManagedAttribute(description="Prints the number of rows currently allocated in the matrix. This value will not " +
+      "be lower than xmit_table_now_rows")
+    public int getXmitTableNumCurrentRows() {
+        Table<Message> table=local_addr != null? xmit_table.get(local_addr) : null;
+        return table != null? table.getNumRows() : 0;
+    }
 
     @ManagedAttribute(description="Returns the number of bytes of all messages in all retransmit buffers. " +
       "To compute the size, Message.getLength() is used")
@@ -238,6 +250,38 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
     @ManagedAttribute public long getCurrentSeqno() {return seqno.get();}
+
+    @ManagedOperation(description="Prints the stability messages received")
+    public String printStabilityMessages() {
+        StringBuilder sb=new StringBuilder();
+        sb.append(Util.printListWithDelimiter(stability_msgs, "\n"));
+        return sb.toString();
+    }
+
+    @ManagedOperation(description="Keeps information about the last N times a digest was set or merged")
+    public String printDigestHistory() {
+        StringBuilder sb=new StringBuilder(local_addr + ":\n");
+        for(String tmp: digest_history)
+            sb.append(tmp).append("\n");
+        return sb.toString();
+    }
+
+    @ManagedOperation(description="Compacts the retransmit buffer")
+    public void compact() {
+        Table<Message> table=local_addr != null? xmit_table.get(local_addr) : null;
+        if(table != null)
+            table.compact();
+    }
+
+    @ManagedOperation(description="Prints the number of rows currently allocated in the matrix for all members. " +
+      "This value will not be lower than xmit_table_now_rows")
+    public String dumpXmitTablesNumCurrentRows() {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<Address,Table<Message>> entry: xmit_table.entrySet()) {
+            sb.append(entry.getKey()).append(": ").append(entry.getValue().getNumRows()).append("\n");
+        }
+        return sb.toString();
+    }
 
 
     public void resetStats() {
@@ -290,12 +334,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         return sb.toString();
     }
 
-    @ManagedOperation(description="TODO")
-    public String printStabilityMessages() {
-        StringBuilder sb=new StringBuilder();
-        sb.append(Util.printListWithDelimiter(stability_msgs, "\n"));
-        return sb.toString();
-    }
+
 
     public String printStabilityHistory() {
         StringBuilder sb=new StringBuilder();
@@ -306,13 +345,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         return sb.toString();
     }
 
-    @ManagedOperation(description="Keeps information about the last N times a digest was set or merged")
-    public String printDigestHistory() {
-        StringBuilder sb=new StringBuilder(local_addr + ":\n");
-        for(String tmp: digest_history)
-            sb.append(tmp).append("\n");
-        return sb.toString();
-    }
 
 
     public List<Integer> providedUpServices() {
@@ -558,7 +590,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
 
         msg_id=seqno.incrementAndGet();
-        long sleep=500;
+        long sleep=10;
         while(running) {
             try {
                 msg.putHeader(this.id, NakAckHeader2.createMessageHeader(msg_id));
@@ -566,8 +598,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 break;
             }
             catch(Throwable t) {
-                if(running)
-                    Util.sleep(sleep);
+                if(!running)
+                    break;
+                if(log.isWarnEnabled())
+                    log.warn("failed sending message", t);
+                Util.sleep(sleep);
                 sleep=Math.min(5000, sleep*2);
             }
         }
@@ -588,7 +623,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
     protected void send(Event evt, Message msg) {
-        send(evt, msg, true);
+        send(evt,msg,true);
     }
 
 
@@ -940,7 +975,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * If a buffer already exists, it resets it.
      */
     protected void setDigest(Digest digest) {
-        setDigest(digest, false);
+        setDigest(digest,false);
     }
 
 
@@ -951,7 +986,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * if the digest's seqno is greater than the seqno in the window.
      */
     protected void mergeDigest(Digest digest) {
-        setDigest(digest, true);
+        setDigest(digest,true);
     }
 
     /**

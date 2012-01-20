@@ -57,7 +57,7 @@ public class Table<T> {
 
     protected final AtomicBoolean  processing=new AtomicBoolean(false);
     
-    protected static final long   DEFAULT_MAX_COMPACTION_TIME=2 * 60 * 1000L;
+    protected static final long   DEFAULT_MAX_COMPACTION_TIME=30000;
 
     protected static final double DEFAULT_RESIZE_FACTOR=1.2;
 
@@ -126,6 +126,7 @@ public class Table<T> {
     public long getHighestReceived()     {return hr;}
     public long getMaxCompactionTime()   {return max_compaction_time;}
     public void setMaxCompactionTime(long max_compaction_time) {this.max_compaction_time=max_compaction_time;}
+    public int getNumRows()              {return matrix.length;}
 
     /** Returns the ratio between size and capacity, as a percentage */
     public double getFillFactor()      {return size == 0? 0.0 : (int)(((double)size / capacity()) * 100);}
@@ -361,7 +362,7 @@ public class Table<T> {
 
     /** Moves rows down the matrix, by removing purged rows. If resizing to accommodate seqno is still needed, computes
      * a new size. Then either moves existing rows down, or copies them into a new array (if resizing took place).
-     * The lock must be held vy the caller of resize(). */
+     * The lock must be held by the caller of resize(). */
     @SuppressWarnings("unchecked")
     @GuardedBy("lock")
     protected void resize(long seqno) {
