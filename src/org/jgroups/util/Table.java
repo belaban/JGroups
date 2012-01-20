@@ -57,7 +57,7 @@ public class Table<T> {
 
     protected final AtomicBoolean  processing=new AtomicBoolean(false);
     
-    protected static final long   DEFAULT_MAX_COMPACTION_TIME=30000;
+    protected static final long   DEFAULT_MAX_COMPACTION_TIME=10000;
 
     protected static final double DEFAULT_RESIZE_FACTOR=1.2;
 

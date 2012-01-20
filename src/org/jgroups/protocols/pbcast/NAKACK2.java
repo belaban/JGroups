@@ -112,7 +112,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     @Property(description="Number of milliseconds after which the matrix in the retransmission table " +
       "is compacted (only for experts)",writable=false)
-    long xmit_table_max_compaction_time=30000;
+    long xmit_table_max_compaction_time=10000;
 
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
