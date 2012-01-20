@@ -149,12 +149,12 @@ public class SeqnoList implements Streamable, Iterable<Long> {
         protected long        range_index=-1;
 
         public boolean hasNext() {
-            return (range != null && range_index +1 <= range.to) || index +1 <=  seqnos.size();
+            return (range != null && range_index < range.to) || index <  seqnos.size();
         }
 
         public Long next() {
             if(range != null) {
-                if(range_index +1 <= range.to)
+                if(range_index < range.to)
                     return ++range_index;
                 else
                     range=null;
