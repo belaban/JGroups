@@ -203,7 +203,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public int getXmitTableMissingMessages() {
         int num=0;
         for(Table<Message> buf: xmit_table.values())
-            num+=buf.getNullElements();
+            num+=buf.getNumMissing();
         return num;
     }
 

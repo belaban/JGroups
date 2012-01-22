@@ -118,7 +118,7 @@ public class TableTest {
             ;
         System.out.println("buf = " + buf);
         assert buf.isEmpty();
-        assert buf.getNullElements() == 0;
+        assert buf.getNumMissing() == 0;
         low=buf.getLow();
         buf.purge(18);
         assert buf.getLow() == 18;
@@ -151,7 +151,7 @@ public class TableTest {
             assert buf.get(i) == null;
 
         assert buf.isEmpty();
-        assert buf.getNullElements() == 0;
+        assert buf.getNumMissing() == 0;
         assertIndices(buf, 18, 18, 18);
     }
 
@@ -160,7 +160,7 @@ public class TableTest {
         for(int i: Arrays.asList(1,2,4,5,6))
             buf.add(i, i);
         System.out.println("buf = " + buf);
-        assert buf.size() == 5 && buf.getNullElements() == 1;
+        assert buf.size() == 5 && buf.getNumMissing() == 1;
 
         Integer num=buf.remove();
         assert num == 1;
@@ -171,7 +171,7 @@ public class TableTest {
 
         buf.add(3, 3);
         System.out.println("buf = " + buf);
-        assert buf.size() == 4 && buf.getNullElements() == 0;
+        assert buf.size() == 4 && buf.getNumMissing() == 0;
 
         for(int i=3; i <= 6; i++) {
             num=buf.remove();
@@ -365,7 +365,7 @@ public class TableTest {
         assert table.size() == 10;
         assertIndices(table, 0, 0, 20);
 
-        int num_null_msgs=table.getNullElements();
+        int num_null_msgs=table.getNumMissing();
         System.out.println("num_null_msgs = " + num_null_msgs);
         assert num_null_msgs == 10;
 
@@ -375,7 +375,7 @@ public class TableTest {
         assert table.size() == 1;
         assertIndices(table, 9, 9, 20);
 
-        num_null_msgs=table.getNullElements();
+        num_null_msgs=table.getNumMissing();
         System.out.println("num_null_msgs = " + num_null_msgs);
         assert num_null_msgs == 10;
     }
@@ -410,7 +410,7 @@ public class TableTest {
         assertIndices(table, 0, 0, 10);
         List<Integer> list=table.removeMany(true,4);
         System.out.println("list=" + list + ", table=" + table);
-        assert table.size() == 5 && table.getNullElements() == 1;
+        assert table.size() == 5 && table.getNumMissing() == 1;
         assert list != null && list.size() == 4;
         for(int num: Arrays.asList(1,2,3,4))
             assert list.contains(num);
@@ -472,14 +472,14 @@ public class TableTest {
             table.add(seqno, seqno);
         System.out.println("table = " + table);
         assertIndices(table, 0, 0, 20);
-        assert table.size() == 18 && table.getNullElements() == 2;
+        assert table.size() == 18 && table.getNumMissing() == 2;
         List<Integer> list=table.removeMany(true, 0);
         assert list.size() == 12;
         assertIndices(table, 12, 12, 20);
-        assert table.size() == 6 && table.getNullElements() == 2;
+        assert table.size() == 6 && table.getNumMissing() == 2;
         table.purge(12);
         assertIndices(table, 12, 12, 20);
-        assert table.size() == 6 && table.getNullElements() == 2;
+        assert table.size() == 6 && table.getNumMissing() == 2;
     }
 
     public static void testRemoveManyWithWrapping2() {
@@ -488,14 +488,14 @@ public class TableTest {
             table.add(seqno, seqno);
         System.out.println("table = " + table);
         assertIndices(table, 0, 0, 20);
-        assert table.size() == 18 && table.getNullElements() == 2;
+        assert table.size() == 18 && table.getNumMissing() == 2;
         List<Integer> list=table.removeMany(false,0);
         assert list.size() == 12;
         assertIndices(table, 0, 12, 20);
-        assert table.size() == 6 && table.getNullElements() == 2;
+        assert table.size() == 6 && table.getNumMissing() == 2;
         table.purge(12);
         assertIndices(table, 12, 12, 20);
-        assert table.size() == 6 && table.getNullElements() == 2;
+        assert table.size() == 6 && table.getNumMissing() == 2;
     }
 
 
@@ -565,13 +565,13 @@ public class TableTest {
         table.add(1, 1);
         table.add(100, 100);
         System.out.println("table = " + table);
-        int num_null_elements=table.getNullElements();
+        int num_null_elements=table.getNumMissing();
         assert num_null_elements == 98; // [2 .. 99]
 
         table.add(50,50);
         System.out.println("table = " + table);
         assert table.size() == 3;
-        assert table.getNullElements() == 97;
+        assert table.getNumMissing() == 97;
     }
 
     public static void testGetNullMessages2() {
@@ -579,24 +579,24 @@ public class TableTest {
         table.add(1, 1);
         table.add(5, 5);
         System.out.println("table = " + table);
-        int num_null_elements=table.getNullElements();
+        int num_null_elements=table.getNumMissing();
         assert num_null_elements == 3; // [2 .. 4]
 
         table.add(10,10);
         System.out.println("table = " + table);
         assert table.size() == 3;
-        assert table.getNullElements() == 7;
+        assert table.getNumMissing() == 7;
 
         table.add(14,14);
         System.out.println("table = " + table);
         assert table.size() == 4;
-        assert table.getNullElements() == 10;
+        assert table.getNumMissing() == 10;
 
         while(table.remove() != null)
             ;
         System.out.println("table = " + table);
         assert table.size() == 3;
-        assert table.getNullElements() == 10;
+        assert table.getNumMissing() == 10;
     }
 
     public static void testGetMissing() {
@@ -634,7 +634,7 @@ public class TableTest {
         for(int i: Arrays.asList(2,5,10,11,12,13,15,20,28,30))
             buf.add(i, i);
         System.out.println("buf = " + buf);
-        int missing=buf.getNullElements();
+        int missing=buf.getNumMissing();
         System.out.println("missing=" + missing);
         SeqnoList missing_list=buf.getMissing();
         System.out.println("missing_list = " + missing_list);
@@ -646,26 +646,26 @@ public class TableTest {
         buf.add(1,1);
         SeqnoList missing=buf.getMissing();
         System.out.println("missing = " + missing);
-        assert missing == null && buf.getNullElements() == 0;
+        assert missing == null && buf.getNumMissing() == 0;
 
         buf=new Table<Integer>(3, 10, 0);
         buf.add(10,10);
         missing=buf.getMissing();
         System.out.println("missing = " + missing);
-        assert buf.getNullElements() == missing.size();
+        assert buf.getNumMissing() == missing.size();
 
         buf=new Table<Integer>(3, 10, 0);
         buf.add(5,5);
         missing=buf.getMissing();
         System.out.println("missing = " + missing);
-        assert buf.getNullElements() == missing.size();
+        assert buf.getNumMissing() == missing.size();
 
         buf=new Table<Integer>(3, 10, 0);
         buf.add(5,5); buf.add(7,7);
         missing=buf.getMissing();
         System.out.println("missing = " + missing);
         assert missing.size() == 5;
-        assert buf.getNullElements() == missing.size();
+        assert buf.getNumMissing() == missing.size();
     }
 
 
@@ -699,7 +699,7 @@ public class TableTest {
         assert table.size() == NUM_ELEMENTS;
         assert table.capacity() == 10010;
         assertIndices(table, 0, 0, NUM_ELEMENTS);
-        assert table.getNullElements() == 0;
+        assert table.getNumMissing() == 0;
     }
 
     public static void testResize() {
@@ -741,7 +741,7 @@ public class TableTest {
             addAndGet(table, i);
         System.out.println("table: " + table);
         assertIndices(table, 0, 0, 50);
-        assert table.size() == 50 && table.getNullElements() == 0;
+        assert table.size() == 50 && table.getNumMissing() == 0;
 
         // now remove 15 messages
         for(long i=1; i <= 15; i++) {
@@ -750,13 +750,13 @@ public class TableTest {
         }
         System.out.println("table after removal of seqno 15: " + table);
         assertIndices(table, 0, 15, 50);
-        assert table.size() == 35 && table.getNullElements() == 0;
+        assert table.size() == 35 && table.getNumMissing() == 0;
 
         table.purge(15);
         System.out.println("now triggering a resize() by addition of seqno=55");
         addAndGet(table, 55);
         assertIndices(table, 15, 15, 55);
-        assert table.size() == 36 && table.getNullElements() == 4;
+        assert table.size() == 36 && table.getNumMissing() == 4;
 
         // now we have elements 40-49 in row 1 and 55 in row 2:
         List<Integer> list=new ArrayList<Integer>(20);

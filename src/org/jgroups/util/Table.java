@@ -430,7 +430,7 @@ public class Table<T> {
 
 
     /** Returns the number of null elements in the range [hd+1 .. hr-1] excluding hd and hr */
-    public int getNullElements() {
+    public int getNumMissing() {
         lock.lock();
         try {
             Counter null_counter=new Counter(true); // count null values
@@ -473,7 +473,7 @@ public class Table<T> {
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append("[" + low + " | " + hd + " | " + hr + "] (" + size() +
-                    " elements, " + getNullElements() + " missing)");
+                    " elements, " + getNumMissing() + " missing)");
         return sb.toString();
     }
 
