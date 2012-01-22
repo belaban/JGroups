@@ -21,11 +21,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * <p/>
  * Table started out as a copy of RetransmitTable, but is synchronized and maintains its own low, hd and hr
  * pointers, so it can be used as a replacement for NakReceiverWindow. The idea is to put messages into Table,
- * deliver them in order of seqnos, and periodically scan over all Tables in NAKACK2 to do retransmission.
+ * deliver them in order of seqnos, and periodically scan over all tables in NAKACK2 to do retransmission.
  * <p/>
  * @author Bela Ban
+ * @version 3.1
  */
-// todo: trigger compaction if more than N rows can be removed; check on resize()
 public class Table<T> {
     protected final int    num_rows;
     protected final int    elements_per_row;
@@ -128,8 +128,6 @@ public class Table<T> {
     public void setMaxCompactionTime(long max_compaction_time) {this.max_compaction_time=max_compaction_time;}
     public int getNumRows()              {return matrix.length;}
 
-    /** Returns the ratio between size and capacity, as a percentage */
-    public double getFillFactor()      {return size == 0? 0.0 : (int)(((double)size / capacity()) * 100);}
 
     /**
      * Only used internally by JGroups on a state transfer. Please don't use this in application code, or you're on
@@ -298,7 +296,6 @@ public class Table<T> {
                 for(int i=0; i <= index; i++) // null all elements up to and including seqno in the given row
                     matrix[row_index][i]=null;
             }
-            size=computeSize();
             if(seqno > low)
                 low=seqno;
 
@@ -382,7 +379,6 @@ public class Table<T> {
         }
 
         offset+=(num_rows_to_purge * elements_per_row);
-        size=computeSize();
     }
 
 
@@ -419,7 +415,6 @@ public class Table<T> {
             System.arraycopy(matrix, from, new_matrix, 0, range);
             matrix=new_matrix;
             offset+=from * elements_per_row;
-            size=computeSize();
         }
     }
 
