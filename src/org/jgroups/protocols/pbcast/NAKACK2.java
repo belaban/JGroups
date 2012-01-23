@@ -1222,9 +1222,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             for(Map.Entry<Address,Table<Message>> entry: xmit_table.entrySet()) {
                 Address target=entry.getKey(); // target to send retransmit requests to
                 Table<Message> buf=entry.getValue();
-                SeqnoList missing=buf.getMissing();
-                if(missing != null)
-                    retransmit(missing, target, false);
+                if(buf.getNumMissing() > 0) {
+                    SeqnoList missing=buf.getMissing();
+                    if(missing != null)
+                        retransmit(missing, target, false);
+                }
             }
         }
     }

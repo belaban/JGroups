@@ -431,15 +431,7 @@ public class Table<T> {
 
     /** Returns the number of null elements in the range [hd+1 .. hr-1] excluding hd and hr */
     public int getNumMissing() {
-        lock.lock();
-        try {
-            Counter null_counter=new Counter(true); // count null values
-            forEach(hd+1, hr-1, null_counter);      // exclude hd and hr
-            return null_counter.result;
-        }
-        finally {
-            lock.unlock();
-        }
+        return (int)(hr-hd-size);
     }
 
 

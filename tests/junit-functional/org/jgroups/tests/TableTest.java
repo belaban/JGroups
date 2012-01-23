@@ -607,6 +607,7 @@ public class TableTest {
         SeqnoList missing=table.getMissing();
         System.out.println("missing=" + missing);
         assert missing.size() == 4;
+        assert table.getNumMissing() == 4;
     }
 
     public static void testGetMissing2() {
@@ -617,6 +618,7 @@ public class TableTest {
         SeqnoList missing=table.getMissing();
         System.out.println("missing=" + missing);
         assert missing.size() == 2; // the range [1-2]
+        assert table.getNumMissing() == 2;
     }
 
     public static void testGetMissing3() {
@@ -627,6 +629,7 @@ public class TableTest {
         SeqnoList missing=table.getMissing();
         System.out.println("missing=" + missing);
         assert missing.size() == 7;
+        assert table.getNumMissing() == 7;
     }
 
     public void testGetMissing4() {
@@ -635,6 +638,7 @@ public class TableTest {
             buf.add(i, i);
         System.out.println("buf = " + buf);
         int missing=buf.getNumMissing();
+        assert missing == 20;
         System.out.println("missing=" + missing);
         SeqnoList missing_list=buf.getMissing();
         System.out.println("missing_list = " + missing_list);
@@ -677,6 +681,7 @@ public class TableTest {
         SeqnoList missing=table.getMissing();
         System.out.println("missing=" + missing);
         assert missing.size() == 1;
+        assert table.getNumMissing() == 1;
     }
 
     public static void testGetMissingFirst() {
@@ -687,6 +692,7 @@ public class TableTest {
         SeqnoList missing=table.getMissing();
         System.out.println("missing=" + missing);
         assert missing.size() == 1;
+        assert table.getNumMissing() == 1;
     }
 
 
