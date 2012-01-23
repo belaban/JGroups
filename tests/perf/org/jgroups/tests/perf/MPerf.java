@@ -249,7 +249,7 @@ public class MPerf extends ReceiverAdapter {
         MPerfHeader hdr=(MPerfHeader)msg.getHeader(ID);
         switch(hdr.type) {
             case MPerfHeader.DATA:
-                handleData(msg.getSrc(), msg.getLength());
+                handleData(msg.getSrc(), msg.getLength(), hdr.seqno);
                 break;
 
             case MPerfHeader.START_SENDING:
@@ -359,7 +359,7 @@ public class MPerf extends ReceiverAdapter {
         }
     }
 
-    protected void handleData(Address src, int length) {
+    protected void handleData(Address src, int length, long seqno) {
         if(length == 0)
             return;
         Stats result=received_msgs.get(src);
@@ -369,7 +369,7 @@ public class MPerf extends ReceiverAdapter {
             if(tmp != null)
                 result=tmp;
         }
-        result.addMessage();
+        result.addMessage(seqno);
 
         if(last_interval == 0)
             last_interval=System.currentTimeMillis();
@@ -477,12 +477,13 @@ public class MPerf extends ReceiverAdapter {
     
     protected void sendMessages() {
         final AtomicInteger num_msgs_sent=new AtomicInteger(0); // all threads will increment this
+        final AtomicLong    seqno=new AtomicLong(1); // monotonically increasing seqno, to be used by all threads
         final Sender[]      senders=new Sender[num_threads];
         final CyclicBarrier barrier=new CyclicBarrier(num_threads +1);
         final byte[]        payload=new byte[msg_size];
 
         for(int i=0; i < num_threads; i++) {
-            senders[i]=new Sender(barrier, num_msgs_sent, payload);
+            senders[i]=new Sender(barrier, num_msgs_sent, seqno, payload);
             senders[i].setName("sender-" + i);
             senders[i].start();
         }
@@ -512,11 +513,13 @@ public class MPerf extends ReceiverAdapter {
     protected class Sender extends Thread {
         protected final CyclicBarrier barrier;
         protected final AtomicInteger num_msgs_sent;
+        protected final AtomicLong    seqno;
         protected final byte[]        payload;
 
-        protected Sender(CyclicBarrier barrier, AtomicInteger num_msgs_sent, byte[] payload) {
+        protected Sender(CyclicBarrier barrier, AtomicInteger num_msgs_sent, AtomicLong seqno, byte[] payload) {
             this.barrier=barrier;
             this.num_msgs_sent=num_msgs_sent;
+            this.seqno=seqno;
             this.payload=payload;
         }
 
@@ -534,7 +537,11 @@ public class MPerf extends ReceiverAdapter {
                     int tmp=num_msgs_sent.incrementAndGet();
                     if(tmp > num_msgs)
                         break;
-                    send(null, payload, MPerfHeader.DATA);
+                    long new_seqno=seqno.getAndIncrement();
+                    Message msg=new Message(null, null, payload);
+                    MPerfHeader hdr=new MPerfHeader(MPerfHeader.DATA,new_seqno);
+                    msg.putHeader(ID, hdr);
+                    channel.send(msg);
                     if(tmp % log_interval == 0)
                         System.out.println("++ sent " + tmp);
                     if(tmp == num_msgs) // last message, send SENDING_DONE message
@@ -621,17 +628,22 @@ public class MPerf extends ReceiverAdapter {
         protected long    start=0;
         protected long    stop=0; // done when > 0
         protected long    num_msgs_received=0;
+        protected long    seqno=1; // next expected seqno
 
         public void reset() {
             start=stop=num_msgs_received=0;
+            seqno=1;
         }
 
         public void    stop() {stop=System.currentTimeMillis();}
         public boolean isDone() {return stop > 0;}
 
-        public void addMessage() {
+        public void addMessage(long seqno) {
             if(start == 0)
                 start=System.currentTimeMillis();
+            if(seqno != this.seqno)
+                throw new IllegalStateException("expected seqno=" + this.seqno + ", but received " + seqno);
+            this.seqno++;
             num_msgs_received++;
         }
 
@@ -685,12 +697,29 @@ public class MPerf extends ReceiverAdapter {
 
 
         protected byte         type;
+        protected long         seqno;
 
         public MPerfHeader() {}
         public MPerfHeader(byte type) {this.type=type;}
-        public int size() {return Global.BYTE_SIZE;}
-        public void writeTo(DataOutput out) throws Exception {out.writeByte(type);}
-        public void readFrom(DataInput in) throws Exception {type=in.readByte();}
+        public MPerfHeader(byte type, long seqno) {this(type); this.seqno=seqno;}
+        public int size() {
+            int retval=Global.BYTE_SIZE;
+            if(type == DATA)
+                retval+=Util.size(seqno);
+            return retval;
+        }
+
+        public void writeTo(DataOutput out) throws Exception {
+            out.writeByte(type);
+            if(type == DATA)
+                Util.writeLong(seqno, out);
+        }
+
+        public void readFrom(DataInput in) throws Exception {
+            type=in.readByte();
+            if(type == DATA)
+                seqno=Util.readLong(in);
+        }
     }
 
 
