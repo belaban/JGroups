@@ -396,7 +396,7 @@ public class Table<T> {
     @SuppressWarnings("unchecked")
     @GuardedBy("lock")
     protected void resize(long seqno) {
-        int num_rows_to_purge=(int)((low - offset) / elements_per_row);
+        int num_rows_to_purge=computeRow(low);
         int row_index=computeRow(seqno) - num_rows_to_purge;
         if(row_index < 0)
             return;

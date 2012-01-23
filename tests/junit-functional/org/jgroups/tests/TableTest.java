@@ -824,6 +824,32 @@ public class TableTest {
         assert table.capacity() == 50;
     }
 
+    public static void testMove2() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i < 30; i++)
+            table.add(i, i);
+        table.removeMany(true, 23);
+        System.out.println("table = " + table);
+        table.add(35, 35); // triggers a resize() --> move()
+        for(int i=1; i <= 23; i++)
+            assert table._get(i) == null;
+        for(int i=24; i < 30; i++)
+            assert table._get(i) != null;
+    }
+
+    public static void testMove3() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i < 30; i++)
+            table.add(i, i);
+        table.removeMany(true, 23);
+        System.out.println("table = " + table);
+        table.add(30, 30); // triggers a resize() --> move()
+        for(int i=1; i <= 23; i++)
+            assert table._get(i) == null;
+        for(int i=24; i < 30; i++)
+            assert table._get(i) != null;
+    }
+
 
     public static void testPurge() {
         Table<Integer> table=new Table<Integer>(5, 10, 0);
@@ -955,7 +981,7 @@ public class TableTest {
     }
 
 
-    public void testCompactWithAutomaticPurging() {
+    public void testCompact2() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
         for(int i=1; i <= 80; i++)
              addAndGet(table, i);
