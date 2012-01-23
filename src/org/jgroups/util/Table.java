@@ -318,18 +318,17 @@ public class Table<T> {
         try {
             if(seqno > hd) // we cannot be higher than the highest removed seqno
                 seqno=hd;
-            int num_rows_to_remove=(int)(seqno - offset) / elements_per_row;
-            for(int i=0; i < num_rows_to_remove; i++) // Null all rows which can be fully removed
+            int start_row=computeRow(low), end_row=computeRow(seqno);
+            if(start_row < 0) start_row=0;
+            if(end_row < 0)
+                return;
+            for(int i=start_row; i < end_row; i++) // Null all rows which can be fully removed
                 matrix[i]=null;
 
-            int row_index=computeRow(seqno);
-            if(row_index < 0 || row_index >= matrix.length)
-                return;
-
-            if(matrix[row_index] != null) {
+            if(matrix[end_row] != null) {
                 int index=computeIndex(seqno);
                 for(int i=0; i <= index; i++) // null all elements up to and including seqno in the given row
-                    matrix[row_index][i]=null;
+                    matrix[end_row][i]=null;
             }
             if(seqno > low)
                 low=seqno;
