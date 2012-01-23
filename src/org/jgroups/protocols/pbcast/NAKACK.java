@@ -640,7 +640,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
 
         msg_id=seqno.incrementAndGet();
-        long sleep=500;
+        long sleep=10;
         while(running) {
             try {
                 msg.putHeader(this.id, NakAckHeader.createMessageHeader(msg_id));
