@@ -27,39 +27,41 @@ import java.util.concurrent.locks.ReentrantLock;
  * @version 3.1
  */
 public class Table<T> {
-    protected final int    num_rows;
-    protected final int    elements_per_row;
-    protected final double resize_factor;
-    protected T[][]        matrix;
+    protected final int            num_rows;
+    protected final int            elements_per_row;
+    protected final double         resize_factor;
+    protected T[][]                matrix;
 
     /** The first seqno, at matrix[0][0] */
-    protected long         offset;
+    protected long                 offset;
 
-    protected int          size;
+    protected int                  size;
 
     /** The highest seqno purged */
-    protected long         low;
+    protected long                 low;
 
     /** The highest received seqno */
-    protected long         hr;
+    protected long                 hr;
 
     /** The highest delivered (= removed) seqno */
-    protected long         hd;
+    protected long                 hd;
 
     /** Time (in ms) after which a compaction should take place. 0 disables compaction */
-    protected long         max_compaction_time=DEFAULT_MAX_COMPACTION_TIME;
+    protected long                 max_compaction_time=DEFAULT_MAX_COMPACTION_TIME;
 
     /** The time when the last compaction took place. If a {@link #compact()} takes place and sees that the
      * last compaction is more than max_compaction_time ms ago, a compaction will take place */
-    protected long         last_compaction_timestamp=0;
+    protected long                 last_compaction_timestamp=0;
 
-    protected final Lock   lock=new ReentrantLock();
+    protected final Lock           lock=new ReentrantLock();
 
     protected final AtomicBoolean  processing=new AtomicBoolean(false);
-    
-    protected static final long   DEFAULT_MAX_COMPACTION_TIME=10000;
 
-    protected static final double DEFAULT_RESIZE_FACTOR=1.2;
+    protected int                  num_compactions=0, num_resizes=0, num_moves=0, num_purges=0;
+    
+    protected static final long    DEFAULT_MAX_COMPACTION_TIME=10000;
+
+    protected static final double  DEFAULT_RESIZE_FACTOR=1.2;
 
 
 
@@ -118,6 +120,11 @@ public class Table<T> {
     /** Returns the total capacity in the matrix */
     public int capacity()                {return matrix.length * elements_per_row;}
 
+    public int getNumCompactions()       {return num_compactions;}
+    public int getNumMoves()             {return num_moves;}
+    public int getNumResizes()           {return num_resizes;}
+    public int getNumPurges()            {return num_purges;}
+
     /** Returns the numbers of elements in the table */
     public int size()                    {return size;}
     public boolean isEmpty()             {return size <= 0;}
@@ -127,7 +134,7 @@ public class Table<T> {
     public long getMaxCompactionTime()   {return max_compaction_time;}
     public void setMaxCompactionTime(long max_compaction_time) {this.max_compaction_time=max_compaction_time;}
     public int getNumRows()              {return matrix.length;}
-
+    public void resetStats()             {num_compactions=num_moves=num_resizes=num_purges=0;}
 
     /**
      * Only used internally by JGroups on a state transfer. Please don't use this in application code, or you're on
@@ -298,9 +305,8 @@ public class Table<T> {
             }
             if(seqno > low)
                 low=seqno;
-
-            // see if compaction should be triggered
-            if(max_compaction_time <= 0)
+            num_purges++;
+            if(max_compaction_time <= 0) // see if compaction should be triggered
                 return;
 
             long current_time=System.currentTimeMillis();
@@ -373,6 +379,7 @@ public class Table<T> {
             T[][] new_matrix=(T[][])new Object[new_size][];
             System.arraycopy(matrix, num_rows_to_purge, new_matrix, 0, matrix.length - num_rows_to_purge);
             matrix=new_matrix;
+            num_resizes++;
         }
         else if(num_rows_to_purge > 0) {
             move(num_rows_to_purge);
@@ -394,6 +401,7 @@ public class Table<T> {
 
         for(int i=matrix.length - num_rows; i < matrix.length; i++)
             matrix[i]=null;
+        num_moves++;
     }
 
 
@@ -415,6 +423,7 @@ public class Table<T> {
             System.arraycopy(matrix, from, new_matrix, 0, range);
             matrix=new_matrix;
             offset+=from * elements_per_row;
+            num_compactions++;
         }
     }
 

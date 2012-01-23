@@ -238,6 +238,30 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         return retval;
     }
 
+    @ManagedAttribute(description="Number of retransmit table compactions")
+    public int getXmitTableNumCompactions() {
+        Table<Message> table=local_addr != null? xmit_table.get(local_addr) : null;
+        return table != null? table.getNumCompactions() : 0;
+    }
+
+    @ManagedAttribute(description="Number of retransmit table moves")
+    public int getXmitTableNumMoves() {
+        Table<Message> table=local_addr != null? xmit_table.get(local_addr) : null;
+        return table != null? table.getNumMoves() : 0;
+    }
+
+    @ManagedAttribute(description="Number of retransmit table resizes")
+    public int getXmitTableNumResizes() {
+        Table<Message> table=local_addr != null? xmit_table.get(local_addr) : null;
+        return table != null? table.getNumResizes(): 0;
+    }
+
+    @ManagedAttribute(description="Number of retransmit table purges")
+    public int getXmitTableNumPurges() {
+        Table<Message> table=local_addr != null? xmit_table.get(local_addr) : null;
+        return table != null? table.getNumPurges(): 0;
+    }
+
     @ManagedOperation(description="Prints the contents of the receiver windows for all members")
     public String printMessages() {
         StringBuilder ret=new StringBuilder(local_addr + ":\n");
@@ -283,7 +307,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         return sb.toString();
     }
 
-
+    @ManagedOperation(description="Resets all statistics")
     public void resetStats() {
         xmit_reqs_received.set(0);
         xmit_reqs_sent.set(0);
@@ -291,6 +315,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         xmit_rsps_sent.set(0);
         stability_msgs.clear();
         digest_history.clear();
+        Table<Message> table=local_addr != null? xmit_table.get(local_addr) : null;
+        if(table != null)
+            table.resetStats();
     }
 
     public void init() throws Exception {
