@@ -187,6 +187,11 @@ public class Table<T> {
     }
 
 
+    /**
+     * Returns an element at seqno
+     * @param seqno
+     * @return
+     */
     public T get(long seqno) {
         lock.lock();
         try {
@@ -205,6 +210,29 @@ public class Table<T> {
             lock.unlock();
         }
     }
+
+    /**
+     * To be used only for testing; doesn't do any index or sanity checks
+     * @param seqno
+     * @return
+     */
+    public T _get(long seqno) {
+        lock.lock();
+        try {
+            int row_index=computeRow(seqno);
+            if(row_index < 0 || row_index >= matrix.length)
+                return null;
+            T[] row=matrix[row_index];
+            if(row == null)
+                return null;
+            int index=computeIndex(seqno);
+            return index >= 0? row[index] : null;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
 
 
 
@@ -432,9 +460,9 @@ public class Table<T> {
     /** Iterate from low to hr and add up non-null values. Caller must hold the lock. */
     @GuardedBy("lock")
     public int computeSize() {
-        Counter non_null_counter=new Counter(false);
+        Counter non_null_counter=new Counter();
         forEach(hd+1, hr, non_null_counter);
-        return non_null_counter.result;
+        return non_null_counter.getResult();
     }
 
 
@@ -530,24 +558,14 @@ public class Table<T> {
     }
 
     protected class Counter implements Visitor<T> {
-        protected final boolean count_null_values;
         protected int           result=0;
 
-        public Counter(boolean count_null_values) {
-            this.count_null_values=count_null_values;
-        }
 
         public int getResult() {return result;}
 
         public boolean visit(long seqno, T element, int row, int column) {
-            if(element == null) {
-                if(count_null_values)
-                    result++;
-            }
-            else {
-                if(!count_null_values)
-                    result++;
-            }
+            if(element != null)
+                result++;
             return true;
         }
     }

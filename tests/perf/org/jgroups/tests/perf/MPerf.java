@@ -22,7 +22,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Dynamic tool to measure multicast performance of JGroups; every member sends N messages and we measure how long it
- * takes for all receivers to receive them. MPerf is <em>dynamic</em> because it doesn't accept any configuration
+ * takes for all receivers to receive them.<p/>
+ * All messages received from a member P are checked for ordering and non duplicity.<p/>
+ * MPerf is <em>dynamic</em> because it doesn't accept any configuration
  * parameters (besides the channel config file and name); all configuration is done at runtime, and will be broadcast
  * to all cluster members.
  * @author Bela Ban (belaban@yahoo.com)

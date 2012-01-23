@@ -108,7 +108,7 @@ public class TableTest {
         System.out.println("buf = " + buf);
         assert buf.getLow() == 8;
         for(long i=low; i <= 8; i++)
-            assert buf.get(i) == null : "message with seqno=" + i + " is not null";
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
 
         for(int i=16; i <= 18; i++)
             assert buf.add(i, i);
@@ -123,7 +123,7 @@ public class TableTest {
         buf.purge(18);
         assert buf.getLow() == 18;
         for(long i=low; i <= 18; i++)
-            assert buf.get(i) == null : "message with seqno=" + i + " is not null";
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
     }
 
 
@@ -132,11 +132,11 @@ public class TableTest {
         for(int i=6; i <=15; i++)
             assert buf.add(i, i) : "addition of seqno " + i + " failed";
         System.out.println("buf = " + buf);
-        List<Integer> removed=buf.removeMany(true,3);
+        List<Integer> removed=buf.removeMany(true, 3);
         System.out.println("removed " + removed);
         System.out.println("buf = " + buf);
         for(int i: removed)
-            assert buf.get(i) == null;
+            assert buf._get(i) == null;
         assertIndices(buf, 8, 8, 15);
 
         for(int i=16; i <= 18; i++)
@@ -148,7 +148,7 @@ public class TableTest {
         System.out.println("removed = " + removed);
         assert removed.size() == 10;
         for(int i: removed)
-            assert buf.get(i) == null;
+            assert buf._get(i) == null;
 
         assert buf.isEmpty();
         assert buf.getNumMissing() == 0;
@@ -310,7 +310,7 @@ public class TableTest {
         buf.purge(7);
         System.out.println("buf = " + buf);
         for(long i=low; i <= 7; i++)
-            assert buf.get(i) == null : "message with seqno=" + i + " is not null";
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
     }
 
 
@@ -323,7 +323,7 @@ public class TableTest {
         buf.removeMany(true,0);
         System.out.println("buf = " + buf);
         for(long i=low; i <= 7; i++)
-            assert buf.get(i) == null : "message with seqno=" + i + " is not null";
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
         assertIndices(buf, 7, 7, 7);
     }
 
@@ -446,13 +446,13 @@ public class TableTest {
         System.out.println("list = " + list);
         assert list != null && list.size() == 3;
         for(int i: list)
-            assert buf.get(i) == null;
+            assert buf._get(i) == null;
 
         list=buf.removeMany(true, 0);
         System.out.println("list = " + list);
         assert list != null && list.size() == 4;
         for(int i: list)
-            assert buf.get(i) == null;
+            assert buf._get(i) == null;
 
         list=buf.removeMany(false, 10);
         assert list == null;
@@ -462,7 +462,7 @@ public class TableTest {
         System.out.println("list = " + list);
         assert list != null && list.size() == 3;
         for(int i: list)
-            assert buf.get(i) == null;
+            assert buf._get(i) == null;
     }
 
 
@@ -771,7 +771,7 @@ public class TableTest {
         list.add(55);
 
         for(long i=table.getOffset(); i < table.capacity() + table.getOffset(); i++) {
-            Integer num=table.get(i);
+            Integer num=table._get(i);
             if(num != null) {
                 System.out.println("num=" + num);
                 list.remove(num);
@@ -857,13 +857,13 @@ public class TableTest {
         buf.purge(3);
         assert buf.getLow() == 3;
         for(long i=low; i <= 3; i++)
-            assert buf.get(i) == null : "message with seqno=" + i + " is not null";
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
 
 
         buf.purge(6);
-        assert buf.get(6) == null;
+        assert buf._get(6) == null;
         buf.purge(7);
-        assert buf.get(7) == null;
+        assert buf._get(7) == null;
         assert buf.getLow() == 7;
         assert buf.isEmpty();
 
@@ -880,7 +880,58 @@ public class TableTest {
         System.out.println("buf = " + buf);
         assert buf.getLow() == 12;
         for(long i=low; i <= 12; i++)
-            assert buf.get(i) == null : "message with seqno=" + i + " is not null";
+            assert buf._get(i) == null : "message with seqno=" + i + " is not null";
+    }
+
+
+    public void testPurge3() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 100; i++)
+            table.add(i, i);
+        System.out.println("table = " + table);
+        table.removeMany(true, 53);
+        for(int i=54; i <= 100; i++)
+            assert table.get(i) == i;
+    }
+
+    public void testPurge4() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 100; i++)
+            table.add(i, i);
+        System.out.println("table = " + table);
+        table.removeMany(false, 53);
+        table.purge(53);
+        for(int i=54; i <= 100; i++)
+            assert table.get(i) == i;
+    }
+
+    public void testPurge5() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 100; i++)
+            table.add(i, i);
+        System.out.println("table = " + table);
+        table.removeMany(false, 0);
+
+        table.purge(10);
+        for(int i=1; i <= 10; i++)
+            assert table._get(i) == null;
+        for(int i=11; i <= 100; i++)
+            assert table.get(i) == i;
+
+        table.purge(10);
+        for(int i=11; i <= 100; i++)
+            assert table.get(i) == i;
+
+        table.purge(50);
+        for(int i=1; i <= 50; i++)
+            assert table._get(i) == null;
+        for(int i=51; i <= 100; i++)
+            assert table.get(i) == i;
+
+        table.purge(100);
+        for(int i=51; i <= 100; i++)
+            assert table._get(i) == null;
+
     }
 
 
