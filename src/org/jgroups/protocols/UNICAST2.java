@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -117,6 +118,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     private TimeScheduler timer=null; // used for retransmissions (passed to AckSenderWindow)
 
     private boolean started=false;
+
+    protected volatile boolean running=false;
 
     private short last_conn_id=0;
 
@@ -295,6 +298,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         if(max_retransmit_time > 0)
             cache=new AgeOutCache<Address>(timer, max_retransmit_time, this);
         started=true;
+        running=true;
         if(stable_interval > 0)
             startStableTask();
         if(conn_expiry_timeout > 0)
@@ -304,6 +308,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
     public void stop() {
         started=false;
+        running=false;
         stopStableTask();
         stopConnectionReaper();
         removeAllConnections();
@@ -387,29 +392,31 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     }
                 }
 
-                long seqno=-2;
-                short send_conn_id=-1;
-                Unicast2Header hdr;
-
-                entry.lock(); // threads will only sync if they access the same entry
-                try {
-                    seqno=entry.sent_msgs_seqno;
-                    send_conn_id=entry.send_conn_id;
-                    hdr=Unicast2Header.createDataHeader(seqno, send_conn_id, seqno == DEFAULT_FIRST_SEQNO);
-                    msg.putHeader(this.id, hdr);
-                    entry.sent_msgs.addToMessages(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
-                    entry.sent_msgs_seqno++;
-                    entry.update();
-                }
-                finally {
-                    entry.unlock();
+                short send_conn_id=entry.send_conn_id;
+                long seqno=entry.sent_msgs_seqno.getAndIncrement();
+                long sleep=10;
+                while(running) {
+                    try {
+                        msg.putHeader(this.id, Unicast2Header.createDataHeader(seqno,send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
+                        entry.sent_msgs.add(seqno,msg);  // add *including* UnicastHeader, adds to retransmitter
+                        entry.update();
+                        break;
+                    }
+                    catch(Throwable t) {
+                        if(!running)
+                            break;
+                        if(log.isWarnEnabled())
+                            log.warn("failed sending message", t);
+                        Util.sleep(sleep);
+                        sleep=Math.min(5000, sleep*2);
+                    }
                 }
 
                 if(log.isTraceEnabled()) {
                     StringBuilder sb=new StringBuilder();
                     sb.append(local_addr).append(" --> DATA(").append(dst).append(": #").append(seqno).
                             append(", conn_id=").append(send_conn_id);
-                    if(hdr.first) sb.append(", first");
+                    if(seqno == DEFAULT_FIRST_SEQNO) sb.append(", first");
                     sb.append(')');
                     log.trace(sb);
                 }
@@ -460,19 +467,19 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
      * Purge all messages in window for local_addr, which are <= low. Check if the window's highest received message is
      * > high: if true, retransmit all messages from high - win.high to sender
      * @param sender
-     * @param highest_delivered
-     * @param highest_seen
+     * @param hd Highest delivered seqno
+     * @param hr Highest received seqno
      */
-    protected void stable(Address sender, short conn_id, long highest_delivered, long highest_seen) {
+    protected void stable(Address sender, short conn_id, long hd, long hr) {
         SenderEntry entry=send_table.get(sender);
-        AckSenderWindow win=entry != null? entry.sent_msgs : null;
+        Table<Message> win=entry != null? entry.sent_msgs : null;
         if(win == null)
             return;
 
         if(log.isTraceEnabled())
             log.trace(new StringBuilder().append(local_addr).append(" <-- STABLE(").append(sender)
-                        .append(": ").append(highest_delivered).append("-")
-                        .append(highest_seen).append(", conn_id=" + conn_id) +")");
+                        .append(": ").append(hd).append("-")
+                        .append(hr).append(", conn_id=" + conn_id) +")");
 
         if(entry.send_conn_id != conn_id) {
             log.warn(local_addr + ": my conn_id (" + entry.send_conn_id +
@@ -480,10 +487,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             return;
         }
 
-        win.ack(highest_delivered);
-        long win_high=win.getHighest();
-        if(win_high > highest_seen) {
-            for(long seqno=highest_seen; seqno <= win_high; seqno++) {
+        win.purge(hd,true);
+        long win_hr=win.getHighestReceived();
+        if(win_hr > hr) {
+            for(long seqno=hr; seqno <= win_hr; seqno++) {
                 Message msg=win.get(seqno); // destination is still the same (the member which sent the STABLE message)
                 if(msg != null)
                     down_prot.down(new Event(Event.MSG, msg));
@@ -503,7 +510,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 long low=tmp[0], high=tmp[1];
 
                 if(val.last_highest == high) {
-                    if(val.num_stable_msgs >= val.max_stable_msgs) {
+                    if(val.num_stable_msgs >= max_stable_msgs) {
                         continue;
                     }
                     else
@@ -584,9 +591,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     public void removeSendConnection(Address mbr) {
-        SenderEntry entry=send_table.remove(mbr);
-        if(entry != null)
-            entry.reset();
+        send_table.remove(mbr);
     }
 
     public void removeReceiveConnection(Address mbr) {
@@ -605,10 +610,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
      */
     @ManagedOperation(description="Trashes all connections to other nodes. This is only used for testing")
     public void removeAllConnections() {
-        for(SenderEntry entry: send_table.values())
-            entry.reset();
         send_table.clear();
-
         sendStableMessages();
         for(ReceiverEntry entry2: recv_table.values())
             entry2.reset();
@@ -704,23 +706,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
         if(added) {
             int len=msg.getLength();
-            if(len > 0) {
-                boolean send_stable_msg=false;
-                entry.lock();
-                try {
-                    entry.received_bytes+=len;
-                    if(entry.received_bytes >= max_bytes) {
-                        entry.received_bytes=0;
-                        send_stable_msg=true;
-                    }
-                }
-                finally {
-                    entry.unlock();
-                }
-
-                if(send_stable_msg)
-                    sendStableMessage(sender, entry.recv_conn_id, win.getHighestDelivered(), win.getHighestReceived());
-            }
+            if(len > 0 &&  entry.incrementStable(msg.getLength()))
+                sendStableMessage(sender, entry.recv_conn_id, win.getHighestDelivered(), win.getHighestReceived());
         }
 
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
@@ -781,7 +768,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     private ReceiverEntry getOrCreateReceiverEntry(Address sender, long seqno, short conn_id) {
         Table<Message> table=new Table<Message>(xmit_table_num_rows, xmit_table_msgs_per_row, seqno-1,
                                                 xmit_table_resize_factor, xmit_table_max_compaction_time);
-        ReceiverEntry entry=new ReceiverEntry(table, conn_id, max_stable_msgs);
+        ReceiverEntry entry=new ReceiverEntry(table, conn_id);
         ReceiverEntry entry2=recv_table.putIfAbsent(sender, entry);
         if(entry2 != null)
             return entry2;
@@ -797,7 +784,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
               append(": #").append(missing).append(')'));
 
         SenderEntry entry=send_table.get(sender);
-        AckSenderWindow win=entry != null? entry.sent_msgs : null;
+        Table<Message> win=entry != null? entry.sent_msgs : null;
         if(win != null) {
             for(long seqno: missing) {
                 Message msg=win.get(seqno);
@@ -828,13 +815,13 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         if(log.isTraceEnabled())
             log.trace(local_addr + " <-- SEND_FIRST_SEQNO(" + sender + "," + seqno + ")");
         SenderEntry entry=send_table.get(sender);
-        AckSenderWindow win=entry != null? entry.sent_msgs : null;
+        Table<Message> win=entry != null? entry.sent_msgs : null;
         if(win == null) {
             if(log.isErrorEnabled())
                 log.error(local_addr + ": sender window for " + sender + " not found");
             return;
         }
-        long lowest=win.getLowest();
+        long lowest=win.getLow();
         Message rsp=win.get(lowest);
         if(rsp == null)
             return;
@@ -1104,30 +1091,23 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
 
-    private static final class SenderEntry {
-        // stores (and retransmits) msgs sent by us to a certain peer
-        final AckSenderWindow   sent_msgs;
-        long                    sent_msgs_seqno=DEFAULT_FIRST_SEQNO;   // seqno for msgs sent by us
+    private final class SenderEntry {
+        // stores (and retransmits) msgs sent by us to a given peer
+        Table<Message>          sent_msgs;
+        final AtomicLong        sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
         final short             send_conn_id;
         private long            timestamp;
         final Lock              lock=new ReentrantLock();
 
         public SenderEntry(short send_conn_id) {
             this.send_conn_id=send_conn_id;
-            sent_msgs=new AckSenderWindow();
+            this.sent_msgs=new Table<Message>(xmit_table_num_rows, xmit_table_msgs_per_row, 0,
+                                              xmit_table_resize_factor, xmit_table_max_compaction_time);
             update();
         }
 
-        void lock()   {lock.lock();}
-        void unlock() {lock.unlock();}
 
-        void reset() {
-            if(sent_msgs != null)
-                sent_msgs.reset();
-            sent_msgs_seqno=DEFAULT_FIRST_SEQNO;
-        }
-
-        void update() {timestamp=System.currentTimeMillis();}
+        synchronized void update() {timestamp=System.currentTimeMillis();}
         long age() {return System.currentTimeMillis() - timestamp;}
 
         public String toString() {
@@ -1140,7 +1120,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         }
     }
 
-    private static final class ReceiverEntry {
+    private final class ReceiverEntry {
         private final Table<Message>     received_msgs;  // stores all msgs rcvd by a certain peer in seqno-order
         private final short              recv_conn_id;
         private int                      received_bytes=0;
@@ -1149,19 +1129,30 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
         private long                     last_highest=-1;
         private int                      num_stable_msgs=0;
-        public final int                 max_stable_msgs;
 
 
 
-        public ReceiverEntry(Table<Message> received_msgs, short recv_conn_id, final int max_stable_msgs) {
+        public ReceiverEntry(Table<Message> received_msgs, short recv_conn_id) {
             this.received_msgs=received_msgs;
             this.recv_conn_id=recv_conn_id;
-            this.max_stable_msgs=max_stable_msgs;
             update();
         }
 
-        void lock()   {lock.lock();}
-        void unlock() {lock.unlock();}
+        /** Adds len bytes, if max_bytes is exceeded, the value is reset and true returned, else false */
+        boolean incrementStable(int len) {
+            lock.lock();
+            try {
+                if(received_bytes+len >= max_bytes) {
+                    received_bytes=0;
+                    return true;
+                }
+                received_bytes+=len;
+                return false;
+            }
+            finally {
+                lock.unlock();
+            }
+        }
 
         void reset() {
             received_bytes=0;
