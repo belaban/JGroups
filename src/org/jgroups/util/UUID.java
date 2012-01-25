@@ -16,7 +16,7 @@ import java.util.Map;
  * 
  * @author Bela Ban
  */
-public class UUID implements Address, Comparable<Address> {
+public class UUID implements Address {
     private static final long serialVersionUID=-6194072960039354716L;
     protected long   mostSigBits;
     protected long   leastSigBits;
