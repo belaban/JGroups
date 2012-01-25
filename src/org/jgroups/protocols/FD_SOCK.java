@@ -560,7 +560,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     void startServerSocket() throws Exception {
         srv_sock=Util.createServerSocket(getSocketFactory(),
-                                         Global.FD_SOCK_SRV_SOCK, bind_addr, start_port, start_port+port_range); // grab a random unused port above 10000
+                                         "jgroups.fd_sock.srv_sock", bind_addr, start_port, start_port+port_range); // grab a random unused port above 10000
         srv_sock_addr=new IpAddress(external_addr != null? external_addr : bind_addr, srv_sock.getLocalPort());
         if(srv_sock_handler != null) {
             srv_sock_handler.start(); // won't start if already running            
@@ -583,7 +583,8 @@ public class FD_SOCK extends Protocol implements Runnable {
             }
             try {
                 SocketAddress destAddr=new InetSocketAddress(dest.getIpAddress(), dest.getPort());
-                ping_sock=new Socket();
+                // ping_sock=new Socket();
+                ping_sock=getSocketFactory().createSocket("jgroups.fd.ping_sock");
 
                 int num_bind_attempts=0;
                 int port=client_bind_port;

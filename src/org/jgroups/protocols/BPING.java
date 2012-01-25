@@ -72,7 +72,7 @@ public class BPING extends PING implements Runnable {
     public void start() throws Exception {
         for(int i=bind_port; i < bind_port+port_range; i++) {
             try {
-                sock=getSocketFactory().createDatagramSocket(Global.BPING_SOCK, i);
+                sock=getSocketFactory().createDatagramSocket("jgroups.bping.sock", i);
                 break;
             }
             catch(Throwable t) {
