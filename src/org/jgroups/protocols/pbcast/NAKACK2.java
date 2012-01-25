@@ -96,7 +96,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @Property(description="If true, trashes warnings about retransmission messages not found in the xmit_table (used for testing)")
     protected boolean log_not_found_msgs=true;
 
-    @Property(description="Interval (in millisconds) at which missing messages (from all retransmit buffers) " +
+    @Property(description="Interval (in milliseconds) at which missing messages (from all retransmit buffers) " +
       "are retransmitted")
     protected long xmit_interval=1000;
 
