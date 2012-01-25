@@ -264,6 +264,12 @@ public class ENCRYPT14KeystoreTest {
             return 0;
         }
 
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        }
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+        }
+
         public void writeTo(DataOutput out) throws Exception {
             ;
         }

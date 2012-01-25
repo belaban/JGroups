@@ -12,6 +12,7 @@ import java.security.SecureRandom;
  * @author Bela Ban
  */
 public class PayloadUUID extends UUID {
+    private static final long serialVersionUID = -7920418038143502913L;
     protected String payload;
 
     public PayloadUUID() {
@@ -55,6 +56,26 @@ public class PayloadUUID extends UUID {
         if(payload != null)
             retval+=payload.length() +2;
         return retval;
+    }
+
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+        try {
+            payload=Util.readString(in);
+        }
+        catch(Exception e) {
+            throw new IOException(e);
+        }
+    }
+
+    public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+        try {
+            Util.writeString(payload, out);
+        }
+        catch(Exception e) {
+            throw new IOException(e);
+        }
     }
 
     public void writeTo(DataOutput out) throws Exception {

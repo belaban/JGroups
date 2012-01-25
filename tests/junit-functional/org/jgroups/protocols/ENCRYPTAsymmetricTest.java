@@ -494,6 +494,12 @@ public class ENCRYPTAsymmetricTest {
             return address.name.equals(this.name);
         }
 
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        }
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+        }
+
         public void writeTo(DataOutput out) throws Exception {
         }
 

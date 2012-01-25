@@ -21,7 +21,7 @@ import java.net.Inet6Address;
  * @author Bela Ban
  */
 public class IpAddress implements PhysicalAddress {
-
+    private static final long       serialVersionUID = 5877146630213185651L;
     private InetAddress             ip_addr;
     private int                     port;
     protected static final Log      log=LogFactory.getLog(IpAddress.class);
@@ -174,7 +174,23 @@ public class IpAddress implements PhysicalAddress {
     }
 
 
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        try {
+            readFrom(in);
+        }
+        catch(Exception e) {
+            throw new IOException(e);
+        }
+    }
 
+    public void writeExternal(ObjectOutput out) throws IOException {
+        try {
+            writeTo(out);
+        }
+        catch(Exception e) {
+            throw new IOException(e);
+        }
+    }
 
     public void writeTo(DataOutput out) throws Exception {
         if(ip_addr != null) {

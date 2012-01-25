@@ -9,7 +9,8 @@ import java.io.*;
  * @author Bela Ban
  */
 public class SingletonAddress implements Address {
-    protected final String cluster_name;
+    private static final long serialVersionUID = 7295848950180741550L;
+    protected final String  cluster_name;
     protected final Address addr;
 
     public SingletonAddress(String cluster_name, Address addr) {
@@ -34,6 +35,14 @@ public class SingletonAddress implements Address {
 
     public int size() {
         return 0;
+    }
+
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        throw new UnsupportedOperationException();
+    }
+
+    public void writeExternal(ObjectOutput out) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     public void writeTo(DataOutput out) throws Exception {
