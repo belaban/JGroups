@@ -275,15 +275,7 @@ public class SizeTest {
         _testSize(hdr);
         _testMarshalling(hdr);
 
-        hdr=UNICAST2.Unicast2Header.createXmitReqHeader(0, 0);
-        _testSize(hdr);
-        _testMarshalling(hdr);
-
-        hdr=UNICAST2.Unicast2Header.createXmitReqHeader(70000, 100000);
-        _testSize(hdr);
-        _testMarshalling(hdr);
-
-        hdr=UNICAST2.Unicast2Header.createXmitReqHeader(Integer.MAX_VALUE, (long)Integer.MAX_VALUE +100);
+        hdr=UNICAST2.Unicast2Header.createXmitReqHeader();
         _testSize(hdr);
         _testMarshalling(hdr);
 
