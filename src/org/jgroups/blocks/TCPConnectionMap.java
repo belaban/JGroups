@@ -370,14 +370,20 @@ public class TCPConnectionMap{
             if(peer_addr == null)
                 throw new IllegalArgumentException("Invalid parameter peer_addr="+ peer_addr);           
             SocketAddress destAddr=new InetSocketAddress(((IpAddress)peer_addr).getIpAddress(),((IpAddress)peer_addr).getPort());
-            this.sock=socket_factory.createSocket(Global.TCP_SOCK);
-            this.sock.bind(new InetSocketAddress(bind_addr, 0));
-            Util.connect(this.sock, destAddr, sock_conn_timeout);
+            this.sock=socket_factory.createSocket("jgroups.tcp.sock");
+            try {
+                this.sock.bind(new InetSocketAddress(bind_addr, 0));
+                Util.connect(this.sock, destAddr, sock_conn_timeout);
+            }
+            catch(Exception t) {
+                socket_factory.close(this.sock);
+                throw t;
+            }
             setSocketParameters(sock);
             this.out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
             this.in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));
             sendLocalAddress(getLocalAddress());
-            this.peer_addr=peer_addr;            
+            this.peer_addr=peer_addr;
         }
 
         TCPConnection(Socket s) throws Exception {

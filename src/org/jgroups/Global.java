@@ -89,19 +89,6 @@ public class Global {
     public static final String INITIAL_MCAST_PORT="INITIAL_MCAST_PORT";
     public static final String INITIAL_TCP_PORT="INITIAL_TCP_PORT";
 
-    public static final String UDP_MCAST_SOCK="jgroups.udp.mcast_sock";
-    public static final String UDP_UCAST_SOCK="jgroups.udp.unicast_sock";
-    public static final String TCP_SRV_SOCK="jgroups.tcp.srv_sock";
-    public static final String TCP_SOCK="jgroups.tcp.sock";
-    public static final String TUNNEL_UCAST_SOCK="jgroups.tunnel.ucast_sock";
-    public static final String MPING_MCAST_SOCK="jgroups.mping.mcast_sock";
-    public static final String BPING_SOCK="jgroups.bping.sock";
-    public static final String TP_DIAG_MCAST_SOCK="jgroups.tp.diag.mcast_sock";
-    public static final String STATE_SERVER_SOCK="jgroups.streaming_state_transfer.srv_sock";
-    public static final String FD_SOCK_SRV_SOCK="jgroups.fd_sock.srv_sock";
-    public static final String BSH_SRV_SOCK="jgroups.bsh.srv_sock";
-    public static final String STOMP_SRV_SOCK="jgroups.stomp.srv_sock";
-
     public static final String CCHM_INITIAL_CAPACITY="cchm.initial_capacity";
     public static final String CCHM_LOAD_FACTOR="cchm.load_factor";
     public static final String CCHM_CONCURRENCY_LEVEL="cchm.concurrency_level";

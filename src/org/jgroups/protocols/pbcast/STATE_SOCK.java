@@ -94,7 +94,7 @@ public class STATE_SOCK extends StreamingStateTransfer {
     protected StateProviderAcceptor createAcceptor() {
         StateProviderAcceptor retval=new StateProviderAcceptor(thread_pool,
                                                                Util.createServerSocket(getSocketFactory(),
-                                                                                       Global.STATE_SERVER_SOCK,
+                                                                                       "jgroups.streaming_state_transfer.srv_sock",
                                                                                        bind_addr, bind_port));
         Thread t=getThreadFactory().newThread(retval, "STATE server socket acceptor");
         t.start();
@@ -115,8 +115,9 @@ public class STATE_SOCK extends StreamingStateTransfer {
     protected void createStreamToProvider(Address provider, StateHeader hdr) {
         IpAddress address=hdr.bind_addr;
         InputStream bis=null;
-        Socket socket=new Socket();
+        Socket socket=null;
         try {
+            socket=getSocketFactory().createSocket("jgroups.state_sock.sock");
             socket.bind(new InetSocketAddress(bind_addr, 0));
             socket.setReceiveBufferSize(buffer_size);
             Util.connect(socket, new InetSocketAddress(address.getIpAddress(), address.getPort()), 0);

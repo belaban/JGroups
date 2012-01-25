@@ -127,7 +127,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
     ) throws Exception {
         TCPConnectionMap cTable;
         if(reaperInterval == 0 && connExpireTime == 0) {
-            cTable=new TCPConnectionMap(Global.TCP_SRV_SOCK,
+            cTable=new TCPConnectionMap("jgroups.tcp.srv_sock",
                                         getThreadFactory(),
                                         getSocketFactory(),
                                         this,
@@ -148,7 +148,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                 if(log.isWarnEnabled())
                     log.warn("conn_expire_time was 0, set it to " + connExpireTime);
             }
-            cTable=new TCPConnectionMap(Global.TCP_SRV_SOCK, 
+            cTable=new TCPConnectionMap("jgroups.tcp.srv_sock",
                                         getThreadFactory(),
                                         getSocketFactory(),
                                         this,

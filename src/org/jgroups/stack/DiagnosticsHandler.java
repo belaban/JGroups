@@ -59,7 +59,7 @@ public class DiagnosticsHandler implements Runnable {
         //   diag_sock=Util.createMulticastSocket(getSocketFactory(),
         //                               Global.TP_DIAG_MCAST_SOCK, diagnostics_addr, diagnostics_port, log);
         //else
-        diag_sock=socket_factory.createMulticastSocket(Global.TP_DIAG_MCAST_SOCK,diagnostics_port);
+        diag_sock=socket_factory.createMulticastSocket("jgroups.tp.diag.mcast_sock", diagnostics_port);
 
         List<NetworkInterface> interfaces=Util.getAllAvailableInterfaces();
         bindToInterfaces(interfaces, diag_sock);
