@@ -314,7 +314,8 @@ public class Table<T> {
      * @param seqno
      */
     public void purge(long seqno) {
-        lock.lock();
+        purge(seqno, false);
+        /*lock.lock();
         try {
             if(seqno > hd) // we cannot be higher than the highest removed seqno
                 seqno=hd;
@@ -332,6 +333,61 @@ public class Table<T> {
             }
             if(seqno > low)
                 low=seqno;
+            num_purges++;
+            if(max_compaction_time <= 0) // see if compaction should be triggered
+                return;
+
+            long current_time=System.currentTimeMillis();
+            if(last_compaction_timestamp > 0) {
+                if(current_time - last_compaction_timestamp >= max_compaction_time) {
+                    _compact();
+                    last_compaction_timestamp=current_time;
+                }
+            }
+            else
+                last_compaction_timestamp=current_time;
+        }
+        finally {
+            lock.unlock();
+        }*/
+    }
+
+    /**
+     * Removes all elements less than or equal to seqno from the table. Does this by nulling entire rows in the matrix
+     * and nulling all elements < index(seqno) of the first row that cannot be removed.
+     * @param seqno All elements <= seqno will be nulled
+     * @param force If true, we only ensure that seqno <= hr, but don't care about hd, and set hd=low=seqno.
+     */
+    public void purge(long seqno, boolean force) {
+        lock.lock();
+        try {
+            if(force) {
+                if(seqno > hr)
+                    seqno=hr;
+            }
+            else {
+                if(seqno > hd) // we cannot be higher than the highest removed seqno
+                    seqno=hd;
+            }
+
+            int start_row=computeRow(low), end_row=computeRow(seqno);
+            if(start_row < 0) start_row=0;
+            if(end_row < 0)
+                return;
+            for(int i=start_row; i < end_row; i++) // Null all rows which can be fully removed
+                matrix[i]=null;
+
+            if(matrix[end_row] != null) {
+                int index=computeIndex(seqno);
+                for(int i=0; i <= index; i++) // null all elements up to and including seqno in the given row
+                    matrix[end_row][i]=null;
+            }
+            if(seqno > low)
+                low=seqno;
+            if(force) {
+                low=hd=seqno;
+                size=computeSize();
+            }
             num_purges++;
             if(max_compaction_time <= 0) // see if compaction should be triggered
                 return;

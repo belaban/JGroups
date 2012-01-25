@@ -957,7 +957,40 @@ public class TableTest {
         table.purge(100);
         for(int i=51; i <= 100; i++)
             assert table._get(i) == null;
+    }
 
+
+    public void testPurgeForce() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 30; i++)
+            table.add(i, i);
+        System.out.println("table = " + table);
+        table.purge(15, true);
+        System.out.println("table = " + table);
+        assertIndices(table, 15, 15, 30);
+        for(int i=1; i <= 15; i++)
+            assert table._get(i) == null;
+        for(int i=16; i<= 30; i++)
+            assert table._get(i) != null;
+        assert table.get(5) == null && table.get(25) != null;
+
+        table.purge(30, true);
+        System.out.println("table = " + table);
+        assertIndices(table, 30, 30, 30);
+        assert table.isEmpty();
+        for(int i=1; i <= 30; i++)
+            assert table._get(i) == null;
+
+        for(int i=31; i <= 40; i++)
+            table.add(i, i);
+        System.out.println("table = " + table);
+        assert table.size() == 10;
+        assertIndices(table, 30, 30, 40);
+
+        table.purge(50, true);
+        System.out.println("table = " + table);
+        assert table.isEmpty();
+        assertIndices(table, 40, 40, 40);
     }
 
 
