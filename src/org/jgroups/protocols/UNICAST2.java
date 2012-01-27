@@ -98,7 +98,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
-    private long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0, num_xmits=0;
+    private long num_msgs_sent=0, num_msgs_received=0;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
@@ -111,7 +111,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected final ReentrantLock recv_table_lock=new ReentrantLock();
 
-    private final List<Address> members=new ArrayList<Address>(11);
+    private volatile List<Address> members=new ArrayList<Address>(11);
 
     private Address local_addr=null;
 
@@ -150,7 +150,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
 
     @ManagedAttribute
-    public String getMembers() {return members != null? members.toString() : "[]";}
+    public String getMembers() {return members.toString();}
 
 
     @ManagedAttribute(description="Returns the number of outgoing (send) connections")
@@ -201,20 +201,117 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         return num_msgs_received;
     }
 
-    @ManagedAttribute
-    public long getNumBytesSent() {
-        return num_bytes_sent;
+    @ManagedAttribute(description="Total number of undelivered messages in all receive windows")
+    public long getXmitTableUndeliveredMessages() {
+        long retval=0;
+        for(ReceiverEntry entry: recv_table.values()) {
+            if(entry.received_msgs != null)
+                retval+=entry.received_msgs.size();
+        }
+        return retval;
     }
 
-    @ManagedAttribute
-    public long getNumBytesReceived() {
-        return num_bytes_received;
+    @ManagedAttribute(description="Total number of missing messages in all receive windows")
+    public long getXmitTableMissingMessages() {
+        long retval=0;
+        for(ReceiverEntry entry: recv_table.values()) {
+            if(entry.received_msgs != null)
+                retval+=entry.received_msgs.getNumMissing();
+        }
+        return retval;
     }
 
-    @ManagedAttribute
-    public long getNumberOfRetransmissions() {
-        return num_xmits;
+    @ManagedAttribute(description="Number of compactions in all (receive and send) windows")
+    public int getXmitTableNumCompactions() {
+        int retval=0;
+        for(ReceiverEntry entry: recv_table.values()) {
+            if(entry.received_msgs != null)
+                retval+=entry.received_msgs.getNumCompactions();
+        }
+        for(SenderEntry entry: send_table.values()) {
+            if(entry.sent_msgs != null)
+                retval+=entry.sent_msgs.getNumCompactions();
+        }
+        return retval;
     }
+
+    @ManagedAttribute(description="Number of moves in all (receive and send) windows")
+    public int getXmitTableNumMoves() {
+        int retval=0;
+        for(ReceiverEntry entry: recv_table.values()) {
+            if(entry.received_msgs != null)
+                retval+=entry.received_msgs.getNumMoves();
+        }
+        for(SenderEntry entry: send_table.values()) {
+            if(entry.sent_msgs != null)
+                retval+=entry.sent_msgs.getNumMoves();
+        }
+        return retval;
+    }
+
+    @ManagedAttribute(description="Number of resizes in all (receive and send) windows")
+    public int getXmitTableNumResizes() {
+        int retval=0;
+        for(ReceiverEntry entry: recv_table.values()) {
+            if(entry.received_msgs != null)
+                retval+=entry.received_msgs.getNumResizes();
+        }
+        for(SenderEntry entry: send_table.values()) {
+            if(entry.sent_msgs != null)
+                retval+=entry.sent_msgs.getNumResizes();
+        }
+        return retval;
+    }
+
+    @ManagedAttribute(description="Number of purges in all (receive and send) windows")
+    public int getXmitTableNumPurges() {
+        int retval=0;
+        for(ReceiverEntry entry: recv_table.values()) {
+            if(entry.received_msgs != null)
+                retval+=entry.received_msgs.getNumPurges();
+        }
+        for(SenderEntry entry: send_table.values()) {
+            if(entry.sent_msgs != null)
+                retval+=entry.sent_msgs.getNumPurges();
+        }
+        return retval;
+    }
+
+    @ManagedOperation(description="Prints the contents of the receive windows for all members")
+    public String printReceiveWindowMessages() {
+        StringBuilder ret=new StringBuilder(local_addr + ":\n");
+        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+            Address addr=entry.getKey();
+            Table<Message> buf=entry.getValue().received_msgs;
+            ret.append(addr).append(": ").append(buf.toString()).append('\n');
+        }
+        return ret.toString();
+    }
+
+    @ManagedOperation(description="Prints the contents of the send windows for all members")
+    public String printSendWindowMessages() {
+        StringBuilder ret=new StringBuilder(local_addr + ":\n");
+        for(Map.Entry<Address,SenderEntry> entry: send_table.entrySet()) {
+            Address addr=entry.getKey();
+            Table<Message> buf=entry.getValue().sent_msgs;
+            ret.append(addr).append(": ").append(buf.toString()).append('\n');
+        }
+        return ret.toString();
+    }
+
+
+
+    @ManagedAttribute(description="Number of retransmit requests received")
+    protected final AtomicLong xmit_reqs_received=new AtomicLong(0);
+
+    @ManagedAttribute(description="Number of retransmit requests sent")
+    protected final AtomicLong xmit_reqs_sent=new AtomicLong(0);
+
+    @ManagedAttribute(description="Number of retransmit responses sent")
+    protected final AtomicLong xmit_rsps_sent=new AtomicLong(0);
+
+    @ManagedAttribute(description="Is the retransmit task running")
+    public boolean isXmitTaskRunning() {return xmit_task != null && !xmit_task.isDone();}
 
     public long getMaxRetransmitTime() {
         return max_retransmit_time;
@@ -242,20 +339,13 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         return cache;
     }
 
-    @ManagedAttribute
-    public int getNumberOfMessagesInReceiveWindows() {
-        int num=0;
-        for(ReceiverEntry entry: recv_table.values()) {
-            if(entry.received_msgs != null)
-                num+=entry.received_msgs.size();
-        }
-        return num;
-    }
-
 
 
     public void resetStats() {
-        num_msgs_sent=num_msgs_received=num_bytes_sent=num_bytes_received=num_xmits=0;
+        num_msgs_sent=num_msgs_received=0;
+        xmit_reqs_received.set(0);
+        xmit_reqs_sent.set(0);
+        xmit_rsps_sent.set(0);
     }
 
 
@@ -263,10 +353,6 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         Map<String, Object> m=super.dumpStats();
         m.put("num_msgs_sent", num_msgs_sent);
         m.put("num_msgs_received", num_msgs_received);
-        m.put("num_bytes_sent", num_bytes_sent);
-        m.put("num_bytes_received", num_bytes_received);
-        m.put("num_xmits", num_xmits);
-        m.put("num_msgs_in_recv_windows", getNumberOfMessagesInReceiveWindows());
         return m;
     }
 
@@ -399,7 +485,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     try {
                         msg.putHeader(this.id, Unicast2Header.createDataHeader(seqno,send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
                         entry.sent_msgs.add(seqno,msg);  // add *including* UnicastHeader, adds to retransmitter
-                        entry.update();
+                        if(conn_expiry_timeout > 0)
+                            entry.update();
                         break;
                     }
                     catch(Throwable t) {
@@ -424,7 +511,6 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 try {
                     down_prot.down(evt);
                     num_msgs_sent++;
-                    num_bytes_sent+=msg.getLength();
                 }
                 catch(Throwable t) {
                     log.warn("failed sending the message", t);
@@ -437,15 +523,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 Set<Address> non_members=new HashSet<Address>(send_table.keySet());
                 non_members.addAll(recv_table.keySet());
 
-                synchronized(members) {
-                    members.clear();
-                    if(new_members != null)
-                        members.addAll(new_members);
-                    non_members.removeAll(members);
-                    if(cache != null) {
-                        cache.removeAll(members);
-                    }
-                }
+                members=new_members;
+                non_members.removeAll(new_members);
+                if(cache != null)
+                    cache.removeAll(new_members);
 
                 if(!non_members.isEmpty()) {
                     if(log.isTraceEnabled())
@@ -626,8 +707,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             log.trace(local_addr + ": sending XMIT_REQ (" + missing + ") to " + sender);
         retransmit_msg.putHeader(this.id, hdr);
         down_prot.down(new Event(Event.MSG,retransmit_msg));
-        // if(stats)
-           // xmit_reqs_sent.addAndGet(missing_msgs.size());
+        xmit_reqs_sent.addAndGet(missing.size());
     }
 
     
@@ -699,10 +779,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 recv_table_lock.unlock();
         }
 
-        entry.update();
+        if(conn_expiry_timeout > 0)
+            entry.update();
         boolean added=win.add(seqno, msg); // win is guaranteed to be non-null if we get here
         num_msgs_received++;
-        num_bytes_received+=msg.getLength();
 
         if(added) {
             int len=msg.getLength();
@@ -784,6 +864,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
               append(": #").append(missing).append(')'));
 
         SenderEntry entry=send_table.get(sender);
+        xmit_reqs_received.addAndGet(missing.size());
         Table<Message> win=entry != null? entry.sent_msgs : null;
         if(win != null) {
             for(long seqno: missing) {
@@ -800,7 +881,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 }
                 
                 down_prot.down(new Event(Event.MSG, msg));
-                num_xmits++;
+                xmit_rsps_sent.incrementAndGet();
             }
         }
     }
@@ -889,6 +970,9 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
     @ManagedOperation(description="Closes connections that have been idle for more than conn_expiry_timeout ms")
     public void reapIdleConnections() {
+        if(conn_expiry_timeout <= 0)
+            return;
+
         // remove expired connections from send_table
         for(Map.Entry<Address,SenderEntry> entry: send_table.entrySet()) {
             SenderEntry val=entry.getValue();
@@ -1024,7 +1108,6 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                       + Global.BYTE_SIZE;    // first
                     break;
                 case XMIT_REQ:
-                    retval+=Util.size(seqno, high_seqno);
                     break;
                 case STABLE:
                     retval+=Util.size(seqno, high_seqno) + Global.SHORT_SIZE; // conn_id
@@ -1051,7 +1134,6 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     out.writeBoolean(first);
                     break;
                 case XMIT_REQ:
-                    Util.writeLongSequence(seqno, high_seqno, out);
                     break;
                 case STABLE:
                     Util.writeLongSequence(seqno, high_seqno, out);
@@ -1072,12 +1154,9 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     first=in.readBoolean();
                     break;
                 case XMIT_REQ:
-                    long[] seqnos=Util.readLongSequence(in);
-                    seqno=seqnos[0];
-                    high_seqno=seqnos[1];
                     break;
                 case STABLE:
-                    seqnos=Util.readLongSequence(in);
+                    long[] seqnos=Util.readLongSequence(in);
                     seqno=seqnos[0];
                     high_seqno=seqnos[1];
                     conn_id=in.readShort();
@@ -1093,11 +1172,11 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
     private final class SenderEntry {
         // stores (and retransmits) msgs sent by us to a given peer
-        Table<Message>          sent_msgs;
-        final AtomicLong        sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
-        final short             send_conn_id;
-        private long            timestamp;
-        final Lock              lock=new ReentrantLock();
+        Table<Message>           sent_msgs;
+        final AtomicLong         sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
+        final short              send_conn_id;
+        private final AtomicLong timestamp=new AtomicLong(0);
+        final Lock               lock=new ReentrantLock();
 
         public SenderEntry(short send_conn_id) {
             this.send_conn_id=send_conn_id;
@@ -1107,8 +1186,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         }
 
 
-        synchronized void update() {timestamp=System.currentTimeMillis();}
-        long age() {return System.currentTimeMillis() - timestamp;}
+        void update() {timestamp.set(System.currentTimeMillis());}
+        long age()    {return System.currentTimeMillis() - timestamp.longValue();}
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
@@ -1124,7 +1203,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         private final Table<Message>     received_msgs;  // stores all msgs rcvd by a certain peer in seqno-order
         private final short              recv_conn_id;
         private int                      received_bytes=0;
-        private long                     timestamp;
+        private final AtomicLong         timestamp=new AtomicLong(0);
         private final Lock               lock=new ReentrantLock();
 
         private long                     last_highest=-1;
@@ -1160,8 +1239,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             num_stable_msgs=0;
         }
 
-        void update() {timestamp=System.currentTimeMillis();}
-        long age() {return System.currentTimeMillis() - timestamp;}
+        void update() {timestamp.set(System.currentTimeMillis());}
+        long age() {return System.currentTimeMillis() - timestamp.longValue();}
 
         public String toString() {
             StringBuilder sb=new StringBuilder();

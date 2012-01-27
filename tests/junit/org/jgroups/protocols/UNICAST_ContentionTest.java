@@ -129,8 +129,6 @@ public class UNICAST_ContentionTest {
         Protocol prot=ch.getProtocolStack().findProtocol(UNICAST.class, UNICAST2.class);
         if(prot instanceof UNICAST)
             return ((UNICAST)prot).getNumberOfRetransmissions();
-        if(prot instanceof UNICAST2)
-            return ((UNICAST2)prot).getNumberOfRetransmissions();
         return -1;
     }
 
