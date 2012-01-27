@@ -618,11 +618,6 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             log.trace(sb.toString());
         }
         down_prot.down(new Event(Event.MSG, stable_msg));
-
-        ReceiverEntry entry=recv_table.get(dest);
-        Table<Message> win=entry != null? entry.received_msgs : null;
-        if(win != null)
-            win.purge(win.getHighestDelivered(),true);
     }
 
 
@@ -786,7 +781,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
         if(added) {
             int len=msg.getLength();
-            if(len > 0 &&  entry.incrementStable(msg.getLength()))
+            if(len > 0 &&  entry.incrementStable(len))
                 sendStableMessage(sender, entry.recv_conn_id, win.getHighestDelivered(), win.getHighestReceived());
         }
 
