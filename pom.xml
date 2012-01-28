@@ -81,17 +81,19 @@
             <optional>true</optional>
             <scope>compile</scope>
         </dependency>
-       <dependency>
-          <groupId>org.testng</groupId>
-          <artifactId>testng</artifactId>
-          <version>6.0.1</version>
-       </dependency>
-       <!--  Tests not included in maven build currently so commented out -->
-        <!-- <dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>5.10</version>
+            <version>5.11</version>
             <classifier>jdk15</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.byteman</groupId>
+            <artifactId>byteman-bmunit</artifactId>
+            <version>2.0.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -99,7 +101,7 @@
             <artifactId>bcprov-jdk15</artifactId>
             <version>140</version>
             <scope>test</scope>
-        </dependency> -->
+        </dependency>
     </dependencies>
     <build>
         <sourceDirectory>src</sourceDirectory>
@@ -114,22 +116,73 @@
                 </excludes>
             </resource>
             <resource>
-                <directory>${project.build.outputDirectory}/schema</directory>
+                <directory>${project.build.directory}/schema</directory>
+            </resource>
+            <resource>
+               <directory>${project.basedir}</directory>
+               <includes>
+                  <include>INSTALL.html</include>
+                  <include>LICENSE</include>
+                  <include>README</include>
+               </includes>
+            </resource>
+            <resource>
+              <directory>${project.basedir}/lib</directory>
+              <includes>
+                 <include>licenses/thirdparty*</include>
+              </includes>
             </resource>
         </resources>
         <plugins>
-            <!--<plugin>-->
-                <!--<artifactId>maven-compiler-plugin</artifactId>-->
-                <!--<configuration>-->
-                    <!--<source>1.6</source>-->
-                    <!--<target>1.6</target>-->
-                    <!--<excludes>-->
-                        <!--<exclude>org/jgroups/util/JUnitXMLReporter.java</exclude>-->
-                        <!--&lt;!&ndash;<exclude>org/jgroups/demos/**</exclude>&ndash;&gt;-->
-                    <!--</excludes>-->
-                <!--</configuration>-->
-            <!--</plugin>-->
             <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                    <excludes>
+                        <exclude>org/jgroups/util/JUnitXMLReporter.java</exclude>
+                        <!--<exclude>org/jgroups/demos/**</exclude>-->
+                    </excludes>
+                </configuration>
+            </plugin>
+           <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>build-helper-maven-plugin</artifactId>
+              <version>1.7</version>
+              <executions>
+                 <execution>
+                    <id>add-source</id>
+                    <phase>validate</phase>
+                    <goals>
+                       <goal>add-source</goal>
+                    </goals>
+                    <configuration>
+                       <sources>
+                          <!-- These tests have to go in the main jar -->
+                          <source>tests/other</source>
+                          <source>tests/perf</source>
+                       </sources>
+                    </configuration>
+                 </execution>
+                 <execution>
+                    <id>add-test-source</id>
+                    <phase>validate</phase>
+                    <goals>
+                       <goal>add-test-source</goal>
+                    </goals>
+                    <configuration>
+                       <sources>
+                          <source>tests/byteman</source>
+                          <source>tests/junit</source>
+                          <source>tests/junit-functional</source>
+                          <!-- tests/other and tests/perf are included in the normal sources -->
+                          <source>tests/stress</source>
+                       </sources>
+                    </configuration>
+                 </execution>
+              </executions>
+           </plugin>
+           <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
@@ -139,17 +192,19 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <target>
+                            <tasks>
                                 <property name="compile_classpath" refid="maven.compile.classpath"/>
-                                <property name="runtime_classpath" refid="maven.runtime.classpath"/>
-                                <property name="test_classpath" refid="maven.test.classpath"/>
                                 <property name="plugin_classpath" refid="maven.plugin.classpath"/>
-                                <property name="dist.dir" value="${outputDirectory}"/>
-
-                                <ant antfile="${basedir}/build.xml">
-                                    <target name="jgroups.jar"/>
-                                </ant>
-                            </target>
+                                <delete dir="${project.build.directory}/schema" failonerror="false"/>
+                                <mkdir dir="${project.build.directory}/schema"/>
+                                <java classname="org.jgroups.util.XMLSchemaGenerator">
+                                    <classpath>
+                                        <pathelement path="${compile_classpath}"/>
+                                        <pathelement path="${plugin_classpath}"/>
+                                    </classpath>
+                                    <arg line="-o ${project.build.directory}/schema"/>
+                                </java>
+                            </tasks>
                         </configuration>
                     </execution>
                 </executions>
