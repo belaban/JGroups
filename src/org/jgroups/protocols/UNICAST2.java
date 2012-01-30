@@ -131,7 +131,6 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected Future<?> connection_reaper; // closes idle connections
 
-    //protected final AtomicLong my_seqno=new AtomicLong(1);
 
 
     public int[] getTimeout() {return timeout;}
@@ -465,12 +464,6 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                         log.trace("discarded message as start() has not yet been called, message: " + msg);
                     return null;
                 }
-
-                // short cut for messages sent to self
-                /*if(dst.equals(local_addr)) {
-                    long seqno=my_seqno.getAndIncrement();
-                    handleDataReceived(dst, seqno, (short)0, seqno == DEFAULT_FIRST_SEQNO, msg, evt, false);
-                }*/
 
                 SenderEntry entry=send_table.get(dst);
                 if(entry == null) {
