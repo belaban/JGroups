@@ -131,6 +131,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected Future<?> connection_reaper; // closes idle connections
 
+    //protected final AtomicLong my_seqno=new AtomicLong(1);
+
 
     public int[] getTimeout() {return timeout;}
 
@@ -464,6 +466,12 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     return null;
                 }
 
+                // short cut for messages sent to self
+                /*if(dst.equals(local_addr)) {
+                    long seqno=my_seqno.getAndIncrement();
+                    handleDataReceived(dst, seqno, (short)0, seqno == DEFAULT_FIRST_SEQNO, msg, evt, false);
+                }*/
+
                 SenderEntry entry=send_table.get(dst);
                 if(entry == null) {
                     entry=new SenderEntry(getNewConnectionId());
@@ -719,13 +727,16 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
+    protected void handleDataReceived(Address sender, long seqno, short conn_id, boolean first, Message msg, Event evt) {
+        handleDataReceived(sender, seqno, conn_id, first, msg, evt, true);
+    }
 
     /**
      * Check whether the hashtable contains an entry e for <code>sender</code> (create if not). If
      * e.received_msgs is null and <code>first</code> is true: create a new AckReceiverWindow(seqno) and
      * add message. Set e.received_msgs to the new window. Else just add the message.
      */
-    protected void handleDataReceived(Address sender, long seqno, short conn_id, boolean first, Message msg, Event evt) {
+    protected void handleDataReceived(Address sender, long seqno, short conn_id, boolean first, Message msg, Event evt, boolean send_stable) {
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno);
@@ -734,52 +745,17 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             sb.append(')');
             log.trace(sb);
         }
-
-        ReceiverEntry entry;
-        Table<Message> win;
-
-        recv_table_lock.lock();
-        try {
-            entry=recv_table.get(sender);
-            win=entry != null? entry.received_msgs : null;
-            if(first) {
-                if(entry == null) {
-                    entry=getOrCreateReceiverEntry(sender, seqno, conn_id);
-                    win=entry.received_msgs;
-                }
-                else {  // entry != null && win != null
-                    if(conn_id != entry.recv_conn_id) {
-                        if(log.isTraceEnabled())
-                            log.trace(local_addr + ": conn_id=" + conn_id + " != " + entry.recv_conn_id + "; resetting receiver window");
-
-                        recv_table.remove(sender);
-                        entry=getOrCreateReceiverEntry(sender, seqno, conn_id);
-                        win=entry.received_msgs;
-                    }
-                    else {
-                        ;
-                    }
-                }
-            }
-            else { // entry == null && win == null OR entry != null && win == null OR entry != null && win != null
-                if(win == null || entry.recv_conn_id != conn_id) {
-                    recv_table_lock.unlock();
-                    sendRequestForFirstSeqno(sender, seqno); // drops the message and returns (see below)
-                    return;
-                }
-            }
-        }
-        finally {
-            if(recv_table_lock.isHeldByCurrentThread())
-                recv_table_lock.unlock();
-        }
-
+        
+        ReceiverEntry entry=getReceiverEntry(sender, seqno, first, conn_id);
+        if(entry == null)
+            return;
         if(conn_expiry_timeout > 0)
             entry.update();
+        Table<Message> win=entry.received_msgs;
         boolean added=win.add(seqno, msg); // win is guaranteed to be non-null if we get here
         num_msgs_received++;
 
-        if(added) {
+        if(added && send_stable) {
             int len=msg.getLength();
             if(len > 0 &&  entry.incrementStable(len))
                 sendStableMessage(sender, entry.recv_conn_id, win.getHighestDelivered(), win.getHighestReceived());
@@ -801,8 +777,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             return;
         }
 
-        // try to remove (from the AckReceiverWindow) as many messages as possible and pass them up
-
+        // Try to remove as many messages as possible and pass them up.
         // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
         // this is all the more important once we have a concurrent stack (http://jira.jboss.com/jira/browse/JGRP-181),
         // where lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time
@@ -836,6 +811,47 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             // 2nd line of defense should there be an exception before win.remove(processing) sets processing
             if(!released_processing)
                 processing.set(false);
+        }
+    }
+
+
+    protected ReceiverEntry getReceiverEntry(Address sender, long seqno, boolean first, short conn_id) {
+        ReceiverEntry entry=recv_table.get(sender);
+        if(entry != null && entry.recv_conn_id == conn_id)
+            return entry;
+
+        recv_table_lock.lock();
+        try {
+            entry=recv_table.get(sender);
+            if(first) {
+                if(entry == null) {
+                    entry=getOrCreateReceiverEntry(sender, seqno, conn_id);
+                }
+                else {  // entry != null && win != null
+                    if(conn_id != entry.recv_conn_id) {
+                        if(log.isTraceEnabled())
+                            log.trace(local_addr + ": conn_id=" + conn_id + " != " + entry.recv_conn_id + "; resetting receiver window");
+
+                        recv_table.remove(sender);
+                        entry=getOrCreateReceiverEntry(sender, seqno, conn_id);
+                    }
+                    else {
+                        ;
+                    }
+                }
+            }
+            else { // entry == null && win == null OR entry != null && win == null OR entry != null && win != null
+                if(entry == null || entry.recv_conn_id != conn_id) {
+                    recv_table_lock.unlock();
+                    sendRequestForFirstSeqno(sender, seqno); // drops the message and returns (see below)
+                    return null;
+                }
+            }
+            return entry;
+        }
+        finally {
+            if(recv_table_lock.isHeldByCurrentThread())
+                recv_table_lock.unlock();
         }
     }
 
@@ -885,7 +901,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     /**
      * We need to resend our first message with our conn_id
      * @param sender
-     * @param seqno Resend messages in the range [lowest .. seqno]
+     * @param seqno Resend the non null messages in the range [lowest .. seqno]
      */
     private void handleResendingOfFirstMessage(Address sender, long seqno) {
         if(log.isTraceEnabled())
@@ -897,36 +913,27 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 log.error(local_addr + ": sender window for " + sender + " not found");
             return;
         }
-        long lowest=win.getLow();
-        Message rsp=win.get(lowest);
-        if(rsp == null)
-            return;
 
-        // We need to copy the UnicastHeader and put it back into the message because Message.copy() doesn't copy
-        // the headers and therefore we'd modify the original message in the sender retransmission window
-        // (https://jira.jboss.org/jira/browse/JGRP-965)
-        Message copy=rsp.copy();
-        Unicast2Header hdr=(Unicast2Header)copy.getHeader(this.id);
-        Unicast2Header newhdr=hdr.copy();
-        newhdr.first=true;
-        copy.putHeader(this.id, newhdr);
-
-        if(log.isTraceEnabled()) {
-            StringBuilder sb=new StringBuilder();
-            sb.append(local_addr).append(" --> DATA(").append(copy.getDest()).append(": #").append(newhdr.seqno).
-                    append(", conn_id=").append(newhdr.conn_id);
-            if(newhdr.first) sb.append(", first");
-            sb.append(')');
-            log.trace(sb);
-        }
-        down_prot.down(new Event(Event.MSG, copy));
-
-        if(++lowest > seqno)
-            return;
-        for(long i=lowest; i <= seqno; i++) {
-            rsp=win.get(i);
-            if(rsp != null)
+        boolean first_sent=false;
+        for(long i=win.getLow() +1; i <= seqno; i++) {
+            Message rsp=win.get(i);
+            if(rsp == null)
+                continue;
+            if(first_sent) {
                 down_prot.down(new Event(Event.MSG, rsp));
+            }
+            else {
+                first_sent=true;
+                // We need to copy the UnicastHeader and put it back into the message because Message.copy() doesn't copy
+                // the headers and therefore we'd modify the original message in the sender retransmission window
+                // (https://jira.jboss.org/jira/browse/JGRP-965)
+                Message copy=rsp.copy();
+                Unicast2Header hdr=(Unicast2Header)copy.getHeader(this.id);
+                Unicast2Header newhdr=hdr.copy();
+                newhdr.first=true;
+                copy.putHeader(this.id, newhdr);
+                down_prot.down(new Event(Event.MSG, copy));
+            }
         }
     }
 
@@ -1194,7 +1201,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         }
     }
 
-    private final class ReceiverEntry {
+    protected final class ReceiverEntry {
         private final Table<Message>     received_msgs;  // stores all msgs rcvd by a certain peer in seqno-order
         private final short              recv_conn_id;
         private int                      received_bytes=0;

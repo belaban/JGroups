@@ -433,8 +433,8 @@ public class UPerf extends ReceiverAdapter {
             Object[] get_args={0};
             MethodCall get_call=new MethodCall(GET, get_args);
             MethodCall put_call=new MethodCall(PUT, put_args);
-            RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 20000, false, null);
-            RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 20000, true, null);
+            RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 40000, false, null);
+            RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 40000, true, null);
 
             if(oob) {
                 get_options.setFlags(Message.OOB);

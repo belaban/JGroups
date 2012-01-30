@@ -23,7 +23,7 @@ public class UNICAST2_ConnectionTests {
     private Address a_addr, b_addr;
     private MyReceiver r1, r2;
     private UNICAST2 u1, u2;
-    private static final String props="SHARED_LOOPBACK:UNICAST2(stable_interval=2000)";
+    private static final String props="SHARED_LOOPBACK:UNICAST2(stable_interval=2000;conn_expiry_timeout=0)";
     private static final String CLUSTER="UNICAST2_ConnectionTests";
 
 
@@ -101,6 +101,7 @@ public class UNICAST2_ConnectionTests {
         u2.removeConnection(a_addr);
 
         // then send messages from A to B
+        // u2.setLevel("trace");
         sendAndCheck(a, b_addr, 10, r2);
     }
 
@@ -219,7 +220,7 @@ public class UNICAST2_ConnectionTests {
             channel.send(dest, "m" + i);
         }
         List<Message> list=receiver.getMessages();
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 1000; i++) {
             if(list.size() == num)
                 break;
             Util.sleep(500);
