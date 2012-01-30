@@ -720,16 +720,13 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
-    protected void handleDataReceived(Address sender, long seqno, short conn_id, boolean first, Message msg, Event evt) {
-        handleDataReceived(sender, seqno, conn_id, first, msg, evt, true);
-    }
 
     /**
-     * Check whether the hashtable contains an entry e for <code>sender</code> (create if not). If
+     * Check whether the hashmap contains an entry e for <code>sender</code> (create if not). If
      * e.received_msgs is null and <code>first</code> is true: create a new AckReceiverWindow(seqno) and
      * add message. Set e.received_msgs to the new window. Else just add the message.
      */
-    protected void handleDataReceived(Address sender, long seqno, short conn_id, boolean first, Message msg, Event evt, boolean send_stable) {
+    protected void handleDataReceived(Address sender, long seqno, short conn_id, boolean first, Message msg, Event evt) {
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno);
@@ -748,7 +745,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         boolean added=win.add(seqno, msg); // win is guaranteed to be non-null if we get here
         num_msgs_received++;
 
-        if(added && send_stable) {
+        if(added) {
             int len=msg.getLength();
             if(len > 0 &&  entry.incrementStable(len))
                 sendStableMessage(sender, entry.recv_conn_id, win.getHighestDelivered(), win.getHighestReceived());
