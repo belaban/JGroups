@@ -238,7 +238,7 @@ public class SizeTest {
         hdr=UNICAST.UnicastHeader.createAckHeader(322649);
         _testSize(hdr);
 
-        hdr=UNICAST.UnicastHeader.createSendFirstSeqnoHeader();
+        hdr=UNICAST.UnicastHeader.createSendFirstSeqnoHeader(33333);
         _testSize(hdr);
     }
 

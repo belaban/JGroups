@@ -398,8 +398,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         running=false;
         stopStableTask();
         stopConnectionReaper();
-        removeAllConnections();
         stopRetransmitTask();
+        removeAllConnections();
     }
 
 
@@ -1164,11 +1164,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
     private final class SenderEntry {
         // stores (and retransmits) msgs sent by us to a given peer
-        Table<Message>           sent_msgs;
+        final Table<Message>     sent_msgs;
         final AtomicLong         sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
         final short              send_conn_id;
         private final AtomicLong timestamp=new AtomicLong(0);
-        final Lock               lock=new ReentrantLock();
 
         public SenderEntry(short send_conn_id) {
             this.send_conn_id=send_conn_id;
@@ -1185,8 +1184,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             StringBuilder sb=new StringBuilder();
             if(sent_msgs != null)
                 sb.append(sent_msgs).append(", ");
-            sb.append("send_conn_id=" + send_conn_id);
-            sb.append(" (" + age() + " ms old)");
+            sb.append("send_conn_id=" + send_conn_id).append(" (" + age() + " ms old)");
             return sb.toString();
         }
     }
