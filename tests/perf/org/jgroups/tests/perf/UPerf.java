@@ -341,8 +341,10 @@ public class UPerf extends ReceiverAdapter {
         double throughput=total_reqs_sec * msg_size;
         double ms_per_req=total_time / (double)total_reqs;
         Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
-        System.out.println("\nAverage of " + f.format(total_reqs_sec) + " requests / sec (" +
-                Util.printBytes(throughput) + " / sec), " + f.format(ms_per_req) + " ms /request (prot=" + prot.getName() + ")");
+        System.out.println("\n");
+        System.out.println(Util.bold("Average of " + f.format(total_reqs_sec) + " requests / sec (" +
+                                       Util.printBytes(throughput) + " / sec), " +
+                                       f.format(ms_per_req) + " ms /request (prot=" + prot.getName() + ")"));
         System.out.println("\n\n");
     }
     
