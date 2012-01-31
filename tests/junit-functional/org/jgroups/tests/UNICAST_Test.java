@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 /**
  * Tests the UNICAST protocol
  * @author Bela Ban
- * @version $id$
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class UNICAST_Test {
@@ -57,13 +56,9 @@ public class UNICAST_Test {
 
     @DataProvider
     public static Object[][] configProvider() {
-        Object[][] retval=new Object[][] {
-                {new UNICAST()}, {new UNICAST2()}
+        return new Object[][]{
+          {new UNICAST()},{new UNICAST2()}
         };
-
-        ((UNICAST)retval[0][0]).setTimeout(new int[]{500,1000,2000,3000});
-        ((UNICAST2)retval[1][0]).setTimeout(new int[]{500,1000,2000,3000});
-        return retval;
     }
 
 

@@ -135,6 +135,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
     public int[] getTimeout() {return timeout;}
 
+    @Deprecated
     @Property(name="timeout",converter=PropertyConverters.IntegerArray.class,
               description="list of timeouts", deprecatedMessage="not used anymore")
     public void setTimeout(int[] val) {
