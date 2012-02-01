@@ -485,7 +485,7 @@ public abstract class TP extends Protocol {
      * <br/>
      * The keys are logical addresses, the values physical addresses
      */
-    protected LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache=null;
+    protected LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache;
 
     // last time we sent a discovery request
     protected long last_discovery_request=0;
@@ -509,7 +509,7 @@ public abstract class TP extends Protocol {
 
     /** Cache keeping track of WHO_HAS requests for physical addresses (given a logical address) and expiring
      * them after 5000ms */
-    protected AgeOutCache<Address> who_has_cache=null;
+    protected AgeOutCache<Address> who_has_cache;
 
 
     /**
