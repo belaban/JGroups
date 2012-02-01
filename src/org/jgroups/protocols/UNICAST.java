@@ -194,7 +194,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
     public long getNumAcksReceived() {return num_acks_received;}
 
     @ManagedAttribute
-    public long getNumberOfRetransmissions() {return num_xmits;}
+    public long getNumXmits() {return num_xmits;}
 
     public long getMaxRetransmitTime() {return max_retransmit_time;}
 
@@ -225,25 +225,13 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
     /** The number of messages in all Entry.sent_msgs tables (haven't received an ACK yet) */
     @ManagedAttribute
-    public int getNumberOfUnackedMessages() {
+    public int getNumUnackedMessages() {
         int num=0;
         for(SenderEntry entry: send_table.values()) {
                 if(entry.sent_msgs != null)
                     num+=entry.sent_msgs.size();
             }
         return num;
-    }
-
-    @ManagedOperation
-    public String printUnackedMessages() {
-        StringBuilder sb=new StringBuilder();
-        for(Map.Entry<Address,SenderEntry> entry: send_table.entrySet()) {
-            sb.append(entry.getKey()).append(": ");
-            SenderEntry val=entry.getValue();
-            if(val.sent_msgs != null)
-                sb.append(val.sent_msgs).append("\n");
-        }
-        return sb.toString();
     }
 
 
@@ -257,6 +245,105 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
         return num;
     }
 
+@ManagedAttribute(description="Total number of undelivered messages in all receive windows")
+    public long getXmitTableUndeliveredMessages() {
+        long retval=0;
+        for(ReceiverEntry entry: recv_table.values()) {
+            if(entry.received_msgs != null)
+                retval+=entry.received_msgs.size();
+        }
+        return retval;
+    }
+
+    @ManagedAttribute(description="Total number of missing messages in all receive windows")
+    public long getXmitTableMissingMessages() {
+        long retval=0;
+        for(ReceiverEntry entry: recv_table.values()) {
+            if(entry.received_msgs != null)
+                retval+=entry.received_msgs.getNumMissing();
+        }
+        return retval;
+    }
+
+    @ManagedAttribute(description="Number of compactions in all (receive and send) windows")
+    public int getXmitTableNumCompactions() {
+        int retval=0;
+        for(ReceiverEntry entry: recv_table.values()) {
+            if(entry.received_msgs != null)
+                retval+=entry.received_msgs.getNumCompactions();
+        }
+        for(SenderEntry entry: send_table.values()) {
+            if(entry.sent_msgs != null)
+                retval+=entry.sent_msgs.getNumCompactions();
+        }
+        return retval;
+    }
+
+    @ManagedAttribute(description="Number of moves in all (receive and send) windows")
+    public int getXmitTableNumMoves() {
+        int retval=0;
+        for(ReceiverEntry entry: recv_table.values()) {
+            if(entry.received_msgs != null)
+                retval+=entry.received_msgs.getNumMoves();
+        }
+        for(SenderEntry entry: send_table.values()) {
+            if(entry.sent_msgs != null)
+                retval+=entry.sent_msgs.getNumMoves();
+        }
+        return retval;
+    }
+
+    @ManagedAttribute(description="Number of resizes in all (receive and send) windows")
+    public int getXmitTableNumResizes() {
+        int retval=0;
+        for(ReceiverEntry entry: recv_table.values()) {
+            if(entry.received_msgs != null)
+                retval+=entry.received_msgs.getNumResizes();
+        }
+        for(SenderEntry entry: send_table.values()) {
+            if(entry.sent_msgs != null)
+                retval+=entry.sent_msgs.getNumResizes();
+        }
+        return retval;
+    }
+
+    @ManagedAttribute(description="Number of purges in all (receive and send) windows")
+    public int getXmitTableNumPurges() {
+        int retval=0;
+        for(ReceiverEntry entry: recv_table.values()) {
+            if(entry.received_msgs != null)
+                retval+=entry.received_msgs.getNumPurges();
+        }
+        for(SenderEntry entry: send_table.values()) {
+            if(entry.sent_msgs != null)
+                retval+=entry.sent_msgs.getNumPurges();
+        }
+        return retval;
+    }
+
+    @ManagedOperation(description="Prints the contents of the receive windows for all members")
+    public String printReceiveWindowMessages() {
+        StringBuilder ret=new StringBuilder(local_addr + ":\n");
+        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+            Address addr=entry.getKey();
+            Table<Message> buf=entry.getValue().received_msgs;
+            ret.append(addr).append(": ").append(buf.toString()).append('\n');
+        }
+        return ret.toString();
+    }
+
+    @ManagedOperation(description="Prints the contents of the send windows for all members")
+    public String printSendWindowMessages() {
+        StringBuilder ret=new StringBuilder(local_addr + ":\n");
+        for(Map.Entry<Address,SenderEntry> entry: send_table.entrySet()) {
+            Address addr=entry.getKey();
+            Table<Message> buf=entry.getValue().sent_msgs;
+            ret.append(addr).append(": ").append(buf.toString()).append('\n');
+        }
+        return ret.toString();
+    }
+
+
     public void resetStats() {
         num_msgs_sent=num_msgs_received=num_acks_sent=num_acks_received=0;
         num_xmits=0;
@@ -265,13 +352,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
     public Map<String, Object> dumpStats() {
         Map<String, Object> m=super.dumpStats();
-        m.put("unacked_msgs", printUnackedMessages());
-        m.put("num_msgs_sent", num_msgs_sent);
-        m.put("num_msgs_received", num_msgs_received);
-        m.put("num_acks_sent", num_acks_sent);
-        m.put("num_acks_received", num_acks_received);
-        m.put("num_xmits", num_xmits);
-        m.put("num_unacked_msgs", getNumberOfUnackedMessages());
+        m.put("num_unacked_msgs", getNumUnackedMessages());
         m.put("num_msgs_in_recv_windows", getNumberOfMessagesInReceiveWindows());
         return m;
     }

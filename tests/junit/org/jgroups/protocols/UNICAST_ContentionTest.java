@@ -128,7 +128,7 @@ public class UNICAST_ContentionTest {
     private static long getNumberOfRetransmissions(JChannel ch) {
         Protocol prot=ch.getProtocolStack().findProtocol(UNICAST.class, UNICAST2.class);
         if(prot instanceof UNICAST)
-            return ((UNICAST)prot).getNumberOfRetransmissions();
+            return ((UNICAST)prot).getNumXmits();
         return -1;
     }
 

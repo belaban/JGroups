@@ -351,14 +351,6 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
-    public Map<String, Object> dumpStats() {
-        Map<String, Object> m=super.dumpStats();
-        m.put("num_msgs_sent", num_msgs_sent);
-        m.put("num_msgs_received", num_msgs_received);
-        return m;
-    }
-
-
     public TimeScheduler getTimer() {
         return timer;
     }
