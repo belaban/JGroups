@@ -693,7 +693,22 @@
 
         </section>
 
-         <section id="UNICAST">
+        <section id="NAKACK2">
+            <title>NAKACK2</title>
+            <para>
+                NAKACK2 was introduced in 3.1 and is a successor to NAKACK (at some point it will replace NAKACK). It
+                has the same properties as NAKACK, but its implementation is faster and uses less memory, plus it
+                creates fewer tasks in the timer.
+            </para>
+            <para>
+                Some of the properties of NAKACK were deprecated in NAKACK2, but were not removed so people can simply
+                change from NAKACK to NAKACK2 by changing the protocol name in the config.
+            </para>
+
+            ${NAKACK2}
+        </section>
+
+        <section id="UNICAST">
             <title>UNICAST</title>
 
             <para>
@@ -709,23 +724,44 @@
                 FIFO order means that all messages from a given sender are received in exactly the order in which
                 they were sent.
             </para>
-             <para>
-                 On top of a reliable transport, such as TCP, UNICAST is not really needed. However, concurrent
-                 delivery of messages from the same sender is prevented by UNICAST by acquiring a lock on the sender's
-                 retransmission table, so unless concurrent delivery is desired, UNICAST should not be removed from
-                 the stack even if TCP is used.
-             </para>
 
-			${UNICAST}
+            <para>
+                UNICAST uses <emphasis>positive acks</emphasis> for retransmission; sender A keeps sending
+                message M until receiver B delivers M and sends an ack(M) to A, or until B leaves the cluster or A
+                crashes.
+            </para>
+            <para>
+                Although JGroups attempts to send acks selectively, UNICAST will still see a lot of acks on the wire.
+                If this is not desired, use UNICAST2 (see <xref linkend="UNICAST2"/>).
+            </para>
 
-         </section>
+            <para>
+                On top of a reliable transport, such as TCP, UNICAST is not really needed. However, concurrent
+                delivery of messages from the same sender is prevented by UNICAST by acquiring a lock on the sender's
+                retransmission table, so unless concurrent delivery is desired, UNICAST should not be removed from
+                the stack even if TCP is used.
+            </para>
 
-        <section>
+            ${UNICAST}
+
+        </section>
+
+        <section id="UNICAST2">
             <title>UNICAST2</title>
             <para>
                 UNICAST2 provides lossless, ordered, communication between 2 members. Contrary to UNICAST, it
-                uses negative acks (similar to NAKACK) rather than positive acks. This reduces the communication
+                uses <emphasis>negative acks</emphasis> (similar to NAKACK) rather than positive acks. This reduces the communication
                 overhead required for sending an ack for every message.
+            </para>
+            <para>
+                Negative acks have sender A simply send messages without retransmission, and receivers never ack
+                messages, until they detect a gap: for instance, if A sends messages 1,2,4,5, then B delivers 1 and 2,
+                but queues 4 and 5 because it is missing message 3 from A. B then asks A to retransmit 3. When 3 is
+                received, messages 3, 4 and 5 can be delivered to the application.
+            </para>
+            <para>
+                Compared to a positive ack scheme as used in UNICAST, negative acks have the advantage that they generate
+                less traffic: if all messages are received in order, we never need to do retransmission.
             </para>
 
             ${UNICAST2}

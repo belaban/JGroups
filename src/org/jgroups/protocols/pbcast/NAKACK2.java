@@ -34,7 +34,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
-@Experimental(comment="If successful, might replace NAKACK in the future")
 public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected static final int NUM_REBROADCAST_MSGS=3;
 
