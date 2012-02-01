@@ -50,78 +50,73 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
     @Deprecated
-    private int[] timeout= { 400, 800, 1600, 3200 }; // for AckSenderWindow: max time to wait for missing acks
+    protected int[]  timeout= { 400, 800, 1600, 3200 }; // for AckSenderWindow: max time to wait for missing acks
 
     @Property(description="Max number of messages to be removed from a retransmit window. This property might " +
             "get removed anytime, so don't use it !")
-    private int max_msg_batch_size=100;
+    protected int    max_msg_batch_size=500;
 
     @Property(description="Time (in milliseconds) after which an idle incoming or outgoing connection is closed. The " +
       "connection will get re-established when used again. 0 disables connection reaping")
-    protected long conn_expiry_timeout=60000;
+    protected long   conn_expiry_timeout=60000;
 
     @Deprecated
     @Property(description="Size (in bytes) of a Segment in the segments table. Only for experts, do not use !",
               deprecatedMessage="not used anymore")
-    protected int segment_capacity=1000;
+    protected int    segment_capacity=1000;
 
 
 
     @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
-    int xmit_table_num_rows=5;
+    protected int    xmit_table_num_rows=100;
 
     @Property(description="Number of elements of a row of the matrix in the retransmission table (only for experts). " +
       "The capacity of the matrix is xmit_table_num_rows * xmit_table_msgs_per_row",writable=false)
-    int xmit_table_msgs_per_row=1000;
+    protected int    xmit_table_msgs_per_row=1000;
 
     @Property(description="Resize factor of the matrix in the retransmission table (only for experts)",writable=false)
-    double xmit_table_resize_factor=1.2;
+    protected double xmit_table_resize_factor=1.2;
 
     @Property(description="Number of milliseconds after which the matrix in the retransmission table " +
       "is compacted (only for experts)",writable=false)
-    long xmit_table_max_compaction_time=10 * 60 * 1000;
+    protected long   xmit_table_max_compaction_time=10 * 60 * 1000;
 
     @Property(description="Interval (in milliseconds) at which messages in the send windows are resent")
-    protected long xmit_interval=1000;
+    protected long   xmit_interval=1000;
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
-    private long num_msgs_sent=0, num_msgs_received=0;
-    private long num_acks_sent=0, num_acks_received=0, num_xmits=0;
+    protected long   num_msgs_sent=0, num_msgs_received=0;
+    protected long   num_acks_sent=0, num_acks_received=0, num_xmits=0;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
 
-    private final ConcurrentMap<Address, SenderEntry>   send_table=Util.createConcurrentMap();
-    private final ConcurrentMap<Address, ReceiverEntry> recv_table=Util.createConcurrentMap();
+    protected final ConcurrentMap<Address, SenderEntry>   send_table=Util.createConcurrentMap();
+    protected final ConcurrentMap<Address, ReceiverEntry> recv_table=Util.createConcurrentMap();
 
-    protected final ReentrantLock  recv_table_lock=new ReentrantLock();
+    protected final ReentrantLock    recv_table_lock=new ReentrantLock();
 
     /** RetransmitTask running every xmit_interval ms */
-    protected Future<?>            xmit_task;
+    protected Future<?>              xmit_task;
 
-    private volatile List<Address> members=new ArrayList<Address>(11);
+    protected volatile List<Address> members=new ArrayList<Address>(11);
 
-    private Address local_addr=null;
+    protected Address                local_addr=null;
 
-    private TimeScheduler timer=null; // used for retransmissions (passed to AckSenderWindow)
+    protected TimeScheduler          timer=null; // used for retransmissions (passed to AckSenderWindow)
 
-    private boolean started=false;
+    protected volatile boolean       running=false;
 
-    protected volatile boolean running=false;
+    protected short                  last_conn_id=0;
 
-    // didn't make this 'connected' in case we need to send early acks which may race to the socket
-    private volatile boolean disconnected=false;
+    protected long                   max_retransmit_time=60 * 1000L;
 
-    private short last_conn_id=0;
+    protected AgeOutCache<Address>   cache=null;
 
-    protected long max_retransmit_time=60 * 1000L;
-
-    private AgeOutCache<Address> cache=null;
-
-    protected Future<?> connection_reaper; // closes idle connections
+    protected Future<?>              connection_reaper; // closes idle connections
 
 
     public int[] getTimeout() {return timeout;}
@@ -245,7 +240,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
         return num;
     }
 
-@ManagedAttribute(description="Total number of undelivered messages in all receive windows")
+    @ManagedAttribute(description="Total number of undelivered messages in all receive windows")
     public long getXmitTableUndeliveredMessages() {
         long retval=0;
         for(ReceiverEntry entry: recv_table.values()) {
@@ -365,7 +360,6 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
             throw new Exception("timer is null");
         if(max_retransmit_time > 0)
             cache=new AgeOutCache<Address>(timer, max_retransmit_time, this);
-        started=true;
         running=true;
         if(conn_expiry_timeout > 0)
             startConnectionReaper();
@@ -373,7 +367,6 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     public void stop() {
-        started=false;
         running=false;
         stopRetransmitTask();
         stopConnectionReaper();
@@ -434,7 +427,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                 if (dst == null || msg.isFlagSet(Message.NO_RELIABILITY))
                     break;
 
-                if(!started) {
+                if(!running) {
                     if(log.isTraceEnabled())
                         log.trace("discarded message as start() has not yet been called, message: " + msg);
                     return null;
@@ -516,21 +509,13 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
                 break;
-
-            case Event.CONNECT:
-                disconnected=false;
-                break;
-
-            case Event.DISCONNECT:
-                disconnected=true;
-                break;
         }
 
         return down_prot.down(evt);          // Pass on to the layer below us
     }
 
 
-    private void send(Message msg, Event evt) {
+    protected void send(Message msg, Event evt) {
         down_prot.down(evt);
         num_msgs_sent++;
     }
@@ -720,7 +705,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
-    private ReceiverEntry getOrCreateReceiverEntry(Address sender, long seqno, short conn_id) {
+    protected ReceiverEntry getOrCreateReceiverEntry(Address sender, long seqno, short conn_id) {
         Table<Message> table=new Table<Message>(xmit_table_num_rows, xmit_table_msgs_per_row, seqno-1,
                                                 xmit_table_resize_factor, xmit_table_max_compaction_time);
         ReceiverEntry entry=new ReceiverEntry(table, conn_id);
@@ -733,7 +718,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     /** Add the ACK to hashtable.sender.sent_msgs */
-    private void handleAckReceived(Address sender, long seqno) {
+    protected void handleAckReceived(Address sender, long seqno) {
         if(log.isTraceEnabled())
             log.trace(new StringBuilder().append(local_addr).append(" <-- ACK(").append(sender).
                     append(": #").append(seqno).append(')'));
@@ -752,7 +737,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
      * @param sender
      * @param seqno Resend the non null messages in the range [lowest .. seqno]
      */
-    private void handleResendingOfFirstMessage(Address sender, long seqno) {
+    protected void handleResendingOfFirstMessage(Address sender, long seqno) {
         if(log.isTraceEnabled())
             log.trace(local_addr + " <-- SEND_FIRST_SEQNO(" + sender + "," + seqno + ")");
         SenderEntry entry=send_table.get(sender);
@@ -800,20 +785,14 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
 
 
-    private void sendAck(Address dst, long seqno) {
-        if(disconnected) // if we are disconnected, then don't send any acks which throw exceptions on shutdown
+    protected void sendAck(Address dst, long seqno) {
+        if(!running) // if we are disconnected, then don't send any acks which throw exceptions on shutdown
             return;
         Message ack=new Message(dst);
-        // commented Jan 23 2008 (bela): TP.enable_unicast_bundling should decide whether we bundle or not, and *not*
-        // the OOB flag ! Bundling UNICAST ACKs should be really fast
-
-        // https://jira.jboss.org/jira/browse/JGRP-1125; will be reverted in 2.10
-        // ack.setFlag(Message.OOB);
-
         ack.putHeader(this.id, UnicastHeader.createAckHeader(seqno));
         if(log.isTraceEnabled())
             log.trace(new StringBuilder().append(local_addr).append(" --> ACK(").append(dst).
-                    append(": #").append(seqno).append(')'));
+              append(": #").append(seqno).append(')'));
         try {
             down_prot.down(new Event(Event.MSG, ack));
             num_acks_sent++;
@@ -833,7 +812,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
             connection_reaper.cancel(false);
     }
    
-    private synchronized short getNewConnectionId() {
+    protected synchronized short getNewConnectionId() {
         short retval=last_conn_id;
         if(last_conn_id >= Short.MAX_VALUE || last_conn_id < 0)
             last_conn_id=0;
@@ -843,7 +822,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
-    private void sendRequestForFirstSeqno(Address dest, long seqno_received) {
+    protected void sendRequestForFirstSeqno(Address dest, long seqno_received) {
         Message msg=new Message(dest);
         msg.setFlag(Message.OOB);
         UnicastHeader hdr=UnicastHeader.createSendFirstSeqnoHeader(seqno_received);
@@ -914,12 +893,12 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
             return new UnicastHeader(SEND_FIRST_SEQNO, seqno_received);
         }
 
-        private UnicastHeader(byte type, long seqno) {
+        protected UnicastHeader(byte type, long seqno) {
             this.type=type;
             this.seqno=seqno;
         }
 
-        private UnicastHeader(byte type, long seqno, short conn_id, boolean first) {
+        protected UnicastHeader(byte type, long seqno, short conn_id, boolean first) {
             this.type=type;
             this.seqno=seqno;
             this.conn_id=conn_id;
@@ -1009,11 +988,11 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected final class SenderEntry {
         // stores (and retransmits) msgs sent by us to a certain peer
-        final Table<Message>     sent_msgs;
-        final AtomicLong         sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
-        final short              send_conn_id;
-        private final AtomicLong timestamp=new AtomicLong(0);
-        final Lock               lock=new ReentrantLock();
+        final Table<Message>        sent_msgs;
+        final AtomicLong            sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
+        final short                 send_conn_id;
+        protected final AtomicLong  timestamp=new AtomicLong(0);
+        final Lock                  lock=new ReentrantLock();
 
         public SenderEntry(short send_conn_id) {
             this.send_conn_id=send_conn_id;
@@ -1035,9 +1014,9 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     protected static final class ReceiverEntry {
-        private final Table<Message>     received_msgs;  // stores all msgs rcvd by a certain peer in seqno-order
-        private final long               recv_conn_id;
-        private final AtomicLong         timestamp=new AtomicLong(0);
+        protected final Table<Message>  received_msgs;  // stores all msgs rcvd by a certain peer in seqno-order
+        protected final long            recv_conn_id;
+        protected final AtomicLong      timestamp=new AtomicLong(0);
 
         
         public ReceiverEntry(Table<Message> received_msgs, long recv_conn_id) {
