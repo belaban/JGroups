@@ -136,7 +136,8 @@ public class TCPGOSSIP extends Discovery {
                 responses.addAll(rsps);
             }
             catch(Throwable t) {
-                log.warn("failed fetching members from " + stub.getGossipRouterAddress() + ": " + t);
+                log.warn("failed fetching members from " + stub.getGossipRouterAddress() + ": " + t +
+                           ", cause: " + t.getCause());
             }
         }
 
