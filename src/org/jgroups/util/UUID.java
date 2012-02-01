@@ -53,7 +53,7 @@ public class UUID implements Address {
         }
 
         try {
-            tmp=Util.getProperty(new String[]{Global.UUID_CACHE_MAX_AGE}, null, null, false, "5000");
+            tmp=Util.getProperty(new String[]{Global.UUID_CACHE_MAX_AGE}, null, null, false, "120000");
             if(tmp != null)
                 max_age=Long.valueOf(tmp);
         }
