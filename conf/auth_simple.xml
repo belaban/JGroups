@@ -4,7 +4,7 @@
     <MERGE2/>
     <FD/>
     <VERIFY_SUSPECT/>
-    <pbcast.NAKACK/>
+    <pbcast.NAKACK2/>
     <UNICAST/>
     <pbcast.STABLE/>
     <FRAG2/>

@@ -16,7 +16,7 @@ Author: Bela Ban
     <FD_SOCK/>
     <FD/>
     <VERIFY_SUSPECT/>
-    <pbcast.NAKACK/>
+    <pbcast.NAKACK2/>
     <UNICAST/>
     <pbcast.STABLE/>
     <pbcast.GMS/>

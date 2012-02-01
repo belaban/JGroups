@@ -56,11 +56,18 @@
     <FD_ALL/>
     <VERIFY_SUSPECT timeout="1500"  />
     <BARRIER />
-    <pbcast.NAKACK exponential_backoff="300"
-                   xmit_stagger_timeout="200"
-                   use_mcast_xmit="true"
-                   discard_delivered_msgs="true"/>
-    <UNICAST2 exponential_backoff="500"/>
+    <pbcast.NAKACK2 xmit_interval="2000"
+                    xmit_table_num_rows="100"
+                    xmit_table_msgs_per_row="2000"
+                    xmit_table_max_compaction_time="30000"
+                    max_msg_batch_size="500"
+                    use_mcast_xmit="true"
+                    discard_delivered_msgs="true"/>
+    <UNICAST2 max_bytes="20M"
+              xmit_table_num_rows="100"
+              xmit_table_msgs_per_row="1000"
+              xmit_table_max_compaction_time="30000"
+              max_msg_batch_size="500"/>
     <RSVP resend_interval="2000" timeout="10000"/>
     <pbcast.STABLE stability_delay="2000" desired_avg_gossip="60000"
                    max_bytes="4M"

@@ -82,7 +82,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
     protected long   xmit_table_max_compaction_time=10 * 60 * 1000;
 
     @Property(description="Interval (in milliseconds) at which messages in the send windows are resent")
-    protected long   xmit_interval=1000;
+    protected long   xmit_interval=2000;
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 

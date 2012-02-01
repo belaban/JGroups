@@ -51,8 +51,7 @@
     <FD timeout="3000" max_tries="3" />
     <VERIFY_SUSPECT timeout="1500"  />
     <BARRIER />
-    <pbcast.NAKACK use_mcast_xmit="false"
-                   exponential_backoff="500"
+    <pbcast.NAKACK2 use_mcast_xmit="false"
                    discard_delivered_msgs="true"/>
     <UNICAST />
     <RSVP resend_interval="2000" timeout="10000"/>

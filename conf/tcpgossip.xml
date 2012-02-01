@@ -15,7 +15,7 @@
     <MERGE2/>
     <FD/>
     <VERIFY_SUSPECT/>
-    <pbcast.NAKACK use_mcast_xmit="false"/>
+    <pbcast.NAKACK2 use_mcast_xmit="false"/>
     <UNICAST/>
     <pbcast.STABLE/>
     <pbcast.GMS/>

@@ -14,7 +14,7 @@
     <FD_ALL/>
     <VERIFY_SUSPECT/>
     <BARRIER />
-    <pbcast.NAKACK/>
+    <pbcast.NAKACK2/>
     <UNICAST/>
     <pbcast.STABLE/>
     <pbcast.GMS/>
