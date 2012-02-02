@@ -16,7 +16,7 @@ import java.util.Collection;
  * @author Bela Ban
  */
 public class PingData implements Streamable {
-    protected Address own_addr=null;
+    protected Address sender=null;  // the sender of this PingData
     protected View    view=null;    // only sent with merge-triggered discovery response (if ViewIds differ)
     protected ViewId  view_id=null; // only sent with GMS-triggered discovery response
     protected boolean is_server=false;
@@ -27,41 +27,41 @@ public class PingData implements Streamable {
     public PingData() {
     }
 
-    public PingData(Address own_addr, View view, boolean is_server) {
-        this.own_addr=own_addr;
+    public PingData(Address sender, View view, boolean is_server) {
+        this.sender=sender;
         this.view=view;
         this.is_server=is_server;
     }
 
 
-    public PingData(Address own_addr, View view, boolean is_server,
+    public PingData(Address sender, View view, boolean is_server,
                     String logical_name, Collection<PhysicalAddress> physical_addrs) {
-        this(own_addr, view, is_server);
+        this(sender, view, is_server);
         this.logical_name=logical_name;
         if(physical_addrs != null)
             this.physical_addrs=new ArrayList<PhysicalAddress>(physical_addrs);
     }
 
 
-    public PingData(Address own_addr, View view, ViewId view_id, boolean is_server,
+    public PingData(Address sender, View view, ViewId view_id, boolean is_server,
                     String logical_name, Collection<PhysicalAddress> physical_addrs) {
-        this(own_addr, view, is_server, logical_name, physical_addrs);
+        this(sender, view, is_server, logical_name, physical_addrs);
         this.view_id=view_id;
     }
 
 
     public boolean isCoord() {
         Address coord_addr=getCoordAddress();
-        return is_server && own_addr != null && coord_addr != null && own_addr.equals(coord_addr);
+        return is_server && sender != null && coord_addr != null && sender.equals(coord_addr);
     }
     
     public boolean hasCoord(){
         Address coord_addr=getCoordAddress();
-        return is_server && own_addr != null && coord_addr != null;
+        return is_server && sender != null && coord_addr != null;
     }
 
     public Address getAddress() {
-        return own_addr;
+        return sender;
     }
 
     public Address getCoordAddress() {
@@ -102,13 +102,13 @@ public class PingData implements Streamable {
         if(!(obj instanceof PingData))
             return false;
         PingData other=(PingData)obj;
-        return own_addr != null && own_addr.equals(other.own_addr);
+        return sender != null && sender.equals(other.sender);
     }
 
     public int hashCode() {
         int retval=0;
-        if(own_addr != null)
-            retval+=own_addr.hashCode();
+        if(sender != null)
+            retval+=sender.hashCode();
         if(retval == 0)
             retval=super.hashCode();
         return retval;
@@ -116,7 +116,7 @@ public class PingData implements Streamable {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append(own_addr);
+        sb.append(sender);
         sb.append(", " + printViewId());
         sb.append(", is_server=").append(is_server).append(", is_coord=" + isCoord());
         if(logical_name != null)
@@ -145,7 +145,7 @@ public class PingData implements Streamable {
     }
 
     public void writeTo(DataOutput outstream) throws Exception {
-        Util.writeAddress(own_addr, outstream);
+        Util.writeAddress(sender, outstream);
         Util.writeView(view, outstream);
         Util.writeViewId(view_id, outstream);
         outstream.writeBoolean(is_server);
@@ -155,7 +155,7 @@ public class PingData implements Streamable {
 
     @SuppressWarnings("unchecked")
     public void readFrom(DataInput instream) throws Exception {
-        own_addr=Util.readAddress(instream);
+        sender=Util.readAddress(instream);
         view=Util.readView(instream);
         view_id=Util.readViewId(instream);
         is_server=instream.readBoolean();
@@ -165,7 +165,7 @@ public class PingData implements Streamable {
 
     public int size() {
         int retval=Global.BYTE_SIZE; // for is_server
-        retval+=Util.size(own_addr);
+        retval+=Util.size(sender);
         retval+=Util.size(view);
         retval+=Util.size(view_id);
         retval+=Global.BYTE_SIZE;     // presence byte for logical_name
