@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.protocols.Discovery;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Digest;
@@ -322,7 +322,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         StringBuilder sb=new StringBuilder();
         for(JChannel ch: channels) {
             sb.append(ch.getAddress()).append(": ");
-            NAKACK nakack=(NAKACK)ch.getProtocolStack().findProtocol(NAKACK.class);
+            NAKACK2 nakack=(NAKACK2)ch.getProtocolStack().findProtocol(NAKACK2.class);
             Digest digest=nakack.getDigest();
             sb.append(digest).append("\n");
         }
@@ -438,7 +438,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
             stack.removeProtocols("MERGE2","MERGE3","FD_SOCK","FD","FD_ALL","FC","MFC","UFC","VERIFY_SUSPECT", "STATE_TRANSFER");
-            NAKACK nak=(NAKACK)stack.findProtocol(NAKACK.class);
+            NAKACK2 nak=(NAKACK2)stack.findProtocol(NAKACK2.class);
             if(nak != null)
                 nak.setLogDiscardMessages(false);
         }
