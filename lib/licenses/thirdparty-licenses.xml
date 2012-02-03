@@ -89,7 +89,7 @@
     </module>
     <module name='testng'
             licenseType='apache-2.0'
-            version='5.8'
+            version='6.3.1'
             projectHome='http://www.testng.org'
             description='Used for unit testing'>
         <jar name='testng.jar' />
