@@ -39,7 +39,7 @@
     <property name="maven.executable" value="mvn"/>
 
 	<!-- 5 minutes per test suite timeout -->
-    <property name="unittest.timeout.low" value="500000"/>
+    <property name="unittest.timeout" value="1800000"/>
 
     <!-- default properties used in all test targets -->
     <property name="channel.conf" value="udp.xml"/>
@@ -548,7 +548,7 @@
                     usedefaultlisteners="false"
                     outputdir="@{outputdir}"
                     listeners="org.jgroups.util.JUnitXMLReporter"
-            		timeout="${unittest.timeout.low}"
+            		timeout="${unittest.timeout}"
             	    verbose="${test.verbose}"
                     >
                 <xmlfileset dir="${testng.conf.dir}" includes="@{testng.xmlfile}"/>

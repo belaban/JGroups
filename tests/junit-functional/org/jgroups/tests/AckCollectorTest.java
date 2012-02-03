@@ -61,7 +61,7 @@ public class AckCollectorTest {
             }
         }.start();
         try {
-            ac.waitForAllAcks(5000);
+            ac.waitForAllAcks(30000);
             assert true : "we should not get a timeout exception here";
         }
         catch(TimeoutException e) {
