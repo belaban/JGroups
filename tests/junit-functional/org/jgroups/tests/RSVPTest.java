@@ -85,7 +85,7 @@ public class RSVPTest {
                                              .setValue("xmit_table_num_rows",5)
                                              .setValue("xmit_table_msgs_per_row",10),
                                            // new UNICAST(),
-                                           new UNICAST2().setValue("xmit_table_num_rows",5).setValue("exponential_backoff", 300)
+                                           new UNICAST2().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300)
                                              .setValue("xmit_table_msgs_per_row",10)
                                              .setValue("conn_expiry_timeout", 10000)
                                              .setValue("stable_interval", 30000)
