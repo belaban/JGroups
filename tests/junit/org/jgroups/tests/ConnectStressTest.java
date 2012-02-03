@@ -7,7 +7,7 @@ import org.jgroups.JChannel;
 import org.jgroups.View;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -139,9 +139,9 @@ public class ConnectStressTest extends ChannelTestBase {
             merge.setMinInterval(2000);
             merge.setMaxInterval(5000);
         }
-        NAKACK nakack=(NAKACK)stack.findProtocol(NAKACK.class);
+        NAKACK2 nakack=(NAKACK2)stack.findProtocol(NAKACK2.class);
         if(nakack != null)
-            nakack.setLogDiscardMsgs(false);
+            nakack.setLogDiscardMessages(false);
     }
 
 
