@@ -5,7 +5,7 @@ import org.jgroups.*;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.tests.ChannelTestBase;
@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
 public class GMS_MergeTest extends ChannelTestBase {
     static final String simple_props="SHARED_LOOPBACK:PING(timeout=1000):" +
-            "pbcast.NAKACK(use_mcast_xmit=false;log_discard_msgs=false;log_not_found_msgs=false)" +
+            "pbcast.NAKACK2(use_mcast_xmit=false;log_discard_msgs=false;log_not_found_msgs=false)" +
             ":UNICAST:pbcast.STABLE(stability_delay=200):pbcast.GMS:FC:FRAG2";
 
     static final String flush_props=simple_props + ":pbcast.FLUSH";
@@ -322,9 +322,9 @@ public class GMS_MergeTest extends ChannelTestBase {
              checkMessages(NUM * 2, receivers[0], receivers[2]);
              checkMessages(0, receivers[1]);
 
-             Digest da=((NAKACK)a.getProtocolStack().findProtocol(NAKACK.class)).getDigest(),
-                     db=((NAKACK)b.getProtocolStack().findProtocol(NAKACK.class)).getDigest(),
-                     dc=((NAKACK)c.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
+             Digest da=((NAKACK2)a.getProtocolStack().findProtocol(NAKACK2.class)).getDigest(),
+                     db=((NAKACK2)b.getProtocolStack().findProtocol(NAKACK2.class)).getDigest(),
+                     dc=((NAKACK2)c.getProtocolStack().findProtocol(NAKACK2.class)).getDigest();
 
              System.out.println("Digest A: " + da + "\nDigest B: " + db + "\nDigest C: " + dc);
              System.out.println("Running stability protocol on B and C now");
@@ -339,9 +339,9 @@ public class GMS_MergeTest extends ChannelTestBase {
                  Util.sleep(300);
              }
 
-             db=((NAKACK)a.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
-             db=((NAKACK)b.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
-             dc=((NAKACK)c.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
+             db=((NAKACK2)a.getProtocolStack().findProtocol(NAKACK2.class)).getDigest();
+             db=((NAKACK2)b.getProtocolStack().findProtocol(NAKACK2.class)).getDigest();
+             dc=((NAKACK2)c.getProtocolStack().findProtocol(NAKACK2.class)).getDigest();
              System.out.println("(after purging)\nDigest A: " + da + "\nDigest B: " + db + "\nDigest C: " + dc);
 
              // now enable traffic reception of B and C on A:
@@ -415,8 +415,8 @@ public class GMS_MergeTest extends ChannelTestBase {
              for(MyReceiver receiver: receivers)
                  receiver.clear();
 
-             Digest da=((NAKACK)a.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
-             Digest db=((NAKACK)b.getProtocolStack().findProtocol(NAKACK.class)).getDigest();
+             Digest da=((NAKACK2)a.getProtocolStack().findProtocol(NAKACK2.class)).getDigest();
+             Digest db=((NAKACK2)b.getProtocolStack().findProtocol(NAKACK2.class)).getDigest();
              System.out.println("(after purging)\nDigest A: " + da + "\nDigest B: " + db);
 
              Address merge_leader=determineLeader(channels, "A", "B");
@@ -649,7 +649,7 @@ public class GMS_MergeTest extends ChannelTestBase {
 
     private static void printDigests(JChannel[] channels) {
         for(JChannel ch: channels) {
-            NAKACK nak=(NAKACK)ch.getProtocolStack().findProtocol(NAKACK.class);
+            NAKACK2 nak=(NAKACK2)ch.getProtocolStack().findProtocol(NAKACK2.class);
             Digest digest=nak.getDigest();
             System.out.println(ch.getName() + ": " + digest.toStringSorted());
         }

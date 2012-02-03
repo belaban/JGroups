@@ -978,7 +978,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     /**
      * Returns a message digest: for each member P the highest delivered and received seqno is added
      */
-    protected Digest getDigest() {
+    public Digest getDigest() {
         final Map<Address,long[]> map=new HashMap<Address,long[]>();
         for(Map.Entry<Address,Table<Message>> entry: xmit_table.entrySet()) {
             Address sender=entry.getKey(); // guaranteed to be non-null (CCHM)
