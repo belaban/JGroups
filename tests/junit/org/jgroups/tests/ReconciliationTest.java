@@ -2,14 +2,17 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.*;
 
 /**
@@ -235,7 +238,7 @@ public class ReconciliationTest extends ChannelTestBase {
     /** Sets discard_delivered_msgs to false */
     protected void modifyNAKACK(JChannel ch) {
         if(ch == null) return;
-        NAKACK nakack=(NAKACK)ch.getProtocolStack().findProtocol(NAKACK.class);
+        NAKACK2 nakack=(NAKACK2)ch.getProtocolStack().findProtocol(NAKACK2.class);
         if(nakack != null)
             nakack.setDiscardDeliveredMsgs(false);
     }
@@ -251,7 +254,7 @@ public class ReconciliationTest extends ChannelTestBase {
         DISCARD discard=new DISCARD();
         discard.setExcludeItself(true);
         discard.addIgnoreMember(exclude); // ignore messages from this member
-        ch.getProtocolStack().insertProtocol(discard, ProtocolStack.BELOW, "NAKACK");
+        ch.getProtocolStack().insertProtocol(discard, ProtocolStack.BELOW, NAKACK2.class);
     }
 
     private static void removeDISCARD(JChannel...channels) throws Exception {
