@@ -27,8 +27,8 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
     @BeforeClass
     void setUp() throws Exception {
 
-        channels[0] = createChannel(true);
-        channels[1] = createChannel(channels[0]);
+        channels[0] = createChannel(true, 2, "A");
+        channels[1] = createChannel(channels[0], "B");
         
         for (int i = 0; i < dispatchers.length; i++) {
 
