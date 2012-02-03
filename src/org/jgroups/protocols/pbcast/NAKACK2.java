@@ -185,6 +185,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         this.discard_delivered_msgs=discard_delivered_msgs;
     }
 
+    /** Returns the receive window for sender; only used for testing. Do not use ! */
+    public Table<Message> getWindow(Address sender) {
+        return xmit_table.get(sender);
+    }
+
 
     /** Only used for unit tests, don't use ! */
     public void setTimer(TimeScheduler timer) {this.timer=timer;}
