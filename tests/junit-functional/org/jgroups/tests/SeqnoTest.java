@@ -222,7 +222,7 @@ public class SeqnoTest {
     public static void testCompareTo() {
         TreeMap<Seqno,Seqno> map=new TreeMap<Seqno,Seqno>(new SeqnoComparator());
 
-        Seqno[] ranges=new Seqno[]{new SeqnoRange(900,905), new Seqno(222), new SeqnoRange(700,800), new SeqnoRange(23,200)};
+        Seqno[] ranges={new SeqnoRange(900,905), new Seqno(222), new SeqnoRange(700,800), new SeqnoRange(23,200)};
 
         for(Seqno range: ranges)
             map.put(range, range);
@@ -246,8 +246,8 @@ public class SeqnoTest {
     public static void testCompareTo2() {
         TreeMap<Seqno,Seqno> map=new TreeMap<Seqno,Seqno>(new SeqnoComparator());
 
-        Seqno[] ranges=new Seqno[]{new SeqnoRange(900,905), new Seqno(550), new Seqno(222),
-                new SeqnoRange(700,800), new Seqno(650), new SeqnoRange(23,200)};
+        Seqno[] ranges={new SeqnoRange(900,905), new Seqno(550), new Seqno(222),
+          new SeqnoRange(700,800), new Seqno(650), new SeqnoRange(23,200)};
 
         for(Seqno range: ranges)
             map.put(range, range);
