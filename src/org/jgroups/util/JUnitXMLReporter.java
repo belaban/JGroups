@@ -12,6 +12,7 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -35,10 +36,13 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
     private PrintStream old_stdout=System.out;
     private PrintStream old_stderr=System.err;
 
-    private final ConcurrentMap<Class<?>,List<ITestResult>> classes=new ConcurrentHashMap<Class<?>,List<ITestResult>>();
+    private final ConcurrentMap<Class<?>,Collection<ITestResult>> classes=new ConcurrentHashMap<Class<?>,Collection<ITestResult>>();
 
     /** Map to keep systemout and systemerr associated with a class */
     private final ConcurrentMap<Class<?>,Tuple<StringBuffer,StringBuffer>> outputs=new ConcurrentHashMap<Class<?>,Tuple<StringBuffer,StringBuffer>>();
+
+    // Keeps track of already gnerated reports, so we don't generate the same report multiple times
+    protected final Set<Class<?>> generated_reports=new HashSet<Class<?>>();
 
     public static InheritableThreadLocal<Class<?>> local=new InheritableThreadLocal<Class<?>>();
 
@@ -116,10 +120,10 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
 
         local.set(real_class);
 
-        List<ITestResult> results=classes.get(real_class);
+        Collection<ITestResult> results=classes.get(real_class);
         if(results == null) {
             results=new LinkedList<ITestResult>();
-            classes.putIfAbsent(real_class, results);
+            classes.putIfAbsent(real_class,results);
         }
 
         outputs.putIfAbsent(real_class, new Tuple<StringBuffer,StringBuffer>(new StringBuffer(), new StringBuffer())) ;
@@ -177,21 +181,26 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
     }
 
     private void addTest(Class<?> clazz, ITestResult result) {
-        List<ITestResult> results=classes.get(clazz);
+        Collection<ITestResult> results=classes.get(clazz);
         if(results == null) {
-            results=new LinkedList<ITestResult>();
-            classes.putIfAbsent(clazz, results);
+            results=new ConcurrentLinkedQueue<ITestResult>();
+            Collection<ITestResult> tmp=classes.putIfAbsent(clazz,results);
+            if(tmp != null)
+                results=tmp;
         }
-
-        results=classes.get(clazz);
         results.add(result);
         
         ITestNGMethod[] testMethods=result.getMethod().getTestClass().getTestMethods();
         int enabledCount = enabledMethods(testMethods);
         boolean allTestsInClassCompleted = results.size() >= enabledCount;
-        if(allTestsInClassCompleted){
+        if(allTestsInClassCompleted) {
+            boolean do_generate=false;
+            synchronized(generated_reports) {
+                do_generate=generated_reports.add(clazz);
+            }
             try {
-                generateReport(clazz, results);
+                if(do_generate)
+                    generateReport(clazz, results);
             }
             catch(IOException e) {
                 print(old_stderr, "Failed generating report: ", clazz.getName(), "");
@@ -199,7 +208,7 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
         }                   
     }
 
-    private int enabledMethods(ITestNGMethod[] testMethods) {
+    private static int enabledMethods(ITestNGMethod[] testMethods) {
         int count = testMethods.length;
         for(ITestNGMethod testNGMethod:testMethods) {
             Method m = testNGMethod.getMethod();
@@ -248,7 +257,7 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
     /**
      * generate the XML report given what we know from all the test results
      */
-    protected void generateReport(Class<?> clazz, List<ITestResult> results) throws IOException {
+    protected void generateReport(Class<?> clazz, Collection<ITestResult> results) throws IOException {
 
         int num_failures=getFailures(results);
         int num_skips=getSkips(results);
@@ -287,7 +296,7 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
             }
             out.write("\n</properties>\n");
 
-            for(ITestResult result:results) {
+            for(ITestResult result: results) {
                 if(result == null)
                     continue;
                 long time=result.getEndMillis() - result.getStartMillis();
@@ -394,7 +403,7 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
         return message != null? message.replaceAll("<", LT).replaceAll(">", GT) : message;
     }
 
-    private static long getTotalTime(List<ITestResult> results) {
+    private static long getTotalTime(Collection<ITestResult> results) {
         long start=0, stop=0;
         for(ITestResult result:results) {
             if(result == null)
@@ -415,7 +424,7 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
         return stop - start;
     }
 
-    private static int getFailures(List<ITestResult> results) {
+    private static int getFailures(Collection<ITestResult> results) {
         int retval=0;
         for(ITestResult result:results) {
             if(result != null && result.getStatus() == ITestResult.FAILURE)
@@ -424,7 +433,7 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
         return retval;
     }
 
-    private static int getErrors(List<ITestResult> results) {
+    private static int getErrors(Collection<ITestResult> results) {
         int retval=0;
         for(ITestResult result:results) {
             if(result != null && result.getStatus() != ITestResult.SUCCESS
@@ -435,7 +444,7 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
         return retval;
     }
 
-    private static int getSkips(List<ITestResult> results) {
+    private static int getSkips(Collection<ITestResult> results) {
         int retval=0;
         for(ITestResult result:results) {
             if(result != null && result.getStatus() == ITestResult.SKIP)
