@@ -183,7 +183,7 @@ public class AckCollectorTest {
             }
         }.start();
 
-        boolean received_all=ac.waitForAllAcks(5000);
+        boolean received_all=ac.waitForAllAcks(30000);
         System.out.println("ac = " + ac);
         assert received_all;
     }
@@ -204,7 +204,7 @@ public class AckCollectorTest {
             }
         }.start();
 
-        boolean received_all=ac.waitForAllAcks(5000);
+        boolean received_all=ac.waitForAllAcks(30000);
         System.out.println("ac = " + ac);
         assert received_all;
     }

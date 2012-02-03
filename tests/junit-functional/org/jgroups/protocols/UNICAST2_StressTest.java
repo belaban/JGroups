@@ -60,8 +60,8 @@ public class UNICAST2_StressTest {
         final Lock lock=new ReentrantLock();
         final Condition all_msgs_delivered=lock.newCondition();
         final ConcurrentLinkedQueue<Long> delivered_msg_list=new ConcurrentLinkedQueue<Long>();
-        final Address local_addr=Util.createRandomAddress();
-        final Address sender=Util.createRandomAddress();
+        final Address local_addr=Util.createRandomAddress("A");
+        final Address sender=Util.createRandomAddress("B");
 
         if(timer == null)
             timer=new TimeScheduler2();
