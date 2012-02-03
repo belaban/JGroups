@@ -846,7 +846,7 @@ public abstract class TP extends Protocol {
             }
         }
 
-        who_has_cache=new AgeOutCache<Address>(timer, 5000L);
+        who_has_cache=new AgeOutCache<Address>(timer, 2000L);
 
         Util.verifyRejectionPolicy(oob_thread_pool_rejection_policy);
         Util.verifyRejectionPolicy(thread_pool_rejection_policy);
@@ -1271,17 +1271,30 @@ public abstract class TP extends Protocol {
 
 
     protected void sendToSingleMember(Address dest, byte[] buf, int offset, int length) throws Exception {
-        PhysicalAddress physical_dest=dest instanceof PhysicalAddress? (PhysicalAddress)dest : getPhysicalAddressFromCache(dest);
-        if(physical_dest == null) {
-            if(!who_has_cache.contains(dest)) {
-                who_has_cache.add(dest);
-                if(log.isWarnEnabled())
-                    log.warn(local_addr+  ": no physical address for " + dest + ", dropping message");
-                up(new Event(Event.GET_PHYSICAL_ADDRESS, dest));
-            }
+        if(dest instanceof PhysicalAddress) {
+            sendUnicast((PhysicalAddress)dest, buf, offset, length);
             return;
         }
-        sendUnicast(physical_dest, buf, offset, length);
+
+        PhysicalAddress physical_dest=null;
+        int cnt=1;
+        long sleep_time=20;
+        while((physical_dest=getPhysicalAddressFromCache(dest)) == null && cnt++ <= 10) {
+            if(!who_has_cache.contains(dest)) {
+                who_has_cache.add(dest);
+                Util.sleepRandom(1, 500); // to prevent a discovery flood in large clusters (by staggering requests)
+                if((physical_dest=getPhysicalAddressFromCache(dest)) != null)
+                    break;
+                up(new Event(Event.GET_PHYSICAL_ADDRESS, dest));
+            }
+            Util.sleep(sleep_time);
+            sleep_time=Math.min(1000, sleep_time *2);
+        }
+
+        if(physical_dest != null)
+            sendUnicast(physical_dest, buf, offset, length);
+        else if(log.isWarnEnabled())
+            log.warn(local_addr+  ": no physical address for " + dest + ", dropping message");
     }
 
 
