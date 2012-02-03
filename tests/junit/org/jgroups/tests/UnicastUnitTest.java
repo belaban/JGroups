@@ -19,8 +19,8 @@ public class UnicastUnitTest extends ChannelTestBase {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        ch1=createChannel(true,2);
-        ch2=createChannel(ch1);
+        ch1=createChannel(true,2, "A");
+        ch2=createChannel(ch1, "B");
     }
 
     @AfterMethod
