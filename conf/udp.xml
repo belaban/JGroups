@@ -48,7 +48,7 @@
 
     <PING timeout="2000"
             num_initial_members="20"/>
-    <MERGE3 max_interval="30000"
+    <MERGE2 max_interval="30000"
             min_interval="10000"/>
     <FD_SOCK/>
     <FD_ALL/>
