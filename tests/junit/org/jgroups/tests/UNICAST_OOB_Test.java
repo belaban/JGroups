@@ -54,7 +54,7 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
      * Check that 4 is received before 3
      */
     private void sendMessages(boolean oob) throws Exception {
-        DISCARD_PAYLOAD prot1=new DISCARD_PAYLOAD();
+        DISCARD_PAYLOAD discard=new DISCARD_PAYLOAD();
         MyReceiver receiver=new MyReceiver();
         c2.setReceiver(receiver);
 
@@ -62,7 +62,7 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
         ProtocolStack stack=c1.getProtocolStack();
         Protocol neighbor=stack.findProtocol(UNICAST.class, UNICAST2.class);
         System.out.println("Found unicast protocol " + neighbor.getClass().getSimpleName());
-        stack.insertProtocolInStack(prot1, neighbor, ProtocolStack.BELOW);
+        stack.insertProtocolInStack(discard, neighbor, ProtocolStack.BELOW);
 
         c1.connect("UNICAST_OOB_Test");
         c2.connect("UNICAST_OOB_Test");
@@ -79,7 +79,7 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
         }
 
         // wait until retransmission of seqno #3 happens, so that 4 and 5 are received as well
-        long target_time=System.currentTimeMillis() + 5000;
+        long target_time=System.currentTimeMillis() + 30000;
         do {
             if(receiver.size() >= 5)
                 break;
@@ -90,6 +90,7 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
 
         List<Long> seqnos=receiver.getSeqnos();
         System.out.println("sequence numbers: " + seqnos);
+        assert seqnos.size() == 5;
 
         if(!oob) {
             for(int i=0; i < 5; i++)
@@ -125,6 +126,7 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
         public void receive(Message msg) {
             if(msg != null) {
                 Long num=(Long)msg.getObject();
+                System.out.println(">> received " + num);
                 seqnos.add(num);
             }
         }
