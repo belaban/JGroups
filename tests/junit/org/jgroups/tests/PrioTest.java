@@ -7,7 +7,7 @@ import org.jgroups.ReceiverAdapter;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.PRIO;
 import org.jgroups.protocols.PrioHeader;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterTest;
@@ -29,7 +29,7 @@ public class PrioTest extends ChannelTestBase {
 
     @BeforeTest void init() throws Exception {
         c1=createChannel(true, 2, "A");
-        c1.getProtocolStack().insertProtocol(new PRIO(), ProtocolStack.ABOVE, NAKACK.class);
+        c1.getProtocolStack().insertProtocol(new PRIO(), ProtocolStack.ABOVE, NAKACK2.class);
         c2=createChannel(c1, "B");
         c1.connect("PrioTest");
         r1=new PrioReceiver();

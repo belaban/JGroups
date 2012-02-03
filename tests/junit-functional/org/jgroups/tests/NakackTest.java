@@ -4,7 +4,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -133,7 +133,7 @@ public class NakackTest {
         stack.addProtocol(new SHARED_LOOPBACK())
           .addProtocol(new PING().setValue("timeout", 2000).setValue("num_initial_members", 3))
           .addProtocol(new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000))
-          .addProtocol(new NAKACK().setValue("use_mcast_xmit", false))
+          .addProtocol(new NAKACK2().setValue("use_mcast_xmit", false))
           .addProtocol(new UNICAST2())
           .addProtocol(new STABLE().setValue("max_bytes", 50000))
           .addProtocol(new GMS().setValue("print_local_addr", false))

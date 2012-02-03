@@ -9,7 +9,7 @@ import org.jgroups.protocols.PING;
 import org.jgroups.protocols.SHARED_LOOPBACK;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.ProtocolStack;
@@ -75,7 +75,7 @@ public class MergeTest2 {
         JChannel retval=Util.createChannel(shared_loopback,
                                            new DISCARD().setValue("discard_all",true),
                                            new PING().setValue("timeout",100),
-                                           new NAKACK().setValue("use_mcast_xmit",false)
+                                           new NAKACK2().setValue("use_mcast_xmit",false)
                                              .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
                                            new UNICAST(),
                                            new STABLE().setValue("max_bytes",50000),

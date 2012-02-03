@@ -8,7 +8,7 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.SHUFFLE;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -103,7 +103,7 @@ public class SequencerOrderTest {
             shuffle.setUp(true);
             shuffle.setMaxSize(10);
             shuffle.setMaxTime(1000);
-            ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.BELOW, NAKACK.class);
+            ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.BELOW, NAKACK2.class);
             shuffle.init(); // gets the timer
         }
     }

@@ -8,7 +8,7 @@ import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -99,7 +99,7 @@ public class FragTest {
         ch.setProtocolStack(stack);
         stack.addProtocol(new SHARED_LOOPBACK())
           .addProtocol(new PING())
-          .addProtocol(new NAKACK().setValue("use_mcast_xmit", false))
+          .addProtocol(new NAKACK2().setValue("use_mcast_xmit", false))
           .addProtocol(new UNICAST2())
           .addProtocol(new STABLE().setValue("max_bytes", 50000))
           .addProtocol(new GMS().setValue("print_local_addr", false))

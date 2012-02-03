@@ -3,7 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -11,8 +11,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -78,7 +76,7 @@ public class OrderingTest {
           .addProtocol(new FD_SOCK())
           .addProtocol(new VERIFY_SUSPECT())
           .addProtocol(new BARRIER())
-          .addProtocol(new NAKACK().setValue("use_mcast_xmit", false).setValue("discard_delivered_msgs", true))
+          .addProtocol(new NAKACK2().setValue("use_mcast_xmit", false).setValue("discard_delivered_msgs", true))
           .addProtocol(new UNICAST2().setValue("stable_interval", 10000).setValue("max_bytes", 50000))
           .addProtocol(new STABLE().setValue("max_bytes", 50000))
           .addProtocol(new GMS().setValue("print_local_addr", false))

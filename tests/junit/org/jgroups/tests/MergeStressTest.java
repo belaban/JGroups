@@ -4,7 +4,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.FD_SOCK;
 import org.jgroups.protocols.MERGE2;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -30,7 +30,7 @@ import java.util.concurrent.TimeoutException;
  * Vladimir Sept 22, 2008
  * 
  * */
-@Test(groups="broken")
+@Test(groups=Global.STACK_DEPENDENT)
 public class MergeStressTest extends ChannelTestBase {
     CyclicBarrier start_connecting=null;
     CyclicBarrier received_all_views=null;
@@ -115,9 +115,9 @@ public class MergeStressTest extends ChannelTestBase {
             STABLE stable=(STABLE)prot;
             stable.setDesiredAverageGossip(5000);
         }
-        prot=stack.findProtocol(NAKACK.class);
+        prot=stack.findProtocol(NAKACK2.class);
         if(prot != null) {
-            ((NAKACK)prot).setLogDiscardMessages(false);
+            ((NAKACK2)prot).setLogDiscardMessages(false);
         }
         prot=stack.findProtocol(FD_SOCK.class);
         if(prot != null) {

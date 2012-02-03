@@ -6,7 +6,7 @@ import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -29,7 +29,7 @@ public class ProgrammaticChat {
                 .addProtocol(new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000))
                 .addProtocol(new VERIFY_SUSPECT())
                 .addProtocol(new BARRIER())
-                .addProtocol(new NAKACK())
+                .addProtocol(new NAKACK2())
                 .addProtocol(new UNICAST2())
                 .addProtocol(new STABLE())
                 .addProtocol(new GMS())

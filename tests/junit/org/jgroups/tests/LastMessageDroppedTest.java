@@ -2,7 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -42,7 +42,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
     public void testLastMessageDropped() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=c1.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK.class);
+        stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK2.class);
         c1.setDiscardOwnMessages(true);
 
         Message m1=new Message(null, null, 1);

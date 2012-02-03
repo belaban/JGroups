@@ -5,7 +5,7 @@ import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -14,10 +14,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
@@ -134,7 +134,7 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBMulticasts() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=c1.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK.class);
+        stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK2.class);
         c1.setDiscardOwnMessages(true);
 
         Address dest=null; // send to all
@@ -171,7 +171,7 @@ public class OOBTest extends ChannelTestBase {
         discard.setLocalAddress(c1.getAddress());
         discard.setDownDiscardRate(0.5);
         ProtocolStack stack=c1.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK.class);
+        stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK2.class);
         MyReceiver r1=new MyReceiver("C1"), r2=new MyReceiver("C2");
         c1.setReceiver(r1);
         c2.setReceiver(r2);

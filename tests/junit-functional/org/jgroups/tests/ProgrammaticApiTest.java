@@ -3,7 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -11,8 +11,6 @@ import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.net.InetAddress;
 
 /**
  * @author Bela Ban
@@ -101,7 +99,7 @@ public class ProgrammaticApiTest {
                 new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000),
                 new VERIFY_SUSPECT(),
                 new BARRIER(),
-                new NAKACK(),
+                new NAKACK2(),
                 new UNICAST2(),
                 new STABLE(),
                 new GMS(),

@@ -4,7 +4,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.DUPL;
 import org.jgroups.protocols.UNICAST2;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Tuple;
@@ -189,7 +189,7 @@ public class DuplicateTest extends ChannelTestBase {
         c1=createChannel(true, 3);
         DUPL dupl=new DUPL(copy_multicasts, copy_unicasts, num_incoming_copies, num_outgoing_copies);
         ProtocolStack stack=c1.getProtocolStack();
-        stack.insertProtocol(dupl, ProtocolStack.BELOW, NAKACK.class);
+        stack.insertProtocol(dupl, ProtocolStack.BELOW, NAKACK2.class);
 
         c2=createChannel(c1);
         c3=createChannel(c1);

@@ -9,7 +9,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
@@ -79,7 +79,7 @@ public class RSVPTest {
                                            new DISCARD(),
                                            new PING().setValue("timeout",1000).setValue("num_initial_members",NUM)
                                              .setValue("force_sending_discovery_rsps", true),
-                                           new NAKACK().setValue("use_mcast_xmit",false)
+                                           new NAKACK2().setValue("use_mcast_xmit",false)
                                              .setValue("discard_delivered_msgs",true)
                                              .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false)
                                              .setValue("xmit_table_num_rows",5)
