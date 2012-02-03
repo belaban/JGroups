@@ -1,7 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.util.*;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -13,7 +13,7 @@ import org.testng.annotations.Test;
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_SET_DIGEST_Test {
-    private NAKACK nak;
+    private NAKACK2 nak;
     private MutableDigest d1, d2;
     private Address a, b, c;
 
@@ -24,7 +24,7 @@ public class NAKACK_SET_DIGEST_Test {
         a=Util.createRandomAddress("A");
         b=Util.createRandomAddress("B");
         c=Util.createRandomAddress("C");
-        nak=new NAKACK();
+        nak=new NAKACK2();
         d1=new MutableDigest(2);
         d1.add(a, 11, 11);
         d1.add(b, 30, 35);
