@@ -3,7 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -77,7 +77,7 @@ public class MergeTest extends ChannelTestBase {
             tmp.setName(members[i]);
             ProtocolStack stack=tmp.getProtocolStack();
 
-            NAKACK nakack=(NAKACK)stack.findProtocol(NAKACK.class);
+            NAKACK2 nakack=(NAKACK2)stack.findProtocol(NAKACK2.class);
             if(nakack != null)
                 nakack.setLogDiscardMessages(false);
 

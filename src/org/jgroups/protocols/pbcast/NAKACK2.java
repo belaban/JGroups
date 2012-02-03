@@ -990,7 +990,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
 
-    protected Digest getDigest(Address mbr) {
+    public Digest getDigest(Address mbr) {
         if(mbr == null)
             return getDigest();
         Table<Message> buf=xmit_table.get(mbr);
