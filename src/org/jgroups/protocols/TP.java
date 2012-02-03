@@ -248,7 +248,7 @@ public abstract class TP extends Protocol {
 
     @Experimental
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations")
-    protected int bundler_capacity=20000;
+    protected int bundler_capacity=200000;
 
 
     @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
@@ -479,7 +479,7 @@ public abstract class TP extends Protocol {
      * <br/>
      * The keys are logical addresses, the values physical addresses
      */
-    protected LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache=null;
+    protected LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache;
 
     // last time we sent a discovery request
     protected long last_discovery_request=0;
@@ -503,7 +503,7 @@ public abstract class TP extends Protocol {
 
     /** Cache keeping track of WHO_HAS requests for physical addresses (given a logical address) and expiring
      * them after 5000ms */
-    protected AgeOutCache<Address> who_has_cache=null;
+    protected AgeOutCache<Address> who_has_cache;
 
 
     /**
@@ -840,7 +840,7 @@ public abstract class TP extends Protocol {
             }
         }
 
-        who_has_cache=new AgeOutCache<Address>(timer, 5000L);
+        who_has_cache=new AgeOutCache<Address>(timer, 2000L);
 
         Util.verifyRejectionPolicy(oob_thread_pool_rejection_policy);
         Util.verifyRejectionPolicy(thread_pool_rejection_policy);
@@ -1265,17 +1265,30 @@ public abstract class TP extends Protocol {
 
 
     protected void sendToSingleMember(Address dest, byte[] buf, int offset, int length) throws Exception {
-        PhysicalAddress physical_dest=dest instanceof PhysicalAddress? (PhysicalAddress)dest : getPhysicalAddressFromCache(dest);
-        if(physical_dest == null) {
-            if(!who_has_cache.contains(dest)) {
-                who_has_cache.add(dest);
-                if(log.isWarnEnabled())
-                    log.warn(local_addr+  ": no physical address for " + dest + ", dropping message");
-                up(new Event(Event.GET_PHYSICAL_ADDRESS, dest));
-            }
+        if(dest instanceof PhysicalAddress) {
+            sendUnicast((PhysicalAddress)dest, buf, offset, length);
             return;
         }
-        sendUnicast(physical_dest, buf, offset, length);
+
+        PhysicalAddress physical_dest=null;
+        int cnt=1;
+        long sleep_time=20;
+        while((physical_dest=getPhysicalAddressFromCache(dest)) == null && cnt++ <= 10) {
+            if(!who_has_cache.contains(dest)) {
+                who_has_cache.add(dest);
+                Util.sleepRandom(1, 500); // to prevent a discovery flood in large clusters (by staggering requests)
+                if((physical_dest=getPhysicalAddressFromCache(dest)) != null)
+                    break;
+                up(new Event(Event.GET_PHYSICAL_ADDRESS, dest));
+            }
+            Util.sleep(sleep_time);
+            sleep_time=Math.min(1000, sleep_time *2);
+        }
+
+        if(physical_dest != null)
+            sendUnicast(physical_dest, buf, offset, length);
+        else if(log.isWarnEnabled())
+            log.warn(local_addr+  ": no physical address for " + dest + ", dropping message");
     }
 
 
