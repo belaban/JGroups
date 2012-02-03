@@ -2,14 +2,10 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.pbcast.NAKACK;
-import org.jgroups.protocols.pbcast.NakAckHeader;
-import org.jgroups.stack.NakReceiverWindow;
+import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.DefaultTimeScheduler;
-import org.jgroups.util.MutableDigest;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -18,7 +14,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Tests whether a mix of OOB and regular messages (with duplicates), sent my multiple threads, are delivery
+ * Tests whether a mix of OOB and regular messages (with duplicates), sent my multiple threads, are delivered
  * correctly. Correct delivery means:
  * <ul>
  * <li>All messages are received exactly once (no duplicates and no missing messages)
@@ -28,9 +24,9 @@ import java.util.concurrent.*;
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_Delivery_Test {
-    private NAKACK nak;
+    private NAKACK2 nak;
     private Address c1, c2;
-    static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK.class);
+    static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK2.class);
     MyReceiver receiver=new MyReceiver();
     Executor pool;
     final static int NUM_MSGS=50;
@@ -39,7 +35,7 @@ public class NAKACK_Delivery_Test {
     protected void setUp() throws Exception {
         c1=Util.createRandomAddress("C1");
         c2=Util.createRandomAddress("C2");
-        nak=new NAKACK();
+        nak=new NAKACK2();
 
         TP transport=new TP() {
             public boolean supportsMulticasting() {return false;}
@@ -60,7 +56,7 @@ public class NAKACK_Delivery_Test {
 
         nak.start();
 
-        Vector<Address> members=new Vector<Address>(2);
+        List<Address> members=new ArrayList<Address>(2);
         members.add(c1); members.add(c2);
         View view=new View(c1, 1, members);
 
@@ -108,7 +104,7 @@ public class NAKACK_Delivery_Test {
                 no_duplicates.size());
 
         // we need to add our own messages (nak is for C1), or else they will get discarded by NAKACK.handleMessage()
-        NakReceiverWindow win=nak.getWindow(c1);
+        Table<Message> win=nak.getWindow(c1);
         for(int i=1; i <= NUM_MSGS; i++)
             win.add(i, msg(c1, i, i, true));
 
@@ -156,7 +152,7 @@ public class NAKACK_Delivery_Test {
         if(oob)
             msg.setFlag(Message.OOB);
         if(seqno != -1)
-            msg.putHeader(NAKACK_ID, NakAckHeader.createMessageHeader(seqno));
+            msg.putHeader(NAKACK_ID, NakAckHeader2.createMessageHeader(seqno));
         return msg;
     }
 
