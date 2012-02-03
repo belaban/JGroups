@@ -2,10 +2,13 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.pbcast.NAKACK;
-import org.jgroups.protocols.pbcast.NakAckHeader;
+import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
+import org.jgroups.util.MutableDigest;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.TimeScheduler2;
+import org.jgroups.util.Util;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -29,28 +32,21 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class NAKACK_StressTest {
-    static final int NUM_MSGS=1000000;
-    static final int NUM_THREADS=50;
+    static final int   NUM_MSGS=1000000;
+    static final int   NUM_THREADS=50;
+    static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK2.class);
 
-    static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK.class);
 
-    @DataProvider(name="createTimer")
-    Object[][] createTimer() {
-        return Util.createTimer();
+    public static void stressTest() {
+        start(NUM_THREADS, NUM_MSGS, false);
     }
 
-    @Test(dataProvider="createTimer")
-    public static void stressTest(TimeScheduler timer) {
-        start(NUM_THREADS, NUM_MSGS, false, timer);
+    public static void stressTestOOB() {
+        start(NUM_THREADS, NUM_MSGS, true);
     }
 
-    @Test(dataProvider="createTimer")
-    public static void stressTestOOB(TimeScheduler timer) {
-        start(NUM_THREADS, NUM_MSGS, true, timer);
-    }
-
-    private static void start(final int num_threads, final int num_msgs, boolean oob, TimeScheduler timer) {
-        final NAKACK nak=new NAKACK();
+    private static void start(final int num_threads, final int num_msgs, boolean oob) {
+        final NAKACK2 nak=new NAKACK2();
         final AtomicInteger counter=new AtomicInteger(num_msgs);
         final AtomicLong seqno=new AtomicLong(1);
         final AtomicInteger delivered_msgs=new AtomicInteger(0);
@@ -61,18 +57,13 @@ public class NAKACK_StressTest {
         final Address sender=Util.createRandomAddress("B");
 
 
-        if(timer == null)
-            timer=new TimeScheduler2();
-        nak.setTimer(timer);
-        System.out.println("timer is a " + timer.getClass());
-
         nak.setDownProtocol(new Protocol() {public Object down(Event evt) {return null;}});
 
         nak.setUpProtocol(new Protocol() {
             public Object up(Event evt) {
                 if(evt.getType() == Event.MSG) {
                     delivered_msgs.incrementAndGet();
-                    NakAckHeader hdr=(NakAckHeader)((Message)evt.getArg()).getHeader(NAKACK_ID);
+                    NakAckHeader2 hdr=(NakAckHeader2)((Message)evt.getArg()).getHeader(NAKACK_ID);
                     if(hdr != null)
                         delivered_msg_list.add(hdr.getSeqno());
 
@@ -135,7 +126,6 @@ public class NAKACK_StressTest {
             System.out.println("Elements: " + delivered_msg_list);
 
         nak.stop();
-        timer.stop();
 
         List<Long> results=new ArrayList<Long>(delivered_msg_list);
 
@@ -158,7 +148,7 @@ public class NAKACK_StressTest {
 
     private static Message createMessage(Address dest, Address src, long seqno, boolean oob) {
         Message msg=new Message(dest, src, "hello world");
-        NakAckHeader hdr=NakAckHeader.createMessageHeader(seqno) ;
+        NakAckHeader2 hdr=NakAckHeader2.createMessageHeader(seqno) ;
         msg.putHeader(NAKACK_ID, hdr);
         if(oob)
             msg.setFlag(Message.OOB);
@@ -167,14 +157,14 @@ public class NAKACK_StressTest {
 
 
     static class Sender extends Thread {
-        final NAKACK nak;
+        final NAKACK2 nak;
         final CountDownLatch latch;
         final AtomicInteger num_msgs;
         final AtomicLong current_seqno;
         final boolean oob;
         final Address sender;
 
-        public Sender(NAKACK nak, CountDownLatch latch, AtomicInteger num_msgs, AtomicLong current_seqno,
+        public Sender(NAKACK2 nak, CountDownLatch latch, AtomicInteger num_msgs, AtomicLong current_seqno,
                       boolean oob, final Address sender) {
             this.nak=nak;
             this.latch=latch;
@@ -226,6 +216,6 @@ public class NAKACK_StressTest {
             System.out.println("NAKACK_StressTest [-num_msgs msgs] [-num_threads threads] [-oob <true | false>]");
             return;
         }
-        start(num_threads, num_msgs, oob, null);
+        start(num_threads, num_msgs, oob);
     }
 }
