@@ -28,11 +28,11 @@ public class TCPGOSSIP_Test extends ChannelTestBase {
     @BeforeClass
     void startRouter() throws Exception {
         String bind_addr = getRouterBindAddress();
-        gossipRouter = new GossipRouter(12001, bind_addr);
+        gossipRouter = new GossipRouter(12001, null); // binds the GR to 0.0.0.0
         gossipRouter.start();
     }
 
-    private String getRouterBindAddress() {
+    private static String getRouterBindAddress() {
         String bind_addr = Util.getProperty(Global.BIND_ADDR);
         if (bind_addr == null) {
             StackType type = Util.getIpStackType();
