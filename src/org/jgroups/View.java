@@ -140,7 +140,8 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
     public String toString() {
         StringBuilder sb=new StringBuilder(64);
         sb.append(vid).append(" ");
-        sb.append("[").append(Util.printListWithDelimiter(members, ", ", Util.MAX_LIST_PRINT_SIZE)).append("]");
+        if(members != null)
+            sb.append("[").append(Util.printListWithDelimiter(members, ", ", Util.MAX_LIST_PRINT_SIZE)).append("]");
         return sb.toString();
     }
 
