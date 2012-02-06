@@ -211,8 +211,8 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
     private static int enabledMethods(ITestNGMethod[] testMethods) {
         int count = testMethods.length;
         for(ITestNGMethod testNGMethod:testMethods) {
-            Method m = testNGMethod.getMethod();
-            if(m.isAnnotationPresent(Test.class)){
+            Method m = testNGMethod.getConstructorOrMethod().getMethod();
+            if(m != null && m.isAnnotationPresent(Test.class)){
               Test annotation=m.getAnnotation(Test.class);  
               if(!annotation.enabled()){
                   count --;
@@ -268,7 +268,7 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
         if(suffix != null)
             file_name=file_name + "-" + suffix;
         file_name=file_name + ".xml";
-        FileWriter out=new FileWriter(file_name, false); // don't append, overwrite
+        Writer out=new FileWriter(file_name, false); // don't append, overwrite
         try {
             out.write(XML_DEF + "\n");
 
@@ -287,7 +287,7 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
             out.write("\n<properties>");
             Properties props=System.getProperties();
 
-            for(Map.Entry<Object,Object> tmp:props.entrySet()) {
+            for(Map.Entry<Object,Object> tmp: props.entrySet()) {
                 out.write("\n    <property name=\"" + tmp.getKey()
                           + "\""
                           + " value=\""
@@ -299,36 +299,14 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
             for(ITestResult result: results) {
                 if(result == null)
                     continue;
-                long time=result.getEndMillis() - result.getStartMillis();
-                out.write("\n    <testcase classname=\"" + clazz.getName());
-                if(suffix != null)
-                    out.write(" (" + suffix + ")");
-                out.write("\" name=\"" + result.getMethod().getMethodName()
-                          + "\" time=\""
-                          + (time / 1000.0)
-                          + "\">");
 
-                Throwable ex=result.getThrowable();
-
-                switch(result.getStatus()) {
-                    case ITestResult.SUCCESS:
-                    case ITestResult.SUCCESS_PERCENTAGE_FAILURE:
-                        break;
-                    case ITestResult.FAILURE:
-                        writeFailure("failure",
-                                     result.getMethod().getMethod(),
-                                     ex,
-                                     "exception",
-                                     out);
-                        break;
-                    case ITestResult.SKIP:
-                        writeFailure("error", result.getMethod().getMethod(), ex, "SKIPPED", out);
-                        break;
-                    default:
-                        writeFailure("error", result.getMethod().getMethod(), ex, "exception", out);
+                try {
+                    String testcase=writeTestCase(result,clazz,suffix);
+                    out.write(testcase);
                 }
-
-                out.write("\n</testcase>");
+                catch(Throwable t) {
+                    t.printStackTrace();
+                }
             }
 
             Tuple<StringBuffer,StringBuffer> stdout=outputs.get(clazz);
@@ -339,15 +317,54 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
                 out.write("\n");
                 writeOutput(out, system_err.toString(), 2);
             }
-
-            out.write("\n</testsuite>\n");
         }
         finally {
+            out.write("\n</testsuite>\n");
             out.close();
         }
     }
 
-    private static void writeOutput(FileWriter out, String s, int type) throws IOException {
+    protected static String writeTestCase(ITestResult result, Class<?> clazz, String suffix) throws IOException {
+        if(result == null)
+            return null;
+        long time=result.getEndMillis() - result.getStartMillis();
+        StringBuilder sb=new StringBuilder();
+        sb.append("\n    <testcase classname=\"" + clazz.getName());
+        if(suffix != null)
+            sb.append(" (" + suffix + ")");
+        sb.append("\" name=\"" + result.getMethod().getMethodName() + "\" time=\"" + (time / 1000.0) + "\">");
+
+        Throwable ex=result.getThrowable();
+
+        switch(result.getStatus()) {
+            case ITestResult.SUCCESS:
+            case ITestResult.SUCCESS_PERCENTAGE_FAILURE:
+            case ITestResult.STARTED:
+                break;
+            case ITestResult.FAILURE:
+                String failure=writeFailure("failure",
+                                            result.getMethod().getConstructorOrMethod().getMethod(),
+                                            ex,
+                                            "exception");
+                if(failure != null)
+                    sb.append(failure);
+                break;
+            case ITestResult.SKIP:
+                failure=writeFailure("error", result.getMethod().getConstructorOrMethod().getMethod(), ex, "SKIPPED");
+                if(failure != null)
+                    sb.append(failure);
+                break;
+            default:
+                failure=writeFailure("error", result.getMethod().getConstructorOrMethod().getMethod(), ex, "exception");
+                if(failure != null)
+                    sb.append(failure);
+        }
+
+        sb.append("\n    </testcase>\n");
+        return sb.toString();
+    }
+
+    private static void writeOutput(Writer out, String s, int type) throws IOException {
         if(s != null && s.length() > 0) {
             out.write("\n<" + (type == 2? SYSTEM_ERR : SYSTEM_OUT) + "><" + CDATA + "\n");
             out.write(s);
@@ -356,47 +373,45 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
         }
     }
 
-    private static void writeFailure(String type,
-                                     Method method,
-                                     Throwable ex,
-                                     String msg,
-                                     FileWriter out) throws IOException {
-        Test annotation=method.getAnnotation(Test.class);
+    private static String writeFailure(String type, Method method, Throwable ex, String msg) throws IOException {
+        Test annotation=method != null? method.getAnnotation(Test.class) : null;
         if(annotation != null && ex != null) {
             Class<?>[] expected_exceptions=annotation.expectedExceptions();
             for(int i=0;i < expected_exceptions.length;i++) {
                 Class<?> expected_exception=expected_exceptions[i];
                 if(expected_exception.equals(ex.getClass())) {
-                    return;
+                    return null;
                 }
             }
         }
 
-        out.write("\n<" + type + " type=\"");
+        StringBuilder sb=new StringBuilder();
+        sb.append("\n        <" + type + " type=\"");
         if(ex != null) {
-            out.write(ex.getClass().getName() + "\" message=\"" + escape(ex.getMessage()) + "\">");
-            printException(ex, out);
+            sb.append(ex.getClass().getName() + "\" message=\"" + escape(ex.getMessage()) + "\">");
+            String ex_str=printException(ex);
+            if(ex_str != null)
+                sb.append(ex_str);
         }
         else
-            out.write("exception\" message=\"" + msg + "\">");
-        out.write("\n</" + type + ">");
+            sb.append("exception\" message=\"" + msg + "\">");
+        sb.append("\n        </" + type + ">");
+        return sb.toString();
     }
 
-    private static void printException(Throwable ex, FileWriter out) throws IOException {
+    private static String printException(Throwable ex) throws IOException {
         if(ex == null)
-            return;
+            return null;
         StackTraceElement[] stack_trace=ex.getStackTrace();
-        out.write("\n<" + CDATA + "\n");
-        out.write(ex.getClass().getName() + " \n");
+        StringBuilder sb=new StringBuilder();
+        sb.append("\n<" + CDATA + "\n");
+        sb.append(ex.getClass().getName() + " \n");
         for(int i=0;i < stack_trace.length;i++) {
             StackTraceElement frame=stack_trace[i];
-            try {
-                out.write("at " + frame.toString() + " \n");
-            }
-            catch(IOException e) {
-            }
+            sb.append("at " + frame.toString() + " \n");
         }
-        out.write("\n]]>");
+        sb.append("\n]]>");
+        return sb.toString();
     }
 
     private static String escape(String message) {
