@@ -23,7 +23,7 @@ public class AgeOutCacheTest {
 
     @Test(dataProvider="timerCreator")
     public void testExpiration(TimeScheduler timer) {
-        AgeOutCache<Integer> cache=new AgeOutCache<Integer>(timer, 500L,
+        AgeOutCache<Integer> cache=new AgeOutCache<Integer>(timer, 2000L,
                                                             new AgeOutCache.Handler<Integer>() {
                                                                 public void expired(Integer key) {
                                                                     System.out.println(key + " expired");
@@ -31,8 +31,8 @@ public class AgeOutCacheTest {
                                                             });
         for(int i = 1; i <= 5; i++)
             cache.add(i);
-        System.out.println("cache:\n" + cache);
         int size=cache.size();
+        System.out.println("cache:\n" + cache);
         assert size == 5 : "size is " + size;
 
         for(int i=0; i < 30; i++) {

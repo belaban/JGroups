@@ -16,10 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -35,12 +32,13 @@ public class NakReceiverWindowTest2 {
 
     final Address self=Util.createRandomAddress();
     final Address sender=Util.createRandomAddress();
-    final CyclicBarrier barrier=new CyclicBarrier(NUM_THREADS +1);
+    protected CountDownLatch latch;
 
     NakReceiverWindow win;
 
     @BeforeMethod
     void init() {
+        latch=new CountDownLatch(1);
         win=new NakReceiverWindow(self, new Retransmitter.RetransmitCommand() {
             public void retransmit(long first_seqno, long last_seqno, Address sender) {
             }
@@ -66,16 +64,15 @@ public class NakReceiverWindowTest2 {
             successful_adds.put((long)i, new AtomicInteger(0));
 
         for(int i=0; i < senders.length; i++) {
-            senders[i]=new Sender(NUM_MSGS, win, sender, barrier, successful_adds);
+            senders[i]=new Sender(NUM_MSGS, win, sender, latch, successful_adds);
             senders[i].start();
         }
 
-        Util.sleep(2000);
         System.out.println("Concurrently inserting " + NUM_MSGS + " messages with " + NUM_THREADS + " threads");
-        barrier.await();
+        latch.countDown();
 
         for(int i=0; i < senders.length; i++)
-            senders[i].join(20000);
+            senders[i].join();
         System.out.println("OK: " + NUM_MSGS + " were added to the NakReceiverWindow concurrently by " + NUM_THREADS + " threads");
 
         Set<Long> keys=successful_adds.keySet();
@@ -104,16 +101,15 @@ public class NakReceiverWindowTest2 {
             successful_adds.put((long)i, new AtomicInteger(0));
 
         for(int i=0; i < senders.length; i++) {
-            senders[i]=new RandomSender(NUM_MSGS, win, sender, barrier, successful_adds);
+            senders[i]=new RandomSender(NUM_MSGS, win, sender, latch, successful_adds);
             senders[i].start();
         }
 
-        Util.sleep(2000);
         System.out.println("Concurrently inserting " + NUM_MSGS + " messages with " + NUM_THREADS + " threads");
-        barrier.await();
+        latch.countDown();
 
         for(int i=0; i < senders.length; i++)
-            senders[i].join(20000);
+            senders[i].join();
         System.out.println("OK: " + NUM_MSGS + " were added to the NakReceiverWindow concurrently by " + NUM_THREADS + " threads");
 
         Set<Long> keys=successful_adds.keySet();
@@ -142,16 +138,15 @@ public class NakReceiverWindowTest2 {
             successful_adds.put((long)i, new AtomicInteger(0));
 
         for(int i=0; i < senders.length; i++) {
-            senders[i]=new SameSeqnoSender(NUM_MSGS, win, sender, barrier, successful_adds);
+            senders[i]=new SameSeqnoSender(NUM_MSGS, win, sender, latch, successful_adds);
             senders[i].start();
         }
 
-        Util.sleep(2000);
         System.out.println("Concurrently inserting 1 message with " + NUM_THREADS + " threads");
-        barrier.await();
+        latch.countDown();
 
         for(int i=0; i < senders.length; i++)
-            senders[i].join(20000);
+            senders[i].join();
         System.out.println("OK: 1 message was added to the NakReceiverWindow concurrently by " + NUM_THREADS + " threads");
 
         Set<Long> keys=successful_adds.keySet();
@@ -171,14 +166,14 @@ public class NakReceiverWindowTest2 {
         final int num;
         final NakReceiverWindow win;
         final Address sender;
-        final CyclicBarrier barrier;
+        final CountDownLatch latch;
         final ConcurrentMap<Long,AtomicInteger> map;
 
-        public Sender(int num, NakReceiverWindow win, Address sender, CyclicBarrier barrier, ConcurrentMap<Long, AtomicInteger> map) {
+        public Sender(int num, NakReceiverWindow win, Address sender, CountDownLatch latch, ConcurrentMap<Long, AtomicInteger> map) {
             this.num=num;
             this.win=win;
             this.sender=sender;
-            this.barrier=barrier;
+            this.latch=latch;
             this.map=map;
         }
 
@@ -196,14 +191,14 @@ public class NakReceiverWindowTest2 {
             boolean added=win.add(seqno, msg);
 
             if(added) {
-                AtomicInteger val=map.get((long)seqno);
+                AtomicInteger val=map.get(seqno);
                 val.incrementAndGet();
             }
         }
 
         protected void waitForBarrier() {
             try {
-                barrier.await();
+                latch.await();
             }
             catch(Exception e) {
                 e.printStackTrace();
@@ -213,8 +208,8 @@ public class NakReceiverWindowTest2 {
 
     static class RandomSender extends Sender {
 
-        public RandomSender(int num, NakReceiverWindow win, Address sender, CyclicBarrier barrier, ConcurrentMap<Long, AtomicInteger> map) {
-            super(num, win, sender, barrier, map);
+        public RandomSender(int num, NakReceiverWindow win, Address sender, CountDownLatch latch, ConcurrentMap<Long, AtomicInteger> map) {
+            super(num, win, sender, latch, map);
         }
 
         public void run() {
@@ -237,8 +232,8 @@ public class NakReceiverWindowTest2 {
      */
     static class SameSeqnoSender extends Sender {
 
-        public SameSeqnoSender(int num, NakReceiverWindow win, Address sender, CyclicBarrier barrier, ConcurrentMap<Long, AtomicInteger> map) {
-            super(num, win, sender, barrier, map);
+        public SameSeqnoSender(int num, NakReceiverWindow win, Address sender, CountDownLatch latch, ConcurrentMap<Long, AtomicInteger> map) {
+            super(num, win, sender, latch, map);
         }
 
         public void run() {

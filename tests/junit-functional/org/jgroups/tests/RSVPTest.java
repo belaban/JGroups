@@ -31,8 +31,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class RSVPTest {
-    static final int               NUM=5; // number of members
-
+    protected static final int     NUM=5; // number of members
     protected final JChannel[]     channels=new JChannel[NUM];
     protected final MyReceiver[]   receivers=new MyReceiver[NUM];
     protected MyDiagnosticsHandler handler;
@@ -79,6 +78,7 @@ public class RSVPTest {
                                            new DISCARD(),
                                            new PING().setValue("timeout",1000).setValue("num_initial_members",NUM)
                                              .setValue("force_sending_discovery_rsps", true),
+                                           new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000),
                                            new NAKACK2().setValue("use_mcast_xmit",false)
                                              .setValue("discard_delivered_msgs",true)
                                              .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false)
@@ -103,7 +103,10 @@ public class RSVPTest {
             JmxConfigurator.registerChannel(channels[i], server, "channel-" + (i+1), "RSVPTest", true);
             channels[i].connect("RSVPTest");
             System.out.print(i + 1 + " ");
+            if(i == 0)
+                Util.sleep(2000);
         }
+        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, channels);
         System.out.println("");
     }
 
