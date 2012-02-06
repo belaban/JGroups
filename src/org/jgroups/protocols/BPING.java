@@ -89,7 +89,7 @@ public class BPING extends PING implements Runnable {
 
     private void startReceiver() {
         if(receiver == null || !receiver.isAlive()) {
-            receiver=new Thread(Util.getGlobalThreadGroup(), this, "ReceiverThread");
+            receiver=new Thread(getChannelThreadGroup(), this, "ReceiverThread");
             receiver.setDaemon(true);
             receiver.start();
             if(log.isTraceEnabled())

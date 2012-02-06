@@ -42,7 +42,7 @@ public abstract class BasicConnectionTable {
     long                  conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
     int                   sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
     int                   peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
-    final ThreadGroup     thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "ConnectionTable");
+    final ThreadGroup     thread_group=new ThreadGroup("ConnectionTable");
     protected final Log   log= LogFactory.getLog(getClass());
     final byte[]          cookie={'b', 'e', 'l', 'a'};
     boolean               use_reaper=false;            // by default we don't reap idle conns
@@ -68,7 +68,7 @@ public abstract class BasicConnectionTable {
 
 
     protected BasicConnectionTable() {        
-        factory = new DefaultThreadFactory(new ThreadGroup(Util.getGlobalThreadGroup(),"ConnectionTable"),"Connection Table", false);
+        factory = new DefaultThreadFactory(new ThreadGroup("ConnectionTable"),"Connection Table", false);
     }
 
     public final void setReceiver(Receiver r) {

@@ -12,7 +12,6 @@ import org.jgroups.util.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -136,11 +135,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
 
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
-    protected boolean             is_server=false;
-    protected Address             local_addr=null;
-    protected final List<Address> members=new CopyOnWriteArrayList<Address>();
-    protected View                view;
-    private final AtomicLong      seqno=new AtomicLong(0); // current message sequence number (starts with 1)
+    protected boolean                is_server=false;
+    protected Address                local_addr=null;
+    protected volatile List<Address> members=new ArrayList<Address>();
+    protected View                   view;
+    private final AtomicLong         seqno=new AtomicLong(0); // current message sequence number (starts with 1)
 
     /** Map to store sent and received messages (keyed by sender) */
     protected final ConcurrentMap<Address,Table<Message>> xmit_table=Util.createConcurrentMap();
@@ -438,21 +437,16 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             case Event.TMP_VIEW:
                 View tmp_view=(View)evt.getArg();
                 List<Address> mbrs=tmp_view.getMembers();
-                members.clear();
-                members.addAll(mbrs);
+                members=new ArrayList<Address>(mbrs);
                 break;
 
             case Event.VIEW_CHANGE:
                 tmp_view=(View)evt.getArg();
                 mbrs=tmp_view.getMembers();
-                members.clear();
-                members.addAll(mbrs);
+                members=new ArrayList<Address>(mbrs);
                 view=tmp_view;
-                adjustReceivers(members);
+                adjustReceivers(mbrs);
                 is_server=true;  // check vids from now on
-
-                Set<Address> tmp=new LinkedHashSet<Address>(members);
-                tmp.add(null); // for null destination (= mcast)
                 break;
 
             case Event.BECOME_SERVER:

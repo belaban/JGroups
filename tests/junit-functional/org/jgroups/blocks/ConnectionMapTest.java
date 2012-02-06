@@ -27,6 +27,8 @@ public class ConnectionMapTest {
     private TCPConnectionMap ct1, ct2;
     static final InetAddress loopback_addr;
 
+    static final ThreadGroup GLOBAL=new ThreadGroup("ConnectionMapTest");
+
     static {
         try {
             StackType type=Util.getIpStackType();
@@ -38,7 +40,7 @@ public class ConnectionMapTest {
         }
     }
 
-    static byte[] data=new byte[]{'b', 'e', 'l', 'a'};
+    static byte[] data={'b', 'e', 'l', 'a'};
 
 
     protected int PORT1, PORT2;
@@ -79,13 +81,13 @@ public class ConnectionMapTest {
         };
 
         ct1=new TCPConnectionMap("ConnectionMapTest1",
-                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
-                                 null, dummy, loopback_addr, null, PORT1, PORT1);
+                                 new DefaultThreadFactory(GLOBAL, "ConnectionMapTest", true),
+                                 null, dummy, loopback_addr, null, PORT1, PORT1,GLOBAL);
         ct1.start();
         
         ct2=new TCPConnectionMap("ConnectionMapTest2",
-                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
-                                 null, dummy, loopback_addr, null, PORT2, PORT2);
+                                 new DefaultThreadFactory(GLOBAL, "ConnectionMapTest", true),
+                                 null, dummy, loopback_addr, null, PORT2, PORT2,GLOBAL);
         ct2.start();
         
         int num_conns;
@@ -139,13 +141,13 @@ public class ConnectionMapTest {
 
     public void testStopConnectionMapNoSendQueues() throws Exception {
         ct1=new TCPConnectionMap("ConnectionMapTest1",
-                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
-                                 new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
+                                 new DefaultThreadFactory(GLOBAL, "ConnectionMapTest", true),
+                                 new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000,GLOBAL);
         ct1.setUseSendQueues(false);
         ct1.start();
         ct2=new TCPConnectionMap("ConnectionMapTest2",
-                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
-                                 new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
+                                 new DefaultThreadFactory(GLOBAL, "ConnectionMapTest", true),
+                                 new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000,GLOBAL);
         ct2.setUseSendQueues(false);
         ct2.start();
         _testStop(ct1, ct2);
@@ -153,12 +155,12 @@ public class ConnectionMapTest {
 
     public void testStopConnectionMapWithSendQueues() throws Exception {
         ct1=new TCPConnectionMap("ConnectionMapTest1",
-                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
-                                 new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
+                                 new DefaultThreadFactory(GLOBAL, "ConnectionMapTest", true),
+                                 new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000,GLOBAL);
         ct1.start();
         ct2=new TCPConnectionMap("ConnectionMapTest2",
-                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "ConnectionMapTest", true),
-                                 new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
+                                 new DefaultThreadFactory(GLOBAL, "ConnectionMapTest", true),
+                                 new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000,GLOBAL);
         ct2.start();
         _testStop(ct1, ct2);
     }

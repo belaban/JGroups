@@ -50,7 +50,7 @@ public class LargeMergeTest {
         handler=new MyDiagnosticsHandler(InetAddress.getByName("224.0.75.75"), 7500,
                                          LogFactory.getLog(DiagnosticsHandler.class),
                                          new DefaultSocketFactory(),
-                                         new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false));
+                                         new DefaultThreadFactory(new ThreadGroup("LargeMergeTest"), "", false));
         handler.start();
         
         ThreadGroup test_group=new ThreadGroup("LargeMergeTest");

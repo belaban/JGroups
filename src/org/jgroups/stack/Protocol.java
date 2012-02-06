@@ -160,6 +160,10 @@ public abstract class Protocol {
         return down_prot != null? down_prot.getSocketFactory() : null;
     }
 
+    public ThreadGroup getChannelThreadGroup() {
+        return down_prot != null? down_prot.getChannelThreadGroup() : null;
+    }
+
     /**
      * Sets a SocketFactory. Socket factories are typically provided by the transport ({@link org.jgroups.protocols.TP})
      * or {@link org.jgroups.protocols.TP.ProtocolAdapter}

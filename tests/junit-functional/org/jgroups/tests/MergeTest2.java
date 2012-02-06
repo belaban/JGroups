@@ -44,7 +44,7 @@ public class MergeTest2 {
         handler=new MyDiagnosticsHandler(InetAddress.getByName("224.0.75.75"), 7500,
                                          LogFactory.getLog(DiagnosticsHandler.class),
                                          new DefaultSocketFactory(),
-                                         new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false));
+                                         new DefaultThreadFactory(new ThreadGroup("MergeTest2"), "", false));
         handler.start();
         
         ThreadGroup test_group=new ThreadGroup("MergeTest2");

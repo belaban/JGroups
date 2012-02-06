@@ -420,7 +420,17 @@ public abstract class TP extends Protocol {
      * members contains *all* members from all channels sitting on the shared transport */
     protected final Set<Address> members=new CopyOnWriteArraySet<Address>();
 
-    protected ThreadGroup pool_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Thread Pools");
+    // Used to be the global thread group (moved here from Util)
+    protected ThreadGroup channel_thread_group=new ThreadGroup("JGroups channel") {
+            public void uncaughtException(Thread t, Throwable e) {
+                log.error("uncaught exception in " + t + " (thread group=" + this + " )", e);
+                final ThreadGroup tgParent = getParent();
+                if(tgParent != null)
+                    tgParent.uncaughtException(t,e);
+            }
+        };
+
+    protected ThreadGroup pool_thread_group=new ThreadGroup(getChannelThreadGroup(), "Thread Pools");
 
     /** Keeps track of connects and disconnects, in order to start and stop threads */
     protected int connect_count=0;
@@ -560,6 +570,10 @@ public abstract class TP extends Protocol {
 
     public ThreadGroup getPoolThreadGroup() {
         return pool_thread_group;
+    }
+
+    public ThreadGroup getChannelThreadGroup() {
+        return channel_thread_group;
     }
 
     public void setThreadPoolQueueEnabled(boolean flag) {thread_pool_queue_enabled=flag;}
@@ -807,11 +821,11 @@ public abstract class TP extends Protocol {
 
         // Create the default thread factory
         if(global_thread_factory == null)
-            global_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false);
+            global_thread_factory=new DefaultThreadFactory(getChannelThreadGroup(), "", false);
 
         // Create the timer and the associated thread factory - depends on singleton_name
         if(timer_thread_factory == null)
-            timer_thread_factory=new LazyThreadFactory(Util.getGlobalThreadGroup(), "Timer", true, true);
+            timer_thread_factory=new LazyThreadFactory(getChannelThreadGroup(), "Timer", true, true);
         if(isSingleton())
             timer_thread_factory.setIncludeClusterName(false);
 
@@ -930,6 +944,9 @@ public abstract class TP extends Protocol {
         if(thread_pool instanceof ThreadPoolExecutor) {
             shutdownThreadPool(thread_pool);
         }
+
+        pool_thread_group.destroy();
+        channel_thread_group.destroy();
     }
 
     /**
@@ -2097,7 +2114,7 @@ public abstract class TP extends Protocol {
             this.up_prot=up;
             this.down_prot=down;
             this.header=new TpHeader(cluster_name);
-            this.factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false);
+            this.factory=new DefaultThreadFactory(getChannelThreadGroup(), "", false);
             factory.setPattern(pattern);
             if(local_addr != null)
                 factory.setAddress(local_addr.toString());

@@ -78,22 +78,7 @@ public class Util {
      * reduces the amount of log data */
     public static int MAX_LIST_PRINT_SIZE=20;
 
-    /**
-     * Global thread group to which all (most!) JGroups threads belong
-     */
-    private static ThreadGroup GLOBAL_GROUP=new ThreadGroup("JGroups") {
-        public void uncaughtException(Thread t, Throwable e) {
-            LogFactory.getLog("org.jgroups").error("uncaught exception in " + t + " (thread group=" + GLOBAL_GROUP + " )", e);
-            final ThreadGroup tgParent = getParent();
-            if(tgParent != null) {
-                tgParent.uncaughtException(t,e);
-            }
-        }
-    };
-
-    public static ThreadGroup getGlobalThreadGroup() {
-        return GLOBAL_GROUP;
-    }
+    
 
     public static enum AddressScope {GLOBAL, SITE_LOCAL, LINK_LOCAL, LOOPBACK, NON_LOOPBACK};
 

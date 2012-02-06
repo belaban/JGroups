@@ -486,9 +486,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 view=tmp_view;
                 adjustReceivers(members);
                 is_server=true;  // check vids from now on
-
-                Set<Address> tmp=new LinkedHashSet<Address>(members);
-                tmp.add(null); // for null destination (= mcast)
                 break;
 
             case Event.BECOME_SERVER:

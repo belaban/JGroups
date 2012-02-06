@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
-import org.jgroups.Global;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.blocks.TCPConnectionMap;
@@ -66,7 +65,8 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                               bind_addr,
                               external_addr,
                               bind_port,
-                              bind_port+port_range
+                              bind_port+port_range,
+                              getChannelThreadGroup()
                               );
         ct.setReceiveBufferSize(recv_buf_size);      
         ct.setSendQueueSize(send_queue_size);
@@ -123,7 +123,8 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                                    InetAddress bindAddress,
                                                    InetAddress externalAddress,
                                                    int startPort,
-                                                   int endPort
+                                                   int endPort,
+                                                   ThreadGroup group
     ) throws Exception {
         TCPConnectionMap cTable;
         if(reaperInterval == 0 && connExpireTime == 0) {
@@ -134,7 +135,8 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                         bindAddress,
                                         externalAddress,
                                         startPort,
-                                        endPort
+                                        endPort,
+                                        group
             );
         }
         else {
@@ -157,7 +159,8 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                         startPort,
                                         endPort,
                                         reaperInterval,
-                                        connExpireTime
+                                        connExpireTime,
+                                        group
             );
         }
 

@@ -6,7 +6,6 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.blocks.TCPConnectionMap;
 import org.jgroups.util.DefaultThreadFactory;
-import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -21,19 +20,19 @@ public class ConnectionMapUnitTest {
     TCPConnectionMap ct1, ct2;
     static final int port1=15555, port2=16666;
 
-
+    static final ThreadGroup group=new ThreadGroup("ConnectionMapUnitTest");
 
     @BeforeMethod
     protected void setUp() throws Exception {
         ct1=new TCPConnectionMap("TCPConnectionMap1",
-                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "test", true),
-                                 null, null, null, null, port1, port1);
+                                 new DefaultThreadFactory(group, "test", true),
+                                 null, null, null, null, port1, port1, group);
 
         ct1.setUseSendQueues(false);
         ct1.start();
         ct2=new TCPConnectionMap("TCPConnectionMap2",
-                                 new DefaultThreadFactory(Util.getGlobalThreadGroup(), "test", true),
-                                 null, null, null, null, port2, port2);
+                                 new DefaultThreadFactory(group, "test", true),
+                                 null, null, null, null, port2, port2,group);
         ct2.setUseSendQueues(false);
         ct2.start();
     }
