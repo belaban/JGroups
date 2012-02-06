@@ -12,7 +12,6 @@
             	<include name="stack-dependent"/>
             	<exclude name="stack-independent"/>
                 <exclude name="broken"/>
-                <exclude name="known-failures"/>
                 <exclude name="flush"/>
                 <exclude name="stress"/>
             </run>

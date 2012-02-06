@@ -8,7 +8,6 @@
             <run>            	
                 <include name="time-sensitive"/>                
                 <exclude name="broken"/>
-                <exclude name="known-failures"/>
             </run>
         </groups>
         <packages>

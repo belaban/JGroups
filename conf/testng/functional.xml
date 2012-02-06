@@ -8,7 +8,6 @@
             <run>            	
                 <include name="functional"/>                
                 <exclude name="broken"/>
-                <exclude name="known-failures"/>
             </run>
         </groups>
         <packages>
