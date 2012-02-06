@@ -5,7 +5,7 @@
 
 	<parameter name="channel.conf" value="flush-tcp.xml"/>
 	<parameter name="use_blocking" value="true"/>
-    <test name="tcp-flush" junit="false" time-out="100000">
+    <test name="tcp-flush" junit="false" time-out="1200000">
         <groups>
             <run>            	
             	<include name="base"/>       
