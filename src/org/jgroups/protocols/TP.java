@@ -944,9 +944,6 @@ public abstract class TP extends Protocol {
         if(thread_pool instanceof ThreadPoolExecutor) {
             shutdownThreadPool(thread_pool);
         }
-
-        pool_thread_group.destroy();
-        channel_thread_group.destroy();
     }
 
     /**
