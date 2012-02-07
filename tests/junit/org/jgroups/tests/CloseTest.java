@@ -47,7 +47,6 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testDoubleClose() throws Exception {
         System.out.println("-- creating channel1 --");
         channel1.set(createChannel(true));
@@ -64,7 +63,6 @@ public class CloseTest extends ChannelTestBase {
         assertFalse("channel not connected", channel1.get().isConnected());
     }
 
-    @Test
     public void testCreationAndClose() throws Exception {
         System.out.println("-- creating channel1 --");
         ch.set(createChannel(true));
@@ -76,7 +74,6 @@ public class CloseTest extends ChannelTestBase {
         ch.get().close();
     }
 
-    @Test
     public void testViewChangeReceptionOnChannelCloseByParticipant() throws Exception {
         Address a1, a2;
         List<Address> members;
@@ -117,7 +114,6 @@ public class CloseTest extends ChannelTestBase {
         assert !members.contains(a2);
     }
 
-    @Test
     public void testViewChangeReceptionOnChannelCloseByCoordinator() throws Exception {
         Address a1, a2;
         List<Address> members;
@@ -151,7 +147,6 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testConnectDisconnectConnectCloseSequence() throws Exception {
         System.out.println("-- creating channel --");
         ch.set(createChannel(true));
@@ -175,7 +170,6 @@ public class CloseTest extends ChannelTestBase {
 
     
 
-    @Test
     public void testConnectCloseSequenceWith2Members() throws Exception {
         System.out.println("-- creating channel --");
         ch.set(createChannel(true));
@@ -199,7 +193,6 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testCreationAndClose2() throws Exception {
         System.out.println("-- creating channel2 --");
         ch.set(createChannel(true));
@@ -210,7 +203,6 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testClosedChannel() throws Exception {
         System.out.println("-- creating channel --");
         ch.set(createChannel(true));
@@ -231,7 +223,6 @@ public class CloseTest extends ChannelTestBase {
 
    
 
-    @Test
     public void testMultipleConnectsAndDisconnects() throws Exception {
         c1.set(createChannel(true));
         assertTrue(c1.get().isOpen());
