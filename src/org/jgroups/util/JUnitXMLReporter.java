@@ -97,14 +97,18 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
             Class<?> clazz=local.get();
             if(clazz != null) {
                 Tuple<StringBuffer,StringBuffer> tuple=outputs.get(clazz);
-                if(tuple != null) {
-                    StringBuffer sb=type == 1? tuple.getVal1() : tuple.getVal2();
-                    if(sb.length() == 0) {
-                        sb.append("\n" + clazz.getName() + ":");
-                    }
-                    sb.append("\n").append(x);
-                    return;
+                if(tuple == null) {
+                    tuple=new Tuple<StringBuffer,StringBuffer>(new StringBuffer(), new StringBuffer());
+                    Tuple<StringBuffer,StringBuffer> tmp=outputs.putIfAbsent(clazz,tuple);
+                    if(tmp != null)
+                        tuple=tmp;
                 }
+                StringBuffer sb=type == 1? tuple.getVal1() : tuple.getVal2();
+                if(sb.length() == 0) {
+                    sb.append("\n" + clazz.getName() + ":");
+                }
+                sb.append("\n").append(x);
+                return;
             }
             PrintStream stream=type == 2? old_stderr : old_stdout;
             if(newline)
@@ -136,14 +140,23 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
 
     /* Moved code from onTestStart() to beforeInvocation() to avoid output leaks (JGRP-850) */ 
     public void onTestStart(ITestResult result) {
-        
+
     }
+
 
     /** Invoked each time a test succeeds */
     public void onTestSuccess(ITestResult tr) {
         Class<?> real_class=tr.getTestClass().getRealClass();
         addTest(real_class, tr);
-        print(old_stdout, "OK:   ", real_class.getName(), tr.getName());
+
+        String method_name=tr.getName();
+        Object[] params=tr.getParameters();
+        if(params != null && params.length > 0) {
+            String tmp=params[0] != null? params[0].getClass().getSimpleName() : null;
+            method_name=method_name + "-" + tmp;
+        }
+
+        print(old_stdout,"OK:   ",real_class.getName(),method_name);
     }
 
     public void onTestFailedButWithinSuccessPercentage(ITestResult tr) {
@@ -208,9 +221,10 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
         }                   
     }
 
-    private static int enabledMethods(ITestNGMethod[] testMethods) {
+    // Basically all of the test methods of a test, minus the ones with @Test(enabled=false)
+   /* private static int enabledMethods(ITestNGMethod[] testMethods) {
         int count = testMethods.length;
-        for(ITestNGMethod testNGMethod:testMethods) {
+        for(ITestNGMethod testNGMethod: testMethods) {
             Method m = testNGMethod.getConstructorOrMethod().getMethod();
             if(m != null && m.isAnnotationPresent(Test.class)){
               Test annotation=m.getAnnotation(Test.class);  
@@ -218,6 +232,17 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
                   count --;
               }
             }
+        }
+        return count;
+    }*/
+
+    // Basically all of the test methods of a test, minus the ones with @Test(enabled=false). Takes
+    // @Test(invocationCount=N) into account by counting the test N times
+    private static int enabledMethods(ITestNGMethod[] testMethods) {
+        int count=0;
+        for(ITestNGMethod testNGMethod: testMethods) {
+            if(testNGMethod.getEnabled())
+                count+=testNGMethod.getInvocationCount();
         }
         return count;
     }
