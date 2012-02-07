@@ -87,9 +87,13 @@ public class OOBTest extends ChannelTestBase {
         c1.send(m2);
         c1.send(m3);
 
-        sendStableMessages(c1,c2);
-        Util.sleep(1000); // time for potential retransmission
         Collection<Integer> list=receiver.getMsgs();
+        int count=10;
+        while(list.size() < 3 && --count > 0) {
+            Util.sleep(500); // time for potential retransmission
+            sendStableMessages(c1,c2);
+        }
+
         assert list.size() == 3 : "list is " + list;
         assert list.contains(1) && list.contains(2) && list.contains(3);
     }
