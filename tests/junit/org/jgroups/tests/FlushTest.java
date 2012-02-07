@@ -26,8 +26,7 @@ public class FlushTest extends ChannelTestBase {
     @Test
     public void testSingleChannel() throws Exception {
         Semaphore s = new Semaphore(1);
-        FlushTestReceiver receivers[] = new FlushTestReceiver[] { new FlushTestReceiver("c1", s, 0,
-                        FlushTestReceiver.CONNECT_ONLY) };
+        FlushTestReceiver receivers[] ={ new FlushTestReceiver("c1", s, 0, FlushTestReceiver.CONNECT_ONLY) };
         receivers[0].start();
         s.release(1);
 
@@ -425,7 +424,7 @@ public class FlushTest extends ChannelTestBase {
 
         public void getState(OutputStream ostream) throws Exception {
             super.getState(ostream);
-            byte[] payload = new byte[] { 'b', 'e', 'l', 'a' };
+            byte[] payload ={ 'b', 'e', 'l', 'a' };
             ostream.write(payload);
         }
 
