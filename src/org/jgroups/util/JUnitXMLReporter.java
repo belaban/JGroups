@@ -1,19 +1,11 @@
 package org.jgroups.util;
 
 import org.testng.ITestContext;
-import org.testng.ITestNGMethod;
+import org.testng.ITestListener;
 import org.testng.ITestResult;
-import org.testng.IInvokedMethod;
-import org.testng.IInvokedMethodListener;
-import org.testng.TestListenerAdapter;
-import org.testng.annotations.Test;
 
 import java.io.*;
-import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Listener generating XML output suitable to be processed by JUnitReport.
@@ -21,54 +13,467 @@ import java.util.concurrent.ConcurrentMap;
  * 
  * @author Bela Ban
  */
-public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMethodListener {
-    private String output_dir=null;
-    private String suffix=null;
+public class JUnitXMLReporter implements ITestListener {
+    protected String output_dir=null;
 
-    private static final String SUFFIX="test.suffix";
-    private static final String XML_DEF="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
-    private static final String CDATA="![CDATA[";
-    private static final String LT="&lt;";
-    private static final String GT="&gt;";
-    private static final String SYSTEM_OUT="system-out";
-    private static final String SYSTEM_ERR="system-err";
+    protected static final String XML_DEF="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
+    protected static final String CDATA="![CDATA[";
+    protected static final String LT="&lt;";
+    protected static final String GT="&gt;";
+    protected static final String SYSTEM_OUT="system-out";
+    protected static final String SYSTEM_ERR="system-err";
+    protected static final String TESTS="tests.data";
+    protected static final String STDOUT="stdout.txt";
+    protected static final String STDERR="stderr.txt";
 
-    private PrintStream old_stdout=System.out;
-    private PrintStream old_stderr=System.err;
+    protected PrintStream old_stdout=System.out;
+    protected PrintStream old_stderr=System.err;
 
-    private final ConcurrentMap<Class<?>,Collection<ITestResult>> classes=new ConcurrentHashMap<Class<?>,Collection<ITestResult>>();
+    public static final InheritableThreadLocal<PrintStream>      stdout=new InheritableThreadLocal<PrintStream>();
+    public static final InheritableThreadLocal<PrintStream>      stderr=new InheritableThreadLocal<PrintStream>();
+    public static final InheritableThreadLocal<DataOutputStream> tests=new InheritableThreadLocal<DataOutputStream>();
 
-    /** Map to keep systemout and systemerr associated with a class */
-    private final ConcurrentMap<Class<?>,Tuple<StringBuffer,StringBuffer>> outputs=new ConcurrentHashMap<Class<?>,Tuple<StringBuffer,StringBuffer>>();
 
-    // Keeps track of already gnerated reports, so we don't generate the same report multiple times
-    protected final Set<Class<?>> generated_reports=new HashSet<Class<?>>();
 
-    public static InheritableThreadLocal<Class<?>> local=new InheritableThreadLocal<Class<?>>();
+    /** Invoked at the start of the test, before any of the classes in the test are run */
+    public void onStart(ITestContext context) {
+        output_dir=context.getOutputDirectory();
+        // Uncomment to delete dir created by previous run of this testsuite
+        //        File dir=new File(output_dir);
+        //        if(dir.exists())
+        //            deleteContents(dir);
 
-    class MyOutput extends PrintStream {
-        final int type; 
+        try {
+            System.setOut(new MyOutput(1));
+            System.setErr(new MyOutput(2));
+        }
+        catch(FileNotFoundException e) {
+        }
+    }
 
-        public MyOutput(String fileName,int type) throws FileNotFoundException {
-            super(fileName);
+    /** Invoked after all test classes in this test have been run */
+    public void onFinish(ITestContext context) {
+        try {
+            generateReports();
+        }
+        catch(IOException e) {
+            error(e.toString());
+        }
+        finally {
+            System.setOut(old_stdout);
+            System.setErr(old_stderr);
+        }
+    }
+
+
+    /* Invoked at the start of each test method in a test class */
+    public void onTestStart(ITestResult result) {
+        String test_name=result.getTestClass().getName();
+        File dir=new File(output_dir + File.separator + test_name);
+        if(!dir.exists())
+            dir.mkdirs();
+        File _tests=new File(dir, TESTS), _stdout=new File(dir, STDOUT), _stderr=new File(dir, STDERR);
+        try {
+            tests.set(new DataOutputStream(new FileOutputStream(_tests, true)));
+            stdout.set(new PrintStream(new FileOutputStream(_stdout, true)));
+            stderr.set(new PrintStream(new FileOutputStream(_stderr, true)));
+            stdout.get().println("\n\n------------- " + getMethodName(result) + " -----------");
+        }
+        catch(IOException e) {
+            error(e.toString());
+        }
+    }
+
+
+    /** Invoked each time a test method succeeds */
+    public void onTestSuccess(ITestResult tr) {
+        onTestCompleted(tr, "OK:   ", old_stdout);
+    }
+
+
+    public void onTestFailedButWithinSuccessPercentage(ITestResult tr) {
+        onTestCompleted(tr,"OK:   ",old_stdout);
+    }
+
+    /** Invoked each time a test method fails */
+    public void onTestFailure(ITestResult tr) {
+        onTestCompleted(tr,"FAIL: ",old_stderr);
+    }
+
+    /** Invoked each time a test method is skipped */
+    public void onTestSkipped(ITestResult tr) {
+        onTestCompleted(tr,"SKIP: ",old_stderr);
+    }
+
+    public String toString() {
+        return "bla";
+    }
+
+    protected void onTestCompleted(ITestResult tr, String message, PrintStream out) {
+        Class<?> real_class=tr.getTestClass().getRealClass();
+        addTest(real_class, tr);
+        print(out, message , real_class.getName(), getMethodName(tr));
+        stdout.get().close();
+        stderr.get().close();
+        Util.close(tests.get());
+    }
+
+
+    protected static void print(PrintStream out, String msg, String classname, String method_name) {
+        out.println(msg + "[" + Thread.currentThread().getId() + "] " + classname + "."  + method_name + "()");
+    }
+
+    protected void error(String msg) {
+        old_stderr.println(msg);
+    }
+
+    protected void println(String msg) {
+        old_stdout.println(msg);
+    }
+
+    protected void addTest(Class<?> clazz, ITestResult result) {
+        try {
+            TestCase test_case=new TestCase(result.getStatus(), clazz.getName(), getMethodName(result),
+                                            result.getStartMillis(), result.getEndMillis());
+            switch(result.getStatus()) {
+                case ITestResult.FAILURE:
+                case ITestResult.SKIP:
+                    Throwable ex=result.getThrowable();
+                    if(ex != null) {
+                        String failure_type=ex.getClass().getName();
+                        String failure_msg=ex.getMessage();
+                        String stack_trace=printException(ex);
+                        test_case.setFailure(failure_type, failure_msg, stack_trace);
+                    }
+                    else
+                        test_case.setFailure("SKIP", null, null);
+                    break;
+            }
+
+            synchronized(this) { // handle concurrent access by different threads, if test methods are run in parallel
+                test_case.writeTo(tests.get());
+            }
+        }
+        catch(Exception e) {
+            error(e.toString());
+        }
+    }
+
+    protected static String getMethodName(ITestResult tr) {
+        String method_name=tr.getName();
+        Object[] params=tr.getParameters();
+        if(params != null && params.length > 0) {
+            String tmp=params[0] != null? params[0].getClass().getSimpleName() : null;
+            method_name=method_name + "-" + tmp;
+        }
+        return method_name;
+    }
+
+
+    /** Generate the XML report from all the test results */
+    protected void generateReports() throws IOException {
+        File root_dir=new File(output_dir);
+        if(!root_dir.exists())
+            throw new IOException(root_dir + " not found");
+        File[] subdirs=root_dir.listFiles(new FileFilter() {public boolean accept(File f) {return f.isDirectory();}});
+        if(subdirs != null) {
+            for(File dir: subdirs) {
+                try {
+                    process(dir);
+                }
+                catch(Throwable e) {
+                    error(e.toString());
+                }
+            }
+        }
+    }
+
+
+    protected static void process(File dir) throws IOException {
+        File file=new File(dir, TESTS);
+        if(!file.exists())
+            throw new IOException(file + " not found");
+        List<TestCase> test_cases=new ArrayList<TestCase>();
+        DataInputStream input=new DataInputStream(new FileInputStream(file));
+        try {
+            for(;;) {
+                TestCase test_case=new TestCase();
+                try {
+                    test_case.readFrom(input);
+                    test_cases.add(test_case);
+                }
+                catch(Exception e) {
+                    break;
+                }
+            }
+        }
+        finally {
+            Util.close(input);
+        }
+
+        if(test_cases.isEmpty())
+            return;
+
+        Reader stdout_reader=null, stderr_reader=null;
+        File tmp=new File(dir, STDOUT);
+        if(tmp.exists() && tmp.length() > 0)
+            stdout_reader=new FileReader(tmp);
+
+        tmp=new File(dir, STDERR);
+        if(tmp.exists() && tmp.length() > 0)
+            stderr_reader=new FileReader(tmp);
+        File parent=dir.getParentFile();
+        File xml_file=new File(parent, "TESTS-" + dir.getName() + "-" + parent.getName() + ".xml");
+        Writer out=new FileWriter(xml_file);
+        try {
+            generateReport(out, dir.getName(), test_cases, stdout_reader, stderr_reader);
+        }
+        finally {
+            out.close();
+            if(stdout_reader != null)
+                stdout_reader.close();
+            if(stderr_reader != null)
+                stderr_reader.close();
+        }
+    }
+
+
+
+    /** Generate the XML report from all the test results */
+    protected static void generateReport(Writer out, String classname, List<TestCase> results,
+                                         Reader stdout, Reader stderr) throws IOException {
+        int num_failures=getFailures(results);
+        int num_skips=getSkips(results);
+        int num_errors=getErrors(results);
+        long total_time=getTotalTime(results);
+
+        try {
+            out.write(XML_DEF + "\n");
+
+            out.write("\n<testsuite " + " failures=\""
+                      + num_failures
+                      + "\" errors=\""
+                      + num_errors
+                      + "\" skips=\""
+                      + num_skips
+                      + "\" name=\""
+                      + classname);
+            out.write("\" tests=\"" + results.size() + "\" time=\"" + (total_time / 1000.0) + "\">");
+
+            out.write("\n<properties>");
+            Properties props=System.getProperties();
+
+            for(Map.Entry<Object,Object> tmp: props.entrySet()) {
+                out.write("\n    <property name=\"" + tmp.getKey()
+                          + "\""
+                          + " value=\""
+                          + tmp.getValue()
+                          + "\"/>");
+            }
+            out.write("\n</properties>\n");
+
+            for(TestCase result: results) {
+                if(result == null)
+                    continue;
+
+                try {
+                    writeTestCase(out,result);
+                }
+                catch(Throwable t) {
+                    t.printStackTrace();
+                }
+            }
+
+            if(stdout != null)
+                writeOutput(1, stdout, out);
+            if(stderr != null)
+                writeOutput(2, stderr, out);
+        }
+        finally {
+            out.write("\n</testsuite>\n");
+        }
+    }
+
+
+    protected static void writeTestCase(Writer out, TestCase result) throws IOException {
+        long time=result.stop_time - result.start_time;
+        // StringBuilder sb=new StringBuilder();
+        out.write("\n    <testcase classname=\"" + result.classname);
+        out.write("\"  name=\"" + result.name + "\" time=\"" + (time / 1000.0) + "\">");
+
+        switch(result.status) {
+            case ITestResult.FAILURE:
+                String failure=writeFailure("failure", result.failure_type, result.failure_msg, result.stack_trace);
+                if(failure != null)
+                    out.write(failure);
+                break;
+            case ITestResult.SKIP:
+                failure=writeFailure("error", result.failure_type, result.failure_msg, result.stack_trace);
+                if(failure != null)
+                    out.write(failure);
+                break;
+        }
+        out.write("\n    </testcase>\n");
+    }
+
+    protected static void writeOutput(int type, Reader in, Writer out) throws IOException {
+        out.write("\n<" + (type == 2? SYSTEM_ERR : SYSTEM_OUT) + "><" + CDATA + "\n");
+        copy(in, out);
+        out.write("\n]]>");
+        out.write("\n</" + (type == 2? SYSTEM_ERR : SYSTEM_OUT) + ">");
+    }
+
+
+    protected static String getStatus(TestCase tr) {
+        switch(tr.status) {
+            case ITestResult.SUCCESS:
+            case ITestResult.SUCCESS_PERCENTAGE_FAILURE:
+                return "OK";
+            case ITestResult.FAILURE: return "FAIL";
+            case ITestResult.SKIP:    return "SKIP";
+            default:                  return "UNKNOWN";
+        }
+    }
+
+    protected static String writeFailure(String type, String failure_type, String failure_msg, String stack_trace) throws IOException {
+        StringBuilder sb=new StringBuilder();
+        sb.append("\n        <" + type + " type=\"").append(failure_type);
+        sb.append("\" message=\"" + escape(failure_msg) + "\">");
+        if(stack_trace != null)
+            sb.append(stack_trace);
+        sb.append("\n        </" + type + ">");
+        return sb.toString();
+    }
+
+    protected static String printException(Throwable ex) throws IOException {
+        if(ex == null)
+            return null;
+        StackTraceElement[] stack_trace=ex.getStackTrace();
+        StringBuilder sb=new StringBuilder();
+        sb.append("\n<" + CDATA + "\n");
+        sb.append(ex.getClass().getName() + " \n");
+        for(int i=0;i < stack_trace.length;i++) {
+            StackTraceElement frame=stack_trace[i];
+            sb.append("at " + frame.toString() + " \n");
+        }
+        sb.append("\n]]>");
+        return sb.toString();
+    }
+
+    protected static String escape(String message) {
+        return message != null? message.replaceAll("<", LT).replaceAll(">", GT) : message;
+    }
+
+    protected static long getTotalTime(Collection<TestCase> results) {
+        long start=0, stop=0;
+        for(TestCase result: results) {
+            if(result == null)
+                continue;
+            long tmp_start=result.start_time, tmp_stop=result.stop_time;
+            if(start == 0)
+                start=tmp_start;
+            else {
+                start=Math.min(start, tmp_start);
+            }
+
+            if(stop == 0)
+                stop=tmp_stop;
+            else {
+                stop=Math.max(stop, tmp_stop);
+            }
+        }
+        return stop - start;
+    }
+
+    protected static int getFailures(Collection<TestCase> results) {
+        int retval=0;
+        for(TestCase result: results) {
+            if(result != null && result.status == ITestResult.FAILURE)
+                retval++;
+        }
+        return retval;
+    }
+
+    protected static int getErrors(Collection<TestCase> results) {
+        int retval=0;
+        for(TestCase result: results) {
+            if(result != null && result.status != ITestResult.SUCCESS
+              && result.status != ITestResult.SUCCESS_PERCENTAGE_FAILURE
+              && result.status != ITestResult.FAILURE)
+                retval++;
+        }
+        return retval;
+    }
+
+    protected static int getSkips(Collection<TestCase> results) {
+        int retval=0;
+        for(TestCase result: results) {
+            if(result != null && result.status == ITestResult.SKIP)
+                retval++;
+        }
+        return retval;
+    }
+
+    /** Deletes all files and dirs in dir, but not dir itself */
+    protected static void deleteContents(File dir) {
+        File[] contents=dir.listFiles();
+        if(contents != null) {
+            for(File file: contents) {
+                if(file.isDirectory()) {
+                    deleteContents(file);
+                    file.delete();
+                }
+                else
+                    file.delete();
+            }
+        }
+    }
+
+    /** Copies the contents of in into out */
+    protected static int copy(Reader in, Writer out) {
+        int count=0;
+
+        char[] buf=new char[1024];
+
+        while(true) {
+            try {
+                int num=in.read(buf, 0, buf.length);
+                if(num == -1)
+                    break;
+                out.write(buf, 0, num);
+                count+=num;
+            }
+            catch(IOException e) {
+                break;
+            }
+        }
+
+        return count;
+    }
+
+    protected static class MyOutput extends PrintStream {
+        final int type;
+
+        public MyOutput(int type) throws FileNotFoundException {
+            super("/tmp/tmp.txt"); // dummy name
             this.type=type;
             if(type != 1 && type != 2)
                 throw new IllegalArgumentException("index has to be 1 or 2");
         }
-        
+
         public void write(final byte[] b) {
-        	String s = new String(b) ;
-        	append(s.trim(), false) ;
+            String s = new String(b) ;
+            append(s.trim(), false) ;
         }
 
         public void write(final byte[] b, final int off, final int len) {
-        	String s = new String(b, off, len) ;
-        	append(s.trim(), false) ;
+            String s = new String(b, off, len) ;
+            append(s.trim(), false) ;
         }
-        
+
         public void write(final int b) {
-        	Integer i = new Integer(b) ;
-        	append(i.toString(), false) ;
+            Integer i = new Integer(b) ;
+            append(i.toString(), false) ;
         }
 
         public void println(String s) {
@@ -93,404 +498,93 @@ public class JUnitXMLReporter extends TestListenerAdapter implements IInvokedMet
                 append("null", true);
         }
 
-        private synchronized void append(String x, boolean newline) {
-            Class<?> clazz=local.get();
-            if(clazz != null) {
-                Tuple<StringBuffer,StringBuffer> tuple=outputs.get(clazz);
-                if(tuple == null) {
-                    tuple=new Tuple<StringBuffer,StringBuffer>(new StringBuffer(), new StringBuffer());
-                    Tuple<StringBuffer,StringBuffer> tmp=outputs.putIfAbsent(clazz,tuple);
-                    if(tmp != null)
-                        tuple=tmp;
-                }
-                StringBuffer sb=type == 1? tuple.getVal1() : tuple.getVal2();
-                if(sb.length() == 0) {
-                    sb.append("\n" + clazz.getName() + ":");
-                }
-                sb.append("\n").append(x);
-                return;
-            }
-            PrintStream stream=type == 2? old_stderr : old_stdout;
+        protected synchronized void append(String x, boolean newline) {
+            PrintStream tmp=type == 1? stdout.get() : stderr.get();
             if(newline)
-                stream.println(x);
+                tmp.println(x);
             else
-                stream.print(x);
+                tmp.print(x);
         }
     }
 
-    /** Invoked before any method (configuration or test) is invoked */
-    public void beforeInvocation(IInvokedMethod method, ITestResult tr) {
-        Class<?> real_class=tr.getTestClass().getRealClass();
+    public static void main(String[] args) throws IOException {
+        JUnitXMLReporter reporter=new JUnitXMLReporter();
+        reporter.output_dir="/home/bela/JGroups/tmp/test-results/xml/tcp";
+        reporter.generateReports();
+    }
 
-        local.set(real_class);
 
-        Collection<ITestResult> results=classes.get(real_class);
-        if(results == null) {
-            results=new LinkedList<ITestResult>();
-            classes.putIfAbsent(real_class,results);
+    protected static class TestCase implements Streamable {
+        protected int    status;
+        protected String classname;
+        protected String name;
+        protected long   start_time;
+        protected long   stop_time;
+        protected String failure_type; // null: no failure, class of the Throwable
+        protected String failure_msg;  // result of Throwable.getMessage()
+        protected String stack_trace;
+
+
+        public TestCase() { // needed for externalization
         }
 
-        outputs.putIfAbsent(real_class, new Tuple<StringBuffer,StringBuffer>(new StringBuffer(), new StringBuffer())) ;
-    }
-
-    /** Invoked after any method (configuration or test) is invoked */
-    public void afterInvocation(IInvokedMethod method, ITestResult tr) {
-
-    }
-
-    /* Moved code from onTestStart() to beforeInvocation() to avoid output leaks (JGRP-850) */ 
-    public void onTestStart(ITestResult result) {
-
-    }
-
-
-    /** Invoked each time a test succeeds */
-    public void onTestSuccess(ITestResult tr) {
-        Class<?> real_class=tr.getTestClass().getRealClass();
-        addTest(real_class, tr);
-
-        String method_name=tr.getName();
-        Object[] params=tr.getParameters();
-        if(params != null && params.length > 0) {
-            String tmp=params[0] != null? params[0].getClass().getSimpleName() : null;
-            method_name=method_name + "-" + tmp;
+        protected TestCase(int status, String classname, String name, long start_time, long stop_time) {
+            this.status=status;
+            this.classname=classname;
+            this.name=name;
+            this.start_time=start_time;
+            this.stop_time=stop_time;
         }
 
-        print(old_stdout,"OK:   ",real_class.getName(),method_name);
-    }
-
-    public void onTestFailedButWithinSuccessPercentage(ITestResult tr) {
-        Class<?> real_class=tr.getTestClass().getRealClass();
-        addTest(tr.getTestClass().getRealClass(), tr);
-        print(old_stdout, "OK:   ", real_class.getName(), tr.getName());
-    }
-
-    /**
-     * Invoked each time a test fails.
-     */
-    public void onTestFailure(ITestResult tr) {
-        Class<?> real_class=tr.getTestClass().getRealClass();
-        addTest(tr.getTestClass().getRealClass(), tr);
-        print(old_stderr, "FAIL: ", real_class.getName(), tr.getName());
-    }
-
-    /**
-     * Invoked each time a test is skipped.
-     */
-    public void onTestSkipped(ITestResult tr) {
-        Class<?> real_class=tr.getTestClass().getRealClass();
-        addTest(tr.getTestClass().getRealClass(), tr);
-        print(old_stdout, "SKIP: ", real_class.getName(), tr.getName());
-    }
-
-    private static void print(PrintStream out, String msg, String classname, String method_name) {
-        out.println(msg + "["
-                    + Thread.currentThread().getId()
-                    + "] "
-                    + classname
-                    + "."
-                    + method_name
-                    + "()");
-    }
-
-    private void addTest(Class<?> clazz, ITestResult result) {
-        Collection<ITestResult> results=classes.get(clazz);
-        if(results == null) {
-            results=new ConcurrentLinkedQueue<ITestResult>();
-            Collection<ITestResult> tmp=classes.putIfAbsent(clazz,results);
-            if(tmp != null)
-                results=tmp;
-        }
-        results.add(result);
-        
-        ITestNGMethod[] testMethods=result.getMethod().getTestClass().getTestMethods();
-        int enabledCount = enabledMethods(testMethods);
-        boolean allTestsInClassCompleted = results.size() >= enabledCount;
-        if(allTestsInClassCompleted) {
-            boolean do_generate=false;
-            synchronized(generated_reports) {
-                do_generate=generated_reports.add(clazz);
-            }
-            try {
-                if(do_generate)
-                    generateReport(clazz, results);
-            }
-            catch(IOException e) {
-                print(old_stderr, "Failed generating report: ", clazz.getName(), "");
-            }
-        }                   
-    }
-
-    // Basically all of the test methods of a test, minus the ones with @Test(enabled=false)
-   /* private static int enabledMethods(ITestNGMethod[] testMethods) {
-        int count = testMethods.length;
-        for(ITestNGMethod testNGMethod: testMethods) {
-            Method m = testNGMethod.getConstructorOrMethod().getMethod();
-            if(m != null && m.isAnnotationPresent(Test.class)){
-              Test annotation=m.getAnnotation(Test.class);  
-              if(!annotation.enabled()){
-                  count --;
-              }
-            }
-        }
-        return count;
-    }*/
-
-    // Basically all of the test methods of a test, minus the ones with @Test(enabled=false). Takes
-    // @Test(invocationCount=N) into account by counting the test N times
-    private static int enabledMethods(ITestNGMethod[] testMethods) {
-        int count=0;
-        for(ITestNGMethod testNGMethod: testMethods) {
-            if(testNGMethod.getEnabled())
-                count+=testNGMethod.getInvocationCount();
-        }
-        return count;
-    }
-
-    /**
-     * Invoked after the test class is instantiated and before any configuration
-     * method is called.
-     */
-    public void onStart(ITestContext context) {
-        suffix=System.getProperty(SUFFIX);
-        if(suffix != null)
-            suffix=suffix.trim();
-        output_dir=context.getOutputDirectory(); // + File.separator + context.getName() + suffix + ".xml";
-
-        try {
-            System.setOut(new MyOutput("/tmp/tmp.txt", 1));
-        }
-        catch(FileNotFoundException e) {
+        public void setFailure(String failure_type, String failure_msg, String stack_trace) {
+            this.failure_type=failure_type;
+            this.failure_msg=failure_msg;
+            this.stack_trace=stack_trace;
         }
 
-        try {
-            System.setErr(new MyOutput("/tmp/tmp.txt", 2));
-        }
-        catch(FileNotFoundException e) {
-        }
-    }
+        public long getTime() {return stop_time-start_time;}
 
-    /**
-     * Invoked after all the tests have run and all their Configuration methods
-     * have been called.
-     */
-    public void onFinish(ITestContext context) {
-        System.setOut(old_stdout);
-        System.setErr(old_stderr);
-    }
-    
-    /**
-     * generate the XML report given what we know from all the test results
-     */
-    protected void generateReport(Class<?> clazz, Collection<ITestResult> results) throws IOException {
-
-        int num_failures=getFailures(results);
-        int num_skips=getSkips(results);
-        int num_errors=getErrors(results);
-        long total_time=getTotalTime(results);
-
-        String file_name=output_dir + File.separator + "TEST-" + clazz.getName();
-        if(suffix != null)
-            file_name=file_name + "-" + suffix;
-        file_name=file_name + ".xml";
-        Writer out=new FileWriter(file_name, false); // don't append, overwrite
-        try {
-            out.write(XML_DEF + "\n");
-
-            out.write("\n<testsuite " + " failures=\""
-                      + num_failures
-                      + "\" errors=\""
-                      + num_errors
-                      + "\" skips=\""
-                      + num_skips
-                      + "\" name=\""
-                      + clazz.getName());
-            if(suffix != null)
-                out.write(" (" + suffix + ")");
-            out.write("\" tests=\"" + results.size() + "\" time=\"" + (total_time / 1000.0) + "\">");
-
-            out.write("\n<properties>");
-            Properties props=System.getProperties();
-
-            for(Map.Entry<Object,Object> tmp: props.entrySet()) {
-                out.write("\n    <property name=\"" + tmp.getKey()
-                          + "\""
-                          + " value=\""
-                          + tmp.getValue()
-                          + "\"/>");
-            }
-            out.write("\n</properties>\n");
-
-            for(ITestResult result: results) {
-                if(result == null)
-                    continue;
-
-                try {
-                    String testcase=writeTestCase(result,clazz,suffix);
-                    out.write(testcase);
-                }
-                catch(Throwable t) {
-                    t.printStackTrace();
-                }
-            }
-
-            Tuple<StringBuffer,StringBuffer> stdout=outputs.get(clazz);
-            if(stdout != null) {
-                StringBuffer system_out=stdout.getVal1();
-                StringBuffer system_err=stdout.getVal2();
-                writeOutput(out, system_out.toString(), 1);
-                out.write("\n");
-                writeOutput(out, system_err.toString(), 2);
-            }
-        }
-        finally {
-            out.write("\n</testsuite>\n");
-            out.close();
-        }
-    }
-
-    protected static String writeTestCase(ITestResult result, Class<?> clazz, String suffix) throws IOException {
-        if(result == null)
-            return null;
-        long time=result.getEndMillis() - result.getStartMillis();
-        StringBuilder sb=new StringBuilder();
-        sb.append("\n    <testcase classname=\"" + clazz.getName());
-        if(suffix != null)
-            sb.append(" (" + suffix + ")");
-        sb.append("\" name=\"" + result.getMethod().getMethodName() + "\" time=\"" + (time / 1000.0) + "\">");
-
-        Throwable ex=result.getThrowable();
-
-        switch(result.getStatus()) {
-            case ITestResult.SUCCESS:
-            case ITestResult.SUCCESS_PERCENTAGE_FAILURE:
-            case ITestResult.STARTED:
-                break;
-            case ITestResult.FAILURE:
-                String failure=writeFailure("failure",
-                                            result.getMethod().getConstructorOrMethod().getMethod(),
-                                            ex,
-                                            "exception");
-                if(failure != null)
-                    sb.append(failure);
-                break;
-            case ITestResult.SKIP:
-                failure=writeFailure("error", result.getMethod().getConstructorOrMethod().getMethod(), ex, "SKIPPED");
-                if(failure != null)
-                    sb.append(failure);
-                break;
-            default:
-                failure=writeFailure("error", result.getMethod().getConstructorOrMethod().getMethod(), ex, "exception");
-                if(failure != null)
-                    sb.append(failure);
+        public String toString() {
+            StringBuilder sb=new StringBuilder();
+            sb.append(statusToString(status)).append(" ").append(classname).append(".").append(name).append(" in ")
+              .append(getTime()).append(" ms");
+            if(failure_type != null)
+                sb.append("\n" + failure_type).append("msg=" + failure_msg).append("\n").append(stack_trace);
+            return sb.toString();
         }
 
-        sb.append("\n    </testcase>\n");
-        return sb.toString();
-    }
-
-    private static void writeOutput(Writer out, String s, int type) throws IOException {
-        if(s != null && s.length() > 0) {
-            out.write("\n<" + (type == 2? SYSTEM_ERR : SYSTEM_OUT) + "><" + CDATA + "\n");
-            out.write(s);
-            out.write("\n]]>");
-            out.write("\n</" + (type == 2? SYSTEM_ERR : SYSTEM_OUT) + ">");
-        }
-    }
-
-    private static String writeFailure(String type, Method method, Throwable ex, String msg) throws IOException {
-        Test annotation=method != null? method.getAnnotation(Test.class) : null;
-        if(annotation != null && ex != null) {
-            Class<?>[] expected_exceptions=annotation.expectedExceptions();
-            for(int i=0;i < expected_exceptions.length;i++) {
-                Class<?> expected_exception=expected_exceptions[i];
-                if(expected_exception.equals(ex.getClass())) {
-                    return null;
-                }
+        protected static String statusToString(int status) {
+            switch(status) {
+                case ITestResult.SUCCESS:
+                case ITestResult.SUCCESS_PERCENTAGE_FAILURE:
+                    return "OK";
+                case ITestResult.FAILURE: return "FAIL";
+                case ITestResult.SKIP:    return "SKIP";
+                default:                  return "N/A";
             }
         }
 
-        StringBuilder sb=new StringBuilder();
-        sb.append("\n        <" + type + " type=\"");
-        if(ex != null) {
-            sb.append(ex.getClass().getName() + "\" message=\"" + escape(ex.getMessage()) + "\">");
-            String ex_str=printException(ex);
-            if(ex_str != null)
-                sb.append(ex_str);
+        public void writeTo(DataOutput out) throws Exception {
+            out.writeInt(status);
+            Util.writeString(classname,out);
+            Util.writeString(name, out);
+            out.writeLong(start_time);
+            out.writeLong(stop_time);
+            Util.writeString(failure_type, out);
+            Util.writeString(failure_msg, out);
+            Util.writeString(stack_trace, out);
         }
-        else
-            sb.append("exception\" message=\"" + msg + "\">");
-        sb.append("\n        </" + type + ">");
-        return sb.toString();
-    }
 
-    private static String printException(Throwable ex) throws IOException {
-        if(ex == null)
-            return null;
-        StackTraceElement[] stack_trace=ex.getStackTrace();
-        StringBuilder sb=new StringBuilder();
-        sb.append("\n<" + CDATA + "\n");
-        sb.append(ex.getClass().getName() + " \n");
-        for(int i=0;i < stack_trace.length;i++) {
-            StackTraceElement frame=stack_trace[i];
-            sb.append("at " + frame.toString() + " \n");
+        public void readFrom(DataInput in) throws Exception {
+            status=in.readInt();
+            classname=Util.readString(in);
+            name=Util.readString(in);
+            start_time=in.readLong();
+            stop_time=in.readLong();
+            failure_type=Util.readString(in);
+            failure_msg=Util.readString(in);
+            stack_trace=Util.readString(in);
         }
-        sb.append("\n]]>");
-        return sb.toString();
-    }
-
-    private static String escape(String message) {
-        return message != null? message.replaceAll("<", LT).replaceAll(">", GT) : message;
-    }
-
-    private static long getTotalTime(Collection<ITestResult> results) {
-        long start=0, stop=0;
-        for(ITestResult result:results) {
-            if(result == null)
-                continue;
-            long tmp_start=result.getStartMillis(), tmp_stop=result.getEndMillis();
-            if(start == 0)
-                start=tmp_start;
-            else {
-                start=Math.min(start, tmp_start);
-            }
-
-            if(stop == 0)
-                stop=tmp_stop;
-            else {
-                stop=Math.max(stop, tmp_stop);
-            }
-        }
-        return stop - start;
-    }
-
-    private static int getFailures(Collection<ITestResult> results) {
-        int retval=0;
-        for(ITestResult result:results) {
-            if(result != null && result.getStatus() == ITestResult.FAILURE)
-                retval++;
-        }
-        return retval;
-    }
-
-    private static int getErrors(Collection<ITestResult> results) {
-        int retval=0;
-        for(ITestResult result:results) {
-            if(result != null && result.getStatus() != ITestResult.SUCCESS
-               && result.getStatus() != ITestResult.SUCCESS_PERCENTAGE_FAILURE
-               && result.getStatus() != ITestResult.FAILURE)
-                retval++;
-        }
-        return retval;
-    }
-
-    private static int getSkips(Collection<ITestResult> results) {
-        int retval=0;
-        for(ITestResult result:results) {
-            if(result != null && result.getStatus() == ITestResult.SKIP)
-                retval++;
-        }
-        return retval;
     }
 
 }

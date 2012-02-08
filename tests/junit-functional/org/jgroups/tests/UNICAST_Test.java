@@ -11,6 +11,7 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -29,6 +30,10 @@ public class UNICAST_Test {
     static final int SIZE=1000; // bytes
     static final int NUM_MSGS=10000;
 
+    @BeforeMethod
+    void before() {
+        throw new NullPointerException("booom");
+    }
 
     @AfterMethod
     void tearDown() throws Exception {
@@ -61,6 +66,16 @@ public class UNICAST_Test {
         };
     }
 
+    //@Test(expectedExceptions=RuntimeException.class)
+    public static void foo() {
+        throw new RuntimeException("booooom");
+    }
+
+    public static void bar() {
+        int num=43;
+        System.err.println("bar will throw an assertion error");
+        assert num > 100;
+    }
 
 
     private static byte[] createPayload(int size, int seqno) {

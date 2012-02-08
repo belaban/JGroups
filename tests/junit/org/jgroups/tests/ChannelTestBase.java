@@ -72,11 +72,6 @@ public class ChannelTestBase {
         // bind_addr = Util.getBindAddress(null).getHostAddress();
     }
 
-    @BeforeMethod
-    protected static void startTestHeader(java.lang.reflect.Method m) {
-        System.out.println("\n================ Starting test " + m.getName()
-                        + " ================\n");
-    }
 
     @AfterClass(alwaysRun = true)
     protected void nullifyInstanceFields() {
