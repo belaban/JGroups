@@ -20,7 +20,7 @@ public class RspListTest {
 
 
     @BeforeMethod
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         rl=new RspList();
         a1=Util.createRandomAddress();
         a2=Util.createRandomAddress();

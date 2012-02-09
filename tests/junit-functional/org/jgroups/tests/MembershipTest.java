@@ -24,7 +24,7 @@ public class MembershipTest {
 
 
     @BeforeMethod
-    public void setUp() {
+    void setUp() {
         a1=Util.createRandomAddress();
         a2=Util.createRandomAddress();
         a3=a2;

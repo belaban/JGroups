@@ -1,9 +1,10 @@
 package org.jgroups.util;
 
 import org.jgroups.util.Util;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -56,6 +57,12 @@ public class CountTests {
                 int mods=method.getModifiers();
                 if(!Modifier.isPublic(mods))
                     continue;
+
+                if(hasAnnotations(method, BeforeSuite.class, BeforeTest.class, BeforeClass.class, BeforeMethod.class,
+                                  BeforeGroups.class, AfterSuite.class, AfterClass.class, AfterTest.class, AfterMethod.class,
+                                  AfterGroups.class))
+                    continue;
+
                 Test method_annotation=method.getAnnotation(Test.class);
                 if(method_annotation != null) {
                     if(method_annotation.enabled() == false) {
@@ -100,6 +107,17 @@ public class CountTests {
             Integer val=entry.getValue();
             System.out.println(key + ": " + val);
         }
+    }
+
+    protected static boolean hasAnnotations(Method method, Class<?> ... annotations) {
+        if(method == null || annotations == null)
+            return false;
+        for(Class<?> annotation: annotations) {
+            Class<Annotation> ann=(Class<Annotation>)annotation;
+            if(method.getAnnotation(ann) != null)
+                return true;
+        }
+        return false;
     }
 
     protected static boolean hasGroup(Test annotation, String grp) {

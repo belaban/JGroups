@@ -24,14 +24,14 @@ public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
 
     @BeforeMethod
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         c1=createChannel(true, 2);
         c2=createChannel(c1);
     }
 
 
     @AfterMethod
-    public void tearDown() throws Exception {        
+    void tearDown() throws Exception {
         Util.close(c2,c1);
     }
 

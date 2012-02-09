@@ -61,7 +61,7 @@ public class NakackTest {
      * Set up a number of simulator instances wrapping NAKACK
      */
     @BeforeMethod
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
 
         // create new simulator instances
         for(int i=0; i < NUM_PEERS; i++) {
@@ -84,7 +84,7 @@ public class NakackTest {
     }
 
     @AfterMethod
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         for(int i=0; i < NUM_PEERS; i++)
             channels[i].close();
     }

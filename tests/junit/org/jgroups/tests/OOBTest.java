@@ -29,7 +29,7 @@ public class OOBTest extends ChannelTestBase {
     private JChannel c1, c2;
 
     @BeforeMethod
-    public void init() throws Exception {
+    void init() throws Exception {
         c1=createChannel(true, 2);
         c1.setName("C1");
         c2=createChannel(c1);
@@ -45,7 +45,7 @@ public class OOBTest extends ChannelTestBase {
 
 
     @AfterMethod
-    public void cleanup() {
+    void cleanup() {
         Util.sleep(1000);
         Util.close(c2, c1);
     }

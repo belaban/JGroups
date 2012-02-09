@@ -19,12 +19,12 @@ public class ReentrantLockTest {
 
 
     @BeforeMethod
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         lock=new ReentrantLock();
     }
 
     @AfterMethod
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         releaseAll(lock);
         lock=null;
     }

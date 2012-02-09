@@ -20,14 +20,14 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
     private final Target target=new Target();
 
     @BeforeClass
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         channel=createChannel(true);
         disp=new RpcDispatcher(channel, target);
         channel.connect("RpcDispatcherExceptionTest");
     }
 
     @AfterClass
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         disp.stop();
         channel.close();
     }

@@ -28,7 +28,7 @@ public class SequencerFailoverTest {
 
 
     @BeforeMethod
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         a=new JChannel(props);
         a.setName("A");
         a.connect(GROUP);
@@ -43,7 +43,7 @@ public class SequencerFailoverTest {
     }
 
     @AfterMethod
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         Util.close(c, b, a);
     }
 

@@ -23,7 +23,7 @@ public class IpAddressTest {
 
     
     @BeforeClass
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         StackType type=Util.getIpStackType();
         if(type == StackType.IPv6) {
             a=new IpAddress("::1", 5555);

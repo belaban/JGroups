@@ -67,7 +67,7 @@ public class SendAndReceiveTest {
 
 
     @AfterMethod
-    public void tearDown() {
+    void tearDown() {
         Util.close(channel);
     }
 

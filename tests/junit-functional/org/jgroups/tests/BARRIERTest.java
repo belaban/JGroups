@@ -25,7 +25,7 @@ public class BARRIERTest {
 
 
     @BeforeMethod
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         ping_prot=new PING();
         example_prot=new EXAMPLE();
         barrier_prot=new BARRIER();
@@ -34,7 +34,7 @@ public class BARRIERTest {
     }
 
     @AfterMethod
-    public void destroy() {
+    void destroy() {
         Util.close(ch);
     }
 

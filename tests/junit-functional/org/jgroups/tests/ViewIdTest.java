@@ -19,7 +19,7 @@ public class ViewIdTest {
     private ViewId v1, v2, v3, v4;
 
     @BeforeClass
-    public void setUp() throws UnknownHostException {
+    void setUp() throws UnknownHostException {
         v1=new ViewId(Util.createRandomAddress("A"), 22);
         v2=new ViewId(Util.createRandomAddress("B"), 21);
         v3=v1.copy();

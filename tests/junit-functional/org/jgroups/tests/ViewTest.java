@@ -25,7 +25,7 @@ public class ViewTest {
    
 
     @BeforeClass
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         a=Util.createRandomAddress("A");
         b=a;
         c=b;

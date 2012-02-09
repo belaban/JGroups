@@ -14,7 +14,7 @@ public class RpcDispatcherAnycastMultipleCallsTest extends ChannelTestBase {
     static final int NUM=3;
 
     @BeforeClass
-    public void init() throws Exception {
+    void init() throws Exception {
         targets=new RpcDispatcherAnycastServerObject[NUM];
         final String GROUP="RpcDispatcherAnycastMultipleCallsTest";
         JChannel first_channel=null;

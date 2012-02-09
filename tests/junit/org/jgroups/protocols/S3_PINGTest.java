@@ -15,7 +15,7 @@ public class S3_PINGTest {
     private S3_PING ping;
 
     @BeforeMethod
-    public void setUp() {
+    void setUp() {
         ping = new S3_PING();
     }
 

@@ -30,7 +30,7 @@ public class ENCRYPTAsymmetricTest {
     static final short ENCRYPT_ID=ClassConfigurator.getProtocolId(ENCRYPT.class);
 
     @BeforeClass
-    public static void initProvider() {
+    static void initProvider() {
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
     }
 

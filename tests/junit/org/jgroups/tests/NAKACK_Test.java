@@ -27,14 +27,14 @@ public class NAKACK_Test extends ChannelTestBase {
 
 
     @BeforeMethod
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         c1=createChannel(true, 3);
         c2=createChannel(c1);
         c3=createChannel(c1);
     }
 
     @AfterMethod
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         Util.close(c3, c2, c1);
     }
 

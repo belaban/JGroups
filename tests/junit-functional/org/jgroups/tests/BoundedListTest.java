@@ -2,11 +2,9 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.util.BoundedList;
 import org.jgroups.Global;
+import org.jgroups.util.BoundedList;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 @Test(groups=Global.FUNCTIONAL)
