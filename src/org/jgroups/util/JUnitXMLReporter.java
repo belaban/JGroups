@@ -392,7 +392,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         return message != null? message.replaceAll("<", LT).replaceAll(">", GT) : message;
     }
 
-    protected static long getTotalTime(Collection<TestCase> results) {
+    public static long getTotalTime(Collection<TestCase> results) {
         long start=0, stop=0;
         for(TestCase result: results) {
             if(result == null)
@@ -413,7 +413,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         return stop - start;
     }
 
-    protected static int getFailures(Collection<TestCase> results) {
+    public static int getFailures(Collection<TestCase> results) {
         int retval=0;
         for(TestCase result: results) {
             if(result != null && result.status == ITestResult.FAILURE)
@@ -422,7 +422,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         return retval;
     }
 
-    protected static int getErrors(Collection<TestCase> results) {
+    public static int getErrors(Collection<TestCase> results) {
         int retval=0;
         for(TestCase result: results) {
             if(result != null && result.status != ITestResult.SUCCESS
@@ -433,7 +433,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         return retval;
     }
 
-    protected static int getSkips(Collection<TestCase> results) {
+    public static int getSkips(Collection<TestCase> results) {
         int retval=0;
         for(TestCase result: results) {
             if(result != null && result.status == ITestResult.SKIP)
@@ -544,7 +544,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
     }
 
 
-    protected static class TestCase implements Streamable {
+    public static class TestCase implements Streamable {
         protected int    status;
         protected String classname;
         protected String name;
@@ -558,7 +558,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         public TestCase() { // needed for externalization
         }
 
-        protected TestCase(int status, String classname, String name, long start_time, long stop_time) {
+        public TestCase(int status, String classname, String name, long start_time, long stop_time) {
             this.status=status;
             this.classname=classname;
             this.name=name;
