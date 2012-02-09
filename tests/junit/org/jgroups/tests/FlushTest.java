@@ -165,8 +165,8 @@ public class FlushTest extends ChannelTestBase {
             // will be started
             Util.shutdown(c2);
 
-            c1.getProtocolStack().findProtocol(FLUSH.class).setLevel("trace");
-            c3.getProtocolStack().findProtocol(FLUSH.class).setLevel("trace");
+            c1.getProtocolStack().findProtocol(FLUSH.class).setLevel("debug");
+            c3.getProtocolStack().findProtocol(FLUSH.class).setLevel("debug");
 
             Util.waitUntilAllChannelsHaveSameSize(10000, 500, c1, c3);
 

@@ -24,8 +24,8 @@ public class PingPongDatagram {
     static final byte PING = 1;
     static final byte PONG = 2;
 
-    static final byte[] PING_REQ=new byte[]{PING};
-    static final byte[] PONG_RSP=new byte[]{PONG};
+    static final byte[] PING_REQ={PING};
+    static final byte[] PONG_RSP={PONG};
 
     long start=0;
 

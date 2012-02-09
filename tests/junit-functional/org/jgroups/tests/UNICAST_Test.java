@@ -61,17 +61,6 @@ public class UNICAST_Test {
         };
     }
 
-    //@Test(expectedExceptions=RuntimeException.class)
-    public static void foo() {
-        throw new RuntimeException("booooom");
-    }
-
-    public static void bar() {
-        int num=43;
-        System.err.println("bar will throw an assertion error");
-        assert num > 100;
-    }
-
 
     private static byte[] createPayload(int size, int seqno) {
         ByteBuffer buf=ByteBuffer.allocate(size);

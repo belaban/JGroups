@@ -6,10 +6,7 @@ import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MutableDigest;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.TimeScheduler2;
 import org.jgroups.util.Util;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -194,7 +191,7 @@ public class NAKACK_StressTest {
     }
 
 
-    @Test(enabled=false)
+    /*@Test(enabled=false)
     public static void main(String[] args) {
         int num_threads=10;
         int num_msgs=1000000;
@@ -217,5 +214,5 @@ public class NAKACK_StressTest {
             return;
         }
         start(num_threads, num_msgs, oob);
-    }
+    }*/
 }

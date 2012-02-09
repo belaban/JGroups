@@ -29,28 +29,23 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
         channel.close();
     }
 
-    @Test(enabled=false)
-    public static Object foo() {
+    static Object foo() {
         return "foo(): OK";
     }
 
-    @Test(enabled=false)
-    public static Object bar() throws Exception {
+    static Object bar() throws Exception {
         throw new TimeoutException("this is an exception");
     }
 
-    @Test(enabled=false)
-    public static Object foobar() {
+    static Object foobar() {
         throw new IllegalArgumentException("bla bla bla from foobar");
     }
 
-    @Test(enabled=false)
-    public static Object foofoobar() {
+    static Object foofoobar() {
         throw new AssertionError("bla bla bla from foofoobar");
     }
 
-    @Test(enabled=false)
-    public static void fooWithThrowable() throws Throwable {
+    static void fooWithThrowable() throws Throwable {
         throw new Throwable("this is an exception");
     }
 

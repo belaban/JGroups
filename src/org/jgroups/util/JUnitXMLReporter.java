@@ -4,6 +4,8 @@ import org.testng.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Listener generating XML output suitable to be processed by JUnitReport.
@@ -27,9 +29,10 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
     protected PrintStream old_stdout=System.out;
     protected PrintStream old_stderr=System.err;
 
+    protected final ConcurrentMap<Class<?>, DataOutputStream> tests=new ConcurrentHashMap<Class<?>,DataOutputStream>(100);
+
     public static final InheritableThreadLocal<PrintStream>      stdout=new InheritableThreadLocal<PrintStream>();
     public static final InheritableThreadLocal<PrintStream>      stderr=new InheritableThreadLocal<PrintStream>();
-    public static final InheritableThreadLocal<DataOutputStream> tests=new InheritableThreadLocal<DataOutputStream>();
 
 
 
@@ -52,6 +55,9 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
     /** Invoked after all test classes in this test have been run */
     public void onFinish(ITestContext context) {
         try {
+            for(DataOutputStream out: tests.values())
+                Util.close(out);
+            tests.clear();
             generateReports();
         }
         catch(IOException e) {
@@ -109,9 +115,9 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
 
     protected void onTestCompleted(ITestResult tr, String message, PrintStream out) {
         Class<?> real_class=tr.getTestClass().getRealClass();
-        addTest(real_class, tr);
-        print(out, message , real_class.getName(), getMethodName(tr));
-        closeStreams();
+        addTest(real_class,tr);
+        print(out,message,real_class.getName(),getMethodName(tr));
+        closeStreams(real_class);
     }
 
     protected void setupStreams(ITestResult result, boolean printMethodName) {
@@ -121,8 +127,16 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
             dir.mkdirs();
         File _tests=new File(dir, TESTS), _stdout=new File(dir, STDOUT), _stderr=new File(dir, STDERR);
         try {
-            if(tests.get() == null)
-                tests.set(new DataOutputStream(new FileOutputStream(_tests, true)));
+            Class<?> clazz=result.getTestClass().getRealClass();
+            if(!tests.containsKey(clazz)) {
+                DataOutputStream output=new DataOutputStream(new FileOutputStream(_tests,true));
+                DataOutputStream tmp=tests.putIfAbsent(clazz, output);
+                if(tmp != null) {
+                    Util.close(output);
+                    output=tmp;
+                }
+            }
+            
             if(stdout.get() == null)
                 stdout.set(new PrintStream(new FileOutputStream(_stdout, true)));
             if(stderr.get() == null)
@@ -135,13 +149,14 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         }
     }
 
-    protected static void closeStreams() {
+    protected static void closeStreams(Class<?> clazz) {
         Util.close(stdout.get());
         stdout.set(null);
         Util.close(stderr.get());
         stderr.set(null);
-        Util.close(tests.get());
-        tests.set(null);
+        // DataOutputStream output=tests.get(clazz);
+        // Util.close(output);
+        // tests.remove(clazz);
     }
 
     protected static void print(PrintStream out, String msg, String classname, String method_name) {
@@ -176,7 +191,8 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
             }
 
             synchronized(this) { // handle concurrent access by different threads, if test methods are run in parallel
-                test_case.writeTo(tests.get());
+                DataOutputStream output=tests.get(clazz);
+                test_case.writeTo(output);
             }
         }
         catch(Exception e) {
@@ -579,7 +595,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
             sb.append(statusToString(status)).append(" ").append(classname).append(".").append(name).append(" in ")
               .append(getTime()).append(" ms");
             if(failure_type != null)
-                sb.append("\n" + failure_type).append("msg=" + failure_msg).append("\n").append(stack_trace);
+                sb.append("\n" + failure_type).append(" msg=" + failure_msg).append("\n").append(stack_trace);
             return sb.toString();
         }
 

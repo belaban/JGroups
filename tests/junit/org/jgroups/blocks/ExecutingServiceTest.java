@@ -53,7 +53,7 @@ import org.testng.annotations.Test;
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ExecutingServiceTest extends ChannelTestBase {
-    protected static Log logger= LogFactory.getLog(ExecutingServiceTest.class);
+    protected static Log logger=null;
     protected ExposedExecutingProtocol exposedProtocol;
     
     protected JChannel c1, c2, c3;
@@ -62,6 +62,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
     
     @BeforeClass
     protected void init() throws Exception {
+        logger = LogFactory.getLog(ExecutingServiceTest.class);
         c1=createChannel(true, 3, "A");
         
         // Add the exposed executing protocol
