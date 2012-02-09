@@ -448,7 +448,7 @@ public class UtilTest {
         Assert.assertEquals(s2, s4);
     }
 
-    public static void writeAddress() throws Exception {
+    public static void testWriteAddress() throws Exception {
         Address a1=Util.createRandomAddress();
         Address a2=Util.createRandomAddress();
         Address a4=Util.createRandomAddress();
@@ -468,7 +468,7 @@ public class UtilTest {
         Assert.assertEquals(a4, Util.readAddress(dis));
     }
 
-    public static void writeNullAddress() throws Exception {
+    public static void testWriteNullAddress() throws Exception {
         Address a1=null;
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -567,7 +567,7 @@ public class UtilTest {
     }
 
 
-    public static String printBuffer(byte[] buf) {
+    static String printBuffer(byte[] buf) {
         StringBuilder sb=new StringBuilder();
         if(buf != null) {
             for(byte b: buf)

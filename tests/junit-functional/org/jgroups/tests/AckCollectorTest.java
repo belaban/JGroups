@@ -130,7 +130,7 @@ public class AckCollectorTest {
             }
         }.start();
         System.out.println("initial AckCollector: " + ac);
-        ac.waitForAllAcks(5000);
+        ac.waitForAllAcks(30000);
         System.out.println("new AckCollector: " + ac);
     }
 

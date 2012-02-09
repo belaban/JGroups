@@ -24,7 +24,7 @@ public class ConcurrentFlushTest extends ChannelTestBase {
         Util.close(c3, c2, c1);
     }
 
-    public boolean useBlocking() {
+    protected boolean useBlocking() {
         return true;
     }
 

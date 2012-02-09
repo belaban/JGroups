@@ -25,7 +25,7 @@ public class SeqnoComparatorTest {
     }
 
 
-    public static void compareDummyWithSeqnoRange() {
+    public static void testCompareDummyWithSeqnoRange() {
         Seqno s1=new Seqno(10, true), s2=new SeqnoRange(1, 100);
         assert comp.compare(s1, s2) == 0;
         s1=new Seqno(1, true);
@@ -40,7 +40,7 @@ public class SeqnoComparatorTest {
         assert comp.compare(s1, s2) == 1;
     }
 
-    public static void compareDummyWithSeqno() {
+    public static void testCompareDummyWithSeqno() {
         Seqno s1=new Seqno(10, true), s2=new Seqno(10);
         assert comp.compare(s1, s2) == 0;
 
@@ -50,7 +50,7 @@ public class SeqnoComparatorTest {
         assert comp.compare(s1, s2) == 1;
     }
 
-    public static void compareSeqnoRangeWithDummy() {
+    public static void testCompareSeqnoRangeWithDummy() {
         Seqno s1=new SeqnoRange(1, 100), s2=new Seqno(10, true);
         assert comp.compare(s1, s2) == 0;
         s2=new Seqno(1, true);
@@ -66,7 +66,7 @@ public class SeqnoComparatorTest {
     }
 
 
-    public static void compareSeqnoWithDummy() {
+    public static void testCompareSeqnoWithDummy() {
         Seqno s1=new Seqno(10), s2=new Seqno(10, true);
         assert comp.compare(s1, s2) == 0;
 

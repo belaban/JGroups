@@ -34,11 +34,11 @@ public class NAKACK_StressTest {
     static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK2.class);
 
 
-    public static void stressTest() {
+    public static void testStress() {
         start(NUM_THREADS, NUM_MSGS, false);
     }
 
-    public static void stressTestOOB() {
+    public static void testStressOOB() {
         start(NUM_THREADS, NUM_MSGS, true);
     }
 
