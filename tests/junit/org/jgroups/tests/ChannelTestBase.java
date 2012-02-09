@@ -5,26 +5,23 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.FLUSH;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.ResourceManager;
-import org.jgroups.util.Util;
 import org.jgroups.util.StackType;
+import org.jgroups.util.Util;
 import org.testng.AssertJUnit;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.InetAddress;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -46,11 +43,12 @@ public class ChannelTestBase {
 
     private String bind_addr = null;
 
-    protected final Log log = LogFactory.getLog(this.getClass());
+    protected Log log;
 
     @BeforeClass
     @Parameters(value = { "channel.conf", "use_blocking" })
     protected void initializeBase(@Optional("udp.xml") String chconf, @Optional("false") String use_blocking) throws Exception {
+        log=LogFactory.getLog(this.getClass());
         Test annotation = this.getClass().getAnnotation(Test.class);
         // this should never ever happen!
         if (annotation == null)

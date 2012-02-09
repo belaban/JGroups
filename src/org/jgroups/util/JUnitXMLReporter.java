@@ -1,8 +1,6 @@
 package org.jgroups.util;
 
-import org.testng.ITestContext;
-import org.testng.ITestListener;
-import org.testng.ITestResult;
+import org.testng.*;
 
 import java.io.*;
 import java.util.*;
@@ -13,7 +11,7 @@ import java.util.*;
  * 
  * @author Bela Ban
  */
-public class JUnitXMLReporter implements ITestListener {
+public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 {
     protected String output_dir=null;
 
     protected static final String XML_DEF="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
@@ -68,20 +66,7 @@ public class JUnitXMLReporter implements ITestListener {
 
     /* Invoked at the start of each test method in a test class */
     public void onTestStart(ITestResult result) {
-        String test_name=result.getTestClass().getName();
-        File dir=new File(output_dir + File.separator + test_name);
-        if(!dir.exists())
-            dir.mkdirs();
-        File _tests=new File(dir, TESTS), _stdout=new File(dir, STDOUT), _stderr=new File(dir, STDERR);
-        try {
-            tests.set(new DataOutputStream(new FileOutputStream(_tests, true)));
-            stdout.set(new PrintStream(new FileOutputStream(_stdout, true)));
-            stderr.set(new PrintStream(new FileOutputStream(_stderr, true)));
-            stdout.get().println("\n\n------------- " + getMethodName(result) + " -----------");
-        }
-        catch(IOException e) {
-            error(e.toString());
-        }
+        setupStreams(result, true);
     }
 
 
@@ -92,35 +77,75 @@ public class JUnitXMLReporter implements ITestListener {
 
 
     public void onTestFailedButWithinSuccessPercentage(ITestResult tr) {
-        onTestCompleted(tr,"OK:   ",old_stdout);
+        onTestCompleted(tr, "OK:   ",old_stdout);
     }
 
     /** Invoked each time a test method fails */
     public void onTestFailure(ITestResult tr) {
-        onTestCompleted(tr,"FAIL: ",old_stderr);
+        onTestCompleted(tr, "FAIL: ",old_stderr);
     }
 
     /** Invoked each time a test method is skipped */
     public void onTestSkipped(ITestResult tr) {
-        onTestCompleted(tr,"SKIP: ",old_stderr);
+        onTestCompleted(tr, "SKIP: ",old_stderr);
     }
 
-    public String toString() {
-        return "bla";
+    public void beforeConfiguration(ITestResult tr) {
+        setupStreams(tr, false);
     }
+
+    public void onConfigurationSuccess(ITestResult tr) {
+
+    }
+
+    public void onConfigurationFailure(ITestResult tr) {
+        error("failed config: " + tr.getThrowable());
+        onTestCompleted(tr, "FAIL: ", old_stderr);
+    }
+
+    public void onConfigurationSkip(ITestResult tr) {
+    }
+
 
     protected void onTestCompleted(ITestResult tr, String message, PrintStream out) {
         Class<?> real_class=tr.getTestClass().getRealClass();
         addTest(real_class, tr);
         print(out, message , real_class.getName(), getMethodName(tr));
-        stdout.get().close();
-        stderr.get().close();
-        Util.close(tests.get());
+        closeStreams();
     }
 
+    protected void setupStreams(ITestResult result, boolean printMethodName) {
+        String test_name=result.getTestClass().getName();
+        File dir=new File(output_dir + File.separator + test_name);
+        if(!dir.exists())
+            dir.mkdirs();
+        File _tests=new File(dir, TESTS), _stdout=new File(dir, STDOUT), _stderr=new File(dir, STDERR);
+        try {
+            if(tests.get() == null)
+                tests.set(new DataOutputStream(new FileOutputStream(_tests, true)));
+            if(stdout.get() == null)
+                stdout.set(new PrintStream(new FileOutputStream(_stdout, true)));
+            if(stderr.get() == null)
+                stderr.set(new PrintStream(new FileOutputStream(_stderr, true)));
+            if(printMethodName)
+                stdout.get().println("\n\n------------- " + getMethodName(result) + " -----------");
+        }
+        catch(IOException e) {
+            error(e.toString());
+        }
+    }
+
+    protected static void closeStreams() {
+        Util.close(stdout.get());
+        stdout.set(null);
+        Util.close(stderr.get());
+        stderr.set(null);
+        Util.close(tests.get());
+        tests.set(null);
+    }
 
     protected static void print(PrintStream out, String msg, String classname, String method_name) {
-        out.println(msg + "[" + Thread.currentThread().getId() + "] " + classname + "."  + method_name + "()");
+        out.println(msg + "[" + Thread.currentThread().getId() + "] " + classname + "." + method_name + "()");
     }
 
     protected void error(String msg) {
@@ -146,7 +171,7 @@ public class JUnitXMLReporter implements ITestListener {
                         test_case.setFailure(failure_type, failure_msg, stack_trace);
                     }
                     else
-                        test_case.setFailure("SKIP", null, null);
+                        test_case.setFailure("exception", "SKIPPED", null);
                     break;
             }
 
@@ -163,8 +188,13 @@ public class JUnitXMLReporter implements ITestListener {
         String method_name=tr.getName();
         Object[] params=tr.getParameters();
         if(params != null && params.length > 0) {
-            String tmp=params[0] != null? params[0].getClass().getSimpleName() : null;
-            method_name=method_name + "-" + tmp;
+            String tmp=null;
+            if(params[0] instanceof Class<?>)
+                tmp=((Class<?>)params[0]).getSimpleName();
+            else if(params[0] != null)
+                tmp=params[0].getClass().getSimpleName();
+            if(tmp != null)
+                method_name=method_name + "-" + tmp;
         }
         return method_name;
     }
@@ -250,15 +280,13 @@ public class JUnitXMLReporter implements ITestListener {
         try {
             out.write(XML_DEF + "\n");
 
-            out.write("\n<testsuite " + " failures=\""
-                      + num_failures
-                      + "\" errors=\""
-                      + num_errors
-                      + "\" skips=\""
-                      + num_skips
-                      + "\" name=\""
-                      + classname);
-            out.write("\" tests=\"" + results.size() + "\" time=\"" + (total_time / 1000.0) + "\">");
+            out.write("\n<testsuite "
+                        + "name=\""   + classname + "\" "
+                        + "tests=\""  + results.size() + "\" "
+                        + "failures=\"" + num_failures + "\" "
+                        + "errors=\"" + num_errors + "\" "
+                        + "skips=\""  + num_skips + "\" "
+                        + "time=\""    + (total_time / 1000.0) + "\">");
 
             out.write("\n<properties>");
             Properties props=System.getProperties();
@@ -500,6 +528,8 @@ public class JUnitXMLReporter implements ITestListener {
 
         protected synchronized void append(String x, boolean newline) {
             PrintStream tmp=type == 1? stdout.get() : stderr.get();
+            if(tmp == null)
+                return;
             if(newline)
                 tmp.println(x);
             else
@@ -509,7 +539,7 @@ public class JUnitXMLReporter implements ITestListener {
 
     public static void main(String[] args) throws IOException {
         JUnitXMLReporter reporter=new JUnitXMLReporter();
-        reporter.output_dir="/home/bela/JGroups/tmp/test-results/xml/tcp";
+        reporter.output_dir="/home/bela/JGroups/tmp/test-results/xml/udp";
         reporter.generateReports();
     }
 
