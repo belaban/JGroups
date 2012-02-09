@@ -55,7 +55,7 @@ public class UNICAST_Test {
     }
 
     @DataProvider
-    public static Object[][] configProvider() {
+    static Object[][] configProvider() {
         return new Object[][]{
           {new UNICAST()},{new UNICAST2()}
         };

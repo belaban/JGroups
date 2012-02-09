@@ -117,7 +117,7 @@ public class UNICAST_ContentionTest {
     }
 
     @DataProvider
-    public static Object[][] provider() {
+    static Object[][] provider() {
         return new Object[][] {
                 {unicast_props},
                 {unicast2_props}
