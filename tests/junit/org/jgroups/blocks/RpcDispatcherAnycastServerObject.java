@@ -29,7 +29,7 @@ public class RpcDispatcherAnycastServerObject extends ReceiverAdapter {
         // vector is unmodifiable
         List<Address> v=new ArrayList<Address>(c.getView().getMembers());
         if(excludeSelf) v.remove(c.getAddress());
-        RspList rsps=d.callRemoteMethods(v, "doSomething", new Object[]{}, new Class[]{}, new RequestOptions(ResponseMode.GET_ALL, 10000, useAnycast));
+        RspList rsps=d.callRemoteMethods(v, "doSomething", new Object[]{}, new Class[]{}, new RequestOptions(ResponseMode.GET_ALL, 20000, useAnycast));
         Map.Entry entry;
         for(Iterator it=rsps.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
