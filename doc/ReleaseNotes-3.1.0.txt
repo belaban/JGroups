@@ -27,7 +27,7 @@ NAKACK2
 [https://issues.jboss.org/browse/JGRP-1402]
 
 Successor to NAKACK (which will get phased out over the next couple of releases). The 2 biggest changes are:
-- A new memory efficient data structure (Table<Message>) is used as to hold messages to be retransmitted. It
+- A new memory efficient data structure (Table<Message>) is used to hold messages to be retransmitted. It
   can grow and shrink dynamically, and replaces NakReceiverWindow.
 - There is no Retransmitter associated with each table, and we don't create an entry *per* missing sequence number
   (seqno) or seqno range. Instead, we have *one* single retransmission task, which periodically (xmit_interval ms)
