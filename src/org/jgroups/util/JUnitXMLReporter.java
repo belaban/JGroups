@@ -117,7 +117,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         Class<?> real_class=tr.getTestClass().getRealClass();
         addTest(real_class,tr);
         print(out,message,real_class.getName(),getMethodName(tr));
-        closeStreams(real_class);
+        closeStreams();
     }
 
     protected void setupStreams(ITestResult result, boolean printMethodName) {
@@ -149,14 +149,11 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         }
     }
 
-    protected static void closeStreams(Class<?> clazz) {
+    protected static void closeStreams() {
         Util.close(stdout.get());
         stdout.set(null);
         Util.close(stderr.get());
         stderr.set(null);
-        // DataOutputStream output=tests.get(clazz);
-        // Util.close(output);
-        // tests.remove(clazz);
     }
 
     protected static void print(PrintStream out, String msg, String classname, String method_name) {
@@ -271,8 +268,12 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         File parent=dir.getParentFile();
         File xml_file=new File(parent, "TESTS-" + dir.getName() + "-" + parent.getName() + ".xml");
         Writer out=new FileWriter(xml_file);
+        String classname=dir.getName();
+        String suffix=parent.getName();
+        if(suffix != null && suffix.length() > 0)
+            classname=classname + "-" + suffix;
         try {
-            generateReport(out, dir.getName(), test_cases, stdout_reader, stderr_reader);
+            generateReport(out, classname, test_cases, stdout_reader, stderr_reader);
         }
         finally {
             out.close();
