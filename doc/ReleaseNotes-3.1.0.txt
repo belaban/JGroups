@@ -1,0 +1,191 @@
+
+
+Release Notes JGroups 3.1.0
+===========================
+
+
+Author: Bela Ban
+
+*************************************************************************
+!! JGroups 3.1.0 is *not* API-backwards compatible with 2.x.x releases !!
+!! JGroups 3.1.0 is       API-backwards compatible with 3.0.x releases !!
+*************************************************************************
+
+
+Below is a summary (with links to the detailed description) of the major new features, optimizations and bug fixes.
+
+
+
+
+New features
+============
+
+
+NAKACK2
+-------
+[https://issues.jboss.org/browse/JGRP-1396]
+[https://issues.jboss.org/browse/JGRP-1402]
+
+Successor to NAKACK (which will get phased out over the next couple of releases). The 2 biggest changes are:
+- A new memory efficient data structure (Table<Message>) is used as to hold messages to be retransmitted. It
+  can grow and shrink dynamically, and replaces NakReceiverWindow.
+- There is no Retransmitter associated with each table, and we don't create an entry *per* missing sequence number
+  (seqno) or seqno range. Instead, we have *one* single retransmission task, which periodically (xmit_interval ms)
+  scans through *all* tables, identifies gaps and triggers retransmission for missing messages. This is a significant
+  code simplification and brings memory consumption down when we have missing messages.
+
+
+UNICAST2: switch from NakReceiverWindow to Table
+------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1417]
+
+This is the same as JGRP-1396 above: NakReceiverWindow was replaced with Table<Message> and instead of a retransmitter
+per member, we now have *one* retransmitter task for *all* members.
+
+
+UNICAST: switch from AckSenderWindow / AckReceiverWindow to Table
+-----------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1419]
+
+Similarly to NAKACK2 and UNICAST2, both AckSenderWindow and AckReceiverWindow were replaced by Table, plus we only have
+*one* retransmission task for all members.
+The sender places messages into a Table<Message> and has a retransmission task for all members which periodically scans
+through all sender windows and resends *all* messages to their destinations. When an ACK is received for a given message,
+all messages below and including that message are removed.
+The receiver adds the messages to the table and then delivers as many messages as possible to the application. After
+that it sends an ACK for the highest message delivered.
+
+
+The changes in NAKACK2, UNICAST2 and UNICAST have several benefits:
+- Code simplification: having only one data structure (Table<Message>) instead of several ones (NakReceiverWindow,
+  AckSenderWindow, AckReceiverWindow), plus removing all Retransmitter implementations leads to simpler code.
+- Code reduction: several classes can be removed, making the code base simpler to understand, and reducing complexity
+- Better maintainability: Table<Message> is now an important core data structure, and improvements to it will affect
+  many parts of JGroups
+- Smaller memory footprint: especially for larger clusters, having fewer per-member data (e.g. retransmission tasks)
+  should lead to better scalability in large clusters (e.g. 1000 nodes).
+- Smooth transition: we'll leave NAKACK (and therefore NakReceiverWindow and Retransmitter) in JGroups for some releases.
+  NAKACK / NakReceiverWindow have served JGroups well for over a decade, and are battle-tested. When there is an issue
+  with NAKACK2 / Table in production, we can always fall back to NAKACK. I intend to phase out NAKACK after some
+  releases and a good amount of time spent in production around the world, to be sure NAKACK2 works well.
+
+
+
+MERGE3: better merging in large clusters
+----------------------------------------
+[https://issues.jboss.org/browse/JGRP-1387]
+
+Merging is frequent in large clusters. MERGE3 handles merging in large clusters better by
+- preventing (or reducing the chances of) concurrent merges
+- reducing traffic caused by merging
+- disseminating {UUID/physical address/logical name} information, so every node has this information, reducing the
+  number of times we need to ask for it explicitly
+
+MERGE3 was written with UDP as transport in mind (which is the transport recommended for large clusters anyway), but it
+also works with TCP.
+
+
+
+Synchronous messages
+--------------------
+[https://issues.jboss.org/browse/JGRP-1389]
+
+Synchronous messages block the sender until the receiver or receivers have ack'ed its delivery. This allows for
+'partial flushing' in the sense that all messages sent by a member P prior to M will get delivered at
+all receivers before delivering M.
+This is related to FLUSH, but less costly and can be done per message. For example, if a unit of work is done, a sender
+could send an RSVP tagged message M and would be sure that - after the send() returns - all receivers have delivered M.
+
+To send an RSVP marked messages, Message.setFlag(Message.Flag.RSVP) has to be used.
+
+A new protocol (RSVP) needs to be added to the stack.
+
+
+
+New Rackspace based discovery protocol
+--------------------------------------
+[https://issues.jboss.org/browse/JGRP-1226]
+
+Contributed by Gustavo Fernandes (thanks !). New discovery protocol using Rackspace's distributed store.
+
+
+
+MPerf / UPerf: dynamic performance tests
+----------------------------------------
+[https://issues.jboss.org/browse/JGRP-1399]
+
+MPerf and UPerf are dynamic in the sense that they can be started on different nodes, and each instance will fetch the
+configuration (e.g. message size, number of senders, number of messages to send etc) from the coordinator. Any
+configuration change is broadcast to all members, so we don't need to restart them.
+MPerf is for multicast (= cluster wide messages) tests (successor to perf.Test) and UPerf tests unicasting.
+
+
+
+
+
+Optimizations
+=============
+
+
+Concurrent joining to a non-existing cluster
+--------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1393]
+
+This reduces changes of merging as it takes more discovery responses into account.
+
+
+TP: reduce "no physical address for X; dropping message" warnings
+-----------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1422]
+
+This warning could be emitted when discovery didn't get all responses; the main reason was that discovery returned
+after num_initial_members responses were received, but if that value was less than the cluster size, we wouldn't get
+all responses and had to get the IP address (when not present) for P at the time of sending a message to P.
+
+
+Replaced MessageDispatcher.cast() with a non-blocking algorithm
+---------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1414]
+
+This removes contention on a lock() acquired by cast() when multiple threads are invoking cast() concurrently.
+Note that this also affects RpcDispatcher.
+
+
+
+
+Bug fixes
+=========
+
+DefaultSocketFactory: failed socket creations lead to socket leaks
+------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1420]
+
+Especially important with TCPPING and static list of hosts that cannot be connected to.
+
+
+Global ThreadGroups not destroyed; leaks in web based applications
+------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1410]
+
+The global (static) ThreadGroup was pulled into JChannel, making its lifetime congruent with the JChannel.
+
+
+
+Manual
+======
+
+The 3.x manual is at http://www.jgroups.org/manual-3.x/html/index.html.
+The 2.x manual is at http://www.jgroups.org/manual/html/index.html.
+
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Toronto, Canada
+Sanne Grinovero, Newcastle, Great Britain
+
+Feb 2012
+
