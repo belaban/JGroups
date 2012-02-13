@@ -7,25 +7,25 @@ import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.Util;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.util.Map;
 
 /**
  * @author Paul Ferraro
  */
-@Test(groups=Global.STACK_DEPENDENT)
+@Test(groups={Global.STACK_DEPENDENT},sequential=true)
 public class MuxRpcDispatcherTest extends ChannelTestBase {
 
-    private JChannel[] channels = new JChannel[2];
+    private JChannel[]        channels = null;
+    private RpcDispatcher[]   dispatchers  = null;
+    private RpcDispatcher[][] muxDispatchers = null;
 
-    private RpcDispatcher[] dispatchers  = new RpcDispatcher[2];
-    private RpcDispatcher[][] muxDispatchers = new RpcDispatcher[2][2];
-
-    @BeforeClass
+    @BeforeMethod
     void setUp() throws Exception {
+        channels       = new JChannel[2];
+        dispatchers    = new RpcDispatcher[2];
+        muxDispatchers = new RpcDispatcher[2][2];
 
         channels[0] = createChannel(true, 2, "A");
         channels[1] = createChannel(channels[0], "B");
@@ -48,79 +48,15 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
         Util.waitUntilAllChannelsHaveSameSize(10000, 1000, channels);
     }
 
-    @AfterClass
+    @AfterMethod
     void tearDown() throws Exception {
         for (int i = 0; i < dispatchers.length; ++i) {
-            channels[i].disconnect();
-            channels[i].close();
             dispatchers[i].stop();
-            
-            for (int j = 0; j < muxDispatchers[i].length; ++j) {
+            for (int j = 0; j < muxDispatchers[i].length; ++j)
                 muxDispatchers[i][j].stop();
-            }
         }
-    }
-
-    public void testMulticastRPCs() throws Exception {
-        MethodCall method = new MethodCall("getName", new Object[0], new Class[0]);
-        RequestOptions options=RequestOptions.SYNC().setTimeout(30000);
-        
-        // Validate normal dispatchers
-        Map<Address, Rsp<String>> responses = dispatchers[0].callRemoteMethods(null, method, options);
-        Assert.assertEquals(responses.size(), 2);
-        
-        for (int i = 0; i < dispatchers.length; ++i)
-            verifyResponse(responses, channels[i], "dispatcher[" + i + "]");
-
-        // Validate muxed dispatchers
-        for (int j = 0; j < muxDispatchers[0].length; ++j) {
-            responses = muxDispatchers[0][j].callRemoteMethods(null, method, options);
-            Assert.assertEquals(responses.size(), 2);
-            for (int i = 0; i < dispatchers.length; ++i)
-                verifyResponse(responses, channels[i], "muxDispatcher[" + i + "][" + j + "]");
-        }
-        
-        // Validate muxed rpc dispatchers w/filter
-        final Address address = channels[0].getAddress();
-        
-        RspFilter filter = new RspFilter() {
-            public boolean isAcceptable(Object response, Address sender) {
-                return !sender.equals(address);
-            }
-            public boolean needMoreResponses() {
-                return true;
-            }
-        };
-        
-        responses = muxDispatchers[0][0].callRemoteMethods(null,method,RequestOptions.SYNC().setTimeout(30000).setRspFilter(filter));
-
-        Assert.assertEquals(responses.size(), 2);
-        verifyResponse(responses, channels[0], null);
-        verifyResponse(responses, channels[1], "muxDispatcher[1][0]");
-        
-        // Validate stopped mux dispatcher response is auto-filtered
-        muxDispatchers[1][0].stop();
-        
-        responses = muxDispatchers[0][0].callRemoteMethods(null, method, options.setTimeout(2000));
-        Assert.assertEquals(responses.size(), 2);
-        verifyResponse(responses, channels[0], "muxDispatcher[0][0]");
-        verifyResponse(responses, channels[1], null);
-        
-        // Validate stopped mux dispatcher response is auto-filtered and custom filter is applied
-        responses = muxDispatchers[0][0].callRemoteMethods(null,method,RequestOptions.SYNC().setTimeout(2000).setRspFilter(filter));
-
-        Assert.assertEquals(responses.size(), 2);
-        verifyResponse(responses, channels[0], null);
-        verifyResponse(responses, channels[1], null);
-        
-        // Validate restarted mux dispatcher functions normally
-        muxDispatchers[1][0].start();
-        
-        responses = muxDispatchers[0][0].callRemoteMethods(null, method, options.setTimeout(30000));
-
-        Assert.assertEquals(responses.size(), 2);
-        verifyResponse(responses, channels[0], "muxDispatcher[0][0]");
-        verifyResponse(responses, channels[1], "muxDispatcher[1][0]");
+        for(JChannel ch: channels)
+            Util.close(ch);
     }
 
 
@@ -173,6 +109,69 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
 
         Assert.assertEquals(response, "muxDispatcher[1][0]");
     }
+
+    public void testMulticastRPCs() throws Exception {
+        MethodCall method = new MethodCall("getName", new Object[0], new Class[0]);
+        RequestOptions options=RequestOptions.SYNC().setTimeout(30000);
+
+        // Validate normal dispatchers
+        Map<Address, Rsp<String>> responses = dispatchers[0].callRemoteMethods(null, method, options);
+        Assert.assertEquals(responses.size(), 2);
+
+        for (int i = 0; i < dispatchers.length; ++i)
+            verifyResponse(responses, channels[i], "dispatcher[" + i + "]");
+
+        // Validate muxed dispatchers
+        for (int j = 0; j < muxDispatchers[0].length; ++j) {
+            responses = muxDispatchers[0][j].callRemoteMethods(null, method, options);
+            Assert.assertEquals(responses.size(), 2);
+            for (int i = 0; i < dispatchers.length; ++i)
+                verifyResponse(responses, channels[i], "muxDispatcher[" + i + "][" + j + "]");
+        }
+
+        // Validate muxed rpc dispatchers w/filter
+        final Address address = channels[0].getAddress();
+
+        RspFilter filter = new RspFilter() {
+            public boolean isAcceptable(Object response, Address sender) {
+                return !sender.equals(address);
+            }
+            public boolean needMoreResponses() {
+                return true;
+            }
+        };
+
+        responses = muxDispatchers[0][0].callRemoteMethods(null,method,RequestOptions.SYNC().setTimeout(30000).setRspFilter(filter));
+
+        Assert.assertEquals(responses.size(), 2);
+        verifyResponse(responses, channels[0], null);
+        verifyResponse(responses, channels[1], "muxDispatcher[1][0]");
+
+        // Validate stopped mux dispatcher response is auto-filtered
+        muxDispatchers[1][0].stop();
+
+        responses = muxDispatchers[0][0].callRemoteMethods(null, method, options.setTimeout(2000));
+        Assert.assertEquals(responses.size(), 2);
+        verifyResponse(responses, channels[0], "muxDispatcher[0][0]");
+        verifyResponse(responses, channels[1], null);
+
+        // Validate stopped mux dispatcher response is auto-filtered and custom filter is applied
+        responses = muxDispatchers[0][0].callRemoteMethods(null,method,RequestOptions.SYNC().setTimeout(2000).setRspFilter(filter));
+
+        Assert.assertEquals(responses.size(), 2);
+        verifyResponse(responses, channels[0], null);
+        verifyResponse(responses, channels[1], null);
+
+        // Validate restarted mux dispatcher functions normally
+        muxDispatchers[1][0].start();
+
+        responses = muxDispatchers[0][0].callRemoteMethods(null, method, options.setTimeout(30000));
+
+        Assert.assertEquals(responses.size(), 2);
+        verifyResponse(responses, channels[0], "muxDispatcher[0][0]");
+        verifyResponse(responses, channels[1], "muxDispatcher[1][0]");
+    }
+
 
     private static void verifyResponse(Map<Address,Rsp<String>> responses, Channel channel, Object expected) {
         Rsp<?> response = responses.get(channel.getAddress());
