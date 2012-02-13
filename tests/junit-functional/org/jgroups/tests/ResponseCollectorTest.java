@@ -16,7 +16,8 @@ import java.util.Map;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class ResponseCollectorTest {
-    static final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress();
+    static final Address a=Util.createRandomAddress("A"),
+      b=Util.createRandomAddress("B"), c=Util.createRandomAddress("C");
 
 
     public static void testAdd() {

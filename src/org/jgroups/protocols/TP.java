@@ -1769,7 +1769,7 @@ public abstract class TP extends Protocol {
         int                                num_msgs=0;
         @GuardedBy("lock")
         int                                num_bundling_tasks=0;
-        long                               last_bundle_time;
+        long                               last_bundle_time; // in nanoseconds
         final ReentrantLock                lock=new ReentrantLock();
         final Log                          log=LogFactory.getLog(getClass());
 
@@ -1819,7 +1819,7 @@ public abstract class TP extends Protocol {
             SingletonAddress dest=new SingletonAddress(cluster_name, dst);
 
             if(msgs.isEmpty())
-                last_bundle_time=System.currentTimeMillis();
+                last_bundle_time=System.nanoTime();
             List<Message> tmp=msgs.get(dest);
             if(tmp == null) {
                 tmp=new LinkedList<Message>();
@@ -1837,13 +1837,13 @@ public abstract class TP extends Protocol {
          */
         private void sendBundledMessages(final Map<SingletonAddress,List<Message>> msgs) {
             if(log.isTraceEnabled()) {
-                long stop=System.currentTimeMillis();
                 double percentage=100.0 / max_bundle_size * count;
                 StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
                 num_msgs=0;
                 sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size)");
                 if(last_bundle_time > 0) {
-                    sb.append(", collected in ").append(stop-last_bundle_time).append("ms) ");
+                    long diff=(System.nanoTime() - last_bundle_time) / 1000000;
+                    sb.append(", collected in ").append(diff).append("ms) ");
                 }
                 sb.append(" to ").append(msgs.size()).append(" destination(s)");
                 if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");

@@ -81,7 +81,7 @@ public class PromiseTest {
         };
         t.start();
         long start=System.currentTimeMillis(), stop;
-        Object result=p.getResult(100000);
+        Object result=p.getResult(30000);
         stop=System.currentTimeMillis();
         System.out.println("-- waited for " + (stop-start) + "ms, result is " + result);
         assert result != null;

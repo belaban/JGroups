@@ -4,6 +4,7 @@ import org.jgroups.annotations.GuardedBy;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -46,11 +47,11 @@ public class Table<T> {
     /** The highest delivered (= removed) seqno */
     protected long                 hd;
 
-    /** Time (in ms) after which a compaction should take place. 0 disables compaction */
-    protected long                 max_compaction_time=DEFAULT_MAX_COMPACTION_TIME;
+    /** Time (in nanoseconds) after which a compaction should take place. 0 disables compaction */
+    protected long                 max_compaction_time=TimeUnit.NANOSECONDS.convert(DEFAULT_MAX_COMPACTION_TIME, TimeUnit.MILLISECONDS);
 
     /** The time when the last compaction took place. If a {@link #compact()} takes place and sees that the
-     * last compaction is more than max_compaction_time ms ago, a compaction will take place */
+     * last compaction is more than max_compaction_time nanoseconds ago, a compaction will take place */
     protected long                 last_compaction_timestamp=0;
 
     protected final Lock           lock=new ReentrantLock();
@@ -59,7 +60,7 @@ public class Table<T> {
 
     protected int                  num_compactions=0, num_resizes=0, num_moves=0, num_purges=0;
     
-    protected static final long    DEFAULT_MAX_COMPACTION_TIME=10000;
+    protected static final long    DEFAULT_MAX_COMPACTION_TIME=10000; // in milliseconds
 
     protected static final double  DEFAULT_RESIZE_FACTOR=1.2;
 
@@ -100,12 +101,20 @@ public class Table<T> {
         this(num_rows,elements_per_row, offset, resize_factor, DEFAULT_MAX_COMPACTION_TIME);
     }
 
+    /**
+     * Creates a new table
+     * @param num_rows the number of rows in the matrix
+     * @param elements_per_row the number of messages per row.
+     * @param offset the seqno before the first seqno to be inserted. E.g. if 0 then the first seqno will be 1
+     * @param resize_factor teh factor with which to increase the number of rows
+     * @param max_compaction_time the max time in milliseconds after we attempt a compaction
+     */
     @SuppressWarnings("unchecked")
     public Table(int num_rows, int elements_per_row, long offset, double resize_factor, long max_compaction_time) {
         this.num_rows=num_rows;
         this.elements_per_row=elements_per_row;
         this.resize_factor=resize_factor;
-        this.max_compaction_time=max_compaction_time;
+        this.max_compaction_time=TimeUnit.NANOSECONDS.convert(max_compaction_time, TimeUnit.MILLISECONDS);
         this.offset=this.low=this.hr=this.hd=offset;
         matrix=(T[][])new Object[num_rows][];
         if(resize_factor <= 1)
@@ -132,7 +141,9 @@ public class Table<T> {
     public long getHighestDelivered()    {return hd;}
     public long getHighestReceived()     {return hr;}
     public long getMaxCompactionTime()   {return max_compaction_time;}
-    public void setMaxCompactionTime(long max_compaction_time) {this.max_compaction_time=max_compaction_time;}
+    public void setMaxCompactionTime(long max_compaction_time) {
+        this.max_compaction_time=TimeUnit.NANOSECONDS.convert(max_compaction_time, TimeUnit.MILLISECONDS);
+    }
     public int getNumRows()              {return matrix.length;}
     public void resetStats()             {num_compactions=num_moves=num_resizes=num_purges=0;}
 
@@ -357,14 +368,14 @@ public class Table<T> {
             if(max_compaction_time <= 0) // see if compaction should be triggered
                 return;
 
-            long current_time=System.currentTimeMillis();
+            long current_time=System.nanoTime();
             if(last_compaction_timestamp > 0) {
                 if(current_time - last_compaction_timestamp >= max_compaction_time) {
                     _compact();
                     last_compaction_timestamp=current_time;
                 }
             }
-            else
+            else // the first time we don't do a compaction
                 last_compaction_timestamp=current_time;
         }
         finally {

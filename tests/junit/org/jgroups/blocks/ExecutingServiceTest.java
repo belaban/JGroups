@@ -68,7 +68,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         // Add the exposed executing protocol
         ProtocolStack stack=c1.getProtocolStack();
         exposedProtocol = new ExposedExecutingProtocol();
-        exposedProtocol.setLevel("trace");
+        exposedProtocol.setLevel("debug");
         stack.insertProtocolAtTop(exposedProtocol);
         
         er1=new ExecutionRunner(c1);
@@ -82,7 +82,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         er3=new ExecutionRunner(c3);
         c3.connect("ExecutionServiceTest");
         
-        LogFactory.getLog(ExecutionRunner.class).setLevel("trace");
+        LogFactory.getLog(ExecutionRunner.class).setLevel("debug");
     }
     
     @AfterClass

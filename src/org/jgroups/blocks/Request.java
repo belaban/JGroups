@@ -34,7 +34,7 @@ public abstract class Request implements RspCollector, NotifyingFuture {
     /** Is set as soon as the request has received all required responses */
     protected final Condition         completed=lock.newCondition();
 
-    protected final  Message          request_msg;
+    protected final Message           request_msg;
     protected final RequestCorrelator corr;         // either use RequestCorrelator or ...
 
     protected final RequestOptions    options;
@@ -170,7 +170,7 @@ public abstract class Request implements RspCollector, NotifyingFuture {
 
     /** This method runs with lock locked (called by <code>execute()</code>). */
     @GuardedBy("lock")
-    protected boolean responsesComplete(long timeout) throws InterruptedException {
+    protected boolean responsesComplete(final long timeout) throws InterruptedException {
         if(timeout <= 0) {
             while(!done) { /* Wait for responses: */
                 if(responsesComplete()) {
@@ -180,30 +180,29 @@ public abstract class Request implements RspCollector, NotifyingFuture {
                 }
                 completed.await();
             }
-            return responsesComplete();
         }
         else {
-            long start_time=System.currentTimeMillis();
-            long timeout_time=start_time + timeout;
-            while(timeout > 0 && !done) { /* Wait for responses: */
+            long wait_time=TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
+            long target_time=System.nanoTime() + wait_time;
+            while(wait_time > 0 && !done) { /* Wait for responses: */
                 if(responsesComplete()) {
                     if(corr != null)
                         corr.done(req_id);
                     return true;
                 }
-                timeout=timeout_time - System.currentTimeMillis();
-                if(timeout > 0) {
-                    completed.await(timeout, TimeUnit.MILLISECONDS);
+                wait_time=target_time - System.nanoTime();
+                if(wait_time > 0) {
+                    completed.await(wait_time, TimeUnit.NANOSECONDS);
                 }
             }
             if(corr != null)
                 corr.done(req_id);
-            return responsesComplete();
         }
+        return responsesComplete();
     }
 
     @GuardedBy("lock")
-    protected boolean waitForResults(long timeout)  {
+    protected boolean waitForResults(final long timeout)  {
         if(timeout <= 0) {
             while(true) { /* Wait for responses: */
                 if(responsesComplete())
@@ -212,32 +211,19 @@ public abstract class Request implements RspCollector, NotifyingFuture {
             }
         }
         else {
-            long start_time=System.currentTimeMillis();
-            long timeout_time=start_time + timeout;
-            while(timeout > 0) { /* Wait for responses: */
+            long wait_time=TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
+            long target_time=System.nanoTime() + wait_time;
+            while(wait_time > 0) { /* Wait for responses: */
                 if(responsesComplete())
                     return true;
-                timeout=timeout_time - System.currentTimeMillis();
-                if(timeout > 0) {
-                    try {completed.await(timeout, TimeUnit.MILLISECONDS);} catch(Exception e) {}
+                wait_time=target_time - System.nanoTime();
+                if(wait_time > 0) {
+                    try {completed.await(wait_time, TimeUnit.NANOSECONDS);} catch(Exception e) {}
                 }
             }
             return false;
         }
     }
-
-
-
-    /*public static String modeToString(int m) {
-        switch(m) {
-            case GET_FIRST: return "GET_FIRST";
-            case GET_ALL: return "GET_ALL";
-            case GET_MAJORITY: return "GET_MAJORITY";
-            case GET_ABS_MAJORITY: return "GET_ABS_MAJORITY";
-            case GET_NONE: return "GET_NONE";
-            default: return "<unknown> (" + m + ")";
-        }
-    }*/
 
 
 }
