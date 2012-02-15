@@ -251,7 +251,7 @@ public class MPerf extends ReceiverAdapter {
         MPerfHeader hdr=(MPerfHeader)msg.getHeader(ID);
         switch(hdr.type) {
             case MPerfHeader.DATA:
-                handleData(msg.getSrc(), msg.getLength(), hdr.seqno);
+                handleData(msg.getSrc(), msg.getLength(), hdr.seqno, num_threads == 1);
                 break;
 
             case MPerfHeader.START_SENDING:
@@ -361,7 +361,7 @@ public class MPerf extends ReceiverAdapter {
         }
     }
 
-    protected void handleData(Address src, int length, long seqno) {
+    protected void handleData(Address src, int length, long seqno, boolean check_order) {
         if(length == 0)
             return;
         Stats result=received_msgs.get(src);
@@ -371,7 +371,7 @@ public class MPerf extends ReceiverAdapter {
             if(tmp != null)
                 result=tmp;
         }
-        result.addMessage(seqno);
+        result.addMessage(seqno, check_order);
 
         if(last_interval == 0)
             last_interval=System.currentTimeMillis();
@@ -640,10 +640,16 @@ public class MPerf extends ReceiverAdapter {
         public void    stop() {stop=System.currentTimeMillis();}
         public boolean isDone() {return stop > 0;}
 
-        public void addMessage(long seqno) {
+        /**
+         * Adds the message and checks whether the messages are received in FIFO order. If we have multiple threads
+         * (check_order=false), then this check canot be performed
+         * @param seqno
+         * @param check_order
+         */
+        public void addMessage(long seqno, boolean check_order) {
             if(start == 0)
                 start=System.currentTimeMillis();
-            if(seqno != this.seqno)
+            if(seqno != this.seqno && check_order)
                 throw new IllegalStateException("expected seqno=" + this.seqno + ", but received " + seqno);
             this.seqno++;
             num_msgs_received++;
