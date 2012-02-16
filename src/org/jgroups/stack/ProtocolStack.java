@@ -495,6 +495,7 @@ public class ProtocolStack extends Protocol {
     public ProtocolStack addProtocol(Protocol prot) {
         if(prot == null)
             return this;
+        prot.setProtocolStack(this);
         prot.setUpProtocol(this);
         if(bottom_prot == null) {
             top_prot=bottom_prot=prot;
@@ -504,7 +505,6 @@ public class ProtocolStack extends Protocol {
         prot.setDownProtocol(top_prot);
         prot.getDownProtocol().setUpProtocol(prot);
         top_prot=prot;
-
         return this;
     }
 
@@ -830,6 +830,8 @@ public class ProtocolStack extends Protocol {
         List<Protocol> protocols = getProtocols();
         Collections.reverse(protocols);
         for(Protocol prot: protocols) {
+            if(prot.getProtocolStack() == null)
+                prot.setProtocolStack(this);
             if(prot instanceof TP) {
                 TP transport=(TP)prot;
                 if(transport.isSingleton()) {
