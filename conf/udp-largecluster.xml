@@ -68,7 +68,6 @@
               xmit_table_msgs_per_row="1000"
               xmit_table_max_compaction_time="30000"
               max_msg_batch_size="500"/>
-    <RSVP resend_interval="2000" timeout="10000"/>
     <pbcast.STABLE stability_delay="2000" desired_avg_gossip="60000"
                    max_bytes="4M"
                    cap="0.1"/>
@@ -84,5 +83,6 @@
     <MFC max_credits="4M"
          min_threshold="0.4"/>
     <FRAG2 frag_size="60K"  />
+    <RSVP resend_interval="2000" timeout="10000"/>
     <pbcast.STATE_TRANSFER />
 </config>
