@@ -201,7 +201,7 @@ public class RSVP extends Protocol {
             RsvpHeader hdr=new RsvpHeader(RsvpHeader.RSP,id);
             msg.putHeader(this.id, hdr);
             if(log.isTraceEnabled())
-                log.trace(local_addr + hdr.typeToString() + " --> " + dest);
+                log.trace(local_addr + ": " + hdr.typeToString() + " --> " + dest);
             down_prot.down(new Event(Event.MSG, msg));
         }
         catch(Throwable t) {
