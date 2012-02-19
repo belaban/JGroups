@@ -705,12 +705,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             if(validView && flushProtocolInStack) {
                 int attemptCount = 0;
                 while (attemptCount < maxAttempts) {
+                    if (attemptCount > 0)
+                        Util.sleepRandom(randomFloor, randomCeiling);
                     try {
                         up_prot.up(new Event(Event.SUSPEND, new ArrayList<Address>(new_view.getMembers())));
                         successfulFlush = true;
                         break;
                     } catch (Exception e) {
-                        Util.sleepRandom(randomFloor, randomCeiling);
                         attemptCount++;
                     }
                 }
