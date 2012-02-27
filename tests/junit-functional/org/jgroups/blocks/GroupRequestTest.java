@@ -44,32 +44,30 @@ public class GroupRequestTest {
         dests.clear();
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
+    
+
     public void testMessageTimeout() throws Exception {
         _testMessageTimeout(true);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
     public void testMessageReception() throws Exception {
         _testMessageReception(true);
         _testMessageReception(false);
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
     public void testMessageReceptionWithViewChange() throws Exception {
         _testMessageReceptionWithViewChange(true);
         _testMessageReceptionWithViewChange(false);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
     public void testMessageReceptionWithViewChangeMemberLeft() throws Exception {
         _testMessageReceptionWithViewChangeMemberLeft(true);
         _testMessageReceptionWithViewChangeMemberLeft(false);
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
     public void testGetFirstWithResponseFilter() throws Exception {
         Object[] responses={new Message(null, a1, new Long(1)),
           new Message(null, a2, new Long(2)),
@@ -103,7 +101,6 @@ public class GroupRequestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
     public void testGetAllWithResponseFilter() throws Exception {
         Object[] responses={new Message(null, a1, new Long(1)),
           new Message(null, a2, new Long(2)),

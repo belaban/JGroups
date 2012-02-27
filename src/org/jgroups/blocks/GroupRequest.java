@@ -192,13 +192,14 @@ public class GroupRequest<T> extends Request {
      * </ul>
      */
     public void viewChange(View new_view) {
-        List<Address> mbrs=new_view != null? new_view.getMembers() : null;
+        if(new_view == null || requests == null || requests.isEmpty())
+            return;
+
+        List<Address> mbrs=new_view.getMembers();
         if(mbrs == null)
             return;
 
         boolean changed=false;
-        if(requests == null || requests.isEmpty())
-                return;
 
         lock.lock();
         try {

@@ -57,6 +57,8 @@ public class RequestCorrelator {
     /** The address of this group member */
     protected Address local_addr=null;
 
+    protected volatile View view;
+
     protected boolean started=false;
 
     private final MyProbeHandler probe_handler=new MyProbeHandler(requests);
@@ -144,8 +146,11 @@ public class RequestCorrelator {
 
         msg.putHeader(this.id, hdr);
 
-        if(coll != null)
+        if(coll != null) {
             addEntry(hdr.id, coll);
+            // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
+            coll.viewChange(view);
+        }
 
         if(options.getAnycasting()) {
             for(Address mbr: dest_mbrs) {
@@ -179,8 +184,11 @@ public class RequestCorrelator {
         Header hdr=new Header(Header.REQ, id, (coll != null), this.id);
         msg.putHeader(this.id, hdr);
 
-        if(coll != null)
+        if(coll != null) {
             addEntry(hdr.id, coll);
+            // make sure no view is received before we add ourself as a view handler (https://issues.jboss.org/browse/JGRP-1428)
+            coll.viewChange(view);
+        }
 
         transport.down(new Event(Event.MSG, msg));
     }
@@ -287,11 +295,12 @@ public class RequestCorrelator {
     public void receiveView(View new_view) {
         // ArrayList    copy;
         // copy so we don't run into bug #761804 - Bela June 27 2003
-        // copy=new ArrayList(requests.values());  // removed because ConcurrentReaderHashMap can tolerate concurrent mods (bela May 8 2006)
+        // copy=new ArrayList(requests.values());  // removed because ConcurrentHashMap can tolerate concurrent mods (bela May 8 2006)
         for(RspCollector coll: requests.values()) {
             if(coll != null)
                 coll.viewChange(new_view);
         }
+        view=new_view;
     }
 
 
