@@ -142,7 +142,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
      * of successful verification of that member's liveness). Terminates when no entry remains in the hashtable.
      */
     public void run() {       
-        long val, diff;
+        long val, diff, min_delay=timeout;
 
         while(!suspects.isEmpty()) {
             diff=0;
@@ -161,15 +161,21 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                         suspects.remove(mbr);
                         continue;
                     }
-                    diff=Math.max(diff, timeout - diff);
+                    if(log.isTraceEnabled())
+                    	log.trace("min_delay = min : " + min_delay + " <> " + (timeout - diff));
+                    
+                    min_delay=Math.min((timeout - diff), min_delay);
                 }
             }
             
             for(Address suspect:confirmed_suspects)
-                up_prot.up(new Event(Event.SUSPECT,suspect));            
+                up_prot.up(new Event(Event.SUSPECT,suspect));
 
-            if(diff > 0)
-                Util.sleep(diff);
+            if(min_delay > 0 && !suspects.isEmpty()) {
+            	if(log.isTraceEnabled())
+            		log.trace("Next timeout exprires within " + min_delay + "ms");
+            	Util.sleep(min_delay);
+            }
         }        
     }
 
