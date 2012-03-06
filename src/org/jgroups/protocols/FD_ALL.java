@@ -36,6 +36,9 @@ public class FD_ALL extends Protocol {
     @Property(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P")
     long timeout=10000;
 
+    @Property(description="Interval in which HEARTBEAT timeout is checked")
+    long interval_checker = 2000;
+    
     @Property(description="Treat messages received from members as heartbeats. Note that this means we're updating " +
             "a value in a hashmap every time a message is passing up the stack through FD_ALL, which is costly. Default is false")
     boolean msg_counts_as_heartbeat=false;
@@ -88,6 +91,8 @@ public class FD_ALL extends Protocol {
     public int getSuspectEventsSent() {return num_suspect_events;}
     public long getTimeout() {return timeout;}
     public void setTimeout(long timeout) {this.timeout=timeout;}
+    public long getIntervalChecker() {return interval_checker;}
+    public void setIntervalChecker(long interval_checker) {this.interval_checker=interval_checker;}
     public long getInterval() {return interval;}
     public void setInterval(long interval) {this.interval=interval;}
 
@@ -186,7 +191,7 @@ public class FD_ALL extends Protocol {
         lock.lock();
         try {
             if(!isTimeoutCheckerRunning()) {
-                timeout_checker_future=timer.scheduleWithFixedDelay(new TimeoutChecker(), interval, interval, TimeUnit.MILLISECONDS);
+                timeout_checker_future=timer.scheduleWithFixedDelay(new TimeoutChecker(), interval_checker, interval_checker, TimeUnit.MILLISECONDS);
             }
         }
         finally {
