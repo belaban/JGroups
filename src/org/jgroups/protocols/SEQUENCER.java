@@ -15,7 +15,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
- * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
+ * Implementation of total order protocol using a sequencer.
+ * Consult <a href="https://github.com/belaban/JGroups/blob/master/doc/design/SEQUENCER.txt">SEQUENCER.txt</a> for details
  * @author Bela Ban
  */
 @MBean(description="Implementation of total order protocol using a sequencer")
