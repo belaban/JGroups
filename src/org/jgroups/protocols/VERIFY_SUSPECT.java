@@ -14,6 +14,9 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.*;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Delayed;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -53,9 +56,9 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     protected NetworkInterface intf=null;
     
     protected Address local_addr=null;
-    
-    /**keys=Addresses, vals=time in mcses since added **/
-    protected final Map<Address,Long> suspects=new HashMap<Address,Long>();
+
+    // a list of suspects, ordered by time when a SUSPECT event needs to be sent up
+    protected final DelayQueue<Entry> suspects=new DelayQueue<Entry>();
     
     protected Thread timer=null;
     
@@ -145,9 +148,9 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
      */
     protected void adjustSuspectedMembers(List<Address> new_mbrship) {
         synchronized(suspects) {
-            for(Iterator<Map.Entry<Address,Long>> it=suspects.entrySet().iterator(); it.hasNext();) {
-                Map.Entry<Address,Long> entry=it.next();
-                if(!new_mbrship.contains(entry.getKey()))
+            for(Iterator<Entry> it=suspects.iterator(); it.hasNext();) {
+                Entry entry=it.next();
+                if(!new_mbrship.contains(entry.suspect))
                     it.remove();
             }
         }
@@ -155,44 +158,23 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
     /**
-     * Will be started when a suspect is added to the suspects hashtable. Continually iterates over the
-     * entries and removes entries whose time have elapsed. For each removed entry, a SUSPECT event is passed
-     * up the stack (because elapsed time means verification of member's liveness failed). Computes the shortest
-     * time to wait (min of all timeouts) and waits(time) msecs. Will be woken up when entry is removed (in case
-     * of successful verification of that member's liveness). Terminates when no entry remains in the hashtable.
+     * Started when a suspected member is added to suspects. Iterates over the queue as long as there are suspects in
+     * it and removes a suspect when the timeout for it has elapsed. Sends up a SUSPECT event for every removed suspect.
+     * When a suspected member is un-suspected, the member is removed from the queue.
      */
-    public void run() {       
-        long val, diff;
-
-        while(!suspects.isEmpty()) {
-            diff=0;
-
-            List<Address> confirmed_suspects=new LinkedList<Address>();
-            synchronized(suspects) {
-                for(Iterator<Map.Entry<Address,Long>> it=suspects.entrySet().iterator(); it.hasNext();) {
-                    Map.Entry<Address,Long> entry=it.next();
-                    Address mbr=entry.getKey();
-
-                    val=suspects.get(mbr).longValue();                    
-                    diff=System.currentTimeMillis() - val;
-                    if(diff >= timeout) {  // haven't been unsuspected, pass up SUSPECT
-                        if(log.isTraceEnabled())
-                            log.trace("diff=" + diff + ", mbr " + mbr + " is dead (passing up SUSPECT event)");                      
-                        
-                        confirmed_suspects.add(mbr);
-                        it.remove();
-                        continue;
-                    }
-                    diff=Math.max(diff, timeout - diff);
+    public void run() {
+        while(!suspects.isEmpty() && timer != null) {
+            try {
+                Entry entry=suspects.poll(timeout * 2,TimeUnit.MILLISECONDS);
+                if(entry != null) {
+                    if(log.isTraceEnabled())
+                        log.trace(entry.suspect + " is dead (passing up SUSPECT event)");
+                    up_prot.up(new Event(Event.SUSPECT, entry.suspect));
                 }
             }
-            
-            for(Address suspect:confirmed_suspects)
-                up_prot.up(new Event(Event.SUSPECT,suspect));            
-
-            if(diff > 0)
-                Util.sleep(diff);
-        }        
+            catch(InterruptedException e) {
+            }
+        }
     }
 
 
@@ -207,15 +189,10 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         Message msg;
         if(mbr == null) return;
 
-        synchronized(suspects) {
-            if(suspects.containsKey(mbr))
-                return;
-            suspects.put(mbr, new Long(System.currentTimeMillis()));
-        }
-        
-        //start timer before we send out are you dead messages
-        startTimer();
-        
+        addSuspect(mbr);
+
+        startTimer(); // start timer before we send out are you dead messages
+
         // moved out of synchronized statement (bela): http://jira.jboss.com/jira/browse/JGRP-302
         if(log.isTraceEnabled()) log.trace("verifying that " + mbr + " is dead");
         
@@ -246,7 +223,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                 if(log.isTraceEnabled())
                     log.debug("could not ping " + suspected_mbr + " after " + (stop-start) + "ms; " +
                             "passing up SUSPECT event");
-                suspects.remove(suspected_mbr);
+                removeSuspect(suspected_mbr);
                 up_prot.up(new Event(Event.SUSPECT, suspected_mbr));
             }
         }
@@ -256,17 +233,38 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
     }
 
-    void unsuspect(Address mbr) {
-        if(mbr == null) return;
-        boolean removed=false;
+    protected boolean addSuspect(Address suspect) {
+        if(suspect == null)
+            return false;
         synchronized(suspects) {
-            if(suspects.containsKey(mbr)) {
-                if(log.isTraceEnabled()) log.trace("member " + mbr + " is not dead !");
-                suspects.remove(mbr);
-                removed=true;
+            for(Entry entry: suspects) // check for duplicates
+                if(entry.suspect.equals(suspect))
+                    return false;
+            suspects.add(new Entry(suspect, System.currentTimeMillis() + timeout));
+            return true;
+        }
+    }
+
+    protected boolean removeSuspect(Address suspect) {
+        if(suspect == null)
+            return false;
+        boolean retval=false;
+        synchronized(suspects) {
+            for(Iterator<Entry> it=suspects.iterator(); it.hasNext();) {
+                Entry entry=it.next();
+                if(entry.suspect.equals(suspect)) {
+                    it.remove();
+                    retval=true; // don't break, possibly remove more (2nd line of defense)
+                }
             }
         }
+        return retval;
+    }
+
+    public void unsuspect(Address mbr) {
+        boolean removed=mbr != null && removeSuspect(mbr);
         if(removed) {
+            if(log.isTraceEnabled()) log.trace("member " + mbr + " was unsuspected");
             down_prot.down(new Event(Event.UNSUSPECT, mbr));
             up_prot.up(new Event(Event.UNSUSPECT, mbr));
         }
@@ -301,7 +299,30 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     }
     /* ----------------------------- End of Private Methods -------------------------------- */
 
+    protected class Entry implements Delayed {
+        protected final Address suspect;
+        protected final long target_time;
 
+        public Entry(Address suspect, long target_time) {
+            this.suspect=suspect;
+            this.target_time=target_time;
+        }
+
+        public int compareTo(Delayed o) {
+            Entry other=(Entry)o;
+            long my_delay=getDelay(TimeUnit.MILLISECONDS), other_delay=other.getDelay(TimeUnit.MILLISECONDS);
+            return my_delay < other_delay ? -1 : my_delay > other_delay? 1 : 0;
+        }
+
+        public long getDelay(TimeUnit unit) {
+            long delay=target_time - System.currentTimeMillis();
+            return unit.convert(delay, TimeUnit.MILLISECONDS);
+        }
+
+        public String toString() {
+            return name + ": " + target_time;
+        }
+    }
 
 
 
