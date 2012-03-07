@@ -70,13 +70,13 @@ public class BPING extends PING implements Runnable {
     }
 
     public void start() throws Exception {
-        for(int i=bind_port; i < bind_port+port_range; i++) {
+        for(int i=bind_port; i <= bind_port+port_range; i++) {
             try {
                 sock=getSocketFactory().createDatagramSocket("jgroups.bping.sock", i);
                 break;
             }
             catch(Throwable t) {
-                if(i >= bind_port+port_range-1)
+                if(i > bind_port+port_range)
                     throw new RuntimeException("failed to open a port in range [" + bind_port + " - " + (bind_port+port_range) + "]", t);
             }
         }
@@ -117,7 +117,7 @@ public class BPING extends PING implements Runnable {
             out.flush();
             Buffer buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
 
-            for(int i=bind_port; i < bind_port+port_range; i++) {
+            for(int i=bind_port; i <= bind_port+port_range; i++) {
                 DatagramPacket packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), dest_addr, i);
                 sock.send(packet);
             }

@@ -594,7 +594,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                         break;
                     }
                     catch(IOException e) {
-                        if(num_bind_attempts++ > port_range) {
+                        if(++num_bind_attempts > port_range) {
                             log.error("failed creating client socket to " + dest, e);
                             throw e;
                         }
