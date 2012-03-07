@@ -491,8 +491,8 @@ public class GossipRouter {
                     log.trace("Removed " +addr + " from group " + group);
                 
                 if(map.isEmpty()) {
-                    routingTable.remove(group);
-                    if(log.isTraceEnabled())
+                    boolean removed=removeGroupIfEmpty(group);
+                    if(log.isTraceEnabled() && removed)
                         log.trace("Removed group " + group);   
                 }                
             }
@@ -501,8 +501,8 @@ public class GossipRouter {
             for(Map.Entry<String,ConcurrentMap<Address,ConnectionHandler>> entry: routingTable.entrySet()) {
                 map=entry.getValue();
                 if(map != null && map.remove(addr) != null && map.isEmpty()) {
-                    routingTable.remove(entry.getKey());
-                    if(log.isTraceEnabled())
+                    boolean removed=removeGroupIfEmpty(entry.getKey());
+                    if(log.isTraceEnabled() && removed)
                         log.trace("Removed " + entry.getKey() + " from group " + group);
                 }
             }
@@ -511,6 +511,21 @@ public class GossipRouter {
         address_mappings.remove(addr);
         UUID.remove(addr);
     }
+
+
+    protected boolean removeGroupIfEmpty(String group) {
+        if(group == null)
+            return false;
+        synchronized(routingTable) {
+            ConcurrentMap<Address,ConnectionHandler> val=routingTable.get(group);
+            if(val != null && val.isEmpty()) {
+                routingTable.remove(group);
+                return true;
+            }
+            return false;
+        }
+    }
+
 
     /**
      * @return null if not found
@@ -778,15 +793,16 @@ public class GossipRouter {
                     org.jgroups.util.UUID.add(addr, logical_name);
 
                 // group name, logical address, logical name, physical addresses (could be null)
-                logical_addrs.add(addr); // allows us to remove the entries for this connection on
-                                         // socket close
+                logical_addrs.add(addr); // allows us to remove the entries for this connection on socket close
 
-                map = routingTable.get(group);
+                addGroup(group, addr, this);
+
+                /*map = routingTable.get(group);
                 if (map == null) {
                     map = new ConcurrentHashMap<Address, ConnectionHandler>();
                     routingTable.put(group, map); // no concurrent requests on the same connection
                 }
-                map.put(addr, this);
+                map.put(addr, this);*/
 
                 Set<PhysicalAddress> physical_addrs;
                 if (request.getPhysicalAddresses() != null) {
@@ -806,6 +822,19 @@ public class GossipRouter {
                 removeEntry(group, addr);
                 sendStatus(OP_FAIL);
                 throw new Exception("Unsuccessful connection setup handshake for " + this);
+            }
+        }
+
+        protected void addGroup(String group, Address addr, ConnectionHandler handler) {
+            if(group == null || handler == null)
+                return;
+            synchronized(routingTable) {
+                ConcurrentMap<Address,ConnectionHandler> map=routingTable.get(group);
+                if(map == null) {
+                    map=new ConcurrentHashMap<Address, ConnectionHandler>();
+                    routingTable.put(group, map);
+                }
+                map.put(addr, this);
             }
         }
         
