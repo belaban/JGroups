@@ -46,6 +46,10 @@ public abstract class Discovery extends Protocol {
     @Property(description="Return from the discovery phase as soon as we have 1 coordinator response")
     protected boolean break_on_coord_rsp=true;
 
+    @Property(description="Whether or not to return the entire logical-physical address cache mappings on a " +
+      "discovery request, or not.")
+    protected boolean return_entire_cache=false;
+
     @Property(description="If greater than 0, we'll wait a random number of milliseconds in range [0..stagger_timeout] " +
       "before sending a discovery response. This prevents traffic spikes in large clusters when everyone sends their " +
       "discovery response at the same time")
@@ -421,10 +425,23 @@ public abstract class Discovery extends Protocol {
                             return null;
                         }
 
-                        List<PhysicalAddress> physical_addrs=hdr.view_id != null? null :
-                          Arrays.asList((PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)));
-                        sendDiscoveryResponse(local_addr, physical_addrs, is_server, hdr.view_id != null,
-                                              UUID.get(local_addr), msg.getSrc());
+                        if(return_entire_cache) {
+                            Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
+                            if(cache != null) {
+                                for(Map.Entry<Address,PhysicalAddress> entry: cache.entrySet()) {
+                                    Address addr=entry.getKey();
+                                    PhysicalAddress physical_addr=entry.getValue();
+                                    sendDiscoveryResponse(addr, Arrays.asList(physical_addr), is_server,
+                                                          hdr.view_id != null, UUID.get(addr), msg.getSrc());
+                                }
+                            }
+                        }
+                        else {
+                            List<PhysicalAddress> physical_addrs=hdr.view_id != null? null :
+                              Arrays.asList((PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)));
+                            sendDiscoveryResponse(local_addr, physical_addrs, is_server, hdr.view_id != null,
+                                                  UUID.get(local_addr), msg.getSrc());
+                        }
                         return null;
 
                     case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
