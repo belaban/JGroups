@@ -1,0 +1,27 @@
+
+RELAY2 - multi-site clustering
+==============================
+
+Author: Bela Ban
+JIRA:   https://issues.jboss.org/browse/JGRP-1433
+
+
+The architecture of RELAY2 is similar to RELAY: relaying between sites is done via a protocol (RELAY2). The biggest
+differences between RELAY2 and RELAY are:
+
+- RELAY2 does *not* expose a virtual view to the application, e.g. if we have LON={A,B,C} and SFO={X,Y,Z}, then the
+  view in LON is {A,B,C}.
+  The local views will not even be disseminated in a first iteration, so virtual views will not be assembled in RELAY2.
+  This is to simplify the design. In a next iteration, this information may get disseminated; if this is the case,
+  virtual views will be available in RELAY2, perhaps we'll also offer a notification callback.
+
+- Clustering between multiple sites. The routing between sites is static, and needs to be defined in a
+  configuration file. Let's look at the following example:
+
+      --------                    --------                      --------
+     |        |      backup      |        |      backup        |        |
+     |   NYC  |  <-------------  |   LON  |   -------------->  |  SFO   |
+     |        |                  |        |                    |        |
+      --------                    --------                      --------
+
+  Here, we have the main site London (LON), which bakcs up its data to New York (NYC) and San Francisco (SFO).
