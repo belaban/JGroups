@@ -36,24 +36,33 @@ differences between RELAY2 and RELAY are:
   sites (excluding the originating site, to avoid cycles). Using this routing algorithm, we could build trees of sites,
   in a hierarchical fashion.
 
-  Unicasts are relayed if the destination address is non-local, e.g. the address is *not* a site address, or it *is*
-  a site address, but the site's suffix is the same as the current site's name.
+  Unicasts are relayed if the destination address is non-local, e.g. the address is a site address, and the site's
+  suffix is not the same as the current site's name.
 
-  There are 2 scenarios in which we send a unicast across sites: when a multicast is received and we want to send a
-  response (e.g. a result of an RPC invocation), and if we use a 'special site address'. The only special site address
-  in the first iteration is a MasterRelayAddress("sfo"). This is a moniker that points to the current relay master
-  of site "sfo", in the example above, X.
+  There are 2 scenarios in which we send a unicast across sites: when a multicast is received from a different site and
+  we want to send a response (e.g. a result of an RPC invocation), and if we use a 'special site address'.
+  The only special site address in the first iteration is a Master("sfo"). This is a moniker that points to the
+  current relay master of site "sfo", in the example above, X.
 
   There is a use case in Infinispan, where we'll invoke (in LON) an RPC on {B,C,Master("sfo")}. This will send 2 local
   unicasts (to B and C) and a remote unicast to X in SFO. There's probably going to be a retry mechanism, so if X fails,
-  we'll retry sending the unicast to Y, and if Y fails, to Z.
+  we'll retry sending the unicast to Y, and if Y fails, to Z. The retry mechanism will be hidden from Infinispan.
 
   If we cannot reach the target, e.g. because a max retry count has been exceeded, or the entire SFO site is down, a
-  HOST-UNREACHABLE message will be sent back to the originator of the RPC, flagging the response from Master("sfo")
-  as 'suspected'.
+  HOST-UNREACHABLE(Master("sfo")) message will be sent back to the originator of the RPC, flagging the response
+  from Master("sfo") as 'suspected'.
 
-  The routing table in LON will have an entry for SFO and one for NYC
+  The routing table in LON will have an entry for SFO and one for NYC; in this case, both entries point to a bridge
+  (see RELAY.txt for the definition of a bridge). If there was a site LAX, attached to SFO, then the routing table
+  in LON would also have an entry for LAX, pointing to SFO. This means that LAX is not directly accessible from LON,
+  but needs to be routed via SFO.
 
+  The routing table of NYC will also have 2 entries: 1 for LON and 1 for SFO, and the routing table in SFO is configured
+  the same way.
+
+  Routing as used by RELAY2 is similar to TCP/IP routing: direct hosts are local messages, and networks are bridges.
+  Because we don't use IP addresses for routing, but UUIDs and SiteUUIDs instead, we have to build the routing tables
+  based on the SiteUUID information.
 
 
 
@@ -66,3 +75,11 @@ differences between RELAY2 and RELAY are:
 - We used string suffixes in the examples above, but in reality we'll probably use shorts, which are mapped to site
   names in the configuration file. Thus, addresses always have the same (marshalled) length, and don't depend on the
   length of the suffix. Also, shorts are more efficient to do lookups on in a routing table.
+
+- An RpcDispatcher flags messages to targets which are not in the current views as 'suspected'. To prevent RPCs to
+  cross-site targets from being flagged as suspected, we need to change code in the RequestCorrelator
+  (or perhaps Unicast/GroupRequest) slightly: we need to skip checking of site addresses.
+
+  To nevertheless being able to terminate an RPC, we need to send HOST-UNREACHABLE back to RPC originators if a
+  cross-site target is unreachable, e.g. because one of the relay masters crashed, the retry count was exceeded, or the
+  target crashed.
