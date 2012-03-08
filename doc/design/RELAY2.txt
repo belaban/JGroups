@@ -9,14 +9,14 @@ JIRA:   https://issues.jboss.org/browse/JGRP-1433
 The architecture of RELAY2 is similar to RELAY: relaying between sites is done via a protocol (RELAY2). The biggest
 differences between RELAY2 and RELAY are:
 
-- RELAY2 does *not* expose a virtual view to the application, e.g. if we have LON={A,B,C} and SFO={X,Y,Z}, then the
-  view in LON is {A,B,C}.
+* RELAY2 does *not* expose a virtual view to the application, e.g. if we have LON={A,B,C} and SFO={X,Y,Z}, then the
+  view in LON is {A,B,C}, and *not* {A,B,C,X,Y,Z}.
   The local views will not even be disseminated in a first iteration, so virtual views will not be assembled in RELAY2.
-  This is to simplify the design. In a next iteration, this information may get disseminated; if this is the case,
+  This is to simplify the design. In a next iteration, this information may get disseminated; if that's the case,
   virtual views will be available in RELAY2, perhaps we'll also offer a notification callback.
 
-- Clustering between multiple sites. The routing between sites is static, and needs to be defined in a
-  configuration file. Let's look at the following example:
+* Clustering between multiple sites. The routing between sites is static, and needs to be defined in a
+  configuration file. Let's look at an example:
 
       --------                    --------                      --------
      |        |      backup      |        |      backup        |        |
@@ -24,4 +24,45 @@ differences between RELAY2 and RELAY are:
      |        |                  |        |                    |        |
       --------                    --------                      --------
 
-  Here, we have the main site London (LON), which bakcs up its data to New York (NYC) and San Francisco (SFO).
+  Here, we have the main site London (LON), which backs up its data to New York (NYC) and San Francisco (SFO). SFO and
+  NYC are also connected, but that's not shown here.
+
+  Every address is by default local, e.g. B in the LON site is a simple UUID. A *site address* is a subclass (of UUID)
+  and has a suffix, e.g. "sfo" added. So if we encounter address Y:sfo in LON, then we know we have to route a messgage
+  to Y:sfo to the SFO relay master (X, the member doing the relaying), who then forwards it to Y.
+
+  Multicasts are by default not relayed; they're always local. This can be changed in a configuration option. If a
+  multicast M *is* relayed, we forward M to all attached sites, which then in turn forward it to all of their attached
+  sites (excluding the originating site, to avoid cycles). Using this routing algorithm, we could build trees of sites,
+  in a hierarchical fashion.
+
+  Unicasts are relayed if the destination address is non-local, e.g. the address is *not* a site address, or it *is*
+  a site address, but the site's suffix is the same as the current site's name.
+
+  There are 2 scenarios in which we send a unicast across sites: when a multicast is received and we want to send a
+  response (e.g. a result of an RPC invocation), and if we use a 'special site address'. The only special site address
+  in the first iteration is a MasterRelayAddress("sfo"). This is a moniker that points to the current relay master
+  of site "sfo", in the example above, X.
+
+  There is a use case in Infinispan, where we'll invoke (in LON) an RPC on {B,C,Master("sfo")}. This will send 2 local
+  unicasts (to B and C) and a remote unicast to X in SFO. There's probably going to be a retry mechanism, so if X fails,
+  we'll retry sending the unicast to Y, and if Y fails, to Z.
+
+  If we cannot reach the target, e.g. because a max retry count has been exceeded, or the entire SFO site is down, a
+  HOST-UNREACHABLE message will be sent back to the originator of the RPC, flagging the response from Master("sfo")
+  as 'suspected'.
+
+  The routing table in LON will have an entry for SFO and one for NYC
+
+
+
+
+
+
+
+
+* Misc
+
+- We used string suffixes in the examples above, but in reality we'll probably use shorts, which are mapped to site
+  names in the configuration file. Thus, addresses always have the same (marshalled) length, and don't depend on the
+  length of the suffix. Also, shorts are more efficient to do lookups on in a routing table.
