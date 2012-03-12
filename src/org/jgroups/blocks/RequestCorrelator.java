@@ -296,11 +296,11 @@ public class RequestCorrelator {
         // ArrayList    copy;
         // copy so we don't run into bug #761804 - Bela June 27 2003
         // copy=new ArrayList(requests.values());  // removed because ConcurrentHashMap can tolerate concurrent mods (bela May 8 2006)
+        view=new_view;  // moved before iteration, see https://issues.jboss.org/browse/JGRP-1428
         for(RspCollector coll: requests.values()) {
             if(coll != null)
                 coll.viewChange(new_view);
         }
-        view=new_view;
     }
 
 
