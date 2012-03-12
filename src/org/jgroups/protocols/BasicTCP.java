@@ -3,11 +3,8 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
-import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
 
-import java.net.InetAddress;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -101,11 +98,6 @@ public abstract class BasicTCP extends TP {
     public abstract void send(Address dest, byte[] data, int offset, int length) throws Exception;
 
     public abstract void retainAll(Collection<Address> members);
-
-    /** ConnectionMap.Receiver interface */
-    public void receive(Address sender, byte[] data, int offset, int length) {
-        super.receive(sender, data, offset, length);
-    }
 
     protected Object handleDownEvent(Event evt) {
         Object ret=super.handleDownEvent(evt);
