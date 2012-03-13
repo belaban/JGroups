@@ -438,6 +438,10 @@ public class UPerf extends ReceiverAdapter {
             RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 40000, false, null);
             RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 40000, true, null);
 
+            // Don't use bundling as we have sync requests (e.g. GETs) regardless of whether we set sync=true or false
+            get_options.setFlags(Message.DONT_BUNDLE);
+            put_options.setFlags(Message.DONT_BUNDLE);
+
             if(oob) {
                 get_options.setFlags(Message.OOB);
                 put_options.setFlags(Message.OOB);
