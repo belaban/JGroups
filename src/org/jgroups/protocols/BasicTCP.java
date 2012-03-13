@@ -99,6 +99,11 @@ public abstract class BasicTCP extends TP {
 
     public abstract void retainAll(Collection<Address> members);
 
+    /** ConnectionMap.Receiver interface */
+    public void receive(Address sender, byte[] data, int offset, int length) {
+        super.receive(sender, data, offset, length);
+    }
+
     protected Object handleDownEvent(Event evt) {
         Object ret=super.handleDownEvent(evt);
         if(evt.getType() == Event.VIEW_CHANGE) {
