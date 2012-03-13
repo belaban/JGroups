@@ -909,8 +909,8 @@ class CustomAddress extends UUID {
             <programlisting language="Java">public View getView();</programlisting>
 
             <para>
-                This method does <emphasis>not</emphasis>  returns the current view of the channel. The
-                current view is updated every time a new view is installed (viewAccepted() callback).
+                This method returns the current view of the channel. It is updated every time a new view is
+                installed (viewAccepted() callback).
             </para>
 
             <para>
