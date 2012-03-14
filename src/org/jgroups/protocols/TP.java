@@ -23,6 +23,7 @@ import java.net.NetworkInterface;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -1010,8 +1011,13 @@ public abstract class TP extends Protocol {
         if(enable_bundling) {
             if(bundler_type.equals("new")) 
                 bundler=new TransferQueueBundler(bundler_capacity);
+            else if(bundler_type.equals("new2"))
+                bundler=new TransferQueueBundler2(bundler_capacity);
             else if(bundler_type.equals("old"))
                 bundler=new DefaultBundler();
+            else if(bundler_type.endsWith("old2")) {
+                bundler=new DefaultBundler2();
+            }
             else
                 log.warn("bundler_type \"" + bundler_type + "\" not known; using default bundler");
             if(bundler == null)
@@ -1912,6 +1918,323 @@ public abstract class TP extends Protocol {
         }
     }
 
+    private class DefaultBundler2 implements Bundler {
+        /** Keys are destinations, values are lists of Messages */
+        final Map<SingletonAddress,List<Message>>  msgs=new HashMap<SingletonAddress,List<Message>>(8);
+
+        final ExposedByteArrayOutputStream bundler_out_stream=new ExposedByteArrayOutputStream(1024);
+        final ExposedDataOutputStream bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
+
+        @GuardedBy("lock")
+        long                               count=0;    // current number of bytes accumulated
+        int                                num_msgs=0;
+
+        protected final AtomicInteger      thread_cnt=new AtomicInteger(0);
+
+        final ReentrantLock                lock=new ReentrantLock();
+        final Log                          log=LogFactory.getLog(getClass());
+
+        public void start() {}
+        public void stop() {}
+
+        public void send(Message msg) throws Exception {
+            long length=msg.size();
+            checkLength(length);
+
+            thread_cnt.incrementAndGet();
+
+            lock.lock();
+            try {
+                if(count + length >= max_bundle_size) {
+                    sendBundledMessages(msgs);
+                }
+                addMessage(msg);
+                count+=length;
+                if(thread_cnt.decrementAndGet() == 0) {
+                    if(num_msgs == 1)
+                        sendSingleMessage(msg);
+                    else
+                        sendBundledMessages(msgs);
+                }
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+        
+
+        /** Run with lock acquired */
+        private void addMessage(Message msg) {
+            Address dst=msg.getDest();
+            String cluster_name;
+
+            if(!isSingleton())
+                cluster_name=TP.this.channel_name;
+            else {
+                TpHeader hdr=(TpHeader)msg.getHeader(id);
+                cluster_name=hdr.channel_name;
+            }
+
+            SingletonAddress dest=new SingletonAddress(cluster_name, dst);
+
+            List<Message> tmp=msgs.get(dest);
+            if(tmp == null) {
+                tmp=new ArrayList<Message>();
+                msgs.put(dest, tmp);
+            }
+            tmp.add(msg);
+            num_msgs++;
+        }
+
+
+        /**
+         * Sends all messages from the map, all messages for the same destination are bundled into 1 message.
+         * This method may be called by timer and bundler concurrently
+         * @param msgs
+         */
+        private void sendBundledMessages(final Map<SingletonAddress,List<Message>> msgs) {
+
+            // System.out.println("sending " + num_msgs + " msgs, count=" + count);
+
+            if(log.isTraceEnabled()) {
+                double percentage=100.0 / max_bundle_size * count;
+                StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
+                num_msgs=0;
+                sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size)");
+                sb.append(" to ").append(msgs.size()).append(" destination(s)");
+                if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
+                log.trace(sb);
+            }
+
+            num_msgs=0;
+
+            for(Map.Entry<SingletonAddress,List<Message>> entry: msgs.entrySet()) {
+                List<Message> list=entry.getValue();
+                if(list.isEmpty())
+                    continue;
+                SingletonAddress dst=entry.getKey();
+                Address dest=dst.getAddress();
+                Address src_addr=list.get(0).getSrc();
+
+                boolean multicast=dest == null;
+                try {
+                    bundler_out_stream.reset();
+                    bundler_dos.reset();
+                    writeMessageList(dest, src_addr, list, bundler_dos, multicast); // flushes output stream when done
+                    Buffer buffer=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
+                    doSend(buffer, dest, multicast);
+                }
+                catch(Throwable e) {
+                    if(log.isErrorEnabled()) log.error("exception sending bundled msgs", e);
+                }
+            }
+            msgs.clear();
+            count=0;
+        }
+
+
+        private void sendSingleMessage(final Message msg) {
+
+            // System.out.println("sending single message, num_msgs=" + num_msgs + " msgs, count=" + count);
+
+            num_msgs=0;
+            msgs.clear();
+            count=0;
+
+            Address dest=msg.getDest();
+
+            boolean multicast=dest == null;
+            try {
+                bundler_out_stream.reset();
+                bundler_dos.reset();
+                writeMessage(msg, bundler_dos, multicast);
+                Buffer buffer=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
+                doSend(buffer, dest, multicast);
+            }
+            catch(Throwable e) {
+                if(log.isErrorEnabled()) log.error("exception sending msg " + msg, e);
+            }
+
+        }
+
+
+
+        private void checkLength(long len) throws Exception {
+            if(len > max_bundle_size)
+                throw new Exception("message size (" + len + ") is greater than max bundling size (" + max_bundle_size +
+                        "). Set the fragmentation/bundle size in FRAG and TP correctly");
+        }
+
+    }
+
+
+
+
+    private class TransferQueueBundler2 implements Bundler, Runnable {
+        final int                          threshold;
+        final BlockingQueue<Message>       buffer;
+        volatile Thread                    bundler_thread;
+        final Log                          log=LogFactory.getLog(getClass());
+
+        /** Keys are destinations, values are lists of Messages */
+        final Map<SingletonAddress,List<Message>>  msgs=new HashMap<SingletonAddress,List<Message>>(36);
+
+        final ExposedByteArrayOutputStream bundler_out_stream=new ExposedByteArrayOutputStream(1024);
+        final ExposedDataOutputStream      bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
+        long                               count=0;    // current number of bytes accumulated
+        int                                num_msgs=0;
+        volatile boolean                   running=true;
+        public static final String         THREAD_NAME="TransferQueueBundler";
+
+
+
+        private TransferQueueBundler2(int capacity) {
+            if(capacity <=0) throw new IllegalArgumentException("Bundler capacity cannot be " + capacity);
+            buffer=new LinkedBlockingQueue<Message>(capacity);
+            threshold=(int)(capacity * .9); // 90% of capacity
+        }
+
+        public void start() {
+            if(bundler_thread == null || !bundler_thread.isAlive()) {
+                bundler_thread=getThreadFactory().newThread(this, THREAD_NAME);
+                running=true;
+                bundler_thread.start();
+            }
+        }
+
+        public Thread getThread() {return bundler_thread;}
+
+        public void stop() {
+            running=false;
+            if(bundler_thread != null)
+                bundler_thread.interrupt();
+        }
+
+        public void send(Message msg) throws Exception {
+            long length=msg.size();
+            checkLength(length);
+            buffer.put(msg);
+        }
+
+        public int getBufferSize() {
+            return buffer.size();
+        }
+
+
+
+        public void run() {
+            while(running) {
+                Message msg=null;
+                try {
+                    if(count == 0) {
+                        msg=buffer.take();
+                        if(msg == null)
+                            continue;
+                        long size=msg.size();
+                        if(count + size >= max_bundle_size || buffer.size() >= threshold) {
+                            sendMessages();
+                        }
+                        addMessage(msg);
+                        count+=size;
+                    }
+                    while(null != (msg=buffer.poll())) {
+                        long size=msg.size();
+                        if(count + size >= max_bundle_size || buffer.size() >= threshold) {
+                            sendMessages();
+                        }
+                        addMessage(msg);
+                        count+=size;
+                    }
+                    if(count > 0)
+                        sendMessages();
+                }
+                catch(Throwable t) {
+                }
+            }
+        }
+
+
+        void sendMessages() {
+            sendBundledMessages(msgs);
+            msgs.clear();
+            count=0;
+        }
+
+        private void checkLength(long len) throws Exception {
+            if(len > max_bundle_size)
+                throw new Exception("message size (" + len + ") is greater than max bundling size (" + max_bundle_size +
+                        "). Set the fragmentation/bundle size in FRAG and TP correctly");
+        }
+
+
+        private void addMessage(Message msg) {
+            Address dst=msg.getDest();
+            String cluster_name;
+
+            if(!isSingleton())
+                cluster_name=TP.this.channel_name;
+            else {
+                TpHeader hdr=(TpHeader)msg.getHeader(id);
+                cluster_name=hdr.channel_name;
+            }
+
+            SingletonAddress dest=new SingletonAddress(cluster_name, dst);
+
+            List<Message> tmp=msgs.get(dest);
+            if(tmp == null) {
+                tmp=new LinkedList<Message>();
+                msgs.put(dest, tmp);
+            }
+            tmp.add(msg);
+            num_msgs++;
+        }
+
+
+
+        /**
+         * Sends all messages from the map, all messages for the same destination are bundled into 1 message.
+         * This method may be called by timer and bundler concurrently
+         * @param msgs
+         */
+        private void sendBundledMessages(final Map<SingletonAddress,List<Message>> msgs) {
+            boolean   multicast;
+
+            if(log.isTraceEnabled()) {
+                double percentage=100.0 / max_bundle_size * count;
+                StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
+                sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size)");
+                sb.append(" to ").append(msgs.size()).append(" destination(s)");
+                if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
+                log.trace(sb);
+                num_msgs=0;
+            }
+
+
+            for(Map.Entry<SingletonAddress,List<Message>> entry: msgs.entrySet()) {
+                List<Message> list=entry.getValue();
+                if(list.isEmpty())
+                    continue;
+
+                SingletonAddress dst=entry.getKey();
+                Address dest=dst.getAddress();
+                Address src_addr=list.get(0).getSrc();
+
+                multicast=dest == null;
+                try {
+                    bundler_out_stream.reset();
+                    bundler_dos.reset();
+                    writeMessageList(dest, src_addr, list, bundler_dos, multicast); // flushes output stream when done
+                    Buffer buf=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
+                    doSend(buf, dest, multicast);
+                }
+                catch(Throwable e) {
+                    if(log.isErrorEnabled()) log.error("exception sending bundled msgs: " + e + ":, cause: " + e.getCause());
+                }
+            }
+        }
+
+
+    }
 
 
     private class TransferQueueBundler implements Bundler, Runnable {
@@ -2027,7 +2350,7 @@ public abstract class TP extends Protocol {
             }
 
             SingletonAddress dest=new SingletonAddress(cluster_name, dst);
-            
+
             List<Message> tmp=msgs.get(dest);
             if(tmp == null) {
                 tmp=new LinkedList<Message>();
