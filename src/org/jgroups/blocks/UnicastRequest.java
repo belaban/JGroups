@@ -71,16 +71,6 @@ public class UnicastRequest<T> extends Request {
                         result.setException((Throwable)response_value);
                     else
                         result.setValue((T)response_value);
-                    if(log.isTraceEnabled()) {
-                        StringBuilder sb=new StringBuilder("received response for request ");
-                        sb.append(req_id).append(", sender=").append(sender);
-                        if(is_exception && response_value instanceof Throwable)
-                            sb.append(", exception=");
-                        else
-                            sb.append(", val=");
-                        sb.append(response_value);
-                        log.trace(sb.toString());
-                    }
                 }
             }
             done=responsesComplete() || (rsp_filter != null && !rsp_filter.needMoreResponses());
