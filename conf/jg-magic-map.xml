@@ -57,4 +57,5 @@
     <class id="94" name="org.jgroups.util.SeqnoList"/>
     <class id="95" name="org.jgroups.protocols.tom.ToaHeader"/>
     <class id="96" name="org.jgroups.AnycastAddress"/>
+    <class id="97" name="org.jgroups.protocols.RELAY2$Relay2Header"/>
 </magic-number-class-mapping>

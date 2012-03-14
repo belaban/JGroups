@@ -56,6 +56,7 @@
     <class id="57" name="org.jgroups.protocols.pbcast.NAKACK2"/>
     <class id="58" name="org.jgroups.protocols.tom.TOA"/>
     <class id="59" name="org.jgroups.protocols.SWIFT_PING"/>
+    <class id="60" name="org.jgroups.protocols.RELAY2"/>
 
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
