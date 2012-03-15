@@ -50,4 +50,5 @@
     <class id="87" name="org.jgroups.blocks.executor.ExecutionService$RunnableAdapter"/>
     <class id="88" name="org.jgroups.blocks.executor.Executions$StreamableCallable"/>
     <class id="89" name="org.jgroups.protocols.COUNTER$CounterHeader"/>
+    <class id="91" name="org.jgroups.protocols.RSVP$RsvpHeader"/>
 </magic-number-class-mapping>
