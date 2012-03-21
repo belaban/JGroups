@@ -23,7 +23,7 @@ public class SequenceNumberManager {
      * @param otherSequenceNumber   the sequence number received
      */
     public synchronized void update(long otherSequenceNumber) {
-        sequenceNumber = Math.max(sequenceNumber, otherSequenceNumber);
+        sequenceNumber = Math.max(sequenceNumber, otherSequenceNumber + 1);
     }
 
     /**
