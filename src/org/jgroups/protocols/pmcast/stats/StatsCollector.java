@@ -1,4 +1,4 @@
-package org.jgroups.groups.stats;
+package org.jgroups.protocols.pmcast.stats;
 
 import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicInteger;

@@ -1,10 +1,10 @@
-package org.jgroups.groups.threading;
+package org.jgroups.protocols.pmcast.threading;
 
 import org.jgroups.Message;
-import org.jgroups.groups.DeliverProtocol;
-import org.jgroups.groups.manager.DeliverManager;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.protocols.pmcast.DeliverProtocol;
+import org.jgroups.protocols.pmcast.manager.DeliverManager;
 
 import java.util.List;
 

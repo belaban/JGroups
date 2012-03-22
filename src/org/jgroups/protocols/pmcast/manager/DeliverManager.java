@@ -1,4 +1,4 @@
-package org.jgroups.groups.manager;
+package org.jgroups.protocols.pmcast.manager;
 
 import org.jgroups.Message;
 

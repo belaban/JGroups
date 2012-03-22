@@ -1,4 +1,4 @@
-package org.jgroups.groups.threading;
+package org.jgroups.protocols.pmcast.threading;
 
 import org.jgroups.Address;
 import org.jgroups.Event;

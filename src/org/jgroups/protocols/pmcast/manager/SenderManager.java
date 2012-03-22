@@ -1,7 +1,7 @@
-package org.jgroups.groups.manager;
+package org.jgroups.protocols.pmcast.manager;
 
 import org.jgroups.Address;
-import org.jgroups.groups.MessageID;
+import org.jgroups.protocols.pmcast.MessageID;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

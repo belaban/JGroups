@@ -1,4 +1,4 @@
-package org.jgroups.groups;
+package org.jgroups.protocols.pmcast;
 
 import org.jgroups.Address;
 import org.jgroups.Global;

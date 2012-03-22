@@ -1,4 +1,4 @@
-package org.jgroups.groups.manager;
+package org.jgroups.protocols.pmcast.manager;
 
 /**
  * Manages the messages sequence number (keeps it up-to-date)

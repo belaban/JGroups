@@ -1,9 +1,9 @@
-package org.jgroups.groups.header;
+package org.jgroups.protocols.pmcast.header;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Header;
-import org.jgroups.groups.MessageID;
+import org.jgroups.protocols.pmcast.MessageID;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;

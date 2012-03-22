@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.groups.GroupAddress;
+import org.jgroups.protocols.pmcast.GroupAddress;
 import org.jgroups.util.Util;
 
 import javax.management.*;

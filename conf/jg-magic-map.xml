@@ -56,5 +56,5 @@
     <class id="93" name="org.jgroups.protocols.pbcast.NakAckHeader2"/>
     <class id="94" name="org.jgroups.util.SeqnoList"/>
 
-    <class id="1000" name="org.jgroups.groups.header.GroupMulticastHeader"/>
+    <class id="1000" name="org.jgroups.protocols.pmcast.header.GroupMulticastHeader"/>
 </magic-number-class-mapping>
