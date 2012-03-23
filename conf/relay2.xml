@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!-- Sample configuration of multipe sites, to be used in RELAY2 -->
+<RelayConfiguration xmlns="urn:jgroups:relay:1.0">
+    <bridges>
+        <bridge name="global" config="global.xml" />
+        <bridge name="nyc-sfc" config="nyc-sfc.xml"/>
+        <bridge name="nyc-lon" config="nyc-lon.xml"/>
+    </bridges>
+    <sites>
+        <site name="lon">
+            <routing>
+                <default-route bridge="global"/>
+                <route name="lax" forward-to="sfo"/>
+            </routing>
+        </site>
+
+        <site name="nyc">
+            <routing>
+                <route name="nyc-sfc" bridge="nyc-sfc"/>
+                <route name="nyc-lon" bridge="nyc-lon"/>
+            </routing>
+        </site>
+    </sites>
+</RelayConfiguration>
