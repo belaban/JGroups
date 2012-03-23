@@ -64,6 +64,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                               conn_expire_time,
                               bind_addr,
                               external_addr,
+                              external_port,
                               bind_port,
                               bind_port+port_range,
                               getChannelThreadGroup()
@@ -122,6 +123,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                                    long connExpireTime,
                                                    InetAddress bindAddress,
                                                    InetAddress externalAddress,
+                                                   int external_port,
                                                    int startPort,
                                                    int endPort,
                                                    ThreadGroup group
@@ -134,6 +136,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                         this,
                                         bindAddress,
                                         externalAddress,
+                                        external_port,
                                         startPort,
                                         endPort,
                                         group
@@ -156,6 +159,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                         this,
                                         bindAddress,
                                         externalAddress,
+                                        external_port,
                                         startPort,
                                         endPort,
                                         reaperInterval,

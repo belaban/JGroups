@@ -59,6 +59,7 @@ public abstract class BasicConnectionTable {
     * be contacted on). If external_addr is null, it will default to the same address that the server socket is bound to.
     */
     InetAddress		    external_addr=null;
+    int                 external_port=0;
     int                 max_port=0;                   // maximum port to bind to (if < srv_port, no limit)
     Thread              acceptor=null;               // continuously calls srv_sock.accept()
     boolean             running=false;

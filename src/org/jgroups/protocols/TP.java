@@ -86,7 +86,11 @@ public abstract class TP extends Protocol {
       "the local IP (e.g. 192.168.1.100) of the host then on each host, set \"external_addr\" TCP transport " +
       "parameter to the external (public IP) address of the firewall.",
               systemProperty=Global.EXTERNAL_ADDR,writable=false)
-    protected InetAddress external_addr=null ;
+    protected InetAddress external_addr=null;
+
+    @Property(description="Used to map the internal port (bind_port) to an external port. Only used if > 0",
+              systemProperty=Global.EXTERNAL_PORT,writable=false)
+    protected int external_port=0;
 
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
     		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr",
@@ -903,6 +907,8 @@ public abstract class TP extends Protocol {
             m.put("bind_addr", bind_addr);
         if(external_addr != null)
             m.put("external_addr", external_addr);
+        if(external_port > 0)
+            m.put("external_port", external_port);
         if(!m.isEmpty())
             up(new Event(Event.CONFIG, m));
 

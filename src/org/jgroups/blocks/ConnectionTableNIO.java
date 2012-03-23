@@ -91,11 +91,12 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
     * @param max_port
     * @throws Exception
     */
-   public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port)
+   public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int external_port, int srv_port, int max_port)
            throws Exception
    {
        setReceiver(r);
        this.external_addr=external_addr;
+       this.external_port=external_port;
        this.bind_addr=bind_addr;
        this.srv_port=srv_port;
        this.max_port=max_port;
@@ -104,12 +105,13 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    }
 
 
-    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr,
+    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int external_port,
                               int srv_port, int max_port, boolean doStart)
             throws Exception
     {
         setReceiver(r);
         this.external_addr=external_addr;
+        this.external_port=external_port;
         this.bind_addr=bind_addr;
         this.srv_port=srv_port;
         this.max_port=max_port;
@@ -130,13 +132,15 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
     * @param conn_expire_time
     * @throws Exception
     */
-   public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port,
+   public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int external_port,
+                             int srv_port, int max_port,
                              long reaper_interval, long conn_expire_time
                              ) throws Exception
    {
       setReceiver(r);
       this.bind_addr=bind_addr;
       this.external_addr=external_addr;
+      this.external_port=external_port;
       this.srv_port=srv_port;
       this.max_port=max_port;
       this.reaper_interval=reaper_interval;
@@ -146,7 +150,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    }
 
 
-    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr,
+    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int external_port,
                               int srv_port, int max_port,
                               long reaper_interval, long conn_expire_time, boolean doStart
     ) throws Exception
@@ -154,6 +158,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
         setReceiver(r);
         this.bind_addr=bind_addr;
         this.external_addr=external_addr;
+        this.external_port=external_port;
         this.srv_port=srv_port;
         this.max_port=max_port;
         this.reaper_interval=reaper_interval;
@@ -298,8 +303,9 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        init();
        srv_sock=createServerSocket(srv_port, max_port);
 
-       if (external_addr!=null)
-           local_addr=new IpAddress(external_addr, srv_sock.getLocalPort());
+       if (external_addr!=null) {
+           local_addr=new IpAddress(external_addr, external_port == 0? srv_sock.getLocalPort() : external_port);
+       }
        else if (bind_addr != null)
            local_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
        else
