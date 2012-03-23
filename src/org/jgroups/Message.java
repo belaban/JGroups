@@ -587,7 +587,10 @@ public class Message implements Streamable {
 
 
     public Message makeReply() {
-        return new Message(src_addr);
+        Message retval=new Message(src_addr);
+        if(dest_addr != null)
+            retval.setSrc(dest_addr);
+        return retval;
     }
 
 

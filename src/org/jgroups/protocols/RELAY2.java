@@ -1,5 +1,6 @@
 package org.jgroups.protocols;
 
+import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
@@ -11,6 +12,7 @@ import org.jgroups.stack.Protocol;
  * @author Bela Ban
  * @since 3.1
  */
+@Experimental
 @MBean(description="RELAY2 protocol")
 public class RELAY2 extends Protocol {
 
