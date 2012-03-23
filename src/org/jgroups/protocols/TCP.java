@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
-import org.jgroups.Global;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.blocks.TCPConnectionMap;
@@ -65,6 +64,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                               conn_expire_time,
                               bind_addr,
                               external_addr,
+                              external_port,
                               bind_port,
                               bind_port+port_range
                               );
@@ -122,6 +122,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                                    long connExpireTime,
                                                    InetAddress bindAddress,
                                                    InetAddress externalAddress,
+                                                   int external_port,
                                                    int startPort,
                                                    int endPort
     ) throws Exception {
@@ -133,6 +134,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                         this,
                                         bindAddress,
                                         externalAddress,
+                                        external_port,
                                         startPort,
                                         endPort
             );
@@ -154,6 +156,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                         this,
                                         bindAddress,
                                         externalAddress,
+                                        external_port,
                                         startPort,
                                         endPort,
                                         reaperInterval,

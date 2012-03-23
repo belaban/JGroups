@@ -27,13 +27,13 @@ public class ConnectionMapUnitTest {
     protected void setUp() throws Exception {
         ct1=new TCPConnectionMap("TCPConnectionMap1",
                                  new DefaultThreadFactory(Util.getGlobalThreadGroup(), "test", true),
-                                 null, null, null, null, port1, port1);
+                                 null, null, null, null, 0, port1, port1);
 
         ct1.setUseSendQueues(false);
         ct1.start();
         ct2=new TCPConnectionMap("TCPConnectionMap2",
                                  new DefaultThreadFactory(Util.getGlobalThreadGroup(), "test", true),
-                                 null, null, null, null, port2, port2);
+                                 null, null, null, null, 0, port2, port2);
         ct2.setUseSendQueues(false);
         ct2.start();
     }

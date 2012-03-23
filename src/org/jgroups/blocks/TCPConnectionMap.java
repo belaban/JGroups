@@ -49,10 +49,11 @@ public class TCPConnectionMap{
                             Receiver r,
                             InetAddress bind_addr,
                             InetAddress external_addr,
+                            int external_port,
                             int srv_port,
                             int max_port
                             ) throws Exception {
-        this(service_name, f,socket_factory, r,bind_addr,external_addr,srv_port,max_port,0,0);
+        this(service_name, f,socket_factory, r,bind_addr,external_addr,external_port, srv_port,max_port,0,0);
     }
 
     public TCPConnectionMap(String service_name,
@@ -60,12 +61,13 @@ public class TCPConnectionMap{
                             Receiver r,
                             InetAddress bind_addr,
                             InetAddress external_addr,
+                            int external_port,
                             int srv_port,
                             int max_port,
                             long reaper_interval,
                             long conn_expire_time
                             ) throws Exception {
-        this(service_name, f, null, r, bind_addr, external_addr, srv_port, max_port, reaper_interval, conn_expire_time);
+        this(service_name, f, null, r, bind_addr, external_addr, external_port, srv_port, max_port, reaper_interval, conn_expire_time);
     }
 
     public TCPConnectionMap(String service_name,
@@ -74,6 +76,7 @@ public class TCPConnectionMap{
                             Receiver r,
                             InetAddress bind_addr,
                             InetAddress external_addr,
+                            int external_port,
                             int srv_port,
                             int max_port,
                             long reaper_interval,
@@ -87,8 +90,12 @@ public class TCPConnectionMap{
             this.socket_factory=socket_factory;
         this.srv_sock=Util.createServerSocket(this.socket_factory, service_name, bind_addr, srv_port, max_port);
 
-        if(external_addr != null)
-            local_addr=new IpAddress(external_addr, srv_sock.getLocalPort());
+        if(external_addr != null) {
+            if(external_port <= 0)
+                local_addr=new IpAddress(external_addr, srv_sock.getLocalPort());
+            else
+                local_addr=new IpAddress(external_addr, external_port);
+        }
         else if(bind_addr != null)
             local_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
         else

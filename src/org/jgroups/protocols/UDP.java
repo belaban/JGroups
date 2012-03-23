@@ -397,7 +397,12 @@ public class UDP extends TP {
     protected IpAddress createLocalAddress() {
         if(sock == null || sock.isClosed())
             return null;
-        return new IpAddress(external_addr != null? external_addr : sock.getLocalAddress(), sock.getLocalPort());
+        if(external_addr != null) {
+            if(external_port > 0)
+                return new IpAddress(external_addr, external_port);
+            return new IpAddress(external_addr, sock.getLocalPort());
+        }
+        return new IpAddress(sock.getLocalAddress(), sock.getLocalPort());
     }
 
 
