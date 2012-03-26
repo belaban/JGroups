@@ -1,16 +1,16 @@
-package org.jgroups.protocols.pmcast.manager;
+package org.jgroups.protocols.tom;
 
 import org.jgroups.Message;
 
 import java.util.List;
 
 /**
- * The interface that a deliver manager must implement. This method is invoked by the deliver thread
+ * The interface that a delivery manager must implement. This method is invoked by the delivery thread
  *
  * @author Pedro Ruivo
  * @since 3.1
  */
-public interface DeliverManager {
+public interface DeliveryManager {
 
     /**
      * returns an ordered list with the messages to be deliver.

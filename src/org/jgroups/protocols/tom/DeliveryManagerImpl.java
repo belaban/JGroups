@@ -1,21 +1,20 @@
-package org.jgroups.protocols.pmcast.manager;
+package org.jgroups.protocols.tom;
 
 import org.jgroups.Message;
-import org.jgroups.protocols.pmcast.MessageID;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * The implementation of the Deliver Manager
+ * The implementation of the Delivery Manager
  *
  * @author Pedro Ruivo
  * @since 3.1
  */
-public class DeliverManagerImpl implements DeliverManager {
+public class DeliveryManagerImpl implements DeliveryManager {
     private static final MessageInfoComparator COMPARATOR = new MessageInfoComparator();
-    private final SortedSet<MessageInfo> toDeliverSet = new TreeSet<MessageInfo>(COMPARATOR);
+    private final SortedSet<MessageInfo> deliverySet= new TreeSet<MessageInfo>(COMPARATOR);
     private final ConcurrentMap<MessageID, MessageInfo> messageCache = new ConcurrentHashMap<MessageID, MessageInfo>(8192, .75f, 64);
 
     /**
@@ -26,8 +25,8 @@ public class DeliverManagerImpl implements DeliverManager {
      */
     public void addNewMessageToDeliver(MessageID messageID, Message message, long sequenceNumber) {
         MessageInfo messageInfo = new MessageInfo(messageID, message, sequenceNumber);
-        synchronized (toDeliverSet) {
-            toDeliverSet.add(messageInfo);
+        synchronized (deliverySet) {
+            deliverySet.add(messageInfo);
         }
         messageCache.put(messageID, messageInfo);
     }
@@ -44,10 +43,10 @@ public class DeliverManagerImpl implements DeliverManager {
     @SuppressWarnings({"SuspiciousMethodCalls"})    
     private void markReadyToDeliverV1(MessageID messageID, long finalSequenceNumber) {
         //This is an old version. It was the bottleneck. Updated to version 2. It can be removed later
-        synchronized (toDeliverSet) {
+        synchronized (deliverySet) {
             MessageInfo messageInfo = null;
             boolean needsUpdatePosition = false;
-            Iterator<MessageInfo> iterator = toDeliverSet.iterator();
+            Iterator<MessageInfo> iterator = deliverySet.iterator();
 
             while (iterator.hasNext()) {
                 MessageInfo aux = iterator.next();
@@ -67,11 +66,11 @@ public class DeliverManagerImpl implements DeliverManager {
             }
             messageInfo.updateAndmarkReadyToDeliver(finalSequenceNumber);
             if (needsUpdatePosition) {
-                toDeliverSet.add(messageInfo);
+                deliverySet.add(messageInfo);
             }
 
-            if (!toDeliverSet.isEmpty() && toDeliverSet.first().isReadyToDeliver()) {
-                toDeliverSet.notify();
+            if (!deliverySet.isEmpty() && deliverySet.first().isReadyToDeliver()) {
+                deliverySet.notify();
             }
         }
     }
@@ -86,17 +85,17 @@ public class DeliverManagerImpl implements DeliverManager {
 
         boolean needsUpdatePosition = messageInfo.isUpdatePositionNeeded(finalSequenceNumber);
 
-        synchronized (toDeliverSet) {
+        synchronized (deliverySet) {
             if (needsUpdatePosition) {
-                toDeliverSet.remove(messageInfo);
+                deliverySet.remove(messageInfo);
                 messageInfo.updateAndmarkReadyToDeliver(finalSequenceNumber);
-                toDeliverSet.add(messageInfo);
+                deliverySet.add(messageInfo);
             } else {
                 messageInfo.updateAndmarkReadyToDeliver(finalSequenceNumber);
             }
             
-            if (toDeliverSet.first().isReadyToDeliver()) {
-                toDeliverSet.notify();
+            if (deliverySet.first().isReadyToDeliver()) {
+                deliverySet.notify();
             }
         }
     }
@@ -105,16 +104,16 @@ public class DeliverManagerImpl implements DeliverManager {
     @Override
     public List<Message> getNextMessagesToDeliver() throws InterruptedException {
         LinkedList<Message> toDeliver = new LinkedList<Message>();
-        synchronized (toDeliverSet) {
-            while (toDeliverSet.isEmpty()) {
-                toDeliverSet.wait();
+        synchronized (deliverySet) {
+            while (deliverySet.isEmpty()) {
+                deliverySet.wait();
             }
 
-            if (!toDeliverSet.first().isReadyToDeliver()) {
-                toDeliverSet.wait();
+            if (!deliverySet.first().isReadyToDeliver()) {
+                deliverySet.wait();
             }
 
-            Iterator<MessageInfo> iterator = toDeliverSet.iterator();
+            Iterator<MessageInfo> iterator = deliverySet.iterator();
 
             while (iterator.hasNext()) {
                 MessageInfo messageInfo = iterator.next();
@@ -133,8 +132,8 @@ public class DeliverManagerImpl implements DeliverManager {
      * remove all the pending messages
      */
     public void clear() {
-        synchronized (toDeliverSet) {
-            toDeliverSet.clear();
+        synchronized (deliverySet) {
+            deliverySet.clear();
             messageCache.clear();
         }
     }
@@ -246,8 +245,8 @@ public class DeliverManagerImpl implements DeliverManager {
      * @return unmodifiable set of messages
      */
     public Set<MessageInfo> getMessageSet() {
-        synchronized (toDeliverSet) {
-            return Collections.unmodifiableSet(toDeliverSet);
+        synchronized (deliverySet) {
+            return Collections.unmodifiableSet(deliverySet);
         }
     }
 }

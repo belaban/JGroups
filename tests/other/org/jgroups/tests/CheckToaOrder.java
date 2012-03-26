@@ -4,8 +4,10 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * This check the order of the messages, assuming that the message IDs are printed in a file
@@ -16,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Pedro Ruivo
  * @since 3.1
  */
-public class CheckGroupMulticastOrder {
+public class CheckToaOrder {
 
     public static void main(String[] args) throws InterruptedException {
 
@@ -43,7 +45,7 @@ public class CheckGroupMulticastOrder {
         }
 
         System.out.println("--------------------------------------------------------------------");
-        System.out.println("------------------CHECK GROUP MULTICAST ORDER ----------------------");
+        System.out.println("----------------------- CHECK TOA ORDER ----------------------------");
         System.out.println("--------------------------------------------------------------------");
 
         System.out.println("analyze " + printArgs(args) + " using " + numberOfThreads + " threads");

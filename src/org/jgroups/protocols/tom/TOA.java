@@ -1,39 +1,39 @@
-package org.jgroups.protocols.pmcast;
+package org.jgroups.protocols.tom;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.protocols.pmcast.header.GroupMulticastHeader;
-import org.jgroups.protocols.pmcast.manager.DeliverManagerImpl;
-import org.jgroups.protocols.pmcast.manager.SenderManager;
-import org.jgroups.protocols.pmcast.manager.SequenceNumberManager;
-import org.jgroups.protocols.pmcast.stats.StatsCollector;
-import org.jgroups.protocols.pmcast.threading.DeliverThread;
-import org.jgroups.protocols.pmcast.threading.SenderThread;
 import org.jgroups.stack.Protocol;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**  
- * Total Order Multicast with three communication steps (based on Skeen's Algorithm)
+ * Total Order Anycast with three communication steps (based on Skeen's Algorithm). Establishes total order for a
+ * message sent to a subset of the cluster members (an anycast). Example: send a totally ordered message to {D,E}
+ * out of a membership of {A,B,C,D,E,F}.<p/>
+ * Skeen's algorithm uses consensus among the anycast target members to find the currently highest
+ * sequence number (seqno) and delivers the message according to the order established by the seqnos.
  *
  * @author Pedro Ruivo
  * @since 3.1
  */
-@MBean(description = "Implementation of Total Order Multicast based on Skeen's Algorithm")
-public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
+@Experimental
+@MBean(description = "Implementation of Total Order Anycast based on Skeen's Algorithm")
+public class TOA extends Protocol implements DeliveryProtocol {
     //managers
-    private DeliverManagerImpl deliverManager;
+    private DeliveryManagerImpl deliverManager;
     private SenderManager senderManager;
 
-    //thread
-    private final DeliverThread deliverThread;
+    // threads
+    private final DeliveryThread deliverThread;
     private final SenderThread multicastSenderThread;
 
     //local address
@@ -47,9 +47,9 @@ public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
     //stats: profiling information
     private final StatsCollector statsCollector;
 
-    public GROUP_MULTICAST() {
+    public TOA() {
         statsCollector = new StatsCollector();
-        deliverThread = new DeliverThread(this);
+        deliverThread = new DeliveryThread(this);
         multicastSenderThread = new SenderThread(this);
         sequenceNumberManager = new SequenceNumberManager();
         sendLock = new ReentrantLock();
@@ -58,7 +58,7 @@ public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
 
     @Override
     public void start() throws Exception {
-        deliverManager = new DeliverManagerImpl();
+        deliverManager = new DeliveryManagerImpl();
         senderManager = new SenderManager();
         deliverThread.start(deliverManager);
         multicastSenderThread.clear();
@@ -97,20 +97,20 @@ public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
             case Event.MSG:
                 Message message = (Message) evt.getArg();
 
-                GroupMulticastHeader header = (GroupMulticastHeader) message.getHeader(this.id);
+                ToaHeader header = (ToaHeader) message.getHeader(this.id);
 
                 if (header == null) {
                     break;
                 }
 
                 switch (header.getType()) {
-                    case GroupMulticastHeader.DATA_MESSAGE:
+                    case ToaHeader.DATA_MESSAGE:
                         handleDataMessage(message, header);
                         break;
-                    case GroupMulticastHeader.PROPOSE_MESSAGE:
+                    case ToaHeader.PROPOSE_MESSAGE:
                         handleSequenceNumberPropose(message.getSrc(), header);
                         break;
-                    case GroupMulticastHeader.FINAL_MESSAGE:
+                    case ToaHeader.FINAL_MESSAGE:
                         handleFinalSequenceNumber(header);
                         break;
                     default:
@@ -153,31 +153,30 @@ public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
         Message message = (Message) evt.getArg();
         Address dest = message.getDest();
 
-        if (dest != null && dest instanceof GroupAddress && !message.isFlagSet(Message.Flag.NO_TOTAL_ORDER)) {
-            //group multicast message
-            handleDownGroupMulticastMessage(message);
-        } else if (dest != null && dest instanceof GroupAddress) {
-            //group address with NO_TOTAL_ORDER flag (should no be possible, but...)
-            handleDownGroupMessage(message);
+        if (dest != null && dest instanceof AnycastAddress && !message.isFlagSet(Message.Flag.NO_TOTAL_ORDER)) {
+            //anycast message
+            sendTotalOrderAnycastMessage(((AnycastAddress)dest).getAddresses(),message);
+        } else if (dest != null && dest instanceof AnycastAddress) {
+            //anycast address with NO_TOTAL_ORDER flag (should no be possible, but...)
+            sendRegularAnycastMessage(((AnycastAddress)dest).getAddresses(), message);
         } else {
             //normal message
             down_prot.down(evt);
         }
     }
 
-    private void handleDownGroupMessage(Message message) {
+    private void sendRegularAnycastMessage(Collection<Address> destinations, Message message) {
         if (log.isTraceEnabled()) {
-            log.trace("Handle message with Group Address but with Flag NO_TOTAL_ORDER set");
+            log.trace("send message with AnycastAddress but with flag NO_TOTAL_ORDER set");
         }
-        GroupAddress groupAddress = (GroupAddress) message.getDest();
         try {
-            multicastSenderThread.addMessage(message, groupAddress.getAddresses());
+            multicastSenderThread.addMessage(message, destinations);
         } catch (Exception e) {
-            logException("Exception caugh while send a NO-TOTAL-ORDER group multicast", e);
+            logException("Exception caugh while sending a NO-TOTAL-ORDER anycast", e);
         }
     }
 
-    private void handleDownGroupMulticastMessage(Message message) {
+    private void sendTotalOrderAnycastMessage(Collection<Address> destinations, Message message) {
         boolean trace = log.isTraceEnabled();
         boolean warn = log.isWarnEnabled();
 
@@ -185,64 +184,62 @@ public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
         long duration = -1;
 
         if (trace) {
-            log.trace("Handle group multicast message");
-        }
-        GroupAddress groupAddress = (GroupAddress) message.getDest();
-        Set<Address> destination = groupAddress.getAddresses();
-
-        if (destination.isEmpty()) {
-            if (warn) {
-                log.warn("Received a group address with an empty list");
-            }
-            throw new IllegalStateException("Group Address must have at least one element");
+            log.trace("sending total order anycast message");
         }
 
-        if (destination.size() == 1) {
+        if (destinations.isEmpty()) {
             if (warn) {
-                log.warn("Received a group address with an element");
+                log.warn("sending an anycast with an empty list");
             }
-            message.setDest(destination.iterator().next());
+            throw new IllegalStateException("AnycastAddress must have at least one element");
+        }
+
+        if (destinations.size() == 1) {
+            if (warn) {
+                log.warn("sending an AnycastAddress with 1 element");
+            }
+            message.setDest(destinations.iterator().next());
             down_prot.down(new Event(Event.MSG, message));
             return;
         }
 
-        boolean deliverToMySelf = destination.contains(localAddress);
+        boolean deliverToMySelf = destinations.contains(localAddress);
 
         sendLock.lock();
         try {
             MessageID messageID = new MessageID(localAddress, messageIdCounter++);
             long sequenceNumber = sequenceNumberManager.getAndIncrement();
 
-            GroupMulticastHeader header = GroupMulticastHeader.createNewHeader(GroupMulticastHeader.DATA_MESSAGE,
-                    messageID);
+            ToaHeader header = ToaHeader.createNewHeader(ToaHeader.DATA_MESSAGE,
+                                                         messageID);
             header.setSequencerNumber(sequenceNumber);
-            header.addDestinations(destination);
+            header.addDestinations(destinations);
             message.putHeader(this.id, header);
 
-            senderManager.addNewMessageToSent(messageID, destination, sequenceNumber, deliverToMySelf);
+            senderManager.addNewMessageToSend(messageID,destinations,sequenceNumber,deliverToMySelf);
 
             if (deliverToMySelf) {
                 deliverManager.addNewMessageToDeliver(messageID, message, sequenceNumber);
             }
 
             if (trace) {
-                log.trace("Sending message " + messageID + " to " + destination + " with initial sequence number of " +
+                log.trace("Sending message " + messageID + " to " + destinations + " with initial sequence number of " +
                         sequenceNumber);
             }
 
-            multicastSenderThread.addMessage(message, destination);
+            multicastSenderThread.addMessage(message, destinations);
 
             duration = statsCollector.now() - startTime;
         } catch (Exception e) {
-            logException("Exception caught while handling group multicast message. Error is " + e.getLocalizedMessage(),
+            logException("Exception caught while sending anycast message. Error is " + e.getLocalizedMessage(),
                     e);
         } finally {
             sendLock.unlock();
-            statsCollector.addGroupMulticastSentDuration(duration, (destination.size() - (deliverToMySelf ? 1 : 0)));
+            statsCollector.addGroupMulticastSentDuration(duration, (destinations.size() - (deliverToMySelf ? 1 : 0)));
         }
     }
 
-    private void handleDataMessage(Message message, GroupMulticastHeader header) {
+    private void handleDataMessage(Message message, ToaHeader header) {
         long startTime = statsCollector.now();
         long duration = -1;
 
@@ -263,8 +260,8 @@ public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
             proposeMessage.setSrc(localAddress);
             proposeMessage.setDest(messageID.getAddress());
 
-            GroupMulticastHeader newHeader = GroupMulticastHeader.createNewHeader(
-                    GroupMulticastHeader.PROPOSE_MESSAGE, messageID);
+            ToaHeader newHeader = ToaHeader.createNewHeader(
+              ToaHeader.PROPOSE_MESSAGE,messageID);
 
             newHeader.setSequencerNumber(myProposeSequenceNumber);
             proposeMessage.putHeader(this.id, newHeader);
@@ -281,7 +278,7 @@ public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
         }
     }
 
-    private void handleSequenceNumberPropose(Address from, GroupMulticastHeader header) {
+    private void handleSequenceNumberPropose(Address from, ToaHeader header) {
         long startTime = statsCollector.now();
         long duration = -1;
         boolean lastProposeReceived = false;
@@ -303,8 +300,8 @@ public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
                 Message finalMessage = new Message();
                 finalMessage.setSrc(localAddress);
 
-                GroupMulticastHeader finalHeader = GroupMulticastHeader.createNewHeader(
-                        GroupMulticastHeader.FINAL_MESSAGE, messageID);
+                ToaHeader finalHeader = ToaHeader.createNewHeader(
+                  ToaHeader.FINAL_MESSAGE,messageID);
 
                 finalHeader.setSequencerNumber(finalSequenceNumber);
                 finalMessage.putHeader(this.id, finalHeader);
@@ -336,7 +333,7 @@ public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
         }
     }
 
-    private void handleFinalSequenceNumber(GroupMulticastHeader header) {
+    private void handleFinalSequenceNumber(ToaHeader header) {
         long startTime = statsCollector.now();
         long duration = -1;
 
@@ -381,8 +378,8 @@ public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
         statsCollector.clearStats();
     }
 
-    @ManagedAttribute(description = "The average duration (in milliseconds) in processing and sending the group " +
-            "multicast message to all the recipients", writable = false)
+    @ManagedAttribute(description = "The average duration (in milliseconds) in processing and sending the anycast " +
+            "message to all the recipients", writable = false)
     public double getAvgGroupMulticastSentDuration() {
         return statsCollector.getAvgGroupMulticastSentDuration();
     }
@@ -411,17 +408,17 @@ public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
         return statsCollector.getAvgFinalMessageReceivedDuration();
     }
 
-    @ManagedAttribute(description = "The number of group multicast messages sent", writable = false)
+    @ManagedAttribute(description = "The number of anycast messages sent", writable = false)
     public int getNumberOfGroupMulticastMessagesSent() {
         return statsCollector.getNumberOfGroupMulticastMessagesSent();
     }
 
-    @ManagedAttribute(description = "The number of final group messages sent", writable = false)
+    @ManagedAttribute(description = "The number of final anycast sent", writable = false)
     public int getNumberOfFinalGroupMessagesSent() {
         return statsCollector.getNumberOfFinalGroupMessagesSent();
     }
 
-    @ManagedAttribute(description = "The number of group multicast messages delivered", writable = false)
+    @ManagedAttribute(description = "The number of anycast messages delivered", writable = false)
     public int getNumberOfGroupMulticastMessagesDelivered() {
         return statsCollector.getGroupMulticastDelivered();
     }
@@ -446,7 +443,7 @@ public class GROUP_MULTICAST extends Protocol implements DeliverProtocol {
         return statsCollector.getNumberOfProposeMessagesReceived();
     }
 
-    @ManagedAttribute(description = "The average number of unicasts messages created per group multicast message",
+    @ManagedAttribute(description = "The average number of unicasts messages created per anycast message",
             writable = false)
     public double getAvgNumberOfUnicastSentPerGroupMulticast() {
         return statsCollector.getAvgNumberOfUnicastSentPerGroupMulticast();

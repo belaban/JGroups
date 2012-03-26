@@ -1,14 +1,14 @@
-package org.jgroups.protocols.pmcast;
+package org.jgroups.protocols.tom;
 
 import org.jgroups.Message;
 
 /**
- * The interface that the Total Order Multicast protocol must implement. This is invoked by the deliver thread
+ * The interface that the Total Order Anycast protocol must implement. This is invoked by the delivery thread
  *
  * @author Pedro Ruivo
  * @since 3.1
  */
-public interface DeliverProtocol {
+public interface DeliveryProtocol {
 
     /**
      * deliver a message

@@ -1,4 +1,4 @@
-package org.jgroups.protocols.pmcast.manager;
+package org.jgroups.protocols.tom;
 
 /**
  * Manages the messages sequence number (keeps it up-to-date)

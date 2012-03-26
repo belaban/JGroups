@@ -1,4 +1,4 @@
-package org.jgroups.protocols.pmcast;
+package org.jgroups.protocols.tom;
 
 import org.jgroups.Address;
 import org.jgroups.util.Streamable;
@@ -7,7 +7,7 @@ import org.jgroups.util.Util;
 import java.io.*;
 
 /**
- * The represents an unique identifier for the messages processed by the Total Order Multicast protocol
+ * The represents an unique identifier for the messages processed by the Total Order Anycast protocol
  * 
  * Note: it is similar to the ViewId (address + counter)
  * 
@@ -15,6 +15,7 @@ import java.io.*;
  * @since 3.1
  */
 public class MessageID implements Externalizable, Comparable<MessageID>, Cloneable, Streamable {
+    private static final long serialVersionUID=878801547232534461L;
     private Address address = null;
     private long id = -1;
 

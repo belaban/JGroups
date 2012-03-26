@@ -1,36 +1,34 @@
-package org.jgroups.protocols.pmcast.header;
+package org.jgroups.protocols.tom;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Header;
-import org.jgroups.protocols.pmcast.MessageID;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
- * The header for the Total Order Multicast protocol
+ * The header for the Total Order Anycast (TOA) protocol
  * 
  * @author Pedro Ruivo
  * @since 3.1
  */
-public class GroupMulticastHeader extends Header {
+public class ToaHeader extends Header {
 
     //type
-    public static final byte DATA_MESSAGE = 1;
+    public static final byte DATA_MESSAGE    = 1 << 0;
     public static final byte PROPOSE_MESSAGE = 1 << 1;
-    public static final byte FINAL_MESSAGE = 1 << 2;
+    public static final byte FINAL_MESSAGE   = 1 << 2;
 
     private byte type = 0;
     private MessageID messageID; //address and sequence number
     private long sequencerNumber;
-    private Set<Address> destination = new HashSet<Address>();
+    private Collection<Address> destinations= new ArrayList<Address>();
 
-    public GroupMulticastHeader() {
+    public ToaHeader() {
         messageID = new MessageID();
     }
 
@@ -43,11 +41,14 @@ public class GroupMulticastHeader extends Header {
     }
 
     public void addDestinations(Collection<Address> addresses) {
-        destination.addAll(addresses);
+        if(addresses != null && !addresses.isEmpty())
+            for(Address address: addresses)
+                if(!destinations.contains(address))
+                    destinations.add(address);
     }
 
-    public Set<Address> getDestinations() {
-        return destination;
+    public Collection<Address> getDestinations() {
+        return destinations;
     }
 
     public long getSequencerNumber() {
@@ -65,7 +66,7 @@ public class GroupMulticastHeader extends Header {
     @Override
     public int size() {
         return (int) (Global.BYTE_SIZE  + messageID.serializedSize() + Util.size(sequencerNumber) +
-                Util.size(destination));
+                Util.size(destinations));
     }
 
     @Override
@@ -73,7 +74,7 @@ public class GroupMulticastHeader extends Header {
         out.writeByte(type);
         messageID.writeTo(out);
         Util.writeLong(sequencerNumber, out);
-        Util.writeAddresses(destination, out);
+        Util.writeAddresses(destinations, out);
     }
 
     @Override
@@ -81,7 +82,7 @@ public class GroupMulticastHeader extends Header {
         type = in.readByte();
         messageID.readFrom(in);
         sequencerNumber = Util.readLong(in);
-        destination = (Set<Address>) Util.readAddresses(in, HashSet.class);
+        destinations= (Collection<Address>) Util.readAddresses(in, ArrayList.class);
     }
 
     @Override
@@ -91,7 +92,7 @@ public class GroupMulticastHeader extends Header {
                 .append("type=").append(type2String(type))
                 .append(", message_id=").append(messageID)
                 .append(", sequence_number=").append(sequencerNumber)
-                .append(", destinations=").append(destination)
+                .append(", destinations=").append(destinations)
                 .append("}");
         return sb.toString();
     }
@@ -105,11 +106,11 @@ public class GroupMulticastHeader extends Header {
         }
     }
 
-    public static GroupMulticastHeader createNewHeader(byte type, MessageID messageID) {
+    public static ToaHeader createNewHeader(byte type, MessageID messageID) {
         if (messageID == null) {
             throw new NullPointerException("The message ID can't be null");
         }
-        GroupMulticastHeader header = new GroupMulticastHeader();
+        ToaHeader header = new ToaHeader();
         header.setType(type);
         header.setMessageID(messageID);
         return header;

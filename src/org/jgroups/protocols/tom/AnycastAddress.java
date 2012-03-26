@@ -1,4 +1,4 @@
-package org.jgroups.protocols.pmcast;
+package org.jgroups.protocols.tom;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
@@ -8,27 +8,45 @@ import java.io.*;
 import java.util.*;
 
 /**
- * This type of address represents a group in which the total order properties must be applied
+ * This type of address represents a subset of the cluster members in which the total order properties must be applied,
+ * e.g. if the cluster membership is {A,B,C,D,E}, an AnycastAddress could be {D,E}.
  * 
  * @author Pedro Ruivo
  * @since 3.1
  */
-public class GroupAddress implements Address {
-    private Set<Address> destinations;
+public class AnycastAddress implements Address {
+    protected Collection<Address> destinations = new ArrayList<Address>(5);
+    private static final long     serialVersionUID=-3133792315497822421L;
 
-    public GroupAddress() {
-        destinations = new HashSet<Address>();
+    public AnycastAddress() {
     }
 
-    public void addAddress(Address address) {
-        destinations.add(address);
+    public AnycastAddress(Collection<Address> addresses) {
+        addAll(addresses);
     }
 
-    public void addAllAddress(Collection<Address> addresses) {
-        destinations.addAll(addresses);
+    public AnycastAddress(Address ... addresses) {
+        add(addresses);
     }
 
-    public Set<Address> getAddresses() {
+    public void add(Address ... addresses) {
+        if(addresses == null || addresses.length == 0) return;
+        for(Address address: addresses)
+            _add(address);
+    }
+
+    protected void _add(Address address) {
+        if(!destinations.contains(address))
+            destinations.add(address);
+    }
+
+    public void addAll(Collection<Address> addresses) {
+        if(addresses != null && !addresses.isEmpty())
+            for(Address address: addresses)
+                _add(address);
+    }
+
+    public Collection<Address> getAddresses() {
         return destinations;
     }
 
@@ -42,7 +60,7 @@ public class GroupAddress implements Address {
 
     @Override
     public String toString() {
-        return "GroupAddress{" + destinations + "}";
+        return "AnycastAddress{" + destinations + "}";
     }
 
     @Override
@@ -57,11 +75,11 @@ public class GroupAddress implements Address {
     @Override
     public boolean equals(Object obj) {
         if(obj == null) return false;
-        if(!(obj instanceof GroupAddress)) {
+        if(!(obj instanceof AnycastAddress)) {
             return false;
         }
 
-        GroupAddress other = (GroupAddress) obj;
+        AnycastAddress other = (AnycastAddress) obj;
 
         return other == this || (this.destinations.containsAll(other.destinations) &&
                 other.destinations.containsAll(this.destinations));
@@ -71,10 +89,10 @@ public class GroupAddress implements Address {
         int hc1, hc2;
 
         if(this == o) return 0;
-        if(!(o instanceof GroupAddress))
+        if(!(o instanceof AnycastAddress))
             throw new ClassCastException("comparison between different classes: the other object is " +
                     (o != null? o.getClass() : o));
-        GroupAddress other = (GroupAddress) o;
+        AnycastAddress other = (AnycastAddress) o;
 
         hc1 = this.hashCode();
         hc2 = other.hashCode();
@@ -94,7 +112,7 @@ public class GroupAddress implements Address {
 
     @Override
     public void readFrom(DataInput in) throws Exception {
-        destinations = (Set<Address>) Util.readAddresses(in, HashSet.class);
+        destinations = (Collection<Address>) Util.readAddresses(in, ArrayList.class);
     }
 
     @Override

@@ -1,14 +1,13 @@
-package org.jgroups.protocols.pmcast.manager;
+package org.jgroups.protocols.tom;
 
 import org.jgroups.Address;
-import org.jgroups.protocols.pmcast.MessageID;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Keeps track of all sended messages, until the final sequence number is known
+ * Keeps track of all sent messages, until the final sequence number is known
  *
  * @author Pedro Ruivo
  * @since 3.1
@@ -22,14 +21,14 @@ public class SenderManager {
     /**
      * Add a new message sent
      * @param messageID             the message ID
-     * @param destination           the destination set
+     * @param destinations          the destination set
      * @param initialSequenceNumber the initial sequence number
-     * @param deliverToMySelf       true if *this* member is in destination sent, false otherwise
+     * @param deliverToMyself       true if *this* member is in destination sent, false otherwise
      */
-    public void addNewMessageToSent(MessageID messageID, Set<Address> destination, long initialSequenceNumber,
-                                    boolean deliverToMySelf) {
-        MessageInfo messageInfo = new MessageInfo(destination, initialSequenceNumber, deliverToMySelf);
-        if (deliverToMySelf) {
+    public void addNewMessageToSend(MessageID messageID, Collection<Address> destinations, long initialSequenceNumber,
+                                    boolean deliverToMyself) {
+        MessageInfo messageInfo = new MessageInfo(destinations, initialSequenceNumber, deliverToMyself);
+        if (deliverToMyself) {
             messageInfo.setProposeReceived(messageID.getAddress());
         }
         sentMessages.put(messageID, messageInfo);
@@ -69,7 +68,7 @@ public class SenderManager {
         MessageInfo messageInfo = sentMessages.get(messageID);
         Set<Address> destination;
         if (messageInfo != null) {
-            destination = new HashSet<Address>(messageInfo.destination);
+            destination = new HashSet<Address>(messageInfo.destinations);
         } else {
             destination = Collections.emptySet();
         }
@@ -87,14 +86,14 @@ public class SenderManager {
      * The state of a message (destination, proposes missing, the highest sequence number proposed, etc...)
      */
     private static class MessageInfo {
-        private ArrayList<Address> destination;
+        private ArrayList<Address> destinations;
         private long highestSequenceNumberReceived;
         private BitSet receivedPropose;
         private boolean finalMessageSent = false;
         private boolean toSelfDeliver = false;
 
-        private MessageInfo(Set<Address> addresses, long sequenceNumber, boolean selfDeliver) {
-            this.destination = new ArrayList<Address>(addresses);
+        private MessageInfo(Collection<Address> addresses, long sequenceNumber, boolean selfDeliver) {
+            this.destinations = new ArrayList<Address>(addresses);
             this.highestSequenceNumberReceived = sequenceNumber;
             createNewBitSet(addresses.size());
             this.toSelfDeliver = selfDeliver;
@@ -122,7 +121,7 @@ public class SenderManager {
         }
 
         private void setProposeReceived(Address address) {
-            int idx = destination.indexOf(address);
+            int idx = destinations.indexOf(address);
             if (idx == -1) {
                 throw new IllegalStateException("Address doesn't exists in destination list. Address is " + address);
             }

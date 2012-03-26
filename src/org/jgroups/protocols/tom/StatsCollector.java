@@ -1,4 +1,4 @@
-package org.jgroups.protocols.pmcast.stats;
+package org.jgroups.protocols.tom;
 
 import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -62,7 +62,7 @@ public class StatsCollector {
         return true;
     }
 
-    private double convertNanosToMillis(long nanos) {
+    private static double convertNanosToMillis(long nanos) {
         return nanos / 1000000.0;
     }
 

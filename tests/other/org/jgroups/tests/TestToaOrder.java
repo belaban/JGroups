@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.pmcast.GroupAddress;
+import org.jgroups.protocols.tom.AnycastAddress;
 import org.jgroups.util.Util;
 
 import javax.management.*;
@@ -10,7 +10,7 @@ import java.lang.management.ManagementFactory;
 import java.util.*;
 
 /**
- * Runs the Total Order Multicast protocol and saves the messages delivered
+ * Runs the Total Order Anycast protocol and saves the messages delivered
  * 
  * Note: this is used for debugging
  * Note2: this needs to be clean :)
@@ -18,9 +18,9 @@ import java.util.*;
  * @author Pedro Ruivo
  * @since 3.1
  */
-public class TestGroupMulticastOrder {
-    private static final String PROPS = "group-multicast.xml";
-    private static final String CLUSTER = "test-group-multicast-cluster";
+public class TestToaOrder {
+    private static final String PROPS = "toa.xml";
+    private static final String CLUSTER = "test-toa-cluster";
     private static final String OUTPUT_FILE_SUFFIX = "-messages.txt";
     private static final String JMX_DOMAIN = "org.jgroups";
 
@@ -37,9 +37,9 @@ public class TestGroupMulticastOrder {
     private String config;
 
     public static void main(String[] args) throws InterruptedException {
-        System.out.println("==========================");
-        System.out.println("Test Group Multicast Order");
-        System.out.println("==========================");
+        System.out.println("==============");
+        System.out.println("Test TOA Order");
+        System.out.println("==============");
 
 
         ArgumentsParser argumentsParser = new ArgumentsParser(args);
@@ -76,26 +76,26 @@ public class TestGroupMulticastOrder {
             System.exit(0);*/
         }
 
-        TestGroupMulticastOrder testGroupMulticastOrder = new TestGroupMulticastOrder(
+        TestToaOrder test = new TestToaOrder(
                 argumentsParser.getNumberOfNodes(),
                 argumentsParser.getNumberOfMessages(),
                 argumentsParser.getConfig());
 
         try {
-            testGroupMulticastOrder.startTest();
+            test.startTest();
         } catch (Exception e) {
             System.err.println("Error while executing the test: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
         } finally {
-            testGroupMulticastOrder.closeJChannel();
+            test.closeJChannel();
             System.out.println("============= FINISHED =============");
         }
         System.exit(0);
     }
 
     private static void helpAndExit() {
-        System.out.println("usage: " + TestGroupMulticastOrder.class.getCanonicalName() + " <option>");
+        System.out.println("usage: " + TestToaOrder.class.getCanonicalName() + " <option>");
         System.out.println("Options:");
         System.out.println("  -h                    \tshow this message");
         System.out.println("  -nr-nodes <value>     \tnumber of nodes");
@@ -198,14 +198,14 @@ public class TestGroupMulticastOrder {
         private int expectedMembers;
         private int members = 0;
         private final List<String> messageList;
-        private final TestGroupMulticastOrder testGroupMulticastOrder;
+        private final TestToaOrder testGroupMulticastOrder;
 
         private long start = 0;
         private long stop = 0;
         private long receivedBytes = 0;
         private int receivedMsgs = 0;
 
-        public MyReceiver(int expectedMembers, TestGroupMulticastOrder testGroupMulticastOrder) {
+        public MyReceiver(int expectedMembers, TestToaOrder testGroupMulticastOrder) {
             this.expectedMembers = expectedMembers;
             this.testGroupMulticastOrder = testGroupMulticastOrder;
             this.messageList = new LinkedList<String>();
@@ -391,6 +391,7 @@ public class TestGroupMulticastOrder {
     private static class DataMessage implements Serializable {
         public transient static final byte FINISH = 1; //1 << 0
         public transient static final byte DATA = 1 << 1;
+        private static final long serialVersionUID=5946678490588947910L;
 
         private byte type;
         private String data;
@@ -398,7 +399,7 @@ public class TestGroupMulticastOrder {
 
     // ====================== other methods ======================
 
-    public TestGroupMulticastOrder(int numberOfNodes, int numberOfMessages, String config) {
+    public TestToaOrder(int numberOfNodes, int numberOfMessages, String config) {
         this.numberOfNodes = numberOfNodes;
         this.numberOfMessages = numberOfMessages;
         this.config = config;
@@ -418,14 +419,14 @@ public class TestGroupMulticastOrder {
         members.addAll(jChannel.getView().getMembers());
     }
 
-    private GroupAddress getDestinations(List<Address> members) {
+    private AnycastAddress getDestinations(List<Address> members) {
         int rand = members.indexOf(jChannel.getAddress());
 
-        GroupAddress address = new GroupAddress();
+        AnycastAddress address = new AnycastAddress();
 
-        address.addAddress(members.get(rand++ % members.size()));
-        address.addAddress(members.get(rand++ % members.size()));
-        address.addAddress(members.get(rand % members.size()));
+        address.add(members.get(rand++ % members.size()),
+                    members.get(rand++ % members.size()),
+                    members.get(rand % members.size()));
 
         return address;
     }
@@ -434,10 +435,10 @@ public class TestGroupMulticastOrder {
         System.out.println("Start sending messages...");
 
         String address = jChannel.getAddressAsString();
-        List<Address> members = jChannel.getView().getMembers();
+        List<Address> mbrs = jChannel.getView().getMembers();
         start = System.nanoTime();
         for (int i = 0; i < numberOfMessages; ++i) {
-            GroupAddress dst = getDestinations(members);
+            AnycastAddress dst = getDestinations(mbrs);
             Message message = new Message();
             message.setDest(dst);
 
@@ -529,7 +530,7 @@ public class TestGroupMulticastOrder {
         printJMXStats();
     }
 
-    private void printJMXStats() {
+    private static void printJMXStats() {
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
         ObjectName groupMulticast = getGroupMulticastObjectName(mBeanServer);
 
@@ -556,10 +557,10 @@ public class TestGroupMulticastOrder {
         }
     }
 
-    private ObjectName getGroupMulticastObjectName(MBeanServer mBeanServer) {
+    private static ObjectName getGroupMulticastObjectName(MBeanServer mBeanServer) {
         for(ObjectName name : mBeanServer.queryNames(null, null)) {
             if(name.getDomain().equals(JMX_DOMAIN)) {
-                if ("GROUP_MULTICAST".equals(name.getKeyProperty("protocol"))) {
+                if ("TOA".equals(name.getKeyProperty("protocol"))) {
                     return name;
                 }
             }
