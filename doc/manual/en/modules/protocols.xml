@@ -1055,6 +1055,40 @@
 
             ${SEQUENCER}
         </section>
+
+        <section id="TOA">
+            <title>Total Order Anycast (TOA)</title>
+
+            <para>
+                A total order anycast is a totally ordered message sent to a subset of the cluster members. TOA
+                intercepts messages with an AnycastMessage (carrying a list of addresses) and handles sending of the
+                message in total order. Say the cluster is {A,B,C,D,E} and the Anycast is to {B,C}.
+            </para>
+            <para>
+                Skeen's algorithm is used to send the message: B and C each maintain a logical clock (a counter).
+                When a message is to be sent, TOA contacts B and C and asks them for their counters. B and C return
+                their counters (incrementing them for the next request).
+            </para>
+            <para>
+                The originator of the message then sets the message's ID to be the max of all returned counters and
+                sends the message. Receivers then deliver the messages in order of their IDs.
+            </para>
+            <para>
+                The main use of TOA is currently in Infinispan's transactional caches with partial replication: it
+                is used to apply transactional modifications in total order, so that no two-phase commit protocol
+                has to be run and no locks have to be acquired.
+            </para>
+            <para>
+                As shown in <ulink url="http://www.cloudtm.eu/home/Publications">
+                "Exploiting Total Order Multicast in Weakly Consistent Transactional Caches"</ulink>, when we have
+                many conflicts by different transactions modifying the same keys, TOM fares better than 2PC.
+            </para>
+            <para>
+                Note that TOA is experimental (as of 3.1).
+            </para>
+
+            ${tom.TOA}
+        </section>
     </section>
 
 

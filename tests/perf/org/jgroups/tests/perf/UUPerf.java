@@ -84,7 +84,7 @@ public class UUPerf extends ReceiverAdapter {
             METHODS[APPLY_STATE]=UUPerf.class.getMethod("applyState",byte[].class);
             METHODS[GET_CONFIG]=UUPerf.class.getMethod("getConfig");
 
-            ClassConfigurator.add((short)11000,Results.class);
+            ClassConfigurator.add((short)12000,Results.class);
             f=NumberFormat.getNumberInstance();
             f.setGroupingUsed(false);
             f.setMinimumFractionDigits(2);
