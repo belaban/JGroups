@@ -6,6 +6,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
+import org.jgroups.AnycastAddress;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Buffer;
@@ -153,10 +154,18 @@ public class RequestCorrelator {
         }
 
         if(options.getAnycasting()) {
-            for(Address mbr: dest_mbrs) {
+            if(options.useAnycastAddresses()) {
                 Message copy=msg.copy(true);
-                copy.setDest(mbr);
+                AnycastAddress dest=new AnycastAddress(dest_mbrs);
+                copy.setDest(dest);
                 transport.down(new Event(Event.MSG, copy));
+            }
+            else {
+                for(Address mbr: dest_mbrs) {
+                    Message copy=msg.copy(true);
+                    copy.setDest(mbr);
+                    transport.down(new Event(Event.MSG, copy));
+                }
             }
         }
         else

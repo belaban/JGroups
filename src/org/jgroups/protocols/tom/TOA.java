@@ -1,9 +1,6 @@
 package org.jgroups.protocols.tom;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -144,7 +141,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
             sendTotalOrderAnycastMessage(((AnycastAddress)dest).getAddresses(),message);
         } else if (dest != null && dest instanceof AnycastAddress) {
             //anycast address with NO_TOTAL_ORDER flag (should no be possible, but...)
-            send(((AnycastAddress)dest).getAddresses(), message);
+            send(((AnycastAddress)dest).getAddresses(),message);
         } else {
             //normal message
             down_prot.down(evt);
@@ -202,7 +199,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                         sequenceNumber);
             }
 
-            send(destinations, message);
+            send(destinations,message);
             duration = statsCollector.now() - startTime;
         } catch (Exception e) {
             logException("Exception caught while sending anycast message. Error is " + e.getLocalizedMessage(),
@@ -214,7 +211,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
 
     private void send(Collection<Address> destinations, Message msg) {
         if (destinations == null) {
-            down_prot.down(new Event(Event.MSG, msg));
+            down_prot.down(new Event(Event.MSG,msg));
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("sending anycast total order message " + msg + " to " + destinations);
@@ -225,7 +222,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                 }
                 Message cpy = msg.copy();
                 cpy.setDest(address);
-                down_prot.down(new Event(Event.MSG, cpy));
+                down_prot.down(new Event(Event.MSG,cpy));
             }
         }
     }
@@ -309,7 +306,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                             finalSequenceNumber);
                 }
 
-                send(destinations, finalMessage);
+                send(destinations,finalMessage);
                 //returns true if we are in destination set
                 if (senderManager.markSent(messageID)) {
                     deliverManager.markReadyToDeliver(messageID, finalSequenceNumber);

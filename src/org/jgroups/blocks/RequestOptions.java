@@ -12,25 +12,29 @@ import java.util.*;
  */
 public class RequestOptions {
     /** The mode of a request. Defined in {@link ResponseMode} e.g. GET_NONE, GET_ALL */
-    private ResponseMode  mode=ResponseMode.GET_NONE;
+    protected ResponseMode  mode=ResponseMode.GET_NONE;
 
     /** The max time (in ms) for a blocking call. 0 blocks until all responses have been received (if mode = GET_ALL) */
-    private long          timeout; // used when mode != GET_NONE
+    protected long          timeout; // used when mode != GET_NONE
 
     /** Turns on anycasting; this results in multiple unicasts rather than a multicast for group calls */
-    private boolean       use_anycasting;
+    protected boolean       use_anycasting;
+
+    /** If use_anycasting is true: do we want to use an AnycastAddress [B,C] or a unicast to B and another unicast
+     * to C to send an anycast to {B,C} ? Only used if use_anycasting is true */
+    protected boolean       use_anycast_addresses;
 
     /** Allows for filtering of responses */
-    private RspFilter     rsp_filter;
+    protected RspFilter     rsp_filter;
 
     /** The scope of a message, allows for concurrent delivery of messages from the same sender */
-    private short         scope;
+    protected short         scope;
 
     /** The flags set in the message in which a request is sent */
-    private short         flags; // Message.OOB, Message.DONT_BUNDLE etc
+    protected short         flags; // Message.OOB, Message.DONT_BUNDLE etc
 
     /** A list of members which should be excluded from a call */
-    private Set<Address>  exclusion_list;
+    protected Set<Address>  exclusion_list;
 
 
 
@@ -104,6 +108,14 @@ public class RequestOptions {
         return this;
     }
 
+
+    public boolean useAnycastAddresses() {return use_anycast_addresses;}
+
+    public RequestOptions useAnycastAddresses(boolean flag) {
+        use_anycast_addresses=flag;
+        return this;
+    }
+
     public short getScope() {
         return scope;
     }
@@ -171,8 +183,11 @@ public class RequestOptions {
         StringBuilder sb=new StringBuilder();
         sb.append("mode=" + mode);
         sb.append(", timeout=" + timeout);
-        if(use_anycasting)
+        if(use_anycasting) {
             sb.append(", anycasting=true");
+            if(use_anycast_addresses)
+                sb.append(" (using AnycastAddress)");
+        }
         sb.append(", flags=" + Message.flagsToString(flags));
         if(scope > 0)
             sb.append(", scope=" + scope);

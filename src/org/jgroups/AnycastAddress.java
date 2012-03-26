@@ -1,7 +1,5 @@
-package org.jgroups.protocols.tom;
+package org.jgroups;
 
-import org.jgroups.Address;
-import org.jgroups.Global;
 import org.jgroups.util.Util;
 
 import java.io.*;

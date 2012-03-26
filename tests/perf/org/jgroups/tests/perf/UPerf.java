@@ -40,22 +40,24 @@ public class UPerf extends ReceiverAdapter {
     private int num_threads=25;
     private int num_msgs=20000, msg_size=1000;
     private int anycast_count=2;
+    private boolean use_anycast_addrs;
     private double read_percentage=0.8; // 80% reads, 20% writes
     // =======================================================
 
     private static final Method[] METHODS=new Method[15];
 
-    private static final short START               =  0;
-    private static final short SET_OOB             =  1;
-    private static final short SET_SYNC            =  2;
-    private static final short SET_NUM_MSGS        =  3;
-    private static final short SET_NUM_THREADS     =  4;
-    private static final short SET_MSG_SIZE        =  5;
-    private static final short SET_ANYCAST_COUNT   =  6;
-    private static final short SET_READ_PERCENTAGE =  7;
-    private static final short GET                 =  8;
-    private static final short PUT                 =  9;
-    private static final short GET_CONFIG          = 10;
+    private static final short START                 =  0;
+    private static final short SET_OOB               =  1;
+    private static final short SET_SYNC              =  2;
+    private static final short SET_NUM_MSGS          =  3;
+    private static final short SET_NUM_THREADS       =  4;
+    private static final short SET_MSG_SIZE          =  5;
+    private static final short SET_ANYCAST_COUNT     =  6;
+    private static final short SET_USE_ANYCAST_ADDRS =  7;
+    private static final short SET_READ_PERCENTAGE   =  8;
+    private static final short GET                   =  9;
+    private static final short PUT                   = 10;
+    private static final short GET_CONFIG            = 11;
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[] GET_RSP=new byte[msg_size];
@@ -67,17 +69,18 @@ public class UPerf extends ReceiverAdapter {
 
     static {
         try {
-            METHODS[START]               = UPerf.class.getMethod("startTest");
-            METHODS[SET_OOB]             = UPerf.class.getMethod("setOOB", boolean.class);
-            METHODS[SET_SYNC]            = UPerf.class.getMethod("setSync", boolean.class);
-            METHODS[SET_NUM_MSGS]        = UPerf.class.getMethod("setNumMessages", int.class);
-            METHODS[SET_NUM_THREADS]     = UPerf.class.getMethod("setNumThreads", int.class);
-            METHODS[SET_MSG_SIZE]        = UPerf.class.getMethod("setMessageSize", int.class);
-            METHODS[SET_ANYCAST_COUNT]   = UPerf.class.getMethod("setAnycastCount", int.class);
-            METHODS[SET_READ_PERCENTAGE] = UPerf.class.getMethod("setReadPercentage", double.class);
-            METHODS[GET]                 = UPerf.class.getMethod("get", long.class);
-            METHODS[PUT]                 = UPerf.class.getMethod("put", long.class, byte[].class);
-            METHODS[GET_CONFIG]          = UPerf.class.getMethod("getConfig");
+            METHODS[START]                 = UPerf.class.getMethod("startTest");
+            METHODS[SET_OOB]               = UPerf.class.getMethod("setOOB", boolean.class);
+            METHODS[SET_SYNC]              = UPerf.class.getMethod("setSync", boolean.class);
+            METHODS[SET_NUM_MSGS]          = UPerf.class.getMethod("setNumMessages", int.class);
+            METHODS[SET_NUM_THREADS]       = UPerf.class.getMethod("setNumThreads", int.class);
+            METHODS[SET_MSG_SIZE]          = UPerf.class.getMethod("setMessageSize", int.class);
+            METHODS[SET_ANYCAST_COUNT]     = UPerf.class.getMethod("setAnycastCount", int.class);
+            METHODS[SET_USE_ANYCAST_ADDRS] = UPerf.class.getMethod("setUseAnycastAddrs", boolean.class);
+            METHODS[SET_READ_PERCENTAGE]   = UPerf.class.getMethod("setReadPercentage", double.class);
+            METHODS[GET]                   = UPerf.class.getMethod("get", long.class);
+            METHODS[PUT]                   = UPerf.class.getMethod("put", long.class, byte[].class);
+            METHODS[GET_CONFIG]            = UPerf.class.getMethod("getConfig");
 
             ClassConfigurator.add((short)11000, Results.class);
             f=NumberFormat.getNumberInstance();
@@ -124,6 +127,7 @@ public class UPerf extends ReceiverAdapter {
             this.num_msgs=config.num_msgs;
             this.msg_size=config.msg_size;
             this.anycast_count=config.anycast_count;
+            this.use_anycast_addrs=config.use_anycast_addrs;
             this.read_percentage=config.read_percentage;
             System.out.println("Fetched config from " + coord + ": " + config);
         }
@@ -146,7 +150,8 @@ public class UPerf extends ReceiverAdapter {
     // =================================== callbacks ======================================
 
     public Results startTest() throws Throwable {
-        System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) + ", sync=" + sync + ", oob=" + oob);
+        System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) +
+                             ", sync=" + sync + ", oob=" + oob + ", use_anycast_addrs=" + use_anycast_addrs);
         int total_gets=0, total_puts=0;
         final AtomicInteger num_msgs_sent=new AtomicInteger(0);
 
@@ -200,6 +205,11 @@ public class UPerf extends ReceiverAdapter {
         System.out.println("anycast_count = " + anycast_count);
     }
 
+    public void setUseAnycastAddrs(boolean flag) {
+        use_anycast_addrs=flag;
+        System.out.println("use_anycast_addrs = " + use_anycast_addrs);
+    }
+
     public void setReadPercentage(double val) {
         this.read_percentage=val;
         System.out.println("read_percentage = " + read_percentage);
@@ -215,7 +225,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
     public ConfigOptions getConfig() {
-        return new ConfigOptions(oob, sync, num_threads, num_msgs, msg_size, anycast_count, read_percentage);
+        return new ConfigOptions(oob, sync, num_threads, num_msgs, msg_size, anycast_count, use_anycast_addrs, read_percentage);
     }
 
     // ================================= end of callbacks =====================================
@@ -226,13 +236,14 @@ public class UPerf extends ReceiverAdapter {
 
         while(true) {
             c=Util.keyPress("[1] Send msgs [2] Print view [3] Print conns " +
-                    "[4] Trash conn [5] Trash all conns" +
-                    "\n[6] Set sender threads (" + num_threads + ") [7] Set num msgs (" + num_msgs + ") " +
-                    "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
-                    " [9] Set anycast count (" + anycast_count + ")" +
-                    "\n[o] Toggle OOB (" + oob + ") [s] Toggle sync (" + sync +
-                    ") [r] Set read percentage (" + f.format(read_percentage) + ")" +
-                    "\n[q] Quit\n");
+                              "[4] Trash conn [5] Trash all conns" +
+                              "\n[6] Set sender threads (" + num_threads + ") [7] Set num msgs (" + num_msgs + ") " +
+                              "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
+                              " [9] Set anycast count (" + anycast_count + ")" +
+                              "\n[o] Toggle OOB (" + oob + ") [s] Toggle sync (" + sync +
+                              ") [r] Set read percentage (" + f.format(read_percentage) + ") " +
+                              "[a] Toggle use_anycast_addrs (" + use_anycast_addrs + ")" +
+                              "\n[q] Quit\n");
             switch(c) {
                 case -1:
                     break;
@@ -268,8 +279,12 @@ public class UPerf extends ReceiverAdapter {
                 case '9':
                     setAnycastCount();
                     break;
+                case 'a':
+                    boolean new_value=!use_anycast_addrs;
+                    disp.callRemoteMethods(null, new MethodCall(SET_USE_ANYCAST_ADDRS, new_value), RequestOptions.SYNC());
+                    break;
                 case 'o':
-                    boolean new_value=!oob;
+                    new_value=!oob;
                     disp.callRemoteMethods(null, new MethodCall(SET_OOB, new_value), RequestOptions.SYNC());
                     break;
                 case 's':
@@ -450,6 +465,9 @@ public class UPerf extends ReceiverAdapter {
                 get_options.setFlags(Message.DONT_BUNDLE, Message.NO_FC);
                 put_options.setFlags(Message.DONT_BUNDLE, Message.NO_FC);
             }
+            if(use_anycast_addrs) {
+                put_options.useAnycastAddresses(true);
+            }
 
             while(true) {
                 long i=num_msgs_sent.getAndIncrement();
@@ -537,15 +555,17 @@ public class UPerf extends ReceiverAdapter {
 
     public static class ConfigOptions implements Streamable {
         private boolean sync, oob;
-        private int num_threads;
-        private int num_msgs, msg_size;
-        private int anycast_count;
-        private double read_percentage;
+        private int     num_threads;
+        private int     num_msgs, msg_size;
+        private int     anycast_count;
+        private boolean use_anycast_addrs;
+        private double  read_percentage;
 
         public ConfigOptions() {
         }
 
-        public ConfigOptions(boolean oob, boolean sync, int num_threads, int num_msgs, int msg_size, int anycast_count,
+        public ConfigOptions(boolean oob, boolean sync, int num_threads, int num_msgs, int msg_size,
+                             int anycast_count, boolean use_anycast_addrs,
                              double read_percentage) {
             this.oob=oob;
             this.sync=sync;
@@ -553,6 +573,7 @@ public class UPerf extends ReceiverAdapter {
             this.num_msgs=num_msgs;
             this.msg_size=msg_size;
             this.anycast_count=anycast_count;
+            this.use_anycast_addrs=use_anycast_addrs;
             this.read_percentage=read_percentage;
         }
 
@@ -564,6 +585,7 @@ public class UPerf extends ReceiverAdapter {
             out.writeInt(num_msgs);
             out.writeInt(msg_size);
             out.writeInt(anycast_count);
+            out.writeBoolean(use_anycast_addrs);
             out.writeDouble(read_percentage);
         }
 
@@ -574,13 +596,15 @@ public class UPerf extends ReceiverAdapter {
             num_msgs=in.readInt();
             msg_size=in.readInt();
             anycast_count=in.readInt();
+            use_anycast_addrs=in.readBoolean();
             read_percentage=in.readDouble();
         }
 
         public String toString() {
             return "oob=" + oob + ", sync=" + sync + ", anycast_count=" + anycast_count +
-                    ", num_threads=" + num_threads + ", num_msgs=" + num_msgs + ", msg_size=" + msg_size +
-                    ", read percentage=" + read_percentage;
+              ", use_anycast_addrs=" + use_anycast_addrs +
+              ", num_threads=" + num_threads + ", num_msgs=" + num_msgs + ", msg_size=" + msg_size +
+              ", read percentage=" + read_percentage;
         }
     }
 
@@ -598,6 +622,7 @@ public class UPerf extends ReceiverAdapter {
                     return new Buffer(buf.array());
                 case SET_OOB:
                 case SET_SYNC:
+                case SET_USE_ANYCAST_ADDRS:
                     return new Buffer(booleanBuffer(call.getId(), (Boolean)call.getArgs()[0]));
                 case SET_NUM_MSGS:
                 case SET_NUM_THREADS:
@@ -634,6 +659,7 @@ public class UPerf extends ReceiverAdapter {
                     return new MethodCall(type);
                 case SET_OOB:
                 case SET_SYNC:
+                case SET_USE_ANYCAST_ADDRS:
                     return new MethodCall(type, buf.get() == 1);
                 case SET_NUM_MSGS:
                 case SET_NUM_THREADS:

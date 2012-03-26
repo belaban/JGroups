@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.tom.AnycastAddress;
+import org.jgroups.AnycastAddress;
 import org.jgroups.util.Util;
 
 import javax.management.*;
