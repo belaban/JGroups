@@ -76,8 +76,8 @@
     <MFC max_credits="2M"
          min_threshold="0.4"/>
     <FRAG2 frag_size="60K"  />
-    <tom.TOA />
     <RSVP resend_interval="2000" timeout="10000"/>
+    <tom.TOA />
     <pbcast.STATE_TRANSFER />
     <!-- pbcast.FLUSH  /-->
 </config>

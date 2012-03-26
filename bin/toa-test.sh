@@ -36,7 +36,7 @@ done
 if [ -n "${HELP}" ]; then
 ARGS="-h"
 else if [ -n "${ORDER}" ]; then
-CMD="java ${JAVA_FLAGS} -cp ${CP} ${JMX} ${JG_FLAGS} ${LOG4J} org.jgroups.tests.CheckGroupMulticastOrder $*"
+CMD="java ${JAVA_FLAGS} -cp ${CP} ${JMX} ${JG_FLAGS} ${LOG4J} org.jgroups.tests.CheckToaOrder $*"
 echo ${CMD}
 ${CMD} > ${WORKING_DIR}/check_std_out_${HOSTNAME}.out 2>&1 &
 exit 0
@@ -54,7 +54,7 @@ fi
 fi
 fi
 
-CMD="java ${JAVA_FLAGS} -cp ${CP} ${JMX} ${JG_FLAGS} ${LOG4J} org.jgroups.tests.TestGroupMulticastOrder ${ARGS}"
+CMD="java ${JAVA_FLAGS} -cp ${CP} ${JMX} ${JG_FLAGS} ${LOG4J} org.jgroups.tests.TestToaOrder ${ARGS}"
 
 echo ${CMD}
 ${CMD} > ${WORKING_DIR}/std_out_${HOSTNAME}.out 2>&1 &
