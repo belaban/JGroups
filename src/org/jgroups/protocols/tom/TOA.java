@@ -141,7 +141,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
             sendTotalOrderAnycastMessage(((AnycastAddress)dest).getAddresses(),message);
         } else if (dest != null && dest instanceof AnycastAddress) {
             //anycast address with NO_TOTAL_ORDER flag (should no be possible, but...)
-            send(((AnycastAddress)dest).getAddresses(),message);
+            send(((AnycastAddress)dest).getAddresses(),message, true);
         } else {
             //normal message
             down_prot.down(evt);
@@ -199,7 +199,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                         sequenceNumber);
             }
 
-            send(destinations,message);
+            send(destinations,message, false);
             duration = statsCollector.now() - startTime;
         } catch (Exception e) {
             logException("Exception caught while sending anycast message. Error is " + e.getLocalizedMessage(),
@@ -209,7 +209,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
         }
     }
 
-    private void send(Collection<Address> destinations, Message msg) {
+    private void send(Collection<Address> destinations, Message msg, boolean sendToMyself) {
         if (destinations == null) {
             down_prot.down(new Event(Event.MSG,msg));
         } else {
@@ -217,7 +217,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                 log.debug("sending anycast total order message " + msg + " to " + destinations);
             }
             for (Address address : destinations) {
-                if (address.equals(localAddress)) {
+                if (!sendToMyself && address.equals(localAddress)) {
                     continue;
                 }
                 Message cpy = msg.copy();
@@ -306,7 +306,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                             finalSequenceNumber);
                 }
 
-                send(destinations,finalMessage);
+                send(destinations,finalMessage, false);
                 //returns true if we are in destination set
                 if (senderManager.markSent(messageID)) {
                     deliverManager.markReadyToDeliver(messageID, finalSequenceNumber);
