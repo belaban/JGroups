@@ -83,6 +83,11 @@ public class XMLSchemaGenerator {
             classToXML(xmldoc, allType, clazz, "pbcast.");
          }
 
+          classes = getClasses("org.jgroups.protocols.tom", Protocol.class);
+         for (Class<?> clazz : classes) {
+            classToXML(xmldoc, allType, clazz, "tom.");
+         }
+
          DOMSource domSource = new DOMSource(xmldoc);
          StreamResult streamResult = new StreamResult(fw);
          TransformerFactory tf = TransformerFactory.newInstance();
