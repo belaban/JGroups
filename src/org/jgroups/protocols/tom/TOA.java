@@ -235,7 +235,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                     e);
         } finally {
             sendLock.unlock();
-            statsCollector.addGroupMulticastSentDuration(duration, (destinations.size() - (deliverToMySelf ? 1 : 0)));
+            statsCollector.addAnycastSentDuration(duration,(destinations.size() - (deliverToMySelf? 1 : 0)));
         }
     }
 
@@ -380,8 +380,8 @@ public class TOA extends Protocol implements DeliveryProtocol {
 
     @ManagedAttribute(description = "The average duration (in milliseconds) in processing and sending the anycast " +
             "message to all the recipients", writable = false)
-    public double getAvgGroupMulticastSentDuration() {
-        return statsCollector.getAvgGroupMulticastSentDuration();
+    public double getAvgToaSendDuration() {
+        return statsCollector.getAvgAnycastSentDuration();
     }
 
     @ManagedAttribute(description = "The average duration (in milliseconds) in processing a data message received",
@@ -409,18 +409,18 @@ public class TOA extends Protocol implements DeliveryProtocol {
     }
 
     @ManagedAttribute(description = "The number of anycast messages sent", writable = false)
-    public int getNumberOfGroupMulticastMessagesSent() {
-        return statsCollector.getNumberOfGroupMulticastMessagesSent();
+    public int getNumberOfAnycastMessagesSent() {
+        return statsCollector.getNumberOfAnycastMessagesSent();
     }
 
     @ManagedAttribute(description = "The number of final anycast sent", writable = false)
-    public int getNumberOfFinalGroupMessagesSent() {
-        return statsCollector.getNumberOfFinalGroupMessagesSent();
+    public int getNumberOfFinalAnycastSent() {
+        return statsCollector.getNumberOfFinalAnycastsSent();
     }
 
     @ManagedAttribute(description = "The number of anycast messages delivered", writable = false)
-    public int getNumberOfGroupMulticastMessagesDelivered() {
-        return statsCollector.getGroupMulticastDelivered();
+    public int getNumberOfAnycastMessagesDelivered() {
+        return statsCollector.getAnycastDelivered();
     }
 
     @ManagedAttribute(description = "The number of propose messages sent", writable = false)
@@ -445,7 +445,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
 
     @ManagedAttribute(description = "The average number of unicasts messages created per anycast message",
             writable = false)
-    public double getAvgNumberOfUnicastSentPerGroupMulticast() {
-        return statsCollector.getAvgNumberOfUnicastSentPerGroupMulticast();
+    public double getAvgNumberOfUnicastSentPerAnycast() {
+        return statsCollector.getAvgNumberOfUnicastSentPerAnycast();
     }
 }

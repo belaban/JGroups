@@ -17,8 +17,8 @@ public class StatsCollector {
         LAST_PROPOSE_MESSAGE_RECEIVED,
         FINAL_MESSAGE_RECEIVED,
         DATA_MESSAGE_RECEIVED,
-        GROUP_MESSAGE_SENT,
-        GROUP_MESSAGE_DELIVERED,
+        ANYCAST_MESSAGE_SENT,
+        ANYCAST_MESSAGE_DELIVERED,
         UNICAST_MESSAGE_SENT
     }
 
@@ -27,7 +27,7 @@ public class StatsCollector {
         LAST_PROPOSE_MESSAGE,
         FINAL_MESSAGE,
         DATA_MESSAGE,
-        GROUP_MESSAGE_SENT
+        ANYCAST_MESSAGE_SENT
     }
 
     //from javadoc: Enum maps are represented internally as arrays. This representation is extremely compact and efficient. 
@@ -115,21 +115,21 @@ public class StatsCollector {
         durations.get(Duration.DATA_MESSAGE).addAndGet(duration);
     }
 
-    public void addGroupMulticastSentDuration(long duration, int numberOfUnicasts) {
+    public void addAnycastSentDuration(long duration, int numberOfUnicasts) {
         if (!shouldCollectStats(duration)) {
             return;
         }
 
         counters.get(StatsCollector.Counter.UNICAST_MESSAGE_SENT).addAndGet(numberOfUnicasts);
-        counters.get(Counter.GROUP_MESSAGE_SENT).incrementAndGet();
-        durations.get(Duration.GROUP_MESSAGE_SENT).addAndGet(duration);
+        counters.get(Counter.ANYCAST_MESSAGE_SENT).incrementAndGet();
+        durations.get(Duration.ANYCAST_MESSAGE_SENT).addAndGet(duration);
     }
 
     public void incrementMessageDeliver() {
         if (!shouldCollectStats()) {
             return ;
         }
-        counters.get(Counter.GROUP_MESSAGE_DELIVERED).incrementAndGet();
+        counters.get(Counter.ANYCAST_MESSAGE_DELIVERED).incrementAndGet();
     }
 
     public double getAvgDataMessageReceivedDuration() {
@@ -141,10 +141,10 @@ public class StatsCollector {
         return 0D;
     }
 
-    public double getAvgGroupMulticastSentDuration() {
-        int count = counters.get(Counter.GROUP_MESSAGE_SENT).get();
+    public double getAvgAnycastSentDuration() {
+        int count = counters.get(Counter.ANYCAST_MESSAGE_SENT).get();
         if (count > 0) {
-            long dur = durations.get(Duration.GROUP_MESSAGE_SENT).get();
+            long dur = durations.get(Duration.ANYCAST_MESSAGE_SENT).get();
             return convertNanosToMillis(dur) / count;
         }
         return 0D;
@@ -177,12 +177,12 @@ public class StatsCollector {
         return 0D;
     }
 
-    public int getNumberOfGroupMulticastMessagesSent() {
-        return counters.get(Counter.GROUP_MESSAGE_SENT).get();
+    public int getNumberOfAnycastMessagesSent() {
+        return counters.get(Counter.ANYCAST_MESSAGE_SENT).get();
     }
 
-    public int getGroupMulticastDelivered() {
-        return counters.get(Counter.GROUP_MESSAGE_DELIVERED).get();
+    public int getAnycastDelivered() {
+        return counters.get(Counter.ANYCAST_MESSAGE_DELIVERED).get();
     }
 
     public int getNumberOfProposeMessagesReceived() {
@@ -195,7 +195,7 @@ public class StatsCollector {
         return counters.get(Counter.DATA_MESSAGE_RECEIVED).get();
     }
 
-    public int getNumberOfFinalGroupMessagesSent() {
+    public int getNumberOfFinalAnycastsSent() {
         //we send 1 final group message when the last propose is received
         return counters.get(Counter.LAST_PROPOSE_MESSAGE_RECEIVED).get();
     }
@@ -204,8 +204,8 @@ public class StatsCollector {
         return counters.get(Counter.FINAL_MESSAGE_RECEIVED).get();
     }
 
-    public double getAvgNumberOfUnicastSentPerGroupMulticast() {
-        int multicast = counters.get(Counter.GROUP_MESSAGE_SENT).get();
+    public double getAvgNumberOfUnicastSentPerAnycast() {
+        int multicast = counters.get(Counter.ANYCAST_MESSAGE_SENT).get();
         if (multicast > 0) {
             int unicast = counters.get(Counter.UNICAST_MESSAGE_SENT).get();
             return unicast * 1.0 / multicast;
