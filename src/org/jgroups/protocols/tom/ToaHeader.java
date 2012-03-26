@@ -88,12 +88,12 @@ public class ToaHeader extends Header {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("GroupMulticastHeader{")
+        sb.append("ToaHeader [")
                 .append("type=").append(type2String(type))
                 .append(", message_id=").append(messageID)
                 .append(", sequence_number=").append(sequencerNumber)
                 .append(", destinations=").append(destinations)
-                .append("}");
+                .append("]");
         return sb.toString();
     }
 

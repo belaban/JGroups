@@ -60,7 +60,7 @@ public class AnycastAddress implements Address {
 
     @Override
     public String toString() {
-        return "AnycastAddress{" + destinations + "}";
+        return "AnycastAddress " + destinations;
     }
 
     @Override
