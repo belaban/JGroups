@@ -35,16 +35,23 @@ import java.util.*;
 public class ClassConfigurator {
     public static final String MAGIC_NUMBER_FILE = "jg-magic-map.xml";
     public static final String PROTOCOL_ID_FILE  = "jg-protocol-ids.xml";
+    private static final int   MAX_MAGIC_VALUE=150;
     private static final short MIN_CUSTOM_MAGIC_NUMBER=1024;
     private static final short MIN_CUSTOM_PROTOCOL_ID=512;
 
-    // this is where we store magic numbers; contains data from jg-magic-map.xml
-    private static final Map<Class,Short> classMap=Util.createConcurrentMap(150, 0.75f, 150); // key=Class, value=magic number
-    private static final Map<Short,Class> magicMap=Util.createConcurrentMap(150, 0.75f, 150); // key=magic number, value=Class
+    // this is where we store magic numbers; contains data from jg-magic-map.xml;  key=Class, value=magic number
+    private static final Map<Class,Short> classMap=new IdentityHashMap<Class,Short>(MAX_MAGIC_VALUE);
+
+
+    // Magic map for all values defined in jg-magic-map.xml
+    private static final Class[] magicMap=new Class[MAX_MAGIC_VALUE]; /// simple array, IDs are the indices
+
+    // Magic map for user-defined IDs / classes
+    private static final Map<Short,Class> magicMapUser=new HashMap<Short,Class>(); // key=magic number, value=Class
 
     /** Contains data read from jg-protocol-ids.xml */
-    private static final Map<Class,Short> protocol_ids=Util.createConcurrentMap(150, 0.75f, 150);
-    private static final Map<Short,Class> protocol_names=Util.createConcurrentMap(150, 0.75f, 150);
+    private static final Map<Class,Short> protocol_ids=new HashMap<Class,Short>(MAX_MAGIC_VALUE);
+    private static final Map<Short,Class> protocol_names=new HashMap<Short,Class>(MAX_MAGIC_VALUE);
 
     protected static final Log log=LogFactory.getLog(ClassConfigurator.class);
 
@@ -81,12 +88,14 @@ public class ClassConfigurator {
         List<Tuple<Short,String>> mapping=readMappings(magic_number_file);
         for(Tuple<Short,String> tuple: mapping) {
             short m=tuple.getVal1();
+            if(m >= MAX_MAGIC_VALUE)
+                throw new IllegalArgumentException("ID " + m + " is bigger than MAX_MAGIC_VALUE (" +
+                                                     MAX_MAGIC_VALUE + "); increase MAX_MAGIC_VALUE");
             Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
-            if(magicMap.containsKey(m))
+            if(magicMap[m] != null)
                 throw new Exception("key " + m + " (" + clazz.getName() + ')' +
                                       " is already in magic map; please make sure that all keys are unique");
-                    
-            magicMap.put(m, clazz);
+            magicMap[m]=clazz;
             classMap.put(clazz, m);
         }
 
@@ -110,14 +119,16 @@ public class ClassConfigurator {
      * @param clazz The class. Usually a subclass of Header
      * @throws IllegalArgumentException If the magic number is already taken, or the magic number is <= 1024
      */
-     public static void add(short magic, Class clazz) throws IllegalArgumentException {
-        if(magic <= MIN_CUSTOM_MAGIC_NUMBER)
+    public static void add(short magic, Class clazz) throws IllegalArgumentException {
+        if(magic < MIN_CUSTOM_MAGIC_NUMBER)
             throw new IllegalArgumentException("magic number (" + magic + ") needs to be greater than " +
-                    MIN_CUSTOM_MAGIC_NUMBER);
-        if(magicMap.containsKey(magic) || classMap.containsKey(clazz))
+                                                 MIN_CUSTOM_MAGIC_NUMBER);
+        if(magicMapUser.containsKey(magic))
             throw new IllegalArgumentException("magic number " + magic + " for class " + clazz.getName() +
-                    " is already present");
-        magicMap.put(magic, clazz);
+                                                 " is already present");
+        if(classMap.containsKey(clazz))
+            throw new IllegalArgumentException("class " + clazz.getName() + " is already present");
+        magicMapUser.put(magic, clazz);
         classMap.put(clazz, magic);
     }
 
@@ -139,7 +150,7 @@ public class ClassConfigurator {
      * @return a Class object that represents a class that implements java.io.Externalizable
      */
     public static Class<Address> get(short magic) {
-        return magicMap.get(magic);
+        return magic < MIN_CUSTOM_MAGIC_NUMBER? magicMap[magic] : magicMapUser.get(magic);
     }
 
     /**
@@ -193,10 +204,14 @@ public class ClassConfigurator {
 
     public static String printMagicMap() {
         StringBuilder sb=new StringBuilder();
-        SortedSet<Short> keys=new TreeSet<Short>(magicMap.keySet());
+        SortedSet<Short> keys=new TreeSet<Short>(magicMapUser.keySet());
+        for(short i=0; i < magicMap.length; i++) {
+            if(magicMap[i] != null)
+                keys.add(i);
+        }
 
         for(Short key: keys) {
-            sb.append(key).append(":\t").append(magicMap.get(key)).append('\n');
+            sb.append(key).append(":\t").append(key < MIN_CUSTOM_MAGIC_NUMBER? magicMap[key] : magicMapUser.get(key)).append('\n');
         }
         return sb.toString();
     }
