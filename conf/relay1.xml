@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 
-<!-- Sample configuration of multipe sites, to be used in RELAY2 -->
+<!-- Sample configuration of multiple sites, to be used in RELAY2 -->
 <RelayConfiguration xmlns="urn:jgroups:relay:1.0">
 
     <bridges>
