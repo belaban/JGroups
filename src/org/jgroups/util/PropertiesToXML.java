@@ -58,6 +58,7 @@ public class PropertiesToXML {
 
             Set<Class<Protocol>> classes = Util.findClassesAssignableFrom("org.jgroups.protocols",Protocol.class);
             classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.pbcast",Protocol.class));
+            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.relay",Protocol.class));
             Properties props = new Properties();
             for (Class<Protocol> clazz : classes) {
                 convertToDocbookTable(props, clazz);

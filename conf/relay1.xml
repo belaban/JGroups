@@ -13,10 +13,10 @@
     <sites >
         <site name="lon">
             <routing>
-                <default-route bridge="global"/>
                 <route name="nyc" bridge="lon-nyc"/>
                 <route name="sfc" bridge="lon-sfc"/>
                 <route name="lax" forward-to="sfc"/>
+                <default-route    bridge="global"/>
             </routing>
         </site>
 

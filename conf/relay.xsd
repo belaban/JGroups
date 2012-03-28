@@ -1,63 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema attributeFormDefault="unqualified"
-           elementFormDefault="qualified"
-           targetNamespace="urn:jgroups:relay:1.0"
-           xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    <xs:element name="RelayConfiguration" type="urn:RelayConfigurationType" xmlns:urn="urn:jgroups:relay:1.0">
-        <xs:annotation>
-            <xs:documentation>Sample configuration of multipe sites, to be used in RELAY2</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-    <xs:complexType name="bridgeType">
-        <xs:simpleContent>
-            <xs:extension base="xs:string">
-                <xs:attribute type="xs:string" name="name" use="required"/>
-                <xs:attribute type="xs:string" name="config" use="required"/>
-            </xs:extension>
-        </xs:simpleContent>
-    </xs:complexType>
-    <xs:complexType name="sitesType">
-        <xs:sequence>
-            <xs:element type="urn:siteType" name="site" maxOccurs="unbounded" minOccurs="1" xmlns:urn="urn:jgroups:relay:1.0"/>
-        </xs:sequence>
-    </xs:complexType>
-    <xs:complexType name="routingType">
-        <xs:sequence>
-            <xs:element type="urn:default-routeType" name="default-route" minOccurs="0" xmlns:urn="urn:jgroups:relay:1.0"/>
-            <xs:element type="urn:routeType" name="route" maxOccurs="unbounded" minOccurs="0" xmlns:urn="urn:jgroups:relay:1.0"/>
-        </xs:sequence>
-    </xs:complexType>
-    <xs:complexType name="bridgesType">
-        <xs:sequence>
-            <xs:element type="urn:bridgeType" name="bridge" maxOccurs="unbounded" minOccurs="1" xmlns:urn="urn:jgroups:relay:1.0"/>
-        </xs:sequence>
-    </xs:complexType>
-    <xs:complexType name="routeType">
-        <xs:simpleContent>
-            <xs:extension base="xs:string">
-                <xs:attribute type="xs:string" name="name" use="required"/>
-                <xs:attribute type="xs:string" name="bridge" use="optional"/>
-                <xs:attribute type="xs:string" name="forward-to" use="optional"/>
-            </xs:extension>
-        </xs:simpleContent>
-    </xs:complexType>
-    <xs:complexType name="siteType">
-        <xs:sequence>
-            <xs:element type="urn:routingType" name="routing" xmlns:urn="urn:jgroups:relay:1.0"/>
-        </xs:sequence>
-        <xs:attribute type="xs:string" name="name" use="required"/>
-    </xs:complexType>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="urn:jgroups:relay:1.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="RelayConfiguration" type="urn:RelayConfigurationType" xmlns:urn="urn:jgroups:relay:1.0">
+		<xs:annotation>
+			<xs:documentation>Sample configuration of multipe sites, to be used in RELAY2</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+
     <xs:complexType name="RelayConfigurationType">
         <xs:sequence>
-            <xs:element type="urn:bridgesType" name="bridges" xmlns:urn="urn:jgroups:relay:1.0"/>
-            <xs:element type="urn:sitesType" name="sites" xmlns:urn="urn:jgroups:relay:1.0"/>
+            <xs:element name="bridges" type="urn:bridgesType" xmlns:urn="urn:jgroups:relay:1.0" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="sites"   type="urn:sitesType"   xmlns:urn="urn:jgroups:relay:1.0" minOccurs="1" maxOccurs="1"/>
         </xs:sequence>
     </xs:complexType>
-    <xs:complexType name="default-routeType">
-        <xs:simpleContent>
-            <xs:extension base="xs:string">
-                <xs:attribute type="xs:string" name="bridge"/>
-            </xs:extension>
-        </xs:simpleContent>
+
+    <xs:complexType name="bridgesType">
+        <xs:sequence>
+            <xs:element maxOccurs="unbounded" minOccurs="1" name="bridge" type="urn:bridgeType" xmlns:urn="urn:jgroups:relay:1.0"/>
+        </xs:sequence>
     </xs:complexType>
+    
+    <xs:complexType name="bridgeType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="name" type="xs:string" use="required"/>
+				<xs:attribute name="config" type="xs:string" use="required"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+
+	<xs:complexType name="sitesType">
+		<xs:sequence>
+			<xs:element maxOccurs="unbounded" minOccurs="1" name="site" type="urn:siteType" xmlns:urn="urn:jgroups:relay:1.0"/>
+		</xs:sequence>
+	</xs:complexType>
+
+    <xs:complexType name="siteType">
+        <xs:sequence>
+            <xs:element name="routing" type="urn:routingType" xmlns:urn="urn:jgroups:relay:1.0"/>
+        </xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>
+    
+
+	<xs:complexType name="routingType">
+		<xs:sequence>
+			<xs:element minOccurs="0" maxOccurs="unbounded" name="route" type="urn:routeType" xmlns:urn="urn:jgroups:relay:1.0"/>
+            <xs:element minOccurs="0" maxOccurs="1" name="default-route" type="urn:default-routeType" xmlns:urn="urn:jgroups:relay:1.0"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="routeType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="name" type="xs:string" use="required"/>
+				<xs:attribute name="bridge" type="xs:string" use="optional"/>
+				<xs:attribute name="forward-to" type="xs:string" use="optional"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+
+	<xs:complexType name="default-routeType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="bridge" type="xs:string"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
 </xs:schema>

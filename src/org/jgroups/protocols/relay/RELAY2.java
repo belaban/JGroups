@@ -1,4 +1,4 @@
-package org.jgroups.protocols;
+package org.jgroups.protocols.relay;
 
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
