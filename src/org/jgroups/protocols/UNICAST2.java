@@ -98,7 +98,11 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
-    protected long    num_msgs_sent=0, num_msgs_received=0;
+    @ManagedAttribute(description="Number of messages sent")
+    protected int num_messages_sent=0;
+
+    @ManagedAttribute(description="Number of messages received")
+    protected int num_messages_received=0;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
@@ -190,16 +194,6 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Whether the ConnectionReaper task is running")
     public boolean isConnectionReaperRunning() {return connection_reaper != null && !connection_reaper.isDone();}
 
-
-    @ManagedAttribute
-    public long getNumMessagesSent() {
-        return num_msgs_sent;
-    }
-
-    @ManagedAttribute
-    public long getNumMessagesReceived() {
-        return num_msgs_received;
-    }
 
     @ManagedAttribute(description="Total number of undelivered messages in all receive windows")
     public long getXmitTableUndeliveredMessages() {
@@ -342,7 +336,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     public void resetStats() {
-        num_msgs_sent=num_msgs_received=0;
+        num_messages_sent=num_messages_received=0;
         xmit_reqs_received.set(0);
         xmit_reqs_sent.set(0);
         xmit_rsps_sent.set(0);
@@ -500,7 +494,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
                 try {
                     down_prot.down(evt);
-                    num_msgs_sent++;
+                    num_messages_sent++;
                 }
                 catch(Throwable t) {
                     log.warn("failed sending the message", t);
@@ -732,7 +726,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             entry.update();
         Table<Message> win=entry.received_msgs;
         boolean added=win.add(seqno, msg); // win is guaranteed to be non-null if we get here
-        num_msgs_received++;
+        num_messages_received++;
 
         if(added) {
             int len=msg.getLength();

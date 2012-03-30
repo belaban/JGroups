@@ -131,7 +131,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @ManagedAttribute(description="Is the retransmit task running")
     public boolean isXmitTaskRunning() {return xmit_task != null && !xmit_task.isDone();}
 
+    @ManagedAttribute(description="Number of messages sent")
+    protected int num_messages_sent=0;
 
+    @ManagedAttribute(description="Number of messages received")
+    protected int num_messages_received=0;
 
 
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
@@ -312,6 +316,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     @ManagedOperation(description="Resets all statistics")
     public void resetStats() {
+        num_messages_sent=num_messages_received=0;
         xmit_reqs_received.set(0);
         xmit_reqs_sent.set(0);
         xmit_rsps_received.set(0);
@@ -639,6 +644,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             if(log.isTraceEnabled())
                 log.trace("sending " + local_addr + "#" + msg_id);
             down_prot.down(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
+            num_messages_sent++;
         }
         catch(Throwable t) { // eat the exception, don't pass it up the stack
             if(log.isWarnEnabled()) {
@@ -674,6 +680,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return;
         }
 
+        num_messages_received++;
         boolean loopback=local_addr.equals(sender);
         boolean added=loopback || buf.add(hdr.seqno, msg);
 
