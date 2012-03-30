@@ -152,6 +152,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @ManagedAttribute(description="Number of retransmit responses sent")
     private final AtomicLong xmit_rsps_sent=new AtomicLong(0);
 
+    @ManagedAttribute(description="Number of messages sent")
+    protected int num_messages_sent=0;
+
+    @ManagedAttribute(description="Number of messages received")
+    protected int num_messages_received=0;
+
 
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
     private boolean is_server=false;
@@ -268,6 +274,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
     public void resetStats() {
+        num_messages_sent=num_messages_received=0;
         xmit_reqs_received.set(0);
         xmit_reqs_sent.set(0);
         xmit_rsps_received.set(0);
@@ -649,6 +656,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(log.isTraceEnabled())
                 log.trace("sending " + local_addr + "#" + msg_id);
             down_prot.down(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
+            num_messages_sent++;
         }
         catch(Throwable t) { // eat the exception, don't pass it up the stack
             if(log.isWarnEnabled()) {
@@ -681,6 +689,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         }
 
+        num_messages_received++;
         boolean loopback=local_addr.equals(sender);
         boolean added=loopback || win.add(hdr.seqno, msg);
 
