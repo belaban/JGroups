@@ -5,8 +5,8 @@
 
     <bridges>
         <bridge name="lon-nyx"  config="lon-nyc.xml"/>
-        <bridge name="lon-sfc"  config="lon-sfc.xml"/>
-        <bridge name="nyc-sfc"  config="nyc-sfc.xml"/>
+        <bridge name="lon-sfo"  config="lon-sfo.xml"/>
+        <bridge name="nyc-sfo"  config="nyc-sfo.xml"/>
         <bridge name="sfo-lax"  config="sfo-lax.xml"/>
     </bridges>
         
@@ -14,8 +14,8 @@
         <site name="lon">
             <routing>
                 <route name="nyc" bridge="lon-nyc"/>
-                <route name="sfc" bridge="lon-sfc"/>
-                <route name="lax" forward-to="sfc"/>
+                <route name="sfo" bridge="lon-sfo"/>
+                <route name="lax" forward-to="sfo"/>
                 <default-route    bridge="global"/>
             </routing>
         </site>
@@ -23,7 +23,7 @@
         <site name="nyc">
             <routing>
                 <route name="lon" bridge="lon-nyc.xml"/>
-                <route name="sfc" bridge="nyc-sfc.xml"/>
+                <route name="sfo" bridge="nyc-sfo.xml"/>
                 <route name="lax" forward-to="sfo"/>
             </routing>
         </site>
@@ -31,7 +31,7 @@
         <site name="sfo">
             <routing>
                 <route name="lon" bridge="lon-sfo.xml"/>
-                <route name="nyc" bridge="nyc-sfc.xml"/>
+                <route name="nyc" bridge="nyc-sfo.xml"/>
                 <route name="lax" bridge="sfo-lax.xml"/>
             </routing>
         </site>

@@ -17,6 +17,9 @@ import org.jgroups.stack.Protocol;
 public class RELAY2 extends Protocol {
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
+    @Property(description="Name of the relay configuration",writable=false)
+    protected String config;
+
     @Property(description="Whether or not to relay multicast messages (dest=null)")
     protected boolean relay_multicasts=false;
 
