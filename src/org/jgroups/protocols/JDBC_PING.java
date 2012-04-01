@@ -2,7 +2,6 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.annotations.Property;
-import org.jgroups.util.Util;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -122,8 +121,9 @@ public class JDBC_PING extends FILE_PING {
                         log.debug("Could not execute initialize_sql statement; not necessarily an error.", e);
                     }
                     else {
-                        //avoid printing out the stacktrace
-                        log.debug("Could not execute initialize_sql statement; not necessarily an error. Set to debug logging level for details.");
+                        //avoid printing out the stacktrace when not debugging
+                        log.info("Could not execute initialize_sql statement; not necessarily an error, we always attempt to create the schema. " +
+                              "To suppress this message, set initialize_sql to an empty value. Cause:" + e.getMessage());
                     }
                 }
             } finally {
@@ -227,8 +227,15 @@ public class JDBC_PING extends FILE_PING {
         }
     }
 
+    //It's possible that multiple threads in the same cluster node invoke this concurrently;
+    //Since delete and insert operations are not atomic
+    //(and there is no SQL standard way to do this without introducing a transaction)
+    //we need the synchronization or risk a duplicate insertion on same primary key.
+    //This synchronization should not be a performance problem as this is just a Discovery protocol.
+    //Many SQL dialects have some "insert or update" expression, but that would need
+    //additional configuration and testing on each database. See JGRP-1440
     @Override
-    protected void writeToFile(PingData data, String clustername) {
+    protected synchronized void writeToFile(PingData data, String clustername) {
         final String ownAddress = addressAsString(data.getAddress());
         final Connection connection = getConnection();
         if (connection != null) {
@@ -246,7 +253,7 @@ public class JDBC_PING extends FILE_PING {
         }
     }
 
-    protected void insert(Connection connection, PingData data, String clustername, String address) throws SQLException {
+    protected synchronized void insert(Connection connection, PingData data, String clustername, String address) throws SQLException {
         final byte[] serializedPingData = serializeWithoutView(data);
         PreparedStatement ps = connection.prepareStatement(insert_single_sql);
         try {
@@ -261,7 +268,7 @@ public class JDBC_PING extends FILE_PING {
         }
     }
 
-    protected void delete(Connection connection, String clustername, String addressToDelete) throws SQLException {
+    protected synchronized void delete(Connection connection, String clustername, String addressToDelete) throws SQLException {
         PreparedStatement ps = connection.prepareStatement(delete_single_sql);
         try {
             ps.setString(1, addressToDelete);
