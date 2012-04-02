@@ -9,6 +9,7 @@ import org.jgroups.View;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MergeId;
 import org.jgroups.util.MutableDigest;
+import org.jgroups.util.Tuple;
 
 import java.util.*;
 
@@ -152,8 +153,11 @@ public class CoordGmsImpl extends ServerGmsImpl {
             if(gms.members.contains(mbr)) { // already joined: return current digest and membership
                 if(log.isWarnEnabled())
                     log.warn(mbr + " already present; returning existing view " + gms.view);
-                JoinRsp join_rsp=new JoinRsp(new View(gms.getViewId(), gms.members.getMembers()), gms.getDigest());
-                gms.sendJoinResponse(join_rsp, mbr);
+                Tuple<View,Digest> tuple=gms.getViewAndDigest();
+                if(tuple != null) {
+                    JoinRsp join_rsp=new JoinRsp(tuple.getVal1(), tuple.getVal2());
+                    gms.sendJoinResponse(join_rsp, mbr);
+                }
                 it.remove();
             }
         }
@@ -220,7 +224,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             }
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members                            
-            gms.castViewChange(new_view,join_rsp != null? join_rsp.getDigest() : null,join_rsp,new_mbrs);
+            gms.castViewChange(new_view, join_rsp != null? join_rsp.getDigest() : null, join_rsp, new_mbrs);
         }
         finally {
             if(hasJoiningMembers)
