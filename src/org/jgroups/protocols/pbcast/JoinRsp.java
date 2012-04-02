@@ -87,6 +87,8 @@ public class JoinRsp implements Streamable {
         if(digest != null && view != null) { // if digest is present, view *has* to be present !
             for(Address mbr: view) {
                 long[] seqnos=digest.get(mbr);
+                if(seqnos == null)
+                    seqnos=new long[]{-1, -1};
                 Util.writeLongSequence(seqnos[0], seqnos[1], out);
             }
         }
@@ -123,6 +125,8 @@ public class JoinRsp implements Streamable {
             for(int i=0; i < size; i++) {
                 Address mbr=members.get(i);
                 long[] seqnos=Util.readLongSequence(in);
+                if(seqnos[0] == -1 && seqnos[1] == -1)
+                    continue;
                 tmp.add(mbr, seqnos[0], seqnos[1], false);
             }
             digest=tmp;
