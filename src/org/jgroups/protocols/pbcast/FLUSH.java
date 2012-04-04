@@ -564,6 +564,8 @@ public class FLUSH extends Protocol {
 
     private void rejectFlush(Collection<? extends Address> participants, long viewId) {
         for (Address flushMember : participants) {
+            if(flushMember == null)
+                continue;
             Message reject = new Message(flushMember, localAddress, null);   
             reject.setFlag(Message.OOB);
             reject.putHeader(this.id, new FlushHeader(FlushHeader.ABORT_FLUSH, viewId,participants));
