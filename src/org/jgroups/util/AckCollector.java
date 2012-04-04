@@ -42,6 +42,13 @@ public class AckCollector {
         all_acks_received.reset();
     }
 
+    public synchronized void destroy() {
+        suspected_mbrs.clear();
+        missing_acks.clear();
+        expected_acks=0;
+        all_acks_received.setResult(null);
+    }
+
     public synchronized int size() {
         return missing_acks.size();
     }
