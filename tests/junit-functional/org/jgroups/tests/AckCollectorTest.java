@@ -143,6 +143,23 @@ public class AckCollectorTest {
         assert ac.size() == 5;
     }
 
+    public void testDestroy() {
+        List<Address> tmp_list=Arrays.asList(one,two,one,three,four,one,five);
+        final AckCollector ac=new AckCollector(tmp_list);
+        System.out.println("ac = " + ac);
+        assert ac.size() == 5;
+        Thread thread=new Thread() {
+            public void run() {
+                Util.sleep(2000);
+                ac.destroy();
+            }
+        };
+        thread.start();
+        boolean result=ac.waitForAllAcks(10000);
+        System.out.println("result = " + result);
+        assert !result;
+    }
+
     public static void testNullList() throws TimeoutException {
         AckCollector coll=new AckCollector();
         coll.waitForAllAcks(1000);

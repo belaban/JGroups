@@ -71,6 +71,17 @@ public class RSVP extends Protocol {
         }
     }
 
+
+    public void destroy() {
+        synchronized(ids) {
+            for(Entry entry: ids.values())
+                entry.destroy();
+            ids.clear();
+        }
+        super.destroy();
+    }
+
+
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
@@ -255,6 +266,7 @@ public class RSVP extends Protocol {
         protected void cancelTask() {
             if(resend_task != null)
                 resend_task.cancel(false);
+            ack_collector.destroy();
         }
 
         protected void    ack(Address member)                         {ack_collector.ack(member);}
