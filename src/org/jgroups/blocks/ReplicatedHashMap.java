@@ -4,7 +4,6 @@ import org.jgroups.*;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -579,10 +578,7 @@ public class ReplicatedHashMap<K, V> extends
     void sendViewChangeNotifications(View view, List<Address> new_mbrs, List<Address> old_mbrs) {
         List<Address> joined, left;
 
-        if((notifs.isEmpty()) || (old_mbrs == null)
-           || (new_mbrs == null)
-           || (old_mbrs.isEmpty())
-           || (new_mbrs.isEmpty()))
+        if((notifs.isEmpty()) || (old_mbrs == null) || (new_mbrs == null))
             return;
 
         // 1. Compute set of members that joined: all that are in new_mbrs, but not in old_mbrs
