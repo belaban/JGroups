@@ -563,6 +563,8 @@ public class FLUSH extends Protocol {
     }
 
     private void rejectFlush(Collection<? extends Address> participants, long viewId) {
+        if(participants == null)
+            return;
         for (Address flushMember : participants) {
             if(flushMember == null)
                 continue;
