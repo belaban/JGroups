@@ -7,10 +7,13 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.SeqnoTable;
+import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -33,6 +36,11 @@ public class SEQUENCER extends Protocol {
 
     /** Map<Address, seqno>: maintains the highest seqnos seen for a given member */
     private final SeqnoTable received_table=new SeqnoTable(0);
+
+    /** RetransmitTask running every xmit_interval ms */
+    private Future<?> xmit_task;
+    private long xmit_interval=3000;
+    private TimeScheduler timer=null;
 
     private long forwarded_msgs=0;
     private long bcast_msgs=0;
@@ -59,7 +67,7 @@ public class SEQUENCER extends Protocol {
 
     @ManagedOperation
     public Map<String,Object> dumpStats() {
-        Map<String,Object> m=super.dumpStats();       
+        Map<String,Object> m=super.dumpStats();
         m.put("forwarded", new Long(forwarded_msgs));
         m.put("broadcast", new Long(bcast_msgs));
         m.put("received_forwards", new Long(received_forwards));
@@ -70,10 +78,20 @@ public class SEQUENCER extends Protocol {
     @ManagedOperation
     public String printStats() {
         return dumpStats().toString();
-    }    
+    }
 
 
-    
+    public void start() throws Exception {
+        timer=getTransport().getTimer();
+        if(timer == null)
+            throw new Exception("timer is null");
+        startRetransmitTask();
+    }
+
+    public void stop() {
+        stopRetransmitTask();
+    }
+
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
@@ -190,7 +208,7 @@ public class SEQUENCER extends Protocol {
 
         if(suspected_mbr == null)
             return;
-        
+
         synchronized(this) {
             List<Address> non_suspected_mbrs=new ArrayList<Address>(members);
             non_suspected_mbrs.remove(suspected_mbr);
@@ -335,6 +353,18 @@ public class SEQUENCER extends Protocol {
         return added;
     }
 
+    private void startRetransmitTask() {
+         if(xmit_task == null || xmit_task.isDone())
+             xmit_task=timer.scheduleWithFixedDelay(new RetransmitTask(), 0, xmit_interval, TimeUnit.MILLISECONDS);
+    }
+
+    private void stopRetransmitTask() {
+        if(xmit_task != null) {
+            xmit_task.cancel(true);
+            xmit_task=null;
+        }
+    }
+
 /* ----------------------------- End of Private Methods -------------------------------- */
 
 
@@ -384,7 +414,7 @@ public class SEQUENCER extends Protocol {
             }
         }
 
-  
+
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             Util.writeStreamable(tag, out);
@@ -402,6 +432,17 @@ public class SEQUENCER extends Protocol {
             return size;
         }
 
+    }
+
+
+    /**
+     * Retransmitter task which periodically (every xmit_interval ms) resends messages in the forward table.
+     */
+    private class RetransmitTask implements Runnable {
+
+        public void run() {
+            resendMessagesInForwardTable();
+        }
     }
 
 
