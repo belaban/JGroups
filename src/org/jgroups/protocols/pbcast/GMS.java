@@ -687,56 +687,59 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     boolean startFlush(View view) {
-        return _startFlush(view, 4, 1000L, 5000L);
-    }
+       return _startFlush(view, 4, true, 1000L, 5000L);
+   }
 
-    boolean startFlush(View view, int maxAttempts, long floor, long ceiling) {
-        return _startFlush(view, maxAttempts, floor, ceiling);
-    }
+   boolean startFlush(View view, int maxAttempts, long floor, long ceiling) {
+       return _startFlush(view, maxAttempts, true, floor, ceiling);
+   }
 
-    protected boolean _startFlush(final View new_view, int maxAttempts, long randomFloor, long randomCeiling) {
-        if(!flushProtocolInStack)
-            return true;
-        if(flushInvokerClass != null) {
-            try {
-                Callable<Boolean> invoker = flushInvokerClass.getDeclaredConstructor(View.class).newInstance(new_view);
-                return invoker.call();
-            } catch (Throwable e) {
-                return false;
-            }
-        }
+   protected boolean _startFlush(final View new_view, int maxAttempts, boolean resumeIfFailed, long randomFloor, long randomCeiling) {
+       if(!flushProtocolInStack)
+           return true;
+       if(flushInvokerClass != null) {
+           try {
+               Callable<Boolean> invoker = flushInvokerClass.getDeclaredConstructor(View.class).newInstance(new_view);
+               return invoker.call();
+           } catch (Throwable e) {
+               return false;
+           }
+       }
 
-        try {
-            boolean successfulFlush=false;
-            boolean validView=new_view != null && new_view.size() > 0;
-            if(validView && flushProtocolInStack) {
-                int attemptCount = 0;
-                while (attemptCount < maxAttempts) {
-                    if (attemptCount > 0)
-                        Util.sleepRandom(randomFloor, randomCeiling);
-                    try {
-                        up_prot.up(new Event(Event.SUSPEND, new ArrayList<Address>(new_view.getMembers())));
-                        successfulFlush = true;
-                        break;
-                    } catch (Exception e) {
-                        attemptCount++;
-                    }
-                }
+       try {
+           boolean successfulFlush=false;
+           boolean validView=new_view != null && new_view.size() > 0;
+           if(validView && flushProtocolInStack) {
+               int attemptCount = 0;
+               while (attemptCount < maxAttempts) {
+                   if (attemptCount > 0)
+                       Util.sleepRandom(randomFloor, randomCeiling);
+                   try {
+                       up_prot.up(new Event(Event.SUSPEND, new ArrayList<Address>(new_view.getMembers())));
+                       successfulFlush = true;
+                       break;
+                   } catch (Exception e) {
+                       attemptCount++;
+                   }
+               }
 
-                if(successfulFlush) {
-                    if(log.isTraceEnabled())
-                        log.trace(local_addr + ": successful GMS flush by coordinator");
-                }
-                else {
-                    if(log.isWarnEnabled())
-                        log.warn(local_addr + ": GMS flush by coordinator failed");
-                }
-            }
-            return successfulFlush;
-        } catch (Exception e) {
-            return false;
-        }
-    }
+               if(successfulFlush) {
+                   if(log.isTraceEnabled())
+                       log.trace(local_addr + ": successful GMS flush by coordinator");
+               }
+               else {
+                  if (resumeIfFailed) {
+                     up(new Event(Event.RESUME, new ArrayList<Address>(new_view.getMembers())));
+                  }
+                  if (log.isWarnEnabled())
+                     log.warn(local_addr + ": GMS flush by coordinator failed");
+               }
+           }
+           return successfulFlush;
+       } catch (Exception e) {
+           return false;
+       }
+   }
 
     void stopFlush() {
         if(flushProtocolInStack) {
