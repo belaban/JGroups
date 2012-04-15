@@ -59,7 +59,7 @@ public class SEQUENCER extends Protocol {
 
     @ManagedOperation
     public Map<String,Object> dumpStats() {
-        Map<String,Object> m=super.dumpStats();       
+        Map<String,Object> m=super.dumpStats();
         m.put("forwarded", new Long(forwarded_msgs));
         m.put("broadcast", new Long(bcast_msgs));
         m.put("received_forwards", new Long(received_forwards));
@@ -70,10 +70,10 @@ public class SEQUENCER extends Protocol {
     @ManagedOperation
     public String printStats() {
         return dumpStats().toString();
-    }    
+    }
 
 
-    
+
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
@@ -99,6 +99,10 @@ public class SEQUENCER extends Protocol {
 
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
+                break;
+
+            case Event.TMP_VIEW:
+                handleTmpView((View)evt.getArg());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -148,12 +152,11 @@ public class SEQUENCER extends Protocol {
                 break;
 
             case Event.VIEW_CHANGE:
-                Object retval=up_prot.up(evt);
                 handleViewChange((View)evt.getArg());
-                return retval;
+                break;
 
-            case Event.SUSPECT:
-                handleSuspect((Address)evt.getArg());
+            case Event.TMP_VIEW:
+                handleTmpView((View)evt.getArg());
                 break;
         }
 
@@ -185,24 +188,16 @@ public class SEQUENCER extends Protocol {
         received_table.retainAll(mbrs);
     }
 
-    private void handleSuspect(Address suspected_mbr) {
-        boolean coord_changed=false;
+    // If we're becoming coordinator, we need to handle TMP_VIEW as
+    // an immediate change of view.  See JGRP-1452.
+    private void handleTmpView(View v) {
+        List<Address> mbrs=v.getMembers();
+        if(mbrs.isEmpty()) return;
 
-        if(suspected_mbr == null)
-            return;
-        
-        synchronized(this) {
-            List<Address> non_suspected_mbrs=new ArrayList<Address>(members);
-            non_suspected_mbrs.remove(suspected_mbr);
-            if(!non_suspected_mbrs.isEmpty()) {
-                Address prev_coord=coord;
-                coord=non_suspected_mbrs.get(0);
-                is_coord=local_addr != null && local_addr.equals(coord);
-                coord_changed=prev_coord != null && !prev_coord.equals(coord);
-            }
-        }
-        if(coord_changed) {
-            resendMessagesInForwardTable(); // maybe optimize in the future: broadcast directly if coord
+        Address new_coord=mbrs.iterator().next();
+
+        if (!coord.equals(new_coord) && local_addr != null && local_addr.equals(new_coord)) {
+          handleViewChange(v);
         }
     }
 
@@ -384,7 +379,7 @@ public class SEQUENCER extends Protocol {
             }
         }
 
-  
+
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             Util.writeStreamable(tag, out);
