@@ -547,7 +547,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                         .append(hr).append(", conn_id=" + conn_id) +")");
 
         if(entry.send_conn_id != conn_id) {
-            log.warn(local_addr + ": my conn_id (" + entry.send_conn_id +
+            log.trace(local_addr + ": my conn_id (" + entry.send_conn_id +
                        ") != received conn_id (" + conn_id + "); discarding STABLE message !");
             return;
         }
