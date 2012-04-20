@@ -157,9 +157,11 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         else
             msg.setBuffer((byte[])buf);
 
-        msg.setFlag(options.getFlags());
-        if(options.getScope() > 0)
-            msg.setScope(options.getScope());
+        if(options != null) {
+            msg.setFlag(options.getFlags());
+            if(options.getScope() > 0)
+                msg.setScope(options.getScope());
+        }
 
         RspList<T> retval=super.castMessage(dests, msg, options);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
@@ -198,9 +200,11 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             msg.setBuffer((Buffer)buf);
         else
             msg.setBuffer((byte[])buf);
-        msg.setFlag(options.getFlags());
-        if(options.getScope() > 0)
-            msg.setScope(options.getScope());
+        if(options != null) {
+            msg.setFlag(options.getFlags());
+            if(options.getScope() > 0)
+                msg.setScope(options.getScope());
+        }
         
         NotifyingFuture<RspList<T>>  retval=super.castMessageWithFuture(dests, msg, options);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
@@ -243,9 +247,11 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             msg.setBuffer((Buffer)buf);
         else
             msg.setBuffer((byte[])buf);
-        msg.setFlag(options.getFlags());
-        if(options.getScope() > 0)
-            msg.setScope(options.getScope());
+        if(options != null) {
+            msg.setFlag(options.getFlags());
+            if(options.getScope() > 0)
+                msg.setScope(options.getScope());
+        }
 
         T retval=(T)super.sendMessage(msg, options);
         if(log.isTraceEnabled()) log.trace("retval: " + retval);
@@ -272,9 +278,11 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             msg.setBuffer((Buffer)buf);
         else
             msg.setBuffer((byte[])buf);
-        msg.setFlag(options.getFlags());
-        if(options.getScope() > 0)
-            msg.setScope(options.getScope());
+        if(options != null) {
+            msg.setFlag(options.getFlags());
+            if(options.getScope() > 0)
+                msg.setScope(options.getScope());
+        }
         return super.sendMessageWithFuture(msg, options);
     }
 
