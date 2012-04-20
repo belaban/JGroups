@@ -702,8 +702,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         SenderEntry entry=send_table.get(sender);
         AckSenderWindow win=entry != null? entry.sent_msgs : null;
         if(win == null) {
-            if(log.isErrorEnabled())
-                log.error(local_addr + ": sender window for " + sender + " not found");
+            if(log.isWarnEnabled())
+                log.warn(local_addr + ": sender window for " + sender + " not found");
             return;
         }
         Message rsp=win.getLowestMessage();

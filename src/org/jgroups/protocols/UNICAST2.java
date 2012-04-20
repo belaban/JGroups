@@ -867,8 +867,8 @@ public class UNICAST2 extends Protocol implements Retransmitter.RetransmitComman
         SenderEntry entry=send_table.get(sender);
         AckSenderWindow win=entry != null? entry.sent_msgs : null;
         if(win == null) {
-            if(log.isErrorEnabled())
-                log.error(local_addr + ": sender window for " + sender + " not found");
+            if(log.isWarnEnabled())
+                log.warn(local_addr + ": sender window for " + sender + " not found");
             return;
         }
         long lowest=win.getLowest();
