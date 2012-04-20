@@ -39,7 +39,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
     public void join(Address mbr,boolean useFlushIfPresent) {
         wrongMethod("join");
     }
-    
+
     public void joinWithStateTransfer(Address mbr,boolean useFlushIfPresent) {
         wrongMethod("join");
     }
@@ -62,7 +62,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
         if(mbr.equals(gms.local_addr)) {
             if(log.isWarnEnabled()) log.warn("I am the coord and I'm suspected -- will probably leave shortly");
             return;
-        }        
+        }
         Collection<Request> suspected=new LinkedHashSet<Request>(1);
         suspected.add(new Request(Request.SUSPECT,mbr,true));
         handleMembershipChange(suspected);
@@ -128,7 +128,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             }
         }
 
-        new_mbrs.remove(gms.local_addr); // remove myself - cannot join myself (already joined)        
+        new_mbrs.remove(gms.local_addr); // remove myself - cannot join myself (already joined)
 
         if(gms.getViewId() == null) {
             // we're probably not the coord anymore (we just left ourselves), let someone else do it
@@ -158,12 +158,6 @@ public class CoordGmsImpl extends ServerGmsImpl {
             }
         }
 
-        if(new_mbrs.isEmpty() && leaving_mbrs.isEmpty() && suspected_mbrs.isEmpty()) {
-            if(log.isTraceEnabled())
-                log.trace("found no members to add or remove, will not create new view");
-            return;
-        }
-        
         View new_view=gms.getNextView(new_mbrs, leaving_mbrs, suspected_mbrs);
 
         if(new_view.size() == 0 && gms.local_addr != null && gms.local_addr.equals(new_view.getCreator())) {
@@ -177,14 +171,14 @@ public class CoordGmsImpl extends ServerGmsImpl {
 
         gms.up(new Event(Event.PREPARE_VIEW,new_view));
         gms.down(new Event(Event.PREPARE_VIEW,new_view));
-        
+
         if(log.isTraceEnabled())
             log.trace(gms.local_addr + ": new members=" + new_mbrs + ", suspected=" + suspected_mbrs + ", leaving=" + leaving_mbrs +
                         ", new view: " + new_view);
-             
+
         JoinRsp join_rsp=null;
         boolean hasJoiningMembers=!new_mbrs.isEmpty();
-        try {            
+        try {
             boolean successfulFlush =!useFlushIfPresent || !gms.flushProtocolInStack || gms.startFlush(new_view);
             if(!successfulFlush && hasJoiningMembers) {
                 // Don't send a join response if the flush fails (http://jira.jboss.org/jira/browse/JGRP-759)
@@ -193,11 +187,11 @@ public class CoordGmsImpl extends ServerGmsImpl {
                 // but let the joining client timeout and send another join request
                 return;
             }
-            
+
             // we cannot garbage collect during joining a new member *if* we're the only member
             // Example: {A}, B joins, after returning JoinRsp to B, A garbage collects messages higher than those
             // in the digest returned to the client, so the client will *not* be able to ask for retransmission
-            // of those messages if he misses them            
+            // of those messages if he misses them
             if(hasJoiningMembers) {
                 gms.getDownProtocol().down(new Event(Event.SUSPEND_STABLE, MAX_SUSPEND_TIMEOUT));
                 Digest tmp=gms.getDigest(); // get existing digest
@@ -219,7 +213,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
                 join_rsp=new JoinRsp(new_view, join_digest != null? join_digest.copy() : null);
             }
 
-            sendLeaveResponses(leaving_mbrs); // no-op if no leaving members                            
+            sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
             gms.castViewChange(new_view,join_rsp != null? join_rsp.getDigest() : null,join_rsp,new_mbrs);
         }
         finally {
@@ -254,7 +248,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
     }
 
 
-    
+
     private void sendLeaveResponses(Collection<Address> leaving_members) {
         for(Address address:leaving_members){
             Message msg=new Message(address, null, null); // send an ack to the leaving member
@@ -262,7 +256,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.LEAVE_RSP);
             msg.putHeader(gms.getId(), hdr);
             gms.getDownProtocol().down(new Event(Event.MSG, msg));
-        }       
+        }
     }
 
 
