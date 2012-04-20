@@ -487,7 +487,9 @@ public class UnicastTestRpcDist extends ReceiverAdapter {
             int index=dests.indexOf(local_addr);
             for(int i=index + 1; i < index + 1 + anycast_count; i++) {
                 int new_index=i % dests.size();
-                anycast_targets.add(dests.get(new_index));
+                Address tmp = dests.get(new_index);
+                if(!anycast_targets.contains(tmp))
+                    anycast_targets.add(tmp);
             }
             return anycast_targets;
         }

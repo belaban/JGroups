@@ -6,6 +6,7 @@ import org.jgroups.blocks.mux.Muxer;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
+import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
@@ -13,6 +14,7 @@ import org.jgroups.util.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -45,8 +47,14 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     protected Address local_addr=null;
     protected final Log log=LogFactory.getLog(getClass());
     protected boolean hardware_multicast_supported=false;
-
+    protected final AtomicInteger sync_unicasts=new AtomicInteger(0);
+    protected final AtomicInteger async_unicasts=new AtomicInteger(0);
+    protected final AtomicInteger sync_multicasts=new AtomicInteger(0);
+    protected final AtomicInteger async_multicasts=new AtomicInteger(0);
+    protected final AtomicInteger sync_anycasts=new AtomicInteger(0);
+    protected final AtomicInteger async_anycasts=new AtomicInteger(0);
     protected final Set<ChannelListener> channel_listeners=new CopyOnWriteArraySet<ChannelListener>();
+    protected final DiagnosticsHandler.ProbeHandler probe_handler=new MyProbeHandler();
 
 
     public MessageDispatcher() {
@@ -83,7 +91,6 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
 
 
 
-
     /**
      * If this dispatcher is using a user-provided PullPushAdapter, then need to set the members from the adapter
      * initially since viewChange has most likely already been called in PullPushAdapter.
@@ -111,9 +118,8 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
 
 
     public void start() {
-        if(corr == null) {
+        if(corr == null)
             corr=createRequestCorrelator(prot_adapter, this, local_addr);
-        }
         correlatorStarted();
         corr.start();
 
@@ -126,6 +132,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
             }
             TP transport=channel.getProtocolStack().getTransport();
             hardware_multicast_supported=transport.supportsMulticasting();
+            transport.registerProbeHandler(probe_handler);
         }
     }
 
@@ -144,6 +151,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
 
         if(channel instanceof JChannel) {
             TP transport=channel.getProtocolStack().getTransport();
+            transport.unregisterProbeHandler(probe_handler);
             corr.unregisterProbeHandler(transport);
         }
     }
@@ -296,6 +304,18 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
             return null;
         }
 
+        if(options != null) {
+            boolean async=options.getMode() == ResponseMode.GET_NONE;
+            if(options.getAnycasting()) {
+                if(async) async_anycasts.incrementAndGet();
+                else sync_anycasts.incrementAndGet();
+            }
+            else {
+                if(async) async_multicasts.incrementAndGet();
+                else sync_multicasts.incrementAndGet();
+            }
+        }
+
         GroupRequest<T> req=new GroupRequest<T>(msg, corr, real_dests, options);
         if(options != null) {
             req.setResponseFilter(options.getRspFilter());
@@ -336,6 +356,10 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
             msg.setFlag(opts.getFlags());
             if(opts.getScope() > 0)
                 msg.setScope(opts.getScope());
+            if(opts.getMode() == ResponseMode.GET_NONE)
+                async_unicasts.incrementAndGet();
+            else
+                sync_unicasts.incrementAndGet();
         }
 
         UnicastRequest<T> req=new UnicastRequest<T>(msg, corr, dest, opts);
@@ -383,6 +407,10 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
             msg.setFlag(options.getFlags());
             if(options.getScope() > 0)
                 msg.setScope(options.getScope());
+            if(options.getMode() == ResponseMode.GET_NONE)
+                async_unicasts.incrementAndGet();
+            else
+                sync_unicasts.incrementAndGet();
         }
 
         UnicastRequest<T> req=new UnicastRequest<T>(msg, corr, dest, options);
@@ -447,6 +475,35 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     /* ----------------------------------------------------------------------- */
 
 
+    class MyProbeHandler implements DiagnosticsHandler.ProbeHandler {
+
+        public Map<String,String> handleProbe(String... keys) {
+            Map<String,String> retval=new HashMap<String,String>();
+            for(String key: keys) {
+                if("rpcs".equals(key)) {
+                    retval.put("sync  unicast   RPCs", sync_unicasts.toString());
+                    retval.put("sync  multicast RPCs", sync_multicasts.toString());
+                    retval.put("async unicast   RPCs", async_unicasts.toString());
+                    retval.put("async multicast RPCs", async_multicasts.toString());
+                    retval.put("sync  anycast   RPCs", sync_anycasts.toString());
+                    retval.put("async anycast   RPCs", async_anycasts.toString());
+                }
+                if("rpcs-reset".equals(key)) {
+                    sync_unicasts.set(0);
+                    sync_multicasts.set(0);
+                    async_unicasts.set(0);
+                    async_multicasts.set(0);
+                    sync_anycasts.set(0);
+                    async_anycasts.set(0);
+                }
+            }
+            return retval;
+        }
+
+        public String[] supportedKeys() {
+            return new String[]{"rpcs", "rpcs-reset"};
+        }
+    }
 
 
     class ProtocolAdapter extends Protocol implements UpHandler {
