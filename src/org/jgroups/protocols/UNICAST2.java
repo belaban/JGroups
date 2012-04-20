@@ -882,8 +882,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         SenderEntry entry=send_table.get(sender);
         Table<Message> win=entry != null? entry.sent_msgs : null;
         if(win == null) {
-            if(log.isErrorEnabled())
-                log.error(local_addr + ": sender window for " + sender + " not found");
+            if(log.isTraceEnabled())
+                log.trace(local_addr + ": sender window for " + sender + " not found");
             return;
         }
 
