@@ -94,8 +94,7 @@ public class SeqnoTable {
                     return false;
 
                 // seqno > next_to_receive
-                seqnos.add(seqno);
-                return true;
+                return seqnos.add(seqno);
             }
             finally {
                 highest_received=Math.max(highest_received, seqno);
