@@ -33,7 +33,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
     public void join(Address mbr, boolean useFlushIfPresent) {
         wrongMethod("join");
     }
-    
+
     public void joinWithStateTransfer(Address mbr,boolean useFlushIfPresent) {
         wrongMethod("join");
     }
@@ -85,7 +85,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
         }
     }
 
-    public void handleLeaveResponse() {       
+    public void handleLeaveResponse() {
         leave_promise.setResult(true);  // unblocks thread waiting in leave()
     }
 
@@ -110,7 +110,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
             if(req.type == Request.SUSPECT)
                 suspectedMembers.add(req.mbr);
         }
-        
+
         if(suspectedMembers.isEmpty())
             return;
 
@@ -126,12 +126,12 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
             if(log.isDebugEnabled())
                 log.debug("members are " + gms.members + ", coord=" + gms.local_addr + ": I'm the new coord !");
 
-            suspected_mbrs.clear();
             gms.becomeCoordinator();
-            for(Address mbr: suspectedMembers) {
+            for(Address mbr: suspected_mbrs) {
                 gms.getViewHandler().add(new Request(Request.SUSPECT, mbr, true));
                 gms.ack_collector.suspect(mbr);
             }
+            suspected_mbrs.clear();
         }
     }
 
