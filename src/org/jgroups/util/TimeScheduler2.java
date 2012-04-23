@@ -162,8 +162,9 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             }
             if((retval=existing.add(work)) != null)
                 break;
-            else // entry has completed; remove it. This will create a new Entry at the top of the loop
-                tasks.remove(key);
+
+            // Else the existing entry is completed.  It'll be removed shortly, so we just loop round again.
+            // Don't remove the entry ourselves - see JGRP-1457.
         }
 
         if(key < next_execution_time || no_tasks.compareAndSet(true, false)) {
@@ -393,7 +394,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     }
 
 
-    
+
 
     private static class Entry {
         private final MyTask     task; // the task (wrapper) to execute
@@ -579,7 +580,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                     log.trace("task will not get rescheduled as interval is " + next_interval);
                 return;
             }
-            
+
             future=schedule(this, next_interval, TimeUnit.MILLISECONDS);
             if(cancelled)
                 future.cancel(true);
