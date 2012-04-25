@@ -23,7 +23,7 @@ public class CreditMap {
     protected final Lock              lock=new ReentrantLock();
     protected final Condition         credits_available=lock.newCondition();
     protected int                     num_blockings=0;
-    protected long                    total_block_time=0;
+    protected long                    total_block_time=0; // in ns
 
 
     public CreditMap(long max_credits) {
@@ -44,7 +44,7 @@ public class CreditMap {
     }
 
     public long getTotalBlockTime() {
-        return total_block_time;
+        return TimeUnit.MILLISECONDS.convert(total_block_time, TimeUnit.NANOSECONDS);
     }
 
     public Set<Address> keys() {
@@ -152,14 +152,14 @@ public class CreditMap {
             if(timeout <= 0)
                 return false;
 
-            long start=System.currentTimeMillis();
+            long start=System.nanoTime();
             try {
                 credits_available.await(timeout, TimeUnit.MILLISECONDS);
             }
             catch(InterruptedException e) {
             }
             finally {
-                total_block_time+=System.currentTimeMillis() - start;
+                total_block_time+=System.nanoTime() - start;
                 num_blockings++;
             }
             
