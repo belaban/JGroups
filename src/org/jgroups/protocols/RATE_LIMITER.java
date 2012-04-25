@@ -33,7 +33,7 @@ public class RATE_LIMITER extends Protocol {
     protected long num_bytes_sent=0L;
 
     @GuardedBy("lock")
-    protected long end_of_current_period=0L;
+    protected long end_of_current_period=0L; // ns
 
     protected final Lock lock=new ReentrantLock();
     protected final Condition block=lock.newCondition();
@@ -41,8 +41,13 @@ public class RATE_LIMITER extends Protocol {
     @ManagedAttribute
     protected int num_blockings=0;
 
-    @ManagedAttribute
-    protected long total_block_time=0L;
+    protected long total_block_time=0L; // ns
+
+
+    @ManagedAttribute(description="Total block time in milliseconds")
+    public long getTotalBlockTime() {
+        return TimeUnit.MILLISECONDS.convert(total_block_time, TimeUnit.NANOSECONDS);
+    }
 
 
 
@@ -61,7 +66,7 @@ public class RATE_LIMITER extends Protocol {
 
                 while(true) {
                     boolean size_exceeded=num_bytes_sent + len >= max_bytes,
-                            time_exceeded=System.currentTimeMillis() > end_of_current_period;
+                            time_exceeded=System.nanoTime() >= end_of_current_period;
                     if(!size_exceeded && !time_exceeded)
                         break;
 
@@ -69,10 +74,10 @@ public class RATE_LIMITER extends Protocol {
                         reset();
                     }
                     else { // size exceeded
-                        long block_time=end_of_current_period - System.currentTimeMillis();
+                        long block_time=end_of_current_period - System.nanoTime();
                         if(block_time > 0) {
                             try {
-                                block.await(block_time, TimeUnit.MILLISECONDS);
+                                block.await(block_time, TimeUnit.NANOSECONDS);
                                 num_blockings++;
                                 total_block_time+=block_time;
                             }
@@ -113,7 +118,7 @@ public class RATE_LIMITER extends Protocol {
 
     protected void reset() {
         num_bytes_sent=0L;
-        end_of_current_period=System.currentTimeMillis() + time_period;
+        end_of_current_period=System.nanoTime() + TimeUnit.NANOSECONDS.convert(time_period, TimeUnit.MILLISECONDS);
         block.signalAll();
     }
 }
