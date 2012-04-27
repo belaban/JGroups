@@ -481,12 +481,13 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
             Map<String,String> retval=new HashMap<String,String>();
             for(String key: keys) {
                 if("rpcs".equals(key)) {
-                    retval.put("sync  unicast   RPCs", sync_unicasts.toString());
-                    retval.put("sync  multicast RPCs", sync_multicasts.toString());
-                    retval.put("async unicast   RPCs", async_unicasts.toString());
-                    retval.put("async multicast RPCs", async_multicasts.toString());
-                    retval.put("sync  anycast   RPCs", sync_anycasts.toString());
-                    retval.put("async anycast   RPCs", async_anycasts.toString());
+                    String channel_name = channel != null ? channel.getClusterName() : "";
+                    retval.put(channel_name + ": sync  unicast   RPCs", sync_unicasts.toString());
+                    retval.put(channel_name + ": sync  multicast RPCs", sync_multicasts.toString());
+                    retval.put(channel_name + ": async unicast   RPCs", async_unicasts.toString());
+                    retval.put(channel_name + ": async multicast RPCs", async_multicasts.toString());
+                    retval.put(channel_name + ": sync  anycast   RPCs", sync_anycasts.toString());
+                    retval.put(channel_name + ": async anycast   RPCs", async_anycasts.toString());
                 }
                 if("rpcs-reset".equals(key)) {
                     sync_unicasts.set(0);
