@@ -30,7 +30,7 @@ public class RATE_LIMITER extends Protocol {
     /** Keeps track of the number of bytes sent in the current time period */
     @GuardedBy("lock")
     @ManagedAttribute(description="Number of bytes sent in the current time period. Reset after every time period.")
-    protected long num_bytes_sent=0L;
+    protected long num_bytes_sent_in_period=0L;
 
     @GuardedBy("lock")
     protected long end_of_current_period=0L; // ns
@@ -85,13 +85,13 @@ public class RATE_LIMITER extends Protocol {
                 }
 
                 while(running) {
-                    boolean size_exceeded=num_bytes_sent + len >= max_bytes,
+                    boolean size_exceeded=num_bytes_sent_in_period + len >= max_bytes,
                             time_exceeded=System.nanoTime() >= end_of_current_period;
                     if(!size_exceeded && !time_exceeded)
                         break;
 
                     if(time_exceeded) {
-                        num_bytes_sent=0L;
+                        num_bytes_sent_in_period=0L;
                         end_of_current_period=System.nanoTime() + TimeUnit.NANOSECONDS.convert(time_period, TimeUnit.MILLISECONDS);
                     }
                     else { // size exceeded
@@ -105,7 +105,7 @@ public class RATE_LIMITER extends Protocol {
                 }
             }
             finally {
-                num_bytes_sent+=len;
+                num_bytes_sent_in_period+=len;
                 lock.unlock();
             }
 

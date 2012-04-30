@@ -111,7 +111,6 @@ public class MPerf extends ReceiverAdapter {
                     case '1':
                         initiator=true;
                         results.reset(getSenders());
-                        send(null,null,MPerfHeader.CLEAR_RESULTS, Message.Flag.RSVP); // clear all results (from prev runs) first
                         send(null, null, MPerfHeader.START_SENDING, Message.Flag.RSVP);
                         break;
                     case '2':
@@ -312,6 +311,12 @@ public class MPerf extends ReceiverAdapter {
                 if(initiator && results.hasAllResponses()) {
                     initiator=false;
                     displayResults();
+                    try {
+                        send(null,null,MPerfHeader.CLEAR_RESULTS, Message.Flag.RSVP); // clear all results (for the next run)
+                    }
+                    catch(Exception e) {
+                        log.error("failed sending CLEAR_RESULT message", e);
+                    }
                 }
                 break;
 
