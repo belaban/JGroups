@@ -88,6 +88,9 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
       "it is only used to switch back to the old (and proven) retransmitter mechanism if issues occur")
     protected boolean use_range_based_retransmitter=true;
 
+    @Property(description="If true, trashes warnings about retransmission messages not found in the xmit_table (used for testing)")
+    protected boolean log_not_found_msgs=true;
+
     @Property(description="Time (in milliseconds) after which an idle incoming or outgoing connection is closed. The " +
       "connection will get re-established when used again. 0 disables connection reaping")
     protected long    conn_expiry_timeout=60000;
@@ -854,7 +857,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             for(long seqno: missing) {
                 Message msg=win.get(seqno);
                 if(msg == null) {
-                    if(log.isWarnEnabled() && !local_addr.equals(sender)) {
+                    if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(sender) && seqno > win.getLow()) {
                         StringBuilder sb=new StringBuilder();
                         sb.append("(requester=").append(sender).append(", local_addr=").append(this.local_addr);
                         sb.append(") message ").append(sender).append("::").append(seqno);
@@ -1245,8 +1248,14 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 Table<Message> buf=val != null? val.received_msgs : null;
                 if(buf != null && buf.getNumMissing() > 0) {
                     SeqnoList missing=buf.getMissing();
-                    if(missing != null)
-                        retransmit(missing, target);
+                    if(missing != null) {
+                        // Just a double-check to avoid unneeded retransmissions: messages might have been added to or
+                        // removed from the table after calling getMissing(), and so we remove all
+                        // seqnos <= the highest delivered seqno from the retransmit list
+                        missing.remove(buf.getHighestDelivered());
+                        if(missing.size()  > 0)
+                            retransmit(missing, target);
+                    }
                 }
             }
         }

@@ -784,7 +784,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         for(long i: missing_msgs) {
             Message msg=buf.get(i);
             if(msg == null) {
-                if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(xmit_requester)) {
+                if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(xmit_requester) && i > buf.getLow()) {
                     StringBuilder sb=new StringBuilder();
                     sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                     sb.append(") message ").append(original_sender).append("::").append(i);
@@ -1256,8 +1256,14 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 Table<Message> buf=entry.getValue();
                 if(buf.getNumMissing() > 0) {
                     SeqnoList missing=buf.getMissing();
-                    if(missing != null)
-                        retransmit(missing, target, false);
+                    if(missing != null) {
+                        // Just a double-check to avoid unneeded retransmissions: messages might have been added to or
+                        // removed from the table after calling getMissing(), and so we remove all
+                        // seqnos <= the highest delivered seqno from the retransmit list
+                        missing.remove(buf.getHighestDelivered());
+                        if(missing.size()  > 0)
+                            retransmit(missing, target, false);
+                    }
                 }
             }
         }
