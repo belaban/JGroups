@@ -50,6 +50,26 @@ public class SeqnoList implements Streamable, Iterable<Long> {
         return this;
     }
 
+    /** Removes all seqnos <= seqno */
+    public void remove(long min_seqno) {
+        for(Iterator<Seqno> it=seqnos.iterator(); it.hasNext();) {
+            Seqno tmp=it.next();
+            if(tmp instanceof SeqnoRange) {
+                SeqnoRange range=(SeqnoRange)tmp;
+                if(range.to <= min_seqno)
+                    it.remove();
+                else {
+                    if(range.from <= min_seqno)
+                        range.from=min_seqno+1;
+                }
+            }
+            else {
+                if(tmp.from <= min_seqno)
+                    it.remove();
+            }
+        }
+    }
+
     public void writeTo(DataOutput out) throws Exception {
         out.writeInt(seqnos.size());
         for(Seqno seqno: seqnos) {

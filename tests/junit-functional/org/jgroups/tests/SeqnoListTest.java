@@ -7,7 +7,6 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -21,6 +20,23 @@ public class SeqnoListTest {
         SeqnoList list=new SeqnoList().add(1).add(5,10).add(15);
         System.out.println("list = " + list);
         assert list.size() == 8;
+    }
+
+    public void testRemoval() {
+        SeqnoList list=new SeqnoList().add(1).add(5,10).add(15);
+        list.remove(0);
+        assert list.size() == 8;
+
+        list.remove(1);
+        assert list.size() == 7;
+
+        int size=7;
+        for(long seqno: new long[]{5,6,7,8,9,10}) {
+            list.remove(seqno);
+            assert list.size() == --size;
+        }
+
+        assert list.size() == 1;
     }
 
     public void testIteration() {
