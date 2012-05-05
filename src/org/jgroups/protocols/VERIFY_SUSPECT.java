@@ -320,7 +320,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
 
         public String toString() {
-            return name + ": " + target_time;
+            return suspect + ": " + target_time;
         }
     }
 
