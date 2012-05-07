@@ -6,6 +6,7 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.AckCollector;
 import org.jgroups.util.ResponseCollector;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -31,17 +32,18 @@ import java.util.concurrent.atomic.AtomicLong;
  * @since 3.1
  */
 public class MPerf extends ReceiverAdapter {
-    protected String          props=null;
-    protected JChannel        channel;
-    protected Address         local_addr=null;
-    protected String          name;
+    protected String                props=null;
+    protected JChannel              channel;
+    final protected AckCollector    ack_collector=new AckCollector(); // for synchronous sends
+    protected Address               local_addr=null;
+    protected String                name;
 
-    protected int             num_msgs=1000 * 1000;
-    protected int             msg_size=1000;
-    protected int             num_threads=1;
-    protected int             log_interval=num_msgs / 10; // log every 10%
-    protected int             receive_log_interval=num_msgs / 10;
-    protected int             num_senders=-1; // <= 0: all
+    protected int                   num_msgs=1000 * 1000;
+    protected int                   msg_size=1000;
+    protected int                   num_threads=1;
+    protected int                   log_interval=num_msgs / 10; // log every 10%
+    protected int                   receive_log_interval=num_msgs / 10;
+    protected int                   num_senders=-1; // <= 0: all
 
 
     /** Maintains stats per sender, will be sent to perf originator when all messages have been received */
@@ -111,6 +113,11 @@ public class MPerf extends ReceiverAdapter {
                     case '1':
                         initiator=true;
                         results.reset(getSenders());
+
+                        ack_collector.reset(channel.getView().getMembers());
+                        send(null,null,MPerfHeader.CLEAR_RESULTS, Message.Flag.RSVP); // clear all results (from prev runs) first
+                        ack_collector.waitForAllAcks(5000);
+                        
                         send(null, null, MPerfHeader.START_SENDING, Message.Flag.RSVP);
                         break;
                     case '2':
@@ -311,12 +318,6 @@ public class MPerf extends ReceiverAdapter {
                 if(initiator && results.hasAllResponses()) {
                     initiator=false;
                     displayResults();
-                    try {
-                        send(null,null,MPerfHeader.CLEAR_RESULTS, Message.Flag.RSVP); // clear all results (for the next run)
-                    }
-                    catch(Exception e) {
-                        log.error("failed sending CLEAR_RESULT message", e);
-                    }
                 }
                 break;
 
@@ -325,6 +326,14 @@ public class MPerf extends ReceiverAdapter {
                     result.reset();
                 total_received_msgs.set(0);
                 last_interval=0;
+
+                // requires an ACK to the sender
+                try {
+                    send(msg.getSrc(), null, MPerfHeader.ACK, Message.Flag.OOB);
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
                 break;
 
             case MPerfHeader.CONFIG_CHANGE:
@@ -359,6 +368,10 @@ public class MPerf extends ReceiverAdapter {
 
             case MPerfHeader.NEW_CONFIG:
                 applyNewConfig(msg.getBuffer());
+                break;
+
+            case MPerfHeader.ACK:
+                ack_collector.ack(msg.getSrc());
                 break;
 
             default:
@@ -707,6 +720,7 @@ public class MPerf extends ReceiverAdapter {
         protected static final byte CONFIG_RSP    =  8;
         protected static final byte EXIT          =  9;
         protected static final byte NEW_CONFIG    = 10;
+        protected static final byte ACK           = 11;
 
 
         protected byte         type;
