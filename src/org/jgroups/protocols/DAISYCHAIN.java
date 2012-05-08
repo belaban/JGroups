@@ -40,7 +40,7 @@ public class DAISYCHAIN extends Protocol {
     int send_queue_size=10000;
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-    protected Address                local_addr, next;
+    protected volatile Address       local_addr, next;
     protected int                    view_size=0;
     protected Executor               default_pool=null;
     protected Executor               oob_pool=null;
@@ -60,6 +60,13 @@ public class DAISYCHAIN extends Protocol {
 
     @ManagedAttribute
     public int getElementsInSendQueue() {return send_queue.size();}
+
+
+
+    public void resetStats() {
+        super.resetStats();
+        msgs_forwarded=msgs_sent=0;
+    }
 
     public void init() throws Exception {
         default_pool=getTransport().getDefaultThreadPool();
@@ -82,8 +89,7 @@ public class DAISYCHAIN extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 final Message msg=(Message)evt.getArg();
-                Address dest=msg.getDest();
-                if(dest != null)
+                if(msg.getDest() != null)
                     break; // only process multicast messages
 
                 if(next == null) // view hasn't been received yet, use the normal transport
