@@ -185,9 +185,9 @@ public class SharedTransportTest extends ChannelTestBase {
         b.connect("x");
 
         View view=a.getView();
-        assert view.size() == 2;
+        assert view.size() == 2 : "view=" + view + ", but was supposed to have 2 members";
         view=b.getView();
-        assert view.size() == 2;
+        assert view.size() == 2 : "view=" + view + ", but was supposed to have 2 members";
     }
 
 
