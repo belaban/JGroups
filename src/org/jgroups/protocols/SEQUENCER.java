@@ -32,7 +32,7 @@ public class SEQUENCER extends Protocol {
     private final Map<Long,byte[]> forward_table=new TreeMap<Long,byte[]>();
 
     /** Map<Address, seqno>: maintains the highest seqnos seen for a given member */
-    private final SeqnoTable received_table=new SeqnoTable(0);
+    private final SeqnoTable received_table=new SeqnoTable();
 
     private long forwarded_msgs=0;
     private long bcast_msgs=0;
@@ -59,7 +59,7 @@ public class SEQUENCER extends Protocol {
 
     @ManagedOperation
     public Map<String,Object> dumpStats() {
-        Map<String,Object> m=super.dumpStats();       
+        Map<String,Object> m=super.dumpStats();
         m.put("forwarded", new Long(forwarded_msgs));
         m.put("broadcast", new Long(bcast_msgs));
         m.put("received_forwards", new Long(received_forwards));
@@ -70,10 +70,10 @@ public class SEQUENCER extends Protocol {
     @ManagedOperation
     public String printStats() {
         return dumpStats().toString();
-    }    
+    }
 
 
-    
+
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
@@ -190,7 +190,7 @@ public class SEQUENCER extends Protocol {
 
         if(suspected_mbr == null)
             return;
-        
+
         synchronized(this) {
             List<Address> non_suspected_mbrs=new ArrayList<Address>(members);
             non_suspected_mbrs.remove(suspected_mbr);
@@ -384,7 +384,7 @@ public class SEQUENCER extends Protocol {
             }
         }
 
-  
+
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             Util.writeStreamable(tag, out);

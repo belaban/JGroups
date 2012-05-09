@@ -25,13 +25,13 @@ public class SeqnoTableTest {
 
 
     public static void testInit() {
-        SeqnoTable tab=new SeqnoTable(0);
+        SeqnoTable tab=new SeqnoTable();
         tab.add(MBR, 0);
         Assert.assertEquals(0, tab.getHighestReceived(MBR));
         Assert.assertEquals(1, tab.getNextToReceive(MBR));
 
         tab.clear();
-        tab=new SeqnoTable(50);
+        tab=new SeqnoTable();
         tab.add(MBR, 50);
         Assert.assertEquals(50, tab.getHighestReceived(MBR));
         Assert.assertEquals(51, tab.getNextToReceive(MBR));
@@ -39,7 +39,7 @@ public class SeqnoTableTest {
 
 
     public static void testAdd() {
-        SeqnoTable tab=new SeqnoTable(0);
+        SeqnoTable tab=new SeqnoTable();
         tab.add(MBR, 0);
         tab.add(MBR, 1);
         tab.add(MBR, 2);
@@ -49,7 +49,7 @@ public class SeqnoTableTest {
 
 
     public static void testAddWithGaps() {
-        SeqnoTable tab=new SeqnoTable(0);
+        SeqnoTable tab=new SeqnoTable();
         boolean rc=tab.add(MBR, 0);
         assert rc;
         rc=tab.add(MBR, 1);
@@ -73,7 +73,7 @@ public class SeqnoTableTest {
 
 
     public static void testAddWithGaps2() {
-        SeqnoTable tab=new SeqnoTable(0);
+        SeqnoTable tab=new SeqnoTable();
         boolean rc=tab.add(MBR, 5);
         System.out.println("tab: " + tab);
         assert rc;
@@ -114,7 +114,7 @@ public class SeqnoTableTest {
 
 
     public static void testInsertionOfDuplicates() {
-        SeqnoTable tab=new SeqnoTable(0);
+        SeqnoTable tab=new SeqnoTable();
         boolean rc=tab.add(MBR, 0);
         assert rc;
         rc=tab.add(MBR, 0);
