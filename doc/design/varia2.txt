@@ -7,6 +7,21 @@
 Digest returned to client
 -------------------------
 
+*******************************************************************************************************************
+This issue is moot; we simply return the digest to the client. Here's the example (A's the coord and D the joiner):
+- A has a digest of #35 (the next message to be sent is #36)
+- A multicasts the view (A's digest is now #36)
+- D discards the view as it is not yet a member
+- A unicasts the view and digest (#35) to D
+- D sets its digest to A:35,D:0
+- A multicasts a new message #37
+- D asks A for retransmission of #36
+- D gets #36 (the view), but discards it as the join response already installed this view
+ - D delivers #37
+
+[https://issues.jboss.org/browse/JGRP-1455]
+*******************************************************************************************************************
+
 The digest returned to clients determines the seqnos they have to
 expect from other group members. If, in the absence of a
 retransmission protocol, a client gets back a lower seqno for a member
