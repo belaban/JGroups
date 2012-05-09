@@ -43,6 +43,8 @@ public class RATE_LIMITER extends Protocol {
 
     protected long total_block_time=0L; // ns
 
+    protected int frag_size=0;
+
     protected volatile boolean running=true;
 
     public long getMaxBytes() {
@@ -85,6 +87,8 @@ public class RATE_LIMITER extends Protocol {
     
     public void start() throws Exception {
         super.start();
+        if(max_bytes < frag_size)
+            throw new IllegalStateException("max_bytes (" + max_bytes + ") need to be bigger than frag_size (" + frag_size + ")");
         running=true;
     }
 
@@ -136,8 +140,10 @@ public class RATE_LIMITER extends Protocol {
 
         if(evt.getType() == Event.CONFIG) {
             Map<String,Object> map=(Map<String, Object>)evt.getArg();
-            Integer frag_size=map != null? (Integer)map.get("frag_size") : null;
-            if(frag_size != null) {
+            Integer tmp=map != null? (Integer)map.get("frag_size") : null;
+            if(tmp != null)
+                frag_size=tmp.intValue();
+            if(frag_size > 0) {
                 if(max_bytes % frag_size != 0) {
                     if(log.isWarnEnabled())
                         log.warn("For optimal performance, max_bytes (" + max_bytes +
