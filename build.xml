@@ -564,7 +564,8 @@
                 <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
                 <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
     		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
-                <jvmarg value="-Xmx300M"/>
+                <jvmarg value="-Xms400M"/>
+                <jvmarg value="-Xmx800M"/>
             </testng>
         </sequential>
     </macrodef>

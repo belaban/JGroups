@@ -9,8 +9,8 @@ Date: Dec 29 2005
 
 Motivation
 ----------
-The TOTAL protocol works by asking the coordinator for a sequence number for every group message, but each member
-sends the message itself. This means a round trip to the coordinator, then a multicast. In the design below, we want
+The TOTAL protocol worked by asking the coordinator for a sequence number for every group message, but each member
+sends the message itself. This meant a round trip to the coordinator, then a multicast. In the design below, we want
 the coordinator to directly multicast the message on behalf of the member, now we have 1 unicast to the coordinator and
 1 multicast. The downside is that all message are now routed via the coordinator, which makes the latter the
 bottleneck. However, since it is only the coordinator who sends multicasts, we have no contention.
