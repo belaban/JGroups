@@ -33,7 +33,7 @@ public class SeqnoTable {
     public boolean add(Address member, long seqno) {
         Entry entry=map.get(member);
         if(entry == null) {
-            entry=new Entry(next_to_receive);
+            entry=new Entry(seqno);
             Entry entry2=map.putIfAbsent(member, entry);
             if(entry2 != null)
                 entry=entry2;

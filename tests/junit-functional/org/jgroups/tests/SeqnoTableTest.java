@@ -78,41 +78,41 @@ public class SeqnoTableTest {
         System.out.println("tab: " + tab);
         assert rc;
         Assert.assertEquals(5, tab.getHighestReceived(MBR));
-        Assert.assertEquals(0, tab.getNextToReceive(MBR));
-
-        rc=tab.add(MBR, 4);
-        System.out.println("tab: " + tab);
-        assert rc;
-        Assert.assertEquals(5, tab.getHighestReceived(MBR));
-        Assert.assertEquals(0, tab.getNextToReceive(MBR));
-
-        rc=tab.add(MBR, 3);
-        System.out.println("tab: " + tab);
-        assert rc;
-        Assert.assertEquals(5, tab.getHighestReceived(MBR));
-        Assert.assertEquals(0, tab.getNextToReceive(MBR));
-
-        rc=tab.add(MBR, 2);
-        System.out.println("tab: " + tab);
-        assert rc;
-        Assert.assertEquals(5, tab.getHighestReceived(MBR));
-        Assert.assertEquals(0, tab.getNextToReceive(MBR));
-
-        rc=tab.add(MBR, 1);
-        System.out.println("tab: " + tab);
-        assert rc;
-        Assert.assertEquals(5, tab.getHighestReceived(MBR));
-        Assert.assertEquals(0, tab.getNextToReceive(MBR));
-
-        rc=tab.add(MBR, 0);
-        System.out.println("tab: " + tab);
-        assert rc;
-        Assert.assertEquals(5, tab.getHighestReceived(MBR));
         Assert.assertEquals(6, tab.getNextToReceive(MBR));
+
+        rc=tab.add(MBR, 10);
+        System.out.println("tab: " + tab);
+        assert rc;
+        Assert.assertEquals(10, tab.getHighestReceived(MBR));
+        Assert.assertEquals(6, tab.getNextToReceive(MBR));
+
+        rc=tab.add(MBR, 6);
+        System.out.println("tab: " + tab);
+        assert rc;
+        Assert.assertEquals(10, tab.getHighestReceived(MBR));
+        Assert.assertEquals(7, tab.getNextToReceive(MBR));
+
+        rc=tab.add(MBR, 7);
+        System.out.println("tab: " + tab);
+        assert rc;
+        Assert.assertEquals(10, tab.getHighestReceived(MBR));
+        Assert.assertEquals(8, tab.getNextToReceive(MBR));
+
+        rc=tab.add(MBR, 8);
+        System.out.println("tab: " + tab);
+        assert rc;
+        Assert.assertEquals(10, tab.getHighestReceived(MBR));
+        Assert.assertEquals(9, tab.getNextToReceive(MBR));
+
+        rc=tab.add(MBR, 9);
+        System.out.println("tab: " + tab);
+        assert rc;
+        Assert.assertEquals(10, tab.getHighestReceived(MBR));
+        Assert.assertEquals(11, tab.getNextToReceive(MBR));
 
     }
 
-    
+
     public static void testInsertionOfDuplicates() {
         SeqnoTable tab=new SeqnoTable(0);
         boolean rc=tab.add(MBR, 0);
@@ -133,6 +133,9 @@ public class SeqnoTableTest {
         rc=tab.add(MBR, 2);
         assert !rc;
 
+        rc=tab.add(MBR, 4);
+        assert !rc;
+
         rc=tab.add(MBR, 3);
         assert rc;
 
@@ -140,6 +143,6 @@ public class SeqnoTableTest {
         assert !rc;
     }
 
-    
+
 
 }
