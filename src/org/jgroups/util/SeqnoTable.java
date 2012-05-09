@@ -12,13 +12,7 @@ import java.util.concurrent.ConcurrentMap;
  * @author Bela Ban
  */
 public class SeqnoTable {
-    private long next_to_receive=0;
     private final ConcurrentMap<Address, Entry> map=Util.createConcurrentMap();
-
-
-    public SeqnoTable(long next_to_receive) {
-        this.next_to_receive=next_to_receive;
-    }
 
     public long getHighestReceived(Address member) {
         Entry entry=map.get(member);
@@ -33,7 +27,7 @@ public class SeqnoTable {
     public boolean add(Address member, long seqno) {
         Entry entry=map.get(member);
         if(entry == null) {
-            entry=new Entry(next_to_receive);
+            entry=new Entry(seqno);
             Entry entry2=map.putIfAbsent(member, entry);
             if(entry2 != null)
                 entry=entry2;
