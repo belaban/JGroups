@@ -5,6 +5,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
@@ -44,6 +45,21 @@ public class RATE_LIMITER extends Protocol {
 
     protected volatile boolean running=true;
 
+    public long getMaxBytes() {
+        return max_bytes;
+    }
+
+    public void setMaxBytes(long max_bytes) {
+        this.max_bytes=max_bytes;
+    }
+
+    public long getTimePeriod() {
+        return time_period;
+    }
+
+    public void setTimePeriod(long time_period) {
+        this.time_period=time_period;
+    }
 
     @ManagedAttribute(description="Total block time in milliseconds")
     public long getTotalBlockTime() {
@@ -61,6 +77,12 @@ public class RATE_LIMITER extends Protocol {
         num_blockings=0; total_block_time=0;
     }
 
+    public void init() throws Exception {
+        super.init();
+        if(time_period <= 0)
+            throw new IllegalArgumentException("time_period needs to be positive");
+    }
+    
     public void start() throws Exception {
         super.start();
         running=true;
@@ -112,15 +134,19 @@ public class RATE_LIMITER extends Protocol {
             return down_prot.down(evt);
         }
 
+        if(evt.getType() == Event.CONFIG) {
+            Map<String,Object> map=(Map<String, Object>)evt.getArg();
+            Integer frag_size=map != null? (Integer)map.get("frag_size") : null;
+            if(frag_size != null) {
+                if(max_bytes % frag_size != 0) {
+                    if(log.isWarnEnabled())
+                        log.warn("For optimal performance, max_bytes (" + max_bytes +
+                                   ") should be a multiple of frag_size (" + frag_size + ")");
+                }
+            }
+        }
+
         return down_prot.down(evt);
     }
-    
-
-    public void init() throws Exception {
-        super.init();
-        if(time_period <= 0)
-            throw new IllegalArgumentException("time_period needs to be positive");
-    }
-
 
 }
