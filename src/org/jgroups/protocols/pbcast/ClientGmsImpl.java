@@ -4,6 +4,7 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.protocols.PingData;
 import org.jgroups.util.Promise;
+import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 import org.jgroups.util.Digest;
 
@@ -168,6 +169,14 @@ public class ClientGmsImpl extends GmsImpl {
                     // tmp_digest.incrementHighestDeliveredSeqno(coord); // see doc/design/varia2.txt for details
                     // tmp_digest.seal();
                     gms.setDigest(tmp_digest);
+
+                    // asking the coord to retransmit at least the view, so we deliver the next messages immediately and
+                    // don't have to wait for retransmission tio kick in (https://issues.jboss.org/browse/JGRP-1455)
+                    long[] seqnos=tmp_digest.get(coord);
+                    if(seqnos != null) {
+                        long retransmit=seqnos[0] +1;
+                        gms.down(new Event(Event.RETRANSMIT, new Tuple<Address,Long>(coord, retransmit)));
+                    }
 
                     if(log.isTraceEnabled())
                         log.trace(gms.local_addr + ": JOIN-RSP=" + tmp_view + " [size=" + tmp_view.size() + "]\n\n");

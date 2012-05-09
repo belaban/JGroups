@@ -495,8 +495,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
          // If we're the only member the VIEW is broadcast to, let's simply install the view directly, without
          // sending the VIEW multicast ! Or else N-1 members drop the multicast anyway...
         if(local_addr != null && ackMembers.size() == 1 && ackMembers.get(0).equals(local_addr)) {
-            // we need to add the message to the retransmit window (e.g. in NAKACK), so (1) it can be retransmitted and
-            // (2) we increment the seqno (otherwise, we'd return an incorrect digest)
+            // we need to add the message to the retransmit window (e.g. in NAKACK), so it can be retransmitted
             down_prot.down(new Event(Event.ADD_TO_XMIT_TABLE, view_change_msg));
             impl.handleViewChange(new_view, digest);
         }

@@ -58,6 +58,7 @@ public class Event {
     public static final int IS_MERGE_IN_PROGRESS               = 100; // returns true or false
     public static final int ADD_TO_XMIT_TABLE                  = 101; // arg=Message
     public static final int GET_PHYSICAL_ADDRESSES             = 102; // arg=null (returns all physical addresses)
+    public static final int RETRANSMIT                         = 103; // arg=Tuple<Address,Long>
 
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
@@ -141,6 +142,7 @@ public class Event {
             case IS_MERGE_IN_PROGRESS:   return "IS_MERGE_IN_PROGRESS";
             case ADD_TO_XMIT_TABLE:      return "ADD_TO_XMIT_TABLE";
             case GET_PHYSICAL_ADDRESSES: return "GET_PHYSICAL_ADDRESSES";
+            case RETRANSMIT:             return "RETRANSMIT";
             
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";

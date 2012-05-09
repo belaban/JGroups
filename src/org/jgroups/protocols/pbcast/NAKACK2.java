@@ -1,9 +1,6 @@
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -493,6 +490,14 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
                 send(evt, msg, false); // add to retransmit window, but don't send (we want to avoid the unneeded traffic)
                 return null;    // don't pass down the stack
+
+            case Event.RETRANSMIT:
+                // asks target to retransmit xmit_seqno
+                Tuple<Address,Long> tuple=(Tuple<Address, Long>)evt.getArg();
+                Address target=tuple.getVal1();
+                long xmit_seqno=tuple.getVal2();
+                retransmit(xmit_seqno, xmit_seqno, target, false);
+                return null;
         }
 
         return down_prot.down(evt);
