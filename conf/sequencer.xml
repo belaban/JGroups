@@ -19,9 +19,9 @@
     <UNICAST/>
     <pbcast.STABLE/>
     <pbcast.GMS/>
-    <SEQUENCER />
     <UFC/>
     <MFC/>
+    <SEQUENCER />
     <FRAG2/>
     <pbcast.STATE_TRANSFER />
 </config>
