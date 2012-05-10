@@ -87,11 +87,19 @@ public class SequencerOrderTest {
             sender.join(20000);
         System.out.println("Ok, senders have completed");
 
+
+        for(int i=0; i < 10; i++) {
+            if(r1.size() == EXPECTED_MSGS && r2.size() == EXPECTED_MSGS && r3.size() == EXPECTED_MSGS)
+                break;
+            Util.sleep(1000);
+        }
+
+
         final List<String> l1=r1.getMsgs();
         final List<String> l2=r2.getMsgs();
         final List<String> l3=r3.getMsgs();
         
-        System.out.println("-- verifying messages on A and B");
+        System.out.println("-- verifying messages on A, B and C");
         verifyNumberOfMessages(EXPECTED_MSGS, l1, l2, l3);
         verifySameOrder(EXPECTED_MSGS, l1, l2, l3);
     }
@@ -104,7 +112,7 @@ public class SequencerOrderTest {
             shuffle.setMaxSize(10);
             shuffle.setMaxTime(1000);
             ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.BELOW, NAKACK.class);
-            shuffle.init(); // gets the timer
+            shuffle.init(); // starts the timer
         }
     }
 
@@ -127,7 +135,8 @@ public class SequencerOrderTest {
             System.out.println("list #" + (i+1) + ": " + lists[i]);
 
         for(int i=0; i < lists.length; i++)
-            assert lists[i].size() == num_msgs : "list #" + (i+1) + " should have " + num_msgs + " elements";
+            assert lists[i].size() == num_msgs : "list #" + (i+1) + " should have " + num_msgs +
+              " elements, but has " + lists[i].size() + " elements";
         System.out.println("OK, all lists have the same size (" + num_msgs + ")\n");
     }
 
@@ -149,8 +158,8 @@ public class SequencerOrderTest {
     }
 
     private static class Sender extends Thread {
-        final int        num_msgs;
-        final JChannel[] channels;
+        final int           num_msgs;
+        final JChannel[]    channels;
         final AtomicInteger num;
 
         public Sender(int num_msgs, AtomicInteger num, JChannel ... channels) {
@@ -183,6 +192,8 @@ public class SequencerOrderTest {
         public List<String> getMsgs() {
             return msgs;
         }
+
+        public int size() {return msgs.size();}
 
         public void receive(Message msg) {
             String val=(String)msg.getObject();
