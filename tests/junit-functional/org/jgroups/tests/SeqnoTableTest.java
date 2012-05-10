@@ -20,7 +20,7 @@ public class SeqnoTableTest {
 
     @BeforeClass
     private static void init() throws UnknownHostException {
-        MBR=Util.createRandomAddress();
+        MBR=Util.createRandomAddress("A");
     }
 
 
@@ -70,6 +70,31 @@ public class SeqnoTableTest {
         Assert.assertEquals(5, tab.getHighestReceived(MBR));
         Assert.assertEquals(6, tab.getNextToReceive(MBR));
     }
+
+    public static void testAddWithIncorrectOrder() {
+        SeqnoTable tab=new SeqnoTable();
+        boolean rc=tab.add(MBR, 5);
+        assert rc;
+        rc=tab.add(MBR, 6);
+        assert rc;
+        rc=tab.add(MBR, 8);
+        assert rc;
+        rc=tab.add(MBR, 7);
+        assert rc;
+        rc=tab.add(MBR, 9);
+        assert rc;
+        System.out.println("tab: " + tab);
+        Assert.assertEquals(5, tab.getHighestReceived(MBR));
+        Assert.assertEquals(3, tab.getNextToReceive(MBR));
+
+        rc=tab.add(MBR, 3);
+        assert rc;
+        System.out.println("tab: " + tab);
+        Assert.assertEquals(5, tab.getHighestReceived(MBR));
+        Assert.assertEquals(6, tab.getNextToReceive(MBR));
+    }
+
+
 
 
     public static void testAddWithGaps2() {
