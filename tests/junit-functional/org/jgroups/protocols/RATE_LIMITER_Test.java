@@ -14,7 +14,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 
@@ -26,7 +25,7 @@ import java.util.concurrent.locks.LockSupport;
 public class RATE_LIMITER_Test {
 
     public void testThroughput() throws Exception {
-        byte[] buffer=new byte[1];
+        byte[] buffer=new byte[1000];
         RATE_LIMITER limiter=create(10, 100000);
         long target_throughput=10000000; // 10MB/s
         final CountDownLatch latch=new CountDownLatch(1);
@@ -58,9 +57,9 @@ public class RATE_LIMITER_Test {
 
         // 50% deviation below is ok: e.g. max_bytes=100000, and sending 50001 bytes !
         // In the real setup, there a warning if the system is not configured for max_bytes to be a multiple of frag_size
-        long min_value=(long)(target_throughput * 0.45);
+        long min_value=(long)(target_throughput * 0.45), max_value=(long)(target_throughput * 1.1);
         for(long value: list) {
-            assert value >= min_value && value <= target_throughput;
+            assert value >= min_value && value <= max_value;
         }
     }
 

@@ -22,12 +22,12 @@ public class RATE_LIMITER extends Protocol {
 
     @Property(description="Max number of bytes to be sent in time_period ms. Blocks the sender if exceeded until a new " +
             "time period has started")
-    protected long max_bytes=500000;
+    protected long max_bytes=300000;
 
     @Property(description="Number of milliseconds during which max_bytes bytes can be sent")
-    protected long time_period=1000L;
+    protected long time_period=10L;
 
-    protected long time_period_ns=TimeUnit.NANOSECONDS.convert(time_period, TimeUnit.MILLISECONDS);
+    protected long time_period_ns;
 
 
     /** Keeps track of the number of bytes sent in the current time period */
@@ -86,6 +86,7 @@ public class RATE_LIMITER extends Protocol {
         super.init();
         if(time_period <= 0)
             throw new IllegalArgumentException("time_period needs to be positive");
+        time_period_ns=TimeUnit.NANOSECONDS.convert(time_period, TimeUnit.MILLISECONDS);
     }
     
     public void start() throws Exception {
@@ -115,25 +116,17 @@ public class RATE_LIMITER extends Protocol {
                     max_bytes=len;
                 }
 
-                while(running) {
+                if(num_bytes_sent_in_period + len > max_bytes) { // size exceeded
                     long current_time=System.nanoTime();
-                    boolean size_exceeded=num_bytes_sent_in_period + len > max_bytes,
-                            time_exceeded=current_time >= end_of_current_period;
-                    if(!size_exceeded && !time_exceeded)
-                        break;
-
-                    if(time_exceeded) {
-                        num_bytes_sent_in_period=0L;
-                        end_of_current_period=current_time + time_period_ns;
+                    if(current_time < end_of_current_period) {
+                        long block_time=end_of_current_period - current_time;
+                        LockSupport.parkNanos(block_time);
+                        num_blockings++;
+                        total_block_time+=block_time;
+                        current_time=end_of_current_period; // more or less, avoid having to call nanoTime() again
                     }
-                    else { // size exceeded
-                        long block_time=current_time - end_of_current_period;
-                        if(block_time > 0) {
-                            LockSupport.parkNanos(block_time);
-                            num_blockings++;
-                            total_block_time+=block_time;
-                        }
-                    }
+                    end_of_current_period=current_time + time_period_ns; // start a new time period
+                    num_bytes_sent_in_period=0;
                 }
             }
             finally {
