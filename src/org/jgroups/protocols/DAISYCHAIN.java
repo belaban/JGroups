@@ -1,14 +1,15 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.ConcurrentLinkedBlockingQueue;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 
 /**
@@ -32,11 +33,11 @@ public class DAISYCHAIN extends Protocol {
     boolean loopback=true;
 
     @Property(description="The number of messages in the forward queue. This queue is used to host messages that " +
-      "need to be forwarded by us on behalf of our neighbor")
+      "need to be forwarded by us on behalf of our neighbor",deprecatedMessage="not used anymore")
     int forward_queue_size=10000;
 
     @Property(description="The number of messages in the send queue. This queue is used to host messages that need " +
-      "to be sent")
+      "to be sent",deprecatedMessage="not used anymore")
     int send_queue_size=10000;
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -92,9 +93,8 @@ public class DAISYCHAIN extends Protocol {
                 copy.setDest(next);
                 copy.putHeader(getId(), hdr);
 
-
                 msgs_sent++;
-
+                
                 if(loopback) {
                     if(log.isTraceEnabled()) log.trace(new StringBuilder("looping back message ").append(msg));
                     if(msg.getSrc() == null)
