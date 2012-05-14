@@ -100,7 +100,7 @@ public class SEQUENCER extends Protocol {
 
                 seqno_lock.lock();
                 try {
-                    long next_seqno=seqno +1;
+                    long next_seqno=seqno;
                     if(is_coord) {
                         SequencerHeader hdr=new SequencerHeader(SequencerHeader.BCAST, local_addr, next_seqno);
                         msg.putHeader(this.id, hdr);
@@ -124,7 +124,7 @@ public class SEQUENCER extends Protocol {
                             forwardToCoord(marshalled_msg, next_seqno);
                         }
                     }
-                    seqno=next_seqno;
+                    seqno++;
                 }
                 finally {
                     seqno_lock.unlock();
@@ -133,6 +133,10 @@ public class SEQUENCER extends Protocol {
 
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
+                break;
+
+            case Event.TMP_VIEW:
+                handleTmpView((View)evt.getArg());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -186,8 +190,8 @@ public class SEQUENCER extends Protocol {
                 handleViewChange((View)evt.getArg());
                 return retval;
 
-            case Event.SUSPECT:
-                handleSuspect((Address)evt.getArg());
+            case Event.TMP_VIEW:
+                handleTmpView((View)evt.getArg());
                 break;
         }
 
@@ -219,26 +223,19 @@ public class SEQUENCER extends Protocol {
         }
     }
 
-    protected void handleSuspect(Address suspected_mbr) {
-        boolean coord_changed=false;
 
-        if(suspected_mbr == null)
-            return;
+    // If we're becoming coordinator, we need to handle TMP_VIEW as
+    // an immediate change of view. See JGRP-1452.
+    private void handleTmpView(View v) {
+        List<Address> mbrs=v.getMembers();
+        if(mbrs.isEmpty()) return;
 
-        synchronized(this) {
-            List<Address> non_suspected_mbrs=new ArrayList<Address>(members);
-            non_suspected_mbrs.remove(suspected_mbr);
-            if(!non_suspected_mbrs.isEmpty()) {
-                Address prev_coord=coord;
-                coord=non_suspected_mbrs.get(0);
-                is_coord=local_addr != null && local_addr.equals(coord);
-                coord_changed=prev_coord != null && !prev_coord.equals(coord);
-            }
-        }
-        if(coord_changed) {
-            resendMessagesInForwardTable(); // maybe optimize in the future: broadcast directly if coord
+        Address new_coord=mbrs.iterator().next();
+        if (!new_coord.equals(coord) && local_addr != null && local_addr.equals(new_coord)) {
+            handleViewChange(v);
         }
     }
+
 
     /**
      * Sends all messages currently in forward_table to the new coordinator (changing the dest field).
