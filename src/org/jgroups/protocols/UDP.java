@@ -221,8 +221,14 @@ public class UDP extends TP {
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
-        createSockets();
-        super.start();
+        try {
+            createSockets();
+            super.start();
+        }
+        catch(Exception ex) {
+            destroySockets();
+            throw ex;
+        }
         ucast_receiver=new PacketReceiver(sock,
                                           "unicast receiver",
                                           new Runnable() {
