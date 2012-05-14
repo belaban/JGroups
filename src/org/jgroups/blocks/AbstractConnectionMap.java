@@ -16,7 +16,8 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
         
     protected final List<ConnectionMapListener<V>> conn_listeners=new ArrayList<ConnectionMapListener<V>>();
     protected final Map<Address,V> conns=new HashMap<Address,V>();
-    protected final Lock lock = new ReentrantLock();
+    protected final Lock lock = new ReentrantLock(); // syncs conns
+    protected final Lock sock_creation_lock= new ReentrantLock(true); // syncs socket establishment
     protected final ThreadFactory factory; 
     protected final long reaperInterval;
     protected final Reaper reaper;

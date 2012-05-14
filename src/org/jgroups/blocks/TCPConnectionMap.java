@@ -1,7 +1,6 @@
 package org.jgroups.blocks;
 
 import org.jgroups.Address;
-import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -747,7 +746,7 @@ public class TCPConnectionMap{
         }
     }
     
-    private class Mapper extends AbstractConnectionMap<TCPConnection>{
+    private class Mapper extends AbstractConnectionMap<TCPConnection> {
 
         public Mapper(ThreadFactory factory) {
             super(factory);            
@@ -757,29 +756,68 @@ public class TCPConnectionMap{
             super(factory,reaper_interval);            
         }
 
-        public TCPConnection getConnection(Address dest) throws Exception {
-            TCPConnection conn = null;
+        protected TCPConnection getConnectionUnderLock(Address dest) throws Exception {
+            TCPConnection conn;
             getLock().lock();
             try {
                 conn=conns.get(dest);
-                if(conn != null && conn.isOpen())
-                    return conn;
-                try {
-                    conn = new TCPConnection(dest);
-                    conn.start(getThreadFactory());
-                    addConnection(dest, conn);
-                    if (log.isTraceEnabled())
-                        log.trace("created socket to " + dest);
-                }
-                catch(Exception ex) {
-                    if(log.isTraceEnabled())
-                        log.trace("failed creating connection to " + dest);
-                }
-            } finally {
+            }
+            finally {
                 getLock().unlock();
+            }
+            if(conn != null && conn.isOpen()) // conn.isOpen should not be under the lock
+                return conn;
+            return null;
+        }
+
+        public TCPConnection getConnection(Address dest) throws Exception { //S. Simeonoff
+            TCPConnection conn=getConnectionUnderLock(dest); // keep FAST path on the most common case
+            if(conn != null)
+                return conn;
+
+            sock_creation_lock.lockInterruptibly();
+            try {
+                //lock / realease, create new conn under sock_creation_lock, it can be skipped but then it takes
+                // extra check in conn map and closing the new connection, w/ sock_creation_lock it looks much simpler
+                // (slow path,so not important)
+
+                conn=getConnectionUnderLock(dest); // check again after obtaining sock_creation_lock
+                if(conn != null)
+                    return conn;
+
+                conn=new TCPConnection(dest);
+                conn.start(getThreadFactory());
+                addConnection(dest,conn); // listener notification should not be under the getLock() either
+                if(log.isTraceEnabled())
+                    log.trace("created socket to " + dest);
+
+            }
+            catch(Exception ex) {
+                if(log.isTraceEnabled())
+                    log.trace("failed creating connection to " + dest);
+                if(conn != null) { // should not happen, either conn.start or addConnection failed -still make sure
+                    // it's a "proper rollback"
+                    TCPConnection existing;
+                    getLock().lock();
+                    try {
+                        existing=conns.get(dest);
+                        if(existing == null)
+                            removeConnection(dest);
+                    }
+                    finally {
+                        getLock().unlock();
+                    }
+
+                    Util.close(conn);
+                    conn=existing;
+                }
+            }
+            finally {
+                sock_creation_lock.unlock();
             }
             return conn;
         }
+
 
         public boolean connectionEstablishedTo(Address address) {
             lock.lock();
