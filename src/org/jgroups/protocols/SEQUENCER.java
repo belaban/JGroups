@@ -11,7 +11,8 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -21,15 +22,20 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @MBean(description="Implementation of total order protocol using a sequencer")
 public class SEQUENCER extends Protocol {
-    private Address                    local_addr=null, coord=null;
-    private final Collection<Address>  members=new ArrayList<Address>();
-    private volatile boolean           is_coord=false;
-    private AtomicLong                 seqno=new AtomicLong(1);
+    protected Address                           local_addr=null, coord=null;
+    protected final Collection<Address>         members=new ArrayList<Address>();
+    protected volatile boolean                  is_coord=false;
+    protected long                              seqno=1;
 
     /** Maintains messages forwarded to the coord which which no ack has been received yet.
      *  Needs to be sorted so we resend them in the right order
      */
-    private final Map<Long,byte[]>     forward_table=new TreeMap<Long,byte[]>();
+    protected final Map<Long,byte[]>            forward_table=new TreeMap<Long,byte[]>();
+
+    // Maintains the next seqno to be delivered, so we can weed out dupes
+    protected final Map<Address,Long>           delivery_table=Util.createHashMap();
+
+    protected final Lock                        seqno_lock=new ReentrantLock();
 
 
     protected long forwarded_msgs=0;
@@ -75,28 +81,55 @@ public class SEQUENCER extends Protocol {
         return dumpStats().toString();
     }
 
+    @ManagedOperation(description="Prints the next seqnos to be received for all senders")
+    public String printDeliveryTable() {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<Address,Long> entry: delivery_table.entrySet())
+        sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        return sb.toString();
+    }
+
 
 
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                if(msg.isFlagSet(Message.NO_TOTAL_ORDER))
+                if(msg.getDest() != null || msg.isFlagSet(Message.NO_TOTAL_ORDER) || msg.isFlagSet(Message.OOB))
                     break;
-                Address dest=msg.getDest();
-                if(dest == null) { // only handle multicasts
-                    long next_seqno=seqno.getAndIncrement();
+
+                seqno_lock.lock();
+                try {
+                    long next_seqno=seqno +1;
                     if(is_coord) {
                         SequencerHeader hdr=new SequencerHeader(SequencerHeader.BCAST, local_addr, next_seqno);
                         msg.putHeader(this.id, hdr);
                         broadcast(msg, false); // don't copy, just use the message passed as argument
                     }
                     else {
-                        forwardToCoord(msg, next_seqno);
+                        if(msg.getSrc() == null)
+                            msg.setSrc(local_addr);
+                        
+                        byte[] marshalled_msg=null;
+                        try {
+                            marshalled_msg=Util.objectToByteBuffer(msg);
+                        }
+                        catch(Exception ex) {
+                            log.error("failed marshalling message", ex);
+                            return null;
+                        }
+                        if(marshalled_msg != null) {
+                            if(log.isTraceEnabled())
+                                log.trace(local_addr + ": forwarding " + local_addr + "::" + seqno + " to coord " + coord);
+                            forwardToCoord(marshalled_msg, next_seqno);
+                        }
                     }
-                    return null; // don't pass down
+                    seqno=next_seqno;
                 }
-                break;
+                finally {
+                    seqno_lock.unlock();
+                }
+                return null; // don't pass down
 
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
@@ -119,7 +152,7 @@ public class SEQUENCER extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 msg=(Message)evt.getArg();
-                if(msg.isFlagSet(Message.NO_TOTAL_ORDER))
+                if(msg.isFlagSet(Message.NO_TOTAL_ORDER) || msg.isFlagSet(Message.OOB))
                     break;
                 hdr=(SequencerHeader)msg.getHeader(this.id);
                 if(hdr == null)
@@ -165,7 +198,7 @@ public class SEQUENCER extends Protocol {
 
     /* --------------------------------- Private Methods ----------------------------------- */
 
-    private void handleViewChange(View v) {
+    protected void handleViewChange(View v) {
         List<Address> mbrs=v.getMembers();
         if(mbrs.isEmpty()) return;
         boolean coord_changed=false;
@@ -179,12 +212,14 @@ public class SEQUENCER extends Protocol {
             coord_changed=prev_coord != null && !prev_coord.equals(coord);
         }
 
+        delivery_table.keySet().retainAll(mbrs);
+
         if(coord_changed) {
             resendMessagesInForwardTable(); // maybe optimize in the future: broadcast directly if coord
         }
     }
 
-    private void handleSuspect(Address suspected_mbr) {
+    protected void handleSuspect(Address suspected_mbr) {
         boolean coord_changed=false;
 
         if(suspected_mbr == null)
@@ -212,7 +247,7 @@ public class SEQUENCER extends Protocol {
      * Note that we need to resend the messages in order of their seqnos ! We also need to prevent other message
      * from being inserted until we're done, that's why there's synchronization.
      */
-    private void resendMessagesInForwardTable() {
+    protected void resendMessagesInForwardTable() {
         Map<Long,byte[]> copy;
         synchronized(forward_table) {
             copy=new TreeMap<Long,byte[]>(forward_table);
@@ -232,30 +267,19 @@ public class SEQUENCER extends Protocol {
     }
 
 
-    private void forwardToCoord(final Message msg, long seqno) {
-        if(msg.getSrc() == null)
-            msg.setSrc(local_addr);
-        if(log.isTraceEnabled())
-            log.trace(local_addr + ": forwarding " + local_addr + "::" + seqno + " to coord " + coord);
-
-        byte[] marshalled_msg;
-        try {
-            marshalled_msg=Util.objectToByteBuffer(msg);
-            synchronized(forward_table) {
-                forward_table.put(seqno, marshalled_msg);
-            }
-            Message forward_msg=new Message(coord, null, marshalled_msg);
-            SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, seqno);
-            forward_msg.putHeader(this.id, hdr);
-            down_prot.down(new Event(Event.MSG, forward_msg));
-            forwarded_msgs++;
+    protected void forwardToCoord(final byte[] marshalled_msg, long seqno) {
+        synchronized(forward_table) {
+            forward_table.put(seqno, marshalled_msg);
         }
-        catch(Exception e) {
-            log.error("failed marshalling message", e);
-        }
+        Message forward_msg=new Message(coord, null, marshalled_msg);
+        SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, seqno);
+        forward_msg.putHeader(this.id,hdr);
+        down_prot.down(new Event(Event.MSG, forward_msg));
+        forwarded_msgs++;
     }
+    
 
-    private void broadcast(final Message msg, boolean copy) {
+    protected void broadcast(final Message msg, boolean copy) {
         Message bcast_msg=null;
         final SequencerHeader hdr=(SequencerHeader)msg.getHeader(this.id);
 
@@ -279,7 +303,7 @@ public class SEQUENCER extends Protocol {
      * Unmarshal the original message (in the payload) and then pass it up (unless already delivered)
      * @param msg
      */
-    private void unwrapAndDeliver(final Message msg) {
+    protected void unwrapAndDeliver(final Message msg) {
         try {
             SequencerHeader hdr=(SequencerHeader)msg.getHeader(this.id);
             Message msg_to_deliver=(Message)Util.objectFromByteBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
@@ -290,6 +314,13 @@ public class SEQUENCER extends Protocol {
                     forward_table.remove(msg_seqno);
                 }
             }
+
+            if(!canDeliver(sender, msg_seqno)) {
+                if(log.isWarnEnabled())
+                    log.warn(local_addr + ": dropped duplicate message " + sender + "::" + msg_seqno);
+                return;
+            }
+
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": delivering " + hdr.getOriginalSender() + "::" + msg_seqno);
 
@@ -302,7 +333,7 @@ public class SEQUENCER extends Protocol {
     }
 
 
-    private void deliver(Message msg, Event evt, SequencerHeader hdr) {
+    protected void deliver(Message msg, Event evt, SequencerHeader hdr) {
         Address sender=msg.getSrc();
         if(sender == null) {
             if(log.isErrorEnabled())
@@ -315,6 +346,11 @@ public class SEQUENCER extends Protocol {
                 forward_table.remove(msg_seqno);
             }
         }
+        if(!canDeliver(sender, msg_seqno)) {
+            if(log.isWarnEnabled())
+                log.warn(local_addr + ": dropped duplicate message " + sender + "::" + msg_seqno);
+            return;
+        }
         if(log.isTraceEnabled())
             log.trace(local_addr + ": delivering " + sender + "::" + msg_seqno);
         up_prot.up(evt);
@@ -322,6 +358,25 @@ public class SEQUENCER extends Protocol {
     }
 
 
+    /**
+     * Checks if seqno is == the next expected seqno. If one doesn't exist yet, it will be created. This weeds out
+     * duplicates. Note that we'll only get monotonically increasing seqnos, so if we get A5, A6, A7, we know that 5 is
+     * the first seqno broadcast by A.<p/>
+     * Note that this method is never called concurrently for the same sender, as the sender in NAKACK will always be
+     * the coordinator.
+     */
+    protected boolean canDeliver(Address sender, long seqno) {
+        Long next_to_deliver=delivery_table.get(sender);
+        if(next_to_deliver == null) {
+            delivery_table.put(sender, seqno +1);
+            return true;
+        }
+        if(next_to_deliver == seqno) {
+            delivery_table.put(sender, seqno +1);
+            return true;
+        }
+        return false;
+    }
 
 /* ----------------------------- End of Private Methods -------------------------------- */
 
@@ -330,9 +385,9 @@ public class SEQUENCER extends Protocol {
 
 
     public static class SequencerHeader extends Header {
-        private static final byte FORWARD       = 1;
-        private static final byte BCAST         = 2;
-        private static final byte WRAPPED_BCAST = 3;
+        protected static final byte FORWARD       = 1;
+        protected static final byte BCAST         = 2;
+        protected static final byte WRAPPED_BCAST = 3;
 
         byte    type=-1;
         /** the original sender's address and a seqno */
@@ -363,7 +418,7 @@ public class SEQUENCER extends Protocol {
             return sb.toString();
         }
 
-        private final String printType() {
+        protected final String printType() {
             switch(type) {
                 case FORWARD:        return "FORWARD";
                 case BCAST:          return "BCAST";
