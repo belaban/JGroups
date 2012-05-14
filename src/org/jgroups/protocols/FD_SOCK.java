@@ -771,19 +771,33 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     private Address determinePingDest() {
-        Address tmp;
+        Address first_mbr = null;
+        boolean several_mbrs = false;
+        boolean found_local_addr = false;
 
-        if(pingable_mbrs == null || pingable_mbrs.size() < 2 || local_addr == null)
+        if(pingable_mbrs == null || local_addr == null)
             return null;
-        for(int i=0; i < pingable_mbrs.size(); i++) {
-            tmp=pingable_mbrs.get(i);
-            if(local_addr.equals(tmp)) {
-                if(i + 1 >= pingable_mbrs.size())
-                    return pingable_mbrs.get(0);
-                else
-                    return pingable_mbrs.get(i + 1);
+
+        // Look for the pingable member who follows the local_addr
+        for(Address tmp: pingable_mbrs) {
+            if(found_local_addr)
+                return tmp;
+
+            if(first_mbr == null) {
+                first_mbr = tmp;
             }
+            else {
+              several_mbrs = true;
+            }
+
+            if (tmp.equals(local_addr))
+                found_local_addr = true;
         }
+
+        // If the local address was the last in the list, then wrap.
+        if (found_local_addr && several_mbrs)
+            return first_mbr;
+
         return null;
     }
 
