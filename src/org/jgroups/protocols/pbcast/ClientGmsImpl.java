@@ -337,9 +337,6 @@ public class ClientGmsImpl extends GmsImpl {
         mbrs.add(mbr);
 
         View new_view=new View(view_id, mbrs);
-        gms.up(new Event(Event.PREPARE_VIEW,new_view));
-        gms.down(new Event(Event.PREPARE_VIEW,new_view));
-
         gms.installView(new_view);
         gms.becomeCoordinator(); // not really necessary - installView() should do it
 

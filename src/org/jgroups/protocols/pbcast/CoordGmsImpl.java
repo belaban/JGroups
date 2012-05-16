@@ -179,9 +179,6 @@ public class CoordGmsImpl extends ServerGmsImpl {
             return;
         }
 
-        gms.up(new Event(Event.PREPARE_VIEW,new_view));
-        gms.down(new Event(Event.PREPARE_VIEW,new_view));
-        
         if(log.isDebugEnabled())
             log.debug("new=" + new_mbrs + ", suspected=" + suspected_mbrs + ", leaving=" + leaving_mbrs +
                     ", new view: " + new_view);
