@@ -34,8 +34,8 @@ public class UNICAST_ContentionTest {
 
     @Test(dataProvider="provider")
     public void testSimpleMessageReception(String props) throws Exception {
-        c1=new JChannel(props);
-        c2=new JChannel(props);
+        c1=new JChannel(props); c1.setName("A");
+        c2=new JChannel(props); c2.setName("B");
         MyReceiver r1=new MyReceiver("c1"), r2=new MyReceiver("c2");
         c1.setReceiver(r1);
         c2.setReceiver(r2);
@@ -72,8 +72,8 @@ public class UNICAST_ContentionTest {
     @Test(dataProvider="provider")
     public void testMessageReceptionUnderHighLoad(String props) throws Exception {
         CountDownLatch latch=new CountDownLatch(1);
-        c1=new JChannel(props);
-        c2=new JChannel(props);
+        c1=new JChannel(props); c1.setName("A");
+        c2=new JChannel(props); c2.setName("B");
         MyReceiver r1=new MyReceiver("c1"), r2=new MyReceiver("c2");
         c1.setReceiver(r1);
         c2.setReceiver(r2);
@@ -92,8 +92,13 @@ public class UNICAST_ContentionTest {
             c2_senders[i].start();
         }
 
-        Util.sleep(500);
         latch.countDown(); // starts all threads
+
+        for(MySender sender: c1_senders)
+            sender.join();
+        for(MySender sender: c2_senders)
+            sender.join();
+        System.out.println("Senders are done, waiting for all messages to be received");
 
         long NUM_EXPECTED_MSGS=NUM_THREADS * NUM_MSGS;
 
