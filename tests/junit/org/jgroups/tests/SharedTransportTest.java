@@ -394,20 +394,20 @@ public class SharedTransportTest extends ChannelTestBase {
      * Tests http://jira.jboss.com/jira/browse/JGRP-737 */
     public void testSendingOfMessagesAfterChannelClose() throws Exception {
         MyReceiver rec_a=new MyReceiver("A"), rec_b=new MyReceiver("B"), rec_c=new MyReceiver("C");
-        System.out.println("-- creating A");
         a=createSharedChannel(SINGLETON_1);
+        a.setName("A");
         a.setReceiver(rec_a);
-        a.connect("A");
+        a.connect("one");
 
-        System.out.println("-- creating B");
         b=createSharedChannel(SINGLETON_1);
+        b.setName("B");
         b.setReceiver(rec_b);
-        b.connect("B");
+        b.connect("two");
 
-        System.out.println("-- creating C");
         c=createSharedChannel(SINGLETON_2);
+        c.setName("C");
         c.setReceiver(rec_c);
-        c.connect("B");
+        c.connect("two");
 
         b.send(null, "first");
         Util.sleep(500); // msg delivery is asynchronous, so give members some time to receive the msg (incl retransmission)
