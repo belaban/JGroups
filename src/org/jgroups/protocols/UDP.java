@@ -359,12 +359,9 @@ public class UDP extends TP {
             mcast_addr=new IpAddress(mcast_group_addr, mcast_port);
 
             // check that we're not using the same mcast address and port as the diagnostics socket
-            if(enable_diagnostics) {
-                if(diagnostics_addr != null && diagnostics_addr.equals(mcast_group_addr) ||
-                        diagnostics_port == mcast_port)
-                    throw new IllegalArgumentException("diagnostics_addr / diagnostics_port and mcast_addr / mcast_port " +
-                            "have to be different");
-            }
+            if(enable_diagnostics && diagnostics_addr.equals(mcast_group_addr) && diagnostics_port == mcast_port)
+                throw new IllegalArgumentException("diagnostics_addr:diagnostics_port and mcast_addr:mcast_port " +
+                                                     "have to be different");
 
             if(tos > 0) {
                 try {
