@@ -41,7 +41,6 @@ public class Event {
     public static final int OPEN_BARRIER                       = 77;  // arg = null
     public static final int REBROADCAST				           = 78;  // arg = Digest
     public static final int CONNECT_WITH_STATE_TRANSFER        = 80;  // arg = cluster name (string)
-    public static final int PREPARE_VIEW                       = 86;  // arg = View
     public static final int GET_PHYSICAL_ADDRESS               = 87;  // arg = Address --> PhysicalAddress
     public static final int GET_LOGICAL_PHYSICAL_MAPPINGS      = 88;  // arg = null --> Map<Address,PhysicalAddress>
     public static final int SET_PHYSICAL_ADDRESS               = 89;  // arg = Tuple<Address,PhysicalAddress>
@@ -126,7 +125,6 @@ public class Event {
             case OPEN_BARRIER:           return "OPEN_BARRIER";
             case REBROADCAST:            return "REBROADCAST";
             case CONNECT_WITH_STATE_TRANSFER:    return "CONNECT_WITH_STATE_TRANSFER";
-            case PREPARE_VIEW:           return "PREPARE_VIEW";
             case GET_PHYSICAL_ADDRESS:   return "GET_PHYSICAL_ADDRESS";
             case GET_LOGICAL_PHYSICAL_MAPPINGS: return "GET_LOGICAL_PHYSICAL_MAPPINGS";
             case SET_PHYSICAL_ADDRESS:   return "SET_PHYSICAL_ADDRESS";
