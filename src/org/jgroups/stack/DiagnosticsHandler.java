@@ -22,6 +22,7 @@ public class DiagnosticsHandler implements Runnable {
     protected MulticastSocket diag_sock=null;
     protected InetAddress diagnostics_addr=null;
     protected int diagnostics_port=7500;
+    protected int ttl=8;
     protected final Set<ProbeHandler> handlers=new CopyOnWriteArraySet<ProbeHandler>();
     protected final Log log;
     protected final SocketFactory socket_factory;
@@ -34,6 +35,12 @@ public class DiagnosticsHandler implements Runnable {
         this.log=log;
         this.socket_factory=socket_factory;
         this.thread_factory=thread_factory;
+    }
+
+    public DiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port, int diagnostics_ttl,
+                              Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
+        this(diagnostics_addr, diagnostics_port, log, socket_factory, thread_factory);
+        this.ttl=diagnostics_ttl;
     }
 
     public Thread getThread(){
@@ -60,6 +67,7 @@ public class DiagnosticsHandler implements Runnable {
         //                               Global.TP_DIAG_MCAST_SOCK, diagnostics_addr, diagnostics_port, log);
         //else
         diag_sock=socket_factory.createMulticastSocket("jgroups.tp.diag.mcast_sock", diagnostics_port);
+        diag_sock.setTimeToLive(ttl);
 
         List<NetworkInterface> interfaces=Util.getAllAvailableInterfaces();
         bindToInterfaces(interfaces, diag_sock);

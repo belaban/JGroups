@@ -225,6 +225,9 @@ public abstract class TP extends Protocol {
     @Property(description="Port for diagnostic probing. Default is 7500")
     protected int diagnostics_port=7500;
 
+    @Property(description="TTL of the diagnostics multicast socket")
+    protected int diagnostics_ttl=8;
+
     @Property(description="If assigned enable this transport to be a singleton (shared) transport")
     protected String singleton_name=null;
 
@@ -944,8 +947,8 @@ public abstract class TP extends Protocol {
         if(enable_diagnostics) {
             boolean diag_handler_created=diag_handler == null;
             if(diag_handler == null)
-                diag_handler=new DiagnosticsHandler(diagnostics_addr, diagnostics_port, log, getSocketFactory(),
-                                                    getThreadFactory());
+                diag_handler=new DiagnosticsHandler(diagnostics_addr, diagnostics_port, diagnostics_ttl,
+                        log, getSocketFactory(), getThreadFactory());
 
             diag_handler.registerProbeHandler(new DiagnosticsHandler.ProbeHandler() {
                 public Map<String, String> handleProbe(String... keys) {
