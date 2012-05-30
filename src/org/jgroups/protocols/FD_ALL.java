@@ -188,6 +188,15 @@ public class FD_ALL extends Protocol {
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
                 break;
+            case Event.UNSUSPECT:
+                Address member=(Address)evt.getArg();
+                if(member != null) {
+                    synchronized(this) {
+                        suspected_mbrs.remove(member);
+                    }
+                    update(member);
+                }
+                break;
         }
         return down_prot.down(evt);
     }
