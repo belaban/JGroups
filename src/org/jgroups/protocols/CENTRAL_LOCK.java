@@ -139,12 +139,8 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
 
         // For all non-acquired client locks, send the GRANT_LOCK request to the new coordinator (if changed)
         if(old_coord != null && !old_coord.equals(coord)) {
-            Map<String,Map<Owner,ClientLock>> copy;
-            synchronized(client_locks) {
-                copy=new HashMap<String,Map<Owner,ClientLock>>(client_locks);
-            }
-            if(!copy.isEmpty()) {
-                for(Map<Owner,ClientLock> map: copy.values()) {
+            if(!client_locks.isEmpty()) {
+                for(Map<Owner,ClientLock> map: client_locks.values()) {
                     for(ClientLock lock: map.values()) {
                         if(!lock.acquired && !lock.denied)
                             sendGrantLockRequest(lock.name, lock.owner, lock.timeout, lock.is_trylock);

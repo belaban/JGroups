@@ -64,7 +64,7 @@ abstract public class Locking extends Protocol {
     protected final ConcurrentMap<String,ServerLock> server_locks=Util.createConcurrentMap(20);
 
     // client side locks
-    protected final Map<String,Map<Owner,ClientLock>> client_locks=new HashMap<String,Map<Owner,ClientLock>>();
+    protected final ConcurrentMap<String,Map<Owner,ClientLock>> client_locks=Util.createConcurrentMap(20);
 
     protected final Set<LockNotification> lock_listeners=new HashSet<LockNotification>();
     
@@ -285,12 +285,9 @@ abstract public class Locking extends Protocol {
     @ManagedOperation(description="Unlocks all currently held locks")
     public void unlockAll() {
         List<ClientLock> locks=new ArrayList<ClientLock>();
-        synchronized(client_locks) {
-            Collection<Map<Owner,ClientLock>> maps=client_locks.values();
-            for(Map<Owner,ClientLock> map: maps) {
-                locks.addAll(map.values());
-            }
-        }
+        Collection<Map<Owner,ClientLock>> maps=client_locks.values();
+        for(Map<Owner,ClientLock> map: maps)
+            locks.addAll(map.values());
         for(ClientLock lock: locks)
             lock.unlock();
     }
@@ -305,28 +302,26 @@ abstract public class Locking extends Protocol {
         }
 
         sb.append("\nmy locks: ");
-        synchronized(client_locks) {
-            boolean first_element=true;
-            for(Map.Entry<String,Map<Owner,ClientLock>> entry: client_locks.entrySet()) {
-                if(first_element)
-                    first_element=false;
+        boolean first_element=true;
+        for(Map.Entry<String,Map<Owner,ClientLock>> entry: client_locks.entrySet()) {
+            if(first_element)
+                first_element=false;
+            else
+                sb.append(", ");
+            sb.append(entry.getKey()).append(" (");
+            Map<Owner,ClientLock> owners=entry.getValue();
+            boolean first=true;
+            for(Map.Entry<Owner,ClientLock> entry2: owners.entrySet()) {
+                if(first)
+                    first=false;
                 else
                     sb.append(", ");
-                sb.append(entry.getKey()).append(" (");
-                Map<Owner,ClientLock> owners=entry.getValue();
-                boolean first=true;
-                for(Map.Entry<Owner,ClientLock> entry2: owners.entrySet()) {
-                    if(first)
-                        first=false;
-                    else
-                        sb.append(", ");
-                    sb.append(entry2.getKey());
-                    ClientLock cl=entry2.getValue();
-                    if(!cl.acquired || cl.denied)
-                        sb.append(", unlocked");
-                }
-                sb.append(")");
+                sb.append(entry2.getKey());
+                ClientLock cl=entry2.getValue();
+                if(!cl.acquired || cl.denied)
+                    sb.append(", unlocked");
             }
+            sb.append(")");
         }
         return sb.toString();
     }
@@ -444,7 +439,7 @@ abstract public class Locking extends Protocol {
     }
 
     protected void handleLockDeniedResponse(String lock_name, Owner owner) {
-         ClientLock lock=getLock(lock_name, owner, false);
+         ClientLock lock=getLock(lock_name,owner,false);
          if(lock != null)
              lock.lockDenied();
     }
@@ -470,7 +465,7 @@ abstract public class Locking extends Protocol {
     }
     
     protected void handleSignalResponse(String lock_name, Owner owner) {
-        ClientLock lock=getLock(lock_name, owner, false);
+        ClientLock lock=getLock(lock_name,owner,false);
         if(lock != null) {
             synchronized (lock.condition) {
                 lock.condition.signaled();
@@ -542,34 +537,32 @@ abstract public class Locking extends Protocol {
 
 
     protected ClientLock getLock(String name, Owner owner, boolean create_if_absent) {
-        synchronized(client_locks) {
-            Map<Owner,ClientLock> owners=client_locks.get(name);
-            if(owners == null) {
-                if(!create_if_absent)
-                    return null;
-                owners=new HashMap<Owner,ClientLock>();
-                client_locks.put(name, owners);
-            }
-            ClientLock lock=owners.get(owner);
-            if(lock == null) {
-                if(!create_if_absent)
-                    return null;
-                lock=createLock(name);
-                owners.put(owner, lock);
-            }
-            return lock;
+        Map<Owner,ClientLock> owners=client_locks.get(name);
+        if(owners == null) {
+            if(!create_if_absent)
+                return null;
+            owners=new HashMap<Owner,ClientLock>();
+            Map<Owner,ClientLock> existing=client_locks.putIfAbsent(name,owners);
+            if(existing != null)
+                owners=existing;
         }
+        ClientLock lock=owners.get(owner);
+        if(lock == null) {
+            if(!create_if_absent)
+                return null;
+            lock=createLock(name);
+            owners.put(owner, lock);
+        }
+        return lock;
     }
 
     protected void removeClientLock(String lock_name, Owner owner) {
-        synchronized(client_locks) {
-            Map<Owner,ClientLock> owners=client_locks.get(lock_name);
-            if(owners != null) {
-                ClientLock lock=owners.remove(owner);
-                if(lock != null) {
-                    if(owners.isEmpty())
-                        client_locks.remove(lock_name);
-                }
+        Map<Owner,ClientLock> owners=client_locks.get(lock_name);
+        if(owners != null) {
+            ClientLock lock=owners.remove(owner);
+            if(lock != null) {
+                if(owners.isEmpty())
+                    client_locks.remove(lock_name);
             }
         }
     }
@@ -600,7 +593,7 @@ abstract public class Locking extends Protocol {
     protected void notifyLocked(String lock_name, Owner owner) {
         for(LockNotification listener: lock_listeners) {
             try {
-                listener.locked(lock_name, owner);
+                listener.locked(lock_name,owner);
             }
             catch(Throwable t) {
                 log.error("failed notifying " + listener, t);
@@ -611,7 +604,7 @@ abstract public class Locking extends Protocol {
     protected void notifyUnlocked(String lock_name, Owner owner) {
         for(LockNotification listener: lock_listeners) {
             try {
-                listener.unlocked(lock_name, owner);
+                listener.unlocked(lock_name,owner);
             }
             catch(Throwable t) {
                 log.error("failed notifying " + listener, t);
@@ -622,7 +615,7 @@ abstract public class Locking extends Protocol {
     protected void notifyAwaiting(String lock_name, Owner owner) {
         for(LockNotification listener: lock_listeners) {
             try {
-                listener.awaiting(lock_name, owner);
+                listener.awaiting(lock_name,owner);
             }
             catch(Throwable t) {
                 log.error("failed notifying " + listener, t);
@@ -633,7 +626,7 @@ abstract public class Locking extends Protocol {
     protected void notifyAwaited(String lock_name, Owner owner) {
         for(LockNotification listener: lock_listeners) {
             try {
-                listener.awaited(lock_name, owner);
+                listener.awaited(lock_name,owner);
             }
             catch(Throwable t) {
                 log.error("failed notifying " + listener, t);
