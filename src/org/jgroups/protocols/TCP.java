@@ -52,7 +52,8 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
     }
 
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
-        ct.send(dest, data, offset, length);
+        if(ct != null)
+            ct.send(dest, data, offset, length);
     }
 
     public void retainAll(Collection<Address> members) {
