@@ -59,6 +59,7 @@ public class LockServiceTest extends ChannelTestBase {
         s3.unlockAll();
         s2.unlockAll();
         s1.unlockAll();
+        Thread.interrupted(); // clears any possible interrupts from the previous method
     }
 
 
@@ -164,7 +165,7 @@ public class LockServiceTest extends ChannelTestBase {
 
 
     public void testSuccessfulSignalAllTimeout() throws InterruptedException, BrokenBarrierException {
-        Lock lock2=s2.getLock(LOCK); 
+        Lock lock2=s2.getLock(LOCK);
         Thread locker=new Signaller(true);
         boolean rc=tryLock(lock2, 5000, LOCK);
         assert rc;
