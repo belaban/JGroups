@@ -19,19 +19,19 @@ import org.jgroups.annotations.Immutable;
  */
 @Immutable
 public class Version {
-    public static final short major = 3;
-    public static final short minor = 1;
-    public static final short micro = 0;
-    public static final String description="3.1.0.Beta1";
+    public static final short  major = 3;
+    public static final short  minor = 1;
+    public static final short  micro = 0;
+    public static final String description="3.1.0.Beta2";
 
-    public static final short version=encode(major, minor, micro);
+    public static final short  version=encode(major, minor, micro);
     public static final String string_version=print(version);
 
-    private static final int MAJOR_SHIFT = 11;
-    private static final int MINOR_SHIFT = 6;
-    private static final int MAJOR_MASK  = 0x00f800; // 1111100000000000 bit mask
-    private static final int MINOR_MASK  = 0x0007c0; //      11111000000 bit mask
-    private static final int MICRO_MASK  = 0x00003f; //           111111 bit mask
+    private static final int   MAJOR_SHIFT = 11;
+    private static final int   MINOR_SHIFT = 6;
+    private static final int   MAJOR_MASK  = 0x00f800; // 1111100000000000 bit mask
+    private static final int   MINOR_MASK  = 0x0007c0; //      11111000000 bit mask
+    private static final int   MICRO_MASK  = 0x00003f; //           111111 bit mask
     
 
 
