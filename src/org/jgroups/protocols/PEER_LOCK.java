@@ -70,11 +70,9 @@ public class PEER_LOCK extends Locking {
     public void handleView(View view) {
         super.handleView(view);
         List<Address> members=view.getMembers();
-        synchronized(client_locks) {
-            for(Map<Owner,ClientLock> map: client_locks.values()) {
-                for(ClientLock lock: map.values())
-                    ((PeerLock)lock).retainAll(members);
-            }
+        for(Map<Owner,ClientLock> map: client_locks.values()) {
+            for(ClientLock lock: map.values())
+                ((PeerLock)lock).retainAll(members);
         }
     }
 
