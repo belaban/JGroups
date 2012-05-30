@@ -23,7 +23,7 @@ import java.util.concurrent.locks.LockSupport;
  */
 @Test(groups=Global.TIME_SENSITIVE, sequential=true)
 public class RATE_LIMITER_Test {
-    final byte[] buffer=new byte[1];
+    final byte[] buffer=new byte[1000];
 
     public void testThroughputSingleThreaded() throws Exception {
         _testThroughput(1);
@@ -34,8 +34,8 @@ public class RATE_LIMITER_Test {
     }
 
     protected void _testThroughput(int num_threads) throws Exception {
-        RATE_LIMITER limiter=create(10, 100000);
-        long target_throughput=10000000; // 10MB/s
+        RATE_LIMITER limiter=create(10, 100000); // 100K in 10 ms --> 10MB in 1 s
+        long target_throughput=10000000;         // 10MB/s
         final CountDownLatch latch=new CountDownLatch(1);
         Throughput throughput=new Throughput(latch);
         limiter.setDownProtocol(throughput);
@@ -60,7 +60,7 @@ public class RATE_LIMITER_Test {
         // In the real setup, there a warning if the system is not configured for max_bytes to be a multiple of frag_size
         long min_value=(long)(target_throughput * 0.45), max_value=(long)(target_throughput * 1.1);
         for(long value: list) {
-            assert value >= min_value && value <= max_value;
+            assert value >= min_value && value <= max_value: "value=" + value + " (min_value=" + min_value + ",max_value=" + max_value + ")";
         }
     }
 
@@ -78,7 +78,6 @@ public class RATE_LIMITER_Test {
                 sender.join();
             }
             catch(InterruptedException e) {
-                e.printStackTrace();
             }
         }
     }
@@ -181,7 +180,7 @@ public class RATE_LIMITER_Test {
         }
     }
 
-
+    @Test(enabled=false)
     public static void main(String[] args) throws Exception {
         RATE_LIMITER_Test test=new RATE_LIMITER_Test();
         test.testThroughputMultiThreaded();
