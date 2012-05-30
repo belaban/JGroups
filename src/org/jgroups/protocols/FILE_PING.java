@@ -9,6 +9,7 @@ import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import java.io.*;
+import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -145,35 +146,45 @@ public class FILE_PING extends Discovery {
         if(!dir.exists())
             return;
 
-        try {
-            String filename=addr instanceof UUID? ((UUID)addr).toStringLong() : addr.toString();
-            File file=new File(dir, filename + SUFFIX);
-            if(log.isTraceEnabled())
-                log.trace("removing " + file);
-            file.delete();
+        if(log.isDebugEnabled()) {
+        	log.debug("remove : "+clustername);
         }
-        catch(Throwable e) {
-            log.error("failure removing data", e);
-        }
+        
+        String filename=addr instanceof UUID? ((UUID)addr).toStringLong() : addr.toString();
+        File file=new File(dir, filename + SUFFIX);
+        deleteFile(file);
     }
 
     /**
      * Reads all information from the given directory under clustername
      * @return
      */
-   protected List<PingData> readAll(String clustername) {
+    protected synchronized List<PingData> readAll(String clustername) {
         List<PingData> retval=new ArrayList<PingData>();
-        File dir=new File(root_dir, clustername);
+        File dir=new File(root_dir,clustername);
         if(!dir.exists())
             dir.mkdir();
 
+        log.info("reading all : " + clustername);
         File[] files=dir.listFiles(filter);
         if(files != null) {
             for(File file: files) {
-                PingData data=readFile(file);
+                PingData data=null;
+                //implementing a simple spin lock doing a few attempts to read the file
+                //this is done since the file may be written in concurrency and may therefore not be readable
+                for(int i=0; i < 3; i++) {
+                    data=null;
+                    if(file.exists())
+                        data=readFile(file);
+                    if(data != null)
+                        break;
+                    else
+                        Util.sleep(100);
+                }
+
                 if(data == null) {
-                    log.warn("failed reading " + file.getName() + ": removing it");
-                    file.delete();
+                    log.warn("failed parsing content in " + file.getAbsolutePath() + ": removing it from " + clustername);
+                    deleteFile(file);
                 }
                 else
                     retval.add(data);
@@ -182,7 +193,7 @@ public class FILE_PING extends Discovery {
         return retval;
     }
 
-    protected static PingData readFile(File file) {
+    private synchronized PingData readFile(File file) {
         PingData retval=null;
         DataInputStream in=null;
 
@@ -193,6 +204,7 @@ public class FILE_PING extends Discovery {
             return tmp;
         }
         catch(Exception e) {
+            log.debug("failed to read file : "+file.getAbsolutePath(), e);
         }
         finally {
             Util.close(in);
@@ -200,27 +212,41 @@ public class FILE_PING extends Discovery {
         return retval;
     }
 
-    protected void writeToFile(PingData data, String clustername) {
-        DataOutputStream out=null;
-        File dir=new File(root_dir, clustername);
+    protected synchronized void writeToFile(PingData data, String clustername) {
+        File dir=new File(root_dir,clustername);
         if(!dir.exists())
             dir.mkdir();
 
-        String filename=addressAsString(local_addr);
-        File file=new File(dir, filename + SUFFIX);
-        file.deleteOnExit();
-
-        try {
-            out=new DataOutputStream(new FileOutputStream(file));
-            data.writeTo(out);
+        if(data == null) {
+            return;
         }
-        catch(Exception e) {
+
+        String filename=addressAsString(local_addr);
+
+        //first write all data to a temporary file
+        //this is because the writing can be very slow under some circumstances
+        File tmpFile=writeToTempFile(dir, data);
+        if(tmpFile == null)
+            return;
+
+        File destination=new File(dir, filename + SUFFIX);
+        try {
+            //do a file move, this is much faster and could be considered atomic on most operating systems
+            FileChannel src_ch=new FileInputStream(tmpFile).getChannel();
+            FileChannel dest_ch=new FileOutputStream(destination).getChannel();
+            src_ch.transferTo(0,src_ch.size(),dest_ch);
+            src_ch.close();
+            dest_ch.close();
+            if(log.isTraceEnabled())
+                log.trace("Moved: " + tmpFile.getName() + "->" + destination.getName());
+        }
+        catch(IOException ioe) {
+            log.error("attempt to move failed at " + clustername + " : " + tmpFile.getName() + "->" + destination.getName(),ioe);
         }
         finally {
-            Util.close(out);
+            deleteFile(tmpFile);
         }
     }
-
 
     protected class WriterTask implements Runnable {
         public void run() {
@@ -232,15 +258,66 @@ public class FILE_PING extends Discovery {
     }
     
     protected static String addressAsString(Address address) {
-        if (address == null) {
+        if(address == null)
             return "";
-        } else if (address instanceof UUID) {
+        if(address instanceof UUID)
             return ((UUID) address).toStringLong();
-        } else {
-            return address.toString();
-        }
+        return address.toString();
     }
 
+    /**
+     * Attempts to delete the provided file.<br>
+     * Logging is performed on the result
+     * @param file
+     * @return
+     */
+    private boolean deleteFile(File file) {
+        boolean result = true;
+        if(log.isTraceEnabled())
+            log.trace("Attempting to delete file : "+file.getAbsolutePath());
+
+        if(file != null && file.exists()) {
+            try {
+                result=file.delete();
+                if(log.isTraceEnabled())
+                    log.trace("Deleted file result: "+file.getAbsolutePath() +" : "+result);
+            }
+            catch(Throwable e) {
+                log.error("Failed to delete file: " + file.getAbsolutePath(), e);
+            }
+        }
+        return result;
+    }
+       
+
+    /**
+     * Writes the data to a temporary file.<br>
+     * The file is stored in the same directory as the other cluster files but is given the <tt>.tmp</tmp> suffix 
+     * @param dir The cluster file dir
+     * @param data the data to write
+     * @return
+     */
+    private File writeToTempFile(File dir, PingData data) {
+        DataOutputStream out=null;
+               
+        String filename=addressAsString(local_addr);
+        File file=new File(dir, filename + ".tmp");
+                
+        try {
+            out=new DataOutputStream(new FileOutputStream(file));
+            data.writeTo(out);
+            Util.close(out);
+            if(log.isTraceEnabled())
+                log.trace("Stored temporary file: "+file.getAbsolutePath());            	
+        }
+        catch(Exception e) {
+            Util.close(out);
+        	log.error("Failed to write temporary file: "+file.getAbsolutePath());
+        	deleteFile(file);
+        	return null;
+        }
+		return file;
+    }
 
 
 }
