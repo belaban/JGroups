@@ -106,6 +106,7 @@ public class ReplicatedTree extends ReceiverAdapter {
     public ReplicatedTree(JChannel channel) throws Exception {
         this.channel=channel;
         channel.setReceiver(this);
+        viewAccepted(channel.getView());
         start();
     }
 
