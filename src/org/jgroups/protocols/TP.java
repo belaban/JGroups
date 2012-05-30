@@ -1117,13 +1117,12 @@ public abstract class TP extends Protocol {
         }
 
         final boolean multicast=dest == null;
-        if(loopback && (multicast || (dest.equals(msg.getSrc()) && dest.equals(local_addr)))) {
+        if(loopback && (multicast || dest.equals(msg.getSrc()))) {
 
             // we *have* to make a copy, or else up_prot.up() might remove headers from msg which will then *not*
             // be available for marshalling further down (when sending the message)
             final Message copy=msg.copy();
-            if(log.isTraceEnabled()) log.trace(new StringBuilder("looping back message ").append(copy));
-            // up_prot.up(new Event(Event.MSG, copy));
+            if(log.isTraceEnabled()) log.trace("looping back message " + copy);
 
             // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
             Executor pool=msg.isFlagSet(Message.OOB)? oob_thread_pool : thread_pool;
