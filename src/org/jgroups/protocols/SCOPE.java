@@ -284,8 +284,8 @@ public class SCOPE extends Protocol {
     protected static ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time,
                                                       final org.jgroups.util.ThreadFactory factory) {
 
-        ThreadPoolExecutor pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads, keep_alive_time,
-                                                                    TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>());
+        ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time,
+                                                       TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>());
         pool.setThreadFactory(factory);
         pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         return pool;

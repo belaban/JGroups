@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Experimental @Unsupported
 public class HashedTimingWheel implements TimeScheduler, Runnable  {
-    private final ThreadManagerThreadPoolExecutor pool;
+    private final ThreadPoolExecutor pool;
 
     private Thread runner=null;
 
@@ -33,8 +33,6 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
     protected volatile boolean running=false;
 
     protected static final Log log=LogFactory.getLog(HashedTimingWheel.class);
-
-    protected ThreadDecorator threadDecorator=null;
 
     protected ThreadFactory timer_thread_factory=null;
 
@@ -56,9 +54,9 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
     public HashedTimingWheel() {
         ROTATION_TIME=wheel_size * tick_time;
         wheel=new List[wheel_size];
-        pool=new ThreadManagerThreadPoolExecutor(4, 10,
-                                                 5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
-                                                 Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
+        pool=new ThreadPoolExecutor(4, 10,
+                                    5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
+                                    Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
         init();
     }
 
@@ -71,9 +69,9 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
         ROTATION_TIME=wheel_size * tick_time;
         wheel=new List[this.wheel_size];
         timer_thread_factory=factory;
-        pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
-                                                 new LinkedBlockingQueue<Runnable>(max_queue_size),
-                                                 factory, new ThreadPoolExecutor.CallerRunsPolicy());
+        pool=new ThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
+                                    new LinkedBlockingQueue<Runnable>(max_queue_size),
+                                    factory, new ThreadPoolExecutor.CallerRunsPolicy());
         init();
     }
 
@@ -82,22 +80,12 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
     public HashedTimingWheel(int corePoolSize) {
         ROTATION_TIME=wheel_size * tick_time;
         wheel=(List<MyTask>[])new List[wheel_size];
-        pool=new ThreadManagerThreadPoolExecutor(corePoolSize, corePoolSize * 2,
-                                                 5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
-                                                 Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
+        pool=new ThreadPoolExecutor(corePoolSize, corePoolSize * 2,
+                                    5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
+                                    Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
         init();
     }
 
-
-
-    public ThreadDecorator getThreadDecorator() {
-        return threadDecorator;
-    }
-
-    public void setThreadDecorator(ThreadDecorator threadDecorator) {
-        this.threadDecorator=threadDecorator;
-        pool.setThreadDecorator(threadDecorator);
-    }
 
     public void setThreadFactory(ThreadFactory factory) {
         pool.setThreadFactory(factory);
@@ -333,9 +321,6 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
     protected void init() {
         for(int i=0; i < wheel.length; i++)
             wheel[i]=new LinkedList<MyTask>();
-        if(threadDecorator != null)
-            pool.setThreadDecorator(threadDecorator);
-        // pool.allowCoreThreadTimeOut(true);
         startRunner();
     }
 

@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * @author Bela Ban
  */
-public interface TimeScheduler extends ThreadManager {
+public interface TimeScheduler {
 
     /** The interface that dynamic tasks
      * ({@link TimeScheduler#scheduleWithDynamicInterval(org.jgroups.util.TimeScheduler.Task)}) must implement */

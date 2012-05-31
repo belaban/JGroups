@@ -71,10 +71,4 @@ public class MockTimeScheduler implements TimeScheduler {
         return false;
     }
 
-    public ThreadDecorator getThreadDecorator() {
-        return null;
-    }
-
-    public void setThreadDecorator(ThreadDecorator decorator) {
-    }
 }

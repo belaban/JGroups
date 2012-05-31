@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
-    private final ThreadManagerThreadPoolExecutor pool;
+    private final ThreadPoolExecutor pool;
 
     private final ConcurrentSkipListMap<Long,Entry> tasks=new ConcurrentSkipListMap<Long,Entry>();
 
@@ -47,8 +47,6 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     protected static final Log log=LogFactory.getLog(TimeScheduler2.class);
 
-    protected ThreadDecorator threadDecorator=null;
-
     protected ThreadFactory timer_thread_factory=null;
 
     protected static final long SLEEP_TIME=10000;
@@ -58,9 +56,9 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
      * Create a scheduler that executes tasks in dynamically adjustable intervals
      */
     public TimeScheduler2() {
-        pool=new ThreadManagerThreadPoolExecutor(4, 10,
-                                                 5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
-                                                 Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
+        pool=new ThreadPoolExecutor(4, 10,
+                                    5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
+                                    Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
         init();
     }
 
@@ -69,29 +67,19 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                           String rejection_policy) {
         timer_thread_factory=factory;
         RejectedExecutionHandler tmp=Util.parseRejectionPolicy(rejection_policy);
-        pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
-                                                 new LinkedBlockingQueue<Runnable>(max_queue_size),
-                                                 factory, tmp);
+        pool=new ThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
+                                    new LinkedBlockingQueue<Runnable>(max_queue_size),
+                                    factory, tmp);
         init();
     }
 
     public TimeScheduler2(int corePoolSize) {
-        pool=new ThreadManagerThreadPoolExecutor(corePoolSize, corePoolSize * 2,
-                                                 5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
-                                                 Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
+        pool=new ThreadPoolExecutor(corePoolSize, corePoolSize * 2,
+                                    5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
+                                    Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
         init();
     }
 
-
-
-    public ThreadDecorator getThreadDecorator() {
-        return threadDecorator;
-    }
-
-    public void setThreadDecorator(ThreadDecorator threadDecorator) {
-        this.threadDecorator=threadDecorator;
-        pool.setThreadDecorator(threadDecorator);
-    }
 
     public void setThreadFactory(ThreadFactory factory) {
         pool.setThreadFactory(factory);
@@ -322,9 +310,6 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
 
     protected void init() {
-        if(threadDecorator != null)
-            pool.setThreadDecorator(threadDecorator);
-        // pool.allowCoreThreadTimeOut(true);
         startRunner();
     }
 
