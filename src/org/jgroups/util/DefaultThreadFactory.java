@@ -10,7 +10,7 @@ package org.jgroups.util;
  * @author Vladimir Blagojevic
  * @author Bela Ban
  */
-public class DefaultThreadFactory implements ThreadFactory, ThreadManager {
+public class DefaultThreadFactory implements ThreadFactory {
     protected final ThreadGroup group;
     protected final String baseName;
     protected final boolean createDaemons;
@@ -21,7 +21,6 @@ public class DefaultThreadFactory implements ThreadFactory, ThreadManager {
     protected boolean includeLocalAddress=false;
     protected String clusterName=null;
     protected String address=null;
-    protected ThreadDecorator threadDecorator=null;
 
     public DefaultThreadFactory(ThreadGroup group,String baseName,boolean createDaemons) {
         this(group, baseName, createDaemons, false);
@@ -56,14 +55,6 @@ public class DefaultThreadFactory implements ThreadFactory, ThreadManager {
         this.address=address;
     }
 
-    public ThreadDecorator getThreadDecorator() {
-        return threadDecorator;
-    }
-
-    public void setThreadDecorator(ThreadDecorator threadDecorator) {
-        this.threadDecorator=threadDecorator;
-    }
-
     public Thread newThread(Runnable r, String name) {
         return newThread(group, r, name);
     }
@@ -84,8 +75,6 @@ public class DefaultThreadFactory implements ThreadFactory, ThreadManager {
         Thread retval=new Thread(group, r, name);
         retval.setDaemon(createDaemons);
         renameThread(retval, addr, cluster_name);
-        if(threadDecorator != null)
-            threadDecorator.threadCreated(retval);
         return retval;
     }
 

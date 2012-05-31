@@ -38,7 +38,6 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
         }
     }
 
-    private ThreadDecorator threadDecorator=null;
 
     /**
      * Create a scheduler that executes tasks in dynamically adjustable intervals
@@ -63,14 +62,6 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
 
     public void setThreadFactory(ThreadFactory factory) {
         super.setThreadFactory(factory);
-    }
-
-    public ThreadDecorator getThreadDecorator() {
-        return threadDecorator;
-    }
-
-    public void setThreadDecorator(ThreadDecorator threadDecorator) {
-        this.threadDecorator=threadDecorator;
     }
 
     public String dumpTimerTasks() {
@@ -169,19 +160,6 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
     }
 
 
-
-
-    @Override
-    protected void afterExecute(Runnable r, Throwable t)
-    {
-        try {
-           super.afterExecute(r, t);
-        }
-        finally {
-           if(threadDecorator != null)
-              threadDecorator.threadReleased(Thread.currentThread());
-        }
-    }
 
 
     public String toString() {
