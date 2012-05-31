@@ -16,6 +16,7 @@ public class DeliveryManagerImpl implements DeliveryManager {
     private static final MessageInfoComparator COMPARATOR = new MessageInfoComparator();
     private final SortedSet<MessageInfo> deliverySet= new TreeSet<MessageInfo>(COMPARATOR);
     private final ConcurrentMap<MessageID, MessageInfo> messageCache = new ConcurrentHashMap<MessageID, MessageInfo>(8192, .75f, 64);
+    private final Set<Message> singleDestinationSet = new HashSet<Message>();
 
     /**
      * Add a new group message to be deliver 
@@ -105,13 +106,24 @@ public class DeliveryManagerImpl implements DeliveryManager {
     public List<Message> getNextMessagesToDeliver() throws InterruptedException {
         LinkedList<Message> toDeliver = new LinkedList<Message>();
         synchronized (deliverySet) {
-            while (deliverySet.isEmpty()) {
+            while (deliverySet.isEmpty() && singleDestinationSet.isEmpty()) {
                 deliverySet.wait();
+            }
+            
+            if (!singleDestinationSet.isEmpty()) {
+                toDeliver.addAll(singleDestinationSet);
+                singleDestinationSet.clear();
+                return toDeliver;
             }
 
             if (!deliverySet.first().isReadyToDeliver()) {
                 deliverySet.wait();
             }
+
+           if (!singleDestinationSet.isEmpty()) {
+                toDeliver.addAll(singleDestinationSet);
+                singleDestinationSet.clear();                
+           }
 
             Iterator<MessageInfo> iterator = deliverySet.iterator();
 
@@ -135,6 +147,18 @@ public class DeliveryManagerImpl implements DeliveryManager {
         synchronized (deliverySet) {
             deliverySet.clear();
             messageCache.clear();
+        }
+    }
+
+   /**
+    * delivers a message that has only as destination member this node
+    * 
+    * @param msg  the message
+    */
+    public void deliverSingleDestinationMessage(Message msg) {
+        synchronized (deliverySet) {
+            singleDestinationSet.add(msg);
+            deliverySet.notify();
         }
     }
 
