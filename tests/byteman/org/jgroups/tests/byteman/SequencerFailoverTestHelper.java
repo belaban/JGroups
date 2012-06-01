@@ -16,7 +16,7 @@ public class SequencerFailoverTestHelper extends Helper {
         super(rule);
     }
 
-    public static void sendMessages(final Protocol prot, final int start, final int end) {
+    public void sendMessages(final Protocol prot, final int start, final int end) {
         new Thread() {
             public void run() {
                 for(int i=start; i <= end; i++) {

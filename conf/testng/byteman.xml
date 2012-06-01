@@ -1,5 +1,5 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="byteman"
+<!--<suite name="byteman"
        parallel="false"
        thread-count="1" >
 
@@ -14,4 +14,19 @@
             <package name="org.jgroups.tests.byteman.*"/>
         </packages>
     </test>
+</suite>-->
+
+
+<suite name="byteman" parallel="false" thread-count="1">
+  <test name="byteman" junit="false" time-out="120000">
+
+      <!--
+      Due to classloader issues with TestNG, classes have to be listed individually (groups cannot be used)
+      -->
+      <classes>
+          <class name="org.jgroups.tests.byteman.SequencerFailoverTest"/>
+          <class name="org.jgroups.tests.byteman.RingBufferTest"/>
+      </classes>
+
+  </test>
 </suite>

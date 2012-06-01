@@ -22,7 +22,6 @@ import java.util.List;
 @Test(groups=Global.BYTEMAN,sequential=true)
 public class SequencerFailoverTest extends BMNGRunner {
     JChannel a, b, c; // A is the coordinator
-    View     v1, v2, v3;
     static final String GROUP="SequencerFailoverTest";
     static final int    NUM_MSGS=50;
     static final String props="sequencer.xml";
@@ -83,8 +82,8 @@ public class SequencerFailoverTest extends BMNGRunner {
             System.out.print("-- messages sent: " + i + "/" + NUM_MSGS + "\r");
         }
         System.out.println("");
-        v2=b.getView();
-        v3=c.getView();
+        View v2=b.getView();
+        View v3=c.getView();
         System.out.println("B's view: " + v2 + "\nC's view: " + v3);
         assert v2.equals(v3);
         assert v2.size() == 2;
@@ -100,7 +99,7 @@ public class SequencerFailoverTest extends BMNGRunner {
         }
         System.out.println("-- verifying messages on B and C");
         List<Integer> list_b=rb.getList(), list_c=rc.getList();
-        System.out.println("B: " + list_b + "\nC: " + list_c);
+        System.out.println("\nB: " + list_b + "\nC: " + list_c);
 
         assert list_b.size() == list_c.size();
         System.out.println("OK: both B and C have the same number of messages (" + list_b.size() + ")");
@@ -112,10 +111,11 @@ public class SequencerFailoverTest extends BMNGRunner {
         for(int i=0; i < list_b.size(); i++) {
             Integer el_b=list_b.get(i), el_c=list_c.get(i);
             assert el_b.equals(el_c) : "element at index=" + i + " in B (" + el_b +
-                    ") is different from element " + i + " in C (" + el_c + ")"; 
+              ") is different from element " + i + " in C (" + el_c + ")";
         }
         System.out.println("OK: B and C's message are in the same order");
     }
+
 
 
     /**
@@ -152,11 +152,12 @@ public class SequencerFailoverTest extends BMNGRunner {
         for(int i=0; i < 10; i++) {
             if(list_b.size() == expected_msgs && list_c.size() == expected_msgs)
                 break;
-            Util.sleep(1000);
+            Util.sleep(500);
         }
-        System.out.println("B: " + list_b + "\nC: " + list_c);
+        System.out.println("\nB: " + list_b + "\nC: " + list_c);
 
-        assert list_b.size() == expected_msgs && list_c.size() == expected_msgs;
+        assert list_b.size() == expected_msgs : "expected " + expected_msgs + " msgs, but got " + list_b.size() + ": " +list_b;
+        assert list_c.size() == expected_msgs : "expected " + expected_msgs + " msgs, but got " + list_c.size() + ": " +list_c;
         System.out.println("OK: both B and C have the expected number (" + expected_msgs + ") of messages");
 
         System.out.println("Verifying that B and C have the same order");
@@ -196,7 +197,7 @@ public class SequencerFailoverTest extends BMNGRunner {
 
         public void receive(Message msg) {
             Integer val=(Integer)msg.getObject();
-            System.out.println("[" + name + "] received " + val);
+            // System.out.println("[" + name + "] received " + val);
             synchronized(list) {
                 list.add(val);
             }

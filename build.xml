@@ -370,7 +370,6 @@
     <target name="all-tests">
         <sequential>
         	<antcall target="functional"/>
-            <antcall target="byteman"/>
         	<antcall target="stack-independent"/>
             <antcall target="udp"/>
             <antcall target="tcp"/>
@@ -378,6 +377,7 @@
         	<antcall target="udp-flush"/>
         	<antcall target="tcp-flush"/>
             <antcall target="time-sensitive"/>
+            <antcall target="byteman"/>
         </sequential>
     </target>
 
@@ -403,7 +403,7 @@
                 outputdir="${tmp.dir}/test-results/xml"
                 listeners="org.jgroups.util.JUnitXMLReporter"
                 threadcount="1"
-                parallel="false"
+                parallel="false" 
                 >
         	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
         	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
