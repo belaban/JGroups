@@ -1,8 +1,8 @@
+package org.jgroups.tests.byteman;
 
 
-package org.jgroups.tests;
-
-
+import org.jboss.byteman.contrib.bmunit.BMNGRunner;
+import org.jboss.byteman.contrib.bmunit.BMScript;
 import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.util.Util;
@@ -19,9 +19,10 @@ import java.util.List;
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
-public class SequencerFailoverTest {
+@Test(groups=Global.BYTEMAN,sequential=true)
+public class SequencerFailoverTest extends BMNGRunner {
     JChannel a, b, c; // A is the coordinator
+    View     v1, v2, v3;
     static final String GROUP="SequencerFailoverTest";
     static final int    NUM_MSGS=50;
     static final String props="sequencer.xml";
@@ -40,6 +41,11 @@ public class SequencerFailoverTest {
         c=new JChannel(props);
         c.setName("C");
         c.connect(GROUP);
+
+        Util.sleep(500);
+        assert a.getView().size() == 3 : "A's view: " + a.getView();
+        assert b.getView().size() == 3 : "B's view: " + b.getView();
+        assert c.getView().size() == 3 : "C's view: " + c.getView();
     }
 
     @AfterMethod
@@ -47,14 +53,13 @@ public class SequencerFailoverTest {
         Util.close(c, b, a);
     }
 
-    @Test
+
+    /**
+     * Tests that the ordering of messages is correct after a coordinator fails half-way through the sending of N msgs
+     */
     public void testBroadcastSequence() throws Exception {
         MyReceiver rb=new MyReceiver("B"), rc=new MyReceiver("C");
         b.setReceiver(rb); c.setReceiver(rc);
-
-        View v2=b.getView(), v3=c.getView();
-        System.out.println("ch2's view: " + v2 + "\nch3's view: " + v3);
-        assert v2.equals(v3);
 
         new Thread() {
             public void run() {
@@ -113,6 +118,57 @@ public class SequencerFailoverTest {
     }
 
 
+    /**
+     * Tests that resending of messages in the forward-queue on a view change and sending of new messages at the
+     * same time doesn't lead to incorrect ordering (forward-queue messages need to be delivered before new msgs)
+     * https://issues.jboss.org/browse/JGRP-1449
+     */
+    @BMScript(dir="scripts/SequencerFailoverTest", value="testResendingVersusNewMessages")
+    public void testResendingVersusNewMessages() throws Exception {
+        MyReceiver rb=new MyReceiver("B"), rc=new MyReceiver("C");
+        b.setReceiver(rb); c.setReceiver(rc);
+
+        final int expected_msgs=10;
+
+        Util.sleep(500);
+        // Now kill A (the coordinator)
+        System.out.print("-- killing A: ");
+        Util.shutdown(a);
+        System.out.println("done");
+        injectSuspectEvent(a.getAddress(), b, c);
+        a=null;
+
+        // Now send message 1-2 (they'll end up in the forward-queue)
+        System.out.println("-- sending messages 1-2");
+        for(int i=1; i <=2; i++) {
+            Message msg=new Message(null, i);
+            c.send(msg);
+        }
+
+        // Now wait for the view change, the sending of new messages 3-10 and the resending of 1-2, and make sure
+        // 1-2 are delivered before 3-10
+        System.out.println("-- verifying messages on B and C");
+        List<Integer> list_b=rb.getList(), list_c=rc.getList();
+        for(int i=0; i < 10; i++) {
+            if(list_b.size() == expected_msgs && list_c.size() == expected_msgs)
+                break;
+            Util.sleep(1000);
+        }
+        System.out.println("B: " + list_b + "\nC: " + list_c);
+
+        assert list_b.size() == expected_msgs && list_c.size() == expected_msgs;
+        System.out.println("OK: both B and C have the expected number (" + expected_msgs + ") of messages");
+
+        System.out.println("Verifying that B and C have the same order");
+        for(int i=0; i < list_b.size(); i++) {
+            Integer el_b=list_b.get(i), el_c=list_c.get(i);
+            assert el_b.equals(el_c) : "element at index=" + i + " in B (" + el_b +
+                    ") is different from element " + i + " in C (" + el_c + ")";
+        }
+        System.out.println("OK: B and C's messages are in the same order");
+    }
+
+
 
 
     /** Injects SUSPECT event(suspected_mbr) into channels */
@@ -126,9 +182,9 @@ public class SequencerFailoverTest {
     }
 
 
-    private static class MyReceiver extends ReceiverAdapter {
-        private final List<Integer> list=new LinkedList<Integer>();
-        private final String name;
+    protected static class MyReceiver extends ReceiverAdapter {
+        protected final List<Integer> list=new LinkedList<Integer>();
+        protected final String name;
 
         public MyReceiver(String name) {
             this.name=name;
@@ -140,12 +196,13 @@ public class SequencerFailoverTest {
 
         public void receive(Message msg) {
             Integer val=(Integer)msg.getObject();
+            System.out.println("[" + name + "] received " + val);
             synchronized(list) {
                 list.add(val);
             }
         }
 
-        void clear() {list.clear();}
+        protected void clear() {list.clear();}
     }
 
 

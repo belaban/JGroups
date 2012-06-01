@@ -370,7 +370,7 @@
     <target name="all-tests">
         <sequential>
         	<antcall target="functional"/>
-            <!--<antcall target="byteman"/>-->
+            <antcall target="byteman"/>
         	<antcall target="stack-independent"/>
             <antcall target="udp"/>
             <antcall target="tcp"/>

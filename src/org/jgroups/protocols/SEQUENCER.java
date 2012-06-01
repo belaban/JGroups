@@ -314,7 +314,7 @@ public class SEQUENCER extends Protocol {
 
             if(!canDeliver(sender, msg_seqno)) {
                 if(log.isWarnEnabled())
-                    log.warn(local_addr + ": dropped duplicate message " + sender + "::" + msg_seqno);
+                    log.warn(local_addr + ": dropped message " + sender + "::" + msg_seqno + " (expected=" + getNextToDeliver(sender) + ")");
                 return;
             }
 
@@ -334,7 +334,7 @@ public class SEQUENCER extends Protocol {
         Address sender=msg.getSrc();
         if(sender == null) {
             if(log.isErrorEnabled())
-                log.error(local_addr + ": sender is null, cannot deliver " + sender + "::" + hdr.getSeqno());
+                log.error(local_addr + ": sender is null, cannot deliver " + sender + "::" + hdr.getSeqno() + " (expected=" + getNextToDeliver(sender) + ")");
             return;
         }
         long msg_seqno=hdr.getSeqno();
@@ -345,7 +345,7 @@ public class SEQUENCER extends Protocol {
         }
         if(!canDeliver(sender, msg_seqno)) {
             if(log.isWarnEnabled())
-                log.warn(local_addr + ": dropped duplicate message " + sender + "::" + msg_seqno);
+                log.warn(local_addr + ": dropped message " + sender + "::" + msg_seqno);
             return;
         }
         if(log.isTraceEnabled())
@@ -365,14 +365,19 @@ public class SEQUENCER extends Protocol {
     protected boolean canDeliver(Address sender, long seqno) {
         Long next_to_deliver=delivery_table.get(sender);
         if(next_to_deliver == null) {
-            delivery_table.put(sender, seqno +1);
+            delivery_table.put(sender,seqno + 1);
             return true;
         }
         if(next_to_deliver == seqno) {
-            delivery_table.put(sender, seqno +1);
+            delivery_table.put(sender,seqno + 1);
             return true;
         }
         return false;
+    }
+
+    protected long getNextToDeliver(Address sender) {
+        Long next_to_deliver=delivery_table.get(sender);
+        return next_to_deliver != null? next_to_deliver : -1;
     }
 
 /* ----------------------------- End of Private Methods -------------------------------- */

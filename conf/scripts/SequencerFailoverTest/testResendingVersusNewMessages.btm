@@ -1,0 +1,25 @@
+
+## Test case for https://issues.jboss.org/browse/JGRP-1449 (SEQUENCER):
+## - When a coord A fails, we resend messages in the forward-queue that we haven't yet received
+## - If, at the same time, new messages are sent, the old messages in the forward-queue might be received
+##   *after* the new ones. JGRP-1449 is supposed to fix that. The fix is that sending of new messages on a view
+##   change will be blocked until all messages in the forward-queue have been forwarded successfully.
+##
+##   The test case intercepts SEQUENCER.resendMessagesInForwardTable() and starts a thread which sends new messages.
+##   We then check the order of message delivery.
+
+RULE ResendHook
+CLASS SEQUENCER
+METHOD handleViewChange
+HELPER org.jgroups.tests.byteman.SequencerFailoverTestHelper
+AFTER WRITE is_coord
+BIND local_addr=$0.local_addr;
+     is_coord=$0.is_coord;
+     view=$1;
+     forward_table_size=$0.forward_table.size()
+IF !is_coord && view.size() == 2 && forward_table_size > 0
+DO SequencerFailoverTestHelper.sendMessages($this, 3, 10);
+ENDRULE
+
+
+
