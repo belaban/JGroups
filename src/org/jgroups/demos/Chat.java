@@ -21,8 +21,10 @@ public class Chat extends ReceiverAdapter {
     }
 
 
-    private void start(String props) throws Exception {
+    private void start(String props, String name) throws Exception {
         channel=new JChannel(props);
+        if(name != null)
+            channel.setName(name);
         channel.setReceiver(this);
         channel.connect("ChatCluster");
         eventLoop();
@@ -49,17 +51,22 @@ public class Chat extends ReceiverAdapter {
 
     public static void main(String[] args) throws Exception {
         String props="udp.xml";
+        String name=null;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-props")) {
                 props=args[++i];
                 continue;
             }
+            if(args[i].equals("-name")) {
+                name=args[++i];
+                continue;
+            }
             help();
             return;
         }
 
-        new Chat().start(props);
+        new Chat().start(props, name);
     }
 
     protected static void help() {
