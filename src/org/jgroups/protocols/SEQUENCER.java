@@ -102,7 +102,7 @@ public class SEQUENCER extends Protocol {
                     msg.setSrc(local_addr);
 
                 // We have to wrap the sending / forwarding in a lock, or else messages can get reordered
-                // before they reach UNICAST or NAKACK !
+                // before they reach UNICAST or NAKACK (https://issues.jboss.org/browse/JGRP-1461) !
                 seqno_lock.lock();
                 try {
                     long next_seqno=seqno;
