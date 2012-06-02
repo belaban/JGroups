@@ -98,30 +98,31 @@ public class SEQUENCER extends Protocol {
                 if(msg.getDest() != null || msg.isFlagSet(Message.NO_TOTAL_ORDER) || msg.isFlagSet(Message.OOB))
                     break;
 
+                if(msg.getSrc() == null)
+                    msg.setSrc(local_addr);
+
+                // We have to wrap the sending / forwarding in a lock, or else messages can get reordered
+                // before they reach UNICAST or NAKACK !
                 seqno_lock.lock();
                 try {
                     long next_seqno=seqno;
+                    SequencerHeader hdr=new SequencerHeader(is_coord? SequencerHeader.BCAST : SequencerHeader.WRAPPED_BCAST, next_seqno);
+                    msg.putHeader(this.id, hdr);
+
                     if(is_coord) {
-                        SequencerHeader hdr=new SequencerHeader(SequencerHeader.BCAST, local_addr, next_seqno);
-                        msg.putHeader(this.id, hdr);
-                        broadcast(msg, false); // don't copy, just use the message passed as argument
+                        broadcast(msg, false, msg.getSrc(), next_seqno); // don't copy, just use the message passed as argument
                     }
                     else {
-                        if(msg.getSrc() == null)
-                            msg.setSrc(local_addr);
-                        
                         byte[] marshalled_msg=null;
                         try {
                             marshalled_msg=Util.objectToByteBuffer(msg);
+                            if(log.isTraceEnabled())
+                                log.trace(local_addr + ": forwarding " + local_addr + "::" + seqno + " to coord " + coord);
+                            forwardToCoord(marshalled_msg, next_seqno);
                         }
                         catch(Exception ex) {
                             log.error("failed marshalling message", ex);
                             return null;
-                        }
-                        if(marshalled_msg != null) {
-                            if(log.isTraceEnabled())
-                                log.trace(local_addr + ": forwarding " + local_addr + "::" + seqno + " to coord " + coord);
-                            forwardToCoord(marshalled_msg, next_seqno);
                         }
                     }
                     seqno++;
@@ -169,7 +170,7 @@ public class SEQUENCER extends Protocol {
                                 log.error(local_addr + ": non-coord; dropping FORWARD request from " + msg.getSrc());
                             return null;
                         }
-                        broadcast(msg, true); // do copy the message
+                        broadcast(msg, true, msg.getSrc(), hdr.seqno); // do copy the message
                         received_forwards++;
                         return null;
 
@@ -254,7 +255,7 @@ public class SEQUENCER extends Protocol {
             byte[] val=entry.getValue();
 
             Message forward_msg=new Message(coord, null, val);
-            SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, key);
+            SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, key);
             forward_msg.putHeader(this.id, hdr);
 
             if(log.isTraceEnabled())
@@ -268,33 +269,34 @@ public class SEQUENCER extends Protocol {
         synchronized(forward_table) {
             forward_table.put(seqno, marshalled_msg);
         }
-        Message forward_msg=new Message(coord, null, marshalled_msg);
-        SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, local_addr, seqno);
+        Message forward_msg=new Message(coord, marshalled_msg);
+        SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, seqno);
         forward_msg.putHeader(this.id,hdr);
         down_prot.down(new Event(Event.MSG, forward_msg));
         forwarded_msgs++;
     }
     
 
-    protected void broadcast(final Message msg, boolean copy) {
+    protected void broadcast(final Message msg, boolean copy, Address original_sender, long seqno) {
         Message bcast_msg=null;
-        final SequencerHeader hdr=(SequencerHeader)msg.getHeader(this.id);
 
         if(!copy) {
             bcast_msg=msg; // no need to add a header, message already has one
         }
         else {
-            bcast_msg=new Message(null, local_addr, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-            SequencerHeader new_hdr=new SequencerHeader(SequencerHeader.WRAPPED_BCAST, hdr.getOriginalSender(), hdr.getSeqno());
+            bcast_msg=new Message(null, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+            SequencerHeader new_hdr=new SequencerHeader(SequencerHeader.WRAPPED_BCAST, seqno);
             bcast_msg.putHeader(this.id, new_hdr);
         }
 
         if(log.isTraceEnabled())
-            log.trace(local_addr + ": broadcasting " + hdr.getOriginalSender() + "::" + hdr.getSeqno());
+            log.trace(local_addr + ": broadcasting " + original_sender + "::" + seqno);
 
-        down_prot.down(new Event(Event.MSG, bcast_msg));
+        down_prot.down(new Event(Event.MSG,bcast_msg));
         bcast_msgs++;
     }
+
+   
 
     /**
      * Unmarshal the original message (in the payload) and then pass it up (unless already delivered)
@@ -302,30 +304,12 @@ public class SEQUENCER extends Protocol {
      */
     protected void unwrapAndDeliver(final Message msg) {
         try {
-            SequencerHeader hdr=(SequencerHeader)msg.getHeader(this.id);
             Message msg_to_deliver=(Message)Util.objectFromByteBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-            long msg_seqno=hdr.getSeqno();
-            Address sender=msg_to_deliver.getSrc();
-            if(sender.equals(local_addr)) {
-                synchronized(forward_table) {
-                    forward_table.remove(msg_seqno);
-                }
-            }
-
-            if(!canDeliver(sender, msg_seqno)) {
-                if(log.isWarnEnabled())
-                    log.warn(local_addr + ": dropped message " + sender + "::" + msg_seqno + " (expected=" + getNextToDeliver(sender) + ")");
-                return;
-            }
-
-            if(log.isTraceEnabled())
-                log.trace(local_addr + ": delivering " + hdr.getOriginalSender() + "::" + msg_seqno);
-
-            up_prot.up(new Event(Event.MSG, msg_to_deliver));
-            delivered_bcasts++;
+            SequencerHeader hdr=(SequencerHeader)msg_to_deliver.getHeader(this.id);
+            deliver(msg_to_deliver, new Event(Event.MSG, msg_to_deliver), hdr);
         }
-        catch(Exception e) {
-            log.error("failure unmarshalling buffer", e);
+        catch(Exception ex) {
+            log.error("failure unmarshalling buffer", ex);
         }
     }
 
@@ -391,32 +375,30 @@ public class SEQUENCER extends Protocol {
         protected static final byte BCAST         = 2;
         protected static final byte WRAPPED_BCAST = 3;
 
-        byte    type=-1;
-        /** the original sender's address and a seqno */
-        ViewId  tag=null;
-
+        protected byte    type=-1;
+        protected long    seqno=-1;
 
         public SequencerHeader() {
         }
 
-        public SequencerHeader(byte type, Address original_sender, long seqno) {
+        public SequencerHeader(byte type) {
             this.type=type;
-            this.tag=new ViewId(original_sender, seqno);
         }
 
-        public Address getOriginalSender() {
-            return tag != null? tag.getCreator() : null;
+        public SequencerHeader(byte type, long seqno) {
+            this(type);
+            this.seqno=seqno;
         }
 
         public long getSeqno() {
-            return tag != null? tag.getId() : -1;
+            return seqno;
         }
 
         public String toString() {
             StringBuilder sb=new StringBuilder(64);
             sb.append(printType());
-            if(tag != null)
-                sb.append(" (tag=").append(tag).append(")");
+            if(seqno >= 0)
+                sb.append(" seqno=" + seqno);
             return sb.toString();
         }
 
@@ -432,19 +414,16 @@ public class SEQUENCER extends Protocol {
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
-            Util.writeStreamable(tag, out);
+            Util.writeLong(seqno, out);
         }
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            tag=(ViewId)Util.readStreamable(ViewId.class, in);
+            seqno=Util.readLong(in);
         }
 
         public int size() {
-            int size=Global.BYTE_SIZE *2; // type + presence byte
-            if(tag != null)
-                size+=tag.serializedSize();
-            return size;
+            return Global.BYTE_SIZE + Util.size(seqno); // type + seqno
         }
 
     }

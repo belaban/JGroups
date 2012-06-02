@@ -314,9 +314,7 @@ public class SizeTest {
 
     public static void testSequencerHeader() throws Exception {
         org.jgroups.protocols.SEQUENCER.SequencerHeader hdr;
-        hdr=new SEQUENCER.SequencerHeader((byte)1, Util.createRandomAddress("A"), 1L);
-        _testSize(hdr);
-        hdr=new SEQUENCER.SequencerHeader((byte)2, Util.createRandomAddress("B"), -1L);
+        hdr=new SEQUENCER.SequencerHeader((byte)1, 1L);
         _testSize(hdr);
     }
 
