@@ -75,11 +75,12 @@ public class ClientGmsImpl extends GmsImpl {
                     // gray: we've seen this NPE here.  not sure of the cases but wanted to add more debugging info
                     throw new NullPointerException("responses returned by findInitialMembers for " + join_promise + " is null");
                 }
-                /*// Sept 2008 (bela): break if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
+                // Sept 2008 (bela): break if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
                 if(join_promise.hasResult()) {
                     rsp=join_promise.getResult(gms.join_timeout); // clears the result
-                    continue;
-                }*/
+                    if (rsp != null)
+                        continue;
+                }
                 if(responses.isEmpty()) {
                     if(log.isTraceEnabled())
                         log.trace(gms.local_addr + ": no initial members discovered: creating group as first member");
