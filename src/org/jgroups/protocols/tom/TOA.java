@@ -97,6 +97,12 @@ public class TOA extends Protocol implements DeliveryProtocol {
                     case ToaHeader.FINAL_MESSAGE:
                         handleFinalSequenceNumber(header);
                         break;
+                    case ToaHeader.SINGLE_DESTINATION_MESSAGE:
+                        if (log.isTraceEnabled()) {
+                            log.trace("Received message " + message + " with SINGLE_DESTINATION header. delivering...");
+                        }
+                        deliverManager.deliverSingleDestinationMessage(message);
+                        break;
                     default:
                         throw new IllegalStateException("Unknown header type received " + header);
                 }
@@ -171,6 +177,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
             if (warn) {
                 log.warn("sending an AnycastAddress with 1 element");
             }
+            message.putHeader(id, ToaHeader.createSingleDestinationHeader());
             message.setDest(destinations.iterator().next());
             down_prot.down(new Event(Event.MSG, message));
             return;

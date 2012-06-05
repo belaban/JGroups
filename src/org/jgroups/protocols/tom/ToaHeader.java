@@ -19,9 +19,10 @@ import java.util.Collection;
 public class ToaHeader extends Header {
 
     //type
-    public static final byte DATA_MESSAGE    = 1 << 0;
-    public static final byte PROPOSE_MESSAGE = 1 << 1;
-    public static final byte FINAL_MESSAGE   = 1 << 2;
+    public static final byte DATA_MESSAGE                = 1 << 0;
+    public static final byte PROPOSE_MESSAGE             = 1 << 1;
+    public static final byte FINAL_MESSAGE               = 1 << 2;
+    public static final byte SINGLE_DESTINATION_MESSAGE  = 1 << 3;
 
     private byte type = 0;
     private MessageID messageID; //address and sequence number
@@ -101,7 +102,8 @@ public class ToaHeader extends Header {
         switch(type) {
             case DATA_MESSAGE: return "DATA_MESSAGE";
             case PROPOSE_MESSAGE: return "PROPOSE_MESSAGE";
-            case FINAL_MESSAGE: return"FINAL_MESSAGE";
+            case FINAL_MESSAGE: return "FINAL_MESSAGE";
+            case SINGLE_DESTINATION_MESSAGE: return "SINGLE_DESTINATION_MESSAGE";
             default: return "UNKNOWN";
         }
     }
@@ -115,6 +117,12 @@ public class ToaHeader extends Header {
         header.setMessageID(messageID);
         return header;
     }
+
+   public static ToaHeader createSingleDestinationHeader() {      
+      ToaHeader header = new ToaHeader();
+      header.setType(SINGLE_DESTINATION_MESSAGE);      
+      return header;
+   }
 
     private void setType(byte type) {
         this.type = type;
