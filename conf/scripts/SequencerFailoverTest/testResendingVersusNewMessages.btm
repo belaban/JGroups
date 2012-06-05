@@ -8,17 +8,15 @@
 ##   The test case intercepts SEQUENCER.handleViewChange() and starts a thread which sends new messages.
 ##   We then check the order of message delivery.
 
-RULE ResendHook
+RULE SendNewMessages
 CLASS SEQUENCER
-METHOD handleViewChange
+METHOD resend
 HELPER org.jgroups.tests.byteman.SequencerFailoverTestHelper
-AFTER WRITE is_coord
-BIND local_addr=$0.local_addr;
-     local_addr_name=org.jgroups.util.UUID.get($0.local_addr);
-     is_coord=$0.is_coord;
-     view=$1;
+AFTER WRITE resending ALL
+BIND local_addr_name=org.jgroups.util.UUID.get($0.local_addr);
      forward_table_size=$0.forward_table.size();
-IF debug("testing") && local_addr_name.equals("C") && forward_table_size > 0 && debug("end")
+     resending=$0.resending
+IF resending && local_addr_name.equals("C") && forward_table_size > 0
 DO System.out.println("-- sending new messages 3-10");
    sendMessages($0, 3, 10);
 ENDRULE
