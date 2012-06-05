@@ -152,7 +152,7 @@ public class SequencerFailoverTest extends BMNGRunner {
         for(int i=0; i < 10; i++) {
             if(list_b.size() == expected_msgs && list_c.size() == expected_msgs)
                 break;
-            Util.sleep(500);
+            Util.sleep(1000);
         }
         System.out.println("\nB: " + list_b + "\nC: " + list_c);
 
@@ -167,6 +167,17 @@ public class SequencerFailoverTest extends BMNGRunner {
                     ") is different from element " + i + " in C (" + el_c + ")";
         }
         System.out.println("OK: B and C's messages are in the same order");
+
+        System.out.println("Verifying that B and C have the correct order");
+        int seqno=1;
+        for(int i=0; i < expected_msgs; i++) {
+            Integer seqno_b=list_b.get(i);
+            assert seqno_b == seqno : "expected " + seqno + " , but got " + seqno_b + " (B)";
+            Integer seqno_c=list_c.get(i);
+            assert seqno_c == seqno : "expected " + seqno + " , but got " + seqno_c + " (C)";
+            seqno++;
+        }
+        System.out.println("OK: B and C's messages are in the correct order");
     }
 
 
