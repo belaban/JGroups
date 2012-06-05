@@ -5,7 +5,6 @@ import org.jboss.byteman.rule.helper.Helper;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
@@ -17,15 +16,21 @@ public class SequencerFailoverTestHelper extends Helper {
     }
 
     public void sendMessages(final Protocol prot, final int start, final int end) {
-        new Thread() {
+        final Thread sender=new Thread() {
             public void run() {
                 for(int i=start; i <= end; i++) {
                     Message msg=new Message(null, i);
-                    System.out.println("--> Sending message " + i);
-                    prot.down(new Event(Event.MSG, msg));
+                    System.out.println("[" + prot.getValue("local_addr") + "] --> sending message " + i);
+                    prot.down(new Event(Event.MSG,msg));
                 }
             }
-        }.start();
-        Util.sleep(1000);
+        };
+        sender.setName("BytemanSenderThread");
+        sender.start();
+        try {
+            sender.join(1000);
+        }
+        catch(InterruptedException e) {
+        }
     }
 }
