@@ -7,6 +7,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -52,6 +53,9 @@ public class SEQUENCER extends Protocol {
     protected final ConcurrentMap<Address,NavigableSet<Long>> delivery_table=Util.createConcurrentMap();
 
     protected volatile Resender                 resender;
+
+    /** Used for each resent message to wait until the message has been received */
+    protected final Promise<Long>               resend_promise=new Promise<Long>();
 
 
     @Property(description="Size of the set to store received seqnos (for duplicate checking)")
@@ -314,24 +318,18 @@ public class SEQUENCER extends Protocol {
             final Long key=entry.getKey();
             byte[] val=entry.getValue();
 
-            boolean sent=false;
-            while(!sent && resending && !forward_table.isEmpty()) {
+            boolean acked=false;
+            while(!acked && resending && !forward_table.isEmpty()) {
                 Message forward_msg=new Message(coord, val);
                 SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, key);
                 forward_msg.putHeader(this.id,hdr);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": resending (forwarding) " + local_addr + "::" + key + " to coord " + coord);
+                resend_promise.reset();
                 down_prot.down(new Event(Event.MSG, forward_msg));
-
-                long sleep_time=10;
-                for(int i=0; i < 5; i++) {
-                    if(!forward_table.containsKey(key)) {
-                        sent=true;
-                        break;
-                    }
-                    Util.sleep(sleep_time);
-                    sleep_time=Math.min(sleep_time * 2, 1000);
-                }
+                Long ack=resend_promise.getResult(500);
+                if((ack != null && ack.equals(key)) || !forward_table.containsKey(key))
+                    acked=true;
             }
         }
 
@@ -393,11 +391,14 @@ public class SEQUENCER extends Protocol {
             return;
         }
         long msg_seqno=hdr.getSeqno();
-        if(sender.equals(local_addr))
+        if(sender.equals(local_addr)) {
             forward_table.remove(msg_seqno);
+            if(resending)
+                resend_promise.setResult(msg_seqno);
+        }
         if(!canDeliver(sender, msg_seqno)) {
             if(log.isWarnEnabled())
-                log.warn(local_addr + ": dropped message " + sender + "::" + msg_seqno);
+                log.warn(local_addr + ": dropped duplicate message " + sender + "::" + msg_seqno);
             return;
         }
         if(log.isTraceEnabled())
@@ -454,6 +455,7 @@ public class SEQUENCER extends Protocol {
         try {
             resending=false;
             resend_cond.signalAll();
+            resend_promise.setResult(null);
         }
         finally {
             resend_lock.unlock();

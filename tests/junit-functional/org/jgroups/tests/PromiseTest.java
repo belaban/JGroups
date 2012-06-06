@@ -17,6 +17,12 @@ import org.testng.annotations.Test;
 @Test(groups=Global.FUNCTIONAL)
 public class PromiseTest {
 
+    public static void testGetWithResultAvailable() {
+        final Promise<Integer> p=new Promise<Integer>();
+        p.setResult(22);
+        assert p.getResult() == 22;
+    }
+
     public static void testGetResultNoTimeout() {
         final Promise p=new Promise();
         Object result;
