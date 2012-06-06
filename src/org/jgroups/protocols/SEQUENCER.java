@@ -318,8 +318,7 @@ public class SEQUENCER extends Protocol {
             final Long key=entry.getKey();
             byte[] val=entry.getValue();
 
-            boolean acked=false;
-            while(!acked && resending && !forward_table.isEmpty()) {
+            while(resending && !forward_table.isEmpty()) {
                 Message forward_msg=new Message(coord, val);
                 SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, key);
                 forward_msg.putHeader(this.id,hdr);
@@ -329,7 +328,7 @@ public class SEQUENCER extends Protocol {
                 down_prot.down(new Event(Event.MSG, forward_msg));
                 Long ack=resend_promise.getResult(500);
                 if((ack != null && ack.equals(key)) || !forward_table.containsKey(key))
-                    acked=true;
+                    break;
             }
         }
 
