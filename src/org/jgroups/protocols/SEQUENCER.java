@@ -13,6 +13,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,7 +37,7 @@ public class SEQUENCER extends Protocol {
     /** Maintains messages forwarded to the coord which which no ack has been received yet.
      *  Needs to be sorted so we resend them in the right order
      */
-    protected final Map<Long,byte[]>            forward_table=new TreeMap<Long,byte[]>();
+    protected final NavigableMap<Long,byte[]>   forward_table=new ConcurrentSkipListMap<Long,byte[]>();
 
     protected final Lock                        resend_lock=new ReentrantLock();
 
@@ -276,37 +277,69 @@ public class SEQUENCER extends Protocol {
      * This needs to be done, so the underlying reliable unicast protocol (e.g. UNICAST) adds these messages
      * to its retransmission mechanism<br/>
      * Note that we need to resend the messages in order of their seqnos ! We also need to prevent other message
-     * from being inserted until we're done, that's why there's synchronization.
+     * from being inserted until we're done, that's why there's synchronization.<br/>
+     * Access to the forward_table doesn't need to be synchronized as there won't be any insertions during resending
+     * (all down-threads are blocked)
      */
     protected void resendMessagesInForwardTable() {
-        Map<Long,byte[]> copy;
-        synchronized(forward_table) {
-            if(forward_table.isEmpty())
-                return;
-            copy=new TreeMap<Long,byte[]>(forward_table);
+        if(is_coord) {
+            for(Map.Entry<Long,byte[]> entry: forward_table.entrySet()) {
+                Long key=entry.getKey();
+                byte[] val=entry.getValue();
+
+                Message forward_msg=new Message(null, val);
+                SequencerHeader hdr=new SequencerHeader(SequencerHeader.WRAPPED_BCAST, key);
+                forward_msg.putHeader(this.id,hdr);
+                if(log.isTraceEnabled())
+                    log.trace(local_addr + ": resending (broadcasting) " + local_addr + "::" + key);
+                down_prot.down(new Event(Event.MSG, forward_msg));
+            }
+            return;
         }
-        for(Map.Entry<Long,byte[]> entry: copy.entrySet()) {
-            Long key=entry.getKey();
+
+        // for forwarded messages, we need to receive the forwarded message from the coordinator, to prvent this case:
+        // - V1={A,B,C}
+        // - A crashes
+        // - C installs V2={B,C}
+        // - C forwards messages 3 and 4 to B (the new coord)
+        // - B drops 3 because its view is still V1
+        // - B installs V2
+        // - B receives message 4 and broadcasts it
+        // ==> C's message 4 is delivered *before* message 3 !
+        // ==> By resending 3 until it is received, then resending 4 until it is received, we make sure this won't happen
+        // (see https://issues.jboss.org/browse/JGRP-1449)
+
+        while(resending && !forward_table.isEmpty()) {
+            Map.Entry<Long,byte[]> entry=forward_table.firstEntry();
+            final Long key=entry.getKey();
             byte[] val=entry.getValue();
 
-            Message forward_msg=new Message(is_coord? null : coord, null, val);
-            SequencerHeader hdr=new SequencerHeader(is_coord ? SequencerHeader.WRAPPED_BCAST : SequencerHeader.FORWARD, key);
-            forward_msg.putHeader(this.id,hdr);
-            if(log.isTraceEnabled()) {
-                if(is_coord)
-                    log.trace(local_addr + ": resending (broadcasting) " + local_addr + "::" + key);
-                else
+            boolean sent=false;
+            while(!sent && resending && !forward_table.isEmpty()) {
+                Message forward_msg=new Message(coord, val);
+                SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, key);
+                forward_msg.putHeader(this.id,hdr);
+                if(log.isTraceEnabled())
                     log.trace(local_addr + ": resending (forwarding) " + local_addr + "::" + key + " to coord " + coord);
+                down_prot.down(new Event(Event.MSG, forward_msg));
+
+                long sleep_time=10;
+                for(int i=0; i < 5; i++) {
+                    if(!forward_table.containsKey(key)) {
+                        sent=true;
+                        break;
+                    }
+                    Util.sleep(sleep_time);
+                    sleep_time=Math.min(sleep_time * 2, 1000);
+                }
             }
-            down_prot.down(new Event(Event.MSG, forward_msg));
         }
+
     }
 
 
     protected void forwardToCoord(final byte[] marshalled_msg, long seqno) {
-        synchronized(forward_table) {
-            forward_table.put(seqno, marshalled_msg);
-        }
+        forward_table.put(seqno, marshalled_msg);
         Message forward_msg=new Message(coord, marshalled_msg);
         SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, seqno);
         forward_msg.putHeader(this.id,hdr);
@@ -360,11 +393,8 @@ public class SEQUENCER extends Protocol {
             return;
         }
         long msg_seqno=hdr.getSeqno();
-        if(sender.equals(local_addr)) {
-            synchronized(forward_table) {
-                forward_table.remove(msg_seqno);
-            }
-        }
+        if(sender.equals(local_addr))
+            forward_table.remove(msg_seqno);
         if(!canDeliver(sender, msg_seqno)) {
             if(log.isWarnEnabled())
                 log.warn(local_addr + ": dropped message " + sender + "::" + msg_seqno);
