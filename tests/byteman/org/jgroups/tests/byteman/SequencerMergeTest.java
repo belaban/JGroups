@@ -102,8 +102,6 @@ public class SequencerMergeTest extends BMNGRunner {
         System.out.println("Installing " + new_view + " in A");
         injectViewAndDigest(new_view, getDigest(), a);
 
-        Util.sleep(60000);
-
 
         System.out.println("\nReceivers:");
         List<String> list_a=ra.getList();
