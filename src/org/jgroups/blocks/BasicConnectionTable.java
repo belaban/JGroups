@@ -541,12 +541,9 @@ public abstract class BasicConnectionTable {
 
        void doSend(byte[] data, int offset, int length) throws Exception {
            try {
-               // we're using 'double-writes', sending the buffer to the destination in 2 pieces. this would
-               // ensure that, if the peer closed the connection while we were idle, we would get an exception.
-               // this won't happen if we use a single write (see Stevens, ch. 5.13).
                if(out != null) {
                    out.writeInt(length); // write the length of the data buffer first
-                   Util.doubleWrite(data, offset, length, out);
+                   out.write(data, offset, length);
                    out.flush();  // may not be very efficient (but safe)
                }
            }
