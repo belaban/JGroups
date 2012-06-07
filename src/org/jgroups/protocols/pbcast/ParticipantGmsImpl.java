@@ -81,7 +81,8 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
         ViewId tmp_vid=v != null? v.getVid() : null;
         ViewId my_view=gms.getViewId();
         if(tmp_vid != null && my_view != null && tmp_vid.compareToIDs(my_view) > 0) {
-            gms.installView(v);
+            Digest d=join_rsp.getDigest();
+            gms.installView(v, d);
         }
     }
 
