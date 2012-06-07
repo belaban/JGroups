@@ -32,6 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class SEQUENCER extends Protocol {
     protected Address                           local_addr;
     protected volatile Address                  coord;
+    protected volatile View                     view;
     protected volatile boolean                  is_coord=false;
     protected final AtomicLong                  seqno=new AtomicLong(0);
 
@@ -131,7 +132,7 @@ public class SEQUENCER extends Protocol {
                     SequencerHeader hdr=new SequencerHeader(is_coord? SequencerHeader.BCAST : SequencerHeader.WRAPPED_BCAST, next_seqno);
                     msg.putHeader(this.id, hdr);
                     if(is_coord)
-                        broadcast(msg, false, msg.getSrc(), next_seqno); // don't copy, just use the message passed as argument
+                        broadcast(msg, false, msg.getSrc(), next_seqno, false); // don't copy, just use the message passed as argument
                     else {
                         byte[] marshalled_msg=Util.objectToByteBuffer(msg);
                         if(log.isTraceEnabled())
@@ -180,12 +181,21 @@ public class SEQUENCER extends Protocol {
 
                 switch(hdr.type) {
                     case SequencerHeader.FORWARD:
+                    case SequencerHeader.RESEND:
                         if(!is_coord) {
                             if(log.isErrorEnabled())
                                 log.error(local_addr + ": non-coord; dropping FORWARD request from " + msg.getSrc());
                             return null;
                         }
-                        broadcast(msg, true, msg.getSrc(), hdr.seqno); // do copy the message
+                        Address sender=msg.getSrc();
+                        if(view != null && !view.containsMember(sender)) {
+                            if(log.isErrorEnabled())
+                                log.error(local_addr + ": dropping FORWARD request from non-member " + sender +
+                                            "; view=" + view);
+                            return null;
+                        }
+                        
+                        broadcast(msg, true, msg.getSrc(), hdr.seqno, hdr.type == SequencerHeader.RESEND); // do copy the message
                         received_forwards++;
                         return null;
 
@@ -230,10 +240,10 @@ public class SEQUENCER extends Protocol {
             return;
 
         stopResender();
-        startResender(new_coord);
+        startResender(v, new_coord);
     }
 
-    protected void resend(final Address new_coord) {
+    protected void resend(final View view, final Address new_coord) {
         resend_lock.lock();
         try {
             resending=true;  // causes subsequent message sends (broadcasts and forwards) to block
@@ -245,7 +255,7 @@ public class SEQUENCER extends Protocol {
                 Util.sleep(100);
             }
 
-            setCoord(new_coord);
+            setCoord(view, new_coord);
 
             // needs to be done in the background, to not block if down() would block
             resendMessagesInForwardTable(); // maybe optimize in the future: broadcast directly if coord
@@ -257,7 +267,8 @@ public class SEQUENCER extends Protocol {
         }
     }
 
-    private void setCoord(Address new_coord) {
+    private void setCoord(final View new_view, final Address new_coord) {
+        view=new_view;
         coord=new_coord;
         is_coord=local_addr != null && local_addr.equals(coord);
     }
@@ -320,8 +331,9 @@ public class SEQUENCER extends Protocol {
 
             while(resending && !forward_table.isEmpty()) {
                 Message forward_msg=new Message(coord, val);
-                SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, key);
+                SequencerHeader hdr=new SequencerHeader(SequencerHeader.RESEND, key);
                 forward_msg.putHeader(this.id,hdr);
+                forward_msg.setFlag(Message.Flag.DONT_BUNDLE);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": resending (forwarding) " + local_addr + "::" + key + " to coord " + coord);
                 resend_promise.reset();
@@ -345,7 +357,7 @@ public class SEQUENCER extends Protocol {
     }
     
 
-    protected void broadcast(final Message msg, boolean copy, Address original_sender, long seqno) {
+    protected void broadcast(final Message msg, boolean copy, Address original_sender, long seqno, boolean resend) {
         Message bcast_msg=null;
 
         if(!copy) {
@@ -355,6 +367,8 @@ public class SEQUENCER extends Protocol {
             bcast_msg=new Message(null, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             SequencerHeader new_hdr=new SequencerHeader(SequencerHeader.WRAPPED_BCAST, seqno);
             bcast_msg.putHeader(this.id, new_hdr);
+            if(resend)
+                bcast_msg.setFlag(Message.Flag.DONT_BUNDLE);
         }
 
         if(log.isTraceEnabled())
@@ -461,9 +475,9 @@ public class SEQUENCER extends Protocol {
         }
     }
 
-    protected void startResender(final Address new_coord) {
+    protected void startResender(final View new_view, final Address new_coord) {
         if(resender == null || !resender.isAlive()) {
-            resender=new Resender(new_coord);
+            resender=new Resender(new_view, new_coord);
             resender.setName("Resender");
             resender.start();
         }
@@ -481,14 +495,16 @@ public class SEQUENCER extends Protocol {
 
     protected class Resender extends Thread {
         protected volatile boolean    running=false;
+        protected final View          new_view;
         protected final Address       new_coord;
 
-        public Resender(Address new_coord) {
+        public Resender(View new_view, Address new_coord) {
+            this.new_view=new_view;
             this.new_coord=new_coord;
         }
 
         public void run() {
-            resend(new_coord);
+            resend(new_view, new_coord);
         }
     }
 
@@ -498,8 +514,9 @@ public class SEQUENCER extends Protocol {
 
     public static class SequencerHeader extends Header {
         protected static final byte FORWARD       = 1;
-        protected static final byte BCAST         = 2;
-        protected static final byte WRAPPED_BCAST = 3;
+        protected static final byte RESEND        = 2;
+        protected static final byte BCAST         = 3;
+        protected static final byte WRAPPED_BCAST = 4;
 
         protected byte    type=-1;
         protected long    seqno=-1;
@@ -531,6 +548,7 @@ public class SEQUENCER extends Protocol {
         protected final String printType() {
             switch(type) {
                 case FORWARD:        return "FORWARD";
+                case RESEND:         return "RESEND";
                 case BCAST:          return "BCAST";
                 case WRAPPED_BCAST:  return "WRAPPED_BCAST";
                 default:             return "n/a";
