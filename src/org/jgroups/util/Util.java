@@ -2445,38 +2445,6 @@ public class Util {
     }
 
 
-    /**
-     Makes sure that we detect when a peer connection is in the closed state (not closed while we send data,
-     but before we send data). Two writes ensure that, if the peer closed the connection, the first write
-     will send the peer from FIN to RST state, and the second will cause a signal (Exception).
-     */
-    public static void doubleWrite(byte[] buf, OutputStream out) throws Exception {
-        if(buf.length > 1) {
-            out.write(buf, 0, 1);
-            out.write(buf, 1, buf.length - 1);
-        }
-        else {
-            out.write(buf, 0, 0);
-            out.write(buf);
-        }
-    }
-
-
-    /**
-     Makes sure that we detect when a peer connection is in the closed state (not closed while we send data,
-     but before we send data). Two writes ensure that, if the peer closed the connection, the first write
-     will send the peer from FIN to RST state, and the second will cause a signal (Exception).
-     */
-    public static void doubleWrite(byte[] buf, int offset, int length, OutputStream out) throws Exception {
-        if(length > 1) {
-            out.write(buf, offset, 1);
-            out.write(buf, offset+1, length - 1);
-        }
-        else {
-            out.write(buf, offset, 0);
-            out.write(buf, offset, length);
-        }
-    }
 
     /**
     * if we were to register for OP_WRITE and send the remaining data on
