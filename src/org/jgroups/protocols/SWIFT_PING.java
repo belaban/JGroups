@@ -41,6 +41,7 @@ import java.util.*;
  * This implementation is derived from Gustavo Fernandes work on RACKSPACE_PING
  *
  * @author tsegismont
+ * @since 3.1
  */
 @Experimental
 public class SWIFT_PING extends FILE_PING {
@@ -416,7 +417,7 @@ public class SWIFT_PING extends FILE_PING {
     /**
      * A thread safe Swift client
      */
-    private static class SwiftClient {
+    protected static class SwiftClient {
 
         private Authenticator authenticator;
 
