@@ -774,7 +774,7 @@ public class TCPConnectionMap{
 
             sock_creation_lock.lockInterruptibly();
             try {
-                //lock / realease, create new conn under sock_creation_lock, it can be skipped but then it takes
+                // lock / release, create new conn under sock_creation_lock, it can be skipped but then it takes
                 // extra check in conn map and closing the new connection, w/ sock_creation_lock it looks much simpler
                 // (slow path,so not important)
 
