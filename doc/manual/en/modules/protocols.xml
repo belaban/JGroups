@@ -410,6 +410,36 @@
 
             ${S3_PING}
         </section>
+
+        <section>
+            <title>SWIFT_PING</title>
+
+            <para>
+                SWIFT_PING uses Openstack Swift to discover initial members. Each node writes a small
+                object in a shared container. New joiners read all addresses from the container and ping each
+                of the elements of the resulting set of members. When a member leaves, it deletes its corresponding object.
+            </para>
+
+            <para>
+                These objects are stored under a container called 'jgroups' (by default), and each node will write an object name after
+                the cluster name, plus a "/" followed by the address, thus simulating a hierarchical structure.
+            </para>
+
+            <para>
+                Currently only Openstack Keystone authentication is supported. Here is a sample configuration block:
+            </para>
+            <programlisting language="XML">
+&lt;SWIFT_PING timeout="2000"
+    num_initial_members="3"
+    auth_type="keystone_v_2_0"
+    auth_url="http://localhost:5000/v2.0/tokens"
+    username="demo"
+    password="password"
+    tenant="demo" /&gt;
+            </programlisting>
+
+            ${SWIFT_PING}
+        </section>
     </section>
 
     <section>
