@@ -397,7 +397,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
     boolean haveCoordinatorRole() {
-        return impl != null && impl instanceof CoordGmsImpl;
+        return impl instanceof CoordGmsImpl;
     }
 
     @ManagedOperation(description="Fetches digests from all members and installs them, unblocking blocked members")
