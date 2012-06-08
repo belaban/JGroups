@@ -11,7 +11,7 @@
 RULE SendNewMessages
 CLASS SEQUENCER
 METHOD resend
-HELPER org.jgroups.tests.byteman.SequencerFailoverTestHelper
+HELPER org.jgroups.tests.helpers.SequencerFailoverTestHelper
 AFTER WRITE resending ALL
 BIND local_addr_name=org.jgroups.util.UUID.get($0.local_addr);
      map:java.util.Map=$0.forward_table;

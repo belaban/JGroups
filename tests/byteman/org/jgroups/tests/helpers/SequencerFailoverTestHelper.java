@@ -1,4 +1,4 @@
-package org.jgroups.tests.byteman;
+package org.jgroups.tests.helpers;
 
 import org.jboss.byteman.rule.Rule;
 import org.jboss.byteman.rule.helper.Helper;
