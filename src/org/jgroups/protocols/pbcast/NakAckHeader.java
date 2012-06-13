@@ -19,10 +19,10 @@ public class NakAckHeader extends Header {
     public static final byte XMIT_REQ=2;  // retransmit request
     public static final byte XMIT_RSP=3;  // retransmit response (contains one or more messages)
 
-    public byte  type=0;
-    public long  seqno=-1;        // seqno of regular message (MSG)
-    public Range range=null;      // range of msgs to be retransmitted (XMIT_REQ)
-    public Address sender;        // the original sender of the message (for XMIT_REQ)
+    byte  type=0;
+    long  seqno=-1;        // seqno of regular message (MSG)
+    Range range=null;      // range of msgs to be retransmitted (XMIT_REQ)
+    Address sender;        // the original sender of the message (for XMIT_REQ)
 
 
     public NakAckHeader() {

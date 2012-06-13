@@ -90,8 +90,8 @@ public class NAKACK_REBROADCAST_Test {
             if(evt.getType() == Event.MSG) {
                 Message msg=(Message)evt.getArg();
                 NakAckHeader hdr=(NakAckHeader)msg.getHeader(NAKACK_ID);
-                if(hdr != null && hdr.type == NakAckHeader.XMIT_REQ) {
-                    this.range=hdr.range;
+                if(hdr != null && hdr.getType() == NakAckHeader.XMIT_REQ) {
+                    this.range=hdr.getRange();
                 }
             }
 
