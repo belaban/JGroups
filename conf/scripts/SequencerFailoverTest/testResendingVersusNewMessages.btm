@@ -10,16 +10,16 @@
 
 RULE SendNewMessages
 CLASS SEQUENCER
-METHOD resend
+METHOD flush
 HELPER org.jgroups.tests.helpers.SequencerFailoverTestHelper
-AFTER WRITE resending ALL
+AFTER WRITE flushing ALL
 BIND local_addr_name=org.jgroups.util.UUID.get($0.local_addr);
      map:java.util.Map=$0.forward_table;
      empty=map.isEmpty();
-     resending=$0.resending
-IF resending && local_addr_name.equals("C") && !empty
-DO System.out.println("-- sending new messages 3-10");
-   sendMessages($0, 3, 10);
+     flushing=$0.flushing
+IF flushing && local_addr_name.equals("C") && !empty
+DO System.out.println("-- sending new messages 2-5");
+   sendMessages($0, 2, 5);
 ENDRULE
 
 

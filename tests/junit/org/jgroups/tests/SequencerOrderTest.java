@@ -35,11 +35,12 @@ public class SequencerOrderTest {
     private JChannel    c1, c2, c3;
     private MyReceiver  r1, r2, r3;
     static final String GROUP="SequencerOrderTest";
-    static final int    NUM_MSGS=50; // messages per thread
+    static final int    NUM_MSGS=2; // messages per thread
     static final int    NUM_THREADS=10;
     static final int    EXPECTED_MSGS=NUM_MSGS * NUM_THREADS;
     static final String props="sequencer.xml";
     private Sender[]    senders=new Sender[NUM_THREADS];
+    protected final AtomicInteger num=new AtomicInteger(0);
 
 
     @BeforeMethod
@@ -62,15 +63,15 @@ public class SequencerOrderTest {
         r3=new MyReceiver("C");
         c3.setReceiver(r3);
 
-        AtomicInteger num=new AtomicInteger(1);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, c1,c2,c3);
 
-        for(int i=0; i < senders.length; i++) {
+        for(int i=0; i < senders.length; i++)
             senders[i]=new Sender(NUM_MSGS, num, c1, c2, c3);
-        }
     }
 
     @AfterMethod
     void tearDown() throws Exception {
+        removeSHUFFLE(c3,c2,c1);
         Util.close(c3, c2, c1);
     }
 
@@ -84,7 +85,7 @@ public class SequencerOrderTest {
             sender.start();
 
         for(Sender sender: senders)
-            sender.join(20000);
+            sender.join(60000);
         System.out.println("Ok, senders have completed");
 
 
@@ -104,7 +105,7 @@ public class SequencerOrderTest {
         verifySameOrder(EXPECTED_MSGS, l1, l2, l3);
     }
 
-    private static void insertShuffle(JChannel... channels) throws Exception {
+    protected static void insertShuffle(JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
             SHUFFLE shuffle=new SHUFFLE();
             shuffle.setDown(false);
@@ -113,6 +114,14 @@ public class SequencerOrderTest {
             shuffle.setMaxTime(1000);
             ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.BELOW, NAKACK2.class);
             shuffle.init(); // starts the timer
+        }
+    }
+
+    protected static void removeSHUFFLE(JChannel ... channels) {
+        for(JChannel ch: channels) {
+            SHUFFLE shuffle=(SHUFFLE)ch.getProtocolStack().removeProtocol(SHUFFLE.class);
+            if(shuffle != null)
+                shuffle.destroy();
         }
     }
 
@@ -173,7 +182,8 @@ public class SequencerOrderTest {
                 try {
                     JChannel ch=(JChannel)Util.pickRandomElement(channels);
                     String channel_name=ch.getName();
-                    ch.send(null, channel_name + ":" + num.getAndIncrement());
+                    int number=num.incrementAndGet();
+                    ch.send(null, channel_name + number);
                 }
                 catch(Exception e) {
                 }
@@ -203,6 +213,13 @@ public class SequencerOrderTest {
                 }
             }
         }
+    }
+
+    public static void main(String[] args) throws Exception {
+        SequencerOrderTest test=new SequencerOrderTest();
+        test.setUp();
+        test.testBroadcastSequence();
+        test.tearDown();
     }
 
 

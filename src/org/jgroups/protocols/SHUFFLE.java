@@ -108,7 +108,7 @@ public class SHUFFLE extends Protocol {
         return null;
     }
 
-    private synchronized void startTask() {
+    protected synchronized void startTask() {
         if(task == null || task.isDone() || task.isCancelled()) {
             task=timer.schedule(new Runnable() {
 
@@ -117,6 +117,11 @@ public class SHUFFLE extends Protocol {
                 }
             }, max_time, TimeUnit.MILLISECONDS);
         }
+    }
+
+    public synchronized void stopTask() {
+        if(task != null)
+            task.cancel(true);
     }
 
     private void shuffleAndSendMessages() {

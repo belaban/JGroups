@@ -52,11 +52,29 @@ public class SequencerFailoverTest extends BMNGRunner {
         Util.close(c, b, a);
     }
 
+    /**
+     * Tests that the ordering of messages is correct after a coordinator fails half-way through the sending of N msgs.
+     * We have {A,B,C} initially, and B sending messages (forwarding to A). Then A crashes, and B becomes the coordinator.
+     * Now B needs to broadcast the messgages in the forward-table and then broadcast messages after that.
+     */
+    public void testBroadcastSequenceSenderIsB() throws Exception {
+        _testBroadcastSequence(b);
+    }
+
+     /**
+     * Tests that the ordering of messages is correct after a coordinator fails half-way through the sending of N msgs.
+      * We have {A,B,C} initially, and C sending messages (forwarding to A). Then A crashes, and C now needs to forward
+      * the messages to B.
+      */
+     public void testBroadcastSequenceSenderIsC() throws Exception {
+         _testBroadcastSequence(c);
+     }
+
 
     /**
      * Tests that the ordering of messages is correct after a coordinator fails half-way through the sending of N msgs
      */
-    public void testBroadcastSequence() throws Exception {
+    protected void _testBroadcastSequence(JChannel channel) throws Exception {
         MyReceiver rb=new MyReceiver("B"), rc=new MyReceiver("C");
         b.setReceiver(rb); c.setReceiver(rc);
 
@@ -76,10 +94,11 @@ public class SequencerFailoverTest extends BMNGRunner {
             }
         }.start();
 
+        final Address sender=channel.getAddress();
         for(int i=1; i <= NUM_MSGS; i++) {
             Util.sleep(300);
-            b.send(new Message(null, null, new Integer(i)));
-            System.out.print("-- messages sent: " + i + "/" + NUM_MSGS + "\r");
+            channel.send(new Message(null, null, new Integer(i)));
+            System.out.print("[" + sender + "] -- messages sent: " + i + "/" + NUM_MSGS + "\r");
         }
         System.out.println("");
         View v2=b.getView();
@@ -128,7 +147,12 @@ public class SequencerFailoverTest extends BMNGRunner {
         MyReceiver rb=new MyReceiver("B"), rc=new MyReceiver("C");
         b.setReceiver(rb); c.setReceiver(rc);
 
-        final int expected_msgs=10;
+        /*for(JChannel ch: Arrays.asList(a,b,c)) {
+            SEQUENCER seq=(SEQUENCER)ch.getProtocolStack().findProtocol(SEQUENCER.class);
+            seq.setValue("ack_mode", false);
+        }*/
+
+        final int expected_msgs=5;
 
         Util.sleep(500);
         // Now kill A (the coordinator)
@@ -138,15 +162,13 @@ public class SequencerFailoverTest extends BMNGRunner {
         injectSuspectEvent(a.getAddress(), b, c);
         a=null;
 
-        // Now send message 1-2 (they'll end up in the forward-queue)
-        System.out.println("-- sending messages 1-2");
-        for(int i=1; i <=2; i++) {
-            Message msg=new Message(null, i);
-            c.send(msg);
-        }
+        // Now send message 1 (it'll end up in the forward-queue)
+        System.out.println("-- sending message 1");
+        Message msg=new Message(null, 1);
+        c.send(msg);
 
-        // Now wait for the view change, the sending of new messages 3-10 and the resending of 1-2, and make sure
-        // 1-2 are delivered before 3-10
+        // Now wait for the view change, the sending of new messages 2-5 and the resending of 1, and make sure
+        // 1 is delivered before 2-5
         System.out.println("-- verifying messages on B and C");
         List<Integer> list_b=rb.getList(), list_c=rc.getList();
         for(int i=0; i < 10; i++) {

@@ -12,7 +12,10 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -36,31 +39,45 @@ public class SEQUENCER extends Protocol {
     protected volatile boolean                  is_coord=false;
     protected final AtomicLong                  seqno=new AtomicLong(0);
 
+
     /** Maintains messages forwarded to the coord which which no ack has been received yet.
      *  Needs to be sorted so we resend them in the right order
      */
     protected final NavigableMap<Long,byte[]>   forward_table=new ConcurrentSkipListMap<Long,byte[]>();
 
-    protected final Lock                        resend_lock=new ReentrantLock();
+    protected final Lock                        send_lock=new ReentrantLock();
 
-    protected final Condition                   resend_cond=resend_lock.newCondition();
+    protected final Condition                   send_cond=send_lock.newCondition();
 
-    protected volatile boolean                  resending=false;
+    /** When ack_mode is set, we need to wait for an ack for each forwarded message until we can send the next one */
+    protected volatile boolean                  ack_mode=true;
 
-    // keeps track of broadcasts or forwards that are currently in progress
+    /** Set when we block all sending threads to resend all messages from forward_table */
+    protected volatile boolean                  flushing=false;
+
+    protected volatile boolean                  running=true;
+
+    /** Keeps track of the threads sending messages */
     protected final AtomicInteger               in_flight_sends=new AtomicInteger(0);
 
     // Maintains receives seqnos, so we can weed out dupes
     protected final ConcurrentMap<Address,NavigableSet<Long>> delivery_table=Util.createConcurrentMap();
 
-    protected volatile Resender                 resender;
+    protected volatile Flusher                  flusher;
 
     /** Used for each resent message to wait until the message has been received */
-    protected final Promise<Long>               resend_promise=new Promise<Long>();
+    protected final Promise<Long>               ack_promise=new Promise<Long>();
+
 
 
     @Property(description="Size of the set to store received seqnos (for duplicate checking)")
     protected int  delivery_table_max_size=2000;
+
+    @Property(description="Number of acks needed before going from ack-mode to normal mode. 0 disables this, which means " +
+      "that ack-mode is always on")
+    protected int threshold=1; // todo: change back to 10
+
+    protected int num_acks=0;
 
     protected long forwarded_msgs=0;
     protected long bcast_msgs=0;
@@ -92,8 +109,8 @@ public class SEQUENCER extends Protocol {
     @ManagedOperation
     public Map<String,Object> dumpStats() {
         Map<String,Object> m=super.dumpStats();
-        m.put("forwarded",         forwarded_msgs);
-        m.put("broadcast",         bcast_msgs);
+        m.put("forwarded",forwarded_msgs);
+        m.put("broadcast",bcast_msgs);
         m.put("received_forwards", received_forwards);
         m.put("received_bcasts",   received_bcasts);
         m.put("delivered_bcasts",  delivered_bcasts);
@@ -106,8 +123,9 @@ public class SEQUENCER extends Protocol {
     }
 
     public void stop() {
+        running=false;
         unblockAll();
-        stopResender();
+        stopFlusher();
         super.stop();
     }
 
@@ -121,8 +139,10 @@ public class SEQUENCER extends Protocol {
                 if(msg.getSrc() == null)
                     msg.setSrc(local_addr);
 
-                if(resending)
+                if(flushing) {
+                    // System.err.println("***** BLOCKING !!!!!!");
                     block();
+                }
 
                 // A seqno is not used to establish ordering, but only to weed out duplicates; next_seqno doesn't need
                 // to increase monotonically, but only to be unique (https://issues.jboss.org/browse/JGRP-1461) !
@@ -131,17 +151,20 @@ public class SEQUENCER extends Protocol {
                 try {
                     SequencerHeader hdr=new SequencerHeader(is_coord? SequencerHeader.BCAST : SequencerHeader.WRAPPED_BCAST, next_seqno);
                     msg.putHeader(this.id, hdr);
-                    if(is_coord)
+                    if(is_coord) {
+                        // System.out.println("[" + local_addr + "]: broadcasting " + seqno);
                         broadcast(msg, false, msg.getSrc(), next_seqno, false); // don't copy, just use the message passed as argument
+                    }
                     else {
                         byte[] marshalled_msg=Util.objectToByteBuffer(msg);
                         if(log.isTraceEnabled())
-                            log.trace(local_addr + ": forwarding " + local_addr + "::" + seqno + " to coord " + coord);
+                            log.trace("[" + local_addr + "]: forwarding " + local_addr + "::" + seqno + " to coord " + coord);
                         forwardToCoord(marshalled_msg, next_seqno);
                     }
                 }
                 catch(Exception ex) {
-                    log.error("failed marshalling message", ex);
+                    // System.err.println("failed sending message: " + ex);
+                    log.error("failed sending message", ex);
                 }
                 finally {
                     in_flight_sends.decrementAndGet();
@@ -181,7 +204,7 @@ public class SEQUENCER extends Protocol {
 
                 switch(hdr.type) {
                     case SequencerHeader.FORWARD:
-                    case SequencerHeader.RESEND:
+                    case SequencerHeader.FLUSH:
                         if(!is_coord) {
                             if(log.isErrorEnabled())
                                 log.error(local_addr + ": non-coord; dropping FORWARD request from " + msg.getSrc());
@@ -195,7 +218,7 @@ public class SEQUENCER extends Protocol {
                             return null;
                         }
                         
-                        broadcast(msg, true, msg.getSrc(), hdr.seqno, hdr.type == SequencerHeader.RESEND); // do copy the message
+                        broadcast(msg, true, msg.getSrc(), hdr.seqno, hdr.type == SequencerHeader.FLUSH); // do copy the message
                         received_forwards++;
                         return null;
 
@@ -205,7 +228,7 @@ public class SEQUENCER extends Protocol {
                         return null;
 
                     case SequencerHeader.WRAPPED_BCAST:
-                        unwrapAndDeliver(msg);  // unwrap the original message (in the payload) and deliver it
+                        unwrapAndDeliver(msg, hdr.flush_ack);  // unwrap the original message (in the payload) and deliver it
                         received_bcasts++;
                         return null;
                 }
@@ -232,43 +255,50 @@ public class SEQUENCER extends Protocol {
         List<Address> mbrs=v.getMembers();
         if(mbrs.isEmpty()) return;
 
+        if(view == null || view.compareTo(v) < 0)
+            view=v;
+        else
+            return;
+
         delivery_table.keySet().retainAll(mbrs);
 
         Address existing_coord=coord, new_coord=mbrs.get(0);
         boolean coord_changed=existing_coord == null || !existing_coord.equals(new_coord);
-        if(!coord_changed)
+        if(!coord_changed) {
+            setCoord(new_coord);
             return;
+        }
 
-        stopResender();
-        startResender(v, new_coord);
+        stopFlusher();
+        startFlusher(v, new_coord);
     }
 
-    protected void resend(final View view, final Address new_coord) {
-        resend_lock.lock();
+    protected void flush(final View view, final Address new_coord) {
+        flushing=true;  // causes subsequent message sends (broadcasts and forwards) to block
+
+        // wait until all threads currently sending messages have returned (new threads after flushing=true) will block
+        while(flushing && running) {
+            if(in_flight_sends.get() == 0)
+                break;
+            Util.sleep(100);
+        }
+
+        send_lock.lock();
         try {
-            resending=true;  // causes subsequent message sends (broadcasts and forwards) to block
-
-            // wait for all threads to complete in-flight message sending
-            while(resending) {
-                if(in_flight_sends.get() == 0)
-                    break;
-                Util.sleep(100);
-            }
-
-            setCoord(view, new_coord);
-
-            // needs to be done in the background, to not block if down() would block
-            resendMessagesInForwardTable(); // maybe optimize in the future: broadcast directly if coord
+            setCoord(new_coord);
+            // needs to be done in the background, to prevent blocking if down() would block
+            flushMessagesInForwardTable();
         }
         finally {
-            resending=false;
-            resend_cond.signalAll();
-            resend_lock.unlock();
+            flushing=false;
+            ack_mode=true; // go to ack-mode after flushing
+            num_acks=0;
+            send_cond.signalAll();
+            send_lock.unlock();
         }
     }
 
-    private void setCoord(final View new_view, final Address new_coord) {
-        view=new_view;
+    private void setCoord(final Address new_coord) {
         coord=new_coord;
         is_coord=local_addr != null && local_addr.equals(coord);
     }
@@ -280,8 +310,8 @@ public class SEQUENCER extends Protocol {
         List<Address> mbrs=v.getMembers();
         if(mbrs.isEmpty()) return;
 
-        Address new_coord=mbrs.iterator().next();
-        if (!new_coord.equals(coord) && local_addr != null && local_addr.equals(new_coord)) {
+        Address new_coord=mbrs.get(0);
+        if(!new_coord.equals(coord) && local_addr != null && local_addr.equals(new_coord)) {
             handleViewChange(v);
         }
     }
@@ -293,10 +323,10 @@ public class SEQUENCER extends Protocol {
      * to its retransmission mechanism<br/>
      * Note that we need to resend the messages in order of their seqnos ! We also need to prevent other message
      * from being inserted until we're done, that's why there's synchronization.<br/>
-     * Access to the forward_table doesn't need to be synchronized as there won't be any insertions during resending
+     * Access to the forward_table doesn't need to be synchronized as there won't be any insertions during flushing
      * (all down-threads are blocked)
      */
-    protected void resendMessagesInForwardTable() {
+    protected void flushMessagesInForwardTable() {
         if(is_coord) {
             for(Map.Entry<Long,byte[]> entry: forward_table.entrySet()) {
                 Long key=entry.getKey();
@@ -306,7 +336,7 @@ public class SEQUENCER extends Protocol {
                 SequencerHeader hdr=new SequencerHeader(SequencerHeader.WRAPPED_BCAST, key);
                 forward_msg.putHeader(this.id,hdr);
                 if(log.isTraceEnabled())
-                    log.trace(local_addr + ": resending (broadcasting) " + local_addr + "::" + key);
+                    log.trace(local_addr + ": flushing (broadcasting) " + local_addr + "::" + key);
                 down_prot.down(new Event(Event.MSG, forward_msg));
             }
             return;
@@ -323,22 +353,24 @@ public class SEQUENCER extends Protocol {
         // ==> C's message 4 is delivered *before* message 3 !
         // ==> By resending 3 until it is received, then resending 4 until it is received, we make sure this won't happen
         // (see https://issues.jboss.org/browse/JGRP-1449)
+        while(flushing && running && !forward_table.isEmpty()) {
 
-        while(resending && !forward_table.isEmpty()) {
+            // System.out.println("-- forwarding " + forward_table.keySet() + " to " + coord + " (flushing=" + flushing + ")");
+
             Map.Entry<Long,byte[]> entry=forward_table.firstEntry();
             final Long key=entry.getKey();
             byte[] val=entry.getValue();
 
-            while(resending && !forward_table.isEmpty()) {
+            while(flushing && running && !forward_table.isEmpty()) {
                 Message forward_msg=new Message(coord, val);
-                SequencerHeader hdr=new SequencerHeader(SequencerHeader.RESEND, key);
+                SequencerHeader hdr=new SequencerHeader(SequencerHeader.FLUSH, key);
                 forward_msg.putHeader(this.id,hdr);
                 forward_msg.setFlag(Message.Flag.DONT_BUNDLE);
                 if(log.isTraceEnabled())
-                    log.trace(local_addr + ": resending (forwarding) " + local_addr + "::" + key + " to coord " + coord);
-                resend_promise.reset();
+                    log.trace(local_addr + ": flushing (forwarding) " + local_addr + "::" + key + " to coord " + coord);
+                ack_promise.reset();
                 down_prot.down(new Event(Event.MSG, forward_msg));
-                Long ack=resend_promise.getResult(500);
+                Long ack=ack_promise.getResult(500);
                 if((ack != null && ack.equals(key)) || !forward_table.containsKey(key))
                     break;
             }
@@ -348,14 +380,51 @@ public class SEQUENCER extends Protocol {
 
 
     protected void forwardToCoord(final byte[] marshalled_msg, long seqno) {
-        forward_table.put(seqno, marshalled_msg);
+        if(!running || flushing) {
+            forward_table.put(seqno, marshalled_msg);
+
+            System.err.println("[" + local_addr + "]: !running || flushing: running=" + running + ", flushing=" + flushing);
+            return;
+        }
+
+        if(!ack_mode) {
+            forward_table.put(seqno, marshalled_msg);
+            //System.out.println("[" + local_addr + "]: forwarding " + seqno +
+              //                   " to " + coord + " (flushing=" + flushing + ", forward-table=" + forward_table.keySet() + ")");
+            forward(marshalled_msg, seqno, false);
+            return;
+        }
+
+        send_lock.lock();
+        try {
+            forward_table.put(seqno, marshalled_msg);
+            while(running && !flushing) {
+                ack_promise.reset();
+
+                //System.out.println("[" + local_addr + "]: sending " + seqno +
+                  //                   " to " + coord + " (flushing=" + flushing + ", forward-table=" + forward_table.keySet() + ")");
+
+                forward(marshalled_msg, seqno, true);
+                if(!running || flushing)
+                    break;
+                Long ack=ack_promise.getResult(500);
+                if((ack != null && ack.equals(seqno)) || !forward_table.containsKey(seqno))
+                    break;
+            }
+        }
+        finally {
+            send_lock.unlock();
+        }
+    }
+
+    protected void forward(final byte[] marshalled_msg, long seqno, boolean flush) {
         Message forward_msg=new Message(coord, marshalled_msg);
-        SequencerHeader hdr=new SequencerHeader(SequencerHeader.FORWARD, seqno);
+        byte type=flush? SequencerHeader.FLUSH : SequencerHeader.FORWARD;
+        SequencerHeader hdr=new SequencerHeader(type, seqno);
         forward_msg.putHeader(this.id,hdr);
         down_prot.down(new Event(Event.MSG, forward_msg));
         forwarded_msgs++;
     }
-    
 
     protected void broadcast(final Message msg, boolean copy, Address original_sender, long seqno, boolean resend) {
         Message bcast_msg=null;
@@ -367,8 +436,10 @@ public class SEQUENCER extends Protocol {
             bcast_msg=new Message(null, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             SequencerHeader new_hdr=new SequencerHeader(SequencerHeader.WRAPPED_BCAST, seqno);
             bcast_msg.putHeader(this.id, new_hdr);
-            if(resend)
+            if(resend) {
+                new_hdr.flush_ack=true;
                 bcast_msg.setFlag(Message.Flag.DONT_BUNDLE);
+            }
         }
 
         if(log.isTraceEnabled())
@@ -384,10 +455,12 @@ public class SEQUENCER extends Protocol {
      * Unmarshal the original message (in the payload) and then pass it up (unless already delivered)
      * @param msg
      */
-    protected void unwrapAndDeliver(final Message msg) {
+    protected void unwrapAndDeliver(final Message msg, boolean flush_ack) {
         try {
             Message msg_to_deliver=(Message)Util.objectFromByteBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             SequencerHeader hdr=(SequencerHeader)msg_to_deliver.getHeader(this.id);
+            if(flush_ack)
+                hdr.flush_ack=true;
             deliver(msg_to_deliver, new Event(Event.MSG, msg_to_deliver), hdr);
         }
         catch(Exception ex) {
@@ -406,8 +479,13 @@ public class SEQUENCER extends Protocol {
         long msg_seqno=hdr.getSeqno();
         if(sender.equals(local_addr)) {
             forward_table.remove(msg_seqno);
-            if(resending)
-                resend_promise.setResult(msg_seqno);
+            if(hdr.flush_ack) {
+                ack_promise.setResult(msg_seqno);
+                if(ack_mode && !flushing && ++num_acks >= threshold) {
+                    ack_mode=false;
+                    num_acks=0;
+                }
+            }
         }
         if(!canDeliver(sender, msg_seqno)) {
             if(log.isWarnEnabled())
@@ -448,63 +526,69 @@ public class SEQUENCER extends Protocol {
     }
 
     protected void block() {
-        resend_lock.lock();
+        send_lock.lock();
         try {
-            while(resending) {
+            while(flushing && running) {
                 try {
-                    resend_cond.await();
+                    send_cond.await();
                 }
                 catch(InterruptedException e) {
                 }
             }
         }
         finally {
-            resend_lock.unlock();
+            send_lock.unlock();
         }
     }
 
     protected void unblockAll() {
-        resend_lock.lock();
+        flushing=false;
+        send_lock.lock();
         try {
-            resending=false;
-            resend_cond.signalAll();
-            resend_promise.setResult(null);
+            send_cond.signalAll();
+            ack_promise.setResult(null);
         }
         finally {
-            resend_lock.unlock();
+            send_lock.unlock();
         }
     }
 
-    protected void startResender(final View new_view, final Address new_coord) {
-        if(resender == null || !resender.isAlive()) {
-            resender=new Resender(new_view, new_coord);
-            resender.setName("Resender");
-            resender.start();
+    protected void startFlusher(final View new_view, final Address new_coord) {
+        if(flusher == null || !flusher.isAlive()) {
+            flusher=new Flusher(new_view, new_coord);
+            flusher.setName("Flusher");
+            flusher.start();
         }
     }
 
-    protected void stopResender() {
-        Thread tmp=resender;
-        if(tmp != null &&tmp.isAlive()) {
-            unblockAll();
+    protected void stopFlusher() {
+        flushing=false;
+        Thread tmp=flusher;
+
+        while(tmp != null && tmp.isAlive()) {
             tmp.interrupt();
+            ack_promise.setResult(null);
+            try {
+                tmp.join();
+            }
+            catch(InterruptedException e) {
+            }
         }
     }
 
 /* ----------------------------- End of Private Methods -------------------------------- */
 
-    protected class Resender extends Thread {
-        protected volatile boolean    running=false;
-        protected final View          new_view;
-        protected final Address       new_coord;
+    protected class Flusher extends Thread {
+        protected final View    new_view;
+        protected final Address new_coord;
 
-        public Resender(View new_view, Address new_coord) {
+        public Flusher(View new_view, Address new_coord) {
             this.new_view=new_view;
             this.new_coord=new_coord;
         }
 
         public void run() {
-            resend(new_view, new_coord);
+            flush(new_view, new_coord);
         }
     }
 
@@ -514,12 +598,13 @@ public class SEQUENCER extends Protocol {
 
     public static class SequencerHeader extends Header {
         protected static final byte FORWARD       = 1;
-        protected static final byte RESEND        = 2;
+        protected static final byte FLUSH         = 2;
         protected static final byte BCAST         = 3;
         protected static final byte WRAPPED_BCAST = 4;
 
         protected byte    type=-1;
         protected long    seqno=-1;
+        protected boolean flush_ack;
 
         public SequencerHeader() {
         }
@@ -542,13 +627,15 @@ public class SEQUENCER extends Protocol {
             sb.append(printType());
             if(seqno >= 0)
                 sb.append(" seqno=" + seqno);
+            if(flush_ack)
+                sb.append(" (flush_ack)");
             return sb.toString();
         }
 
         protected final String printType() {
             switch(type) {
                 case FORWARD:        return "FORWARD";
-                case RESEND:         return "RESEND";
+                case FLUSH:          return "FLUSH";
                 case BCAST:          return "BCAST";
                 case WRAPPED_BCAST:  return "WRAPPED_BCAST";
                 default:             return "n/a";
@@ -559,18 +646,19 @@ public class SEQUENCER extends Protocol {
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             Util.writeLong(seqno, out);
+            out.writeBoolean(flush_ack);
         }
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
             seqno=Util.readLong(in);
+            flush_ack=in.readBoolean();
         }
 
         public int size() {
-            return Global.BYTE_SIZE + Util.size(seqno); // type + seqno
+            return Global.BYTE_SIZE + Util.size(seqno) + Global.BYTE_SIZE; // type + seqno + flush_ack
         }
 
     }
-
 
 }

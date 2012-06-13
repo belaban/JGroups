@@ -15,6 +15,7 @@ import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import sun.misc.UCDecoder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,8 +80,8 @@ public class SequencerMergeTest extends BMNGRunner {
         c.setReceiver(rc);
         d.setReceiver(rd);
 
-        View new_view=Util.createView(a.getAddress(), 5, a.getAddress(),b.getAddress(),c.getAddress(),d.getAddress());
-        Digest digest=getDigest(a,b,c,d);
+        final View new_view=Util.createView(a.getAddress(), 5, a.getAddress(),b.getAddress(),c.getAddress(),d.getAddress());
+        final Digest digest=getDigest(a,b,c,d);
 
         System.out.println("Installing " + new_view + " in B,C and D");
         injectViewAndDigest(new_view,digest,b,c,d);
@@ -90,28 +91,44 @@ public class SequencerMergeTest extends BMNGRunner {
         assert !Util.isCoordinator(c);
         assert !Util.isCoordinator(d);
 
+        Thread thread=new Thread() {
+            public void run() {
+                Util.sleep(1000);
 
+                // Finally installing the new view at A; this simulates a delayed view installation
+                System.out.println("Installing " + new_view + " in A");
+                injectViewAndDigest(new_view, getDigest(), a);
+            }
+        };
+        thread.start();
 
         System.out.println("D sends a multicast message M");
         Message msg=new Message(null, "M");
         d.send(msg);
-
-        Util.sleep(500);
-
-        // Finally installing the new view at A; this simulates a delayed view installation
-        System.out.println("Installing " + new_view + " in A");
-        injectViewAndDigest(new_view, getDigest(), a);
-
 
         System.out.println("\nReceivers:");
         List<String> list_a=ra.getList();
         List<String> list_b=rb.getList();
         List<String> list_c=rc.getList();
         List<String> list_d=rd.getList();
+        final List<String> expected=Arrays.asList("V5", "M");
+
+        for(int i=0; i < 20; i++) {
+            boolean all_ok=true;
+            for(List<String> list: Arrays.asList(list_a, list_b, list_c, list_d)) {
+                if(!list.equals(expected)) {
+                    all_ok=false;
+                    break;
+                }
+            }
+            if(all_ok)
+                break;
+            Util.sleep(500);
+        }
+
         System.out.println("A: " + list_a + "\nB: " + list_b + "\nC: " + list_c + "\nD: " + list_d);
 
         System.out.println("Checking ordering:");
-        final List<String> expected=Arrays.asList("V5", "M");
         for(List<String> list: Arrays.asList(list_a, list_b, list_c, list_d)) {
             assert list.equals(expected) : "expected=" + expected + ", actual list=" + list;
         }
