@@ -911,11 +911,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 // Also, we need to ask for retransmission of my_high+1, because we already *have* my_high, and don't
                 // need it, so the retransmission range is [my_high+1 .. their_high]: *exclude* my_high, but *include*
                 // their_high
-                long my_high=Math.max(1, Math.max(my_entry[0], my_entry[1]) +1);
+                long my_high=Math.max(my_entry[0], my_entry[1]);
                 if(their_high > my_high) {
                     if(log.isTraceEnabled())
                         log.trace("[" + local_addr + "] fetching " + my_high + "-" + their_high + " from " + member);
-                    retransmit(my_high, their_high, member, true); // use multicast to send retransmit request
+                    retransmit(my_high+1, their_high, member, true); // use multicast to send retransmit request
                     xmitted=true;
                 }
             }
