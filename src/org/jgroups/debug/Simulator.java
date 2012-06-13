@@ -126,11 +126,6 @@ public class Simulator {
             throw new Exception("protocol stack is null");
 
         bottom.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
-        if(view != null) {
-            Event view_evt=new Event(Event.VIEW_CHANGE, view);
-            bottom.up(view_evt);
-            top.down(view_evt);
-        }
 
         for(int i=0; i < protStack.length; i++) {
             Protocol p=protStack[i];
@@ -147,6 +142,11 @@ public class Simulator {
             p.start();
         }
 
+        if(view != null) {
+            Event view_evt=new Event(Event.VIEW_CHANGE, view);
+            bottom.up(view_evt);
+            top.down(view_evt);
+        }
 
         send_thread=new Thread() {
             public void run() {
