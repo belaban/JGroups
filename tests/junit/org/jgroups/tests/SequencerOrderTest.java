@@ -21,14 +21,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
- * Tests a SEQUENCER based stack: demonstrates race condition where thread#1
- * gets seqno, thread#2 gets seqno, thread#2 sends, thread#1 tries to send but
- * is out of order.
- * 
- * In order to test total ordering, make sure that messages are sent from 
- * concurrent senders; using one sender will cause NAKACK to FIFO order 
- * the messages and the assertions in this test will still hold true, whether
- * SEQUENCER is present or not. 
+ * Tests ordering with SEQUENCER: NUM_THREADS send messages concurrently over 3 channels, each thread sending NUM_MSGS
+ * messages. At the end of the test, we assert that NUM_THREADS * NUM_MSGS messages have been received and that every
+ * receiver delivered all messages in the same order.
+ * @author Bela Ban
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerOrderTest {
