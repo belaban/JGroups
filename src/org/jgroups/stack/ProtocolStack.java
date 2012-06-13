@@ -681,8 +681,11 @@ public class ProtocolStack extends Protocol {
         if(protocols != null)
             for(Class cl: protocols) {
                 Protocol tmp=removeProtocol(cl);
-                if(tmp != null)
+                if(tmp != null) {
+                    tmp.stop();
+                    tmp.destroy();
                     retval=tmp;
+                }
             }
 
         return retval;

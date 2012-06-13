@@ -1078,10 +1078,6 @@
                 Sending members add every forwarded message M to a buffer and remove M when they receive it. Should
                 the current coordinator crash, all buffered messages are forwarded to the new coordinator.
             </para>
-            <para>
-                Note that retransmissions go to the <emphasis>original sender</emphasis>, <emphasis>not</emphasis>
-                to the coordinator.
-            </para>
 
             ${SEQUENCER}
         </section>

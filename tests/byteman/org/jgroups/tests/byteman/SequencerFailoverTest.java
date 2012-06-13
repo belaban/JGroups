@@ -4,14 +4,15 @@ package org.jgroups.tests.byteman;
 import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jboss.byteman.contrib.bmunit.BMScript;
 import org.jgroups.*;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -96,17 +97,11 @@ public class SequencerFailoverTest extends BMNGRunner {
 
         assert list_b.size() == expected_msgs : "expected " + expected_msgs + " msgs, but got " + list_b.size() + ": " +list_b;
         assert list_c.size() == expected_msgs : "expected " + expected_msgs + " msgs, but got " + list_c.size() + ": " +list_c;
-        System.out.println("OK: both B and C have the expected number (" + expected_msgs + ") of messages");
+        System.out.println("OK: both B and C have the expected number of messages (" + expected_msgs + ")");
 
-        System.out.println("Verifying that B and C have the same order");
-        for(int i=0; i < list_b.size(); i++) {
-            Integer el_b=list_b.get(i), el_c=list_c.get(i);
-            assert el_b.equals(el_c) : "element at index=" + i + " in B (" + el_b +
-              ") is different from element " + i + " in C (" + el_c + ")";
-        }
+        assert list_b.equals(list_c);
         System.out.println("OK: B and C's messages are in the same order");
 
-        System.out.println("Verifying that B and C have the correct order");
         int seqno=1;
         for(int i=0; i < expected_msgs; i++) {
             Integer seqno_b=list_b.get(i);
@@ -118,6 +113,92 @@ public class SequencerFailoverTest extends BMNGRunner {
         System.out.println("OK: B and C's messages are in the correct order");
     }
 
+
+    /**
+     * Tests the following scenario:
+     * - The cluster is {A,B,C}
+     * - Failure detection and merging protocols have been removed
+     * - A is disabled (DISCARD drops all messages) and shut down
+     * - We set threshold in SEQUENCER to 0 (permanent ack-mode)
+     * - On C, 5 threads are sending messages 1 and 2 each (prefixed with the thread name)
+     * - The first thread is looping trying to send its message 1. The threads are blocked trying to acquire send-lock
+     * - We inject view {B,C} into B and C
+     * - The flush on C waits until threads 2-4 on C have acquired send-lock, added their message 1 to forward-table
+     *   and dropped out of the for loop
+     * - The threads are now all blocked trying to send message 2
+     * - The flush phase resends messages 1 from all 5 threads in the forward-queue, then unblocks the threads
+     * - The 5 threads now send message 2
+     * - We need to assert that both B and C delivered the same messages in the same order, and that all 1 messages
+     *   were delivered before the 2 messages
+     */
+    public void testFailoverWithMultipleThreadsSendingMessages() throws Exception {
+        adjustConfiguration(a,b,c); // removes FD/FD_ALL and MERGE protocols
+
+        final int num_senders=5;
+
+        MyReceiver rb=new MyReceiver("B"), rc=new MyReceiver("C");
+        b.setReceiver(rb); c.setReceiver(rc);
+
+        // insert DISCARD into A
+        DISCARD discard=new DISCARD();
+        discard.setLocalAddress(a.getAddress());
+        discard.setDiscardAll(true);
+        ProtocolStack stack=a.getProtocolStack();
+        TP transport=stack.getTransport();
+        stack.insertProtocol(discard,  ProtocolStack.ABOVE, transport.getClass());
+        
+        MySender[] senders=new MySender[num_senders];
+        for(int i=0; i < senders.length; i++) {
+            senders[i]=new MySender((i+1) * 10, c);
+            senders[i].start();
+        }
+        Util.sleep(1000);
+
+        System.out.println("Injecting SUSPECT(A) into B and C");
+        injectSuspectEvent(a.getAddress(), b,c);
+
+        for(int i=0; i < 20; i++) {
+            if(b.getView().size() == 2 && c.getView().size() == 2)
+                break;
+            Util.sleep(500);
+        }
+        System.out.println("B: " + b.getView() +"\nC: " + c.getView());
+        assert b.getView().size() == 2 && c.getView().size() == 2;
+
+        for(MySender sender: senders)
+            sender.join(30000);
+        System.out.println("senders are done");
+
+        List<Integer> list_b=rb.getList(), list_c=rc.getList();
+        System.out.println("\nB: " + list_b + "\nC: " + list_c);
+
+        assert list_b.size() == num_senders * 2 && list_c.size() == num_senders * 2;
+        System.out.println("OK: both B and C have the expected number of messages (" + num_senders *2 + ")");
+        assert list_b.equals(list_c);
+        System.out.println("OK: both list have the same ordering");
+
+        // check that the first messages (11, 21, 31, 41, 51) are in the first half of both lists
+        List<Integer> expected_list=Arrays.asList(11, 21, 31, 41, 51);
+        List<Integer> list_bb=new ArrayList<Integer>();
+        for(int i=0; i < num_senders; i++)
+            list_bb.add(list_b.get(i));
+
+        Collections.sort(list_bb);
+
+        System.out.println("Expected first half: " + expected_list + ", received: " + list_bb);
+        assert expected_list.equals(list_bb);
+
+        List<Integer> list_cc=new ArrayList<Integer>();
+        for(int i=0; i < num_senders; i++)
+            list_cc.add(list_c.get(i));
+
+        Collections.sort(list_cc);
+
+        System.out.println("Expected first half: " + expected_list + ", received: " + list_cc);
+        assert expected_list.equals(list_cc);
+
+        System.out.println("OK: first set of messages of all threads were delivered before second set of messages");
+    }
 
 
 
@@ -156,48 +237,39 @@ public class SequencerFailoverTest extends BMNGRunner {
         System.out.println("B's view: " + v2 + "\nC's view: " + v3);
         assert v2.equals(v3);
         assert v2.size() == 2;
-        int s2, s3;
-        for(int i=15000; i > 0; i-=1000) {
-            s2=rb.size(); s3=rc.size();
-            if(s2 >= NUM_MSGS && s3 >= NUM_MSGS) {
-                System.out.print("B: " + s2 + " msgs, C: " + s3 + " msgs\r");
+        for(int i=20000; i > 0; i-=1000) {
+            if(rb.size() >= NUM_MSGS && rc.size() >= NUM_MSGS)
                 break;
-            }
-            Util.sleep(1000);
-            System.out.print("sleeping for " + (i/1000) + " seconds (B: " + s2 + " msgs, C: " + s3 + " msgs)\r");
+            Util.sleep(500);
         }
-        System.out.println("-- verifying messages on B and C");
         List<Integer> list_b=rb.getList(), list_c=rc.getList();
         System.out.println("\nB: " + list_b + "\nC: " + list_c);
 
-        assert list_b.size() == list_c.size();
-        System.out.println("OK: both B and C have the same number of messages (" + list_b.size() + ")");
-
         assert list_b.size() == NUM_MSGS && list_c.size() == NUM_MSGS;
-        System.out.println("OK: both B and C have the expected number (" + NUM_MSGS + ") of messages");
+        System.out.println("OK: both B and C have the expected number of messages (" + NUM_MSGS + ")");
 
-        System.out.println("verifying B and C have the same order");
-        for(int i=0; i < list_b.size(); i++) {
-            Integer el_b=list_b.get(i), el_c=list_c.get(i);
-            assert el_b.equals(el_c) : "element at index=" + i + " in B (" + el_b +
-              ") is different from element " + i + " in C (" + el_c + ")";
-        }
-        System.out.println("OK: B and C's message are in the same order");
+        assert list_b.equals(list_c);
+        System.out.println("OK: B's and C's message are in the same order");
     }
 
 
 
-
-
-
-
     /** Injects SUSPECT event(suspected_mbr) into channels */
-    private static void injectSuspectEvent(Address suspected_mbr, JChannel ... channels) {
+    protected static void injectSuspectEvent(Address suspected_mbr, JChannel ... channels) {
         Event evt=new Event(Event.SUSPECT, suspected_mbr);
         for(JChannel ch: channels) {
             GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
             if(gms != null)
                 gms.up(evt);
+        }
+    }
+
+    /** Removes FD, FD_ALL, MERGEX protocols, sets SEQUENCER.threshold=0 */
+    protected void adjustConfiguration(JChannel ... channels) {
+        for(JChannel ch: channels) {
+            ch.getProtocolStack().removeProtocol(FD_ALL.class,FD.class,MERGE2.class,MERGE3.class, VERIFY_SUSPECT.class);
+            SEQUENCER seq=(SEQUENCER)ch.getProtocolStack().findProtocol(SEQUENCER.class);
+            seq.setThreshold(0); // permanent ack-mode
         }
     }
 
@@ -215,21 +287,41 @@ public class SequencerFailoverTest extends BMNGRunner {
         public int size() {return list.size();}
 
         public void receive(Message msg) {
-            Integer val=(Integer)msg.getObject();
-            // System.out.println("[" + name + "] received " + val);
             synchronized(list) {
-                list.add(val);
+                list.add((Integer)msg.getObject());
             }
         }
+    }
 
-        protected void clear() {list.clear();}
+    protected static class MySender extends Thread {
+        protected final int      rank;
+        protected final JChannel ch;
+
+        public MySender(int rank, JChannel ch) {
+            this.rank=rank;
+            this.ch=ch;
+            setName("sender-" + rank);
+        }
+
+        public void run() {
+            for(int i=1; i <=2; i++) {
+                Message msg=new Message(null, (rank + i));
+                try {
+                    System.out.println("[" + rank + "]: sending msg " + (rank + i));
+                    ch.send(msg);
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
 
     protected JChannel createChannel(final String props, final String name, final String cluster_name) throws Exception {
         JChannel retval=new JChannel(props);
-        a.setName(name);
-        a.connect(cluster_name);
+        retval.setName(name);
+        retval.connect(cluster_name);
         return retval;
     }
 }

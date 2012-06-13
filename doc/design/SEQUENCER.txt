@@ -4,59 +4,65 @@ Design of SEQUENCER, a total order protocol using a sequencer
 =============================================================
 
 Author: Bela Ban
-Date: Dec 29 2005
+Date:   June 2012 (enhances the design from 2005)
 
-
-Motivation
-----------
-The TOTAL protocol worked by asking the coordinator for a sequence number for every group message, but each member
-sends the message itself. This meant a round trip to the coordinator, then a multicast. In the design below, we want
-the coordinator to directly multicast the message on behalf of the member, now we have 1 unicast to the coordinator and
-1 multicast. The downside is that all message are now routed via the coordinator, which makes the latter the
-bottleneck. However, since it is only the coordinator who sends multicasts, we have no contention.
 
 Overview
 --------
-When a member multicasts a group message, it sends it to the coordinator. The coord then wraps the message into
-its own message and multicasts it to the group. The SEQUENCER protocol (somewhere above NAKACK) unwraps the message
+Say we have a cluster of {A,B,C}.
+
+When member C multicasts a message, it sends it to coordinator A. The coord then wraps the message into
+its own message and multicasts it to the group. The SEQUENCER protocol (somewhere above NAKACK(2)) unwraps the message
 so that the original sender is seen.
 
-It is the coordinator who decides on the ordering of messages from different senders. When receiving FORWARD
-messages from A, B and C, the coordinator establishes an ordered sequence, ordered by the seqno assigned by the
-coordinator when sending the message. This sequence is delivered in order at all receivers, therefore establishing
-total ordering.
+Because it is only A which is sending messages, everybody delivers messages from A in the order in which they
+were sent by A, therefore establishing total order.
 
-Example: group is {A,B,C}. B wants to multicast a message M to the group. It does so by sending M to A. A then
-adds a header which records the original sender (B) and replaces M's sender address with its own (A).
+C uses unicasts to forward all of its messages to A, so the order in which it unicasts them determines the order in
+which A broadcasts them, and therefore the order in which messages will get delivered.
+
+If C forwards M1 and then M2, UNICAST delivers M1 before M2 at A, and so A will broadcast M1 before M2. (Note, however,
+that messages from other members might get sent by A between M1 and M2).
+
+Example: group is {A,B,C}. C wants to multicast a message M to the group. It does so by sending M to A. A then
+adds a header which records the original sender (C) and replaces M's sender address with its own (A).
 When a member receives M, everybody thinks the message is from A, and NAKACK will possibly retransmit from A
-in case M is lost. However, SEQUENCER removes the header and replaces M's sender address with B. It has to
+in case M is lost. However, SEQUENCER removes the header and replaces M's sender address with C. It has to
 do so on a *copy* of M, otherwise we would change the original message and therefore retransmission
-requests would go to B, rather than A !
+requests would go to C, rather than A !
 
 Reliability on failover of coordinator
 --------------------------------------
 When sending messages to a coord, and that coord dies, then we simply resend the unacked messages to the new
-coord (on a VIEW_CHANGE). Each message has a unique tag, consisting of the sender's address and a monotonically
-increasing sequence number (seqno). The coord simply broadcasts the message (making sure that the tag is still
-in the message, as a header).
-When a member receives a broadcast message, it checks whether it already received that message, by comparing the
-message's seqno to the highest seqno it received for that sender. If received, the message will simply
-be discarded, otherwise the member will update its highest seqno received and deliver the message.
+coord (on a VIEW_CHANGE). To prevent new messages to be forwarded before old ones; before setting the new coordinator
+to forward messages to, new senders are blocked and we wait until old senders have completed.
 
-So if a member C sends messages 1, 2, 3, 4, 5 and 6 to the coord, and the coord is able to broadcast all messages,
-but dies and C doesn't receive brodacasts 5 and 6 (therefore 5 and 6 are still in the forward-table), then
-C simply re-sends messages 5 and 6 to the new coord. The new coord broadcasts 5 and 6, but all members
-who received 5 and 6 before will simply discard them. C, who originally sent 5 and 6, will deliver them
-and remove 5 and 6 from its forward-table.
-The unit test that verifies this behavior is org.jgroups.tests.SequencerFailoverTest
+Then, we forward messages from the forward-table to the new coordinator, one by one (waiting until a message has been
+acked before sending the next one). This mode is called ack-mode.
+
+When the forward-table is empty, we unblock the new sender threads. When a number of forwarded messages have been
+received, we switch from ack-mode to normal mode (which doesn't require acks anymore).
+
+Each message has a unique tag, consisting of a sequence number (seqno). The coord simply broadcasts the message
+(making sure that the seqno is still in the message, as a header).
+
+When a member receives a broadcast message, because the ordering of the message is correct, it just checks for duplicates.
+This is done by keeping the last N seqnos around, and checking if the seqno of the received message has already been
+received. If so, the message is discarded, else it is delivered and the new seqno recorded.
+
+Note that seqnos are *not* used to check for ordering, but only to discard duplicates ! So it is ok to
+receive seqno 5 before seqno 4, if different threads on the same sender send messages concurrently.
+
+SEQUENCER will ensure though that, if a receiver P receives C:5 before C:4, then *everybody* will receive C:5 bfore C:4.
+
+There are various unit tests for SEQUENCER, e.g. SequencerFailoverTest, SequencerMergeTest, SequencerOrderTest etc.
 
 
-Design
-------
+Design (*not* updated since 2005, look in the code for details !)
+-----------------------------------------------------------------
 
 Variables:
-- forward-table: Map<seqno, Message>, list of messages to be forwarded (sorted by seqno)
-                 that have not yet been received (as bcasts).
+- forward-table: List of messages to be forwarded (sorted by seqno) that have not yet been received (as bcasts).
                  Access patterns: add at end (frequent), remove by seqno (frequent), iterate through
                  it in order of seqnos (infrequent): therefore a Map was preferred over a linked list
 - received-table: Map<Address, Long> which keeps the highest seqno seen per member. This table has N

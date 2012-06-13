@@ -84,13 +84,11 @@ public class SequencerOrderTest {
             sender.join(60000);
         System.out.println("Ok, senders have completed");
 
-
         for(int i=0; i < 10; i++) {
             if(r1.size() == EXPECTED_MSGS && r2.size() == EXPECTED_MSGS && r3.size() == EXPECTED_MSGS)
                 break;
             Util.sleep(1000);
         }
-
 
         final List<String> l1=r1.getMsgs();
         final List<String> l2=r2.getMsgs();

@@ -75,9 +75,9 @@ public class SEQUENCER extends Protocol {
 
     @Property(description="Number of acks needed before going from ack-mode to normal mode. 0 disables this, which means " +
       "that ack-mode is always on")
-    protected int threshold=10;
+    protected int  threshold=10;
 
-    protected int num_acks=0;
+    protected int  num_acks=0;
 
     protected long forwarded_msgs=0;
     protected long bcast_msgs=0;
@@ -101,6 +101,10 @@ public class SEQUENCER extends Protocol {
     @ManagedAttribute(description="Number of messages in the forward-table")
     public int getForwardTableSize() {return forward_table.size();}
 
+    public void setThreshold(int new_threshold) {this.threshold=new_threshold;}
+
+    public void setDeliveryTableMaxSize(int size) {delivery_table_max_size=size;}
+
     @ManagedOperation
     public void resetStats() {
         forwarded_msgs=bcast_msgs=received_forwards=received_bcasts=delivered_bcasts=0L;
@@ -122,6 +126,11 @@ public class SEQUENCER extends Protocol {
         return dumpStats().toString();
     }
 
+    public void start() throws Exception {
+        super.start();
+        ack_mode=true;
+    }
+
     public void stop() {
         running=false;
         unblockAll();
@@ -139,10 +148,8 @@ public class SEQUENCER extends Protocol {
                 if(msg.getSrc() == null)
                     msg.setSrc(local_addr);
 
-                if(flushing) {
-                    // System.err.println("***** BLOCKING !!!!!!");
+                if(flushing)
                     block();
-                }
 
                 // A seqno is not used to establish ordering, but only to weed out duplicates; next_seqno doesn't need
                 // to increase monotonically, but only to be unique (https://issues.jboss.org/browse/JGRP-1461) !
@@ -151,10 +158,8 @@ public class SEQUENCER extends Protocol {
                 try {
                     SequencerHeader hdr=new SequencerHeader(is_coord? SequencerHeader.BCAST : SequencerHeader.WRAPPED_BCAST, next_seqno);
                     msg.putHeader(this.id, hdr);
-                    if(is_coord) {
-                        // System.out.println("[" + local_addr + "]: broadcasting " + seqno);
+                    if(is_coord)
                         broadcast(msg, false, msg.getSrc(), next_seqno, false); // don't copy, just use the message passed as argument
-                    }
                     else {
                         byte[] marshalled_msg=Util.objectToByteBuffer(msg);
                         if(log.isTraceEnabled())
@@ -163,7 +168,6 @@ public class SEQUENCER extends Protocol {
                     }
                 }
                 catch(Exception ex) {
-                    // System.err.println("failed sending message: " + ex);
                     log.error("failed sending message", ex);
                 }
                 finally {
@@ -270,10 +274,10 @@ public class SEQUENCER extends Protocol {
         }
 
         stopFlusher();
-        startFlusher(v, new_coord);
+        startFlusher(new_coord); // needs to be done in the background, to prevent blocking if down() would block
     }
 
-    protected void flush(final View view, final Address new_coord) {
+    protected void flush(final Address new_coord) {
         flushing=true;  // causes subsequent message sends (broadcasts and forwards) to block
 
         // wait until all threads currently sending messages have returned (new threads after flushing=true) will block
@@ -286,7 +290,6 @@ public class SEQUENCER extends Protocol {
         send_lock.lock();
         try {
             setCoord(new_coord);
-            // needs to be done in the background, to prevent blocking if down() would block
             flushMessagesInForwardTable();
         }
         finally {
@@ -311,9 +314,8 @@ public class SEQUENCER extends Protocol {
         if(mbrs.isEmpty()) return;
 
         Address new_coord=mbrs.get(0);
-        if(!new_coord.equals(coord) && local_addr != null && local_addr.equals(new_coord)) {
+        if(!new_coord.equals(coord) && local_addr != null && local_addr.equals(new_coord))
             handleViewChange(v);
-        }
     }
 
 
@@ -354,9 +356,6 @@ public class SEQUENCER extends Protocol {
         // ==> By resending 3 until it is received, then resending 4 until it is received, we make sure this won't happen
         // (see https://issues.jboss.org/browse/JGRP-1449)
         while(flushing && running && !forward_table.isEmpty()) {
-
-            // System.out.println("-- forwarding " + forward_table.keySet() + " to " + coord + " (flushing=" + flushing + ")");
-
             Map.Entry<Long,byte[]> entry=forward_table.firstEntry();
             final Long key=entry.getKey();
             byte[] val=entry.getValue();
@@ -381,16 +380,12 @@ public class SEQUENCER extends Protocol {
 
     protected void forwardToCoord(final byte[] marshalled_msg, long seqno) {
         if(!running || flushing) {
-            forward_table.put(seqno, marshalled_msg);
-
-            System.err.println("[" + local_addr + "]: !running || flushing: running=" + running + ", flushing=" + flushing);
+            forward_table.put(seqno,marshalled_msg);
             return;
         }
 
         if(!ack_mode) {
             forward_table.put(seqno, marshalled_msg);
-            //System.out.println("[" + local_addr + "]: forwarding " + seqno +
-              //                   " to " + coord + " (flushing=" + flushing + ", forward-table=" + forward_table.keySet() + ")");
             forward(marshalled_msg, seqno, false);
             return;
         }
@@ -400,10 +395,6 @@ public class SEQUENCER extends Protocol {
             forward_table.put(seqno, marshalled_msg);
             while(running && !flushing) {
                 ack_promise.reset();
-
-                //System.out.println("[" + local_addr + "]: sending " + seqno +
-                  //                   " to " + coord + " (flushing=" + flushing + ", forward-table=" + forward_table.keySet() + ")");
-
                 forward(marshalled_msg, seqno, true);
                 if(!ack_mode || !running || flushing)
                     break;
@@ -481,7 +472,7 @@ public class SEQUENCER extends Protocol {
             forward_table.remove(msg_seqno);
             if(hdr.flush_ack) {
                 ack_promise.setResult(msg_seqno);
-                if(ack_mode && !flushing && ++num_acks >= threshold) {
+                if(ack_mode && !flushing && threshold > 0 && ++num_acks >= threshold) {
                     ack_mode=false;
                     num_acks=0;
                 }
@@ -553,9 +544,9 @@ public class SEQUENCER extends Protocol {
         }
     }
 
-    protected void startFlusher(final View new_view, final Address new_coord) {
+    protected void startFlusher(final Address new_coord) {
         if(flusher == null || !flusher.isAlive()) {
-            flusher=new Flusher(new_view, new_coord);
+            flusher=new Flusher(new_coord);
             flusher.setName("Flusher");
             flusher.start();
         }
@@ -579,16 +570,14 @@ public class SEQUENCER extends Protocol {
 /* ----------------------------- End of Private Methods -------------------------------- */
 
     protected class Flusher extends Thread {
-        protected final View    new_view;
         protected final Address new_coord;
 
-        public Flusher(View new_view, Address new_coord) {
-            this.new_view=new_view;
+        public Flusher(Address new_coord) {
             this.new_coord=new_coord;
         }
 
         public void run() {
-            flush(new_view, new_coord);
+            flush(new_coord);
         }
     }
 

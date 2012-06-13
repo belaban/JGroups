@@ -123,10 +123,9 @@ public class SequencerMergeTest extends BMNGRunner {
 
         System.out.println("A: " + list_a + "\nB: " + list_b + "\nC: " + list_c + "\nD: " + list_d);
 
-        System.out.println("Checking ordering:");
-        for(List<String> list: Arrays.asList(list_a, list_b, list_c, list_d)) {
+        for(List<String> list: Arrays.asList(list_a, list_b, list_c, list_d))
             assert list.equals(expected) : "expected=" + expected + ", actual list=" + list;
-        }
+        System.out.println("OK: order of all 3 lists is correct");
     }
 
 
@@ -205,13 +204,11 @@ public class SequencerMergeTest extends BMNGRunner {
         }
 
         public void receive(Message msg) {
-            System.out.println("-- [" + name + "] received " + msg.getObject());
             list.add(msg.getObject().toString());
         }
 
         public void viewAccepted(View view) {
             String tmp="V" + view.getViewId().getId();
-            System.out.println("-- [" + name + "] received " + view.getVid());
             list.add(tmp);
         }
     }
