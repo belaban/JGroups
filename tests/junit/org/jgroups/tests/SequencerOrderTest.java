@@ -35,7 +35,7 @@ public class SequencerOrderTest {
     private JChannel    c1, c2, c3;
     private MyReceiver  r1, r2, r3;
     static final String GROUP="SequencerOrderTest";
-    static final int    NUM_MSGS=2; // messages per thread
+    static final int    NUM_MSGS=50; // messages per thread
     static final int    NUM_THREADS=10;
     static final int    EXPECTED_MSGS=NUM_MSGS * NUM_THREADS;
     static final String props="sequencer.xml";
@@ -215,13 +215,7 @@ public class SequencerOrderTest {
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        SequencerOrderTest test=new SequencerOrderTest();
-        test.setUp();
-        test.testBroadcastSequence();
-        test.tearDown();
-    }
-
+   
 
 
 }

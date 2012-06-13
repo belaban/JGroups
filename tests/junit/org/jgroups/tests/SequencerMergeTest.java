@@ -1,4 +1,4 @@
-package org.jgroups.tests.byteman;
+package org.jgroups.tests;
 
 
 import org.jboss.byteman.contrib.bmunit.BMNGRunner;
@@ -27,7 +27,7 @@ import java.util.List;
  * @author Bela Ban
  * @since 3.1
  */
-@Test(groups=Global.BYTEMAN,sequential=true)
+@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerMergeTest extends BMNGRunner {
     JChannel a, b, c, d;
     static final String GROUP="SequencerMergeTest";
@@ -51,7 +51,6 @@ public class SequencerMergeTest extends BMNGRunner {
      * Tests a merge between {A} and {B,C,D}, plus a concurrent multicast.
      * https://issues.jboss.org/browse/JGRP-1468
      */
-    // @BMScript(dir="scripts/SequencerFailoverTest", value="testResendingVersusNewMessages")
     public void testMergeAndSendOrdering() throws Exception {
         // Create subgroup {A}:
         a=create("A", true);

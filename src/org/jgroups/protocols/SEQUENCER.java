@@ -75,7 +75,7 @@ public class SEQUENCER extends Protocol {
 
     @Property(description="Number of acks needed before going from ack-mode to normal mode. 0 disables this, which means " +
       "that ack-mode is always on")
-    protected int threshold=1; // todo: change back to 10
+    protected int threshold=10;
 
     protected int num_acks=0;
 
@@ -405,7 +405,7 @@ public class SEQUENCER extends Protocol {
                   //                   " to " + coord + " (flushing=" + flushing + ", forward-table=" + forward_table.keySet() + ")");
 
                 forward(marshalled_msg, seqno, true);
-                if(!running || flushing)
+                if(!ack_mode || !running || flushing)
                     break;
                 Long ack=ack_promise.getResult(500);
                 if((ack != null && ack.equals(seqno)) || !forward_table.containsKey(seqno))
