@@ -1145,7 +1145,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 if(their_high > my_high) {
                     if(log.isTraceEnabled())
                         log.trace("sending XMIT request to " + sender + " for messages " + my_high + " - " + their_high);
-                    retransmit(my_high, their_high, sender, true); // use multicast to send retransmit request
+                    retransmit(my_high+1, their_high, sender, true); // use multicast to send retransmit request
                     xmitted=true;
                 }
             }
