@@ -17,17 +17,18 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -102,11 +103,23 @@ abstract public class Executing extends Protocol {
     protected final Map<Owner, Runnable> _awaitingReturn;
     
     /**
-     * This is a server side queue of all the tasks to pass off.  Currently 
-     * there will never be tasks waiting to put in.  If a task is put in and doesn't have a 
-     * respective take at the same time that task is rejected.
+     * This is a server side store of all the tasks that want to be ran on a
+     * given thread.  This  map should be updated by an incoming request before
+     * awaking the task with the latch.  This map should only be retrieved after
+     * first waiting on the latch for a consumer
      */
-    protected BlockingQueue<Runnable> _tasks = new SynchronousQueue<Runnable>();
+    protected ConcurrentMap<Long, Runnable> _tasks = new ConcurrentHashMap<Long, Runnable>();
+    
+    /**
+     * This is a server side store of all the barriers for respective tasks 
+     * requests.  When a consumer is starting up they should create a latch
+     * place in map with it's id and wait on it until a request comes in to
+     * wake it up it would only then touch the {@link _tasks} map.  A requestor
+     * should first place in the {@link _tasks} map and then create a latch
+     * and notify the consumer
+     */
+    protected ConcurrentMap<Long, CyclicBarrier> _taskBarriers = 
+            new ConcurrentHashMap<Long, CyclicBarrier>();
     
     /**
      * This is a server side map to show which threads are running for a
@@ -201,23 +214,46 @@ abstract public class Executing extends Protocol {
                 break;
             case ExecutorEvent.CONSUMER_READY:
                 Thread currentThread = Thread.currentThread();
-                long id = currentThread.getId();
-                _consumerId.put(id, new Object());
-                sendToCoordinator(Type.CONSUMER_READY, id, local_addr);
+                long threadId = currentThread.getId();
+                _consumerId.put(threadId, PRESENT);
                 try {
-                    // Unfortunately we can't start taking before we send
-                    // a message, therefore we have to do a timed poll on
-                    // _tasks below to make sure that we have time to call take
-                    runnable = _tasks.take();
+                    for (;;) {
+                        CyclicBarrier barrier = new CyclicBarrier(2);
+                        _taskBarriers.put(threadId, barrier);
+                        
+                        // We only send to the coordinator that we are ready after
+                        // making the barrier, wait for request to come and let
+                        // us free
+                        sendToCoordinator(Type.CONSUMER_READY, threadId, local_addr);
+                        
+                        try {
+                            barrier.await();
+                            break;
+                        }
+                        catch (BrokenBarrierException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Producer timed out before we picked up"
+                                        + " the task, have to tell coordinator"
+                                        + " we are still good.");
+                        }
+                    }
+                    // This should always be non nullable since the latch
+                    // was freed
+                    runnable = _tasks.remove(threadId);
                     _runnableThreads.put(runnable, currentThread);
                     return runnable;
                 }
                 catch (InterruptedException e) {
-                    sendToCoordinator(Type.CONSUMER_UNREADY, id, local_addr);
+                    if (log.isDebugEnabled()) 
+                        log.debug("Consumer " + threadId + 
+                            " stopped via interrupt");
+                    sendToCoordinator(Type.CONSUMER_UNREADY, threadId, local_addr);
                     Thread.currentThread().interrupt();
                 }
                 finally {
-                    _consumerId.remove(id);
+                    // Make sure the barriers are cleaned up as well
+                    _taskBarriers.remove(threadId);
+                    _consumerId.remove(threadId);
                 }
                 break;
             case ExecutorEvent.TASK_COMPLETE:
@@ -242,6 +278,8 @@ abstract public class Executing extends Protocol {
                     // we interrupted the thread while waiting but still got
                     // a task therefore we have to reject it.
                     if (throwable instanceof InterruptedException) {
+                        if (log.isDebugEnabled())
+                            log.debug("Run rejected due to interrupted exception returned");
                         sendRequest(owner.address, Type.RUN_REJECTED, owner.requestId, null);
                         break;
                     }
@@ -333,7 +371,8 @@ abstract public class Executing extends Protocol {
                 if (_awaitingConsumer.remove(runnable)) {
                     _requestId.remove(runnable);
                     if (log.isTraceEnabled())
-                        log.trace("Cancelled task " + runnable + " before it was picked up");
+                        log.trace("Cancelled task " + runnable + 
+                            " before it was picked up");
                     return Boolean.TRUE;
                 }
                 // This is guaranteed to not be null so don't take cost of auto unboxing
@@ -454,7 +493,8 @@ abstract public class Executing extends Protocol {
                         handleConsumerFoundResponse(req.request, (Address)req.object);
                         break;
                     case RUN_SUBMITTED:
-                        Object objectToRun = req.object;
+                        RequestWithThread reqWT = (RequestWithThread)req;
+                        Object objectToRun = reqWT.object;
                         Runnable runnable;
                         if (objectToRun instanceof Runnable) {
                             runnable = (Runnable)objectToRun;
@@ -471,7 +511,7 @@ abstract public class Executing extends Protocol {
                         }
                         
                         handleTaskSubmittedRequest(runnable, msg.getSrc(), 
-                            req.request);
+                            req.request, reqWT.threadId);
                         break;
                     case RUN_REJECTED:
                         // We could make requests local for this, but is it really worth it
@@ -624,15 +664,22 @@ abstract public class Executing extends Protocol {
     
     protected void handleConsumerUnreadyRequest(long requestId, Address address) {
         Owner consumer = new Owner(address, requestId);
-        _consumersAvailable.remove(consumer);
+        _consumerLock.lock();
+        try {
+            _consumersAvailable.remove(consumer);
+        }
+        finally {
+            _consumerLock.unlock();
+        }
         sendRemoveConsumerRequest(consumer);
     }
 
-    protected void handleConsumerFoundResponse(long request, Address address) {
+    protected void handleConsumerFoundResponse(long threadId, Address address) {
         final Runnable runnable = _awaitingConsumer.poll();
         // This is a representation of the server side owner running our task.
-        Owner owner = new Owner(address, request);
+        Owner owner;
         if (runnable == null) {
+            owner = new Owner(address, threadId);
             // For some reason we don't have a runnable anymore
             // so we have to send back to the coordinator that
             // the consumer is still available.  The runnable
@@ -646,24 +693,24 @@ abstract public class Executing extends Protocol {
             _awaitingReturn.put(owner, runnable);
             // If local we pass along without serializing
             if (local_addr.equals(owner.getAddress())) {
-                handleTaskSubmittedRequest(runnable, local_addr, requestId);
+                handleTaskSubmittedRequest(runnable, local_addr, requestId, threadId);
             }
             else {
                 if (runnable instanceof DistributedFuture) {
                     Callable<?> callable = ((DistributedFuture<?>)runnable).getCallable();
-                    sendRequest(owner.getAddress(), Type.RUN_SUBMITTED, 
-                        requestId, callable);
+                    sendThreadRequest(owner.getAddress(), threadId, 
+                        Type.RUN_SUBMITTED, requestId, callable);
                 }
                 else {
-                    sendRequest(owner.getAddress(), Type.RUN_SUBMITTED, 
-                        requestId, runnable);
+                    sendThreadRequest(owner.getAddress(), threadId, 
+                        Type.RUN_SUBMITTED, requestId, runnable);
                 }
             }
         }
     }
 
     protected void handleTaskSubmittedRequest(Runnable runnable, Address source, 
-                                              long requestId) {
+                                              long requestId, long threadId) {
         // We store in our map so that when that task is
         // finished so that we can send back to the owner
         // with the results
@@ -673,21 +720,44 @@ abstract public class Executing extends Protocol {
         // caller that we can't handle it.  They must have
         // gotten our address when we had a consumer, but
         // they went away between then and now.
-        boolean received = false;
+        boolean received;
         try {
-            /** 
-             * We offer it a while before rejecting it.  This is required
-             * in case if the _tasks.take() call isn't registered quick
-             * enough after sending the Type.CONSUMER_READY message
-             */
-            received = _tasks.offer(runnable, 1000, TimeUnit.SECONDS);
+            _tasks.put(threadId, runnable);
+            
+            CyclicBarrier barrier = _taskBarriers.remove(threadId);
+            if ((received = barrier != null) == true) {
+                // Only wait 10 milliseconds, in case if the consumer was
+                // stopped between when we were told it was available and now
+                barrier.await(10, TimeUnit.MILLISECONDS);
+            }
         }
         catch (InterruptedException e) {
+            if (log.isDebugEnabled())
+                log.debug("Interrupted while handing off task");
             Thread.currentThread().interrupt();
-            System.out.println("Interrupted while handing off");
+            received = false;
+        }
+        catch (BrokenBarrierException e) {
+            if (log.isDebugEnabled())
+                log.debug("Consumer " + threadId + " has been interrupted, " +
+                        "must retry to submit elsewhere");
+            received = false;
+        }
+        catch (TimeoutException e) {
+            if (log.isDebugEnabled())
+                log.debug("Timeout waiting to hand off to barrier, consumer " + 
+                        threadId + " must be slow");
+            // This should only happen if the consumer put the latch then got
+            // interrupted but hadn't yet removed the latch, should almost never
+            // happen
+            received = false;
         }
         
         if (!received) {
+            // Clean up the tasks request
+            _tasks.remove(threadId);
+            if (log.isDebugEnabled())
+                log.debug("Run rejected not able to pass off to consumer");
             // If we couldn't hand off the task we have to tell the client
             // and also reupdate the coordinator that our consumer is ready
             sendRequest(source, Type.RUN_REJECTED, requestId, null);
@@ -830,12 +900,35 @@ abstract public class Executing extends Protocol {
         }  
     }
     
+    protected void sendThreadRequest(Address dest, long threadId, Type type, long requestId, 
+        Object object) {
+        RequestWithThread req=new RequestWithThread(type, object, requestId, threadId);
+        Message msg=new Message(dest, null, req);
+        msg.putHeader(id, new ExecutorHeader());
+        if(bypass_bundling)
+            msg.setFlag(Message.DONT_BUNDLE);
+        if(log.isTraceEnabled())
+            log.trace("[" + local_addr + "] --> [" + (dest == null? "ALL" : dest) + "] " + req);
+        try {
+            down_prot.down(new Event(Event.MSG, msg));
+        }
+        catch(Exception ex) {
+            log.error("failed sending " + type + " request: " + ex);
+        }  
+    }
+    
     /**
      * This keeps track of all the requests we send.  This is used so that
      * the response doesn't have to send back the future but instead the counter
      * We just let this roll over
      */
     protected static final AtomicLong counter = new AtomicLong();
+    
+    /**
+     * This is a placeholder for a key value to make a concurrent hash map
+     * a concurrent hash set
+     */
+    protected static final Object PRESENT = new Object();
 
     protected static class Request implements Streamable {
         protected Type    type;
@@ -904,6 +997,36 @@ abstract public class Executing extends Protocol {
 
         public String toString() {
             return type.name() + " [" + object + (request != -1 ? " request id: " + request : "") + "]";
+        }
+    }
+    
+    protected static class RequestWithThread extends Request {
+        protected long threadId;
+        
+        public RequestWithThread() {
+        }
+        
+        public RequestWithThread(Type type, Object object, long request, 
+            long threadId) {
+            super(type, object, request);
+            this.threadId = threadId;
+        }
+        
+        @Override
+        public void readFrom(DataInput in) throws Exception {
+            super.readFrom(in);
+            threadId = in.readLong();
+        }
+        
+        @Override
+        public void writeTo(DataOutput out) throws Exception {
+            super.writeTo(out);
+            out.writeLong(threadId);
+        }
+        
+        public String toString() {
+            return type.name() + " [" + object + (request != -1 ? " request id: " + request : "") + 
+                    " threadId: " + threadId + "]";
         }
     }
 
