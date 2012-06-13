@@ -6,8 +6,8 @@ import org.jgroups.stack.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.protocols.TP;
-import org.jgroups.protocols.pbcast.NAKACK;
-import org.jgroups.protocols.pbcast.NakAckHeader;
+import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -22,16 +22,16 @@ import java.util.Vector;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class NAKACK_REBROADCAST_Test {
-    static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK.class);
+    static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK2.class);
     IpAddress a1;
-    NAKACK nak;
+    NAKACK2 nak;
     MessageInterceptor interceptor;
 
     @BeforeMethod
     public void setUp() throws Exception {
         a1=new IpAddress(1111);
 
-        nak=new NAKACK();
+        nak=new NAKACK2();
         interceptor = new MessageInterceptor();
         nak.setDownProtocol(interceptor);
         TP transport=new TP() {
@@ -58,10 +58,11 @@ public class NAKACK_REBROADCAST_Test {
         Event evt=new Event(Event.REBROADCAST, digest);
         nak.down(evt);
 
-        Range range = interceptor.getRange();
+        SeqnoList range = interceptor.getRange();
         Assert.assertNotNull(range);
-        Assert.assertEquals(1, range.low);
-        Assert.assertEquals(2, range.high);
+        Assert.assertEquals(2, range.size());
+        for(long i: range)
+        	Assert.assertTrue(i == 1 || i == 2);
     }
 
     @Test
@@ -70,14 +71,15 @@ public class NAKACK_REBROADCAST_Test {
         Event evt=new Event(Event.REBROADCAST, digest);
         nak.down(evt);
 
-        Range range = interceptor.getRange();
+        SeqnoList range = interceptor.getRange();
         Assert.assertNotNull(range);
-        Assert.assertEquals(1, range.low);
-        Assert.assertEquals(1, range.high);
+        Assert.assertEquals(1, range.size());
+        for(long i: range)
+        	Assert.assertTrue(i == 1);
     }
 
     static class MessageInterceptor extends Protocol {
-        private Range range;
+        private SeqnoList range;
 
         public MessageInterceptor () {
         }
@@ -89,16 +91,16 @@ public class NAKACK_REBROADCAST_Test {
         public Object down(Event evt) {
             if(evt.getType() == Event.MSG) {
                 Message msg=(Message)evt.getArg();
-                NakAckHeader hdr=(NakAckHeader)msg.getHeader(NAKACK_ID);
-                if(hdr != null && hdr.type == NakAckHeader.XMIT_REQ) {
-                    this.range=hdr.range;
+                NakAckHeader2 hdr=(NakAckHeader2)msg.getHeader(NAKACK_ID);
+                if(hdr != null && hdr.getType() == NakAckHeader2.XMIT_REQ) {
+                    this.range=(SeqnoList)msg.getObject();
                 }
             }
 
             return super.down(evt);
         }
 
-        public Range getRange ()
+        public SeqnoList getRange ()
         {
             return this.range;
         }
