@@ -91,30 +91,56 @@ public class MergerTest {
     }
 
 
-     /**
-      * A: AB
-      * B: BC
-      * C: CD
-      * D: DE
-      */
-     public void testOverlappingMerge3() {
-         Map<Address,View> map=new HashMap<Address,View>();
-         map.put(a, makeView(a, a,b));
-         map.put(b, makeView(b, b,c));
-         map.put(c, makeView(c, c,d));
-         map.put(d, makeView(d, d,e));
-         System.out.println("map:\n" + print(map));
+    /**
+     * A: AB
+     * B: BC
+     * C: CD
+     * D: DE
+     */
+    public void testOverlappingMerge3() {
+        Map<Address,View> map=new HashMap<Address,View>();
+        map.put(a, makeView(a, a,b));
+        map.put(b, makeView(b, b,c));
+        map.put(c, makeView(c, c,d));
+        map.put(d, makeView(d, d,e));
+        System.out.println("map:\n" + print(map));
 
-         assert map.size() == 4;
-         Merger.sanitizeViews(map);
-         System.out.println("map after sanitization:\n" + print(map));
+        assert map.size() == 4;
+        Merger.sanitizeViews(map);
+        System.out.println("map after sanitization:\n" + print(map));
 
-         assert map.size() == 4;
-         assert map.get(a).size() == 1;
-         assert map.get(b).size() == 1;
-         assert map.get(c).size() == 1;
-         assert map.get(d).size() == 2;
-     }
+        assert map.size() == 4;
+        assert map.get(a).size() == 1;
+        assert map.get(b).size() == 1;
+        assert map.get(c).size() == 1;
+        assert map.get(d).size() == 2;
+    }
+
+    /**
+     * A: ACB
+     * B: ACB
+     * C: ACB
+     * D: BACD
+     * Test case is https://issues.jboss.org/browse/JGRP-1451
+     */
+    public void testOverlappingMerge4() {
+        Map<Address,View> map=new HashMap<Address,View>();
+        map.put(a, makeView(a, a,c,b));
+        map.put(b, makeView(a, a,c,b));
+        map.put(c, makeView(a, a,c,b));
+        map.put(d, makeView(d, b,a,c,d));
+        System.out.println("map:\n" + print(map));
+
+        assert map.size() == 4;
+        Merger.sanitizeViews(map);
+        System.out.println("map after sanitization:\n" + print(map));
+
+        assert map.size() == 4;
+        assert map.get(a).size() == 3;
+        assert map.get(b).size() == 3;
+        assert map.get(c).size() == 3;
+        assert map.get(d).size() == 1;
+    }
 
 
     private static <T> Collection<T> makeList(T ... elements) {
@@ -122,7 +148,7 @@ public class MergerTest {
     }
 
     private static View makeView(Address coord, Address ... members) {
-        return new View(coord, 1, new Vector<Address>(Arrays.asList(members)));
+        return Util.createView(coord, 1, members);
     }
 
     static String print(Map<Address,View> map) {
