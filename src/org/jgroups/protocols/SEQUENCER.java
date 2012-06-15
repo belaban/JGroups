@@ -278,6 +278,8 @@ public class SEQUENCER extends Protocol {
     }
 
     protected void flush() {
+        if(log.isTraceEnabled())
+            log.trace("Flush starts");
         flushing=true;  // causes subsequent message sends (broadcasts and forwards) to block
 
         // wait until all threads currently sending messages have returned (new threads after flushing=true) will block
@@ -292,6 +294,8 @@ public class SEQUENCER extends Protocol {
             flushMessagesInForwardTable();
         }
         finally {
+            if(log.isTraceEnabled())
+                log.trace("Flush ends");
             flushing=false;
             ack_mode=true; // go to ack-mode after flushing
             num_acks=0;
