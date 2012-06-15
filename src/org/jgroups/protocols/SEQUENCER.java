@@ -221,7 +221,7 @@ public class SEQUENCER extends Protocol {
                                             "; view=" + view);
                             return null;
                         }
-                        
+
                         broadcast(msg, true, msg.getSrc(), hdr.seqno, hdr.type == SequencerHeader.FLUSH); // do copy the message
                         received_forwards++;
                         return null;
@@ -269,11 +269,11 @@ public class SEQUENCER extends Protocol {
         Address existing_coord=coord, new_coord=mbrs.get(0);
         boolean coord_changed=existing_coord == null || !existing_coord.equals(new_coord);
         if(!coord_changed) {
-            setCoord(new_coord);
             return;
         }
 
         stopFlusher();
+        setCoord(new_coord);
         startFlusher(new_coord); // needs to be done in the background, to prevent blocking if down() would block
     }
 
@@ -289,7 +289,6 @@ public class SEQUENCER extends Protocol {
 
         send_lock.lock();
         try {
-            setCoord(new_coord);
             flushMessagesInForwardTable();
         }
         finally {
@@ -302,6 +301,8 @@ public class SEQUENCER extends Protocol {
     }
 
     private void setCoord(final Address new_coord) {
+        if(log.isTraceEnabled())
+            log.trace("Coordinator changes from " + coord + " to " + new_coord);
         coord=new_coord;
         is_coord=local_addr != null && local_addr.equals(coord);
     }
@@ -440,7 +441,7 @@ public class SEQUENCER extends Protocol {
         bcast_msgs++;
     }
 
-   
+
 
     /**
      * Unmarshal the original message (in the payload) and then pass it up (unless already delivered)
