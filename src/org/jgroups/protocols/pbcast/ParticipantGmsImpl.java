@@ -46,7 +46,6 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
     public void leave(Address mbr) {
         Address coord;
         int max_tries=3;
-        Boolean result;
 
         leave_promise.reset();
 
@@ -61,9 +60,9 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
                 return;
             }
 
-            if(log.isDebugEnabled()) log.debug("sending LEAVE request to " + coord + " (local_addr=" + gms.local_addr + ")");
+            if(log.isDebugEnabled()) log.debug(gms.local_addr + ": sending LEAVE request to " + coord);
             sendLeaveMessage(coord, mbr);
-            result=leave_promise.getResult(gms.leave_timeout);
+            Boolean result=leave_promise.getResult(gms.leave_timeout);
             if(result != null)
                 break;
         }
@@ -87,6 +86,10 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
     }
 
     public void handleLeaveResponse() {
+
+        System.out.println("[" + gms.local_addr + "]: unblocking leave_promise (hasResult=" + leave_promise.hasResult() + ")");
+
+
         leave_promise.setResult(true);  // unblocks thread waiting in leave()
     }
 

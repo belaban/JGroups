@@ -63,15 +63,22 @@ public class Merger {
         }
 
         // we need the merge *coordinators* not merge participants because not everyone can lead a merge !
-        Collection<Address> coords=Util.determineMergeCoords(views);
-        Collection<Address> merge_participants=Util.determineMergeParticipants(views);
+        Collection<Address> coords=Util.determineActualMergeCoords(views);
+        if(coords.isEmpty()) {
+            log.error(gms.local_addr + ": unable to determine merge leader from " + views + "; not starting a merge");
+            return;
+        }
+
+
         Membership tmp=new Membership(coords); // establish a deterministic order, so that coords can elect leader
         tmp.sort();
         Address merge_leader=tmp.elementAt(0);
         if(merge_leader.equals(gms.local_addr)) {
-            if(log.isDebugEnabled())
+            if(log.isDebugEnabled()) {
+                Collection<Address> merge_participants=Util.determineMergeParticipants(views);
                 log.debug("I (" + gms.local_addr + ") will be the leader. Starting the merge task for " +
                             merge_participants.size() + " coords");
+            }
             merge_task.start(views);
         }
         else {

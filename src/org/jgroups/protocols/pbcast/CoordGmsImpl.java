@@ -221,7 +221,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             }
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members                            
-            gms.castViewChange(new_view, join_rsp != null? join_rsp.getDigest() : null, join_rsp, new_mbrs);
+            gms.castViewChange(new_view,join_rsp != null? join_rsp.getDigest() : null,join_rsp,new_mbrs);
         }
         finally {
             if(hasJoiningMembers)
@@ -257,7 +257,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
 
     
     private void sendLeaveResponses(Collection<Address> leaving_members) {
-        for(Address address:leaving_members){
+        for(Address address: leaving_members){
             Message msg=new Message(address, null, null); // send an ack to the leaving member
             msg.setFlag(Message.OOB);
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.LEAVE_RSP);

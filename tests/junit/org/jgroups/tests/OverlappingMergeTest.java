@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.Discovery;
 import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.pbcast.CoordGmsImpl;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
@@ -29,7 +30,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
     @BeforeMethod
     protected void start() throws Exception {
-        a=createChannel(true, 3);
+        a=createChannel(true, 4);
         a.setName("A");
         ra=new MyReceiver("A", a);
         a.setReceiver(ra);
@@ -43,7 +44,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         c.setName("C");
         rc=new MyReceiver("C", c);
         c.setReceiver(rc);
-        modifyConfigs(a, b, c);
+        modifyConfigs(a,b,c);
 
         a.connect("OverlappingMergeTest");
         b.connect("OverlappingMergeTest");
@@ -81,7 +82,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
      * <li/>B and C install {B,C}
      * <li/>B and C trash the connection table for A in UNICAST
      * <li/>A ignores the view, it still has view {A,B,C} and all connection tables intact in UNICAST
-     * <li/>We now inject a MERGE(A,B) event into A. This should ause A and B as coords to create a new MergeView {A,B,C}
+     * <li/>We now inject a MERGE(A,B) event into A. This should use A and B as coords to create a new MergeView {A,B,C}
      * <li/>The merge already fails because the unicast between A and B fails due to the reason given below !
      *      Once this is fixed, the next step below should work, too !
      * <li/>A sends a unicast to B and C. This should fail until JGRP-940 has been fixed !
@@ -214,7 +215,6 @@ public class OverlappingMergeTest extends ChannelTestBase {
             System.out.print(".");
             for(JChannel ch: new JChannel[]{a,b,c})
                 runStableProtocol(ch);
-            injectMergeEvent(merge_evt, a,b,c);
             Util.sleep(1000);
         }
 
@@ -258,14 +258,14 @@ public class OverlappingMergeTest extends ChannelTestBase {
         // Inject view {A,C,B} into A, B and C:
         View new_view=Util.createView(a.getAddress(), 4, a.getAddress(), c.getAddress(), b.getAddress());
         System.out.println("\n ==== Injecting view " + new_view + " into A, B and C ====");
-        injectView(new_view, a, b, c);
+        injectView(new_view,false,a,b,c);
         assert Util.isCoordinator(a);
         assert !Util.isCoordinator(b);
         assert !Util.isCoordinator(c);
 
         View view_d=Util.createView(b.getAddress(), 4, b.getAddress(), a.getAddress(), c.getAddress(), d.getAddress());
-        System.out.println("\n ==== Injecting view " + view_d + " into D ====");
-        injectView(view_d, d);
+        System.out.println("\n ==== Injecting view " + view_d + " into D ====\n");
+        injectView(view_d, false, d);
         assert !Util.isCoordinator(d);
 
         for(JChannel ch: Arrays.asList(a,b,c,d))
@@ -276,8 +276,8 @@ public class OverlappingMergeTest extends ChannelTestBase {
         Map<Address,View> views=new HashMap<Address,View>();
         views.put(a.getAddress(), a.getView());
         views.put(b.getAddress(), b.getView());
-        views.put(c.getAddress(), c.getView());
-        views.put(d.getAddress(), d.getView());
+        views.put(c.getAddress(),c.getView());
+        views.put(d.getAddress(),d.getView());
         Event merge_evt=new Event(Event.MERGE, views);
 
         System.out.println("\n==== Injecting a merge event into A, B, C and D====");
@@ -296,11 +296,11 @@ public class OverlappingMergeTest extends ChannelTestBase {
         }
 
         for(JChannel ch: Arrays.asList(a,b,c,d))
-            System.out.println(ch.getName() + ": " + ch.getView());
+            System.out.println(ch.getName() + ": " + ch.getView() + " (coord=" + isCoord(ch) + ")");
 
         for(JChannel ch: Arrays.asList(a,b,c,d))
             assert ch.getView().size() == 4: ch.getName() + ": view is " + ch.getView();
-
+        System.out.println("\n");
     }
 
 
@@ -399,15 +399,21 @@ public class OverlappingMergeTest extends ChannelTestBase {
         return null;
     }
 
-    private static void injectView(View view, JChannel ... channels) {
+    private static void injectView(View view, boolean print_receivers, JChannel ... channels) {
         for(JChannel ch: channels) {
             GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
         }
+        if(!print_receivers)
+            return;
         for(JChannel ch: channels) {
             MyReceiver receiver=(MyReceiver)ch.getReceiver();
             System.out.println("[" + receiver.name + "] view=" + ch.getView());
         }
+    }
+
+    private static void injectView(View view, JChannel ... channels) {
+        injectView(view, true, channels);
     }
 
 
@@ -487,6 +493,12 @@ public class OverlappingMergeTest extends ChannelTestBase {
             sb.append(msg.getSrc()).append(": ").append(msg.getObject()).append(" ");
         }
         return sb.toString();
+    }
+
+
+    protected boolean isCoord(JChannel ch) {
+        GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+        return gms.getImpl() instanceof CoordGmsImpl;
     }
 
 

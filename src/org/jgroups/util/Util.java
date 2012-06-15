@@ -2315,6 +2315,27 @@ public class Util {
     }
 
     /**
+     * Similar to {@link #determineMergeCoords(java.util.Map)} but only actual coordinators are counted: an actual
+     * coord is when the sender of a view is the first member of that view
+     * @param map
+     * @return
+     */
+    public static Collection<Address> determineActualMergeCoords(Map<Address,View> map) {
+        Set<Address> retval=new HashSet<Address>();
+        if(map != null) {
+            for(Map.Entry<Address,View> entry: map.entrySet()) {
+                Address sender=entry.getKey();
+                List<Address> members=entry.getValue().getMembers();
+                Address actual_coord=members.isEmpty() ? null : members.get(0);
+                if(sender.equals(actual_coord))
+                    retval.add(sender);
+            }
+        }
+        return retval;
+    }
+
+
+    /**
      * Returns the rank of a member in a given view
      * @param view The view
      * @param addr The address of a member

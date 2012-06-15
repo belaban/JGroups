@@ -39,7 +39,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     long join_timeout=5000;
 
     @Property(description="Leave timeout")
-    long leave_timeout=5000;
+    long leave_timeout=1000;
 
     @Property(description="Timeout (in ms) to complete merge")
     long merge_timeout=5000; // time to wait for all MERGE_RSPS
@@ -480,7 +480,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         // Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
         // in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
         // Check NAKACK's TMP_VIEW handling for details
-        up_prot.up(new Event(Event.TMP_VIEW, new_view));
+        up_prot.up(new Event(Event.TMP_VIEW,new_view));
         down_prot.down(new Event(Event.TMP_VIEW, new_view));
 
         List<Address> ackMembers=new ArrayList<Address>(new_view.getMembers());
@@ -490,7 +490,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         Message view_change_msg=new Message(); // bcast to all members
         GmsHeader hdr=new GmsHeader(GmsHeader.VIEW, new_view);
         hdr.my_digest=digest;
-        view_change_msg.putHeader(this.id, hdr);
+        view_change_msg.putHeader(this.id,hdr);
 
          // If we're the only member the VIEW is broadcast to, let's simply install the view directly, without
          // sending the VIEW multicast ! Or else N-1 members drop the multicast anyway...
@@ -569,10 +569,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             ViewId view_id=view.getViewId();
             int rc=vid.compareToIDs(view_id);
             if(rc <= 0) {
-                if(log.isWarnEnabled() && rc < 0 && log_view_warnings) { // only scream if view is smaller, silently discard same views
-                    log.warn(local_addr + ": received view < current view;" +
-                               " discarding it (current vid: " + view_id + ", new vid: " + vid + ')');
-                }
+                //if(log.isTraceEnabled() && rc < 0 && log_view_warnings) { // only scream if view is smaller, silently discard same views
+                  //  log.trace(local_addr + ": received view < current view;" +
+                    //            " discarding it (current vid: " + view_id + ", new vid: " + vid + ')');
+                //}
                 return;
             }
         }
