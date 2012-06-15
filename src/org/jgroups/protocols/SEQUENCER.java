@@ -274,10 +274,10 @@ public class SEQUENCER extends Protocol {
 
         stopFlusher();
         setCoord(new_coord);
-        startFlusher(new_coord); // needs to be done in the background, to prevent blocking if down() would block
+        startFlusher(); // needs to be done in the background, to prevent blocking if down() would block
     }
 
-    protected void flush(final Address new_coord) {
+    protected void flush() {
         flushing=true;  // causes subsequent message sends (broadcasts and forwards) to block
 
         // wait until all threads currently sending messages have returned (new threads after flushing=true) will block
@@ -545,9 +545,9 @@ public class SEQUENCER extends Protocol {
         }
     }
 
-    protected void startFlusher(final Address new_coord) {
+    protected void startFlusher() {
         if(flusher == null || !flusher.isAlive()) {
-            flusher=new Flusher(new_coord);
+            flusher=new Flusher();
             flusher.setName("Flusher");
             flusher.start();
         }
@@ -571,14 +571,8 @@ public class SEQUENCER extends Protocol {
 /* ----------------------------- End of Private Methods -------------------------------- */
 
     protected class Flusher extends Thread {
-        protected final Address new_coord;
-
-        public Flusher(Address new_coord) {
-            this.new_coord=new_coord;
-        }
-
         public void run() {
-            flush(new_coord);
+            flush();
         }
     }
 
