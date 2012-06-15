@@ -1339,7 +1339,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         }
                         else {
                             wait_time=end_time - System.currentTimeMillis();
-                            if(wait_time > 0)
+                            if(wait_time > 0 && firstRequest.canBeProcessedTogether(firstRequest)) // JGRP-1438
                                 queue.waitUntilClosed(wait_time); // misnomer: waits until element has been added or q closed
                             keepGoing=queue.size() > 0 && firstRequest.canBeProcessedTogether((Request)queue.peek());
                         }
