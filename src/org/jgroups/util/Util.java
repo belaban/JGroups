@@ -2042,11 +2042,10 @@ public class Util {
                 continue;
             }
             catch(IOException io_ex) {
+                throw new IOException("Could not create server socket, start port:" +start_port, io_ex);
             }
             break;
         }
-        if(ret == null)
-        	throw new IOException("Could not create server socket, start port:" +start_port);
         return ret;
     }
 
@@ -2062,11 +2061,10 @@ public class Util {
                 continue;
             }
             catch(IOException io_ex) {
+                throw new IOException("Could not create server socket, start port:" +start_port, io_ex);
             }
             break;
         }
-        if(ret == null)
-        	throw new IOException("Could not create server socket, start port:" +start_port);
         return ret;
     }
 
