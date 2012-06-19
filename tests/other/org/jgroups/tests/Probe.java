@@ -1,12 +1,17 @@
 package org.jgroups.tests;
 
-import org.jgroups.util.StackType;
-import org.jgroups.util.Util;
-
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.StringTokenizer;
+
+import org.jgroups.util.StackType;
+import org.jgroups.util.Util;
 
 /**
  * Discovers all UDP-based members running on a certain mcast address
@@ -26,19 +31,31 @@ public class Probe {
     }
 
     public void start(InetAddress addr, InetAddress bind_addr, int port, int ttl,
-                      final long timeout, List query, String match, boolean weed_out_duplicates) throws Exception {
+                      final long timeout, List query, String match, boolean weed_out_duplicates, String passcode) throws Exception {
         mcast_sock=new MulticastSocket();
         mcast_sock.setTimeToLive(ttl);
         if(bind_addr != null)
             mcast_sock.setInterface(bind_addr);
 
         StringBuilder request=new StringBuilder();
+        byte[] authenticationDigest = null;
+        if(passcode != null){
+           long t1 = (new Date()).getTime();
+           double q1 = Math.random();           
+           authenticationDigest = Util.createAuthenticationDigest(passcode, t1, q1);
+        }
         for(int i=0; i < query.size(); i++) {
             request.append(query.get(i)).append(" ");
         }
-        byte[] probe_buf=request.toString().getBytes();
-
-        DatagramPacket probe=new DatagramPacket(probe_buf, 0, probe_buf.length, addr, port);
+        byte[] queryPayload = request.toString().getBytes();
+        byte[] payload = queryPayload;
+        if (authenticationDigest != null) {
+           payload = new byte[authenticationDigest.length + queryPayload.length];
+           System.arraycopy(authenticationDigest, 0, payload, 0, authenticationDigest.length);
+           System.arraycopy(queryPayload, 0, payload, authenticationDigest.length, queryPayload.length);
+        }
+        
+        DatagramPacket probe=new DatagramPacket(payload, 0, payload.length, addr, port);
         mcast_sock.send(probe);
         System.out.println("\n-- send probe on " + addr + ':' + port + '\n');
 
@@ -117,6 +134,7 @@ public class Probe {
         List<String> query=new ArrayList<String>();
         String       match=null;
         boolean      weed_out_duplicates=false;
+        String passcode = null;
 
         try {
             for(int i=0; i < args.length; i++) {
@@ -148,6 +166,10 @@ public class Probe {
                     weed_out_duplicates=true;
                     continue;
                 }
+                if("-passcode".equals(args[i])) {
+                   passcode=args[++i];
+                   continue;
+               }
                 if("-help".equals(args[i]) || "-h".equals(args[i]) || "--help".equals(args[i])) {
                     help();
                     return;
@@ -162,7 +184,7 @@ public class Probe {
             }
             if(port == 0)
                 port=DEFAULT_DIAG_PORT;
-            p.start(addr, bind_addr, port, ttl, timeout, query, match, weed_out_duplicates);
+            p.start(addr, bind_addr, port, ttl, timeout, query, match, weed_out_duplicates, passcode);
         }
         catch(Throwable t) {
             t.printStackTrace();
