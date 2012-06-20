@@ -28,6 +28,7 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
@@ -269,8 +270,30 @@ public class Util {
         SCOPE.ScopeHeader hdr=(SCOPE.ScopeHeader)msg.getHeader(Global.SCOPE_ID);
         return hdr != null? hdr.getScope() : 0;
     }
-
-
+    
+   public static byte[] createAuthenticationDigest(String passcode, long t1, double q1) throws IOException,
+            NoSuchAlgorithmException {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream(128);
+      DataOutputStream out = new DataOutputStream(baos);
+      byte[] digest = createDigest(passcode, t1, q1);
+      out.writeLong(t1);
+      out.writeDouble(q1);      
+      out.writeInt(digest.length);
+      out.write(digest);
+      out.flush();
+      return baos.toByteArray();
+   }
+   
+   public static byte[] createDigest(String passcode, long t1, double q1)
+            throws IOException, NoSuchAlgorithmException {
+      MessageDigest md = MessageDigest.getInstance("SHA");
+      md.update(passcode.getBytes());
+      ByteBuffer bb = ByteBuffer.allocate(16); //8 bytes for long and double each
+      bb.putLong(t1);
+      bb.putDouble(q1);
+      md.update(bb);
+      return md.digest();      
+   }
 
     /**
      * Utility method. If the dest address is IPv6, convert scoped link-local addrs into unscoped ones

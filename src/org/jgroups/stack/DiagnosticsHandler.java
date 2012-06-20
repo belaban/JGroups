@@ -6,8 +6,11 @@ import org.jgroups.util.SocketFactory;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.*;
+import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -24,22 +27,30 @@ public class DiagnosticsHandler implements Runnable {
     protected int diagnostics_port=7500;
     protected int ttl=8;
     protected final Set<ProbeHandler> handlers=new CopyOnWriteArraySet<ProbeHandler>();
-    protected final Log log;
-    protected final SocketFactory socket_factory;
-    protected final ThreadFactory thread_factory;
+    protected final Log               log;
+    protected final SocketFactory     socket_factory;
+    protected final ThreadFactory     thread_factory;
+    protected final String            passcode;
 
     public DiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port,
-                              Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
+             Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
+       this(diagnostics_addr,diagnostics_port,log,socket_factory,thread_factory,null);
+    }
+    
+    public DiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port,
+                              Log log, SocketFactory socket_factory, ThreadFactory thread_factory, String passcode) {
         this.diagnostics_addr=diagnostics_addr;
         this.diagnostics_port=diagnostics_port;
         this.log=log;
         this.socket_factory=socket_factory;
         this.thread_factory=thread_factory;
+        this.passcode = passcode;
     }
 
-    public DiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port, int diagnostics_ttl,
-                              Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
-        this(diagnostics_addr, diagnostics_port, log, socket_factory, thread_factory);
+    public DiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port,
+                              int diagnostics_ttl,
+                              Log log, SocketFactory socket_factory, ThreadFactory thread_factory, String passcode) {
+        this(diagnostics_addr, diagnostics_port, log, socket_factory, thread_factory, passcode);
         this.ttl=diagnostics_ttl;
     }
 
@@ -100,8 +111,12 @@ public class DiagnosticsHandler implements Runnable {
             packet=new DatagramPacket(buf, 0, buf.length);
             try {
                 diag_sock.receive(packet);
+                int payloadStartOffset = 0;
+                if(isAuthorizationRequired()){
+                   payloadStartOffset = authorizeProbeRequest(packet);
+                }
                 handleDiagnosticProbe(packet.getSocketAddress(), diag_sock,
-                                      new String(packet.getData(), packet.getOffset(), packet.getLength()));
+                                      new String(packet.getData(), packet.getOffset() + payloadStartOffset, packet.getLength()));
             }
             catch(IOException socket_ex) {
             }
@@ -126,7 +141,6 @@ public class DiagnosticsHandler implements Runnable {
         for(int i=0; i < list.size(); i++)
             tokens[i]=list.get(i);
 
-
         for(ProbeHandler handler: handlers) {
             Map<String, String> map=handler.handleProbe(tokens);
             if(map == null || map.isEmpty())
@@ -149,7 +163,35 @@ public class DiagnosticsHandler implements Runnable {
         }
     }
 
-    protected static void sendResponse(DatagramSocket sock, SocketAddress sender, byte[] buf) throws IOException {
+    /**
+    * Performs authorization on given DatagramPacket. 
+    * 
+    * @param packet to authorize
+    * @return offset in DatagramPacket where request payload starts
+    * @throws Exception thrown if passcode received from client does not match set passcode
+    */
+   protected int authorizeProbeRequest(DatagramPacket packet) throws Exception {
+      int offset = 0;
+      ByteArrayInputStream bis = new ByteArrayInputStream(packet.getData());
+      DataInputStream in = new DataInputStream(bis);
+      long t1 = in.readLong();
+      double q1 = in.readDouble();
+      int length = in.readInt();
+      byte[] digest = new byte[length];
+      in.readFully(digest);
+      offset = 8 + 8 + 4 + digest.length;
+
+      byte[] local = Util.createDigest(passcode, t1, q1);
+      if (!MessageDigest.isEqual(digest, local)) {
+         throw new Exception("Authorization failed! Make sure correct passcode is used");
+      } else {
+         if(log.isDebugEnabled())
+            log.debug("Request authorized");
+      }
+      return offset;
+   }
+
+   protected static void sendResponse(DatagramSocket sock, SocketAddress sender, byte[] buf) throws IOException {
         DatagramPacket p=new DatagramPacket(buf, 0, buf.length, sender);
         sock.send(p);
     }
@@ -169,6 +211,10 @@ public class DiagnosticsHandler implements Runnable {
                 log.warn("failed to join " + group_addr + " on " + i.getName() + ": " + e);
             }
         }
+    }
+    
+    protected boolean isAuthorizationRequired(){
+       return passcode != null;
     }
 
     public interface ProbeHandler {

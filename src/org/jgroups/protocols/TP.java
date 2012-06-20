@@ -227,6 +227,9 @@ public abstract class TP extends Protocol {
 
     @Property(description="TTL of the diagnostics multicast socket")
     protected int diagnostics_ttl=8;
+    
+    @Property(description="Authorization passcode for diagnostics. If specified every probe query will be authorized")
+    protected String diagnostics_passcode;
 
     @Property(description="If assigned enable this transport to be a singleton (shared) transport")
     protected String singleton_name=null;
@@ -947,9 +950,9 @@ public abstract class TP extends Protocol {
         if(enable_diagnostics) {
             boolean diag_handler_created=diag_handler == null;
             if(diag_handler == null)
-                diag_handler=new DiagnosticsHandler(diagnostics_addr, diagnostics_port, diagnostics_ttl,
-                        log, getSocketFactory(), getThreadFactory());
-
+                diag_handler=new DiagnosticsHandler(diagnostics_addr, diagnostics_port,
+                        diagnostics_ttl, log, getSocketFactory(), getThreadFactory(), diagnostics_passcode);
+            
             diag_handler.registerProbeHandler(new DiagnosticsHandler.ProbeHandler() {
                 public Map<String, String> handleProbe(String... keys) {
                     Map<String,String> retval=new HashMap<String,String>(2);
