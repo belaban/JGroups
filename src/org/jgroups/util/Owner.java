@@ -42,6 +42,8 @@ public class Owner implements Streamable {
     }
 
     public boolean equals(Object obj) {
+        if(obj == null)
+            return false;
         Owner other=(Owner)obj;
         return address.equals(other.address) && thread_id == other.thread_id;
     }
