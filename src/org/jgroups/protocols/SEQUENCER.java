@@ -221,7 +221,7 @@ public class SEQUENCER extends Protocol {
                                             "; view=" + view);
                             return null;
                         }
-                        
+
                         broadcast(msg, true, msg.getSrc(), hdr.seqno, hdr.type == SequencerHeader.FLUSH); // do copy the message
                         received_forwards++;
                         return null;
@@ -269,15 +269,17 @@ public class SEQUENCER extends Protocol {
         Address existing_coord=coord, new_coord=mbrs.get(0);
         boolean coord_changed=existing_coord == null || !existing_coord.equals(new_coord);
         if(!coord_changed) {
-            setCoord(new_coord);
             return;
         }
 
         stopFlusher();
-        startFlusher(new_coord); // needs to be done in the background, to prevent blocking if down() would block
+        setCoord(new_coord);
+        startFlusher(); // needs to be done in the background, to prevent blocking if down() would block
     }
 
-    protected void flush(final Address new_coord) {
+    protected void flush() {
+        if(log.isTraceEnabled())
+            log.trace("Flush starts");
         flushing=true;  // causes subsequent message sends (broadcasts and forwards) to block
 
         // wait until all threads currently sending messages have returned (new threads after flushing=true) will block
@@ -289,10 +291,11 @@ public class SEQUENCER extends Protocol {
 
         send_lock.lock();
         try {
-            setCoord(new_coord);
             flushMessagesInForwardTable();
         }
         finally {
+            if(log.isTraceEnabled())
+                log.trace("Flush ends");
             flushing=false;
             ack_mode=true; // go to ack-mode after flushing
             num_acks=0;
@@ -302,6 +305,8 @@ public class SEQUENCER extends Protocol {
     }
 
     private void setCoord(final Address new_coord) {
+        if(log.isTraceEnabled())
+            log.trace("Coordinator changes from " + coord + " to " + new_coord);
         coord=new_coord;
         is_coord=local_addr != null && local_addr.equals(coord);
     }
@@ -440,7 +445,7 @@ public class SEQUENCER extends Protocol {
         bcast_msgs++;
     }
 
-   
+
 
     /**
      * Unmarshal the original message (in the payload) and then pass it up (unless already delivered)
@@ -544,9 +549,9 @@ public class SEQUENCER extends Protocol {
         }
     }
 
-    protected void startFlusher(final Address new_coord) {
+    protected void startFlusher() {
         if(flusher == null || !flusher.isAlive()) {
-            flusher=new Flusher(new_coord);
+            flusher=new Flusher();
             flusher.setName("Flusher");
             flusher.start();
         }
@@ -570,14 +575,8 @@ public class SEQUENCER extends Protocol {
 /* ----------------------------- End of Private Methods -------------------------------- */
 
     protected class Flusher extends Thread {
-        protected final Address new_coord;
-
-        public Flusher(Address new_coord) {
-            this.new_coord=new_coord;
-        }
-
         public void run() {
-            flush(new_coord);
+            flush();
         }
     }
 
