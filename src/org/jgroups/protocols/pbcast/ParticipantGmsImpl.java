@@ -86,10 +86,6 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
     }
 
     public void handleLeaveResponse() {
-
-        System.out.println("[" + gms.local_addr + "]: unblocking leave_promise (hasResult=" + leave_promise.hasResult() + ")");
-
-
         leave_promise.setResult(true);  // unblocks thread waiting in leave()
     }
 

@@ -268,13 +268,10 @@ public class SEQUENCER extends Protocol {
 
         Address existing_coord=coord, new_coord=mbrs.get(0);
         boolean coord_changed=existing_coord == null || !existing_coord.equals(new_coord);
-        if(!coord_changed) {
-            setCoord(new_coord);
-            return;
+        if(coord_changed && new_coord != null) {
+            stopFlusher();
+            startFlusher(new_coord); // needs to be done in the background, to prevent blocking if down() would block
         }
-
-        stopFlusher();
-        startFlusher(new_coord); // needs to be done in the background, to prevent blocking if down() would block
     }
 
     protected void flush(final Address new_coord) {
@@ -289,7 +286,8 @@ public class SEQUENCER extends Protocol {
 
         send_lock.lock();
         try {
-            setCoord(new_coord);
+            coord=new_coord;
+            is_coord=local_addr != null && local_addr.equals(coord);
             flushMessagesInForwardTable();
         }
         finally {
@@ -299,11 +297,6 @@ public class SEQUENCER extends Protocol {
             send_cond.signalAll();
             send_lock.unlock();
         }
-    }
-
-    private void setCoord(final Address new_coord) {
-        coord=new_coord;
-        is_coord=local_addr != null && local_addr.equals(coord);
     }
 
 
