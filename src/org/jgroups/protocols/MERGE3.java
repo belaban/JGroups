@@ -373,8 +373,15 @@ public class MERGE3 extends Protocol {
         protected void _run() {
             SortedSet<Address> coords=new TreeSet<Address>();
 
-            for(ViewId view_id: views.keySet())
-                coords.add(view_id.getCreator());
+            // Only add view creators which *are* actually in the set as well, e.g.
+            // A|4: {A,B,C} and
+            // B|4: {D} would only add A to the coords list. A is a real coordinator
+            for(Map.Entry<ViewId,SortedSet<Address>> entry: views.entrySet()) {
+                Address coord=entry.getKey().getCreator();
+                SortedSet<Address> members=entry.getValue();
+                if(members != null && members.contains(coord))
+                    coords.add(coord);
+            }
 
             Address merge_leader=coords.isEmpty() ? null : coords.first();
             if(merge_leader == null || local_addr == null || !merge_leader.equals(local_addr)) {
