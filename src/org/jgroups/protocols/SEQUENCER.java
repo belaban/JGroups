@@ -275,6 +275,8 @@ public class SEQUENCER extends Protocol {
     }
 
     protected void flush(final Address new_coord) {
+        if(log.isTraceEnabled())
+            log.trace(local_addr + ": flushing started");
         flushing=true;  // causes subsequent message sends (broadcasts and forwards) to block
 
         // wait until all threads currently sending messages have returned (new threads after flushing=true) will block
@@ -286,11 +288,15 @@ public class SEQUENCER extends Protocol {
 
         send_lock.lock();
         try {
+            if(log.isTraceEnabled())
+                log.trace(local_addr + ": coord changed from " + coord + " to " + new_coord);
             coord=new_coord;
             is_coord=local_addr != null && local_addr.equals(coord);
             flushMessagesInForwardTable();
         }
         finally {
+            if(log.isTraceEnabled())
+                log.trace(local_addr + ": flushing completed");
             flushing=false;
             ack_mode=true; // go to ack-mode after flushing
             num_acks=0;
@@ -402,7 +408,10 @@ public class SEQUENCER extends Protocol {
     }
 
     protected void forward(final byte[] marshalled_msg, long seqno, boolean flush) {
-        Message forward_msg=new Message(coord, marshalled_msg);
+        Address target=coord;
+        if(target == null)
+            return;
+        Message forward_msg=new Message(target, marshalled_msg);
         byte type=flush? SequencerHeader.FLUSH : SequencerHeader.FORWARD;
         SequencerHeader hdr=new SequencerHeader(type, seqno);
         forward_msg.putHeader(this.id,hdr);
