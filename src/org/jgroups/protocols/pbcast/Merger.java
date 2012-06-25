@@ -726,8 +726,8 @@ public class Merger {
          * this method is prepared to resolve duplicate entries (for the same member). Resolution strategy for
          * views is to merge only 1 of the duplicate members. Resolution strategy for digests is to take the higher
          * seqnos for duplicate digests.<p>
-         * After merging all members into a Membership and subsequent sorting, the first member of the sorted membership
-         * will be the new coordinator. This method has a lock on merge_rsps.
+         * After merging all members into a Membership, arrange for the local node to be the new coordinator.
+         * This method has a lock on merge_rsps.
          * @param merge_rsps A list of MergeData items. Elements with merge_rejected=true were removed before. Is guaranteed
          *          not to be null and to contain at least 1 member.
          */
@@ -758,10 +758,8 @@ public class Merger {
             // remove all members from the new member list that are not in the digest
             new_mbrs.retainAll(new_digest.getMembers());
 
-            // the new coordinator is the first member of the consolidated & sorted membership list
-            new_mbrs.sort();
-            Address new_coord = new_mbrs.size() > 0 ? new_mbrs.elementAt(0) : null;
-            if(new_coord == null)
+            // We will be the new coordinator
+            if (!new_mbrs.setCoordinator(gms.local_addr))
                 return null;
 
             // should be the highest view ID seen up to now plus 1
