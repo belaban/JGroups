@@ -114,6 +114,10 @@ public class Configurator {
         // process default values
         setDefaultValues(protocol_configs, protocols, ip_version);
         ensureValidBindAddresses(protocols);
+
+        // Fixes NPE with concurrent channel creation when using a shared stack (https://issues.jboss.org/browse/JGRP-1488)
+        Protocol top_protocol=protocols.get(protocols.size() - 1);
+        top_protocol.setUpProtocol(st);
         return connectProtocols(protocols);
     }
 
