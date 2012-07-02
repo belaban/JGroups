@@ -21,7 +21,7 @@ import java.util.*;
  * @author Bela Ban
  * @version $Revision: 1.78 $
  */
-public class ClientGmsImpl extends GmsImpl {   
+public class ClientGmsImpl extends GmsImpl {
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
 
 
@@ -30,18 +30,18 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
     public void init() throws Exception {
-        super.init();     
+        super.init();
         join_promise.reset();
     }
-    
+
     public void join(Address address,boolean useFlushIfPresent) {
-    	joinInternal(address, false,useFlushIfPresent);
+        joinInternal(address, false,useFlushIfPresent);
+    }
+
+    public void joinWithStateTransfer(Address local_addr, boolean useFlushIfPresent) {
+        joinInternal(local_addr,true,useFlushIfPresent);
     }
     
-	public void joinWithStateTransfer(Address local_addr, boolean useFlushIfPresent) {
-    	joinInternal(local_addr,true,useFlushIfPresent);
-	}
-
     /**
      * Joins this process to a group. Determines the coordinator and sends a
      * unicast handleJoin() message to it. The coordinator returns a JoinRsp and
@@ -58,13 +58,14 @@ public class ClientGmsImpl extends GmsImpl {
      * When GMS.disable_initial_coord is set to true, then we won't become
      * coordinator on receiving an initial membership of 0, but instead will
      * retry (forever) until we get an initial membership of > 0.
-     * 
+     *
      * @param mbr Our own address (assigned through SET_LOCAL_ADDRESS)
      */
     private void joinInternal(Address mbr, boolean joinWithStateTransfer,boolean useFlushIfPresent) {
         Address coord=null;
         JoinRsp rsp=null;
         View tmp_view;
+        long join_attempts=0;
         leaving=false;
 
         join_promise.reset();
@@ -138,11 +139,19 @@ public class ClientGmsImpl extends GmsImpl {
                 if(rsp == null)
                     rsp=join_promise.getResult(gms.join_timeout);
                 if(rsp == null) {
+                    join_attempts++;
                     if(log.isWarnEnabled())
-                        log.warn("JOIN(" + mbr + ") sent to " + coord + " timed out (after " + gms.join_timeout + " ms), retrying");
+                        log.warn("JOIN(" + mbr + ") sent to " + coord + " timed out (after " + gms.join_timeout + " ms), on try " + join_attempts);
+
+                    if(gms.max_join_attempts != 0 && join_attempts >= gms.max_join_attempts) {
+                        if(log.isWarnEnabled())
+                            log.warn("Too many JOIN attempts: becoming singleton");
+                        becomeSingletonMember(mbr);
+                        return;
+                    }
                     continue;
                 }
-                
+
                 // 1. check whether JOIN was rejected
                 String failure=rsp.getFailReason();
                 if(failure != null)
@@ -218,7 +227,7 @@ public class ClientGmsImpl extends GmsImpl {
         List<PingData> responses=(List<PingData>)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS, promise));
         if(responses != null) {
             for(Iterator<PingData> iter=responses.iterator(); iter.hasNext();) {
-                Address address=iter.next().getAddress();                
+                Address address=iter.next().getAddress();
                 if(address != null && address.equals(gms.local_addr))
                     iter.remove();
             }
@@ -238,7 +247,7 @@ public class ClientGmsImpl extends GmsImpl {
 
 
     /* --------------------------- Private Methods ------------------------------------ */
-    
+
     /**
      * Called by join(). Installs the view returned by calling Coord.handleJoin() and
      * becomes coordinator.
