@@ -44,6 +44,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Property(description="Timeout (in ms) to complete merge")
     long merge_timeout=5000; // time to wait for all MERGE_RSPS
 
+    @Property(description="Number of join timeouts before we give up and become a singleton.  Zero means 'never give up'.")
+    long max_join_timeouts=0;
+
     @Property(description="Print local address of this member after connect. Default is true")
     private boolean print_local_addr=true;
 
@@ -173,6 +176,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public void setJoinTimeout(long t) {join_timeout=t;}
     public long getMergeTimeout() {return merge_timeout;}
     public void setMergeTimeout(long timeout) {merge_timeout=timeout;}
+    public long getMaxJoinTimeouts() {return max_join_timeouts;}
+    public void setMaxJoinTimeouts(long t) {max_join_timeouts=t;}
 
     @ManagedAttribute(description="Stringified version of merge_id")
     public String getMergeId() {return merger.getMergeIdAsString();}
