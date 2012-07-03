@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.annotations.MBean;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.annotations.Property;
 import org.jgroups.auth.AuthToken;
@@ -21,6 +22,7 @@ import java.util.List;
  * @author Chris Mills
  * @autho Bela Ban
  */
+@MBean(description="Provides authentication of joiners, to prevent un-authorized joining of a cluster")
 public class AUTH extends Protocol {
 
 

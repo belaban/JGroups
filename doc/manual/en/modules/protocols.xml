@@ -1317,6 +1317,15 @@
     <section id="Misc">
         <title>Misc</title>
 
+        <section id="STATS">
+            <title>Statistics</title>
+            <para>
+                STATS exposes various statistics, e.g. number of received multicast and unicast messages, number of
+                bytes sent etc. It should be placed directly over the transport
+            </para>
+            ${STATS}
+        </section>
+
         <section id="Security">
             <title>Security</title>
 
