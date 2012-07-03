@@ -1763,6 +1763,15 @@ public abstract class TP extends Protocol {
                 num_msgs_received++;
                 num_bytes_received+=msg.getLength();
             }
+
+            if(!multicast) {
+                Address dest=msg.getDest();
+                if(dest != null && local_addr != null && !dest.equals(local_addr)) {
+                    if(log.isWarnEnabled())
+                        log.warn("dropping unicast message to wrong destination " + dest + "; my local_addr is " + local_addr);
+                    return;
+                }
+            }
             passMessageUp(msg, true, multicast, true);
         }
     }
@@ -2544,6 +2553,19 @@ public abstract class TP extends Protocol {
                     break;
             }
             return down_prot.down(evt);
+        }
+
+        public Object up(Event evt) {
+            if(evt.getType() == Event.MSG) {
+                Message msg=(Message)evt.getArg();
+                Address dest=msg.getDest();
+                if(dest != null && local_addr != null && !dest.equals(local_addr)) {
+                    if(log.isWarnEnabled())
+                        log.warn("dropping unicast message to wrong destination " + dest + "; my local_addr is " + local_addr);
+                    return null;
+                }
+            }
+            return up_prot.up(evt);
         }
 
         public String getName() {
