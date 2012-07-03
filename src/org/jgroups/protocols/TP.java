@@ -93,10 +93,10 @@ public abstract class TP extends Protocol {
     protected int external_port=0;
 
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
-    		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr",
+        description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr",
             exposeAsManagedAttribute=false)
     protected String bind_interface_str=null;
-    
+
     @Property(description="If true, the transport should use all available interfaces to receive multicast messages")
     protected boolean receive_on_all_interfaces=false;
 
@@ -124,7 +124,7 @@ public abstract class TP extends Protocol {
     @Property(description="The range of valid ports, from bind_port to end_port. 0 only binds to bind_port and fails if taken")
     protected int port_range=50; // 27-6-2003 bgooren, Only try one port by default
 
-  
+
     /**
      * If true, messages sent to self are treated specially: unicast messages are looped back immediately,
      * multicast messages get a local copy first and - when the real copy arrives - it will be discarded. Useful for
@@ -220,8 +220,8 @@ public abstract class TP extends Protocol {
     @Property(description="Switch to enable diagnostic probing. Default is true")
     protected boolean enable_diagnostics=true;
 
-    @Property(description="Address for diagnostic probing. Default is 224.0.75.75", 
-    		defaultValueIPv4="224.0.75.75",defaultValueIPv6="ff0e::0:75:75")
+    @Property(description="Address for diagnostic probing. Default is 224.0.75.75",
+        defaultValueIPv4="224.0.75.75",defaultValueIPv6="ff0e::0:75:75")
     protected InetAddress diagnostics_addr=null;
 
     @Property(converter=PropertyConverters.NetworkInterfaceList.class,
@@ -234,7 +234,7 @@ public abstract class TP extends Protocol {
 
     @Property(description="TTL of the diagnostics multicast socket")
     protected int diagnostics_ttl=8;
-    
+
     @Property(description="Authorization passcode for diagnostics. If specified every probe query will be authorized")
     protected String diagnostics_passcode;
 
@@ -276,7 +276,7 @@ public abstract class TP extends Protocol {
     }
 
     public long getMaxBundleTimeout() {return max_bundle_timeout;}
-    
+
 
     @Property(name="max_bundle_timeout", description="Max number of milliseconds until queued messages are sent")
     public void setMaxBundleTimeout(long timeout) {
@@ -448,7 +448,7 @@ public abstract class TP extends Protocol {
 
     //http://jira.jboss.org/jira/browse/JGRP-849
     protected final ReentrantLock connectLock = new ReentrantLock();
-    
+
 
     // ================================== OOB thread pool ========================
     protected Executor oob_thread_pool;
@@ -708,7 +708,7 @@ public abstract class TP extends Protocol {
 
     public ConcurrentMap<String,Protocol> getUpProtocols() {return up_prots;}
 
-    
+
     @ManagedAttribute(description="Current number of threads in the OOB thread pool")
     public int getOOBPoolSize() {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getPoolSize() : 0;
@@ -842,7 +842,7 @@ public abstract class TP extends Protocol {
 
         if(default_thread_factory == null)
             default_thread_factory=new DefaultThreadFactory(pool_thread_group, "Incoming", false, true);
-        
+
         if(oob_thread_factory == null)
             oob_thread_factory=new DefaultThreadFactory(pool_thread_group, "OOB", false, true);
 
@@ -919,7 +919,7 @@ public abstract class TP extends Protocol {
             up(new Event(Event.CONFIG, m));
 
         logical_addr_cache=new LazyRemovalCache<Address,PhysicalAddress>(logical_addr_cache_max_size, logical_addr_cache_expiration);
-        
+
         if(logical_addr_cache_reaper == null || logical_addr_cache_reaper.isDone()) {
             if(logical_addr_cache_expiration <= 0)
                 throw new IllegalArgumentException("logical_addr_cache_expiration has to be > 0");
@@ -1014,14 +1014,14 @@ public abstract class TP extends Protocol {
             });
             if(diag_handler_created)
                 diag_handler.start();
-            
+
             for(DiagnosticsHandler.ProbeHandler handler: preregistered_probe_handlers)
                 diag_handler.registerProbeHandler(handler);
             preregistered_probe_handlers.clear();
         }
 
         if(enable_bundling) {
-            if(bundler_type.equals("new")) 
+            if(bundler_type.equals("new"))
                 bundler=new TransferQueueBundler(bundler_capacity);
             else if(bundler_type.equals("new2"))
                 bundler=new TransferQueueBundler2(bundler_capacity);
@@ -1076,6 +1076,7 @@ public abstract class TP extends Protocol {
      * @param evt - the event being send from the stack
      */
     public Object up(Event evt) {
+
         if(isSingleton()) {
             passToAllUpProtocols(evt);
             return null;
@@ -1189,6 +1190,12 @@ public abstract class TP extends Protocol {
 
         if(log.isTraceEnabled())
             log.trace(new StringBuilder("received ").append(msg).append(", headers are ").append(msg.printHeaders()));
+
+        Address dst=msg.getDest();
+        if(dst != null && !dst.equals(local_addr)) {
+            if(log.isWarnEnabled()) log.warn("Discarding message intended for " + dst);
+            return;
+        }
 
         String ch_name=hdr.channel_name;
 
@@ -1787,7 +1794,7 @@ public abstract class TP extends Protocol {
 
 
     private class DefaultBundler implements Bundler {
-    	static final int 		   		   MIN_NUMBER_OF_BUNDLING_TASKS=2;
+      static final int             MIN_NUMBER_OF_BUNDLING_TASKS=2;
         /** Keys are destinations, values are lists of Messages */
         final Map<SingletonAddress,List<Message>>  msgs=new HashMap<SingletonAddress,List<Message>>(36);
         @GuardedBy("lock")
@@ -1981,7 +1988,7 @@ public abstract class TP extends Protocol {
                 lock.unlock();
             }
         }
-        
+
 
         /** Run with lock acquired */
         private void addMessage(Message msg) {
@@ -2304,7 +2311,7 @@ public abstract class TP extends Protocol {
         public int getBufferSize() {
             return buffer.size();
         }
-        
+
 
 
         public void run() {
@@ -2537,7 +2544,7 @@ public abstract class TP extends Protocol {
                 case Event.CONNECT:
                 case Event.CONNECT_WITH_STATE_TRANSFER:
                 case Event.CONNECT_USE_FLUSH:
-                case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:  
+                case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                     // TODO [JGRP-1194] - Revisit implementation of TUNNEL and shared transport
                     thread_local.set(this);
                     cluster_name=(String)evt.getArg();
@@ -2548,7 +2555,7 @@ public abstract class TP extends Protocol {
                     Address addr=(Address)evt.getArg();
                     if(addr != null) {
                         local_addr=addr;
-                        factory.setAddress(addr.toString()); // used for thread naming                        
+                        factory.setAddress(addr.toString()); // used for thread naming
                     }
                     break;
             }

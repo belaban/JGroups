@@ -810,7 +810,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         return null; // don't pass further up
 
                     case GmsHeader.MERGE_REQ:
-                        impl.handleMergeRequest(msg.getSrc(), hdr.merge_id, hdr.mbrs);
+                        Address dst=msg.getDest();
+                        if (local_addr != null && local_addr.equals(dst)) {
+                          impl.handleMergeRequest(msg.getSrc(), hdr.merge_id, hdr.mbrs);
+                        }
+                        else if (log.isTraceEnabled()) {
+                          log.trace("Discarding MERGE_REQ with merge_id=" + hdr.merge_id + " sent to " + dst);
+                        }
                         break;
 
                     case GmsHeader.MERGE_RSP:
