@@ -167,7 +167,7 @@ public class RelayConfig {
             throw new Exception((is_element? "Element " : "Attribute ") + "\"" + name + "\" didn't match \"" + expected_name + "\"");
     }
 
-    protected static class SiteConfig {
+    public static class SiteConfig {
         protected final String              name;
         protected final short               id;
         protected final List<BridgeConfig>  bridges=new ArrayList<BridgeConfig>();
@@ -181,13 +181,12 @@ public class RelayConfig {
         public short getId()    {return id;}
         public String getName() {return name;}
 
-        public void addBridge(BridgeConfig bridge_config) {
-            bridges.add(bridge_config);
-        }
 
-        public void addForward(ForwardConfig forward_config) {
-            forwards.add(forward_config);
-        }
+        public List<BridgeConfig>  getBridges()   {return bridges;}
+        public List<ForwardConfig> getForwards()  {return forwards;}
+
+        public void addBridge(BridgeConfig bridge_config)    {bridges.add(bridge_config);}
+        public void addForward(ForwardConfig forward_config) {forwards.add(forward_config);}
 
         public String toString() {
             StringBuilder sb=new StringBuilder("name=" + name + " (id=" + id + ")\n");
@@ -201,7 +200,7 @@ public class RelayConfig {
         }
     }
 
-    protected static class BridgeConfig {
+    public static class BridgeConfig {
         protected final String name;
         protected final String config;
 
@@ -218,7 +217,7 @@ public class RelayConfig {
         }
     }
 
-    protected static class ForwardConfig {
+    public static class ForwardConfig {
         protected final String to;
         protected final String gateway;
 
@@ -227,13 +226,16 @@ public class RelayConfig {
             this.gateway=gateway;
         }
 
+        public String getGateway() {return gateway;}
+        public String getTo()      {return to;}
+
         public String toString() {
             return "forward to=" + to + " gateway=" + gateway;
         }
     }
 
     public static void main(String[] args) throws Exception {
-        InputStream input=new FileInputStream("/home/bela/relay2.xml");
+        InputStream input=new FileInputStream("/home/bela/relay1.xml");
         Map<String,SiteConfig> sites=RelayConfig.parse(input);
         System.out.println("sites:");
         for(Map.Entry<String,SiteConfig> entry: sites.entrySet())
