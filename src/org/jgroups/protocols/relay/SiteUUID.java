@@ -29,6 +29,11 @@ public class SiteUUID extends UUID implements SiteAddress {
         this.site=site;
     }
 
+    public SiteUUID(UUID uuid, short site) {
+        super(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
+        this.site=site;
+    }
+
     public static void addToCache(short site, String name) {
         site_cache.putIfAbsent(site, name);
     }
@@ -45,25 +50,25 @@ public class SiteUUID extends UUID implements SiteAddress {
         return site;
     }
 
-    public int compareTo(Address other) {
-        int retval=super.compareTo(other);
-        if(retval != 0)
-            return retval;
-        SiteUUID tmp=(SiteUUID)other;
-        return site == tmp.site ? 0: site < tmp.site? -1 : 1;
-    }
+//    public int compareTo(Address other) {
+//        int retval=super.compareTo(other);
+//        if(retval != 0)
+//            return retval;
+//        SiteUUID tmp=(SiteUUID)other;
+//        return site == tmp.site ? 0: site < tmp.site? -1 : 1;
+//    }
 
     public UUID copy() {
         return new SiteUUID(mostSigBits, leastSigBits, site);
     }
 
-    public boolean equals(Object obj) {
-        return obj instanceof UUID && compareTo((Address)obj) == 0;
-    }
+//    public boolean equals(Object obj) {
+//        return obj instanceof UUID && compareTo((Address)obj) == 0;
+//    }
 
-    public int hashCode() {
-        return super.hashCode() + site;
-    }
+//    public int hashCode() {
+//        return super.hashCode() + site;
+//    }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
@@ -96,9 +101,9 @@ public class SiteUUID extends UUID implements SiteAddress {
         return retval + ":" + (suffix != null? suffix : String.valueOf(site));
     }
 
-    public String toStringLong() {
-        String retval=super.toStringLong();
-        String suffix=site_cache.get(site);
-        return retval + ":" + (suffix != null? suffix : String.valueOf(site));
-    }
+//    public String toStringLong() {
+//        String retval=super.toStringLong();
+//        String suffix=site_cache.get(site);
+//        return retval + ":" + (suffix != null? suffix : String.valueOf(site));
+//    }
 }

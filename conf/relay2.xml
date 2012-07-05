@@ -2,24 +2,21 @@
 
 <!-- Sample configuration of multipe sites, to be used in RELAY2 -->
 <RelayConfiguration xmlns="urn:jgroups:relay:1.0">
-    <bridges>
-        <bridge name="global" config="global.xml" />
-        <bridge name="nyc-sfc" config="nyc-sfc.xml"/>
-        <bridge name="nyc-lon" config="nyc-lon.xml"/>
-    </bridges>
+
     <sites>
-        <site name="lon">
-            <routing>
-                <route name="lax" forward-to="sfo"/>
-                <default-route bridge="global"/>
-            </routing>
+        <site id="1" name="lon">
+            <bridges>
+                <bridge config="global.xml" name="Global"/>
+            </bridges>
+            <forwards>
+                <forward to="lax" gateway="sfo"/>
+            </forwards>
         </site>
 
-        <site name="nyc">
-            <routing>
-                <route name="sfc" bridge="nyc-sfc"/>
-                <route name="lon" bridge="nyc-lon"/>
-            </routing>
+        <site name="nyc" id="2">
+            <bridges>
+                <bridge config="global" name="global"/>
+            </bridges>
         </site>
     </sites>
 </RelayConfiguration>

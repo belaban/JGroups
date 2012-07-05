@@ -3,45 +3,28 @@
 <!-- Sample configuration of multiple sites, to be used in RELAY2 -->
 <RelayConfiguration xmlns="urn:jgroups:relay:1.0">
 
-    <bridges>
-        <bridge name="lon-nyx"  config="lon-nyc.xml"/>
-        <bridge name="lon-sfo"  config="lon-sfo.xml"/>
-        <bridge name="nyc-sfo"  config="nyc-sfo.xml"/>
-        <bridge name="sfo-lax"  config="sfo-lax.xml"/>
-    </bridges>
-        
-    <sites >
-        <site name="lon">
-            <routing>
-                <route name="nyc" bridge="lon-nyc"/>
-                <route name="sfo" bridge="lon-sfo"/>
-                <route name="lax" forward-to="sfo"/>
-                <default-route    bridge="global"/>
-            </routing>
+    <sites>
+        <site name="lon" id="1">
+            <bridges>
+                <bridge config="lon-nyc.xml" name="lon-nyc"/>
+                <bridge config="lon-sfo.xml" name="lon-sfo"/>
+            </bridges>
+            <forwards>
+                <forward to="lax" gateway="sfo"/>
+            </forwards>
         </site>
 
-        <site name="nyc">
-            <routing>
-                <route name="lon" bridge="lon-nyc.xml"/>
-                <route name="sfo" bridge="nyc-sfo.xml"/>
-                <route name="lax" forward-to="sfo"/>
-            </routing>
+        <site name="nyc" id="2">
+            <bridges>
+                <bridge config="lon-nyc.xml" name="nyc-lon"/>
+                <bridge config="nyc-sfo.xml" name="nyc-sfo"/>
+            </bridges>
         </site>
-
-        <site name="sfo">
-            <routing>
-                <route name="lon" bridge="lon-sfo.xml"/>
-                <route name="nyc" bridge="nyc-sfo.xml"/>
-                <route name="lax" bridge="sfo-lax.xml"/>
-            </routing>
+        <site name="sfo" id="3">
+            <bridges>
+                <bridge config="lon-sfc.xml"/>
+            </bridges>
         </site>
-
-        <site name="lax">
-            <routing>
-                <route name="sfo" bridge="sfo-lax.xml"/>
-            </routing>
-        </site>
-
     </sites>
 
 </RelayConfiguration>

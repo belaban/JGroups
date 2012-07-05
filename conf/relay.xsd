@@ -8,27 +8,11 @@
 
     <xs:complexType name="RelayConfigurationType">
         <xs:sequence>
-            <xs:element name="bridges" type="urn:bridgesType" xmlns:urn="urn:jgroups:relay:1.0" minOccurs="1" maxOccurs="1"/>
-            <xs:element name="sites"   type="urn:sitesType"   xmlns:urn="urn:jgroups:relay:1.0" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="sites"   type="urn:sitesType"   xmlns:urn="urn:jgroups:relay:1.0" minOccurs="1" maxOccurs="unbounded"/>
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="bridgesType">
-        <xs:sequence>
-            <xs:element maxOccurs="unbounded" minOccurs="1" name="bridge" type="urn:bridgeType" xmlns:urn="urn:jgroups:relay:1.0"/>
-        </xs:sequence>
-    </xs:complexType>
-    
-    <xs:complexType name="bridgeType">
-		<xs:simpleContent>
-			<xs:extension base="xs:string">
-				<xs:attribute name="name" type="xs:string" use="required"/>
-				<xs:attribute name="config" type="xs:string" use="required"/>
-			</xs:extension>
-		</xs:simpleContent>
-	</xs:complexType>
-
-	<xs:complexType name="sitesType">
+    <xs:complexType name="sitesType">
 		<xs:sequence>
 			<xs:element maxOccurs="unbounded" minOccurs="1" name="site" type="urn:siteType" xmlns:urn="urn:jgroups:relay:1.0"/>
 		</xs:sequence>
@@ -36,34 +20,42 @@
 
     <xs:complexType name="siteType">
         <xs:sequence>
-            <xs:element name="routing" type="urn:routingType" xmlns:urn="urn:jgroups:relay:1.0"/>
+            <xs:element name="bridges" type="urn:bridgesType" xmlns:urn="urn:jgroups:relay:1.0" minOccurs="1"/>
+            <xs:element name="forwards" type="urn:forwardsType" xmlns:urn="urn:jgroups:relay:1.0" minOccurs="0"/>
         </xs:sequence>
 		<xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="id"   type="xs:short" use="required"/>
     </xs:complexType>
-    
 
-	<xs:complexType name="routingType">
-		<xs:sequence>
-			<xs:element minOccurs="0" maxOccurs="unbounded" name="route" type="urn:routeType" xmlns:urn="urn:jgroups:relay:1.0"/>
-            <xs:element minOccurs="0" maxOccurs="1" name="default-route" type="urn:default-routeType" xmlns:urn="urn:jgroups:relay:1.0"/>
-		</xs:sequence>
-	</xs:complexType>
+    <xs:complexType name="bridgesType">
+        <xs:sequence>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="bridge" type="urn:bridgeType" xmlns:urn="urn:jgroups:relay:1.0"/>
+        </xs:sequence>
+    </xs:complexType>
 
-	<xs:complexType name="routeType">
+    <xs:complexType name="bridgeType">
 		<xs:simpleContent>
 			<xs:extension base="xs:string">
-				<xs:attribute name="name" type="xs:string" use="required"/>
-				<xs:attribute name="bridge" type="xs:string" use="optional"/>
-				<xs:attribute name="forward-to" type="xs:string" use="optional"/>
+				<xs:attribute name="name" type="xs:string" use="optional"/>
+				<xs:attribute name="config" type="xs:string" use="required"/>
 			</xs:extension>
 		</xs:simpleContent>
 	</xs:complexType>
 
-	<xs:complexType name="default-routeType">
-		<xs:simpleContent>
-			<xs:extension base="xs:string">
-				<xs:attribute name="bridge" type="xs:string"/>
+    <xs:complexType name="forwardsType">
+        <xs:sequence>
+            <xs:element minOccurs="0" maxOccurs="unbounded" name="forward" type="urn:forwardType" xmlns:urn="urn:jgroups:relay:1.0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="forwardType">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="to" type="xs:string" use="required"/>
+                <xs:attribute name="gateway" type="xs:string" use="required"/>
 			</xs:extension>
 		</xs:simpleContent>
 	</xs:complexType>
+
+
 </xs:schema>
