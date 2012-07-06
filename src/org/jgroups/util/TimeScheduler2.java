@@ -297,7 +297,9 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                 }
                 keys.add(key);
             }
-            tasks.keySet().removeAll(keys);
+            // removed performance hotspot (https://issues.jboss.org/browse/JGRP-1490)
+            for(Long key: keys)
+                tasks.remove(key);
         }
 
         if(tasks.isEmpty()) {
