@@ -100,6 +100,24 @@ To send an RSVP marked messages, Message.setFlag(Message.Flag.RSVP) has to be us
 
 A new protocol (RSVP) needs to be added to the stack.
 
+For further details consult the manual (see below).
+
+
+New Total Order Anycast (TOA) protocol
+--------------------------------------
+[https://issues.jboss.org/browse/JGRP-1442]
+
+Establishes total order between a subset of the cluster members, will be needed to totally order
+Infinispan DIST updates.
+
+
+
+Discovery protocol based on mod-cluster
+---------------------------------------
+[https://issues.jboss.org/browse/JGRP-1322]
+
+If running AS7 and mod-cluster, the individual AS7 instances in a cluster can register directly with mod-cluster and
+read discovery information from mod-cluster. Thanks to Vladimir Blagojevic for designing and implementing this !
 
 
 New Rackspace based discovery protocol
@@ -107,6 +125,13 @@ New Rackspace based discovery protocol
 [https://issues.jboss.org/browse/JGRP-1226]
 
 Contributed by Gustavo Fernandes (thanks !). New discovery protocol using Rackspace's distributed store.
+
+
+New OpenStack based discovery protocol
+--------------------------------------
+[https://issues.jboss.org/browse/JGRP-1478]
+
+Thanks to Thomas Segismont for contributing this new protocol !
 
 
 
@@ -120,6 +145,50 @@ configuration change is broadcast to all members, so we don't need to restart th
 MPerf is for multicast (= cluster wide messages) tests (successor to perf.Test) and UPerf tests unicasting.
 
 
+
+Probe: ability to set attributes
+--------------------------------
+[https://issues.jboss.org/browse/JGRP-1390]
+
+E.g. probe.sh jmx=FLUSH.bypass=true
+
+
+
+Probe: encrypt diagnostics responses
+------------------------------------
+[https://issues.jboss.org/browse/JGRP-1470]
+
+The probe request and its responses are now encrypted.
+
+
+
+Restrict the interfaces that diagnostics listens on
+---------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1403]
+
+Added diagnostics_bind_addresses="eth1,192.168.1.5,eth4"
+
+
+
+TestNG improvements
+-------------------
+[https://issues.jboss.org/browse/JGRP-1423]
+
+Various improvements regarding TestNG.
+
+
+Reinstate return_entire_cache in discovery
+------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1430]
+
+Needed for MPING
+
+
+Added GMS.max_join_attempts to bound the number of times a join should be tried
+-------------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1485]
+
+If max_join_attempts is exceeded, the joiner gives up and becomes a singleton.
 
 
 
@@ -151,6 +220,14 @@ This removes contention on a lock() acquired by cast() when multiple threads are
 Note that this also affects RpcDispatcher.
 
 
+TCP: message senders are blocked by socket creation
+---------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1462]
+
+Moved code that created new connections out of the path of normal message sending, to make the latter not get
+blocked by the former.
+
+
 
 
 Bug fixes
@@ -170,6 +247,53 @@ Global ThreadGroups not destroyed; leaks in web based applications
 The global (static) ThreadGroup was pulled into JChannel, making its lifetime congruent with the JChannel.
 
 
+Rsp incorrectly marked as received on suspecting a member
+---------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1408]
+
+A member P's response (Rsp) is incorrectly set to 'received' if P is suspected (regression)
+
+
+ThreadGroup leak
+----------------
+[https://issues.jboss.org/browse/JGRP-1410]
+
+The global thread group could lead to leaks; moved to individual channels.
+
+
+SEQUENCER related bug fixes / improvements
+------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1449]
+[https://issues.jboss.org/browse/JGRP-1452]
+[https://issues.jboss.org/browse/JGRP-1458]
+[https://issues.jboss.org/browse/JGRP-1461]
+[https://issues.jboss.org/browse/JGRP-1468]
+[https://issues.jboss.org/browse/JGRP-1481]
+
+Various SEQUENCER related bug fixes and/or improvements, mainly dealing with edge cases (e.g. retransmission of
+messages on coordinator change in the correct order)
+
+
+Merge isn't triggered in some cases
+-----------------------------------
+[https://issues.jboss.org/browse/JGRP-1451]
+
+Modification of MERGE3 to handle this
+
+
+Message lost in NAKACK2 due to digest error
+-------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1455]
+
+
+TimeScheduler2 loses tasks
+--------------------------
+[https://issues.jboss.org/browse/JGRP-1457]
+
+Edge case in which TimeScheduler can lose tasks
+
+
+
 
 Manual
 ======
@@ -187,5 +311,5 @@ Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Toronto, Canada
 Sanne Grinovero, Newcastle, Great Britain
 
-Feb 2012
+July 2012
 
