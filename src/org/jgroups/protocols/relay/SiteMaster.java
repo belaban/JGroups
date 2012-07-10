@@ -20,6 +20,10 @@ public class SiteMaster extends SiteUUID {
         super(0, 0, site);
     }
 
+    public SiteMaster(String site) {
+        this(getSite(site));
+    }
+
     public int compareTo(Address other) {
         if(other instanceof UUID)
             return super.compareTo(other);

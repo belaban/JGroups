@@ -1,10 +1,10 @@
 package org.jgroups.protocols.relay;
 
-import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.util.UUID;
 
 import java.io.*;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -45,7 +45,7 @@ public class SiteUUID extends UUID implements SiteAddress {
     public static void clearCache() {
         site_cache.clear();
     }
-        
+
     public short getSite() {
         return site;
     }
@@ -101,9 +101,11 @@ public class SiteUUID extends UUID implements SiteAddress {
         return retval + ":" + (suffix != null? suffix : String.valueOf(site));
     }
 
-//    public String toStringLong() {
-//        String retval=super.toStringLong();
-//        String suffix=site_cache.get(site);
-//        return retval + ":" + (suffix != null? suffix : String.valueOf(site));
-//    }
+    protected static short getSite(String site_name) {
+        for(Map.Entry<Short,String> entry: site_cache.entrySet()) {
+            if(entry.getValue().equals(site_name))
+                return entry.getKey();
+        }
+        throw new IllegalArgumentException("site \"" + site_name + "\" does not have a corresponding ID");
+    }
 }
