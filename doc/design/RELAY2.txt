@@ -64,7 +64,21 @@ differences between RELAY2 and RELAY are:
   based on the SiteUUID information.
 
 
+* Routing
 
+  When a site master creates the N channels which act as bridges, it uses the channels' view information to populate
+  the routing table. E.g. if we're in LON and are connected to SFO and NYC, we'll have a view {xx:lon, yy:sfo, zz:nyc}.
+  Members xx, yy and zz are the endpoints to which messages are to be sent for routing. From the above sample view, we
+  can construct a routing table like the following:
+  sfo: yy
+  nyc: zz
+
+  The suffixes of the view members are the routes and are used as keys in the routing table (internally we actually use
+  IDs (shorts)).
+  We omitted LON because we're in LON, and all messages to a LON destination are local.
+
+  So when we want to send a message from LON to a member in SFO, we wrap the message and forward it to member yy, which
+  in turn either forwards the message (not in this case), or sends it to a local member.
 
 
 

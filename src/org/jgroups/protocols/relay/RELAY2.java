@@ -13,7 +13,9 @@ import org.jgroups.util.Util;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.Map;
+import java.util.TreeSet;
 
 /**
  *
@@ -54,6 +56,19 @@ public class RELAY2 extends Protocol {
         if(config == null)
             throw new IllegalArgumentException("config cannot be null");
         parseSiteConfiguration();
+
+        // Sanity check
+        Collection<Short> site_ids=new TreeSet<Short>();
+        for(RelayConfig.SiteConfig site_config: sites.values())
+            site_ids.add(site_config.getId());
+
+        int index=0;
+        for(short id: site_ids) {
+            if(id != index)
+                throw new Exception("site IDs need to start with 0 and are required to increase monotonically; " +
+                                      "site IDs=" + site_ids);
+            index++;
+        }
     }
 
 
