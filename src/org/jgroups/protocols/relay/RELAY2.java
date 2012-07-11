@@ -12,6 +12,7 @@ import org.jgroups.util.Util;
 
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
@@ -116,6 +117,12 @@ public class RELAY2 extends Protocol {
         }
     }
 
+    @ManagedOperation(description="Prints the contents of the routing table. " +
+      "Only available if we're the current coordinator (site master)")
+    public String printRoutes() {
+        return relayer != null? relayer.printRoutes() : "n/a (not site master)";
+    }
+
 
     public Object down(Event evt) {
         switch(evt.getType()) {
@@ -152,8 +159,7 @@ public class RELAY2 extends Protocol {
         if(become_coord) {
             is_coord=true;
             String bridge_name="_" + UUID.get(local_addr);
-            relayer=new Relayer(site_config.getBridges().size(),
-                                site_config,bridge_name);
+            relayer=new Relayer(site_config, bridge_name, log);
             try {
                 if(log.isTraceEnabled())
                     log.trace("I become site master; starting bridges");

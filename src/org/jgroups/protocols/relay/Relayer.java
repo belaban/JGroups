@@ -1,6 +1,7 @@
 package org.jgroups.protocols.relay;
 
 import org.jgroups.*;
+import org.jgroups.logging.Log;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.AddressGenerator;
 import org.jgroups.util.UUID;
@@ -29,13 +30,17 @@ public class Relayer {
     /** The name of the local channel; we'll prepend "sitemaster_" to it */
     protected final String                 local_name;
 
+    protected final Log                    log;
 
-    public Relayer(final int num_routes, RelayConfig.SiteConfig site_config, String local_name) {
+
+    public Relayer(RelayConfig.SiteConfig site_config, String local_name, Log log) {
         this.site_config=site_config;
+        int num_routes=site_config.getBridges().size();
         my_site_id=site_config.getId();
         routes=new Route[num_routes];
         bridges=new ArrayList<Bridge>(num_routes);
         this.local_name=local_name;
+        this.log=log;
     }
 
     /**
@@ -83,9 +88,12 @@ public class Relayer {
         StringBuilder sb=new StringBuilder();
         for(int i=0; i < routes.length; i++) {
             Route route=routes[i];
-            if(route == null)
-                break;
-            sb.append(i + " --> " + route + "\n");
+            if(route != null) {
+                String name=SiteUUID.getSiteName((short)i);
+                if(name == null)
+                    name=String.valueOf(i);
+                sb.append(name + " --> " + route + "\n");
+            }
         }
 
         return sb.toString();
@@ -94,20 +102,30 @@ public class Relayer {
 
     protected void addRoute(short site, Route route) {
         Route old_route;
+        ensureCapacity(site);
         if((old_route=routes[site]) == null)
-            setRoute(site, route);
+            routes[site]=route;
         else if(!old_route.site_master.equals(route.site_master) || old_route.bridge != route.bridge)
-            setRoute(site, route);
+            routes[site]=route;
     }
 
-    protected void setRoute(short site, Route route) {
+    protected Route removeRoute(short site) {
+        if(site <= routes.length -1) {
+            Route route=routes[site];
+            routes[site]=null;
+            return route;
+        }
+        return null;
+    }
+
+    protected void ensureCapacity(short site) {
         if(site >= routes.length-1) {
             Route[] tmp_routes=new Route[routes.length * 2];
             System.arraycopy(routes, 0, tmp_routes, 0, routes.length);
             routes=tmp_routes;
         }
-        routes[site]=route;
     }
+
 
 
     /**
@@ -131,6 +149,7 @@ public class Relayer {
     protected class Bridge extends ReceiverAdapter {
         protected JChannel     channel;
         protected final String cluster_name;
+        protected View         view;
 
         protected Bridge(final String config, final String cluster_name, String channel_name, AddressGenerator addr_generator) throws Exception {
             channel=new JChannel(config);
@@ -153,7 +172,27 @@ public class Relayer {
         }
 
         public void viewAccepted(View view) {
-            System.out.println("-- view=" + view);
+            List<Address> left_mbrs=this.view != null? Util.determineLeftMembers(this.view.getMembers(),view.getMembers()) : null;
+            this.view=view;
+
+            for(Address addr: view.getMembers()) {
+                if(addr instanceof SiteUUID) {
+                    SiteUUID site_uuid=(SiteUUID)addr;
+                    short site=site_uuid.getSite();
+                    Route route=new Route(site_uuid, channel);
+                    addRoute(site, route);
+                }
+            }
+
+            if(left_mbrs != null) {
+                for(Address addr: left_mbrs) {
+                    if(addr instanceof SiteUUID) {
+                        SiteUUID site_uuid=(SiteUUID)addr;
+                        short site=site_uuid.getSite();
+                        removeRoute(site);
+                    }
+                }
+            }
         }
     }
 }

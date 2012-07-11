@@ -42,6 +42,10 @@ public class SiteUUID extends UUID implements SiteAddress {
         site_cache.put(site, name);
     }
 
+    public static String getSiteName(short site) {
+        return site_cache.get(site);
+    }
+
     public static void clearCache() {
         site_cache.clear();
     }
