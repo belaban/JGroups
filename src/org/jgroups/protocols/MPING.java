@@ -255,7 +255,7 @@ public class MPING extends PING implements Runnable {
 
     private void startReceiver() {
         if(receiver == null || !receiver.isAlive()) {
-            receiver=new Thread(getChannelThreadGroup(), this, "ReceiverThread");
+            receiver=new Thread(getChannelThreadGroup(), this, "MPING");
             receiver.setDaemon(true);
             receiver.start();
             if(log.isTraceEnabled())
@@ -264,9 +264,9 @@ public class MPING extends PING implements Runnable {
     }
 
     public void stop() {
+        receiver=null;
         Util.close(mcast_sock);
         mcast_sock=null;
-        receiver=null;
         super.stop();
     }
 
@@ -334,9 +334,6 @@ public class MPING extends PING implements Runnable {
             }
             catch(Throwable ex) {
                 log.error("failed receiving packet (from " + packet.getSocketAddress() + ")", ex);
-            }
-            finally {
-                Util.close(inp);
             }
         }
         if(log.isTraceEnabled())

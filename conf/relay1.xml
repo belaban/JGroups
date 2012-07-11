@@ -16,13 +16,13 @@
 
         <site name="nyc" id="1">
             <bridges>
-                <bridge config="lon-nyc.xml" name="nyc-lon"/>
-                <bridge config="nyc-sfo.xml" name="nyc-sfo"/>
+                <bridge name="lon-nyc" config="lon-nyc.xml"/>
+                <bridge name="nyc-sfo" config="nyc-sfo.xml"/>
             </bridges>
         </site>
         <site name="sfo" id="2">
             <bridges>
-                <bridge config="lon-sfc.xml"/>
+                <bridge name="lon-sfo" config="lon-sfo.xml"/>
             </bridges>
         </site>
     </sites>

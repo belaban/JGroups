@@ -3923,6 +3923,13 @@ public class Util {
         return !(mbrs == null || mbrs.isEmpty()) && local_addr.equals(mbrs.iterator().next());
     }
 
+    public static Address getCoordinator(View view) {
+        if(view == null)
+            return null;
+        List<Address> mbrs=view.getMembers();
+        return !mbrs.isEmpty()? mbrs.get(0) : null;
+    }
+
     public static MBeanServer getMBeanServer() {
 		ArrayList servers = MBeanServerFactory.findMBeanServer(null);
 		if (servers != null && !servers.isEmpty()) {
