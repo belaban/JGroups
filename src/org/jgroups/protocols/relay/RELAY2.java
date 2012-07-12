@@ -1,8 +1,6 @@
 package org.jgroups.protocols.relay;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.protocols.relay.config.RelayConfig;
@@ -10,6 +8,8 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
@@ -162,7 +162,7 @@ public class RELAY2 extends Protocol {
             relayer=new Relayer(site_config, bridge_name, log);
             try {
                 if(log.isTraceEnabled())
-                    log.trace("I become site master; starting bridges");
+                    log.trace("I became site master; starting bridges");
                 relayer.start();
             }
             catch(Throwable t) {
@@ -176,6 +176,52 @@ public class RELAY2 extends Protocol {
                     log.trace("I ceased to be site master; closing bridges");
                 if(relayer != null)
                     relayer.stop();
+            }
+        }
+    }
+
+
+    public static class Relay2Header extends Header {
+        public static final byte DATA = 1;
+
+        protected byte    type;
+        protected Address dest;
+        protected Address sender;
+
+
+        public Relay2Header() {
+        }
+
+        public Relay2Header(byte type, Address dest, Address sender) {
+            this.type=type;
+            this.dest=dest;
+            this.sender=sender;
+        }
+
+        public int size() {
+            return Global.BYTE_SIZE + Util.size(dest) + Util.size(sender);
+        }
+
+        public void writeTo(DataOutput out) throws Exception {
+            out.writeByte(type);
+            Util.writeAddress(dest, out);
+            Util.writeAddress(sender, out);
+        }
+
+        public void readFrom(DataInput in) throws Exception {
+            type=in.readByte();
+            dest=Util.readAddress(in);
+            sender=Util.readAddress(in);
+        }
+
+        public String toString() {
+            return typeToString(type) + " [dest=" + dest + ", sender=" + sender + "]";
+        }
+
+        protected static String typeToString(byte type) {
+            switch(type) {
+                case DATA: return "DATA";
+                default:   return "<unknown>";
             }
         }
     }

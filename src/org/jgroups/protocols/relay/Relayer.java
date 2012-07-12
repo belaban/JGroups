@@ -175,6 +175,9 @@ public class Relayer {
             List<Address> left_mbrs=this.view != null? Util.determineLeftMembers(this.view.getMembers(),view.getMembers()) : null;
             this.view=view;
 
+            if(log.isTraceEnabled())
+                log.trace("[Relayer " + channel.getAddress() + "] view: " + view);
+
             for(Address addr: view.getMembers()) {
                 if(addr instanceof SiteUUID) {
                     SiteUUID site_uuid=(SiteUUID)addr;

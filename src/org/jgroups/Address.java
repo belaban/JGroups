@@ -20,9 +20,11 @@ import java.io.Externalizable;
  */
 public interface Address extends Streamable, Comparable<Address>, Externalizable {
     // flags used for marshalling
-    public static final byte NULL       = 1 << 0;
-    public static final byte UUID_ADDR  = 1 << 1;
-    public static final byte IP_ADDR    = 1 << 2;
+    public static final byte NULL        = 1 << 0;
+    public static final byte UUID_ADDR   = 1 << 1;
+    public static final byte SITE_UUID   = 1 << 2;
+    public static final byte SITE_MASTER = 1 << 3;
+    public static final byte IP_ADDR     = 1 << 4;
 
 
     /** Returns serialized size of this address */
