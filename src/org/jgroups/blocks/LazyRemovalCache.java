@@ -52,7 +52,7 @@ public class LazyRemovalCache<K,V> {
                 return false;
         return true;
     }
-    
+
 
     public V get(K key) {
         if(key == null)
@@ -223,7 +223,7 @@ public class LazyRemovalCache<K,V> {
             Entry<V> tmp=entry.getValue();
             if(tmp == null)
                 continue;
-            if(tmp.removable && (curr_time - tmp.timestamp) >= max_age || force) {
+            if(tmp.removable && ((curr_time - tmp.timestamp) >= max_age || force)) {
                 it.remove();
             }
         }
