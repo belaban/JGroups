@@ -23,13 +23,13 @@ import java.util.concurrent.TimeUnit;
  * the group, or to see if we have diverging views in case of MERGE2.<p/>
  * When we are a server (after having received the BECOME_SERVER event), we'll respond to discovery requests with
  * a discovery response.
- * 
+ *
  * @author Bela Ban
  */
 @MBean
-public abstract class Discovery extends Protocol {   
-    
-    
+public abstract class Discovery extends Protocol {
+
+
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @Property(description="Timeout to wait for the initial members")
@@ -63,10 +63,10 @@ public abstract class Discovery extends Protocol {
     public void setForceSendingDiscoveryRsps(boolean flag) {
         force_sending_discovery_rsps=flag;
     }
-    
+
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
 
-    
+
     @ManagedAttribute(description="Total number of discovery requests sent ")
     protected int num_discovery_requests=0;
 
@@ -90,7 +90,7 @@ public abstract class Discovery extends Protocol {
     protected final Set<Responses>  ping_responses=new HashSet<Responses>();
 
 
-    
+
     public void init() throws Exception {
         timer=getTransport().getTimer();
         if(timer == null)
@@ -127,7 +127,7 @@ public abstract class Discovery extends Protocol {
     }
 
     public void discoveryRequestReceived(Address sender, String logical_name, Collection<PhysicalAddress> physical_addrs) {
-        
+
     }
 
     public long getTimeout() {
@@ -135,7 +135,7 @@ public abstract class Discovery extends Protocol {
     }
 
     public void setTimeout(long timeout) {
-        this.timeout=timeout;        
+        this.timeout=timeout;
     }
 
     public int getNumInitialMembers() {
@@ -143,7 +143,7 @@ public abstract class Discovery extends Protocol {
     }
 
     public void setNumInitialMembers(int num_initial_members) {
-        this.num_initial_members=num_initial_members;        
+        this.num_initial_members=num_initial_members;
     }
 
     public int getNumberOfDiscoveryRequestsSent() {
@@ -172,7 +172,7 @@ public abstract class Discovery extends Protocol {
         ret.add(Event.GET_PHYSICAL_ADDRESS);
         return ret;
     }
-    
+
     public void resetStats() {
         super.resetStats();
         num_discovery_requests=0;
@@ -301,7 +301,7 @@ public abstract class Discovery extends Protocol {
 
     @ManagedOperation(description="Runs the discovery protocol to find initial members")
     public String findInitialMembersAsString() {
-    	List<PingData> results=findInitialMembers(null);
+      List<PingData> results=findInitialMembers(null);
         if(results == null || results.isEmpty()) return "<empty>";
         StringBuilder sb=new StringBuilder();
         for(PingData rsp: results) {
@@ -349,7 +349,7 @@ public abstract class Discovery extends Protocol {
 
     @SuppressWarnings("unchecked")
     public Object up(Event evt) {
-        
+
         switch(evt.getType()) {
 
             case Event.MSG:
@@ -430,9 +430,12 @@ public abstract class Discovery extends Protocol {
                             if(cache != null) {
                                 for(Map.Entry<Address,PhysicalAddress> entry: cache.entrySet()) {
                                     Address addr=entry.getKey();
-                                    PhysicalAddress physical_addr=entry.getValue();
-                                    sendDiscoveryResponse(addr, Arrays.asList(physical_addr), is_server,
-                                                          hdr.view_id != null, UUID.get(addr), msg.getSrc());
+                                    // JGRP-1492: only return our own address, and addresses in view.
+                                    if (addr.equals(local_addr) || members.contains(addr)) {
+                                        PhysicalAddress physical_addr=entry.getValue();
+                                        sendDiscoveryResponse(addr, Arrays.asList(physical_addr), is_server,
+                                                              hdr.view_id != null, UUID.get(addr), msg.getSrc());
+                                    }
                                 }
                             }
                         }
