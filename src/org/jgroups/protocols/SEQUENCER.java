@@ -275,10 +275,6 @@ public class SEQUENCER extends Protocol {
     }
 
     protected void flush(final Address new_coord) {
-        if(log.isTraceEnabled())
-            log.trace(local_addr + ": flushing started");
-        flushing=true;  // causes subsequent message sends (broadcasts and forwards) to block
-
         // wait until all threads currently sending messages have returned (new threads after flushing=true) will block
         while(flushing && running) {
             if(in_flight_sends.get() == 0)
@@ -548,6 +544,11 @@ public class SEQUENCER extends Protocol {
 
     protected void startFlusher(final Address new_coord) {
         if(flusher == null || !flusher.isAlive()) {
+
+            if(log.isTraceEnabled())
+                log.trace(local_addr + ": flushing started");
+            flushing=true;  // causes subsequent message sends (broadcasts and forwards) to block
+
             flusher=new Flusher(new_coord);
             flusher.setName("Flusher");
             flusher.start();
