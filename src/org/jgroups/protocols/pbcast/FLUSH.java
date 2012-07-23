@@ -227,9 +227,17 @@ public class FLUSH extends Protocol {
                 if(r.failed())
                     throw new RuntimeException(r.getFailureCause());
             } catch (TimeoutException e) {
+                Set<Address> missingMembers = new HashSet<Address>();
+                synchronized(sharedLock) {
+                    missingMembers.addAll(flushMembers);
+                    missingMembers.removeAll(flushCompletedMap.keySet());
+                }
+
                 rejectFlush(flushParticipants, currentViewId());
                 throw new RuntimeException(localAddress
-                            + " timed out waiting for flush responses after "
+                            + " timed out waiting for flush responses from "
+                            + missingMembers
+                            + " after "
                             + start_flush_timeout
                             + " ms. Rejected flush to participants "
                             + flushParticipants,e);
