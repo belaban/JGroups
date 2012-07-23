@@ -235,10 +235,14 @@ public class FLUSH extends Protocol {
                 Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
                 successfulFlush = r.booleanValue();
             } catch (TimeoutException e) {
-                if (log.isDebugEnabled())
-                    log.debug("At " + localAddress
-                                    + " timed out waiting for flush responses after "
-                                    + start_flush_timeout + " msec. Rejecting flush to participants " + flushParticipants);                
+                Set<Address> missingMembers = new HashSet<Address>();
+                synchronized(sharedLock) {
+                    missingMembers.addAll(flushMembers);
+                    missingMembers.removeAll(flushCompletedMap.keySet());
+                }
+                log.warn("At " + localAddress
+                                + " timed out waiting for flush responses from " + missingMembers + " after "
+                                + start_flush_timeout + " msec. Rejecting flush to participants " + flushParticipants);                
                 rejectFlush(flushParticipants, currentViewId());
             }
         }
