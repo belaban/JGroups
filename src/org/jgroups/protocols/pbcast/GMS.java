@@ -564,7 +564,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
      * Sets the new view and sends a VIEW_CHANGE event up and down the stack. If the view is a MergeView (subclass
      * of View), then digest will be non-null and has to be set before installing the view.
      */
-    public void installView(View new_view, Digest digest) {
+    public synchronized void installView(View new_view, Digest digest) {
         ViewId vid=new_view.getVid();
         List<Address> mbrs=new_view.getMembers();
         ltime=Math.max(vid.getId(), ltime);  // compute the logical time, regardless of whether the view is accepted
