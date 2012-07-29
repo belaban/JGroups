@@ -283,7 +283,7 @@ public class SEQUENCER extends Protocol {
         while(flushing && running) {
             if(in_flight_sends.get() == 0)
                 break;
-            Util.sleep(100);
+            Thread.sleep(100);
         }
 
         send_lock.lockInterruptibly();
