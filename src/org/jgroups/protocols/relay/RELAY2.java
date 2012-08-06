@@ -12,7 +12,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
@@ -126,6 +125,23 @@ public class RELAY2 extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                Address dest=msg.getDest();
+                if(dest == null || !(dest instanceof SiteAddress))
+                    break; // todo: handle multicasts
+                SiteAddress target=(SiteAddress)dest;
+                // if(addr.getSite() == site_id) // same site: local; pass down
+                   // break;
+                byte[] buf=marshal(msg);
+                if(buf == null)
+                    return null; // don't pass down
+                SiteUUID sender=new SiteUUID((UUID)local_addr, site_id);
+                if(local_addr.equals(coord))
+                    route(target, sender, buf);
+                else
+                    forwardToCoordinator(target, sender, buf);
+                return null;
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
                 break;
@@ -139,11 +155,90 @@ public class RELAY2 extends Protocol {
 
     public Object up(Event evt) {
         switch(evt.getType()) {
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                Relay2Header hdr=(Relay2Header)msg.getHeader(id);
+                if(hdr == null)
+                    break;
+
+                System.out.println("[" + local_addr + "] received message with Relay2Header " + hdr);
+                handleMessage(hdr, msg);
+                return null;
             case Event.VIEW_CHANGE:
                 handleView((View)evt.getArg());
                 break;
         }
         return up_prot.up(evt);
+    }
+
+    /** Called to handle a received relay message */
+    protected void handleMessage(Relay2Header hdr, Message msg) {
+        System.out.println("**** handleMessage()");
+    }
+
+
+    protected void forwardToCoordinator(SiteAddress dest, Address sender, byte[] buf) {
+        Message msg=new Message(coord, buf);
+        Relay2Header hdr=new Relay2Header(Relay2Header.DATA, dest, sender);
+        msg.putHeader(id, hdr);
+        down_prot.down(new Event(Event.MSG, msg));
+    }
+
+
+    /**
+     * Routes the message to the target destination, used by a site master (coordinator)
+     * @param dest
+     * @param buf
+     */
+    protected void route(SiteAddress dest, SiteUUID sender, byte[] buf) {
+        short target_site=dest.getSite();
+        if(target_site == site_id) {
+            deliverLocally(dest, sender, buf);
+            return;
+        }
+        Relayer tmp=relayer;
+        if(tmp == null) {
+            log.warn("not site master; dropping message");
+            return;
+        }
+        Relayer.Route route=relayer.getRoute(target_site);
+        relay(dest, sender, route, buf);
+    }
+
+    protected void deliverLocally(SiteAddress dest, SiteUUID sender, byte[] buf) {
+
+    }
+
+    protected void relay(SiteAddress to, SiteAddress from, Relayer.Route route, byte[] buf) {
+        if(route == null) {
+            log.warn("route for site" + to.getSite() + " not found; dropping message");
+            return;
+        }
+        RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, to, from);
+        Message msg=new Message(route.site_master, buf);
+        msg.putHeader(id, hdr);
+        try {
+            route.bridge.send(msg);
+        }
+        catch(Exception e) {
+            log.error("failure relaying message", e);
+        }
+    }
+
+
+    protected byte[] marshal(Message msg) {
+        Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // // we only copy headers from building blocks
+        // setting dest and src to null reduces the serialized size of the message; we'll set dest/src from the header later
+        tmp.setDest(null);
+        tmp.setSrc(null);
+
+        try {
+            return Util.streamableToByteBuffer(tmp);
+        }
+        catch(Exception e) {
+            log.error("marshalling failure", e);
+            return null;
+        }
     }
 
 
@@ -159,7 +254,7 @@ public class RELAY2 extends Protocol {
         if(become_coord) {
             is_coord=true;
             String bridge_name="_" + UUID.get(local_addr);
-            relayer=new Relayer(site_config, bridge_name, log);
+            relayer=new Relayer(site_config, bridge_name, log, this);
             try {
                 if(log.isTraceEnabled())
                     log.trace("I became site master; starting bridges");

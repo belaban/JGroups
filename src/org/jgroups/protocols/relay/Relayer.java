@@ -2,6 +2,7 @@ package org.jgroups.protocols.relay;
 
 import org.jgroups.*;
 import org.jgroups.logging.Log;
+import org.jgroups.protocols.RELAY;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.AddressGenerator;
 import org.jgroups.util.UUID;
@@ -32,9 +33,12 @@ public class Relayer {
 
     protected final Log                    log;
 
+    protected final RELAY2                 relay;
 
-    public Relayer(RelayConfig.SiteConfig site_config, String local_name, Log log) {
+
+    public Relayer(RelayConfig.SiteConfig site_config, String local_name, Log log, RELAY2 relay) {
         this.site_config=site_config;
+        this.relay=relay;
         int num_routes=site_config.getBridges().size();
         my_site_id=site_config.getId();
         routes=new Route[num_routes];
@@ -118,6 +122,12 @@ public class Relayer {
         return null;
     }
 
+    protected Route getRoute(short site) {
+        if(site <= routes.length -1)
+            return routes[site];
+        return null;
+    }
+
     protected void ensureCapacity(short site) {
         if(site >= routes.length-1) {
             Route[] tmp_routes=new Route[routes.length * 2];
@@ -168,7 +178,12 @@ public class Relayer {
         }
 
         public void receive(Message msg) {
-
+            RELAY2.Relay2Header hdr=(RELAY2.Relay2Header)msg.getHeader(relay.getId());
+            if(hdr == null) {
+                log.warn("received a message without a relay header; discarding it");
+                return;
+            }
+            relay.handleMessage(hdr, msg);
         }
 
         public void viewAccepted(View view) {

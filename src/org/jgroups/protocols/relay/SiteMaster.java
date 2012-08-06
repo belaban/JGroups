@@ -28,6 +28,7 @@ public class SiteMaster extends SiteUUID {
         if(other instanceof UUID)
             return super.compareTo(other);
         SiteMaster tmp=(SiteMaster)other;
+        if(tmp == null) return 1;
         return site == tmp.site? 0 : site < tmp.site? -1 : 1;
     }
 
