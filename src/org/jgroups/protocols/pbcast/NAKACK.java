@@ -160,11 +160,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
-    private boolean is_server=false;
-    private Address local_addr=null;
+    private volatile boolean    is_server=false;
+    private Address             local_addr=null;
     private final List<Address> members=new CopyOnWriteArrayList<Address>();
-    private View view;
-    private final AtomicLong seqno=new AtomicLong(0); // current message sequence number (starts with 1)
+    private View                view;
+    private final AtomicLong    seqno=new AtomicLong(0); // current message sequence number (starts with 1)
 
     /** Map to store sent and received messages (keyed by sender) */
     private final ConcurrentMap<Address,NakReceiverWindow> xmit_table=Util.createConcurrentMap();
