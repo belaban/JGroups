@@ -310,7 +310,7 @@ public abstract class FlowControl extends Protocol {
     public void stop() {
         super.stop();
         running=false;
-        ignore_thread.set(false);
+        ignore_thread.remove();
     }
 
 
@@ -401,7 +401,7 @@ public abstract class FlowControl extends Protocol {
                 }
                 finally {
                     if(ignore_synchronous_response)
-                        ignore_thread.set(false); // need to revert because the thread is placed back into the pool
+                        ignore_thread.remove(); // need to revert because the thread is placed back into the pool
                     if(new_credits > 0)
                         sendCredit(sender, new_credits);
                 }
