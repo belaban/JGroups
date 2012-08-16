@@ -866,7 +866,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         Message xmit_msg=msg.copy(true, true); // copy payload and headers
         xmit_msg.setDest(dest);
         NakAckHeader hdr=(NakAckHeader)xmit_msg.getHeader(id);
-        hdr.type=NakAckHeader.XMIT_RSP; // change the type in the copy from MSG --> XMIT_RSP
+        NakAckHeader newhdr=hdr.copy();    // create a copy of the header: https://issues.jboss.org/browse/JGRP-1502
+        newhdr.type=NakAckHeader.XMIT_RSP; // change the type in the copy from MSG --> XMIT_RSP
+        xmit_msg.putHeader(id, newhdr);
         down_prot.down(new Event(Event.MSG, xmit_msg));
     }
 
@@ -880,7 +882,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 xmit_rsps_received.incrementAndGet();
 
             msg.setDest(null);
-            hdr.type=NakAckHeader.MSG; // change the type back from XMIT_RSP --> MSG
+            NakAckHeader newhdr=hdr.copy();
+            newhdr.type=NakAckHeader.MSG; // change the type back from XMIT_RSP --> MSG
+            msg.putHeader(id, newhdr);
             up(new Event(Event.MSG, msg));
             if(rebroadcasting)
                 checkForRebroadcasts();
