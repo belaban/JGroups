@@ -4,7 +4,6 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Header;
-import org.jgroups.util.SeqnoList;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -21,7 +20,6 @@ public class NakAckHeader2 extends Header {
 
     byte      type=0;
     long      seqno=-1;        // seqno of regular message (MSG)
-    // SeqnoList missing=null;    // range of msgs to be retransmitted (XMIT_REQ)
     Address   sender;          // the original sender of the message (for XMIT_REQ)
 
 
