@@ -850,7 +850,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         Message xmit_msg=msg.copy(true, true); // copy payload and headers
         xmit_msg.setDest(dest);
         NakAckHeader2 hdr=(NakAckHeader2)xmit_msg.getHeader(id);
-        hdr.type=NakAckHeader2.XMIT_RSP; // change the type in the copy from MSG --> XMIT_RSP
+        NakAckHeader2 newhdr=hdr.copy();
+        newhdr.type=NakAckHeader2.XMIT_RSP; // change the type in the copy from MSG --> XMIT_RSP
+        xmit_msg.putHeader(id, newhdr);
         down_prot.down(new Event(Event.MSG,xmit_msg));
     }
 
@@ -864,7 +866,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 xmit_rsps_received.incrementAndGet();
 
             msg.setDest(null);
-            hdr.type=NakAckHeader2.MSG; // change the type back from XMIT_RSP --> MSG
+            NakAckHeader2 newhdr=hdr.copy();
+            newhdr.type=NakAckHeader2.MSG; // change the type back from XMIT_RSP --> MSG
+            msg.putHeader(id, newhdr);
             up(new Event(Event.MSG, msg));
             if(rebroadcasting)
                 checkForRebroadcasts();
