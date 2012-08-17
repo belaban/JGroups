@@ -440,6 +440,15 @@
 
             ${SWIFT_PING}
         </section>
+
+        <section>
+            <title>AWS_PING</title>
+            <para>
+                This is a protocol written by Meltmedia, which uses the AWS API. It is not part of JGroups, but can be
+                downloaded at <xref linkend="https://github.com/meltmedia/jgroups-aws"/>.
+            </para>
+        </section>
+
     </section>
 
     <section>
