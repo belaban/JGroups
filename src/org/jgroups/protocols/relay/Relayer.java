@@ -129,8 +129,8 @@ public class Relayer {
     }
 
     protected void ensureCapacity(short site) {
-        if(site >= routes.length-1) {
-            Route[] tmp_routes=new Route[routes.length * 2];
+        if(site >= routes.length) {
+            Route[] tmp_routes=new Route[Math.max(site+1, routes.length * 2)];
             System.arraycopy(routes, 0, tmp_routes, 0, routes.length);
             routes=tmp_routes;
         }

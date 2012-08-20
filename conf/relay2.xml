@@ -4,7 +4,7 @@
 <RelayConfiguration xmlns="urn:jgroups:relay:1.0">
 
     <sites>
-        <site id="0" name="lon">
+        <site name="lon" id="0">
             <bridges>
                 <bridge config="/home/bela/global.xml" name="global"/>
             </bridges>

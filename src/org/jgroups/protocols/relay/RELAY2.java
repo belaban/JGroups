@@ -133,10 +133,16 @@ public class RELAY2 extends Protocol {
                 SiteAddress target=(SiteAddress)dest;
                 // if(addr.getSite() == site_id) // same site: local; pass down
                    // break;
+                SiteUUID sender=null;
+                if(msg.getSrc() == null) {
+                    sender=new SiteUUID((UUID)local_addr, site_id);
+                    msg.setSrc(sender);
+                }
                 byte[] buf=marshal(msg);
                 if(buf == null)
                     return null; // don't pass down
-                SiteUUID sender=new SiteUUID((UUID)local_addr, site_id);
+                if(sender == null)
+                    sender=new SiteUUID((UUID)local_addr, site_id);
                 if(local_addr.equals(coord))
                     route(target, sender, buf);
                 else
@@ -173,7 +179,9 @@ public class RELAY2 extends Protocol {
 
     /** Called to handle a received relay message */
     protected void handleMessage(Relay2Header hdr, Message msg) {
-        System.out.println("**** handleMessage()");
+        System.out.println("**** handleMessage(): to=" + hdr.dest + ", from=" + hdr.sender + ", " + msg.getLength() + " bytes " +
+                             "(forwarder=" + msg.getSrc() + ")");
+        
     }
 
 
