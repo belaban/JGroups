@@ -694,8 +694,7 @@ public class STABLE extends Protocol {
         // our random sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a
         // STABILITY msg at the same time
         delay=Util.random(stability_delay);
-        if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg (in " + delay + " ms) " + tmp.printHighestDeliveredSeqnos() +
-        " (copy=" + tmp.hashCode() + ")");
+        if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg (in " + delay + " ms) " + tmp.printHighestDeliveredSeqnos());
         startStabilityTask(tmp, delay);
     }
 
@@ -841,8 +840,7 @@ public class STABLE extends Protocol {
                 msg.setFlag(Message.OOB, Message.Flag.NO_RELIABILITY);
                 StableHeader hdr=new StableHeader(StableHeader.STABILITY, stability_digest);
                 msg.putHeader(id, hdr);
-                if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg " + stability_digest.printHighestDeliveredSeqnos() +
-                " (copy=" + stability_digest.hashCode() + ")");
+                if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg " + stability_digest.printHighestDeliveredSeqnos());
                 num_stability_msgs_sent++;
                 down_prot.down(new Event(Event.MSG, msg));
             }
