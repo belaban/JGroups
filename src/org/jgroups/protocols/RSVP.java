@@ -102,6 +102,10 @@ public class RSVP extends Protocol {
                         ids.put(next_id, entry);
                     }
 
+                    // sync members again - if a view was received after reading members intro Entry, but
+                    // before adding Entry to ids (https://issues.jboss.org/browse/JGRP-1503)
+                    entry.retainAll(members);
+
                     // 2. start timer task
                     entry.startTask(next_id);
 
@@ -129,18 +133,7 @@ public class RSVP extends Protocol {
                 return retval;
 
             case Event.VIEW_CHANGE:
-                View view=(View)evt.getArg();
-                members=view.getMembers();
-
-                synchronized(ids) {
-                    for(Iterator<Map.Entry<Short,Entry>> it=ids.entrySet().iterator(); it.hasNext();) {
-                        entry=it.next().getValue();
-                        if(entry != null && entry.retainAll(view.getMembers()) && entry.size() == 0) {
-                            entry.destroy();
-                            it.remove();
-                        }
-                    }
-                }
+                handleView((View)evt.getArg());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -188,9 +181,28 @@ public class RSVP extends Protocol {
                     }
                 }
                 break;
+            case Event.VIEW_CHANGE:
+                handleView((View)evt.getArg());
+                break;
         }
         return up_prot.up(evt);
     }
+
+
+    protected void handleView(View view) {
+        members=view.getMembers();
+
+        synchronized(ids) {
+            for(Iterator<Map.Entry<Short,Entry>> it=ids.entrySet().iterator(); it.hasNext();) {
+                Entry entry=it.next().getValue();
+                if(entry != null && entry.retainAll(view.getMembers()) && entry.size() == 0) {
+                    entry.destroy();
+                    it.remove();
+                }
+            }
+        }
+    }
+
 
     protected void handleResponse(Address member, short id) {
         synchronized(ids) {
