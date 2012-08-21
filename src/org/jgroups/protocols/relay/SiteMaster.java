@@ -17,7 +17,7 @@ public class SiteMaster extends SiteUUID {
     }
 
     public SiteMaster(short site) {
-        super(0, 0, site);
+        super(0, 0, null, site);
     }
 
     public SiteMaster(String site) {

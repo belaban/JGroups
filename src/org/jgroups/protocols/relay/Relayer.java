@@ -58,7 +58,7 @@ public class Relayer {
                                          new AddressGenerator() {
                                              public Address generateAddress() {
                                                  UUID uuid=UUID.randomUUID();
-                                                 return new SiteUUID(uuid, my_site_id);
+                                                 return new SiteUUID(uuid, null, my_site_id);
                                              }
                                          });
                 bridges.add(bridge);

@@ -39,7 +39,7 @@ public class RELAY2 extends Protocol {
     
 
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
-    @ManagedAttribute(description="The site-ID")
+    @ManagedAttribute(description="My site-ID")
     protected short                              site_id=-1;
 
     protected Map<String,RelayConfig.SiteConfig> sites;
@@ -129,25 +129,30 @@ public class RELAY2 extends Protocol {
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
                 if(dest == null || !(dest instanceof SiteAddress))
-                    break; // todo: handle multicasts
+                    break;
                 SiteAddress target=(SiteAddress)dest;
-                // if(addr.getSite() == site_id) // same site: local; pass down
-                   // break;
-                SiteUUID sender=null;
-                if(msg.getSrc() == null) {
-                    sender=new SiteUUID((UUID)local_addr, site_id);
-                    msg.setSrc(sender);
-                }
+
                 byte[] buf=marshal(msg);
                 if(buf == null)
                     return null; // don't pass down
-                if(sender == null)
-                    sender=new SiteUUID((UUID)local_addr, site_id);
-                if(local_addr.equals(coord))
-                    route(target, sender, buf);
+                SiteAddress sender=new SiteUUID((UUID)local_addr, UUID.get(local_addr), site_id);
+
+                // target is in the same site; we can deliver the message locally
+                if(target.getSite() == site_id) {
+                    if(local_addr.equals(target))
+                        deliver(target, sender, buf);
+                    else
+                        deliverLocally(target, sender, buf);
+                    return null;
+                }
+
+                // forward to the coordinator unless we're the coord (then route the message directly)
+                if(!is_coord)
+                    forwardTo(coord, target, sender, buf, null);
                 else
-                    forwardToCoordinator(target, sender, buf);
+                    route(target, sender, buf);
                 return null;
+
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
                 break;
@@ -179,18 +184,12 @@ public class RELAY2 extends Protocol {
 
     /** Called to handle a received relay message */
     protected void handleMessage(Relay2Header hdr, Message msg) {
-        System.out.println("**** handleMessage(): to=" + hdr.dest + ", from=" + hdr.sender + ", " + msg.getLength() + " bytes " +
+        System.out.println("**** handleMessage(): to=" + hdr.final_dest + ", from=" + hdr.original_sender + ", " + msg.getLength() + " bytes " +
                              "(forwarder=" + msg.getSrc() + ")");
-        
+
+        route((SiteAddress)hdr.final_dest, (SiteAddress)hdr.original_sender, msg.getBuffer());
     }
 
-
-    protected void forwardToCoordinator(SiteAddress dest, Address sender, byte[] buf) {
-        Message msg=new Message(coord, buf);
-        Relay2Header hdr=new Relay2Header(Relay2Header.DATA, dest, sender);
-        msg.putHeader(id, hdr);
-        down_prot.down(new Event(Event.MSG, msg));
-    }
 
 
     /**
@@ -198,10 +197,14 @@ public class RELAY2 extends Protocol {
      * @param dest
      * @param buf
      */
-    protected void route(SiteAddress dest, SiteUUID sender, byte[] buf) {
+    protected void route(SiteAddress dest, SiteAddress sender, byte[] buf) {
         short target_site=dest.getSite();
         if(target_site == site_id) {
-            deliverLocally(dest, sender, buf);
+            if(local_addr.equals(dest) || ((dest instanceof SiteMaster) && is_coord)) {
+                deliver(dest, sender, buf);
+            }
+            else
+                deliverLocally(dest, sender, buf); // send to member in same local site
             return;
         }
         Relayer tmp=relayer;
@@ -213,8 +216,37 @@ public class RELAY2 extends Protocol {
         relay(dest, sender, route, buf);
     }
 
-    protected void deliverLocally(SiteAddress dest, SiteUUID sender, byte[] buf) {
+    protected void forwardTo(Address next_dest, SiteAddress final_dest, Address original_sender, byte[] buf, JChannel ch) {
+        Message msg=new Message(next_dest, buf);
+        Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_dest, original_sender);
+        msg.putHeader(id, hdr);
+        if(ch != null) {
+            try {
+                ch.send(msg);
+            }
+            catch(Exception e) {
+                log.error("failed forwarding message to " + final_dest, e);
+            }
+        }
+        else
+            down_prot.down(new Event(Event.MSG, msg));
+    }
 
+    
+    protected void deliverLocally(SiteAddress dest, SiteAddress sender, byte[] buf) {
+
+    }
+
+    protected void deliver(Address dest, Address sender, byte[] buf) {
+        try {
+            Message original_msg=(Message)Util.streamableFromByteBuffer(Message.class, buf);
+            original_msg.setSrc(sender);
+            original_msg.setDest(dest);
+            up_prot.up(new Event(Event.MSG, original_msg));
+        }
+        catch(Exception e) {
+            log.error("failed unmarshalling message", e);
+        }
     }
 
     protected void relay(SiteAddress to, SiteAddress from, Relayer.Route route, byte[] buf) {
@@ -288,37 +320,37 @@ public class RELAY2 extends Protocol {
         public static final byte DATA = 1;
 
         protected byte    type;
-        protected Address dest;
-        protected Address sender;
+        protected Address final_dest;
+        protected Address original_sender;
 
 
         public Relay2Header() {
         }
 
-        public Relay2Header(byte type, Address dest, Address sender) {
+        public Relay2Header(byte type, Address final_dest, Address original_sender) {
             this.type=type;
-            this.dest=dest;
-            this.sender=sender;
+            this.final_dest=final_dest;
+            this.original_sender=original_sender;
         }
 
         public int size() {
-            return Global.BYTE_SIZE + Util.size(dest) + Util.size(sender);
+            return Global.BYTE_SIZE + Util.size(final_dest) + Util.size(original_sender);
         }
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
-            Util.writeAddress(dest, out);
-            Util.writeAddress(sender, out);
+            Util.writeAddress(final_dest, out);
+            Util.writeAddress(original_sender, out);
         }
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            dest=Util.readAddress(in);
-            sender=Util.readAddress(in);
+            final_dest=Util.readAddress(in);
+            original_sender=Util.readAddress(in);
         }
 
         public String toString() {
-            return typeToString(type) + " [dest=" + dest + ", sender=" + sender + "]";
+            return typeToString(type) + " [dest=" + final_dest + ", sender=" + original_sender + "]";
         }
 
         protected static String typeToString(byte type) {
