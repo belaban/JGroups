@@ -698,8 +698,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             if(loopback)
                 msg=buf.get(hdr.seqno); // we *have* to get a message, because loopback means we didn't add it to win !
             if(msg != null && msg.isFlagSet(Message.OOB)) {
-                if(msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED))
+                if(msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED)) {
+                    if(log.isTraceEnabled())
+                        log.trace(new StringBuilder().append(local_addr).append(": delivering ").append(sender).append('#').append(hdr.seqno));
                     up_prot.up(new Event(Event.MSG, msg));
+                }
             }
         }
 
@@ -732,6 +735,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
                     //msg_to_deliver.removeHeader(getName()); // Changed by bela Jan 29 2003: not needed (see above)
                     try {
+                        if(log.isTraceEnabled()) {
+                            NakAckHeader2 header=(NakAckHeader2)msg_to_deliver.getHeader(this.id);
+                            log.trace(new StringBuilder().append(local_addr).append(": delivering ").append(sender).append('#').append(header.seqno));
+                        }
                         up_prot.up(new Event(Event.MSG, msg_to_deliver));
                     }
                     catch(Throwable t) {
