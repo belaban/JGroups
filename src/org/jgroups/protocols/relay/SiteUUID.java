@@ -40,6 +40,10 @@ public class SiteUUID extends UUID implements SiteAddress {
         this.site=site;
     }
 
+    public String getName() {
+        return name;
+    }
+
     public static void addToCache(short site, String name) {
         site_cache.putIfAbsent(site, name);
     }

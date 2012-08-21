@@ -135,7 +135,13 @@ public class RELAY2 extends Protocol {
                 byte[] buf=marshal(msg);
                 if(buf == null)
                     return null; // don't pass down
-                SiteAddress sender=new SiteUUID((UUID)local_addr, UUID.get(local_addr), site_id);
+
+                Address src=msg.getSrc();
+                SiteAddress sender=null;
+                if(src instanceof SiteMaster)
+                    sender=new SiteMaster(((SiteMaster)src).getSite());
+                else
+                    sender=new SiteUUID((UUID)local_addr, UUID.get(local_addr), site_id);
 
                 // target is in the same site; we can deliver the message locally
                 if(target.getSite() == site_id) {
@@ -148,7 +154,7 @@ public class RELAY2 extends Protocol {
 
                 // forward to the coordinator unless we're the coord (then route the message directly)
                 if(!is_coord)
-                    forwardTo(coord, target, sender, buf, null);
+                    forwardTo(coord, target, sender, buf);
                 else
                     route(target, sender, buf);
                 return null;
@@ -216,25 +222,24 @@ public class RELAY2 extends Protocol {
         relay(dest, sender, route, buf);
     }
 
-    protected void forwardTo(Address next_dest, SiteAddress final_dest, Address original_sender, byte[] buf, JChannel ch) {
+    protected void forwardTo(Address next_dest, SiteAddress final_dest, Address original_sender, byte[] buf) {
         Message msg=new Message(next_dest, buf);
         Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_dest, original_sender);
         msg.putHeader(id, hdr);
-        if(ch != null) {
-            try {
-                ch.send(msg);
-            }
-            catch(Exception e) {
-                log.error("failed forwarding message to " + final_dest, e);
-            }
-        }
-        else
-            down_prot.down(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG, msg));
     }
 
     
     protected void deliverLocally(SiteAddress dest, SiteAddress sender, byte[] buf) {
+        Address local_dest;
+        if(dest instanceof SiteUUID) {
+            SiteUUID tmp=(SiteUUID)dest;
+            local_dest=new UUID(tmp.getMostSignificantBits(), tmp.getLeastSignificantBits());
+        }
+        else
+            local_dest=dest;
 
+        forwardTo(local_dest, dest, sender, buf);
     }
 
     protected void deliver(Address dest, Address sender, byte[] buf) {
