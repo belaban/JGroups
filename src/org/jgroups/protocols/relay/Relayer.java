@@ -107,15 +107,23 @@ public class Relayer {
         Route old_route;
         ensureCapacity(site);
         if((old_route=routes[site]) == null)
-            routes[site]=route;
+            _addRoute(site, route);
         else if(!old_route.site_master.equals(route.site_master) || old_route.bridge != route.bridge)
-            routes[site]=route;
+            _addRoute(site, route);
+    }
+
+    protected void _addRoute(short site, Route route) {
+        if(log.isTraceEnabled())
+            log.trace("added site " + SiteUUID.getSiteName(site));
+        routes[site]=route;
     }
 
     protected Route removeRoute(short site) {
         if(site <= routes.length -1) {
             Route route=routes[site];
             routes[site]=null;
+            if(log.isTraceEnabled())
+                log.trace("removed route " + SiteUUID.getSiteName(site));
             return route;
         }
         return null;

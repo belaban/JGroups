@@ -7,6 +7,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.AnycastAddress;
+import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Buffer;
@@ -231,22 +232,27 @@ public class RequestCorrelator {
     public boolean receive(Event evt) {
         switch(evt.getType()) {
 
-        case Event.SUSPECT:     // don't wait for responses from faulty members
-            receiveSuspect((Address)evt.getArg());
-            break;
+            case Event.SUSPECT:     // don't wait for responses from faulty members
+                receiveSuspect((Address)evt.getArg());
+                break;
 
-        case Event.VIEW_CHANGE: // adjust number of responses to wait for
-            receiveView((View)evt.getArg());
-            break;
+            case Event.VIEW_CHANGE: // adjust number of responses to wait for
+                receiveView((View)evt.getArg());
+                break;
 
-        case Event.SET_LOCAL_ADDRESS:
-            setLocalAddress((Address)evt.getArg());
-            break;
+            case Event.SET_LOCAL_ADDRESS:
+                setLocalAddress((Address)evt.getArg());
+                break;
 
-        case Event.MSG:
-            if(receiveMessage((Message)evt.getArg()))
-                return true; // message was consumed, don't pass it up
-            break;
+            case Event.MSG:
+                if(receiveMessage((Message)evt.getArg()))
+                    return true; // message was consumed, don't pass it up
+                break;
+            case Event.SITE_UNREACHABLE:
+                SiteMaster site_master=(SiteMaster)evt.getArg();
+                short site=site_master.getSite();
+                setSiteUnreachable(site);
+                return true;
         }
         return false;
     }
@@ -290,6 +296,15 @@ public class RequestCorrelator {
         for(RspCollector coll: requests.values()) {
             if(coll != null)
                 coll.suspect(mbr);
+        }
+    }
+
+
+    /** An entire site is down; mark all requests that point to that site as unreachable (used by RELAY2) */
+    public void setSiteUnreachable(short site) {
+        for(RspCollector coll: requests.values()) {
+            if(coll != null)
+                coll.siteUnreachable(site);
         }
     }
 

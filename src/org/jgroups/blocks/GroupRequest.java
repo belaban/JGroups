@@ -5,6 +5,7 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.protocols.relay.SiteAddress;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 
@@ -57,7 +58,7 @@ public class GroupRequest<T> extends Request {
     private final Map<Address,Rsp<T>> requests;
 
     @GuardedBy("lock")
-    int num_valid, num_received, num_suspected;
+    int num_valid, num_received, num_suspected, num_unreachable;
 
 
 
@@ -173,6 +174,35 @@ public class GroupRequest<T> extends Request {
             checkCompletion(this);
     }
 
+    public void siteUnreachable(short site) {
+        boolean changed=false;
+
+        for(Map.Entry<Address, Rsp<T>> entry: requests.entrySet()) {
+            Address member=entry.getKey();
+            if(!(member instanceof SiteAddress))
+                continue;
+            SiteAddress addr=(SiteAddress)member;
+            if(addr.getSite() == site) {
+                Rsp<T> rsp=entry.getValue();
+                if(rsp !=  null) {
+                    if(rsp.setUnreachable()) {
+                        changed=true;
+                        lock.lock();
+                        try {
+                            num_unreachable++;
+                            completed.signalAll();
+                        }
+                        finally {
+                            lock.unlock();
+                        }
+                    }
+                }
+
+                if(changed)
+                    checkCompletion(this);
+            }
+        }
+    }
 
     /**
      * Any member of 'membership' that is not in the new view is flagged as
@@ -205,7 +235,8 @@ public class GroupRequest<T> extends Request {
         try {
             for(Map.Entry<Address,Rsp<T>> entry: requests.entrySet()) {
                 Address mbr=entry.getKey();
-                if(!mbrs.contains(mbr)) {
+                // SiteAddresses are not checked as they might be in a different cluster
+                if(!(mbr instanceof SiteAddress) && !mbrs.contains(mbr)) {
                     Rsp<T> rsp=entry.getValue();
                     if(rsp.setSuspected()) {
                         num_suspected++;
@@ -314,12 +345,12 @@ public class GroupRequest<T> extends Request {
 
         switch(options.getMode()) {
             case GET_FIRST:
-                return num_valid >= 1 || num_suspected >= num_total || num_received >= num_total;
+                return num_valid >= 1 || num_suspected >= num_total || num_received >= num_total || num_unreachable >= num_total;
             case GET_ALL:
-                return num_valid + num_suspected >= num_total || num_received >= num_total;
+                return num_valid + num_suspected + num_unreachable >= num_total || num_received >= num_total;
             case GET_MAJORITY:
                 int majority=determineMajority(num_total);
-                return num_valid + num_suspected >= majority || num_received >= num_total;
+                return num_valid + num_suspected + num_unreachable >= majority || num_received >= num_total;
             case GET_NONE:
                 return true;
             default:

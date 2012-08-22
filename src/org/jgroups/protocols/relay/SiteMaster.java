@@ -25,11 +25,11 @@ public class SiteMaster extends SiteUUID {
     }
 
     public int compareTo(Address other) {
-        if(other instanceof UUID)
-            return super.compareTo(other);
-        SiteMaster tmp=(SiteMaster)other;
-        if(tmp == null) return 1;
-        return site == tmp.site? 0 : site < tmp.site? -1 : 1;
+        if(other instanceof SiteMaster) {
+            SiteMaster tmp=(SiteMaster)other;
+            return site == tmp.site? 0 : site < tmp.site? -1 : 1;
+        }
+        return super.compareTo(other);
     }
 
     public boolean equals(Object obj) {

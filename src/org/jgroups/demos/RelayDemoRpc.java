@@ -1,10 +1,24 @@
 package org.jgroups.demos;
 
-import org.jgroups.*;
-import org.jgroups.blocks.*;
+import org.jgroups.Address;
+import org.jgroups.JChannel;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.View;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
+import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.protocols.relay.SiteMaster;
+import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
+import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /** Demos RELAY. Create 2 *separate* clusters with RELAY as top protocol. Each RELAY has bridge_props="tcp.xml" (tcp.xml
@@ -67,10 +81,57 @@ public class RelayDemoRpc extends ReceiverAdapter {
                 continue;
             }
 
+            if(line.startsWith("sites")) {
+                Collection<String> site_masters=parseSiteMasters(line.substring("sites".length()));
+                Collection<Address> dests=new ArrayList<Address>(site_masters.size());
+                for(String site_master: site_masters)
+                    dests.add(new SiteMaster(site_master));
+                System.out.println("invoking method in " + dests + ": ");
+                RspList<Object> rsps=disp.callRemoteMethods(dests, call,
+                                                            new RequestOptions(ResponseMode.GET_ALL, 5000).setAnycasting(true));
+                for(Rsp rsp: rsps.values()) {
+                    if(rsp.wasUnreachable())
+                        System.out.println("<< unreachable: " + rsp.getSender());
+                    else
+                        System.out.println("<< " + rsp.getValue() + " from " + rsp.getSender());
+                }
+                continue;
+            }
+
+            if(line.startsWith("site")) {
+                Collection<String> site_masters=parseSiteMasters(line.substring("site".length()));
+                for(String site_master: site_masters) {
+                    SiteMaster dest=new SiteMaster(site_master);
+                    System.out.println("invoking method in " + dest + ": ");
+                    try {
+                        call.setArgs(line, new SiteUUID((UUID)local_addr, UUID.get(local_addr), dest.getSite()));
+                        Object rsp=disp.callRemoteMethod(dest, call, new RequestOptions(ResponseMode.GET_ALL, 50000));
+                        System.out.println("rsp from " + dest + ": " + rsp);
+                    }
+                    catch(Throwable throwable) {
+                        throwable.printStackTrace();
+                    }
+                }
+                continue;
+            }
+
+
+
             RspList<Object> rsps=disp.callRemoteMethods(null, call, new RequestOptions(ResponseMode.GET_ALL, 5000).setAnycasting(true));
             for(Rsp rsp: rsps.values())
                 System.out.println("<< " + rsp.getValue() + " from " + rsp.getSender());
         }
+    }
+
+    protected static Collection<String> parseSiteMasters(String line) {
+        Set<String> retval=new HashSet<String>();
+        String[] tmp=line.split("\\s");
+        for(String s: tmp) {
+            String result=s.trim();
+            if(result.length() > 0)
+                retval.add(result);
+        }
+        return retval;
     }
 
     public static String handleMessage(String msg, Address sender) {

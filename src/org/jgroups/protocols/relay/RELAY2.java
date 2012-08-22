@@ -178,7 +178,6 @@ public class RELAY2 extends Protocol {
                 if(hdr == null)
                     break;
 
-                System.out.println("[" + local_addr + "] received message with Relay2Header " + hdr);
                 handleMessage(hdr, msg);
                 return null;
             case Event.VIEW_CHANGE:
@@ -190,10 +189,19 @@ public class RELAY2 extends Protocol {
 
     /** Called to handle a received relay message */
     protected void handleMessage(Relay2Header hdr, Message msg) {
-        System.out.println("**** handleMessage(): to=" + hdr.final_dest + ", from=" + hdr.original_sender + ", " + msg.getLength() + " bytes " +
-                             "(forwarder=" + msg.getSrc() + ")");
-
-        route((SiteAddress)hdr.final_dest, (SiteAddress)hdr.original_sender, msg.getBuffer());
+        switch(hdr.type) {
+            case Relay2Header.DATA:
+                route((SiteAddress)hdr.final_dest, (SiteAddress)hdr.original_sender, msg.getBuffer());
+                break;
+            case Relay2Header.SITE_UNREACHABLE:
+                up_prot.up(new Event(Event.SITE_UNREACHABLE, hdr.final_dest));
+                break;
+            case Relay2Header.HOST_UNREACHABLE:
+                break;
+            default:
+                log.error("type " + hdr.type + " unknown");
+                break;
+        }
     }
 
 
@@ -218,15 +226,27 @@ public class RELAY2 extends Protocol {
             log.warn("not site master; dropping message");
             return;
         }
-        Relayer.Route route=relayer.getRoute(target_site);
+        Relayer.Route route=tmp.getRoute(target_site);
         if(route == null) {
-            log.warn("route for " + SiteUUID.getSiteName(target_site) + " (" + target_site + ") not found, dropping message to " + dest + " from " + sender);
+            log.warn("route for " + SiteUUID.getSiteName(target_site) + " (" + target_site +
+                       ") not found, dropping message to " + dest + " from " + sender);
+            sendSiteUnreachableTo(sender, target_site);
             return;
         }
-        relay(dest, sender, route, buf);
+        _route(dest, sender, route, buf);
+    }
+
+    protected void sendSiteUnreachableTo(SiteAddress dest, short target_site) {
+        Message msg=new Message(dest);
+        msg.setSrc(new SiteUUID((UUID)local_addr, UUID.get(local_addr), site_id));
+        Relay2Header hdr=new Relay2Header(Relay2Header.SITE_UNREACHABLE, new SiteMaster(target_site), null);
+        msg.putHeader(id, hdr);
+        down_prot.down(new Event(Event.MSG, msg));
     }
 
     protected void forwardTo(Address next_dest, SiteAddress final_dest, Address original_sender, byte[] buf) {
+        if(log.isTraceEnabled())
+            log.trace("forwarding message to final destination " + final_dest + " to " + next_dest);
         Message msg=new Message(next_dest, buf);
         Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_dest, original_sender);
         msg.putHeader(id, hdr);
@@ -237,12 +257,19 @@ public class RELAY2 extends Protocol {
     protected void deliverLocally(SiteAddress dest, SiteAddress sender, byte[] buf) {
         Address local_dest;
         if(dest instanceof SiteUUID) {
-            SiteUUID tmp=(SiteUUID)dest;
-            local_dest=new UUID(tmp.getMostSignificantBits(), tmp.getLeastSignificantBits());
+            if(dest instanceof SiteMaster) {
+                local_dest=coord;
+            }
+            else {
+                SiteUUID tmp=(SiteUUID)dest;
+                local_dest=new UUID(tmp.getMostSignificantBits(), tmp.getLeastSignificantBits());
+            }
         }
         else
             local_dest=dest;
 
+        if(log.isTraceEnabled())
+            log.trace("delivering message to " + dest + " in local cluster");
         forwardTo(local_dest, dest, sender, buf);
     }
 
@@ -251,6 +278,8 @@ public class RELAY2 extends Protocol {
             Message original_msg=(Message)Util.streamableFromByteBuffer(Message.class, buf);
             original_msg.setSrc(sender);
             original_msg.setDest(dest);
+            if(log.isTraceEnabled())
+                log.trace("delivering message from " + sender);
             up_prot.up(new Event(Event.MSG, original_msg));
         }
         catch(Exception e) {
@@ -258,11 +287,13 @@ public class RELAY2 extends Protocol {
         }
     }
 
-    protected void relay(SiteAddress to, SiteAddress from, Relayer.Route route, byte[] buf) {
+    protected void _route(SiteAddress to, SiteAddress from, Relayer.Route route, byte[] buf) {
         if(route == null) {
             log.warn("route for site" + to.getSite() + " not found; dropping message");
             return;
         }
+        if(log.isTraceEnabled())
+            log.trace("routing message to " + to + " via " + route.site_master);
         RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, to, from);
         Message msg=new Message(route.site_master, buf);
         msg.putHeader(id, hdr);
@@ -326,7 +357,9 @@ public class RELAY2 extends Protocol {
 
 
     public static class Relay2Header extends Header {
-        public static final byte DATA = 1;
+        public static final byte DATA             = 1;
+        public static final byte SITE_UNREACHABLE = 2; // final_dest is a SiteMaster
+        public static final byte HOST_UNREACHABLE = 3; // final_dest is a SiteUUID
 
         protected byte    type;
         protected Address final_dest;
@@ -364,8 +397,10 @@ public class RELAY2 extends Protocol {
 
         protected static String typeToString(byte type) {
             switch(type) {
-                case DATA: return "DATA";
-                default:   return "<unknown>";
+                case DATA:             return "DATA";
+                case SITE_UNREACHABLE: return "SITE_UNREACHABLE";
+                case HOST_UNREACHABLE: return "HOST_UNREACHABLE";
+                default:               return "<unknown>";
             }
         }
     }

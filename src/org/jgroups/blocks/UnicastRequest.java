@@ -5,6 +5,7 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.protocols.relay.SiteAddress;
 import org.jgroups.util.Rsp;
 
 import java.util.Collection;
@@ -114,6 +115,26 @@ public class UnicastRequest<T> extends Request {
         checkCompletion(this);
     }
 
+    public void siteUnreachable(short site) {
+        if(!(target instanceof SiteAddress))
+            return;
+
+        lock.lock();
+        try {
+            if(done)
+                return;
+            if(result != null && !result.wasUnreachable())
+                result.setUnreachable();
+            done=true;
+            if(corr != null)
+                corr.done(req_id);
+            completed.signalAll();
+        }
+        finally {
+            lock.unlock();
+        }
+        checkCompletion(this);
+    }
 
     /**
      * If the target address is not a member of the new view, we'll mark the response as not received and unblock
@@ -126,7 +147,8 @@ public class UnicastRequest<T> extends Request {
 
         lock.lock();
         try {
-            if(!mbrs.contains(target)) {
+            // SiteAddresses are not checked as they might be in a different cluster
+            if(!(target instanceof SiteAddress) && !mbrs.contains(target)) {
                 result.setSuspected();
                 done=true;
                 if(corr != null)
@@ -193,7 +215,7 @@ public class UnicastRequest<T> extends Request {
     @GuardedBy("lock")
     protected boolean responsesComplete() {
         return done || options.getMode() == ResponseMode.GET_NONE || result.wasReceived() ||
-          result.wasSuspected() || num_received >= 1;
+          result.wasSuspected() || result.wasUnreachable() || num_received >= 1;
     }
 
 
