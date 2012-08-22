@@ -2,7 +2,6 @@ package org.jgroups.protocols.relay;
 
 import org.jgroups.*;
 import org.jgroups.logging.Log;
-import org.jgroups.protocols.RELAY;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.AddressGenerator;
 import org.jgroups.util.UUID;

@@ -144,8 +144,8 @@ public class RELAY2 extends Protocol {
                     sender=new SiteUUID((UUID)local_addr, UUID.get(local_addr), site_id);
 
                 // target is in the same site; we can deliver the message locally
-                if(target.getSite() == site_id) {
-                    if(local_addr.equals(target))
+                if(target.getSite() == site_id ) {
+                    if(local_addr.equals(target) || ((target instanceof SiteMaster) && is_coord))
                         deliver(target, sender, buf);
                     else
                         deliverLocally(target, sender, buf);
@@ -219,6 +219,10 @@ public class RELAY2 extends Protocol {
             return;
         }
         Relayer.Route route=relayer.getRoute(target_site);
+        if(route == null) {
+            log.warn("route for " + SiteUUID.getSiteName(target_site) + " (" + target_site + ") not found, dropping message to " + dest + " from " + sender);
+            return;
+        }
         relay(dest, sender, route, buf);
     }
 
