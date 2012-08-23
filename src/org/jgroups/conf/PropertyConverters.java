@@ -3,6 +3,7 @@ package org.jgroups.conf;
 import org.jgroups.Global;
 import org.jgroups.View;
 import org.jgroups.stack.Configurator;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
@@ -10,6 +11,7 @@ import org.jgroups.util.Util;
 import java.lang.reflect.Field;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -64,7 +66,21 @@ public class PropertyConverters {
         }
 
 		public String toString(Object value) {
-			return value.getClass().getName();
+            if(value instanceof Collection) {
+                StringBuilder sb=new StringBuilder();
+                Collection<IpAddress> list=(Collection<IpAddress>)value;
+                boolean first=true;
+                for(IpAddress addr: list) {
+                    if(first)
+                        first=false;
+                    else
+                        sb.append(",");
+                    sb.append(addr.getIpAddress().getHostAddress()).append("[").append(addr.getPort()).append("]");
+                }
+                return sb.toString();
+            }
+            else
+                return value.getClass().getName();
 		}
 		
         private static int getPortRange(Protocol protocol) throws Exception {
@@ -81,8 +97,22 @@ public class PropertyConverters {
 		}
 
 		public String toString(Object value) {
-			return value.getClass().getName();
-		}		
+            if(value instanceof Collection) {
+                StringBuilder sb=new StringBuilder();
+                Collection<InetSocketAddress> list=(Collection<InetSocketAddress>)value;
+                boolean first=true;
+                for(InetSocketAddress addr: list) {
+                    if(first)
+                        first=false;
+                    else
+                        sb.append(",");
+                    sb.append(addr.getAddress().getHostAddress()).append("[").append(addr.getPort()).append("]");
+                }
+                return sb.toString();
+            }
+            else
+                return value.getClass().getName();
+        }
     }
     
     public static class BindInterface implements PropertyConverter {
@@ -282,6 +312,8 @@ public class PropertyConverters {
         }
 
         public String toString(Object value) {
+            if(value instanceof InetAddress)
+                return ((InetAddress)value).getHostAddress();
             return value != null? value.toString() : null;
         }
     }
