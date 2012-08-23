@@ -50,8 +50,10 @@ public class ProtocolConfiguration {
 
     public ProtocolConfiguration(String protocol_name, Map<String,String> properties) {
         this.protocol_name=protocol_name;
-        if(!properties.isEmpty())
+        if(!properties.isEmpty()) {
             this.properties.putAll(properties);
+            properties_str=propertiesToString();
+        }
     }
 
     public String getProtocolName() {
