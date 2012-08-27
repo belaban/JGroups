@@ -670,10 +670,12 @@ public class ExecutionService extends AbstractExecutorService {
     public void execute(Runnable command) {
         if (!_shutdown.get()) {
             Object serializeCheck;
+            DistributedFuture<?> distFuture = null;
             // If it is wrapped by our future, then we have to make sure to 
             // check the actual callable/runnable given to us for serialization
             if (command instanceof DistributedFuture) {
-                serializeCheck = ((DistributedFuture<?>)command).getCallable();
+                distFuture = (DistributedFuture<?>)command;
+                serializeCheck = distFuture.getCallable();
                 if (serializeCheck instanceof RunnableAdapter) {
                     serializeCheck = ((RunnableAdapter<?>)serializeCheck).task;
                 }
@@ -684,6 +686,16 @@ public class ExecutionService extends AbstractExecutorService {
             
             if (serializeCheck instanceof Serializable ||
                     serializeCheck instanceof Streamable) {
+                if (distFuture != null) {
+                    _execProt.addExecutorListener(distFuture, distFuture);
+                    _unfinishedLock.lock();
+                    try {
+                        _unfinishedFutures.add(distFuture);
+                    }
+                    finally {
+                        _unfinishedLock.unlock();
+                    }
+                }
                 ch.down(new ExecutorEvent(ExecutorEvent.TASK_SUBMIT, command));
             }
             else {
@@ -771,14 +783,6 @@ public class ExecutionService extends AbstractExecutorService {
     protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
         DistributedFuture<T> future = new DistributedFuture<T>(ch, _unfinishedLock, 
                 _unfinishedCondition, _unfinishedFutures, runnable, value);
-        _execProt.addExecutorListener(future, future);
-        _unfinishedLock.lock();
-        try {
-            _unfinishedFutures.add(future);
-        }
-        finally {
-            _unfinishedLock.unlock();
-        }
         return future;
     }
 
@@ -787,14 +791,6 @@ public class ExecutionService extends AbstractExecutorService {
     protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
         DistributedFuture<T> future = new DistributedFuture<T>(ch, _unfinishedLock, 
                 _unfinishedCondition, _unfinishedFutures, callable);
-        _execProt.addExecutorListener(future, future);
-        _unfinishedLock.lock();
-        try {
-            _unfinishedFutures.add(future);
-        }
-        finally {
-            _unfinishedLock.unlock();
-        }
         return future;
     }
 }
