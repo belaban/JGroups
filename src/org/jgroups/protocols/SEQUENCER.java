@@ -221,7 +221,7 @@ public class SEQUENCER extends Protocol {
                                             "; view=" + view);
                             return null;
                         }
-                        
+
                         broadcast(msg, true, msg.getSrc(), hdr.seqno, hdr.type == SequencerHeader.FLUSH); // do copy the message
                         received_forwards++;
                         return null;
@@ -274,7 +274,7 @@ public class SEQUENCER extends Protocol {
         }
     }
 
-    protected void flush(final Address new_coord) {
+    protected void flush(final Address new_coord) throws InterruptedException {
         if(log.isTraceEnabled())
             log.trace(local_addr + ": flushing started");
         flushing=true;  // causes subsequent message sends (broadcasts and forwards) to block
@@ -283,10 +283,10 @@ public class SEQUENCER extends Protocol {
         while(flushing && running) {
             if(in_flight_sends.get() == 0)
                 break;
-            Util.sleep(100);
+            Thread.sleep(100);
         }
 
-        send_lock.lock();
+        send_lock.lockInterruptibly();
         try {
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": coord changed from " + coord + " to " + new_coord);
@@ -442,7 +442,7 @@ public class SEQUENCER extends Protocol {
         bcast_msgs++;
     }
 
-   
+
 
     /**
      * Unmarshal the original message (in the payload) and then pass it up (unless already delivered)
@@ -579,7 +579,11 @@ public class SEQUENCER extends Protocol {
         }
 
         public void run() {
-            flush(new_coord);
+            try {
+                flush(new_coord);
+            }
+            catch (InterruptedException e) {
+            }
         }
     }
 
