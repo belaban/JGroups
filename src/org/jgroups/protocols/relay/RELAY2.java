@@ -12,6 +12,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
@@ -22,7 +23,6 @@ import java.util.TreeSet;
  * @author Bela Ban
  * @since 3.2
  */
-@Experimental
 @MBean(description="RELAY2 protocol")
 public class RELAY2 extends Protocol {
 
@@ -34,7 +34,7 @@ public class RELAY2 extends Protocol {
     protected String config;
 
     @Property(description="Whether or not to relay multicast messages (dest=null)")
-    protected boolean relay_multicasts=false;
+    protected boolean relay_multicasts=true;
 
     
 
@@ -137,7 +137,7 @@ public class RELAY2 extends Protocol {
                     return null; // don't pass down
 
                 Address src=msg.getSrc();
-                SiteAddress sender=null;
+                SiteAddress sender;
                 if(src instanceof SiteMaster)
                     sender=new SiteMaster(((SiteMaster)src).getSite());
                 else
@@ -175,11 +175,25 @@ public class RELAY2 extends Protocol {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 Relay2Header hdr=(Relay2Header)msg.getHeader(id);
-                if(hdr == null)
-                    break;
+                Address dest=msg.getDest();
 
-                handleMessage(hdr, msg);
+                if(hdr == null) {
+                    // forward a multicast message to all bridges except myself, then pass up
+                    if(dest == null && is_coord && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
+                        byte[] buf=marshal(msg);
+                        Address sender=new SiteUUID((UUID)msg.getSrc(), UUID.get(msg.getSrc()), site_id);
+                        sendToBridges(sender, buf, site_id);
+                    }
+                    break; // pass up
+                }
+                else { // header is not null
+                    if(dest != null)
+                        handleMessage(hdr, msg);
+                    else
+                        deliver(null, hdr.original_sender, msg.getBuffer());
+                }
                 return null;
+
             case Event.VIEW_CHANGE:
                 handleView((View)evt.getArg());
                 break;
@@ -187,7 +201,26 @@ public class RELAY2 extends Protocol {
         return up_prot.up(evt);
     }
 
-    /** Called to handle a received relay message */
+
+    /** Called to handle a message received by the relayer */
+    protected void handleRelayMessage(Relay2Header hdr, Message msg, short from_site) {
+        Address final_dest=hdr.final_dest;
+        if(final_dest != null)
+            handleMessage(hdr, msg);
+        else {
+            byte[] buf=msg.getBuffer();
+            Message copy=msg.copy(true, false);
+            copy.setDest(null); // final_dest is null !
+            copy.setSrc(null);  // we'll use our own address
+            copy.putHeader(id, hdr);
+            down_prot.down(new Event(Event.MSG, copy));            // multicast locally
+            sendToBridges(msg.getSrc(), buf, from_site, site_id);  // forward to all bridges except self and from
+        }
+    }
+
+
+
+    /** Called to handle a message received by the transport */
     protected void handleMessage(Relay2Header hdr, Message msg) {
         switch(hdr.type) {
             case Relay2Header.DATA:
@@ -236,6 +269,26 @@ public class RELAY2 extends Protocol {
         _route(dest, sender, route, buf);
     }
 
+    /** Sends the message via all bridges excluding the excluded_sites bridges */
+    protected void sendToBridges(Address sender, byte[] buf, short ... excluded_sites) {
+        List<Relayer.Route> routes=relayer != null? relayer.getRoutes(excluded_sites) : null;
+        if(routes == null)
+            return;
+        for(Relayer.Route route: routes) {
+            if(log.isTraceEnabled())
+                log.trace("relaying multicast message from " + sender + " over bridge " + route.site_master.toString());
+            Relay2Header hdr=new Relay2Header(Relay2Header.DATA, null, sender);
+            Message msg=new Message(route.site_master, buf);
+            msg.putHeader(id, hdr);
+            try {
+                route.bridge.send(msg);
+            }
+            catch(Exception e) {
+                log.error("failed relaying message from " + sender + " over bridge " + route.site_master.toString());
+            }
+        }
+    }
+
     protected void sendSiteUnreachableTo(SiteAddress dest, short target_site) {
         Message msg=new Message(dest);
         msg.setSrc(new SiteUUID((UUID)local_addr, UUID.get(local_addr), site_id));
@@ -250,7 +303,7 @@ public class RELAY2 extends Protocol {
         Message msg=new Message(next_dest, buf);
         Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_dest, original_sender);
         msg.putHeader(id, hdr);
-        down_prot.down(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG,msg));
     }
 
     
@@ -296,7 +349,7 @@ public class RELAY2 extends Protocol {
             log.trace("routing message to " + to + " via " + route.site_master);
         RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, to, from);
         Message msg=new Message(route.site_master, buf);
-        msg.putHeader(id, hdr);
+        msg.putHeader(id,hdr);
         try {
             route.bridge.send(msg);
         }

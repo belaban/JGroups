@@ -87,7 +87,7 @@ public class Relayer {
     }
 
 
-    public String printRoutes() {
+    public synchronized String printRoutes() {
         StringBuilder sb=new StringBuilder();
         for(int i=0; i < routes.length; i++) {
             Route route=routes[i];
@@ -103,7 +103,7 @@ public class Relayer {
     }
 
 
-    protected void addRoute(short site, Route route) {
+    protected synchronized void addRoute(short site, Route route) {
         Route old_route;
         ensureCapacity(site);
         if((old_route=routes[site]) == null)
@@ -118,7 +118,7 @@ public class Relayer {
         routes[site]=route;
     }
 
-    protected Route removeRoute(short site) {
+    protected synchronized Route removeRoute(short site) {
         if(site <= routes.length -1) {
             Route route=routes[site];
             routes[site]=null;
@@ -129,13 +129,36 @@ public class Relayer {
         return null;
     }
 
-    protected Route getRoute(short site) {
+    protected synchronized Route getRoute(short site) {
         if(site <= routes.length -1)
             return routes[site];
         return null;
     }
 
-    protected void ensureCapacity(short site) {
+    protected synchronized List<Route> getRoutes(short ... excluded_sites) {
+        List<Route> retval=new ArrayList<Route>(routes.length);
+        for(short i=0; i < routes.length; i++) {
+            Route tmp=routes[i];
+            if(tmp != null) {
+                if(!isExcluded(tmp, excluded_sites))
+                    retval.add(tmp);
+            }
+        }
+
+        return retval;
+    }
+
+    protected static boolean isExcluded(Route route, short... excluded_sites) {
+        if(excluded_sites == null)
+            return false;
+        short site=((SiteUUID)route.site_master).getSite();
+        for(short excluded_site: excluded_sites)
+            if(site == excluded_site)
+                return true;
+        return false;
+    }
+
+    protected synchronized void ensureCapacity(short site) {
         if(site >= routes.length) {
             Route[] tmp_routes=new Route[Math.max(site+1, routes.length * 2)];
             System.arraycopy(routes, 0, tmp_routes, 0, routes.length);
@@ -148,7 +171,7 @@ public class Relayer {
     /**
      * Includes information about the site master of the route and the channel to be used
      */
-    protected static class Route {
+    public static class Route {
         protected final Address  site_master;
         protected final JChannel bridge;
 
@@ -190,7 +213,8 @@ public class Relayer {
                 log.warn("received a message without a relay header; discarding it");
                 return;
             }
-            relay.handleMessage(hdr, msg);
+            SiteUUID forwarder=(SiteUUID)msg.getSrc();
+            relay.handleRelayMessage(hdr, msg, forwarder.getSite());
         }
 
         public void viewAccepted(View view) {
