@@ -53,7 +53,7 @@ received. If so, the message is discarded, else it is delivered and the new seqn
 Note that seqnos are *not* used to check for ordering, but only to discard duplicates ! So it is ok to
 receive seqno 5 before seqno 4, if different threads on the same sender send messages concurrently.
 
-SEQUENCER will ensure though that, if a receiver P receives C:5 before C:4, then *everybody* will receive C:5 bfore C:4.
+SEQUENCER will ensure though that, if a receiver P receives C:5 before C:4, then *everybody* will receive C:5 before C:4.
 
 There are various unit tests for SEQUENCER, e.g. SequencerFailoverTest, SequencerMergeTest, SequencerOrderTest etc.
 
