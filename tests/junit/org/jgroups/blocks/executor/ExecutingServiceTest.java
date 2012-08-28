@@ -1,8 +1,9 @@
-package org.jgroups.blocks;
+package org.jgroups.blocks.executor;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.NotSerializableException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,11 +28,7 @@ import java.util.concurrent.locks.Lock;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
-import org.jgroups.blocks.executor.ExecutionCompletionService;
-import org.jgroups.blocks.executor.ExecutionRunner;
-import org.jgroups.blocks.executor.ExecutionService;
 import org.jgroups.blocks.executor.ExecutionService.DistributedFuture;
-import org.jgroups.blocks.executor.Executions;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -106,6 +103,12 @@ public class ExecutingServiceTest extends ChannelTestBase {
     protected void resetBlockers() {
         CyclicBarrier barrier = ExposedExecutingProtocol.requestBlocker.getAndSet(null);
         if (barrier != null) barrier.reset();
+    }
+    
+    @AfterMethod
+    protected void makeSureClean() {
+        assert e1._unfinishedFutures.isEmpty() : "Unfinished e1 futures should be empty!";
+        assert e2._unfinishedFutures.isEmpty() : "Unfinished e2 futures should be empty!";
     }
     
     public static class ExposedExecutingProtocol extends CENTRAL_EXECUTOR {
@@ -404,7 +407,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         Callable<Void> callable = new SleepingStreamableCallable(10000);
         NotifyingFuture<Void> future = e1.submit(callable);
         
-        // Now we make sure that 
+        // Now we make sure that callable is waiting for a consumer
         ExposedExecutingProtocol protocol = 
             (ExposedExecutingProtocol)c1.getProtocolStack().findProtocol(
                 ExposedExecutingProtocol.class);
@@ -498,7 +501,6 @@ public class ExecutingServiceTest extends ChannelTestBase {
         @SuppressWarnings("rawtypes")
         Constructor<SimpleCallable> constructor = 
             SimpleCallable.class.getConstructor(Object.class);
-        constructor.getGenericParameterTypes();
         @SuppressWarnings("unchecked")
         Callable<Long> callable = (Callable<Long>)Executions.serializableCallable(
             constructor, value);
@@ -554,13 +556,14 @@ public class ExecutingServiceTest extends ChannelTestBase {
         
         ExposedExecutingProtocol.requestBlocker.set(barrier);
         
-        final Callable<Integer> callable = new SimpleStreamableCallable<Integer>(23);
+        int value = 23;
+        final Callable<Integer> callable = new SimpleStreamableCallable<Integer>(value);
         ExecutorService service = Executors.newCachedThreadPool();
-        service.submit(new Runnable() {
+        Future<Integer> future = service.submit(new Callable<Integer>() {
 
             @Override
-            public void run() {
-                e2.submit(callable);
+            public Integer call() throws InterruptedException, ExecutionException {
+                return e2.submit(callable).get();
             }
         });
         
@@ -607,6 +610,19 @@ public class ExecutingServiceTest extends ChannelTestBase {
         long expected = protocol.getCounter().get() -1;
         assert owner.getRequestId() == expected : "Request id " + 
             owner.getRequestId() + " didn't match what we expected " + expected; 
+        
+        // Start a consumer to consume it
+        Thread consumer1 = new Thread(er2);
+        consumer1.start();
+        
+        Integer returnValue = future.get(2, TimeUnit.SECONDS);
+        assert returnValue == value : "Future value returne didn't match what we expected " + value + " was " + returnValue;
+        
+        // We try to stop the consumer
+        consumer1.interrupt();
+        
+        consumer1.join(2000);
+        assert !consumer1.isAlive() : "Consumer did not stop correctly";
     }
     
     @Test
@@ -632,5 +648,46 @@ public class ExecutingServiceTest extends ChannelTestBase {
         assert !consumer1.isAlive() : "Consumer did not stop correctly";
         consumer2.join(2000);
         assert !consumer2.isAlive() : "Consumer did not stop correctly";
+    }
+    
+    @Test
+    public void testSubmittingNonSerializeCallable() {
+        try {
+            e1.submit(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    return null;
+                }
+            });
+            assert false : "Task was submitted, where as it should have thrown an exception";
+        }
+        catch (IllegalArgumentException e) {
+            
+        }
+    }
+    
+    @Test
+    public void testSubmittingSerializeCallableWithNonSerializableComponent() 
+            throws InterruptedException, TimeoutException {
+        Thread consumer1 = new Thread(er2);
+        consumer1.start();
+        
+        Future<Object> future = e1.submit(new SimpleStreamableCallable<Object>(new Object()));
+        try {
+            future.get(2, TimeUnit.SECONDS);
+        }
+        catch (ExecutionException e) {
+            Throwable t = e.getCause();
+            assert t instanceof IllegalArgumentException : "Expected an illegal argument exception";
+            
+            Throwable t2 = t.getCause();
+            assert t2 instanceof NotSerializableException : "Expected a not serializable exception";
+        }
+        
+        // We try to stop the threads.
+        consumer1.interrupt();
+        
+        consumer1.join(2000);
+        assert !consumer1.isAlive() : "Consumer did not stop correctly";
     }
 }

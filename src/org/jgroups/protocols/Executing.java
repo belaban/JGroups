@@ -183,7 +183,7 @@ abstract public class Executing extends Protocol {
         if(listener != null)
             notifiers.put(future, listener);
     }
-
+    
     @ManagedAttribute
     public String getAddress() {
         return local_addr != null? local_addr.toString() : null;
@@ -370,6 +370,10 @@ abstract public class Executing extends Protocol {
                 
                 if (_awaitingConsumer.remove(runnable)) {
                     _requestId.remove(runnable);
+                    ExecutorNotification notification = notifiers.remove(runnable);
+                    if (notification != null) {
+                        notification.interrupted(runnable);
+                    }
                     if (log.isTraceEnabled())
                         log.trace("Cancelled task " + runnable + 
                             " before it was picked up");
@@ -696,14 +700,25 @@ abstract public class Executing extends Protocol {
                 handleTaskSubmittedRequest(runnable, local_addr, requestId, threadId);
             }
             else {
-                if (runnable instanceof DistributedFuture) {
-                    Callable<?> callable = ((DistributedFuture<?>)runnable).getCallable();
-                    sendThreadRequest(owner.getAddress(), threadId, 
-                        Type.RUN_SUBMITTED, requestId, callable);
+                try {
+                    if (runnable instanceof DistributedFuture) {
+                        Callable<?> callable = ((DistributedFuture<?>)runnable).getCallable();
+                        sendThreadRequest(owner.getAddress(), threadId, 
+                            Type.RUN_SUBMITTED, requestId, callable);
+                    }
+                    else {
+                        sendThreadRequest(owner.getAddress(), threadId, 
+                            Type.RUN_SUBMITTED, requestId, runnable);
+                    }
                 }
-                else {
-                    sendThreadRequest(owner.getAddress(), threadId, 
-                        Type.RUN_SUBMITTED, requestId, runnable);
+                // This relies on the Mesasge class to throw this when a 
+                // serialization issue occurs
+                catch (IllegalArgumentException e) {
+                    ExecutorNotification notificiation = notifiers.remove(runnable);
+                    if (notificiation != null) {
+                        notificiation.throwableEncountered(e);
+                    }
+                    throw e;
                 }
             }
         }
