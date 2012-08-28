@@ -57,7 +57,10 @@ public class GroupRequest<T> extends Request {
     private final Map<Address,Rsp<T>> requests;
 
     @GuardedBy("lock")
-    int num_valid, num_received, num_suspected;
+    int num_valid;    // the number of valid responses (values or exceptions that passed the response filter)
+
+    @GuardedBy("lock")
+    int num_received; // number of responses (values, exceptions or suspicions)
 
 
 
@@ -119,7 +122,8 @@ public class GroupRequest<T> extends Request {
         lock.lock();
         try {
             if(!rsp.wasReceived()) {
-                num_received++;
+                if(!rsp.wasSuspected())
+                    num_received++;
                 if((responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender))) {
                     if(is_exception && response_value instanceof Throwable)
                         rsp.setException((Throwable)response_value);
@@ -160,7 +164,8 @@ public class GroupRequest<T> extends Request {
                 changed=true;
                 lock.lock();
                 try {
-                    num_suspected++;
+                    if(!rsp.wasReceived())
+                        num_received++;
                     completed.signalAll();
                 }
                 finally {
@@ -208,7 +213,8 @@ public class GroupRequest<T> extends Request {
                 if(!mbrs.contains(mbr)) {
                     Rsp<T> rsp=entry.getValue();
                     if(rsp.setSuspected()) {
-                        num_suspected++;
+                        if(!rsp.wasReceived())
+                            num_received++;
                         changed=true;
                     }
                 }
@@ -314,12 +320,12 @@ public class GroupRequest<T> extends Request {
 
         switch(options.getMode()) {
             case GET_FIRST:
-                return num_valid >= 1 || num_suspected >= num_total || num_received >= num_total;
+                return num_valid >= 1 || num_received >= num_total;
             case GET_ALL:
-                return num_valid + num_suspected >= num_total || num_received >= num_total;
+                return num_valid >= num_total || num_received >= num_total;
             case GET_MAJORITY:
                 int majority=determineMajority(num_total);
-                return num_valid + num_suspected >= majority || num_received >= num_total;
+                return num_valid >= majority || num_received >= num_total;
             case GET_NONE:
                 return true;
             default:
