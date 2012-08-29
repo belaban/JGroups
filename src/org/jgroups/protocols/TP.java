@@ -925,8 +925,7 @@ public abstract class TP extends Protocol {
                 throw new IllegalArgumentException("logical_addr_cache_expiration has to be > 0");
             logical_addr_cache_reaper=timer.scheduleWithFixedDelay(new Runnable() {
                 public void run() {
-                    logical_addr_cache.removeMarkedElements();
-                    fetchLocalAddresses();
+                    evictLogicalAddressCache();
                 }
 
                 public String toString() {
