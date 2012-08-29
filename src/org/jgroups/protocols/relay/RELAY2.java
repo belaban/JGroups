@@ -82,6 +82,10 @@ public class RELAY2 extends Protocol {
 
         if(site_id < 0)
             throw new IllegalArgumentException("site_id could not be determined from site \"" + site + "\"");
+
+        if(!site_config.getForwards().isEmpty())
+            log.warn("Forwarding routes are currently not supported and will be ignored. This will change " +
+                       "with hierarchical routing (https://issues.jboss.org/browse/JGRP-1506)");
     }
 
     public void stop() {
@@ -387,11 +391,11 @@ public class RELAY2 extends Protocol {
         if(become_coord) {
             is_coord=true;
             String bridge_name="_" + UUID.get(local_addr);
-            relayer=new Relayer(site_config, bridge_name, log, this);
+            relayer=new Relayer(this, log);
             try {
                 if(log.isTraceEnabled())
                     log.trace("I became site master; starting bridges");
-                relayer.start();
+                relayer.start(site_config.getBridges(), bridge_name, site_id);
             }
             catch(Throwable t) {
                 log.error("failed starting relayer", t);

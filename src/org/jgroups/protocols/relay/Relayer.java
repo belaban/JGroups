@@ -17,43 +17,37 @@ import java.util.List;
  * @since 3.2
  */
 public class Relayer {
-    protected final RelayConfig.SiteConfig site_config;
-
     /** The routing table. Site IDs are used as indices, e.g. the route for site=2 is at index 2. */
     protected Route[]                      routes;
 
     /** The bridges which are used to connect to different sites */
-    protected final List<Bridge>           bridges;
-
-    protected final short                  my_site_id;
-
-    /** The name of the local channel; we'll prepend "sitemaster_" to it */
-    protected final String                 local_name;
+    protected List<Bridge>                 bridges;
 
     protected final Log                    log;
 
     protected final RELAY2                 relay;
 
 
-    public Relayer(RelayConfig.SiteConfig site_config, String local_name, Log log, RELAY2 relay) {
-        this.site_config=site_config;
+    public Relayer(RELAY2 relay, Log log) {
         this.relay=relay;
-        int num_routes=site_config.getBridges().size();
-        my_site_id=site_config.getId();
-        routes=new Route[num_routes];
-        bridges=new ArrayList<Bridge>(num_routes);
-        this.local_name=local_name;
         this.log=log;
     }
 
+    
     /**
      * Creates all bridges from site_config and connects them (joining the bridge clusters)
+     * @param bridge_configs A list of bridge configurations
+     * @param bridge_name The name of the local bridge channel, prefixed with '_'.
+     * @param my_site_id The ID of this site
+     * @throws Throwable
      */
-    // todo: parallelize
-    public void start() throws Throwable {
+    public void start(List<RelayConfig.BridgeConfig> bridge_configs, String bridge_name, final short my_site_id)
+      throws Throwable {
+        routes=new Route[bridge_configs.size()];
+        bridges=new ArrayList<Bridge>(bridge_configs.size());
         try {
-            for(RelayConfig.BridgeConfig bridge_config: site_config.getBridges()) {
-                Bridge bridge=new Bridge(bridge_config.getConfig(), bridge_config.getName(), local_name,
+            for(RelayConfig.BridgeConfig bridge_config: bridge_configs) {
+                Bridge bridge=new Bridge(bridge_config.getConfig(), bridge_config.getName(), bridge_name,
                                          new AddressGenerator() {
                                              public Address generateAddress() {
                                                  UUID uuid=UUID.randomUUID();
