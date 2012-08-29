@@ -925,8 +925,7 @@ public abstract class TP extends Protocol {
                 throw new IllegalArgumentException("logical_addr_cache_expiration has to be > 0");
             logical_addr_cache_reaper=timer.scheduleWithFixedDelay(new Runnable() {
                 public void run() {
-                    logical_addr_cache.removeMarkedElements();
-                    fetchLocalAddresses();
+                    evictLogicalAddressCache();
                 }
 
                 public String toString() {
@@ -2444,7 +2443,6 @@ public abstract class TP extends Protocol {
         protected SocketFactory socket_factory=new DefaultSocketFactory();
         Address                 local_addr;
 
-        // TODO [JGRP-1194] - Revisit implementation of TUNNEL and shared transport
         static final ThreadLocal<ProtocolAdapter> thread_local=new ThreadLocal<ProtocolAdapter>();
 
         public ProtocolAdapter(String cluster_name, Address local_addr, short transport_id, Protocol up, Protocol down, String pattern) {
@@ -2531,14 +2529,12 @@ public abstract class TP extends Protocol {
                     members.addAll(tmp);
                     break;
                 case Event.DISCONNECT:
-                    // TODO [JGRP-1194] - Revisit implementation of TUNNEL and shared transport
                     thread_local.set(this);
                     break;
                 case Event.CONNECT:
                 case Event.CONNECT_WITH_STATE_TRANSFER:
                 case Event.CONNECT_USE_FLUSH:
                 case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:  
-                    // TODO [JGRP-1194] - Revisit implementation of TUNNEL and shared transport
                     thread_local.set(this);
                     cluster_name=(String)evt.getArg();
                     factory.setClusterName(cluster_name);
