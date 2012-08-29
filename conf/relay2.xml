@@ -8,9 +8,6 @@
             <bridges>
                 <bridge config="/home/bela/global.xml" name="global"/>
             </bridges>
-            <forwards>
-                <forward to="lax" gateway="sfo"/>
-            </forwards>
         </site>
 
         <site name="nyc" id="1">
@@ -18,6 +15,7 @@
                 <bridge config="/home/bela/global.xml" name="global"/>
             </bridges>
         </site>
+
         <site name="sfo" id="2">
             <bridges>
                 <bridge name="global" config="/home/bela/global.xml"/>
