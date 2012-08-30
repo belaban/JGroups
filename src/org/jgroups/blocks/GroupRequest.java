@@ -245,7 +245,7 @@ public class GroupRequest<T> extends Request {
                 if(!(mbr instanceof SiteAddress) && !mbrs.contains(mbr)) {
                     Rsp<T> rsp=entry.getValue();
                     if(rsp.setSuspected()) {
-                        if(!rsp.wasReceived())
+                        if(!(rsp.wasReceived() || rsp.wasUnreachable()))
                             num_received++;
                         changed=true;
                     }
