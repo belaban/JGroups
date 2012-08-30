@@ -33,7 +33,7 @@ public class RELAY2 extends Protocol {
     @Property(description="Name of the relay configuration",writable=false)
     protected String config;
 
-    @Property(description="Whether or not to relay multicast messages (dest=null)")
+    @Property(description="Whether or not to relay multicast (dest=null) messages")
     protected boolean relay_multicasts=true;
 
     

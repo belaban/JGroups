@@ -1496,6 +1496,15 @@ keytool -genseckey -alias myKey -keypass changeit -storepass changeit  -keyalg B
             ${RELAY}
         </section>
 
+        <section id="RELAY2">
+            <title>RELAY2</title>
+            <para>
+                RELAY2 provides clustering between different sites (local clusters), for multicast and unicast messages.
+                See <xref linkend="Relay2Advanced"/> for details.
+            </para>
+            ${RELAY2}
+        </section>
+
         <section id="STOMP_Protocol">
             <title>STOMP</title>
             <para>

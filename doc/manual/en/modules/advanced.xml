@@ -1893,6 +1893,227 @@ On view change V:
 
     </section>
 
+    <section id="Relay2Advanced">
+        <title>Relaying between multiple sites (RELAY2)</title>
+
+        <note>
+            <para>
+                RELAY2 was added to JGroups in the 3.2 release.
+            </para>
+        </note>
+
+        <para>
+            Similar to <xref linkend="RelayAdvanced">RELAY</xref>, RELAY2 provides clustering between sites. However, the
+            differences to RELAY are:
+            <itemizedlist>
+                <listitem>
+                    Clustering can be done between <emphasis>multiple sites</emphasis>. Currently (3.2), sites have to be
+                    directly reachable. In 3.3, hierarchical setups of sites will be implemented.
+                </listitem>
+                <listitem>
+                    Virtual (global) views are not provided anymore. If we have clusters SFO={A,B,C} and LON={X,Y,Z}, then
+                    both clusters are completed autonomous and don't know about each other's existence.
+                </listitem>
+                <listitem>
+                    Not only unicasts, but also multicasts can be routed between sites (configurable).
+                </listitem>
+            </itemizedlist>
+        </para>
+
+        <para>
+            To use RELAY2, it has to be placed at the top of the configuration, e.g.:
+        </para>
+        <programlisting language="XML">
+&lt;relay.RELAY2 site="LON" config="/home/bela/relay2.xml"
+              relay_multicasts="true" /&gt;
+        </programlisting>
+
+        <para>
+            The above configuration has a site name which will be used to route messages between sites. To do that, addresses
+            contain the site-ID, so we always know which site the address is from. E.g. an address A1:LON in the SFO site
+            is not local, but will be routed to the remote site SFO.
+        </para>
+        <para>
+            The relay_multicasts property determines whether or not multicast messages (with dest = null) are relayed to
+            the other sites, or not. When we have a site LON, connected to sites SFO and NYC, if a multicast message is
+            sent in site LON, and relay_multicasts is true, then all members of sites SFO and NYC will receive the message.
+        </para>
+        <para>
+            The config property points to an XML file which defines the setup of the sites, e.g.:
+        </para>
+        <programlisting language="XML">
+&lt;RelayConfiguration xmlns="urn:jgroups:relay:1.0"&gt;
+
+    &lt;sites&gt;
+        &lt;site name="lon" id="0"&gt;
+            &lt;bridges&gt;
+                &lt;bridge config="/home/bela/global.xml" name="global"/&gt;
+            &lt;/bridges&gt;
+        &lt;/site&gt;
+
+        &lt;site name="nyc" id="1"&gt;
+            &lt;bridges&gt;
+                &lt;bridge config="/home/bela/global.xml" name="global"/&gt;
+            &lt;/bridges&gt;
+        &lt;/site&gt;
+
+        &lt;site name="sfo" id="2"&gt;
+            &lt;bridges&gt;
+                &lt;bridge name="global" config="/home/bela/global.xml"/&gt;
+            &lt;/bridges&gt;
+        &lt;/site&gt;
+    &lt;/sites&gt;
+&lt;/RelayConfiguration&gt;
+        </programlisting>
+
+        <note>
+            <para>
+                The configuration as shown above might change in 3.3, when hierarchical routing will be added.
+            </para>
+        </note>
+
+        <para>
+            This defines 3 sites LON, SFO and NYC. All the sites are connected to a global cluster (bus) "global" (defined by
+            /home/bela/global.xml). All inter-site traffic will be sent via this global cluster (which has to be accessible
+            by all of the sites). Intra-site traffic is sent via the cluster that's defined by the configuration of which
+            RELAY2 is the top protocol.
+        </para>
+        <para>
+            The above configuration is not mandatory, ie. instead of a global cluster, we could define separate clusters
+            between LON and SFO and LON and NYC. However, in such a setup, due to lack of hierarchical routing, NYC and SFO
+            wouldn't be able to send each other messages; only LON would be able to send message to SFO and NYC.
+        </para>
+
+        <section>
+            <title>Relaying of multicasts</title>
+            <para>
+                If relay_multicasts is true then any multicast received by the <emphasis>site master</emphasis> of a site
+                (ie. the coordinator of the local cluster, responsible for relaying of unicasts and multicasts) will
+                relay the multicast to all connected sites. This means that - beyond setting relay_multicasts - nothing
+                has to be done in order to relay multicasts across all sites.
+            </para>
+            <para>
+                A recipient of a multicast message which originated from a different site will see that the sender's
+                address is not a UUID, but a subclass (SiteUUID) which is the UUID plus the site suffix, e.g. A1:SFO.
+                Since a SiteUUID is a subclass of a UUID, both types can be mixed and matched, placed into hashmaps or
+                lists, and they implement compareTo() and equals() correctly.
+            </para>
+            <para>
+                When a reply is to be sent to the originator of the multicast message, Message.getSrc() provides the
+                target address for the unicast response message. This is also a SiteUUID, but the sender of the response
+                neither has to know nor take any special action to send the response, as JGroups takes care of routing
+                the response back to the original sender.
+            </para>
+        </section>
+
+
+        <section>
+            <title>Relaying of unicasts</title>
+            <para>
+                As discussed above, relaying of unicasts is done transparently. However, if we don't have a target
+                address (e.g. as a result of reception of a multicast), there is a special address
+                <emphasis>SiteMaster</emphasis> which identifies the site master; the coordinator of a local cluster
+                responsible for relaying of messages.
+            </para>
+            <para>
+                Class SiteMaster is created with the name of a site, e.g. new SiteMaster("LON"). When a unicast with
+                destination SiteMaster("LON") is sent, then we relay the message to the <emphasis>current</emphasis>
+                site master of LON. If the site master changes, messages will get relayed to a different node, which
+                took over the role of the site master from the old (perhaps crashed) site master.
+            </para>
+        </section>
+
+        <section>
+            <title>Invoking RPCs across sites</title>
+            <para>
+                Invoking RPCs across sites is more or less transparent, except for the case when we cannot reach a member
+                of a remote site. If we want to invoke method foo() in A1, A2 (local) and SiteMaster("SFO"), we could
+                write the following code:
+            </para>
+            <programlisting language="Java">
+List&lt;Address&gt; dests=new ArrayList&lt;Address&gt;(view.getMembers());
+dests.add(new SiteMaster("SFO"));
+RspList&lt;Object&gt; rsps;
+rsps=disp.callRemoteMethods(dests, call,
+              new RequestOptions(ResponseMode.GET_ALL, 5000).setAnycasting(true));
+for(Rsp rsp: rsps.values()) {
+    if(rsp.wasUnreachable())
+        System.out.println("&lt;&lt; unreachable: " + rsp.getSender());
+    else
+        System.out.println("&lt;&lt; " + rsp.getValue() + " from " + rsp.getSender());
+}
+            </programlisting>
+
+
+            <para>
+                First, we add the members (A1 and A2) of the current (local) view to the destination set. Then we add the
+                special address SiteMaster("SFO") which acts as a placeholder for the current coordinator of the SFO site.
+            </para>
+            <para>
+                Next, we invoke the call with dests as target set and block until responses from all A1, A2 and SiteMaster("SFO")
+                have been received, or until 5 seconds have elapsed.
+            </para>
+            <para>
+                Next, we check the response list. And here comes the bit that's new in 3.2: if a site is unreachable, a Rsp
+                has an additional field "unreachable", which means that we could not reach the site master of SFO for example.
+                Note that this is not necessarily an error, as a site maybe currently down, but the caller now has the
+                option of checking on this new status field.
+            </para>
+        </section>
+
+        <section>
+            <title>Configuration</title>
+            <para>
+                Let's configure an example which consists of 3 sites SFO, LON and NYC and 2 members in each site. First
+                we define the configuration for the local cluster (site) SFO. To do this, we could for example copy udp.xml
+                from the JGroups distro (and name it sfo.xml) and add RELAY2 to the top (as shown above). RELAY2's
+                config property points to relay2.xml as shown above as well. The relay2.xml file defines a
+                global cluster with global.xml, which uses TCP and MPING for the global cluster (copy for example
+                tcp.xml to create global.xml)
+            </para>
+            <para>
+                Now copy sfo.xml to lon.xml and nyc.xml. The RELAY2 configuration stays the same for lon.xml and nyc.xml,
+                but the multicast address and/or multicast port has to be changed in order to create 3 separate local
+                clusters. Therefore, modify both lon.xml and nyc.xml and change mcast_port and / or mcast_addr in UDP
+                to use separate values, so the clusters don't interfere with each other.
+            </para>
+            <para>
+                To test whether we have 3 different clusters, start the Draw application (shipped with JGroups):
+            </para>
+            <screen>
+java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./sfo.xml -name sfo1
+java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./sfo.xml -name sfo2
+java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./lon.xml -name lon1
+java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./lon.xml -name lon2
+java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./nyc.xml -name nyc1
+java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./nyc.xml -name nyc2
+            </screen>
+
+            <para>
+                We should now have 3 local clusters (= sites) of 2 instances each. When RELAY2.relay_multicasts is true,
+                if you draw in one instance, we should see the drawing in all 6 instances. This means that relaying
+                of multicasting between sites works. If this doesn't work, run a few Draw instances on global.xml, to
+                see if they find each other.
+            </para>
+            <para>
+                Note that the first member of each cluster always joins the global cluster (defined by global.xml) too.
+                This is necessary to relay messages between sites.
+            </para>
+            <para>
+                To test unicasts between sites, you can use the org.jgroups.demos.RelayDemoRpc program: start it as
+                follows:
+            </para>
+            <screen>java -Djava.net.preferIPv4Stack=true org.jgroups.demos.RelayDemoRpc -props ./sfo.xml -name sfo1</screen>
+            <para>
+                Start 2 instances in 3 sites and then use <screen>mcast lon sfo nyc</screen> to invoke RPCs on all
+                local members and site masters SFO, NYC and LON. If one of the sites is down, you'll get a message
+                stating the site is unreachable.
+            </para>
+        </section>
+
+    </section>
+
+
     <section id="DaisyChaining">
         <title>Daisychaining</title>
         <para>
