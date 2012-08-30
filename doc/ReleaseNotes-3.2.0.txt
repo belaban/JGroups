@@ -1,0 +1,91 @@
+
+
+Release Notes JGroups 3.2.0
+===========================
+
+
+Author: Bela Ban
+
+********************************************************************************
+!! JGroups 3.2.0 is *not* API-backwards compatible with 2.x.x releases !!
+!! JGroups 3.2.0 is       API-backwards compatible with previous 3.x releases !!
+********************************************************************************
+
+
+Below is a summary (with links to the detailed description) of the major new features, optimizations and bug fixes.
+
+
+
+
+New features
+============
+
+
+RELAY2: multi-site clustering
+-----------------------------
+[https://issues.jboss.org/browse/JGRP-1433]
+
+Provides clustering between multiple sites; successor to RELAY (which allowed for only 2 sites). RELAY2 is added to the
+top of the stack and relays both multicast and unicast messages between sites (local clusters).
+For documentation go to http://www.jgroups.org/manual-3.x/html/user-advanced.html#Relay2Advanced.
+
+
+
+
+Optimizations
+=============
+
+
+
+
+
+
+Bug fixes
+=========
+
+GroupRequest: received and suspected is counted twice
+-----------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1505]
+
+This could lead to premature termination of blocking RPCs.
+
+
+
+NAKACK / NAKACK2: modification of headers leads to unneeded retransmissions
+---------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1502]
+
+When copying messages on a retransmission, the headers are not copied. When NAKACK{2} therefore modifies a header
+in place, we're changing the type of the message (normal message --> retransmit message). This is not incorrect, but
+leads to unneeded retransmissions.
+
+
+RSVP: incorrect updating of membership response list
+----------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1503]
+
+This could lead to TimeoutExceptions when a new view was received before the call terminated.
+
+
+
+
+
+
+
+Manual
+======
+
+The manual is at http://www.jgroups.org/manual-3.x/html/index.html.
+
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Toronto, Canada
+Sanne Grinovero, Newcastle, Great Britain
+
+Aug 2012
+
