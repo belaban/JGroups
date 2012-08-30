@@ -50,7 +50,7 @@ public class Merger {
 
     public String getMergeIdAsString() {return merge_id != null? merge_id.toString() : null;}
     public String getMergeIdHistory()  {return merge_id_history.toString();}
-    
+
     /**
      * Invoked upon receiving a MERGE event from the MERGE layer. Starts the merge protocol.
      * See description of protocol in DESIGN.
@@ -105,7 +105,7 @@ public class Merger {
             sendMergeRejectedResponse(sender, merge_id);
         }
     }
-  
+
 
     protected void _handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs) throws Exception {
         boolean success=matchMergeId(merge_id) || setMergeId(null, merge_id);
@@ -130,7 +130,7 @@ public class Merger {
         if(tmp_vid != null) tmp_vid=tmp_vid.copy();
         if(tmp_vid == null)
             throw new Exception("view ID is null; cannot return merge response");
-        
+
         View view=new View(tmp_vid, new ArrayList<Address>(members));
 
         //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
@@ -145,7 +145,7 @@ public class Merger {
         Digest digest=fetchDigestsFromAllMembersInSubPartition(members, merge_id);
         if(digest == null || digest.size() == 0)
             throw new Exception("failed fetching digests from subpartition members; dropping merge response");
-        
+
         sendMergeResponse(sender, view, digest, merge_id);
     }
 
@@ -349,7 +349,7 @@ public class Merger {
      * @return
      */
     private Digest fetchDigestsFromAllMembersInSubPartition(List<Address> current_mbrs, MergeId merge_id) {
-        
+
         // Optimization: if we're the only member, we don't need to multicast the get-digest message
         if(current_mbrs == null || current_mbrs.size() == 1 && current_mbrs.get(0).equals(gms.local_addr))
             return (Digest)gms.getDownProtocol().down(new Event(Event.GET_DIGEST, gms.local_addr));
@@ -543,7 +543,7 @@ public class Merger {
             // now remove all members which don't have us in their view, so RPCs won't block (e.g. FLUSH)
             // https://jira.jboss.org/browse/JGRP-1061
             sanitizeViews(views);
-                
+
             // Add all different coordinators of the views into the hashmap and sets their members:
             Collection<Address> coordinators=Util.determineMergeCoords(views);
             for(Address coord: coordinators) {
@@ -681,13 +681,20 @@ public class Merger {
             for(Map.Entry<Address,Collection<Address>> entry: coords.entrySet()) {
                 Address coord=entry.getKey();
                 Collection<Address> mbrs=entry.getValue();
-                Message msg=new Message(coord, null, null);
+                final Message msg=new Message(coord, null, null);
                 msg.setFlag(Message.OOB);
                 GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ, mbrs);
                 hdr.mbr=gms.local_addr;
                 hdr.merge_id=new_merge_id;
                 msg.putHeader(gms.getId(), hdr);
-                gms.getDownProtocol().down(new Event(Event.MSG, msg));
+
+                // JGRP-1493: Sending a message can block, and we mustn't block the MergeTask.  So let's have a new thread.
+                Runnable r = new Runnable() {
+                    public void run() {
+                        gms.getDownProtocol().down(new Event(Event.MSG, msg));
+                    }
+                };
+                new Thread(r).start();
             }
 
             // wait until num_rsps_expected >= num_rsps or timeout elapsed
@@ -763,7 +770,7 @@ public class Merger {
             Address new_coord = new_mbrs.size() > 0 ? new_mbrs.elementAt(0) : null;
             if(new_coord == null)
                 return null;
-            
+
             // should be the highest view ID seen up to now plus 1
             ViewId new_vid=new ViewId(new_coord, logical_time + 1);
 
