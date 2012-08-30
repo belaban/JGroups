@@ -245,6 +245,13 @@ public abstract class TP extends Protocol {
     @Property(description="whether or not warnings about messages from different groups are logged")
     protected boolean log_discard_msgs=true;
 
+    @Property(description="Timeout (in ms) to determine how long to wait until a request to fetch the physical address " +
+      "for a given logical address will be sent again. Subsequent requests for the same physical address will therefore " +
+      "be spaced at least who_has_cache_timeout ms apart")
+    protected long who_has_cache_timeout=2000;
+
+    @Property(description="Max number of attempts to fetch a physical address (when not in the cache) before giving up")
+    protected int physical_addr_max_fetch_attempts=10;
 
 
 
@@ -529,7 +536,7 @@ public abstract class TP extends Protocol {
     };
 
     /** Cache keeping track of WHO_HAS requests for physical addresses (given a logical address) and expiring
-     * them after 5000ms */
+     * them after who_has_cache_timeoout ms */
     protected AgeOutCache<Address> who_has_cache;
 
 
@@ -830,6 +837,9 @@ public abstract class TP extends Protocol {
     public void init() throws Exception {
         super.init();
 
+        if(physical_addr_max_fetch_attempts < 1)
+            throw new IllegalArgumentException("Property \"physical_addr_max_fetch_attempts\" cannot be less than 1");
+
         // Create the default thread factory
         if(global_thread_factory == null)
             global_thread_factory=new DefaultThreadFactory(getChannelThreadGroup(), "", false);
@@ -871,7 +881,7 @@ public abstract class TP extends Protocol {
             }
         }
 
-        who_has_cache=new AgeOutCache<Address>(timer, 2000L);
+        who_has_cache=new AgeOutCache<Address>(timer, who_has_cache_timeout);
 
         Util.verifyRejectionPolicy(oob_thread_pool_rejection_policy);
         Util.verifyRejectionPolicy(thread_pool_rejection_policy);
@@ -1309,7 +1319,7 @@ public abstract class TP extends Protocol {
         PhysicalAddress physical_dest=null;
         int cnt=1;
         long sleep_time=20;
-        while((physical_dest=getPhysicalAddressFromCache(dest)) == null && cnt++ <= 10) {
+        while((physical_dest=getPhysicalAddressFromCache(dest)) == null && cnt++ <= physical_addr_max_fetch_attempts) {
             if(!who_has_cache.contains(dest)) {
                 who_has_cache.add(dest);
                 Util.sleepRandom(1, 500); // to prevent a discovery flood in large clusters (by staggering requests)
