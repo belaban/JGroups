@@ -6,6 +6,9 @@ import org.jgroups.*;
 import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.*;
+import org.jgroups.protocols.relay.RELAY2;
+import org.jgroups.protocols.relay.SiteMaster;
+import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.GossipData;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
@@ -601,6 +604,15 @@ public class SizeTest {
         _testSize(hdr);
     }
 
+
+    public static void testRelay2Header() throws Exception {
+        Address dest=new SiteMaster((short)0);
+        RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, dest, null);
+        _testSize(hdr);
+        Address sender=new SiteUUID(UUID.randomUUID(), "dummy", (short)1);
+        hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, dest, sender);
+        _testSize(hdr);
+    }
 
 
     public static void testEncryptHeader() throws Exception {

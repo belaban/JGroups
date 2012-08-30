@@ -5,6 +5,7 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.protocols.relay.SiteAddress;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 
@@ -57,10 +58,10 @@ public class GroupRequest<T> extends Request {
     private final Map<Address,Rsp<T>> requests;
 
     @GuardedBy("lock")
-    int num_valid;    // the number of valid responses (values or exceptions that passed the response filter)
+    int num_valid;       // the number of valid responses (values or exceptions that passed the response filter)
 
     @GuardedBy("lock")
-    int num_received; // number of responses (values, exceptions or suspicions)
+    int num_received;    // number of responses (values, exceptions or suspicions)
 
 
 
@@ -122,7 +123,7 @@ public class GroupRequest<T> extends Request {
         lock.lock();
         try {
             if(!rsp.wasReceived()) {
-                if(!rsp.wasSuspected())
+                if(!(rsp.wasSuspected() || rsp.wasUnreachable()))
                     num_received++;
                 if((responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender))) {
                     if(is_exception && response_value instanceof Throwable)
@@ -164,7 +165,7 @@ public class GroupRequest<T> extends Request {
                 changed=true;
                 lock.lock();
                 try {
-                    if(!rsp.wasReceived())
+                    if(!(rsp.wasReceived() || rsp.wasUnreachable()))
                         num_received++;
                     completed.signalAll();
                 }
@@ -178,6 +179,36 @@ public class GroupRequest<T> extends Request {
             checkCompletion(this);
     }
 
+    public void siteUnreachable(short site) {
+        boolean changed=false;
+
+        for(Map.Entry<Address, Rsp<T>> entry: requests.entrySet()) {
+            Address member=entry.getKey();
+            if(!(member instanceof SiteAddress))
+                continue;
+            SiteAddress addr=(SiteAddress)member;
+            if(addr.getSite() == site) {
+                Rsp<T> rsp=entry.getValue();
+                if(rsp !=  null) {
+                    if(rsp.setUnreachable()) {
+                        changed=true;
+                        lock.lock();
+                        try {
+                            if(!(rsp.wasReceived() || rsp.wasSuspected()))
+                                num_received++;
+                            completed.signalAll();
+                        }
+                        finally {
+                            lock.unlock();
+                        }
+                    }
+                }
+
+                if(changed)
+                    checkCompletion(this);
+            }
+        }
+    }
 
     /**
      * Any member of 'membership' that is not in the new view is flagged as
@@ -210,7 +241,8 @@ public class GroupRequest<T> extends Request {
         try {
             for(Map.Entry<Address,Rsp<T>> entry: requests.entrySet()) {
                 Address mbr=entry.getKey();
-                if(!mbrs.contains(mbr)) {
+                // SiteAddresses are not checked as they might be in a different cluster
+                if(!(mbr instanceof SiteAddress) && !mbrs.contains(mbr)) {
                     Rsp<T> rsp=entry.getValue();
                     if(rsp.setSuspected()) {
                         if(!rsp.wasReceived())

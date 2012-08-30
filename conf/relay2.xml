@@ -4,18 +4,21 @@
 <RelayConfiguration xmlns="urn:jgroups:relay:1.0">
 
     <sites>
-        <site id="1" name="lon">
+        <site name="lon" id="0">
             <bridges>
-                <bridge config="global.xml" name="Global"/>
+                <bridge config="/home/bela/global.xml" name="global"/>
             </bridges>
-            <forwards>
-                <forward to="lax" gateway="sfo"/>
-            </forwards>
         </site>
 
-        <site name="nyc" id="2">
+        <site name="nyc" id="1">
             <bridges>
-                <bridge config="global" name="global"/>
+                <bridge config="/home/bela/global.xml" name="global"/>
+            </bridges>
+        </site>
+
+        <site name="sfo" id="2">
+            <bridges>
+                <bridge name="global" config="/home/bela/global.xml"/>
             </bridges>
         </site>
     </sites>

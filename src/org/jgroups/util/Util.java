@@ -10,6 +10,8 @@ import org.jgroups.logging.Log;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.relay.SiteMaster;
+import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -791,17 +793,21 @@ public class Util {
             return;
         }
 
-        Class<? extends Address> clazz=addr.getClass();
-        if(clazz.equals(UUID.class)) {
-            flags=Util.setFlag(flags, Address.UUID_ADDR);
+        if(addr instanceof UUID) {
+            Class<? extends Address> clazz=addr.getClass();
+            if(clazz.equals(UUID.class))
+                flags=Util.setFlag(flags, Address.UUID_ADDR);
+            else if(clazz.equals(SiteUUID.class))
+                flags=Util.setFlag(flags, Address.SITE_UUID);
+            else if(clazz.equals(SiteMaster.class))
+                flags=Util.setFlag(flags,Address.SITE_MASTER);
+            else
+                streamable_addr=false;
         }
-        else if(clazz.equals(IpAddress.class)) {
+        else if(addr instanceof IpAddress)
             flags=Util.setFlag(flags, Address.IP_ADDR);
-        }
-        else {
+        else
             streamable_addr=false;
-        }
-
         out.writeByte(flags);
         if(streamable_addr)
             addr.writeTo(out);
@@ -817,6 +823,14 @@ public class Util {
         Address addr;
         if(Util.isFlagSet(flags, Address.UUID_ADDR)) {
             addr=new UUID();
+            addr.readFrom(in);
+        }
+        else if(Util.isFlagSet(flags, Address.SITE_UUID)) {
+            addr=new SiteUUID();
+            addr.readFrom(in);
+        }
+        else if(Util.isFlagSet(flags, Address.SITE_MASTER)) {
+            addr=new SiteMaster();
             addr.readFrom(in);
         }
         else if(Util.isFlagSet(flags, Address.IP_ADDR)) {
@@ -3921,6 +3935,13 @@ public class Util {
             return false;
         List<Address> mbrs=view.getMembers();
         return !(mbrs == null || mbrs.isEmpty()) && local_addr.equals(mbrs.iterator().next());
+    }
+
+    public static Address getCoordinator(View view) {
+        if(view == null)
+            return null;
+        List<Address> mbrs=view.getMembers();
+        return !mbrs.isEmpty()? mbrs.get(0) : null;
     }
 
     public static MBeanServer getMBeanServer() {

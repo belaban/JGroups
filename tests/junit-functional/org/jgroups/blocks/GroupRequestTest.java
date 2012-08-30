@@ -5,7 +5,9 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.util.RspList;
+import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -222,6 +224,33 @@ public class GroupRequestTest {
 
         req.receiveResponse(3, c, false);
         req.suspect(c);
+        checkComplete(req, true);
+    }
+
+    public void testResponsesComplete3() {
+        SiteUUID.addToCache((short)0, "lon");
+        SiteUUID.addToCache((short)1, "sfo");
+        SiteUUID.addToCache((short)2, "nyc");
+        Address one=new SiteUUID((UUID)Util.createRandomAddress("lon1"), "lon1", (short)0);
+        Address two=new SiteUUID((UUID)Util.createRandomAddress("sfo1"), "sfo1", (short)1);
+        Address three=new SiteUUID((UUID)Util.createRandomAddress("nyc1"), "nyc1", (short)2);
+
+        GroupRequest<Integer> req=new GroupRequest<Integer>(null, null, Arrays.asList(one, two, three), RequestOptions.SYNC());
+        req.suspect(one);
+        req.receiveResponse(1, one, false);
+        req.siteUnreachable((short)0);
+        checkComplete(req, false);
+
+        req.siteUnreachable((short)1);
+        req.receiveResponse(2, two, false);
+        req.suspect(two);
+        checkComplete(req, false);
+
+        req.siteUnreachable((short)2);
+        checkComplete(req, true);
+        req.suspect(three);
+        checkComplete(req, true);
+        req.receiveResponse(3, three, false);
         checkComplete(req, true);
     }
 

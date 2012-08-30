@@ -14,6 +14,9 @@ public class Rsp<T> {
     /** Flag that represents whether the sender of the response was suspected */
     protected boolean       suspected;
 
+    /** If true, the sender (below) could not be reached, e.g. if a site was down (only used by RELAY2) */
+    protected boolean       unreachable;
+
     /** The sender of this response */
     protected final Address sender;
 
@@ -100,6 +103,17 @@ public class Rsp<T> {
         return changed;
     }
 
+    public boolean wasUnreachable() {
+        return unreachable;
+    }
+
+    public boolean setUnreachable() {
+        boolean changed=!unreachable;
+        unreachable=true;
+        return changed;
+    }
+
+
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append("sender=").append(sender);
@@ -107,8 +121,9 @@ public class Rsp<T> {
             sb.append(", retval=").append(retval);
         if(exception != null)
             sb.append(", exception=").append(exception);
-        sb.append(", received=").
-          append(received).append(", suspected=").append(suspected);
+        sb.append(", received=").append(received).append(", suspected=").append(suspected);
+        if(unreachable)
+            sb.append(" (unreachable)");
         return sb.toString();
     }
 }

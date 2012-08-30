@@ -102,6 +102,8 @@ public abstract class Request implements RspCollector, NotifyingFuture {
 
     public abstract void suspect(Address mbr);
 
+    public abstract void siteUnreachable(short site);
+
     protected abstract boolean responsesComplete();
 
 

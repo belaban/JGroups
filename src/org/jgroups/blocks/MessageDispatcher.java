@@ -6,6 +6,7 @@ import org.jgroups.blocks.mux.Muxer;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
+import org.jgroups.protocols.relay.SiteAddress;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
@@ -273,8 +274,13 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
 
         // we need to clone because we don't want to modify the original
         if(dests != null) {
-            real_dests=new ArrayList<Address>(dests);
-            real_dests.retainAll(this.members);
+            real_dests=new ArrayList<Address>();
+            for(Address dest: dests) {
+                if(dest instanceof SiteAddress || this.members.contains(dest)) {
+                    if(!real_dests.contains(dest))
+                        real_dests.add(dest);
+                }
+            }
         }
         else
             real_dests=new ArrayList<Address>(members);
@@ -380,6 +386,8 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
             else throw new RuntimeException(exception);
         }
 
+        if(rsp.wasUnreachable())
+            throw new UnreachableException(dest);
         if(!rsp.wasReceived() && !req.responseReceived())
             throw new TimeoutException("timeout sending message to " + dest);
         return rsp.getValue();

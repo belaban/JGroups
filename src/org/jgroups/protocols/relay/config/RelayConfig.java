@@ -76,8 +76,8 @@ public class RelayConfig {
 
             String name=name_attr.getValue();
             short id=Short.parseShort(id_attr.getValue());
-            if(id <= 0)
-                throw new Exception("Site ID must be > 0");
+            if(id < 0)
+                throw new Exception("Site ID must be >= 0");
 
             if(map.containsKey(name))
                 throw new Exception("Site \"" + name + "\" already defined");
@@ -178,7 +178,7 @@ public class RelayConfig {
             this.id=id;
         }
 
-        public short getId()    {return id;}
+        public short  getId()   {return id;}
         public String getName() {return name;}
 
 

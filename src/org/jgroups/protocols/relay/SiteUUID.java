@@ -2,6 +2,7 @@ package org.jgroups.protocols.relay;
 
 import org.jgroups.Global;
 import org.jgroups.util.UUID;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.Map;
@@ -14,8 +15,11 @@ import java.util.concurrent.ConcurrentMap;
  * @since 3.2
  */
 public class SiteUUID extends UUID implements SiteAddress {
-    private static final long serialVersionUID=-575018477146695139L;
+    private static final long serialVersionUID=3748908939644729773L;
+    protected String name; // logical name, can be null
+
     protected short site;
+
     // Maps between site-IDs (shorts) and site names
     protected static final ConcurrentMap<Short,String> site_cache=new ConcurrentHashMap<Short,String>(10);
 
@@ -24,14 +28,20 @@ public class SiteUUID extends UUID implements SiteAddress {
     }
 
 
-    public SiteUUID(long mostSigBits, long leastSigBits, short site) {
+    public SiteUUID(long mostSigBits, long leastSigBits, String name, short site) {
         super(mostSigBits,leastSigBits);
+        this.name=name;
         this.site=site;
     }
 
-    public SiteUUID(UUID uuid, short site) {
+    public SiteUUID(UUID uuid, String name, short site) {
         super(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
+        this.name=name;
         this.site=site;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public static void addToCache(short site, String name) {
@@ -40,6 +50,10 @@ public class SiteUUID extends UUID implements SiteAddress {
 
     public static void replaceInCache(short site, String name) {
         site_cache.put(site, name);
+    }
+
+    public static String getSiteName(short site) {
+        return site_cache.get(site);
     }
 
     public static void clearCache() {
@@ -59,7 +73,7 @@ public class SiteUUID extends UUID implements SiteAddress {
 //    }
 
     public UUID copy() {
-        return new SiteUUID(mostSigBits, leastSigBits, site);
+        return new SiteUUID(mostSigBits, leastSigBits, name, site);
     }
 
 //    public boolean equals(Object obj) {
@@ -72,31 +86,35 @@ public class SiteUUID extends UUID implements SiteAddress {
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
+        name=in.readUTF();
         site=in.readShort();
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
+        out.writeUTF(name);
         out.writeShort(site);
     }
 
     public void readFrom(DataInput in) throws Exception {
         super.readFrom(in);
+        name=Util.readString(in);
         site=in.readShort();
     }
 
     public void writeTo(DataOutput out) throws Exception {
         super.writeTo(out);
+        Util.writeString(name, out);
         out.writeShort(site);
     }
 
     public int size() {
-        return super.size() + Global.SHORT_SIZE;
+        return super.size() + Util.size(name) + Global.SHORT_SIZE;
     }
 
 
     public String toString() {
-        String retval=super.toString();
+        String retval=name != null? name : super.toString();
         String suffix=site_cache.get(site);
         return retval + ":" + (suffix != null? suffix : String.valueOf(site));
     }
