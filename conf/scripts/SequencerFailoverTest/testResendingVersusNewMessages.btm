@@ -10,7 +10,7 @@
 
 RULE SendNewMessages
 CLASS SEQUENCER
-METHOD flush
+METHOD startFlusher
 HELPER org.jgroups.tests.helpers.SequencerFailoverTestHelper
 AFTER WRITE flushing ALL
 BIND local_addr_name=org.jgroups.util.UUID.get($0.local_addr);

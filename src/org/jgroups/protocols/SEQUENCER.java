@@ -275,11 +275,8 @@ public class SEQUENCER extends Protocol {
     }
 
     protected void flush(final Address new_coord) throws InterruptedException {
-        if(log.isTraceEnabled())
-            log.trace(local_addr + ": flushing started");
-        flushing=true;  // causes subsequent message sends (broadcasts and forwards) to block
-
         // wait until all threads currently sending messages have returned (new threads after flushing=true) will block
+        // flushing is set to true in startFlusher()
         while(flushing && running) {
             if(in_flight_sends.get() == 0)
                 break;
@@ -546,8 +543,13 @@ public class SEQUENCER extends Protocol {
         }
     }
 
-    protected void startFlusher(final Address new_coord) {
+    protected synchronized void startFlusher(final Address new_coord) {
         if(flusher == null || !flusher.isAlive()) {
+            if(log.isTraceEnabled())
+                log.trace(local_addr + ": flushing started");
+            // causes subsequent message sends (broadcasts and forwards) to block (https://issues.jboss.org/browse/JGRP-1495)
+            flushing=true;
+            
             flusher=new Flusher(new_coord);
             flusher.setName("Flusher");
             flusher.start();
