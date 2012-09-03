@@ -158,7 +158,8 @@ public class AckReceiverWindow {
                 list.add(msg);
                 count++;
                 retval.setVal2(next);
-                next_to_remove.compareAndSet(next, ++next);
+                if(next_to_remove.compareAndSet(next, next+1))
+                    next++;
                 if(segment.allRemoved())
                     segments.remove(segment_id / segment_capacity);
             }
