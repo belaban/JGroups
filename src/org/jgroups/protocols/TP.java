@@ -801,7 +801,11 @@ public abstract class TP extends Protocol {
 
     @ManagedOperation(description="Evicts elements in the logical address cache which have expired")
     public void evictLogicalAddressCache() {
-        logical_addr_cache.removeMarkedElements();
+        evictLogicalAddressCache(false);
+    }
+
+    public void evictLogicalAddressCache(boolean force) {
+        logical_addr_cache.removeMarkedElements(force);
         fetchLocalAddresses();
     }
 
