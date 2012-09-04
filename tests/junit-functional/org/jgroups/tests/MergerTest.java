@@ -3,7 +3,6 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.View;
-import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.Merger;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
