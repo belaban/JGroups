@@ -493,6 +493,12 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             ackMembers.removeAll(newMembers);
 
         Message view_change_msg=new Message(); // bcast to all members
+
+        // Bypasses SEQUENCER, prevents having to forward a merge view to a remote coordinator
+        // (https://issues.jboss.org/browse/JGRP-1484)
+        if(new_view instanceof MergeView)
+            view_change_msg.setFlag(Message.Flag.NO_TOTAL_ORDER);
+
         GmsHeader hdr=new GmsHeader(GmsHeader.VIEW, new_view);
         hdr.my_digest=digest;
         view_change_msg.putHeader(this.id,hdr);
