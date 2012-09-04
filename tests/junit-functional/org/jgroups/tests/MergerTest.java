@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.View;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.Merger;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -15,37 +16,60 @@ import java.util.*;
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class MergerTest {
     private final static Address a=Util.createRandomAddress("A"),
-            b=Util.createRandomAddress("B"),
-            c=Util.createRandomAddress("C"),
-            d=Util.createRandomAddress("D"),
-            e=Util.createRandomAddress("E"),
-            f=Util.createRandomAddress("F");
+      b=Util.createRandomAddress("B"),
+      c=Util.createRandomAddress("C"),
+      d=Util.createRandomAddress("D"),
+      e=Util.createRandomAddress("E"),
+      f=Util.createRandomAddress("F"),
+      x=Util.createRandomAddress("X"),
+      y=Util.createRandomAddress("Y"),
+      z=Util.createRandomAddress("Z");
+    
 
-
-     /**
-      * A: AB
-      * B: AB
-      * C: CD
-      * D: CD
+    /**
+     * A: AB
+     * B: AB
+     * C: CD
+     * D: CD
      */
-     public void testSimpleMerge() {
-         Map<Address,View> map=new HashMap<Address,View>();
-         map.put(a, makeView(a, a,b));
-         map.put(b, makeView(a, a,b));
-         map.put(c, makeView(c, c,d));
-         map.put(d, makeView(c, c,d));
-         System.out.println("map:\n" + print(map));
+    public void testSimpleMerge() {
+        Map<Address,View> map=new HashMap<Address,View>();
+        map.put(a, makeView(a, a,b));
+        map.put(b, makeView(a, a,b));
+        map.put(c, makeView(c, c,d));
+        map.put(d, makeView(c, c,d));
+        System.out.println("map:\n" + print(map));
 
-         assert map.size() == 4;
-         Merger.sanitizeViews(map);
-         System.out.println("map after sanitization:\n" + print(map));
+        assert map.size() == 4;
+        Merger.sanitizeViews(map);
+        System.out.println("map after sanitization:\n" + print(map));
 
-         assert map.size() == 4;
-         assert map.get(a).size() == 2;
-         assert map.get(b).size() == 2;
-         assert map.get(c).size() == 2;
-         assert map.get(d).size() == 2;
-     }
+        assert map.size() == 4;
+        assert map.get(a).size() == 2;
+        assert map.get(b).size() == 2;
+        assert map.get(c).size() == 2;
+        assert map.get(d).size() == 2;
+    }
+
+    public void testSimpleMerge2() {
+        Map<Address,View> map=new HashMap<Address,View>();
+        map.put(a, makeView(a, a,b));
+        map.put(b, makeView(a, a,b));
+        map.put(c, makeView(c, c,d));
+        map.put(d,makeView(c,c,d));
+        System.out.println("map:\n" + print(map));
+
+        assert map.size() == 4;
+        Merger.sanitizeViews(map);
+        System.out.println("map after sanitization:\n" + print(map));
+
+        assert map.size() == 4;
+        assert map.get(a).size() == 2;
+        assert map.get(b).size() == 2;
+        assert map.get(c).size() == 2;
+        assert map.get(d).size() == 2;
+
+    }
 
 
     /**
@@ -72,22 +96,23 @@ public class MergerTest {
 
 
     /**
-     * A: AB
-     * B: B
+     * A: ABCDEF
+     * X: XYZ
      */
     public void testOverlappingMerge2() {
         Map<Address,View> map=new HashMap<Address,View>();
-        map.put(a, makeView(a, a,b));
-        map.put(b, makeView(b, b));
+        map.put(a, makeView(a, a,b,c,d,e,f));
+        map.put(x, makeView(x, x,y,z));
         System.out.println("map:\n" + print(map));
 
         assert map.size() == 2;
-        Merger.sanitizeViews(map);
-        System.out.println("map after sanitization:\n" + print(map));
+        Collection<Address> merge_coords=Util.determineMergeCoords(map);
+        System.out.println("merge_coords = " + merge_coords);
+        assert merge_coords.size() == 2;
 
-        assert map.size() == 2;
-        assert map.get(a).size() == 1;
-        assert map.get(b).size() == 1;
+        Collection<Address> merge_participants=Util.determineMergeParticipants(map);
+        System.out.println("merge_participants = " + merge_participants);
+        assert merge_participants.size() == 2;
     }
 
 
