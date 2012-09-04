@@ -16,9 +16,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -34,7 +32,7 @@ public class SequencerMergeTest extends BMNGRunner {
 
     @BeforeMethod
     void setUp() throws Exception {
-        
+
     }
 
     @AfterMethod
@@ -128,6 +126,75 @@ public class SequencerMergeTest extends BMNGRunner {
         System.out.println("OK: order of all 3 lists is correct");
     }
 
+    /**
+     * Tests a merge between {D,A} and {B,C,D}.
+     * https://issues.jboss.org/browse/JGRP-1484
+     */
+    public void testMergeWithParticipant() throws Exception {
+        a=create("A", false);
+        b=create("B", false);
+        c=create("C", false);
+        d=create("D", false);
+
+        a.connect(GROUP);
+        b.connect(GROUP);
+        c.connect(GROUP);
+        d.connect(GROUP);
+
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a,b,c,d);
+        Util.sleep(1000);
+        System.out.println("Channels:\n" + printChannels(a,b,c,d));
+        MyReceiver ra=new MyReceiver("A");
+        MyReceiver rb=new MyReceiver("B");
+        MyReceiver rc=new MyReceiver("C");
+        MyReceiver rd=new MyReceiver("D");
+        a.setReceiver(ra);
+        b.setReceiver(rb);
+        c.setReceiver(rc);
+        d.setReceiver(rd);
+
+        // To have the best chance of hitting JGRP-1484, construct A's view so that his coordinator isn't coordinator after merging.
+        JChannel a_coord;
+        if (c.getAddress().compareTo(d.getAddress()) < 0)
+            a_coord = d;
+        else
+            a_coord = c;
+
+        // Inject either {C,A} or {D,A} at A
+        final View a_view=Util.createView(a_coord.getAddress(), 10, a_coord.getAddress(),a.getAddress());
+        final Digest a_digest=getDigest(a_coord,a);
+        System.out.println("\nInstalling " + a_view + " in A");
+        injectViewAndDigest(a_view, a_digest, a);
+        assert !Util.isCoordinator(a);
+
+        // Inject {B,C,D} at B,C,D
+        final View bcd_view=Util.createView(b.getAddress(), 20, b.getAddress(),c.getAddress(),d.getAddress());
+        final Digest bcd_digest=getDigest(b,c,d);
+        System.out.println("\nInstalling " + bcd_view + " in B,C and D");
+        injectViewAndDigest(bcd_view,bcd_digest,b,c,d);
+        assert Util.isCoordinator(b);
+        assert !Util.isCoordinator(c);
+        assert !Util.isCoordinator(d);
+
+        // Evict removable addresses from logical caches.
+        // evictCache(a,b,c,d);
+
+        // start merging
+        final Map<Address,View> views=new HashMap<Address,View>();
+        views.put(a.getAddress(), a.getView());
+        views.put(b.getAddress(), b.getView());
+        views.put(c.getAddress(), c.getView());
+        views.put(d.getAddress(), d.getView());
+        final Event merge_evt=new Event(Event.MERGE, views);
+        System.out.println("\n==== Injecting a merge event (leader=" + b.getAddress() + ") ====");
+        injectMergeEvent(merge_evt, b);
+
+        // Wait for merge to complete.
+        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, a,b,c,d);
+        final View merged_view = a.getView();
+        System.out.println("\nMerged view is " + merged_view);
+    }
+
 
     protected JChannel create(String name, boolean insert_discard) throws Exception {
         JChannel ch=Util.createChannel(new UDP(),
@@ -158,6 +225,12 @@ public class SequencerMergeTest extends BMNGRunner {
         }
     }
 
+    private static void injectMergeEvent(Event evt, JChannel ... channels) {
+        for(JChannel ch: channels) {
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            gms.up(evt);
+        }
+    }
 
     protected static Digest getDigest(JChannel ... channels) {
         MutableDigest digest=new MutableDigest(channels.length);
@@ -170,6 +243,11 @@ public class SequencerMergeTest extends BMNGRunner {
         return digest;
     }
 
+    /*private static void evictCache(JChannel ... channels) {
+        for(JChannel ch: channels) {
+            ch.getProtocolStack().getTransport().evictLogicalAddressCache(true);
+        }
+    }*/
 
     protected static void makeCoordinator(JChannel ch) {
         GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
@@ -189,7 +267,7 @@ public class SequencerMergeTest extends BMNGRunner {
             ch.getProtocolStack().removeProtocol(DISCARD.class);
     }
 
-    
+
 
     protected static class MyReceiver extends ReceiverAdapter {
         protected final String name;
