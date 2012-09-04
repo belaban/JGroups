@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -115,7 +112,8 @@ public class RSVPTest {
         for(int i=NUM-1; i >= 0; i--) {
             ProtocolStack stack=channels[i].getProtocolStack();
             String cluster_name=channels[i].getClusterName();
-            JmxConfigurator.unregisterChannel(channels[i], Util.getMBeanServer(), "channel-" + (i+1),cluster_name);
+            if(channels[i].isOpen())
+                JmxConfigurator.unregisterChannel(channels[i], Util.getMBeanServer(), "channel-" + (i+1),cluster_name);
             stack.stopStack(cluster_name);
             stack.destroy();
         }
@@ -174,6 +172,36 @@ public class RSVPTest {
 
         long tmp_value=receivers[1].getValue();
         assert tmp_value == value : "value is " + tmp_value + ", but should be " + value;
+    }
+
+    public void testCancellationByClosingChannel() throws Exception {
+        // test with a multicast message:
+        short value=(short)Math.abs((short)Util.random(10000));
+        Message msg=new Message(null, null, value);
+        msg.setFlag(Message.Flag.RSVP);
+
+        DISCARD discard=(DISCARD)channels[0].getProtocolStack().findProtocol(DISCARD.class);
+        discard.setDiscardAll(true);
+
+        RSVP rsvp=(RSVP)channels[0].getProtocolStack().findProtocol(RSVP.class);
+        rsvp.setValue("throw_exception_on_timeout", true);
+
+        try {
+            Thread closer=new Thread() {
+                public void run() {
+                    Util.sleep(2000);
+                    System.out.println("closer closing channel");
+                    channels[0].close();
+                }
+            };
+            closer.start();
+            channels[0].send(msg); // this will be unsuccessful as the other 4 members won't receive it
+            // test fails if we get a TimeoutException
+        }
+        finally {
+            discard.setDiscardAll(false);
+            rsvp.setValue("throw_exception_on_timeout", false);
+        }
     }
 
 
