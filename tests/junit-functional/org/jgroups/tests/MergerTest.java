@@ -93,6 +93,27 @@ public class MergerTest {
         assert map.get(c).size() == 2;
     }
 
+    /**
+     * A: BAC
+     * B: BC
+     * C: BC
+     */
+    public void testOverlappingMerge1() {
+        Map<Address,View> map=new HashMap<Address,View>();
+        map.put(a, makeView(b, b,a,c));
+        map.put(b, makeView(b, b,c));
+        map.put(c, makeView(b, b,c));
+        System.out.println("map:\n" + print(map));
+
+        Collection<Address> merge_coords=Util.determineMergeCoords(map);
+        System.out.println("merge_coords = " + merge_coords);
+        assert merge_coords.size() == 1;
+
+        Collection<Address> merge_participants=Util.determineMergeParticipants(map);
+        System.out.println("merge_participants = " + merge_participants);
+        assert merge_participants.size() == 2;
+    }
+
 
     /**
      * A: ABCDEF
