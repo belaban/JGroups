@@ -72,7 +72,7 @@ public class RSVP extends Protocol {
     }
 
 
-    public void destroy() {
+    public void stop() {
         synchronized(ids) {
             for(Entry entry: ids.values())
                 entry.destroy();
