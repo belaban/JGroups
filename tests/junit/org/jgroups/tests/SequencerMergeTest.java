@@ -176,9 +176,6 @@ public class SequencerMergeTest extends BMNGRunner {
         assert !Util.isCoordinator(c);
         assert !Util.isCoordinator(d);
 
-        // Evict removable addresses from logical caches.
-        // evictCache(a,b,c,d);
-
         // start merging
         final Map<Address,View> views=new HashMap<Address,View>();
         views.put(a.getAddress(), a.getView());
@@ -242,12 +239,6 @@ public class SequencerMergeTest extends BMNGRunner {
         }
         return digest;
     }
-
-    /*private static void evictCache(JChannel ... channels) {
-        for(JChannel ch: channels) {
-            ch.getProtocolStack().getTransport().evictLogicalAddressCache(true);
-        }
-    }*/
 
     protected static void makeCoordinator(JChannel ch) {
         GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
