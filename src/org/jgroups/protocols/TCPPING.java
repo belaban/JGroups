@@ -19,22 +19,22 @@ import java.util.*;
  * <p/>
  * The TCPPING protocol defines a static configuration, which requires that you to know in advance where to find all
  * of the members of your cluster.
- * 
+ *
  * @author Bela Ban
  */
 public class TCPPING extends Discovery {
-    
+
     /* -----------------------------------------    Properties     --------------------------------------- */
-    
+
     @Property(description="Number of additional ports to be probed for membership. A port_range of 0 does not " +
       "probe additional ports. Example: initial_hosts=A[7800] port_range=0 probes A:7800, port_range=1 probes " +
       "A:7800 and A:7801")
-    private int port_range=1; 
-    
-    @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership", 
-    		converter=PropertyConverters.InitialHosts.class, dependsUpon="port_range",
+    private int port_range=1;
+
+    @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership",
+        converter=PropertyConverters.InitialHosts.class, dependsUpon="port_range",
             systemProperty=Global.TCPPING_INITIAL_HOSTS)
-    private List<IpAddress> initial_hosts=null;
+    private List<IpAddress> initial_hosts=Collections.EMPTY_LIST;
 
     @Property(description="max number of hosts to keep beyond the ones in initial_hosts")
     protected int max_dynamic_hosts=100;
@@ -48,7 +48,7 @@ public class TCPPING extends Discovery {
     protected final BoundedList<PhysicalAddress> dynamic_hosts=new BoundedList<PhysicalAddress>(max_dynamic_hosts);
 
 
-    
+
     public TCPPING() {
     }
 
@@ -61,11 +61,11 @@ public class TCPPING extends Discovery {
      * careful with changes !
      * @return List<Address> list of initial hosts. This variable is only set after the channel has been created and
      * set Properties() has been called
-     */    
+     */
     public List<IpAddress> getInitialHosts() {
         return initial_hosts;
-    }      
-    
+    }
+
     public void setInitialHosts(List<IpAddress> initial_hosts) {
         this.initial_hosts=initial_hosts;
     }
@@ -92,7 +92,7 @@ public class TCPPING extends Discovery {
     public String getInitialHostsList() {
         return initial_hosts.toString();
     }
-       
+
 
     public Collection<PhysicalAddress> fetchClusterMembers(String cluster_name) {
         Set<PhysicalAddress> combined_target_members=new HashSet<PhysicalAddress>(initial_hosts);
