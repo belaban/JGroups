@@ -2982,7 +2982,7 @@ public class Util {
                 retval.add(addr);
             }
         }
-        return Collections.unmodifiableList(new LinkedList<IpAddress>(retval));
+        return new LinkedList<IpAddress>(retval);
     }
 
 
@@ -3007,7 +3007,7 @@ public class Util {
                 retval.add(addr);
             }
         }
-        return Collections.unmodifiableList(new LinkedList<InetSocketAddress>(retval));
+        return new LinkedList<InetSocketAddress>(retval);
    }
 
     public static List<String> parseStringList(String l, String separator) {
