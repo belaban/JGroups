@@ -1,59 +1,43 @@
 package org.jgroups.tests;
 
+import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.blocks.MessageDispatcher;
+import org.jgroups.blocks.RequestOptions;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
+import org.jgroups.protocols.*;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.stack.DiagnosticsHandler;
+import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.*;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collections;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import javax.management.MBeanServer;
-
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.blocks.MessageDispatcher;
-import org.jgroups.blocks.RequestOptions;
-import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.DISCARD;
-import org.jgroups.protocols.MERGE2;
-import org.jgroups.protocols.PING;
-import org.jgroups.protocols.RSVP;
-import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.UNICAST2;
-import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.stack.DiagnosticsHandler;
-import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.DefaultSocketFactory;
-import org.jgroups.util.DefaultThreadFactory;
-import org.jgroups.util.RspList;
-import org.jgroups.util.SocketFactory;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.TimeScheduler2;
-import org.jgroups.util.Util;
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 
 /**
- * Tests tthe {@link org.jgroups.protocols.RSVP} protocol
- * @author Bela Ban
+ * Tests the {@link org.jgroups.protocols.RSVP} protocol
+ * @author Dan Berindei
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class MessageDispatcherRSVPTest {
-    private static final Log log = LogFactory.getLog(MessageDispatcherRSVPTest.class);
-    protected static final int     NUM=2; // number of members
-    protected final JChannel[]     channels=new JChannel[NUM];
+    protected static final int          NUM=2; // number of members
+    protected final JChannel[]          channels=new JChannel[NUM];
     protected final MessageDispatcher[] dispatchers=new MessageDispatcher[NUM];
-    protected MyDiagnosticsHandler handler;
-    protected ThreadPoolExecutor   oob_thread_pool;
-    protected ThreadPoolExecutor   thread_pool;
+    protected MyDiagnosticsHandler      handler;
+    protected ThreadPoolExecutor        oob_thread_pool;
+    protected ThreadPoolExecutor        thread_pool;
 
 
 
@@ -79,12 +63,9 @@ public class MessageDispatcherRSVPTest {
         thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
 
-        MBeanServer server=Util.getMBeanServer();
-
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
             SHARED_LOOPBACK shared_loopback=(SHARED_LOOPBACK)new SHARED_LOOPBACK().setValue("enable_bundling", false);
-            // UDP shared_loopback=(UDP)new UDP().setValue("enable_bundling", false);
             shared_loopback.setLoopback(false);
             shared_loopback.setTimer(timer);
             shared_loopback.setOOBThreadPool(oob_thread_pool);
@@ -98,17 +79,9 @@ public class MessageDispatcherRSVPTest {
                                            new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000),
                                            new NAKACK2().setValue("use_mcast_xmit",false)
                                              .setValue("discard_delivered_msgs",true)
-                                             .setValue("log_discard_msgs", false).setValue("log_not_found_msgs", false)
-                                             .setValue("xmit_table_num_rows",5)
-                                             .setValue("xmit_table_msgs_per_row", 10),
-                                           // new UNICAST(),
-                                           new UNICAST2().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300)
-                                             .setValue("xmit_table_msgs_per_row",10)
-                                             .setValue("conn_expiry_timeout", 10000)
-                                             .setValue("stable_interval", 30000)
-                                             .setValue("max_bytes", 50000),
-                                           new RSVP().setValue("timeout", 10000),
-                                           // new STABLE().setValue("max_bytes",500000).setValue("desired_avg_gossip", 60000),
+                                             .setValue("log_discard_msgs", false).setValue("log_not_found_msgs", false),
+                                           new UNICAST2().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300),
+                                           new RSVP().setValue("timeout", 10000).setValue("throw_exception_on_timeout", true),
                                            new GMS().setValue("print_local_addr",false)
                                              .setValue("leave_timeout",100)
                                              .setValue("log_view_warnings",false)
@@ -116,11 +89,10 @@ public class MessageDispatcherRSVPTest {
                                              .setValue("log_collect_msgs",false));
             channels[i].setName(String.valueOf((i + 1)));
             dispatchers[i]=new MessageDispatcher(channels[i], null, null);
-            JmxConfigurator.registerChannel(channels[i], server, "channel-" + (i+1), "MessageDispatcherRSVPTest", true);
             channels[i].connect("MessageDispatcherRSVPTest");
             System.out.print(i + 1 + " ");
             if(i == 0)
-                Util.sleep(2000);
+                Util.sleep(1000);
         }
         Util.waitUntilAllChannelsHaveSameSize(30000, 1000, channels);
         System.out.println("");
@@ -131,8 +103,6 @@ public class MessageDispatcherRSVPTest {
         for(int i=NUM-1; i >= 0; i--) {
             ProtocolStack stack=channels[i].getProtocolStack();
             String cluster_name=channels[i].getClusterName();
-            if(channels[i].isOpen())
-                JmxConfigurator.unregisterChannel(channels[i], Util.getMBeanServer(), "channel-" + (i+1),cluster_name);
             stack.stopStack(cluster_name);
             stack.destroy();
         }
@@ -140,61 +110,104 @@ public class MessageDispatcherRSVPTest {
     }
 
 
+    /**
+     * First send a message, drop it (using DISCARD) and then close the channel. The caller invoking castMessage() should
+     * get an exception, as the channel was closed
+     */
     public void testCancellationByClosingChannel() throws Exception {
-        // test with a unicast message:
-        short value=(short)Math.abs((short)Util.random(10000));
-        Message msg=new Message(channels[1].getAddress(), null, value);
-
-        DISCARD discard=(DISCARD)channels[0].getProtocolStack().findProtocol(DISCARD.class);
-        discard.setUpDiscardRate(1);
-
-        Thread closer=new Thread() {
-            public void run() {
-                Util.sleep(2000);
-                System.out.println("closer closing channel");
-                channels[0].close();
-            }
-        };
-        closer.start();
-
-        long nanosStart = System.nanoTime();
-        RspList<Object> rsps = dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()), msg, RequestOptions.SYNC());
-        log.debug("Received responses: " + rsps);
-
-        long nanosEnd = System.nanoTime();
-        long seconds = TimeUnit.NANOSECONDS.toSeconds(nanosEnd - nanosStart);
-        Assert.assertTrue(seconds < 5);
+        testCancellationByClosing(false, // multicast
+                                  new Closer(channels[0]));
     }
 
+    public void testCancellationByClosingChannelUnicast() throws Exception {
+        testCancellationByClosing(true, // unicast
+                                  new Closer(channels[0]));
+    }
+    
+
+    /**
+     * Sends a message via the MessageDispatcher on a closed channel. This should immediately throw an exception.
+     */
     public void testSendingMessageOnClosedChannel() throws Exception {
-        channels[0].close();
+        // unicast
+        sendMessageOnClosedChannel(new Message(channels[1].getAddress(), "bla"));
 
-        short value=(short)Math.abs((short)Util.random(10000));
-        Message msg=new Message(channels[1].getAddress(), null, value);
-
-        long nanosStart = System.nanoTime();
-        RspList<Object> rsps = dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()), msg, RequestOptions.SYNC());
-        log.debug("Received responses: " + rsps);
-
-        long nanosEnd = System.nanoTime();
-        long seconds = TimeUnit.NANOSECONDS.toSeconds(nanosEnd - nanosStart);
-        Assert.assertTrue(seconds < 2);
+        // multicast
+        sendMessageOnClosedChannel(new Message(null,"bla"));
     }
 
     public void testSendingMessageOnClosedChannelRSVP() throws Exception {
-        channels[0].close();
-
-        short value=(short)Math.abs((short)Util.random(10000));
-        Message msg=new Message(channels[1].getAddress(), null, value);
+        // unicast
+        Message msg=new Message(channels[1].getAddress(), null, "bla");
         msg.setFlag(Message.Flag.RSVP);
+        sendMessageOnClosedChannel(msg);
 
-        long nanosStart = System.nanoTime();
-        RspList<Object> rsps = dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()), msg, RequestOptions.SYNC());
-        log.debug("Received responses: " + rsps);
+        // multicast
+        msg=new Message(null, "bla");
+        msg.setFlag(Message.Flag.RSVP);
+        sendMessageOnClosedChannel(msg);
+    }
 
-        long nanosEnd = System.nanoTime();
-        long seconds = TimeUnit.NANOSECONDS.toSeconds(nanosEnd - nanosStart);
-        Assert.assertTrue(seconds < 2);
+    protected void testCancellationByClosing(boolean unicast, Thread closer) throws Exception {
+        DISCARD discard=(DISCARD)channels[0].getProtocolStack().findProtocol(DISCARD.class);
+        discard.setDiscardAll(true);
+
+        try {
+            Address target=unicast? channels[1].getAddress() : null;
+            Message msg=new Message(target, "bla");
+            msg.setFlag(Message.Flag.RSVP);
+            closer.start();
+            if(unicast) {
+                System.out.println("sending unicast message to " + target);
+                dispatchers[0].sendMessage(msg, RequestOptions.SYNC());
+                assert false: "sending the message on a closed channel should have thrown an exception";
+            }
+            else {
+                System.out.println("sending multicast message");
+                RspList<Object> rsps=dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()),msg,RequestOptions.SYNC());
+                System.out.println("rsps = " + rsps);
+                assert rsps.size() == 1;
+                Rsp<Object> rsp=rsps.iterator().next();
+                System.out.println("rsp = " + rsp);
+                assert rsp.hasException();
+                Throwable ex=rsp.getException();
+                assert ex instanceof IllegalStateException;
+            }
+        }
+        catch(IllegalStateException t) {
+            System.out.println("received \"" + t + "\" as expected");
+        }
+    }
+
+
+    protected void sendMessageOnClosedChannel(Message msg) throws Exception {
+        channels[0].close();
+        Address target=msg.getDest();
+        try {
+            if(target == null) { // multicast
+                dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()), msg, RequestOptions.SYNC());
+            }
+            else {
+                dispatchers[0].sendMessage(msg, RequestOptions.SYNC());
+            }
+            assert false: "sending the message on a closed channel should have thrown an exception";
+        }
+        catch(IllegalStateException t) {
+            System.out.println("received \"" + t + "\" as expected");
+        }
+    }
+
+
+    protected static class Closer extends Thread {
+        protected final JChannel ch;
+
+        public Closer(JChannel ch) {this.ch=ch;}
+
+        public void run() {
+            Util.sleep(2000);
+            System.out.println("closing channel");
+            Util.close(ch);
+        };
     }
 
 
@@ -209,3 +222,4 @@ public class MessageDispatcherRSVPTest {
         public void destroy() {super.stop();}
     }
 }
+;

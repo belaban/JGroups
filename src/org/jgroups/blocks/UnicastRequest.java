@@ -163,6 +163,23 @@ public class UnicastRequest<T> extends Request {
         checkCompletion(this);
     }
 
+    public void transportClosed() {
+        lock.lock();
+        try {
+            if(done)
+                return;
+            if(result != null && !result.wasReceived())
+                result.setException(new IllegalStateException("transport was closed"));
+            done=true;
+            if(corr != null)
+                corr.done(req_id);
+            completed.signalAll();
+        }
+        finally {
+            lock.unlock();
+        }
+        checkCompletion(this);
+    }
 
     /* -------------------- End of Interface RspCollector ----------------------------------- */
 

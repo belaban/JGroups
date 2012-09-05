@@ -10,4 +10,5 @@ public interface RspCollector {
     void suspect(Address mbr);
     void viewChange(View new_view);
     void siteUnreachable(short site);
+    void transportClosed();
 }

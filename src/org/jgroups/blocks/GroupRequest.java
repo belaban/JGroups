@@ -261,6 +261,30 @@ public class GroupRequest<T> extends Request {
             checkCompletion(this);
     }
 
+    /** Marks all responses with an exception (unless a response was already marked as done) */
+    public void transportClosed() {
+        boolean changed=false;
+
+        lock.lock();
+        try {
+            for(Map.Entry<Address, Rsp<T>> entry: requests.entrySet()) {
+                Rsp<T> rsp=entry.getValue();
+                if(rsp != null && !(rsp.wasReceived() || rsp.wasSuspected() || rsp.wasUnreachable())) {
+                    rsp.setException(new IllegalStateException("transport was closed"));
+                    num_received++;
+                    changed=true;
+                }
+            }
+            if(changed) {
+                completed.signalAll();
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+        if(changed)
+            checkCompletion(this);
+    }
 
     /* -------------------- End of Interface RspCollector ----------------------------------- */
 

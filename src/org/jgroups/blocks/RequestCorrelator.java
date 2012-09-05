@@ -264,6 +264,9 @@ public class RequestCorrelator {
 
     public void stop() {
         started=false;
+        for(RspCollector coll: requests.values())
+            coll.transportClosed();
+        requests.clear();
     }
 
 
