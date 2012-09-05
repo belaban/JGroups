@@ -140,12 +140,37 @@ public class MessageDispatcherRSVPTest {
     }
 
 
+    public void testCancellationByClosingChannel() throws Exception {
+        // test with a unicast message:
+        short value=(short)Math.abs((short)Util.random(10000));
+        Message msg=new Message(channels[1].getAddress(), null, value);
+
+        DISCARD discard=(DISCARD)channels[0].getProtocolStack().findProtocol(DISCARD.class);
+        discard.setUpDiscardRate(1);
+
+        Thread closer=new Thread() {
+            public void run() {
+                Util.sleep(2000);
+                System.out.println("closer closing channel");
+                channels[0].close();
+            }
+        };
+        closer.start();
+
+        long nanosStart = System.nanoTime();
+        RspList<Object> rsps = dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()), msg, RequestOptions.SYNC());
+        log.debug("Received responses: " + rsps);
+
+        long nanosEnd = System.nanoTime();
+        long seconds = TimeUnit.NANOSECONDS.toSeconds(nanosEnd - nanosStart);
+        Assert.assertTrue(seconds < 5);
+    }
 
     public void testSendingMessageOnClosedChannel() throws Exception {
         channels[0].close();
 
         short value=(short)Math.abs((short)Util.random(10000));
-        Message msg=new Message(null, null, value);
+        Message msg=new Message(channels[1].getAddress(), null, value);
 
         long nanosStart = System.nanoTime();
         RspList<Object> rsps = dispatchers[0].castMessage(Collections.singleton(channels[1].getAddress()), msg, RequestOptions.SYNC());
@@ -160,7 +185,7 @@ public class MessageDispatcherRSVPTest {
         channels[0].close();
 
         short value=(short)Math.abs((short)Util.random(10000));
-        Message msg=new Message(null, null, value);
+        Message msg=new Message(channels[1].getAddress(), null, value);
         msg.setFlag(Message.Flag.RSVP);
 
         long nanosStart = System.nanoTime();
