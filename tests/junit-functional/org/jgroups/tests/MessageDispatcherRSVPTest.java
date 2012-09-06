@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests the {@link org.jgroups.protocols.RSVP} protocol
  * @author Dan Berindei
+ * @author Bela Ban
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class MessageDispatcherRSVPTest {

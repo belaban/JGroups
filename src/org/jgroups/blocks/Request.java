@@ -150,7 +150,7 @@ public abstract class Request implements RspCollector, NotifyingFuture {
     public String toString() {
         StringBuilder ret=new StringBuilder(128);
         ret.append(super.toString());
-        ret.append("req_id=").append(req_id).append(", mode=" + options.getMode());
+        ret.append(", req_id=").append(req_id).append(", mode=" + options.getMode());
         return ret.toString();
     }
 

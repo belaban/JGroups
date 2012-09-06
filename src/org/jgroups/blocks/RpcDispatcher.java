@@ -20,7 +20,7 @@ import java.util.*;
 *  Is the equivalent of RpcProtocol on the application rather than protocol level.
  * @author Bela Ban
  */
-public class RpcDispatcher extends MessageDispatcher implements ChannelListener {
+public class RpcDispatcher extends MessageDispatcher {
     protected Object        server_obj=null;
     /** Marshaller to marshall requests at the caller and unmarshal requests at the receiver(s) */
     protected Marshaller    req_marshaller=null;
@@ -37,7 +37,6 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
     public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj) {
         super(channel, l, l2);
-        channel.addChannelListener(this);
         this.server_obj=server_obj;
     }
 

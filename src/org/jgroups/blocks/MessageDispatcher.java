@@ -65,6 +65,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
             local_addr=channel.getAddress();
+            channel.addChannelListener(this);
         }
         setMessageListener(l);
         setMembershipListener(l2);
@@ -613,8 +614,11 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
 
 
         public Object down(Event evt) {
-            if(channel != null)
+            if(channel != null) {
+                if(evt.getType() == Event.MSG && !channel.isConnected())
+                    throw new IllegalStateException("channel is not connected");
                 return channel.down(evt);
+            }
             return null;
         }
 
