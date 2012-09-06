@@ -1,7 +1,9 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
-import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
@@ -14,7 +16,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import javax.management.MBeanServer;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -59,8 +60,6 @@ public class RSVPTest {
         thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
 
-        MBeanServer server=Util.getMBeanServer();
-
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
             SHARED_LOOPBACK shared_loopback=(SHARED_LOOPBACK)new SHARED_LOOPBACK().setValue("enable_bundling", false);
@@ -97,7 +96,6 @@ public class RSVPTest {
             channels[i].setName(String.valueOf((i + 1)));
             receivers[i]=new MyReceiver();
             channels[i].setReceiver(receivers[i]);
-            JmxConfigurator.registerChannel(channels[i], server, "channel-" + (i+1), "RSVPTest", true);
             channels[i].connect("RSVPTest");
             System.out.print(i + 1 + " ");
             if(i == 0)
@@ -112,8 +110,6 @@ public class RSVPTest {
         for(int i=NUM-1; i >= 0; i--) {
             ProtocolStack stack=channels[i].getProtocolStack();
             String cluster_name=channels[i].getClusterName();
-            if(channels[i].isOpen())
-                JmxConfigurator.unregisterChannel(channels[i], Util.getMBeanServer(), "channel-" + (i+1),cluster_name);
             stack.stopStack(cluster_name);
             stack.destroy();
         }
