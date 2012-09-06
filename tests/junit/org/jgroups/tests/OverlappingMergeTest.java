@@ -49,11 +49,8 @@ public class OverlappingMergeTest extends ChannelTestBase {
         a.connect("OverlappingMergeTest");
         b.connect("OverlappingMergeTest");
         c.connect("OverlappingMergeTest");
-        for(JChannel ch: Arrays.asList(a,b,c)) {
-            View view=ch.getView();
-            assert view.size() == 3 : "view is " + view + " for channel " + ch.getAddress();
-        }
 
+        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b,c);
         multicast_transport=isMulticastTransport(a);
     }
 
