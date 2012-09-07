@@ -182,6 +182,9 @@ public class FORWARD_TO_COORD extends Protocol {
         protected static final byte ACK       = 2; // sent back by the coord
         protected static final byte NOT_COORD = 3; // sent by the coord when it is *not* the coord
 
+        public ForwardHeader() {
+        }
+
         public ForwardHeader(byte type, long id) {
             this.type=type;
             this.id=id;
