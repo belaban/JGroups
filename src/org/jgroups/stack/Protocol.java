@@ -293,30 +293,50 @@ public abstract class Protocol {
     }
 
 
-    /** List of events that are required to be answered by some layer above.
-     @return Vector (of Integers) */
+    /** List of events that are required to be answered by some layer above */
     public List<Integer> requiredUpServices() {
         return null;
     }
 
-    /** List of events that are required to be answered by some layer below.
-     @return Vector (of Integers) */
+    /** List of events that are required to be answered by some layer below */
     public List<Integer> requiredDownServices() {
         return null;
     }
 
-    /** List of events that are provided to layers above (they will be handled when sent down from
-     above).
-     @return Vector (of Integers) */
+    /** List of events that are provided to layers above (they will be handled when sent down from above) */
     public List<Integer> providedUpServices() {
         return null;
     }
 
-    /** List of events that are provided to layers below (they will be handled when sent down from
-     below).
-     @return Vector<Integer (of Integers) */
+    /** List of events that are provided to layers below (they will be handled when sent down below) */
     public List<Integer> providedDownServices() {
         return null;
+    }
+
+    /** Returns all services provided by protocols below the current protocol */
+    public final List<Integer> getDownServices() {
+        List<Integer> retval=new ArrayList<Integer>();
+        Protocol prot=down_prot;
+        while(prot != null) {
+            List<Integer> tmp=prot.providedUpServices();
+            if(tmp != null && !tmp.isEmpty())
+                retval.addAll(tmp);
+            prot=prot.down_prot;
+        }
+        return retval;
+    }
+
+    /** Returns all services provided by the protocols above the current protocol */
+    public final List<Integer> getUpServices() {
+        List<Integer> retval=new ArrayList<Integer>();
+        Protocol prot=up_prot;
+        while(prot != null) {
+            List<Integer> tmp=prot.providedDownServices();
+            if(tmp != null && !tmp.isEmpty())
+                retval.addAll(tmp);
+            prot=prot.up_prot;
+        }
+        return retval;
     }
 
 
