@@ -3,6 +3,7 @@ package org.jgroups.protocols.relay;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.ConfiguratorFactory;
+import org.jgroups.protocols.FORWARD_TO_COORD;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.UUID;
@@ -35,7 +36,6 @@ public class RELAY2 extends Protocol {
 
     @Property(description="Whether or not to relay multicast (dest=null) messages")
     protected boolean relay_multicasts=true;
-
     
 
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
@@ -54,6 +54,10 @@ public class RELAY2 extends Protocol {
     protected Relayer                            relayer;
 
     protected volatile Address                   local_addr;
+
+    /** Whether or not FORWARD_TO_COORD is on the stack */
+    @ManagedAttribute(description="FORWARD_TO_COORD protocol is present below the current protocol")
+    protected boolean                 forwarding_protocol_present;
 
 
     public void init() throws Exception {
@@ -86,6 +90,13 @@ public class RELAY2 extends Protocol {
         if(!site_config.getForwards().isEmpty())
             log.warn("Forwarding routes are currently not supported and will be ignored. This will change " +
                        "with hierarchical routing (https://issues.jboss.org/browse/JGRP-1506)");
+
+        List<Integer> available_down_services=getDownServices();
+        forwarding_protocol_present=available_down_services != null && available_down_services.contains(Event.FORWARD_TO_COORD);
+        if(!forwarding_protocol_present && log.isWarnEnabled())
+            log.warn(FORWARD_TO_COORD.class.getSimpleName() + " protocol not found below; " +
+                       "unable to re-submit messages to the new coordinator if the current coordinator crashes");
+
     }
 
     public void stop() {
@@ -158,7 +169,7 @@ public class RELAY2 extends Protocol {
 
                 // forward to the coordinator unless we're the coord (then route the message directly)
                 if(!is_coord)
-                    forwardTo(coord, target, sender, buf);
+                    forwardTo(coord, target, sender, buf, true);
                 else
                     route(target, sender, buf);
                 return null;
@@ -301,13 +312,18 @@ public class RELAY2 extends Protocol {
         down_prot.down(new Event(Event.MSG, msg));
     }
 
-    protected void forwardTo(Address next_dest, SiteAddress final_dest, Address original_sender, byte[] buf) {
+    protected void forwardTo(Address next_dest, SiteAddress final_dest, Address original_sender, byte[] buf,
+                             boolean forward_to_current_coord) {
         if(log.isTraceEnabled())
-            log.trace("forwarding message to final destination " + final_dest + " to " + next_dest);
+            log.trace("forwarding message to final destination " + final_dest + " to " +
+                        (forward_to_current_coord? " the current coordinator" : next_dest));
         Message msg=new Message(next_dest, buf);
         Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_dest, original_sender);
         msg.putHeader(id, hdr);
-        down_prot.down(new Event(Event.MSG,msg));
+        if(forward_to_current_coord && forwarding_protocol_present)
+            down_prot.down(new Event(Event.FORWARD_TO_COORD, msg));
+        else
+            down_prot.down(new Event(Event.MSG, msg));
     }
 
     
@@ -327,7 +343,7 @@ public class RELAY2 extends Protocol {
 
         if(log.isTraceEnabled())
             log.trace("delivering message to " + dest + " in local cluster");
-        forwardTo(local_dest, dest, sender, buf);
+        forwardTo(local_dest, dest, sender, buf, false);
     }
 
     protected void deliver(Address dest, Address sender, byte[] buf) {

@@ -8,10 +8,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Forwards a message to the current coordinator. When the coordinator changes, forwards all pending messages to
@@ -23,16 +20,20 @@ import java.util.Map;
 public class FORWARD_TO_COORD extends Protocol {
     protected final Map<Long,Message> msgs=new HashMap<Long,Message>();
 
-    protected volatile Address        coord=null; // the address of the current coordinator, all msgs are forwarded to it
+    /** the address of the current coordinator, all msgs are forwarded to it */
+    protected volatile Address        coord=null;
 
     protected volatile Address        local_addr;
 
-    /** ID to be used to identify messages. Short.MAX_VALUE (ca 32K plus 32K negative) should be enough, and wrap-around
-     * shouldn't be an issue. */
+    /** ID to be used to identify forwarded messages. Wrap-around shouldn't be an issue. */
     protected long                    current_id=0;
 
 
     public FORWARD_TO_COORD() {
+    }
+
+    public List<Integer> providedUpServices() {
+        return Arrays.asList(Event.FORWARD_TO_COORD);
     }
 
     public Object down(Event evt) {
@@ -95,7 +96,7 @@ public class FORWARD_TO_COORD extends Protocol {
                         if(resend != null) {
                             Message copy=resend.copy();
                             copy.setDest(coord);
-                            down_prot.down(new Event(Event.MSG, resend));
+                            down_prot.down(new Event(Event.MSG, copy));
                         }
 
                         return null;
@@ -107,7 +108,6 @@ public class FORWARD_TO_COORD extends Protocol {
         }
         return up_prot.up(evt);
     }
-
 
 
     public void stop() {
