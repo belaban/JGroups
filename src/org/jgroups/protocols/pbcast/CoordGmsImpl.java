@@ -55,7 +55,10 @@ public class CoordGmsImpl extends ServerGmsImpl {
             leaving=true;
         gms.getViewHandler().add(new Request(Request.LEAVE, mbr, false));
         gms.getViewHandler().stop(true); // wait until all requests have been processed, then close the queue and leave
-        gms.getViewHandler().waitUntilCompleted(gms.leave_timeout);
+
+        // If we're the coord leaving, ignore gms.leave_timeout: https://issues.jboss.org/browse/JGRP-1509
+        long timeout=(long)(Math.max(gms.leave_timeout, gms.view_ack_collection_timeout) * 1.10);
+        gms.getViewHandler().waitUntilCompleted(timeout);
     }
 
 
