@@ -185,6 +185,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public boolean isDiscardDeliveredMsgs()   {return discard_delivered_msgs;}
     public boolean getLogDiscardMessages()    {return log_discard_msgs;}
     public void    setUseMcastXmit(boolean use_mcast_xmit) {this.use_mcast_xmit=use_mcast_xmit;}
+    public void    setUseMcastXmitReq(boolean flag) {this.use_mcast_xmit_req=flag;}
     public void    setLogDiscardMessages(boolean flag) {log_discard_msgs=flag;}
     public void    setXmitFromRandomMember(boolean xmit_from_random_member) {
         this.xmit_from_random_member=xmit_from_random_member;
@@ -657,7 +658,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         
         try { // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
             if(log.isTraceEnabled())
-                log.trace("sending " + local_addr + "#" + msg_id);
+                log.trace(local_addr + " sending " + local_addr + "#" + msg_id);
             down_prot.down(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
             num_messages_sent++;
         }
@@ -946,7 +947,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 long my_high=Math.max(my_entry[0], my_entry[1]);
                 if(their_high > my_high) {
                     if(log.isTraceEnabled())
-                        log.trace("[" + local_addr + "] fetching " + my_high + "-" + their_high + " from " + member);
+                        log.trace(local_addr + " fetching " + my_high + "-" + their_high + " from " + member);
                     retransmit(my_high+1, their_high, member, true); // use multicast to send retransmit request
                     xmitted=true;
                 }
@@ -1169,7 +1170,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
 
         if(log.isTraceEnabled()) {
-            log.trace("received stable digest " + digest);
+            log.trace(local_addr + ": received stable digest " + digest);
         }
 
         stability_msgs.add(digest);
@@ -1192,7 +1193,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
                 if(stability_highest_rcvd >= 0 && stability_highest_rcvd > my_highest_rcvd) {
                     if(log.isTraceEnabled()) {
-                        log.trace("my_highest_rcvd (" + my_highest_rcvd + ") < stability_highest_rcvd (" +
+                        log.trace(local_addr + ": my_highest_rcvd (" + my_highest_rcvd + ") < stability_highest_rcvd (" +
                                 stability_highest_rcvd + "): requesting retransmission of " +
                                     member + '#' + stability_highest_rcvd);
                     }
@@ -1204,7 +1205,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 continue;
 
             if(log.isTraceEnabled())
-                log.trace("deleting msgs <= " + hd + " from " + member);
+                log.trace(local_addr + ": deleting msgs <= " + hd + " from " + member);
 
             // delete *delivered* msgs that are stable
             if(buf != null)
@@ -1236,7 +1237,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 if(random_member != null && !local_addr.equals(random_member)) {
                     dest=random_member;
                     if(log.isTraceEnabled())
-                        log.trace("picked random member " + dest + " to send XMIT request to");
+                        log.trace(local_addr + ": picked random member " + dest + " to send XMIT request to");
                 }
             }
         }
