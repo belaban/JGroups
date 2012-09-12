@@ -55,7 +55,7 @@ public abstract class Discovery extends Protocol {
       "discovery response at the same time")
     protected long stagger_timeout=0;
 
-    @ManagedAttribute(description="Always sends a discovery response, no matter what",writable=true)
+    @Property(description="Always sends a discovery response, no matter what",writable=true)
     protected boolean force_sending_discovery_rsps=true;
 
 
