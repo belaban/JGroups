@@ -2,9 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.TimeScheduler;
@@ -81,12 +79,13 @@ public class FORWARD_TO_COORD_Test {
                                              .setValue("log_view_warnings",false)
                                              .setValue("view_ack_collection_timeout",2000)
                                              .setValue("log_collect_msgs",false),
-                                           new FORWARD_TO_COORD().setValue("resend_delay", 0));
-            channels[i].setName(String.valueOf((char)(i + BASE)));
+                                           new FORWARD_TO_COORD().setValue("resend_delay", 500));
+            String name=String.valueOf((char)(i + BASE));
+            channels[i].setName(name);
             receivers[i]=new MyReceiver();
             channels[i].setReceiver(receivers[i]);
             channels[i].connect("FORWARD_TO_COORD_Test");
-            System.out.print(i + 1 + " ");
+            System.out.print(name + " ");
             if(i == 0)
                 Util.sleep(2000);
         }
@@ -191,6 +190,52 @@ public class FORWARD_TO_COORD_Test {
         assert values.get(0) == 30;
     }
 
+    /**
+     * Tests the case where a view is not installed at the same time in all members. C thinks B is the new coord and
+     * forwards a message to B. B, howeverm doesn't yet have the same view, so it rejects (NOT_COORD message to C) the
+     * message. C in turn resends the message to B and so on. Only when B finally installs the view, will the message
+     * get accepted.
+     */
+    public void testNotCoord() {
+        View new_view=Util.createView(channels[1].getAddress(), 3, channels[1].getAddress(),
+                                      channels[0].getAddress(), channels[2].getAddress());
+        System.out.println("Installing view " + new_view + " members A and C (not B !)");
+        for(JChannel ch: new JChannel[]{channels[0], channels[2]}) {
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            gms.up(new Event(Event.VIEW_CHANGE, new_view));
+        }
+
+        for(JChannel ch: channels)
+            System.out.println(ch.getName() + ": view is " + ch.getView());
+
+
+        Message msg=new Message(null, 35);
+
+        // Sends the message to A, but C will discard it, so A will never get it
+        System.out.println("C: forwarding the message to B");
+        channels[NUM-1].down(new Event(Event.FORWARD_TO_COORD,msg));
+
+        Util.sleep(3000);
+
+        System.out.println("Injecting view " + new_view + " into B");
+        GMS gms=(GMS)channels[1].getProtocolStack().findProtocol(GMS.class);
+        gms.up(new Event(Event.VIEW_CHANGE, new_view));
+
+        MyReceiver receiver=receivers[1]; // B
+        for(int i=0; i < 20; i++) {
+            if(receiver.size() == 1)
+                break;
+            Util.sleep(500);
+        }
+        System.out.println("Receivers");
+        printReceivers();
+
+        List<Integer> values=receiver.getValues();
+        System.out.println("B: received values: " + values);
+        assert values.size() == 1;
+        assert values.get(0) == 35;
+    }
+
 
 
     void printReceivers() {
@@ -207,9 +252,6 @@ public class FORWARD_TO_COORD_Test {
 
         public void receive(Message msg) {values.add((Integer)msg.getObject());}
 
-        //public void viewAccepted(View view) {
-          //  System.out.println(view);
-        //}
     }
 
 

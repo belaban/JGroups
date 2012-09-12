@@ -88,7 +88,7 @@ public class FORWARD_TO_COORD extends Protocol {
                             if(log.isWarnEnabled())
                                 log.warn("[" + local_addr + "] received a message with id=" + tmp_id + " from " + sender +
                                            ", but I'm not coordinator (" + coord + " is); dropping the message");
-                            sendNotCoord(sender, id);
+                            sendNotCoord(sender, tmp_id);
                             return null;
                         }
 
