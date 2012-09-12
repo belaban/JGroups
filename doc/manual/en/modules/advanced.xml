@@ -1926,12 +1926,19 @@ On view change V:
         <programlisting language="XML">
 &lt;relay.RELAY2 site="LON" config="/home/bela/relay2.xml"
               relay_multicasts="true" /&gt;
+&lt;FORWARD_TO_COORD /&gt;
         </programlisting>
 
         <para>
             The above configuration has a site name which will be used to route messages between sites. To do that, addresses
             contain the site-ID, so we always know which site the address is from. E.g. an address A1:LON in the SFO site
             is not local, but will be routed to the remote site SFO.
+        </para>
+        <para>
+            The FORWARD_TO_COORD protocol is optional, but since it guarantees reliable message forwarding to the local
+            site master, it is recommended. It makes sure that - if a local coordinator (site master) crashes or leaves
+            while a message is being forwarded to it - the message will be forwarded to the next coordinator once
+            elected.
         </para>
         <para>
             The relay_multicasts property determines whether or not multicast messages (with dest = null) are relayed to
