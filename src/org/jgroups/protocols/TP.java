@@ -141,7 +141,10 @@ public abstract class TP extends Protocol {
     protected boolean discard_incompatible_packets=true;
 
 
-    @Property(description="Thread naming pattern for threads in this channel. Default is cl")
+    @Property(description="Thread naming pattern for threads in this channel. Valid values are \"pcl\": " +
+      "\"p\": includes the thread name, e.g. \"Incoming thread-1\", \"UDP ucast receiver\", " +
+      "\"c\": includes the cluster name, e.g. \"MyCluster\", " +
+      "\"l\": includes the local address of the current member, e.g. \"192.168.5.1:5678\"")
     protected String thread_naming_pattern="cl";
 
     @Property(name="oob_thread_pool.enabled",description="Switch for enabling thread pool for OOB messages. " +

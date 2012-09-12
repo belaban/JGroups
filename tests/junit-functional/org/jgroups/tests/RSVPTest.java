@@ -46,7 +46,7 @@ public class RSVPTest {
                                          new DefaultThreadFactory(new ThreadGroup("RSVPTest"), "", false));
         handler.start();
         
-        ThreadGroup test_group=new ThreadGroup("LargeMergeTest");
+        ThreadGroup test_group=new ThreadGroup("RSVPTest");
         TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory(test_group, "Timer", true, true),
                                                5,20,
                                                3000, 5000, "abort");

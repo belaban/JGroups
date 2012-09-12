@@ -3,8 +3,10 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.ManagedOperation;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -27,6 +29,17 @@ public class SHARED_LOOPBACK extends TP {
 
     public String toString() {
         return "SHARED_LOOPBACK(local address: " + local_addr + ')';
+    }
+
+    @ManagedOperation(description="Dumps the contents of the routing table")
+    public static String dumpRoutingTable() {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<String,Map<Address,SHARED_LOOPBACK>> entry: routing_table.entrySet()) {
+            String cluster_name=entry.getKey();
+            Set<Address> mbrs=entry.getValue().keySet();
+            sb.append(cluster_name).append(": ").append(mbrs).append("\n");
+        }
+        return sb.toString();
     }
 
     public void sendMulticast(byte[] data, int offset, int length) throws Exception {
