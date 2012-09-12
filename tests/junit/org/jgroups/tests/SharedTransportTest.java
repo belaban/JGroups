@@ -44,7 +44,7 @@ public class SharedTransportTest extends ChannelTestBase {
 
 
     public void testCreationNonSharedTransport() throws Exception {
-        a=createChannel(true);
+        a=createChannel(true, 1, "A");
         a.connect("SharedTransportTest.testCreationNonSharedTransport");
         View view=a.getView();
         System.out.println("view = " + view);
@@ -53,9 +53,9 @@ public class SharedTransportTest extends ChannelTestBase {
 
 
     public void testCreationOfDuplicateCluster() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
+        a=createSharedChannel(SINGLETON_1, "A");
         // makeUnique(a, 2);
-        b=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_1, "B");
         a.connect("x");
         try {
             b.connect("x");
@@ -68,24 +68,20 @@ public class SharedTransportTest extends ChannelTestBase {
 
 
     public void testView() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
-        b=createSharedChannel(SINGLETON_2);
+        a=createSharedChannel(SINGLETON_1, "A");
+        b=createSharedChannel(SINGLETON_2, "B");
         a.setReceiver(new MyReceiver(SINGLETON_1));
         b.setReceiver(new MyReceiver(SINGLETON_2));
 
         a.connect("x");
         b.connect("x");
-
-        View view=a.getView();
-        assert view.size() == 2;
-        view=b.getView();
-        assert view.size() == 2;
+        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b);
     }
 
 
     public void testView2() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
-        b=createSharedChannel(SINGLETON_1);
+        a=createSharedChannel(SINGLETON_1, "A");
+        b=createSharedChannel(SINGLETON_1, "B");
         a.setReceiver(new MyReceiver("first-channel"));
         b.setReceiver(new MyReceiver("second-channel"));
 
@@ -106,9 +102,9 @@ public class SharedTransportTest extends ChannelTestBase {
      */
 
     public void testView3() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
-        b=createSharedChannel(SINGLETON_1);
-        c=createSharedChannel(SINGLETON_2);
+        a=createSharedChannel(SINGLETON_1, "A");
+        b=createSharedChannel(SINGLETON_1, "B");
+        c=createSharedChannel(SINGLETON_2, "C");
         r1=new MyReceiver("A::" + SINGLETON_1);
         r2=new MyReceiver("B::" + SINGLETON_1);
         r3=new MyReceiver("C::" + SINGLETON_2);
@@ -118,11 +114,7 @@ public class SharedTransportTest extends ChannelTestBase {
 
         a.connect("cluster-1");
         c.connect("cluster-1");
-
-        View view=a.getView();
-        assert view.size() == 2;
-        view=c.getView();
-        assert view.size() == 2;
+        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,c);
 
         a.send(new Message(null, null, "msg-1"));
         c.send(new Message(null, null, "msg-2"));
@@ -154,7 +146,7 @@ public class SharedTransportTest extends ChannelTestBase {
 
 
     public void testView4() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
+        a=createSharedChannel(SINGLETON_1, "A");
         r1=new MyReceiver("A::" + SINGLETON_1);
         a.setReceiver(r1);
 
@@ -176,43 +168,37 @@ public class SharedTransportTest extends ChannelTestBase {
 
 
     public void testSharedTransportAndNonsharedTransport() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
+        a=createSharedChannel(SINGLETON_1, "A");
         b=createChannel();
         a.setReceiver(new MyReceiver("first-channel"));
         b.setReceiver(new MyReceiver("second-channel"));
 
         a.connect("x");
         b.connect("x");
-
-        View view=a.getView();
-        assert view.size() == 2 : "view=" + view + ", but was supposed to have 2 members";
-        view=b.getView();
-        assert view.size() == 2 : "view=" + view + ", but was supposed to have 2 members";
+        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b);
     }
 
 
     public void testCreationOfDifferentCluster() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
-        b=createSharedChannel(SINGLETON_2);
+        a=createSharedChannel(SINGLETON_1, "A");
+        b=createSharedChannel(SINGLETON_2, "B");
         a.connect("x");
         b.connect("x");
-        View view=b.getView();
-        System.out.println("b's view is " + view);
-        assert view.size() == 2;
+        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b);
     }
 
 
 
     public void testReferenceCounting() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
+        a=createSharedChannel(SINGLETON_1, "A");
         r1=new MyReceiver("a");
         a.setReceiver(r1);
 
-        b=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_1, "B");
         r2=new MyReceiver("b");
         b.setReceiver(r2);
 
-        c=createSharedChannel(SINGLETON_1);
+        c=createSharedChannel(SINGLETON_1, "C");
         r3=new MyReceiver("c");
         c.setReceiver(r3);
 
@@ -255,11 +241,11 @@ public class SharedTransportTest extends ChannelTestBase {
      */
 
     public void testSimpleReCreation() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
+        a=createSharedChannel(SINGLETON_1, "A");
         a.setReceiver(new MyReceiver("A"));
         a.connect("A");
         a.disconnect();
-        b=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_1, "B");
         b.setReceiver(new MyReceiver("A'"));
         b.connect("A");
     }
@@ -273,11 +259,11 @@ public class SharedTransportTest extends ChannelTestBase {
      */
 
     public void testCreationFollowedByDeletion() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
+        a=createSharedChannel(SINGLETON_1, "A");
         a.setReceiver(new MyReceiver("A"));
         a.connect("A");
 
-        b=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_1, "B");
         b.setReceiver(new MyReceiver("B"));
         b.connect("B");
 
@@ -288,15 +274,15 @@ public class SharedTransportTest extends ChannelTestBase {
 
 
     public void test2ChannelsCreationFollowedByDeletion() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
+        a=createSharedChannel(SINGLETON_1, "A");
         a.setReceiver(new MyReceiver("A"));
         a.connect("A");
 
-        b=createSharedChannel(SINGLETON_2);
+        b=createSharedChannel(SINGLETON_2, "B");
         b.setReceiver(new MyReceiver("B"));
         b.connect("A");
 
-        c=createSharedChannel(SINGLETON_2);
+        c=createSharedChannel(SINGLETON_2, "C");
         c.setReceiver(new MyReceiver("C"));
         c.connect("B");
 
@@ -309,7 +295,7 @@ public class SharedTransportTest extends ChannelTestBase {
      * @throws Exception
      */
     public void testFailedFirstChannel() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
+        a=createSharedChannel(SINGLETON_1, "A");
 
         TP transport=a.getProtocolStack().getTransport();
         transport.setBindPort(128); // set the bind_port to an incorrect value (< 1024), this will fail on connect()
@@ -321,7 +307,7 @@ public class SharedTransportTest extends ChannelTestBase {
             System.out.println("caught exception - as expected: " + ex);
         }
 
-        b=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_1, "B");
         b.setReceiver(new MyReceiver("B"));
 
         try {
@@ -341,12 +327,12 @@ public class SharedTransportTest extends ChannelTestBase {
 
         // Create 2 channels sharing a transport
         System.out.println("-- creating A");
-        a=createSharedChannel(SINGLETON_1);
+        a=createSharedChannel(SINGLETON_1, "A");
         a.setReceiver(new MyReceiver("A"));
         a.connect("A");
 
         System.out.println("-- creating B");
-        b=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_1, "B");
         b.setReceiver(new MyReceiver("B"));
         b.connect("B");
 
@@ -355,7 +341,7 @@ public class SharedTransportTest extends ChannelTestBase {
 
         // a is disconnected so we should be able to create a new channel with group "A"
         System.out.println("-- creating A'");
-        c=createSharedChannel(SINGLETON_1);
+        c=createSharedChannel(SINGLETON_1, "C");
         c.setReceiver(new MyReceiver("A'"));
         c.connect("A");
     }
@@ -365,8 +351,8 @@ public class SharedTransportTest extends ChannelTestBase {
      * @throws Exception
      */
     public void testShutdownOfTimer() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
-        b=createSharedChannel(SINGLETON_1);
+        a=createSharedChannel(SINGLETON_1, "A");
+        b=createSharedChannel(SINGLETON_1, "B");
         a.connect("x");
         b.connect("y");
         TimeScheduler timer1=a.getProtocolStack().getTransport().getTimer();
@@ -394,23 +380,30 @@ public class SharedTransportTest extends ChannelTestBase {
      * Tests http://jira.jboss.com/jira/browse/JGRP-737 */
     public void testSendingOfMessagesAfterChannelClose() throws Exception {
         MyReceiver rec_a=new MyReceiver("A"), rec_b=new MyReceiver("B"), rec_c=new MyReceiver("C");
-        a=createSharedChannel(SINGLETON_1);
+        a=createSharedChannel(SINGLETON_1, "A");
         a.setName("A");
         a.setReceiver(rec_a);
         a.connect("one");
 
-        b=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_1, "B");
         b.setName("B");
         b.setReceiver(rec_b);
         b.connect("two");
 
-        c=createSharedChannel(SINGLETON_2);
+        c=createSharedChannel(SINGLETON_2, "C");
         c.setName("C");
         c.setReceiver(rec_c);
         c.connect("two");
 
         b.send(null, "first");
-        Util.sleep(500); // msg delivery is asynchronous, so give members some time to receive the msg (incl retransmission)
+
+        // msg delivery is asynchronous, so give members some time to receive the msg (incl retransmission)
+        for(int i=0; i < 20; i++) {
+            if(rec_b.size() == 1 && rec_c.size() == 1 && rec_a.size() == 0)
+                break;
+            Util.sleep(500);
+        }
+
         assertSize(1, rec_b, rec_c);
         assertSize(0, rec_a);
         a.close();
@@ -429,15 +422,15 @@ public class SharedTransportTest extends ChannelTestBase {
      */
     public void testConcurrentCreation() throws Exception
     {
-       a=createSharedChannel(SINGLETON_1);
+       a=createSharedChannel(SINGLETON_1, "A");
        r1=new MyReceiver("a");
        a.setReceiver(r1);
 
-       b=createSharedChannel(SINGLETON_1);
+       b=createSharedChannel(SINGLETON_1, "B");
        r2=new MyReceiver("b");
        b.setReceiver(r2);
 
-       c=createSharedChannel(SINGLETON_1);
+       c=createSharedChannel(SINGLETON_1, "C");
        r3=new MyReceiver("c");
        c.setReceiver(r3);
        
@@ -504,12 +497,15 @@ public class SharedTransportTest extends ChannelTestBase {
         }
     }
 
-    private JChannel createSharedChannel(String singleton_name) throws Exception {
+    private JChannel createSharedChannel(String singleton_name, String name) throws Exception {
         ProtocolStackConfigurator config=ConfiguratorFactory.getStackConfigurator(channel_conf);
         List<ProtocolConfiguration> protocols=config.getProtocolStack();
         ProtocolConfiguration transport=protocols.get(0);
         transport.getProperties().put(Global.SINGLETON_NAME, singleton_name);
-        return new JChannel(config);
+        JChannel ch=new JChannel(config);
+        if(name != null)
+            ch.setName(name);
+        return ch;
     }
 
 

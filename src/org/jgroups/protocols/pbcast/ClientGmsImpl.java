@@ -3,10 +3,9 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.protocols.PingData;
-import org.jgroups.util.Promise;
-import org.jgroups.util.Tuple;
-import org.jgroups.util.Util;
 import org.jgroups.util.Digest;
+import org.jgroups.util.Promise;
+import org.jgroups.util.Util;
 
 import java.util.*;
 
@@ -176,23 +175,11 @@ public class ClientGmsImpl extends GmsImpl {
                         throw new IllegalStateException("digest returned from " + coord + " with JOIN_RSP does not contain myself (" +
                                 gms.local_addr + "): join response: " + rsp);
                     }
-                    // bela April 2012: not incrementing the coord's seqno as per https://issues.jboss.org/browse/JGRP-1455
-                    // tmp_digest.incrementHighestDeliveredSeqno(coord); // see doc/design/varia2.txt for details
-                    // tmp_digest.seal();
-                    gms.setDigest(tmp_digest);
-
-                    // asking the coord to retransmit at least the view, so we deliver the next messages immediately and
-                    // don't have to wait for retransmission tio kick in (https://issues.jboss.org/browse/JGRP-1455)
-                    long[] seqnos=tmp_digest.get(coord);
-                    if(seqnos != null) {
-                        long retransmit=seqnos[0] +1;
-                        gms.down(new Event(Event.RETRANSMIT, new Tuple<Address,Long>(coord, retransmit)));
-                    }
 
                     if(log.isTraceEnabled())
                         log.trace(gms.local_addr + ": JOIN-RSP=" + tmp_view + " [size=" + tmp_view.size() + "]\n\n");
 
-                    if(!installView(tmp_view)) {
+                    if(!installView(tmp_view, tmp_digest)) {
                         if(log.isErrorEnabled())
                             log.error("view installation failed, retrying to join group");
                         rsp=null;
@@ -249,17 +236,16 @@ public class ClientGmsImpl extends GmsImpl {
     /* --------------------------- Private Methods ------------------------------------ */
 
     /**
-     * Called by join(). Installs the view returned by calling Coord.handleJoin() and
-     * becomes coordinator.
+     * Called by join(). Installs the view returned by calling Coord.handleJoin() and becomes coordinator.
      */
-    private boolean installView(View new_view) {
+    private boolean installView(View new_view, Digest digest) {
         List<Address> mems=new_view.getMembers();
         if(gms.local_addr == null || mems == null || !mems.contains(gms.local_addr)) {
             if(log.isErrorEnabled())
                 log.error("I (" + gms.local_addr + ") am not member of " + mems + ", will not install view");
             return false;
         }
-        gms.installView(new_view);
+        gms.installView(new_view, digest);
         gms.becomeParticipant();
         gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
         gms.getDownProtocol().down(new Event(Event.BECOME_SERVER));

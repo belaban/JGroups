@@ -55,9 +55,7 @@ public class Event {
     public static final int LOCK_AWAIT                         = 98; // arg=LockInfo
     public static final int LOCK_SIGNAL                        = 99; // arg=AwaitInfo
     public static final int IS_MERGE_IN_PROGRESS               = 100; // returns true or false
-    public static final int ADD_TO_XMIT_TABLE                  = 101; // arg=Message
     public static final int GET_PHYSICAL_ADDRESSES             = 102; // arg=null (returns all physical addresses)
-    public static final int RETRANSMIT                         = 103; // arg=Tuple<Address,Long>
     public static final int SITE_UNREACHABLE                   = 104; // arg=SiteMaster (RELAY2)
 
 
@@ -139,9 +137,7 @@ public class Event {
             case LOCK_AWAIT:             return "LOCK_AWAIT";
             case LOCK_SIGNAL:            return "LOCK_SIGNAL";
             case IS_MERGE_IN_PROGRESS:   return "IS_MERGE_IN_PROGRESS";
-            case ADD_TO_XMIT_TABLE:      return "ADD_TO_XMIT_TABLE";
             case GET_PHYSICAL_ADDRESSES: return "GET_PHYSICAL_ADDRESSES";
-            case RETRANSMIT:             return "RETRANSMIT";
             case SITE_UNREACHABLE:       return "SITE_UNREACHABLE";
 
             case USER_DEFINED:           return "USER_DEFINED";

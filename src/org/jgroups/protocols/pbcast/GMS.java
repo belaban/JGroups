@@ -503,32 +503,23 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         hdr.my_digest=digest;
         view_change_msg.putHeader(this.id,hdr);
 
-         // If we're the only member the VIEW is broadcast to, let's simply install the view directly, without
-         // sending the VIEW multicast ! Or else N-1 members drop the multicast anyway...
-        if(local_addr != null && ackMembers.size() == 1 && ackMembers.get(0).equals(local_addr)) {
-            // we need to add the message to the retransmit window (e.g. in NAKACK), so it can be retransmitted
-            down_prot.down(new Event(Event.ADD_TO_XMIT_TABLE, view_change_msg));
-            impl.handleViewChange(new_view, digest);
-        }
-        else {
-            if(!ackMembers.isEmpty())
-                ack_collector.reset(ackMembers);
+        if(!ackMembers.isEmpty())
+            ack_collector.reset(ackMembers);
 
-            down_prot.down(new Event(Event.MSG, view_change_msg));
-            try {
-                if(!ackMembers.isEmpty()) {
-                    ack_collector.waitForAllAcks(view_ack_collection_timeout);
-                    if(log.isTraceEnabled())
-                        log.trace(local_addr + ": received all " + ack_collector.expectedAcks() +
-                                    " ACKs from members for view " + new_view.getVid());
-                }
+        down_prot.down(new Event(Event.MSG, view_change_msg));
+        try {
+            if(!ackMembers.isEmpty()) {
+                ack_collector.waitForAllAcks(view_ack_collection_timeout);
+                if(log.isTraceEnabled())
+                    log.trace(local_addr + ": received all " + ack_collector.expectedAcks() +
+                                " ACKs from members for view " + new_view.getVid());
             }
-            catch(TimeoutException e) {
-                if(log_collect_msgs && log.isWarnEnabled()) {
-                    log.warn(local_addr + ": failed to collect all ACKs (expected=" + ack_collector.expectedAcks()
-                               + ") for view " + new_view.getViewId() + " after " + view_ack_collection_timeout +
-                               "ms, missing ACKs from " + ack_collector.printMissing());
-                }
+        }
+        catch(TimeoutException e) {
+            if(log_collect_msgs && log.isWarnEnabled()) {
+                log.warn(local_addr + ": failed to collect all ACKs (expected=" + ack_collector.expectedAcks()
+                           + ") for view " + new_view.getViewId() + " after " + view_ack_collection_timeout +
+                           "ms, missing ACKs from " + ack_collector.printMissing());
             }
         }
 

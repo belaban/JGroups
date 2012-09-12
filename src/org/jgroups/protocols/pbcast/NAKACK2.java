@@ -96,18 +96,24 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected long xmit_interval=1000;
 
     @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
-    int xmit_table_num_rows=50;
+    protected int xmit_table_num_rows=50;
 
     @Property(description="Number of elements of a row of the matrix in the retransmission table (only for experts). " +
       "The capacity of the matrix is xmit_table_num_rows * xmit_table_msgs_per_row",writable=false)
-    int xmit_table_msgs_per_row=10000;
+    protected int xmit_table_msgs_per_row=10000;
 
     @Property(description="Resize factor of the matrix in the retransmission table (only for experts)",writable=false)
-    double xmit_table_resize_factor=1.2;
+    protected double xmit_table_resize_factor=1.2;
 
     @Property(description="Number of milliseconds after which the matrix in the retransmission table " +
       "is compacted (only for experts)",writable=false)
-    long xmit_table_max_compaction_time=10000;
+    protected long xmit_table_max_compaction_time=10000;
+
+    @Property(description="Size of the queue to hold messages received after creating the channel, but before being " +
+      "connected (is_server=false). After becoming the server, the messages in the queue are fed into up() and the " +
+      "queue is cleared. The motivation is to avoid retransmissions (see https://issues.jboss.org/browse/JGRP-1509 " +
+      "for details). 0 disables the queue.")
+    protected int become_server_queue_size=50;
 
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
@@ -136,36 +142,38 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
 
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
-    protected boolean                is_server=false;
-    protected Address                local_addr=null;
-    protected volatile List<Address> members=new ArrayList<Address>();
-    protected View                   view;
-    private final AtomicLong         seqno=new AtomicLong(0); // current message sequence number (starts with 1)
+    protected volatile boolean          is_server=false;
+    protected Address                   local_addr=null;
+    protected volatile List<Address>    members=new ArrayList<Address>();
+    protected View                      view;
+    private final AtomicLong            seqno=new AtomicLong(0); // current message sequence number (starts with 1)
 
     /** Map to store sent and received messages (keyed by sender) */
     protected final ConcurrentMap<Address,Table<Message>> xmit_table=Util.createConcurrentMap();
 
     /** RetransmitTask running every xmit_interval ms */
-    protected Future<?>           xmit_task;
+    protected Future<?>                 xmit_task;
 
-    protected volatile boolean    leaving=false;
-    protected volatile boolean    running=false;
-    protected TimeScheduler       timer=null;
+    protected volatile boolean          leaving=false;
+    protected volatile boolean          running=false;
+    protected TimeScheduler             timer=null;
 
-    protected final Lock          rebroadcast_lock=new ReentrantLock();
-    protected final Condition     rebroadcast_done=rebroadcast_lock.newCondition();
+    protected final Lock                rebroadcast_lock=new ReentrantLock();
+    protected final Condition           rebroadcast_done=rebroadcast_lock.newCondition();
 
     // set during processing of a rebroadcast event
-    protected volatile boolean    rebroadcasting=false;
-    protected final Lock          rebroadcast_digest_lock=new ReentrantLock();
+    protected volatile boolean          rebroadcasting=false;
+    protected final Lock                rebroadcast_digest_lock=new ReentrantLock();
     @GuardedBy("rebroadcast_digest_lock")
-    protected Digest              rebroadcast_digest=null;
+    protected Digest                    rebroadcast_digest=null;
 
     /** BoundedList<Digest>, keeps the last 10 stability messages */
     protected final BoundedList<Digest> stability_msgs=new BoundedList<Digest>(10);
 
     /** Keeps a bounded list of the last N digest sets */
     protected final BoundedList<String> digest_history=new BoundedList<String>(10);
+
+    protected BoundedList<Message>      become_server_queue;
 
 
     public long    getXmitRequestsReceived()  {return xmit_reqs_received.get();}
@@ -349,6 +357,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 }
             }
         }
+
+        if(become_server_queue_size > 0)
+            become_server_queue=new BoundedList<Message>(become_server_queue_size);
     }
 
 
@@ -396,6 +407,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     public void stop() {
         running=false;
+        is_server=false;
+        if(become_server_queue != null)
+            become_server_queue.clear();
         stopRetransmitTask();
         reset();
     }
@@ -448,11 +462,17 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 members=new ArrayList<Address>(mbrs);
                 view=tmp_view;
                 adjustReceivers(mbrs);
+                boolean was_server=is_server;
                 is_server=true;  // check vids from now on
+                if(!was_server)
+                    flushBecomeServerQueue();
                 break;
 
             case Event.BECOME_SERVER:
+                was_server=is_server;
                 is_server=true;
+                if(!was_server)
+                    flushBecomeServerQueue();
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -481,23 +501,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     }
                 }
                 return null;
-
-            case Event.ADD_TO_XMIT_TABLE:
-                msg=(Message)evt.getArg();
-                dest=msg.getDest();
-                if(dest != null || msg.isFlagSet(Message.NO_RELIABILITY))
-                    return null; // unicast address: not null and not mcast, pass down unchanged
-
-                send(evt, msg, false); // add to retransmit window, but don't send (we want to avoid the unneeded traffic)
-                return null;    // don't pass down the stack
-
-            case Event.RETRANSMIT:
-                // asks target to retransmit xmit_seqno
-                Tuple<Address,Long> tuple=(Tuple<Address, Long>)evt.getArg();
-                Address target=tuple.getVal1();
-                long xmit_seqno=tuple.getVal2();
-                retransmit(xmit_seqno, xmit_seqno, target, false);
-                return null;
         }
 
         return down_prot.down(evt);
@@ -522,8 +525,15 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 break;  // pass up (e.g. unicast msg)
 
             if(!is_server) { // discard messages while not yet server (i.e., until JOIN has returned)
-                if(log.isTraceEnabled())
-                    log.trace(local_addr + ": message " + msg.getSrc() + "::" + hdr.seqno + " was discarded (not yet server)");
+                if(become_server_queue != null) {
+                    become_server_queue.add(msg);
+                    if(log.isTraceEnabled())
+                        log.trace(local_addr + ": message " + msg.getSrc() + "::" + hdr.seqno + " was added to queue (not yet server)");
+                }
+                else {
+                    if(log.isTraceEnabled())
+                        log.trace(local_addr + ": message " + msg.getSrc() + "::" + hdr.seqno + " was discarded (not yet server)");
+                }
                 return null;
             }
 
@@ -814,6 +824,17 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
     }
 
+
+    protected void flushBecomeServerQueue() {
+        if(become_server_queue != null && !become_server_queue.isEmpty()) {
+            if(log.isTraceEnabled())
+                log.trace(local_addr + ": flushing become_server_queue (" + become_server_queue.size() + " elements)");
+            for(Message msg: become_server_queue) {
+                up(new Event(Event.MSG, msg));
+            }
+            become_server_queue.clear();
+        }
+    }
 
 
     protected void cancelRebroadcasting() {
