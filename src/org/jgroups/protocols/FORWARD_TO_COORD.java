@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
@@ -18,6 +19,12 @@ import java.util.*;
  */
 @MBean(description="Forwards unicast messages to the current coordinator")
 public class FORWARD_TO_COORD extends Protocol {
+
+    @Property(description="The delay (in ms) to wait until we resend a message to member P after P told us that " +
+      "it isn't the coordinator. Thsi can happen when we see P as new coordinator, but P hasn't yet installed the view " +
+      "which makes it coordinator (perhaps due to a slight delay)")
+    protected long                    resend_delay=500;
+
     protected final Map<Long,Message> msgs=new HashMap<Long,Message>();
 
     /** the address of the current coordinator, all msgs are forwarded to it */
@@ -27,6 +34,7 @@ public class FORWARD_TO_COORD extends Protocol {
 
     /** ID to be used to identify forwarded messages. Wrap-around shouldn't be an issue. */
     protected long                    current_id=0;
+
 
 
     public FORWARD_TO_COORD() {
@@ -39,15 +47,20 @@ public class FORWARD_TO_COORD extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.FORWARD_TO_COORD:
+                Address target=coord;
+                if(target == null)
+                    throw new IllegalStateException("coord is null; dropping message");
                 Message msg=(Message)evt.getArg();
                 Long tmp_id=getNextId();
                 ForwardHeader hdr=new ForwardHeader(ForwardHeader.MSG,tmp_id);
                 msg.putHeader(id, hdr);
-                msg.setDest(coord);
+                msg.setDest(target);
                 synchronized(msgs) {
                     msgs.put(tmp_id, msg);
                 }
-                return down_prot.down(new Event(Event.MSG, msg)); // FORWARD_TO_COORD is not pass down any further
+                if(log.isTraceEnabled())
+                    log.trace(local_addr + ": forwarding message with id=" + tmp_id + " to current coordinator " + target);
+                return down_prot.down(new Event(Event.MSG, msg)); // FORWARD_TO_COORD is not passed down any further
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
                 break;
@@ -72,11 +85,16 @@ public class FORWARD_TO_COORD extends Protocol {
                     case ForwardHeader.MSG:
                         if(local_addr != null && !local_addr.equals(coord)) {
                             // I'm not the coord
+                            if(log.isWarnEnabled())
+                                log.warn("[" + local_addr + "] received a message with id=" + tmp_id + " from " + sender +
+                                           ", but I'm not coordinator (" + coord + " is); dropping the message");
                             sendNotCoord(sender, id);
                             return null;
                         }
 
                         try {
+                            if(log.isTraceEnabled())
+                                log.trace(local_addr + ": received a message with id=" + tmp_id + " from " + sender);
                             return up_prot.up(evt);
                         }
                         finally {
@@ -86,6 +104,8 @@ public class FORWARD_TO_COORD extends Protocol {
                         synchronized(msgs) {
                             msgs.remove(tmp_id);
                         }
+                        if(log.isTraceEnabled())
+                            log.trace(local_addr + ": received an ack from " + sender + " for " + tmp_id);
                         return null;
                     case ForwardHeader.NOT_COORD:
                         Message resend;
@@ -96,6 +116,9 @@ public class FORWARD_TO_COORD extends Protocol {
                         if(resend != null) {
                             Message copy=resend.copy();
                             copy.setDest(coord);
+                            Util.sleep(resend_delay);
+                            if(log.isTraceEnabled())
+                                log.trace(local_addr + ": resending message with id=" + tmp_id + " to coord " + coord);
                             down_prot.down(new Event(Event.MSG, copy));
                         }
 
@@ -137,12 +160,16 @@ public class FORWARD_TO_COORD extends Protocol {
             // resend all messages to the new coordinator (make copies)
             final Collection<Message> pending_msgs;
             synchronized(msgs) {
+                if(msgs.isEmpty())
+                    return;
                 pending_msgs=new LinkedList<Message>(msgs.values());
             }
 
             if(!pending_msgs.isEmpty()) {
-                if(log.isTraceEnabled())
-                    log.trace("sending " + pending_msgs.size() + " messages to new coordinator " + coord);
+                if(log.isTraceEnabled()) {
+                    int size=pending_msgs.size();
+                    log.trace(local_addr + ": resending " + size + (size > 1? " messages" : " message") + " to new coordinator " + coord);
+                }
                 for(Message msg: pending_msgs) {
                     Message copy=msg.copy();
                     copy.setDest(coord);

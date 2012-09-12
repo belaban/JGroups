@@ -329,9 +329,11 @@ public class RELAY2 extends Protocol {
     
     protected void deliverLocally(SiteAddress dest, SiteAddress sender, byte[] buf) {
         Address local_dest;
+        boolean send_to_coord=false;
         if(dest instanceof SiteUUID) {
             if(dest instanceof SiteMaster) {
                 local_dest=coord;
+                send_to_coord=true;
             }
             else {
                 SiteUUID tmp=(SiteUUID)dest;
@@ -343,7 +345,7 @@ public class RELAY2 extends Protocol {
 
         if(log.isTraceEnabled())
             log.trace("delivering message to " + dest + " in local cluster");
-        forwardTo(local_dest, dest, sender, buf, false);
+        forwardTo(local_dest, dest, sender, buf, send_to_coord);
     }
 
     protected void deliver(Address dest, Address sender, byte[] buf) {

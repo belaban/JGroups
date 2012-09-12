@@ -119,9 +119,6 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
                 suspected_mbrs.add(mbr);
         }
 
-        if(log.isDebugEnabled())
-            log.debug("suspected members=" + suspectedMembers + ", suspected_mbrs=" + suspected_mbrs);
-
         if(wouldIBeCoordinator()) {
             if(log.isDebugEnabled())
                 log.debug("members are " + gms.members + ", coord=" + gms.local_addr + ": I'm the new coord !");
