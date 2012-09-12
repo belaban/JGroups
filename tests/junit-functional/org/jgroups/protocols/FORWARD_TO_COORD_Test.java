@@ -58,10 +58,9 @@ public class FORWARD_TO_COORD_Test {
             shared_loopback.setOOBThreadPool(oob_thread_pool);
             shared_loopback.setDefaultThreadPool(thread_pool);
 
-            channels[i]=Util.createChannel(//shared_loopback,
-                                           new UDP(),
+            channels[i]=Util.createChannel(shared_loopback,
                                            new DISCARD(),
-                                           new PING().setValue("timeout",500).setValue("num_initial_members",NUM)
+                                           new PING().setValue("timeout",1000).setValue("num_initial_members",NUM)
                                              .setValue("force_sending_discovery_rsps", true),
                                            new FD_SOCK(),
                                            new NAKACK2().setValue("use_mcast_xmit",false)
@@ -87,10 +86,9 @@ public class FORWARD_TO_COORD_Test {
             channels[i].connect("FORWARD_TO_COORD_Test");
             System.out.print(name + " ");
             if(i == 0)
-                Util.sleep(2000);
+                Util.sleep(4000);
         }
         Util.waitUntilAllChannelsHaveSameSize(30000, 1000, channels);
-        System.out.println("");
     }
 
     @AfterMethod
@@ -186,7 +184,7 @@ public class FORWARD_TO_COORD_Test {
 
         List<Integer> values=receiver.getValues();
         System.out.println("B: received values: " + values);
-        assert values.size() == 1;
+        assert values.size() == 1 : "values are " + values;
         assert values.get(0) == 30;
     }
 
