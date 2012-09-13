@@ -15,9 +15,9 @@ import org.testng.annotations.Test;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
@@ -26,28 +26,28 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OOBTest extends ChannelTestBase {
-    private JChannel c1, c2;
+    private JChannel a, b;
 
     @BeforeMethod
     void init() throws Exception {
-        c1=createChannel(true, 2);
-        c1.setName("C1");
-        c2=createChannel(c1);
-        c2.setName("C2");
-        setOOBPoolSize(c1, c2);
-        setStableGossip(c1, c2);
-        c1.connect("OOBTest");
-        c2.connect("OOBTest");
-        View view=c2.getView();
+        a=createChannel(true, 2);
+        a.setName("A");
+        b=createChannel(a);
+        b.setName("B");
+        setOOBPoolSize(a,b);
+        setStableGossip(a,b);
+        a.connect("OOBTest");
+        b.connect("OOBTest");
+        View view=b.getView();
         System.out.println("view = " + view);
-        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, c1, c2);
+        Util.waitUntilAllChannelsHaveSameSize(20000, 1000,a,b);
     }
 
 
     @AfterMethod
     void cleanup() {
         Util.sleep(1000);
-        Util.close(c2, c1);
+        Util.close(b,a);
     }
 
 
@@ -56,7 +56,7 @@ public class OOBTest extends ChannelTestBase {
      * received by B.
      */
     public void testNonBlockingUnicastOOBMessage() throws Exception {
-        Address dest=c2.getAddress();
+        Address dest=b.getAddress();
         send(dest);
     }
 
@@ -71,27 +71,27 @@ public class OOBTest extends ChannelTestBase {
      */
     public void testRegularAndOOBUnicasts() throws Exception {
         DISCARD discard=new DISCARD();
-        ProtocolStack stack=c1.getProtocolStack();
+        ProtocolStack stack=a.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.BELOW, UNICAST.class, UNICAST2.class);
 
-        Address dest=c2.getAddress();
+        Address dest=b.getAddress();
         Message m1=new Message(dest, null, 1);
         Message m2=new Message(dest, null, 2);
         m2.setFlag(Message.OOB);
         Message m3=new Message(dest, null, 3);
 
         MyReceiver receiver=new MyReceiver("C2");
-        c2.setReceiver(receiver);
-        c1.send(m1);
+        b.setReceiver(receiver);
+        a.send(m1);
         discard.setDropDownUnicasts(1);
-        c1.send(m2);
-        c1.send(m3);
+        a.send(m2);
+        a.send(m3);
 
         Collection<Integer> list=receiver.getMsgs();
         int count=10;
         while(list.size() < 3 && --count > 0) {
             Util.sleep(500); // time for potential retransmission
-            sendStableMessages(c1,c2);
+            sendStableMessages(a,b);
         }
 
         assert list.size() == 3 : "list is " + list;
@@ -100,10 +100,10 @@ public class OOBTest extends ChannelTestBase {
 
     public void testRegularAndOOBUnicasts2() throws Exception {
         DISCARD discard=new DISCARD();
-        ProtocolStack stack=c1.getProtocolStack();
+        ProtocolStack stack=a.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.BELOW, UNICAST.class, UNICAST2.class);
 
-        Address dest=c2.getAddress();
+        Address dest=b.getAddress();
         Message m1=new Message(dest, null, 1);
         Message m2=new Message(dest, null, 2);
         m2.setFlag(Message.OOB);
@@ -112,23 +112,23 @@ public class OOBTest extends ChannelTestBase {
         Message m4=new Message(dest, null, 4);
 
         MyReceiver receiver=new MyReceiver("C2");
-        c2.setReceiver(receiver);
-        c1.send(m1);
+        b.setReceiver(receiver);
+        a.send(m1);
 
         discard.setDropDownUnicasts(1);
-        c1.send(m3);
+        a.send(m3);
 
         discard.setDropDownUnicasts(1);
-        c1.send(m2);
+        a.send(m2);
         
-        c1.send(m4);
+        a.send(m4);
         Util.sleep(1000); // sleep some time to receive all messages
 
         Collection<Integer> list=receiver.getMsgs();
         int count=10;
         while(list.size() < 4 && --count > 0) {
             Util.sleep(500); // time for potential retransmission
-            sendStableMessages(c1,c2);
+            sendStableMessages(a,b);
         }
         System.out.println("list = " + list);
         assert list.size() == 4 : "list is " + list;
@@ -137,9 +137,9 @@ public class OOBTest extends ChannelTestBase {
 
     public void testRegularAndOOBMulticasts() throws Exception {
         DISCARD discard=new DISCARD();
-        ProtocolStack stack=c1.getProtocolStack();
+        ProtocolStack stack=a.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK2.class);
-        c1.setDiscardOwnMessages(true);
+        a.setDiscardOwnMessages(true);
 
         Address dest=null; // send to all
         Message m1=new Message(dest, null, 1);
@@ -148,11 +148,11 @@ public class OOBTest extends ChannelTestBase {
         Message m3=new Message(dest, null, 3);
 
         MyReceiver receiver=new MyReceiver("C2");
-        c2.setReceiver(receiver);
-        c1.send(m1);
+        b.setReceiver(receiver);
+        a.send(m1);
         discard.setDropDownMulticasts(1);
-        c1.send(m2);
-        c1.send(m3);
+        a.send(m2);
+        a.send(m3);
 
         Util.sleep(500);
         Collection<Integer> list=receiver.getMsgs();
@@ -161,7 +161,7 @@ public class OOBTest extends ChannelTestBase {
             if(list.size() == 3)
                 break;
             Util.sleep(1000); // give the asynchronous msgs some time to be received
-            sendStableMessages(c1,c2);
+            sendStableMessages(a,b);
         }
         assert list.size() == 3 : "list is " + list;
         assert list.contains(1) && list.contains(2) && list.contains(3);
@@ -172,13 +172,13 @@ public class OOBTest extends ChannelTestBase {
     @SuppressWarnings("unchecked")
     public void testRandomRegularAndOOBMulticasts() throws Exception {
         DISCARD discard=new DISCARD();
-        discard.setLocalAddress(c1.getAddress());
+        discard.setLocalAddress(a.getAddress());
         discard.setDownDiscardRate(0.5);
-        ProtocolStack stack=c1.getProtocolStack();
+        ProtocolStack stack=a.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK2.class);
         MyReceiver r1=new MyReceiver("C1"), r2=new MyReceiver("C2");
-        c1.setReceiver(r1);
-        c2.setReceiver(r2);
+        a.setReceiver(r1);
+        b.setReceiver(r2);
         final int NUM_MSGS=20;
         final int NUM_THREADS=10;
 
@@ -190,7 +190,7 @@ public class OOBTest extends ChannelTestBase {
                 break;
             System.out.println("one size " + one.size() + ", two size " + two.size());
             Util.sleep(1000);
-            sendStableMessages(c1,c2);
+            sendStableMessages(a,b);
         }
         System.out.println("one size " + one.size() + ", two size " + two.size());
 
@@ -199,7 +199,7 @@ public class OOBTest extends ChannelTestBase {
         for(int i=0; i < 5; i++) {
             if(one.size() == NUM_MSGS && two.size() == NUM_MSGS)
                 break;
-            sendStableMessages(c1,c2);
+            sendStableMessages(a,b);
             Util.sleep(500);
         }
         System.out.println("C1 received " + one.size() + " messages ("+ NUM_MSGS + " expected)" +
@@ -212,11 +212,11 @@ public class OOBTest extends ChannelTestBase {
      * Tests https://jira.jboss.org/jira/browse/JGRP-1079
      */
     public void testOOBMessageLoss() throws Exception {
-        Util.close(c2); // we only need 1 channel
+        Util.close(b); // we only need 1 channel
         MyReceiver receiver=new MySleepingReceiver("C1", 1000);
-        c1.setReceiver(receiver);
+        a.setReceiver(receiver);
 
-        TP transport=c1.getProtocolStack().getTransport();
+        TP transport=a.getProtocolStack().getTransport();
         transport.setOOBRejectionPolicy("discard");
 
         final int NUM=10;
@@ -224,9 +224,9 @@ public class OOBTest extends ChannelTestBase {
         for(int i=1; i <= NUM; i++) {
             Message msg=new Message(null, null, i);
             msg.setFlag(Message.OOB);
-            c1.send(msg);
+            a.send(msg);
         }
-        STABLE stable=(STABLE)c1.getProtocolStack().findProtocol(STABLE.class);
+        STABLE stable=(STABLE)a.getProtocolStack().findProtocol(STABLE.class);
         if(stable != null)
             stable.runMessageGarbageCollection();
         Collection<Integer> msgs=receiver.getMsgs();
@@ -235,7 +235,7 @@ public class OOBTest extends ChannelTestBase {
             if(msgs.size() == NUM)
                 break;
             Util.sleep(1000);
-            sendStableMessages(c1,c2);
+            sendStableMessages(a,b);
         }
 
         System.out.println("msgs = " + Util.print(msgs));
@@ -251,16 +251,16 @@ public class OOBTest extends ChannelTestBase {
      */
     public void testOOBUnicastMessageLoss() throws Exception {
         MyReceiver receiver=new MySleepingReceiver("C2", 1000);
-        c2.setReceiver(receiver);
+        b.setReceiver(receiver);
 
-        c1.getProtocolStack().getTransport().setOOBRejectionPolicy("discard");
+        a.getProtocolStack().getTransport().setOOBRejectionPolicy("discard");
 
         final int NUM=10;
-        final Address dest=c2.getAddress();
+        final Address dest=b.getAddress();
         for(int i=1; i <= NUM; i++) {
             Message msg=new Message(dest, null, i);
             msg.setFlag(Message.OOB);
-            c1.send(msg);
+            a.send(msg);
         }
 
         Collection<Integer> msgs=receiver.getMsgs();
@@ -296,7 +296,7 @@ public class OOBTest extends ChannelTestBase {
                 threads[i]=new Thread() {
                     public void run() {
                         for(int j=0; j < msgs_per_thread; j++) {
-                            Channel sender=Util.tossWeightedCoin(0.5) ? c1 : c2;
+                            Channel sender=Util.tossWeightedCoin(0.5) ? a : b;
                             boolean oob=Util.tossWeightedCoin(oob_prob);
                             int num=counter.incrementAndGet();
                             Message msg=new Message(dest, null, num);
@@ -321,7 +321,7 @@ public class OOBTest extends ChannelTestBase {
 
 
         for(int i=0; i < num_msgs; i++) {
-            Channel sender=Util.tossWeightedCoin(0.5) ? c1 : c2;
+            Channel sender=Util.tossWeightedCoin(0.5) ? a : b;
             boolean oob=Util.tossWeightedCoin(oob_prob);
             Message msg=new Message(dest, null, i);
             if(oob)
@@ -332,28 +332,24 @@ public class OOBTest extends ChannelTestBase {
 
 
     private void send(Address dest) throws Exception {
-        final ReentrantLock lock=new ReentrantLock();
-        final BlockingReceiver receiver=new BlockingReceiver(lock);
+        final CountDownLatch latch=new CountDownLatch(1);
+        final BlockingReceiver receiver=new BlockingReceiver(latch);
         final int NUM=10;
-        c2.setReceiver(receiver);
+        b.setReceiver(receiver);
 
-        System.out.println("[" + Thread.currentThread().getName() + "]: locking lock");
-        lock.lock();
-        c1.send(new Message(dest, null, 1));
+        a.send(new Message(dest, null, 1));
         for(int i=2; i <= NUM; i++) {
             Message msg=new Message(dest, null, i);
             msg.setFlag(Message.OOB);
-            c1.send(msg);
+            a.send(msg);
         }
-        sendStableMessages(c1, c2);
-        Util.sleep(500);
+        sendStableMessages(a,b);
 
         List<Integer> list=receiver.getMsgs();
         for(int i=0; i < 20; i++) {
             if(list.size() == NUM-1)
                 break;
-            System.out.println("list = " + list);
-            sendStableMessages(c1, c2);
+            sendStableMessages(a,b);
             Util.sleep(1000); // give the asynchronous msgs some time to be received
         }
 
@@ -362,13 +358,13 @@ public class OOBTest extends ChannelTestBase {
         assert list.size() == NUM-1 : "list is " + list;
         assert list.contains(2) && list.contains(10);
 
-        System.out.println("[" + Thread.currentThread().getName() + "]: unlocking lock");
-        lock.unlock();
+        System.out.println("[" + Thread.currentThread().getName() + "]: releasing latch");
+        latch.countDown();
 
         for(int i=0; i < 20; i++) {
             if(list.size() == NUM)
                 break;
-            System.out.println("list = " + list);
+            sendStableMessages(a,b);
             Util.sleep(1000); // give the asynchronous msgs some time to be received
         }
 
@@ -379,7 +375,7 @@ public class OOBTest extends ChannelTestBase {
     }
 
     @SuppressWarnings("unchecked")
-    private  void check(final int num_expected_msgs, Collection<Integer>... lists) {
+    private static void check(final int num_expected_msgs, Collection<Integer>... lists) {
         for(Collection<Integer> list: lists) {
             System.out.println("list: " + list);
         }
@@ -427,11 +423,11 @@ public class OOBTest extends ChannelTestBase {
     }
 
     private static class BlockingReceiver extends ReceiverAdapter {
-        final Lock lock;
-        final List<Integer> msgs=Collections.synchronizedList(new LinkedList<Integer>());
+        final CountDownLatch latch;
+        final List<Integer>  msgs=Collections.synchronizedList(new LinkedList<Integer>());
 
-        public BlockingReceiver(Lock lock) {
-            this.lock=lock;
+        public BlockingReceiver(CountDownLatch latch) {
+            this.latch=latch;
         }
 
         public List<Integer> getMsgs() {
@@ -440,8 +436,14 @@ public class OOBTest extends ChannelTestBase {
 
         public void receive(Message msg) {
             if(!msg.isFlagSet(Message.OOB)) {
-                lock.lock();
-                lock.unlock();
+                try {
+                    System.out.println(Thread.currentThread() + ": waiting on latch");
+                    latch.await(25000,TimeUnit.MILLISECONDS);
+                    System.out.println(Thread.currentThread() + ": DONE waiting on latch");
+                }
+                catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
 
             msgs.add((Integer)msg.getObject());
