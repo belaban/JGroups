@@ -96,7 +96,7 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
         for(ReplicatedHashMap<Address,Integer> map:channels)
             Assert.assertEquals(map.size(), channelCount, "Correct size");
 
-        log.info("stopping replicated hash maps...");
+        System.out.println("stopping replicated hash maps...");
         for(ReplicatedHashMap<Address,Integer> map:channels)
             map.stop();
     }
@@ -120,7 +120,7 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
         public void entrySet(K key, V value) {}
 
         public void viewChange(View view, List<Address> new_mbrs, List<Address> old_mbrs) {
-            log.info("Got view in ReplicatedHashMap notifier " + view);
+            System.out.println("Got view in ReplicatedHashMap notifier " + view);
         }
     }
 }

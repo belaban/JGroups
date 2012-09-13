@@ -100,7 +100,7 @@ public class StateTransferTest extends ChannelTestBase {
             for(int i=0;i < apps.length;i++) {
                 StateTransferApplication w=apps[i];
                 Map m=w.getMap();
-                log.info("map has " + m.size() + " elements");
+                System.out.println("map has " + m.size() + " elements");
                 assert m.size() == MSG_SEND_COUNT * APP_COUNT;
             }
             System.out.println("++++++++++++++++++++++++++++++++++++++");
@@ -156,7 +156,7 @@ public class StateTransferTest extends ChannelTestBase {
             }
 
             if(changed && num_received % 1000 == 0)
-                log.info(channel.getAddress() + ": received " + num_received);
+                System.out.println(channel.getAddress() + ": received " + num_received);
 
             // are we done?
             if(num_received >= MSG_SEND_COUNT * APP_COUNT)
@@ -177,7 +177,7 @@ public class StateTransferTest extends ChannelTestBase {
             synchronized(map) {
                 map.clear();
                 map.putAll(tmp);
-                log.info(channel.getAddress() + ": received state, map has " + map.size() + " elements");
+                System.out.println(channel.getAddress() + ": received state, map has " + map.size() + " elements");
             }
         }
 
@@ -210,7 +210,7 @@ public class StateTransferTest extends ChannelTestBase {
                         Util.sleep(50);
 
                     if(i % 1000 == 0)
-                        log.info(channel.getAddress() + ": sent " + i);
+                        System.out.println(channel.getAddress() + ": sent " + i);
                 }
                 catch(Exception e) {
                     e.printStackTrace();

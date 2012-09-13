@@ -29,7 +29,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         c1.connect("LastMessageDroppedTest");
         c2.connect("LastMessageDroppedTest");
         View view=c2.getView();
-        log.info("view = " + view);
+        System.out.println("view = " + view);
         assert view.size() == 2 : "view is " + view;
     }
 

@@ -39,7 +39,7 @@ public class OOBTest extends ChannelTestBase {
         c1.connect("OOBTest");
         c2.connect("OOBTest");
         View view=c2.getView();
-        log.info("view = " + view);
+        System.out.println("view = " + view);
         Util.waitUntilAllChannelsHaveSameSize(20000, 1000, c1, c2);
     }
 
@@ -130,7 +130,7 @@ public class OOBTest extends ChannelTestBase {
             Util.sleep(500); // time for potential retransmission
             sendStableMessages(c1,c2);
         }
-        log.info("list = " + list);
+        System.out.println("list = " + list);
         assert list.size() == 4 : "list is " + list;
         assert list.contains(1) && list.contains(2) && list.contains(3) && list.contains(4);
     }
@@ -157,7 +157,7 @@ public class OOBTest extends ChannelTestBase {
         Util.sleep(500);
         Collection<Integer> list=receiver.getMsgs();
         for(int i=0; i < 10; i++) {
-            log.info("list = " + list);
+            System.out.println("list = " + list);
             if(list.size() == 3)
                 break;
             Util.sleep(1000); // give the asynchronous msgs some time to be received
@@ -188,11 +188,11 @@ public class OOBTest extends ChannelTestBase {
         for(int i=0; i < 10; i++) {
             if(one.size() == NUM_MSGS && two.size() == NUM_MSGS)
                 break;
-            log.info("one size " + one.size() + ", two size " + two.size());
+            System.out.println("one size " + one.size() + ", two size " + two.size());
             Util.sleep(1000);
             sendStableMessages(c1,c2);
         }
-        log.info("one size " + one.size() + ", two size " + two.size());
+        System.out.println("one size " + one.size() + ", two size " + two.size());
 
         stack.removeProtocol("DISCARD");
 
@@ -381,7 +381,7 @@ public class OOBTest extends ChannelTestBase {
     @SuppressWarnings("unchecked")
     private  void check(final int num_expected_msgs, Collection<Integer>... lists) {
         for(Collection<Integer> list: lists) {
-            log.info("list: " + list);
+            System.out.println("list: " + list);
         }
 
         for(Collection<Integer> list: lists) {

@@ -95,7 +95,7 @@ public class FlushTest extends ChannelTestBase {
             c2.setReceiver(new SimpleReplier(c2, false));
             c2.connect("testStateTransferFollowedByUnicast");
 
-            log.info("\n** Getting the state **");
+            System.out.println("\n** Getting the state **");
             c2.getState(null, 10000);
             // now send unicast, this might block as described in the case
             c2.send(unicast_msg);
@@ -460,10 +460,10 @@ public class FlushTest extends ChannelTestBase {
         public void receive(Message msg) {
             Message reply = new Message(msg.getSrc());
             try {
-                log.info("-- MySimpleReplier[" + channel.getAddress() + "]: received message from "
+                System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: received message from "
                                 + msg.getSrc());
                 if (handle_requests) {
-                    log.info(", sending reply");
+                    System.out.println(", sending reply");
                     channel.send(reply);
                 } else
                     System.out.println("\n");
@@ -473,16 +473,16 @@ public class FlushTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            log.info("-- MySimpleReplier[" + channel.getAddress() + "]: viewAccepted(" + new_view
+            System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: viewAccepted(" + new_view
                             + ")");
         }
 
         public void block() {
-            log.info("-- MySimpleReplier[" + channel.getAddress() + "]: block()");
+            System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: block()");
         }
 
         public void unblock() {
-            log.info("-- MySimpleReplier[" + channel.getAddress() + "]: unblock()");
+            System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: unblock()");
         }
     }
 

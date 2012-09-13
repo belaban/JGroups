@@ -165,7 +165,8 @@ public class FILE_PING extends Discovery {
         if(!dir.exists())
             dir.mkdir();
 
-        log.info("reading all : " + clustername);
+        if(log.isDebugEnabled())
+            log.debug("reading all : " + clustername);
         File[] files=dir.listFiles(filter);
         if(files != null) {
             for(File file: files) {

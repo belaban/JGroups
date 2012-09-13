@@ -121,9 +121,9 @@ public class JDBC_PING extends FILE_PING {
                         log.debug("Could not execute initialize_sql statement; not necessarily an error.", e);
                     }
                     else {
-                        //avoid printing out the stacktrace when not debugging
-                        log.info("Could not execute initialize_sql statement; not necessarily an error, we always attempt to create the schema. " +
-                              "To suppress this message, set initialize_sql to an empty value. Cause:" + e.getMessage());
+                        if(log.isDebugEnabled())
+                            log.debug("Could not execute initialize_sql statement; not necessarily an error, we always attempt to create the schema. " +
+                                       "To suppress this message, set initialize_sql to an empty value. Cause:" + e.getMessage());
                     }
                 }
             } finally {

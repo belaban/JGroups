@@ -53,7 +53,7 @@ public class ReconciliationTest extends ChannelTestBase {
 
         FlushTrigger t=new FlushTrigger() {
             public void triggerFlush() {
-                log.info("Joining D, this will trigger FLUSH and a subsequent view change to {A,B,C,D}");
+                System.out.println("Joining D, this will trigger FLUSH and a subsequent view change to {A,B,C,D}");
                 JChannel newChannel;
                 try {
                     newChannel=createChannel(channels.get(0));
@@ -88,7 +88,7 @@ public class ReconciliationTest extends ChannelTestBase {
             public void triggerFlush() {
                 JChannel channel=channels.get(0);
                 boolean rc=Util.startFlush(channel);
-                log.info("manual flush success=" + rc);
+                System.out.println("manual flush success=" + rc);
                 channel.stopFlush();
             };
         };

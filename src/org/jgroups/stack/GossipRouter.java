@@ -289,8 +289,8 @@ public class GossipRouter {
         clear();
         if(running.compareAndSet(true, false)){
             Util.close(srvSock);            
-            if(log.isInfoEnabled())
-                log.info("router stopped");            
+            if(log.isDebugEnabled())
+                log.debug("router stopped");
         }
     }
 
