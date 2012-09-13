@@ -137,7 +137,7 @@ public class FORWARD_TO_COORD_Test {
         channels[NUM-1].down(new Event(Event.FORWARD_TO_COORD,msg));
 
         // Now A leaves, C should resend the message to B
-        System.out.println("***** disconnecting A ******");
+        System.out.println("\n***** disconnecting A ******");
         Util.close(channels[0]);
 
         MyReceiver receiver=receivers[1]; // B

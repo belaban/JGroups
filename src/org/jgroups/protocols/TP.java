@@ -442,16 +442,9 @@ public abstract class TP extends Protocol {
     protected final Set<Address> members=new CopyOnWriteArraySet<Address>();
 
     // Used to be the global thread group (moved here from Util)
-    protected ThreadGroup channel_thread_group=new ThreadGroup("JGroups channel") {
-            public void uncaughtException(Thread t, Throwable e) {
-                log.error("uncaught exception in " + t + " (thread group=" + this + " )", e);
-                final ThreadGroup tgParent = getParent();
-                if(tgParent != null)
-                    tgParent.uncaughtException(t,e);
-            }
-        };
+    protected ThreadGroup channel_thread_group;
 
-    protected ThreadGroup pool_thread_group=new ThreadGroup(getChannelThreadGroup(), "Thread Pools");
+    protected ThreadGroup pool_thread_group;
 
     /** Keeps track of connects and disconnects, in order to start and stop threads */
     protected int connect_count=0;
@@ -847,6 +840,18 @@ public abstract class TP extends Protocol {
         if(physical_addr_max_fetch_attempts < 1)
             throw new IllegalArgumentException("Property \"physical_addr_max_fetch_attempts\" cannot be less than 1");
 
+
+        channel_thread_group=new ThreadGroup("JGroups channel") {
+            public void uncaughtException(Thread t, Throwable e) {
+                log.error("uncaught exception in " + t + " (thread group=" + this + " )", e);
+                final ThreadGroup tgParent = getParent();
+                if(tgParent != null)
+                    tgParent.uncaughtException(t,e);
+            }
+        };
+
+        pool_thread_group=new ThreadGroup(getChannelThreadGroup(), "Thread Pools");
+
         // Create the default thread factory
         if(global_thread_factory == null)
             global_thread_factory=new DefaultThreadFactory(getChannelThreadGroup(), "", false);
@@ -973,6 +978,12 @@ public abstract class TP extends Protocol {
         if(thread_pool instanceof ThreadPoolExecutor) {
             shutdownThreadPool(thread_pool);
         }
+
+        if(pool_thread_group.activeCount() == 0 && !pool_thread_group.isDestroyed())
+            pool_thread_group.destroy();
+
+        if(channel_thread_group.activeCount() == 0 && !channel_thread_group.isDestroyed())
+            channel_thread_group.destroy();
     }
 
     /**
