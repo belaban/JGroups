@@ -1,24 +1,22 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
-import org.jgroups.protocols.MERGE2;
-import org.jgroups.protocols.FD;
-import org.jgroups.protocols.FD_ALL;
+import org.jgroups.*;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.GossipRouter;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
+import org.jgroups.util.ResourceManager;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.net.InetAddress;
 
 
 /**
@@ -30,10 +28,11 @@ import org.testng.annotations.Test;
  **/
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{
-    private JChannel channel, coordinator;
+    private JChannel            channel, coordinator;
     private final static String GROUP="TUNNEL_Test";
-    private GossipRouter gossipRouter;
-    private static final String props="tunnel.xml";
+    private GossipRouter        gossipRouter;
+    private int                 gossip_router_port;
+    private String              gossip_router_hosts;
 
     @BeforeClass
     void startRouter() throws Exception {
@@ -45,7 +44,10 @@ public class TUNNEL_Test extends ChannelTestBase{
             else
                 bind_addr="127.0.0.1";
         }
-        gossipRouter=new GossipRouter(12001, null);
+
+        gossip_router_port=ResourceManager.getNextTcpPort(InetAddress.getByName(bind_addr));
+        gossip_router_hosts=bind_addr + "[" + gossip_router_port + "]";
+        gossipRouter=new GossipRouter(gossip_router_port, null);
         gossipRouter.start();
     }
     
@@ -66,8 +68,7 @@ public class TUNNEL_Test extends ChannelTestBase{
      * Tests if the channel has a null local address after disconnect (using TUNNEL).
      **/
     public void testNullLocalAddress_TUNNEL() throws Exception {
-        channel = new JChannel(props);
-        setProps(channel);
+        channel=createTunnelChannel("A");
         channel.connect(GROUP);
         assert channel.getAddress() != null;
         channel.disconnect();
@@ -80,8 +81,7 @@ public class TUNNEL_Test extends ChannelTestBase{
      * (using default configuration).
      **/
     public void testDisconnectConnectOne_Default() throws Exception {
-        channel=new JChannel(props);
-        setProps(channel);
+        channel=createTunnelChannel("A");
         channel.connect("DisconnectTest.testgroup-1");
         channel.disconnect();
         channel.connect("DisconnectTest.testgroup-2");
@@ -96,12 +96,10 @@ public class TUNNEL_Test extends ChannelTestBase{
      * (using default configuration).
      **/
     public void testDisconnectConnectTwo_Default() throws Exception {
-        coordinator=new JChannel(props);
-        setProps(coordinator);
+        coordinator=createTunnelChannel("B");
 
-        channel=new JChannel(props);
-        setProps(channel);
-        
+        channel=createTunnelChannel("A");
+
         coordinator.connect(GROUP);
         channel.connect("DisconnectTest.testgroup-1");
         channel.disconnect();
@@ -123,13 +121,11 @@ public class TUNNEL_Test extends ChannelTestBase{
      **/
     public void testDisconnectConnectSendTwo_Default() throws Exception {
         final Promise<Message> msgPromise=new Promise<Message>();
-        coordinator=new JChannel(props);
-        setProps(coordinator);
+        coordinator=createTunnelChannel("B");
         coordinator.connect(GROUP);
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
 
-        channel=new JChannel(props);
-        setProps(channel);
+        channel=createTunnelChannel("A");
         channel.connect("DisconnectTest.testgroup-1");
         channel.disconnect();
         channel.connect(GROUP);
@@ -147,8 +143,7 @@ public class TUNNEL_Test extends ChannelTestBase{
       * (using TUNNEL).
       **/
      public void testDisconnectConnectOne_TUNNEL() throws Exception {
-        channel=new JChannel(props);
-        setProps(channel);
+        channel=createTunnelChannel("A");
         channel.connect("DisconnectTest.testgroup-1");
         channel.disconnect();
         channel.connect("DisconnectTest.testgroup-2");
@@ -158,14 +153,12 @@ public class TUNNEL_Test extends ChannelTestBase{
     }
      
      public void testFailureDetection() throws Exception {
-         coordinator=new JChannel(props);
+         coordinator=createTunnelChannel("B");
          coordinator.setName("coord");
-         setProps(coordinator);
          coordinator.connect(GROUP);
          
-         channel=new JChannel(props);
+         channel=createTunnelChannel("A");
          channel.setName("participant");
-         setProps(channel);       
          channel.connect(GROUP);
 
          System.out.println("shutting down the participant channel");
@@ -190,16 +183,14 @@ public class TUNNEL_Test extends ChannelTestBase{
      }
      
      public void testConnectThree() throws Exception {
-         coordinator=new JChannel(props);
-         setProps(coordinator);
+         coordinator=createTunnelChannel("B");
 
-         channel=new JChannel(props);
-         setProps(channel);
-         
+         channel=createTunnelChannel("A");
+
          coordinator.connect(GROUP);
          channel.connect(GROUP);
          
-         JChannel third = new JChannel (props);
+         JChannel third = createTunnelChannel("C");
          third.connect(GROUP);
          
          View view=channel.getView();
@@ -217,11 +208,9 @@ public class TUNNEL_Test extends ChannelTestBase{
       * (using TUNNEL).
       **/
      public void testDisconnectConnectTwo_TUNNEL() throws Exception {
-         coordinator=new JChannel(props);
-         setProps(coordinator);
+         coordinator=createTunnelChannel("B");
          coordinator.connect(GROUP);
-         channel=new JChannel(props);
-         setProps(channel);
+         channel=createTunnelChannel("A");
          channel.connect("DisconnectTest.testgroup-1");
          channel.disconnect();
          channel.connect(GROUP);
@@ -244,13 +233,11 @@ public class TUNNEL_Test extends ChannelTestBase{
       **/
      public void testDisconnectConnectSendTwo_TUNNEL() throws Exception {
         final Promise<Message> msgPromise=new Promise<Message>();
-        coordinator=new JChannel(props);
-        setProps(coordinator);
+        coordinator=createTunnelChannel("B");
         coordinator.connect(GROUP);
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
 
-        channel=new JChannel(props);
-        setProps(channel);
+        channel=createTunnelChannel("A");
         channel.connect("DisconnectTest.testgroup-1");
         channel.disconnect();
         channel.connect(GROUP);
@@ -262,23 +249,20 @@ public class TUNNEL_Test extends ChannelTestBase{
         assert "payload".equals(msg.getObject());
     }
 
-    private static void setProps(JChannel channel) {
-        ProtocolStack stack=channel.getProtocolStack();
-        MERGE2 merge=(MERGE2)stack.findProtocol(MERGE2.class);
-        if(merge != null) {
-            merge.setMinInterval(1000);
-            merge.setMaxInterval(3000);
-        }
-        FD fd=(FD)stack.findProtocol(FD.class);
-        if(fd != null) {
-            fd.setTimeout(1000);
-            fd.setMaxTries(2);
-        }
-        FD_ALL fd_all=(FD_ALL)stack.findProtocol(FD_ALL.class);
-        if(fd_all != null) {
-            fd_all.setTimeout(2000);
-            fd_all.setInterval(600);
-        }
+
+    protected JChannel createTunnelChannel(String name) throws Exception {
+        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("enable_bundling",false);
+        tunnel.setGossipRouterHosts(gossip_router_hosts);
+        JChannel ch=Util.createChannel(tunnel,
+                                       new PING(),
+                                       new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000),
+                                       new FD().setValue("timeout", 2000).setValue("max_tries", 2),
+                                       new VERIFY_SUSPECT(),
+                                       new NAKACK2().setValue("use_mcast_xmit", false),
+                                       new UNICAST(), new STABLE(), new GMS());
+        if(name != null)
+            ch.setName(name);
+        return ch;
     }
 
 

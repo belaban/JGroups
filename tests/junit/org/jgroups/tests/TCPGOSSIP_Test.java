@@ -3,11 +3,12 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.View;
-import org.jgroups.protocols.MERGE2;
-import org.jgroups.protocols.MERGE3;
-import org.jgroups.protocols.TCPGOSSIP;
+import org.jgroups.protocols.*;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.GossipRouter;
-import org.jgroups.stack.Protocol;
+import org.jgroups.util.ResourceManager;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
@@ -15,7 +16,9 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,18 +29,17 @@ import java.util.List;
  **/
 @Test(groups = { Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER }, sequential = true)
 public class TCPGOSSIP_Test {
-    private JChannel channel, coordinator;
+    private JChannel            channel, coordinator;
     private final static String GROUP = "TCPGOSSIP_Test";
-    private GossipRouter gossipRouter;
-    private static final String props = "tcpgossip.xml";
+    private GossipRouter        gossipRouter;
+    private int                 gossip_router_port;
+    private final String        bind_addr = getRouterBindAddress();
+
 
     @BeforeClass
     void startRouter() throws Exception {
-        String bind_addr = getRouterBindAddress();
-
-        System.setProperty("jgroups.bind_addr", bind_addr);
-
-        gossipRouter = new GossipRouter(12001, bind_addr); // binds the GR to 127.0.0.1:12001
+        gossip_router_port=ResourceManager.getNextTcpPort(InetAddress.getByName(bind_addr));
+        gossipRouter=new GossipRouter(gossip_router_port, null);
         gossipRouter.start();
     }
 
@@ -63,8 +65,8 @@ public class TCPGOSSIP_Test {
      * Tests connect-disconnect-connect sequence for a group with two members (using the default configuration).
      **/
     public void testDisconnectConnectTwo() throws Exception {
-        coordinator=createChannel("A");
-        channel=createChannel("B");
+        coordinator=createTcpgossipChannel("A");
+        channel=createTcpgossipChannel("B");
         coordinator.connect(GROUP);
         channel.connect("DisconnectTest.testgroup-1");
         channel.disconnect();
@@ -76,14 +78,14 @@ public class TCPGOSSIP_Test {
     }
     
     public void testAddInitialHosts() throws Exception {
-        coordinator=createChannel("A");
-        channel=createChannel("B");
+        coordinator=createTcpgossipChannel("A");
+        channel=createTcpgossipChannel("B");
         coordinator.connect(GROUP);
         channel.connect(GROUP);
         TCPGOSSIP p = (TCPGOSSIP) channel.getProtocolStack().findProtocol(TCPGOSSIP.class);
-        String bind_addr = getRouterBindAddress();
-        assert p.removeInitialHost(bind_addr, 12001);
-        p.addInitialHost(bind_addr, 12001);
+        String tmp_bind_addr = getRouterBindAddress();
+        assert p.removeInitialHost(tmp_bind_addr, gossip_router_port);
+        p.addInitialHost(tmp_bind_addr, gossip_router_port);
        
         View view = channel.getView();
         assert view.size() == 2;
@@ -94,11 +96,11 @@ public class TCPGOSSIP_Test {
     public void testConnectThree() throws Exception {
         JChannel third = null;
         try {
-            coordinator=createChannel("A");
-            channel=createChannel("B");
+            coordinator=createTcpgossipChannel("A");
+            channel=createTcpgossipChannel("B");
             coordinator.connect(GROUP);
             channel.connect(GROUP);
-            third=createChannel("C");
+            third=createTcpgossipChannel("C");
             third.connect(GROUP);
             View view = channel.getView();
             assert channel.getView().size() == 3;
@@ -113,9 +115,8 @@ public class TCPGOSSIP_Test {
     public void testConnectThreeChannelsWithGRDown() throws Exception {
         JChannel third = null;
         try {
-            coordinator=createChannel("A");
-            channel=createChannel("B");
-            changeMergeInterval(coordinator, channel);
+            coordinator=createTcpgossipChannel("A");
+            channel=createTcpgossipChannel("B");
             coordinator.connect("testConnectThreeChannelsWithGRDown");
             channel.connect("testConnectThreeChannelsWithGRDown");
 
@@ -124,8 +125,7 @@ public class TCPGOSSIP_Test {
             
 
             // cannot discover others since GR is down
-            third=createChannel("C");
-            changeMergeInterval(third);
+            third=createTcpgossipChannel("C");
             third.connect("testConnectThreeChannelsWithGRDown");
 
             // restart and....
@@ -146,10 +146,9 @@ public class TCPGOSSIP_Test {
     public void testConnectThreeChannelsWithGRAlreadyDown() throws Exception {
         JChannel third = null;
         try {
-            coordinator=createChannel("A");
-            channel=createChannel("B");
-            changeMergeInterval(coordinator, channel);
-            
+            coordinator=createTcpgossipChannel("A");
+            channel=createTcpgossipChannel("B");
+
             // kill router
             gossipRouter.stop();
             
@@ -157,8 +156,7 @@ public class TCPGOSSIP_Test {
             coordinator.connect("testConnectThreeChannelsWithGRAlreadyDown");          
             channel.connect("testConnectThreeChannelsWithGRAlreadyDown");
 
-            third=createChannel("C");
-            changeMergeInterval(third);
+            third=createTcpgossipChannel("C");
             third.connect("testConnectThreeChannelsWithGRAlreadyDown");
 
             // restart and....
@@ -176,12 +174,26 @@ public class TCPGOSSIP_Test {
         }
     }
 
-    protected JChannel createChannel(String name) throws Exception {
-        JChannel retval=new JChannel(props);
-        retval.setName(name);
-        changeGossipRouter(retval,getRouterBindAddress(),12001);
-        return retval;
+
+    protected JChannel createTcpgossipChannel(String name) throws Exception {
+        TCPGOSSIP gossip=new TCPGOSSIP();
+        List<InetSocketAddress> initial_hosts=new ArrayList<InetSocketAddress>();
+        initial_hosts.add(new InetSocketAddress(bind_addr, gossip_router_port));
+        gossip.setInitialHosts(initial_hosts);
+
+        JChannel ch=Util.createChannel(new TCP().setValue("use_send_queues",true).setValue("sock_conn_timeout",300),
+                                       gossip,
+                                       new MERGE2().setValue("min_interval",1000).setValue("max_interval",3000),
+                                       new FD().setValue("timeout",2000).setValue("max_tries",2),
+                                       new VERIFY_SUSPECT(),
+                                       new NAKACK2().setValue("use_mcast_xmit",false),
+                                       new UNICAST(),new STABLE(),new GMS());
+        if(name != null)
+            ch.setName(name);
+        return ch;
     }
+
+
 
     protected void changeGossipRouter(JChannel channel, String host, int port) {
         TCPGOSSIP tcp_gossip_prot=(TCPGOSSIP)channel.getProtocolStack().findProtocol(TCPGOSSIP.class);
@@ -190,17 +202,5 @@ public class TCPGOSSIP_Test {
         initial_hosts.add(new InetSocketAddress(host, port));
     }
 
-    protected void changeMergeInterval(JChannel ... channels) {
-        for(JChannel ch: channels) {
-            Protocol p=ch.getProtocolStack().findProtocol(MERGE2.class,MERGE3.class);
-            if(p instanceof MERGE2) {
-                ((MERGE2)p).setMinInterval(1000);
-                ((MERGE2)p).setMaxInterval(3000);
-            }
-            else if(p instanceof MERGE3) {
-                ((MERGE3)p).setMaxInterval(1000);
-                ((MERGE3)p).setMaxInterval(3000);
-            }
-        }
-    }
+
 }

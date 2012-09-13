@@ -979,11 +979,11 @@ public abstract class TP extends Protocol {
             shutdownThreadPool(thread_pool);
         }
 
-        if(pool_thread_group.activeCount() == 0 && !pool_thread_group.isDestroyed())
-            pool_thread_group.destroy();
+       // if(pool_thread_group.activeCount() == 0 && !pool_thread_group.isDestroyed())
+         //   pool_thread_group.destroy();
 
-        if(channel_thread_group.activeCount() == 0 && !channel_thread_group.isDestroyed())
-            channel_thread_group.destroy();
+        //if(channel_thread_group.activeCount() == 0 && !channel_thread_group.isDestroyed())
+          //  channel_thread_group.destroy();
     }
 
     /**

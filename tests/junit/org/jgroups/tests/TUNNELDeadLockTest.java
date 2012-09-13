@@ -4,13 +4,20 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
+import org.jgroups.protocols.*;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.Promise;
+import org.jgroups.util.ResourceManager;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.net.InetAddress;
 
 /**
  * Test designed to make sure the TUNNEL doesn't lock the client and the GossipRouter
@@ -32,7 +39,9 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
     // the time (in ms) the main thread waits for all the messages to arrive,
     // before declaring the test failed.
     private int mainTimeout=60000;
-    GossipRouter gossipRouter;
+    GossipRouter                gossipRouter;
+    private int                 gossip_router_port;
+    private String              gossip_router_hosts;
 
 
     @BeforeMethod
@@ -46,7 +55,9 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
                 bind_addr="127.0.0.1";
         }
         promise=new Promise<Boolean>();
-        gossipRouter=new GossipRouter(GossipRouter.PORT,bind_addr);
+        gossip_router_port=ResourceManager.getNextTcpPort(InetAddress.getByName(bind_addr));
+        gossip_router_hosts=bind_addr + "[" + gossip_router_port + "]";
+        gossipRouter=new GossipRouter(gossip_router_port, null);
         gossipRouter.start();
     }
 
@@ -83,7 +94,7 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
      */
     @Test
     public void testStress() throws Exception {
-        channel=new JChannel("tunnel.xml");
+        channel=createTunnelChannel("A");
         channel.connect("agroup");
         channel.setReceiver(new ReceiverAdapter() {
 
@@ -129,5 +140,20 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
                     " messages received so far.";
             assert false : msg;
         }       
+    }
+
+     protected JChannel createTunnelChannel(String name) throws Exception {
+        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("enable_bundling",false);
+        tunnel.setGossipRouterHosts(gossip_router_hosts);
+        JChannel ch=Util.createChannel(tunnel,
+                                       new PING(),
+                                       new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000),
+                                       new FD().setValue("timeout", 2000).setValue("max_tries", 2),
+                                       new VERIFY_SUSPECT(),
+                                       new NAKACK2().setValue("use_mcast_xmit", false),
+                                       new UNICAST(), new STABLE(), new GMS());
+        if(name != null)
+            ch.setName(name);
+        return ch;
     }
 }

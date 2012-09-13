@@ -83,6 +83,20 @@ public class ResourceManager {
 		return retval;
 	}
 
+    public static synchronized short getNextTcpPort(InetAddress bind_addr) throws Exception {
+        short port=tcp_port++;
+        ServerSocket sock=null;
+        try {
+            sock=Util.createServerSocket(socket_factory, "jgroups.temp.resourcemgr.srv_sock", bind_addr, port);
+            return (short) sock.getLocalPort();
+
+        }
+        finally {
+            tcp_port = ++port;
+            socket_factory.close(sock);
+        }
+	}
+
 	public static String getUniqueClusterName(String base_name) {
 		return base_name != null ? base_name + "-" + new UID().toString()
 				: new UID().toString();
