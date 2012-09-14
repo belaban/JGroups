@@ -4,19 +4,14 @@ import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.DefaultThreadFactory;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.TimeScheduler2;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests the FORWARD_TO_COORD protocol
@@ -29,40 +24,17 @@ public class FORWARD_TO_COORD_Test {
     protected static final int     BASE='A';
     protected final JChannel[]     channels=new JChannel[NUM];
     protected final MyReceiver[]   receivers=new MyReceiver[NUM];
-    protected ThreadPoolExecutor   oob_thread_pool;
-    protected ThreadPoolExecutor   thread_pool;
 
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        ThreadGroup test_group=new ThreadGroup("FORWARD_TO_COORD_Test");
-        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory(test_group, "Timer", true, true),
-                                               5,20,
-                                               3000, 5000, "abort");
-
-        oob_thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/4), 3000, TimeUnit.MILLISECONDS,
-                                               new ArrayBlockingQueue<Runnable>(NUM * NUM));
-        oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
-
-        thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/4), 3000, TimeUnit.MILLISECONDS,
-                                           new ArrayBlockingQueue<Runnable>(NUM * NUM));
-        thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-
-
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
-            SHARED_LOOPBACK shared_loopback=(SHARED_LOOPBACK)new SHARED_LOOPBACK().setValue("enable_bundling", false);
-            shared_loopback.setLoopback(false);
-            shared_loopback.setTimer(timer);
-            shared_loopback.setOOBThreadPool(oob_thread_pool);
-            shared_loopback.setDefaultThreadPool(thread_pool);
-
-            channels[i]=Util.createChannel(shared_loopback,
+            channels[i]=Util.createChannel(new SHARED_LOOPBACK(),
                                            new DISCARD(),
                                            new PING().setValue("timeout",1000).setValue("num_initial_members",NUM)
                                              .setValue("force_sending_discovery_rsps", true),
-                                           new FD_SOCK(),
                                            new NAKACK2().setValue("use_mcast_xmit",false)
                                              .setValue("discard_delivered_msgs",true)
                                              .setValue("log_discard_msgs",true).setValue("log_not_found_msgs",true)
@@ -88,7 +60,7 @@ public class FORWARD_TO_COORD_Test {
             if(i == 0)
                 Util.sleep(4000);
         }
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, channels);
+        Util.waitUntilAllChannelsHaveSameSize(30000,1000,channels);
     }
 
     @AfterMethod
@@ -162,8 +134,8 @@ public class FORWARD_TO_COORD_Test {
     public void testForwardingWithCoordCrashing() throws Exception {
         Message msg=new Message(null, 30);
 
-        DISCARD discard=(DISCARD)channels[NUM-1].getProtocolStack().findProtocol(DISCARD.class);
-        discard.setDropDownUnicasts(1);
+        DISCARD discard=(DISCARD)channels[0].getProtocolStack().findProtocol(DISCARD.class);
+        discard.setDiscardAll(true);
 
         // Sends the message to A, but C will discard it, so A will never get it
         channels[NUM-1].down(new Event(Event.FORWARD_TO_COORD,msg));
@@ -172,6 +144,13 @@ public class FORWARD_TO_COORD_Test {
         System.out.println("***** crashing A ******");
         Util.shutdown(channels[0]);
 
+        View view=Util.createView(channels[1].getAddress(), 5, channels[1].getAddress(), channels[2].getAddress());
+
+        System.out.println("Injecting view " + view + " into B and C");
+        for(JChannel ch: Arrays.asList(channels[1], channels[2])) {
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            gms.up(new Event(Event.VIEW_CHANGE, view));
+        }
 
         MyReceiver receiver=receivers[1]; // B
         for(int i=0; i < 20; i++) {
@@ -238,7 +217,7 @@ public class FORWARD_TO_COORD_Test {
 
     void printReceivers() {
         for(int i=0; i < NUM; i++) {
-            System.out.println(channels[i].getName() + ": " + receivers[i].getValues());
+            System.out.println(channels[i].getName() + ": " + receivers[i].getValues() + ", view: " + channels[i].getView());
         }
     }
 
