@@ -13,7 +13,16 @@ import java.util.*;
 
 /**
  * Forwards a message to the current coordinator. When the coordinator changes, forwards all pending messages to
- * the new coordinator. Only looks at unicast messages.
+ * the new coordinator. Only looks at unicast messages.<p/>
+ * Note that the ordering of messages sent in parallel to the resending of messages is currently (Sept 2012) undefined:
+ * when resending messages 1-4, and concurrently sending (new) messages 5 and 6, then FORWARD_TO_COORD only guarantees
+ * that messages [1,2,3,4] are delivered in that order and messages [5,6] are delivered in that order, too, but
+ * there are no guarantees regarding the ordering between [1,2,3,4] and [5,6], e.g. a receiver could deliver
+ * 1,5,2,3,6,4. <p/>
+ * This is currently not an issue, as the main consumer of FORWARD_TO_COORD is RELAY2, which is used by Infinispan to
+ * invoke sync or async RPCs across sites. In the former case, a unicast #2 will not be sent until unicast #1 is either
+ * ack'ed or times out.<p/>
+ * In a future version, ordering may be provided. Note though that OOB or UNRELIABLE messages don't need to be ordered.
  * @author Bela Ban
  * @since 3.2
  */
