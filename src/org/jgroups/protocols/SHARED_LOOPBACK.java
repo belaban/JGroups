@@ -45,8 +45,8 @@ public class SHARED_LOOPBACK extends TP {
     public void sendMulticast(byte[] data, int offset, int length) throws Exception {
         Map<Address,SHARED_LOOPBACK> dests=routing_table.get(channel_name);
         if(dests == null) {
-            if(log.isWarnEnabled())
-                log.warn("no destination found for " + channel_name);
+            if(log.isTraceEnabled())
+                log.trace("no destination found for " + channel_name);
             return;
         }
         for(Map.Entry<Address,SHARED_LOOPBACK> entry: dests.entrySet()) {
@@ -64,14 +64,14 @@ public class SHARED_LOOPBACK extends TP {
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
         Map<Address,SHARED_LOOPBACK> dests=routing_table.get(channel_name);
         if(dests == null) {
-            if(log.isWarnEnabled())
-                log.warn("no destination found for " + channel_name);
+            if(log.isTraceEnabled())
+                log.trace("no destination found for " + channel_name);
             return;
         }
         SHARED_LOOPBACK target=dests.get(dest);
         if(target == null) {
-            if(log.isWarnEnabled())
-                log.warn("destination address " + dest + " not found");
+            if(log.isTraceEnabled())
+                log.trace("destination address " + dest + " not found");
             return;
         }
         target.receive(local_addr, data, offset, length);
@@ -80,14 +80,14 @@ public class SHARED_LOOPBACK extends TP {
     protected void sendToSingleMember(Address dest, byte[] buf, int offset, int length) throws Exception {
         Map<Address,SHARED_LOOPBACK> dests=routing_table.get(channel_name);
         if(dests == null) {
-            if(log.isWarnEnabled())
-                log.warn("no destination found for " + channel_name);
+            if(log.isTraceEnabled())
+                log.trace("no destination found for " + channel_name);
             return;
         }
         SHARED_LOOPBACK target=dests.get(dest);
         if(target == null) {
-            if(log.isWarnEnabled())
-                log.warn("destination address " + dest + " not found");
+            if(log.isTraceEnabled())
+                log.trace("destination address " + dest + " not found");
             return;
         }
         target.receive(local_addr, buf, offset, length);
@@ -124,9 +124,12 @@ public class SHARED_LOOPBACK extends TP {
         return retval;
     }
 
-    public void stop() {
-        super.stop();
-        // unregister(channel_name, local_addr);
+
+    public void destroy() {
+        super.destroy();
+        // We cannot clear the routing table, as it is shared between channels, and so we would clear the routing for
+        // a different channel, too !
+        unregister(channel_name, local_addr);
     }
 
     protected static void register(String channel_name, Address local_addr, SHARED_LOOPBACK shared_loopback) {
