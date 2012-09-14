@@ -6,7 +6,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.stack.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.io.DataInput;
@@ -447,7 +447,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
                 if(!running) {
                     if(log.isTraceEnabled())
-                        log.trace("discarded message as start() has not yet been called, message: " + msg);
+                        log.trace(local_addr + ": discarded message as start() has not yet been called, message: " + msg);
                     return null;
                 }
 
@@ -517,7 +517,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
                 if(!non_members.isEmpty()) {
                     if(log.isTraceEnabled())
-                        log.trace("removing non members " + non_members);
+                        log.trace(local_addr + ": removing non members " + non_members);
                     for(Address non_mbr: non_members)
                         removeConnection(non_mbr);
                 }
@@ -622,7 +622,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             };
             stable_task_future=timer.scheduleWithFixedDelay(stable_task, stable_interval, stable_interval, TimeUnit.MILLISECONDS);
             if(log.isTraceEnabled())
-                log.trace("stable task started");
+                log.trace(local_addr + ": stable task started");
         }
     }
 
@@ -700,7 +700,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     public void expired(Address key) {
         if(key != null) {
             if(log.isDebugEnabled())
-                log.debug("removing connection to " + key + " because it expired");
+                log.debug(local_addr + ": removing connection to " + key + " because it expired");
             removeConnection(key);
         }
     }
@@ -859,9 +859,9 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 if(msg == null) {
                     if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(sender) && seqno > win.getLow()) {
                         StringBuilder sb=new StringBuilder();
-                        sb.append("(requester=").append(sender).append(", local_addr=").append(this.local_addr);
-                        sb.append(") message ").append(sender).append("::").append(seqno);
-                        sb.append(" not found in retransmission table of ").append(sender).append(":\n").append(win);
+                        sb.append(local_addr +  ": (requester=").append(sender).append(") message ").append(sender)
+                          .append("::").append(seqno).append(" not found in retransmission table of ").append(sender)
+                          .append(":\n").append(win);
                         log.warn(sb.toString());
                     }
                     continue;

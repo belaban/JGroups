@@ -121,7 +121,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
 
         if(wouldIBeCoordinator()) {
             if(log.isDebugEnabled())
-                log.debug("members are " + gms.members + ", coord=" + gms.local_addr + ": I'm the new coord !");
+                log.debug(gms.local_addr + ": members are " + gms.members + ", coord=" + gms.local_addr + ": I'm the new coord !");
 
             gms.becomeCoordinator();
             for(Address mbr: suspected_mbrs) {

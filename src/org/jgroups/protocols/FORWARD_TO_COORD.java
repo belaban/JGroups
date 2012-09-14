@@ -86,7 +86,7 @@ public class FORWARD_TO_COORD extends Protocol {
                         if(local_addr != null && !local_addr.equals(coord)) {
                             // I'm not the coord
                             if(log.isWarnEnabled())
-                                log.warn("[" + local_addr + "] received a message with id=" + tmp_id + " from " + sender +
+                                log.warn(local_addr + ": received a message with id=" + tmp_id + " from " + sender +
                                            ", but I'm not coordinator (" + coord + " is); dropping the message");
                             sendNotCoord(sender, tmp_id);
                             return null;
@@ -115,10 +115,11 @@ public class FORWARD_TO_COORD extends Protocol {
 
                         if(resend != null) {
                             Message copy=resend.copy();
-                            copy.setDest(coord);
+                            Address target=coord;
+                            copy.setDest(target);
                             Util.sleep(resend_delay);
                             if(log.isTraceEnabled())
-                                log.trace(local_addr + ": resending message with id=" + tmp_id + " to coord " + coord);
+                                log.trace(local_addr + ": resending message with id=" + tmp_id + " to coord " + target);
                             down_prot.down(new Event(Event.MSG, copy));
                         }
 
@@ -168,7 +169,8 @@ public class FORWARD_TO_COORD extends Protocol {
             if(!pending_msgs.isEmpty()) {
                 if(log.isTraceEnabled()) {
                     int size=pending_msgs.size();
-                    log.trace(local_addr + ": resending " + size + (size > 1? " messages" : " message") + " to new coordinator " + coord);
+                    log.trace(local_addr + ": received view " + view + "; resending " + size +
+                                (size > 1? " messages" : " message") + " to new coordinator " + coord);
                 }
                 for(Message msg: pending_msgs) {
                     Message copy=msg.copy();
