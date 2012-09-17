@@ -25,10 +25,12 @@ import java.util.Set;
  * @author Bela Ban
  */
 public class RelayDemoRpc extends ReceiverAdapter {
-    protected JChannel      ch;
-    protected RpcDispatcher disp;
-    protected String        local_addr;
-    protected View          view;
+    protected JChannel          ch;
+    protected RpcDispatcher     disp;
+    protected String            local_addr;
+    protected View              view;
+
+    protected static final long RPC_TIMEOUT=10000;
 
 
 
@@ -64,6 +66,15 @@ public class RelayDemoRpc extends ReceiverAdapter {
         MethodCall call=new MethodCall(getClass().getMethod("handleMessage", String.class, String.class));
         for(;;) {
             String line=Util.readStringFromStdin(": ");
+            if(line.startsWith("help")) {
+                System.out.println("unicast <text>  // unicasts to all members of local view\n" +
+                                     "site <site>+    // unicasts to all listed site masters, e.g. \"site sfo lon\"\n" +
+                                     "mcast <site>+   // anycasts to all local members, plus listed site masters \n" +
+                                     "<text>          // multicast, RELAY2 will relay to all members of sites");
+                continue;
+            }
+
+
             call.setArgs(line, local_addr);
 
             // unicast to every member of the local cluster
@@ -71,7 +82,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
                 for(Address dest: view.getMembers()) {
                     System.out.println("invoking method in " + dest + ": ");
                     try {
-                        Object rsp=disp.callRemoteMethod(dest, call, new RequestOptions(ResponseMode.GET_ALL, 5000));
+                        Object rsp=disp.callRemoteMethod(dest, call, new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT));
                         System.out.println("rsp from " + dest + ": " + rsp);
                     }
                     catch(Throwable throwable) {
@@ -87,7 +98,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
                     SiteMaster dest=new SiteMaster(site_master);
                     System.out.println("invoking method in " + dest + ": ");
                     try {
-                        Object rsp=disp.callRemoteMethod(dest, call, new RequestOptions(ResponseMode.GET_ALL, 50000));
+                        Object rsp=disp.callRemoteMethod(dest, call, new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT));
                         System.out.println("rsp from " + dest + ": " + rsp);
                     }
                     catch(Throwable throwable) {
@@ -105,7 +116,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
                 dests.addAll(view.getMembers());
                 System.out.println("invoking method in " + dests + ": ");
                 RspList<Object> rsps=disp.callRemoteMethods(dests, call,
-                                                            new RequestOptions(ResponseMode.GET_ALL, 5000).setAnycasting(true));
+                                                            new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT).setAnycasting(true));
                 for(Rsp rsp: rsps.values()) {
                     if(rsp.wasUnreachable())
                         System.out.println("<< unreachable: " + rsp.getSender());
@@ -115,7 +126,8 @@ public class RelayDemoRpc extends ReceiverAdapter {
             }
             else {
                 // mcasting the call to all local cluster members
-                RspList<Object> rsps=disp.callRemoteMethods(null, call, new RequestOptions(ResponseMode.GET_ALL, 5000).setAnycasting(false));
+                RspList<Object> rsps=disp.callRemoteMethods(null, call,
+                                                            new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT).setAnycasting(false));
                 for(Rsp rsp: rsps.values())
                     System.out.println("<< " + rsp.getValue() + " from " + rsp.getSender());
             }
