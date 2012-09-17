@@ -60,7 +60,7 @@ public class SEQUENCER extends Protocol {
     /** Keeps track of the threads sending messages */
     protected final AtomicInteger               in_flight_sends=new AtomicInteger(0);
 
-    // Maintains receives seqnos, so we can weed out dupes
+    // Maintains received seqnos, so we can weed out dupes
     protected final ConcurrentMap<Address,NavigableSet<Long>> delivery_table=Util.createConcurrentMap();
 
     protected volatile Flusher                  flusher;
