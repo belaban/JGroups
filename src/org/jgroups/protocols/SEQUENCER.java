@@ -340,7 +340,7 @@ public class SEQUENCER extends Protocol {
             return;
         }
 
-        // for forwarded messages, we need to receive the forwarded message from the coordinator, to prvent this case:
+        // for forwarded messages, we need to receive the forwarded message from the coordinator, to prevent this case:
         // - V1={A,B,C}
         // - A crashes
         // - C installs V2={B,C}
