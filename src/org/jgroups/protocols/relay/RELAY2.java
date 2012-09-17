@@ -29,14 +29,20 @@ public class RELAY2 extends Protocol {
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
     @Property(description="Name of the site (needs to be defined in the configuration)",writable=false)
-    protected String site;
+    protected String                             site;
 
     @Property(description="Name of the relay configuration",writable=false)
-    protected String config;
+    protected String                             config;
 
     @Property(description="Whether or not to relay multicast (dest=null) messages")
-    protected boolean relay_multicasts=true;
-    
+    protected boolean                            relay_multicasts=true;
+
+    @Property(description="The number of tries to forward a message to a remote site")
+    protected int                                max_forward_attempts=5;
+
+    @Property(description="The time (in milliseconds) to sleep between forward attempts")
+    protected long                               forward_sleep=1000;
+
 
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
     @ManagedAttribute(description="My site-ID")
@@ -57,9 +63,9 @@ public class RELAY2 extends Protocol {
 
     /** Whether or not FORWARD_TO_COORD is on the stack */
     @ManagedAttribute(description="FORWARD_TO_COORD protocol is present below the current protocol")
-    protected boolean                 forwarding_protocol_present;
+    protected boolean                            forwarding_protocol_present;
 
-
+    
     public void init() throws Exception {
         super.init();
         if(site == null)
@@ -274,14 +280,23 @@ public class RELAY2 extends Protocol {
             log.warn("not site master; dropping message");
             return;
         }
-        Relayer.Route route=tmp.getRoute(target_site);
+
+        Relayer.Route route=null;
+        int num_forward_attempts=0;
+
+        while((route=tmp.getRoute(target_site)) == null) {
+            if(++num_forward_attempts >= max_forward_attempts)
+                break;
+            Util.sleep(forward_sleep);
+        }
+
         if(route == null) {
             log.warn("route for " + SiteUUID.getSiteName(target_site) + " (" + target_site +
                        ") not found, dropping message to " + dest + " from " + sender);
             sendSiteUnreachableTo(sender, target_site);
-            return;
         }
-        _route(dest, sender, route, buf);
+        else
+            _route(dest, sender, route, buf);
     }
 
     /** Sends the message via all bridges excluding the excluded_sites bridges */
