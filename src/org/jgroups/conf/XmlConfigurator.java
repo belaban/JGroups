@@ -56,11 +56,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         try {
             return getInstance(is, validate);
         } finally {
-            try {
-                is.close();
-            } catch (IOException e) {
-                log.warn("Failed to close InputStream", e);
-            }
+            Util.close(is);
         }
     }
 
@@ -174,13 +170,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             Element configElement = document.getDocumentElement();
             return parse(configElement);
         } catch (Exception x) {
-            if (x instanceof java.io.IOException)
-                throw (java.io.IOException) x;
-            else {
-                IOException tmp = new IOException();
-                tmp.initCause(x);
-                throw tmp;
-            }
+            throw new IOException(Util.getMessage("ParseError", x.getLocalizedMessage()));
         }
     }
 

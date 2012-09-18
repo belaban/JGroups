@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
@@ -87,9 +88,14 @@ public class Util {
     private static StackType ip_stack_type=_getIpStackType();
 
 
+    protected static ResourceBundle resource_bundle;
+
+
     static {
+        resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Thread.currentThread().getContextClassLoader());
+
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
-        * running in an untrusted environment  with JNLP */
+        * running in an untrusted environment with JNLP */
         try {
             resolve_dns=Boolean.valueOf(System.getProperty("resolve.dns","false"));
         }
@@ -203,6 +209,15 @@ public class Util {
         StringBuilder sb=new StringBuilder("\033[1m");
         sb.append(msg).append("\033[0m");
         return sb.toString();
+    }
+
+    public static String getMessage(String key) {
+        return key != null? resource_bundle.getString(key) : null;
+    }
+
+    public static String getMessage(String key, Object ... args) {
+        String msg=getMessage(key);
+        return msg != null? MessageFormat.format(msg, args) : null;
     }
 
 

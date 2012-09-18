@@ -426,17 +426,12 @@ public class Configurator {
             }
             catch(ClassNotFoundException e) {
             }
-            if(clazz == null) {
-                throw new Exception("unable to load class for protocol " + protocol_name +
-                        " (either as an absolute - " + protocol_name + " - or relative - " +
-                        defaultProtocolName + " - package name)!");
-            }
+            if(clazz == null)
+                throw new Exception(Util.getMessage("ProtocolLoadError", protocol_name, defaultProtocolName));
         }
 
         try {
             retval=(Protocol)clazz.newInstance();
-            if(retval == null)
-                throw new Exception("creation of instance for protocol " + protocol_name + "failed !");
             retval.setProtocolStack(stack);
 
             removeDeprecatedProperties(retval, properties);
@@ -460,15 +455,11 @@ public class Configurator {
                 }
             }
 
-            if(!properties.isEmpty()) {
-                throw new IllegalArgumentException("the following properties in " + protocol_name
-                        + " are not recognized: " + properties);
-            }
+            if(!properties.isEmpty())
+                throw new IllegalArgumentException(Util.getMessage("ConfigurationError", protocol_name, properties));
         }
-        catch(InstantiationException inst_ex) {
-            log.error("an instance of " + protocol_name + " could not be created. Please check that it implements" +
-                    " interface Protocol and that is has a public empty constructor !");
-            throw inst_ex;
+        catch(Throwable t) {
+            throw new Exception(Util.getMessage("ProtocolCreateError",protocol_name,t.getLocalizedMessage()));
         }
         return retval;
     }

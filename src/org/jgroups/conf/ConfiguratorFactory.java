@@ -208,6 +208,8 @@ public class ConfiguratorFactory {
     static XmlConfigurator getXmlConfigurator(String properties) throws IOException {
         XmlConfigurator returnValue=null;
         InputStream configStream=getConfigStream(properties);
+        if(configStream == null && properties.endsWith(".xml"))
+            throw new FileNotFoundException(Util.getMessage("FileNotFound", properties));
 
         if (configStream != null) {
             checkJAXPAvailability();
