@@ -167,35 +167,35 @@
     <target name="jgroups.jar"
             description="Creates the jgroups-${version}.jar (includes everything)"
             depends="clean,compile-no-unittests,compile-essential-unittests,create-schema">
-    	<mkdir dir="${dist.dir}"/>
+        <mkdir dir="${dist.dir}"/>
         <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
         <property name="bndclasspath" refid="jg.classpath"/>
         <property name="-savemanifest" value="${conf.dir}/MANIFEST.MF"/>
         <property name="-output" value="${conf.dir}"/>
         <taskdef resource="aQute/bnd/ant/taskdef.properties" classpathref="jg.classpath"/>
         <bnd
-            classpath="${bndclasspath}"
-            eclipse="false"
-            failok="false"
-            exceptions="true"
-            files="${conf.dir}/jgroups.bnd" />
-    <jar destfile="${dist.dir}/jgroups-${version}.jar"
-         basedir="${compile.dir}"
-         manifest="${conf.dir}/MANIFEST.MF"
-         includes="org/jgroups/**">
-        <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
-        <fileset dir="${compile.dir}/schema">
-            <include name="*.xsd"/>
-        </fileset>
-        <fileset dir="${root.dir}">
-            <include name="INSTALL.html"/>
-            <include name="LICENSE"/>
-            <include name="README"/>
-        </fileset>
-        <fileset dir="${lib.dir}">
-            <include name="licenses/thirdparty*"/>
-        </fileset>
-    </jar>    	
+                classpath="${bndclasspath}"
+                eclipse="false"
+                failok="false"
+                exceptions="true"
+                files="${conf.dir}/jgroups.bnd" />
+        <jar destfile="${dist.dir}/jgroups-${version}.jar"
+             basedir="${compile.dir}"
+             manifest="${conf.dir}/MANIFEST.MF"
+             includes="org/jgroups/**">
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml, jg-messages*.properties" excludes="*-service.xml"/>
+            <fileset dir="${compile.dir}/schema">
+                <include name="*.xsd"/>
+            </fileset>
+            <fileset dir="${root.dir}">
+                <include name="INSTALL.html"/>
+                <include name="LICENSE"/>
+                <include name="README"/>
+            </fileset>
+            <fileset dir="${lib.dir}">
+                <include name="licenses/thirdparty*"/>
+            </fileset>
+        </jar>
     </target>
 
 
