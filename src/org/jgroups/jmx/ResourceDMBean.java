@@ -477,9 +477,7 @@ public class ResourceDMBean implements DynamicMBean {
             }            
         }
         else {
-            log.warn("Could not invoke set on attribute " + attribute.getName()
-                     + " with value "
-                     + attribute.getValue());
+            log.warn("Could not invoke set on attribute " + attribute.getName() + " with value " + attribute.getValue());
         }
         return result;
     }
