@@ -454,11 +454,11 @@ public class ResourceDMBean implements DynamicMBean {
                     result=new Attribute(name, entry.invoke(null));
                 }
                 catch(Exception e) {
-                    log.warn("Exception while reading value of attribute " + name, e);
+                    log.warn(Util.getMessage("AttrReadFailure", name, e));
                 }
             }
             else {
-                log.warn("Did not find queried attribute with name " + name);
+                log.warn(Util.getMessage("MissingAttribute", name));
             }
         }
         return result;
@@ -473,11 +473,11 @@ public class ResourceDMBean implements DynamicMBean {
                 result=true;
             }
             catch(Exception e) {
-                log.warn("Exception while writing value for attribute " + attribute.getName(), e);
+                log.warn(Util.getMessage("AttrWriteFailure", attribute.getName(), e));
             }            
         }
         else {
-            log.warn("Could not invoke set on attribute " + attribute.getName() + " with value " + attribute.getValue());
+            log.warn(Util.getMessage("MissingAttribute", attribute.getName()));
         }
         return result;
     }

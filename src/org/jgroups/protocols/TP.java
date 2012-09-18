@@ -1225,8 +1225,7 @@ public abstract class TP extends Protocol {
             // Discard if message's cluster name is not the same as our cluster name
             if(!is_protocol_adapter && perform_cluster_name_matching && channel_name != null && !channel_name.equals(ch_name)) {
                 if(log.isWarnEnabled() && log_discard_msgs)
-                    log.warn(new StringBuilder("discarded message from different cluster \"").append(ch_name).
-                            append("\" (our cluster is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()).toString());
+                    log.warn(Util.getMessage("MessageDroppedDiffCl", ch_name, channel_name, msg.getSrc()));
                 return;
             }
 
@@ -1744,14 +1743,8 @@ public abstract class TP extends Protocol {
                 }
                 if(Version.isBinaryCompatible(version) == false) {
                     if(log.isWarnEnabled()) {
-                        StringBuilder sb=new StringBuilder();
-                        sb.append("packet from ").append(sender).append(" has different version (").append(Version.print(version));
-                        sb.append(") from ours (").append(Version.printVersion()).append("). ");
-                        if(discard_incompatible_packets)
-                            sb.append("Packet is discarded");
-                        else
-                            sb.append("This may cause problems");
-                        log.warn(sb.toString());
+                        log.warn(Util.getMessage(discard_incompatible_packets? "VersionMismatchDisc" : "VersionMismatchProb",
+                                                 sender, Version.print(version), Version.printVersion()));
                     }
                     if(discard_incompatible_packets)
                         return;

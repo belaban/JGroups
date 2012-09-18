@@ -679,17 +679,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(!pass_down)
             return;
         
-        try { // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
-            if(log.isTraceEnabled())
-                log.trace("sending " + local_addr + "#" + msg_id);
-            down_prot.down(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
-            num_messages_sent++;
-        }
-        catch(Throwable t) { // eat the exception, don't pass it up the stack
-            if(log.isWarnEnabled()) {
-                log.warn("failure passing message down", t);
-            }
-        }
+         // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
+        if(log.isTraceEnabled())
+            log.trace("sending " + local_addr + "#" + msg_id);
+        down_prot.down(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
+        num_messages_sent++;
     }
 
     protected void send(Event evt, Message msg) {
@@ -714,8 +708,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(leaving)
                 return;
             if(log.isWarnEnabled() && log_discard_msgs)
-                log.warn(local_addr + ": dropped message " + hdr.seqno + " from " + sender +
-                           " (sender not in table " + xmit_table.keySet() +"), view=" + view);
+                log.warn(Util.getMessage("MessageDroppedNak", local_addr, hdr.seqno, sender, view));
             return;
         }
 

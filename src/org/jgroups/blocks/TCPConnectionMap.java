@@ -285,14 +285,14 @@ public class TCPConnectionMap{
                     }
                     else {
                         if(log.isWarnEnabled())
-                            log.warn("Could not accept connection from peer ", se);
+                            log.warn(Util.getMessage("AcceptError", se));
                         Util.close(conn);
                         Util.close(client_sock);
                     }                                            
                 }
                 catch(Exception ex) {
                     if(log.isWarnEnabled())
-                        log.warn("Could not read accept connection from peer " + ex);
+                        log.warn(Util.getMessage("AcceptError", ex));
                     Util.close(conn);
                     Util.close(client_sock);
                 }

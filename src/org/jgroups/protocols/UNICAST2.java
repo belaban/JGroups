@@ -479,8 +479,6 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     catch(Throwable t) {
                         if(!running)
                             break;
-                        if(log.isWarnEnabled())
-                            log.warn("failed sending message", t);
                         Util.sleep(sleep);
                         sleep=Math.min(5000, sleep*2);
                     }
@@ -495,14 +493,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     log.trace(sb);
                 }
 
-                try {
-                    down_prot.down(evt);
-                    num_messages_sent++;
-                }
-                catch(Throwable t) {
-                    log.warn("failed sending the message", t);
-                }
-                return null; // we already passed the msg down
+                num_messages_sent++;
+                return down_prot.down(evt);
 
             case Event.VIEW_CHANGE:  // remove connections to peers that are not members anymore !
                 View view=(View)evt.getArg();
