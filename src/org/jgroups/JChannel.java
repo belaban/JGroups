@@ -40,20 +40,20 @@ public class JChannel extends Channel {
     public static final String DEFAULT_PROTOCOL_STACK="udp.xml";
 
     /*the address of this JChannel instance*/
-    protected Address local_addr=null;
+    protected Address local_addr;
 
-    protected AddressGenerator address_generator=null;
+    protected AddressGenerator address_generator;
 
-    protected String name=null;
+    protected String name;
 
     /*the channel (also know as group) name*/
-    private String cluster_name=null;
+    private String cluster_name;
 
     /*the latest view of the group membership*/
-    private View my_view=null;
+    private View my_view;
 
     /*the protocol stack, used to send and receive messages from the protocol stack*/
-    private ProtocolStack prot_stack=null;
+    private ProtocolStack prot_stack;
 
     private final Promise<StateTransferResult> state_promise=new Promise<StateTransferResult>();
 

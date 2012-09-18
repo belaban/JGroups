@@ -40,8 +40,8 @@ import java.util.*;
  * @author Bela Ban
  */
 public abstract class Protocol {
-    protected Protocol         up_prot=null, down_prot=null;
-    protected ProtocolStack    stack=null;
+    protected Protocol         up_prot, down_prot;
+    protected ProtocolStack    stack;
     
     @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true",writable=true)
     protected boolean          stats=true;
