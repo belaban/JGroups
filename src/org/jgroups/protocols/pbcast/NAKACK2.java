@@ -572,11 +572,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
             case NakAckHeader2.XMIT_REQ:
                 SeqnoList missing=(SeqnoList)msg.getObject();
-                if(missing == null) {
-                    if(log.isErrorEnabled())
-                        log.error("XMIT_REQ: no missing seqnos; discarding request from " + msg.getSrc());
+                if(missing == null)
                     return null;
-                }
                 handleXmitReq(msg.getSrc(), missing, hdr.sender);
                 return null;
 
@@ -585,9 +582,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 return null;
 
             default:
-                if(log.isErrorEnabled()) {
+                if(log.isErrorEnabled())
                     log.error("NakAck header type " + hdr.type + " not known !");
-                }
                 return null;
             }
 
@@ -649,11 +645,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
         long msg_id;
         Table<Message> buf=xmit_table.get(local_addr);
-        if(buf == null) {  // discard message if there is no entry for local_addr
-            if(log.isWarnEnabled() && log_discard_msgs)
-                log.warn(local_addr + ": discarded message to " + local_addr + " with no window, my view is " + view);
+        if(buf == null) // discard message if there is no entry for local_addr
             return;
-        }
 
         if(msg.getSrc() == null)
             msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
@@ -695,12 +688,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      */
     protected void handleMessage(Message msg, NakAckHeader2 hdr) {
         Address sender=msg.getSrc();
-        if(sender == null) {
-            if(log.isErrorEnabled())
-                log.error("sender of message is null");
-            return;
-        }
-
         Table<Message> buf=xmit_table.get(sender);
         if(buf == null) {  // discard message if there is no entry for sender
             if(leaving)
@@ -818,7 +805,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                 sb.append(") ").append(original_sender).append(" not found in retransmission table");
                 // don't print the table unless we are in trace mode because it can be LARGE
-                if (log.isTraceEnabled()) {
+                if(log.isTraceEnabled()) {
                     sb.append(":\n").append(printMessages());
                 } 
                 if(print_stability_history_on_failed_xmit) {
@@ -884,11 +871,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * @param msg
      */
     protected void sendXmitRsp(Address dest, Message msg) {
-        if(msg == null) {
-            if(log.isErrorEnabled())
-                log.error("message is null, cannot send retransmission");
+        if(msg == null)
             return;
-        }
 
         if(stats)
             xmit_rsps_sent.incrementAndGet();
@@ -929,7 +913,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
         catch(Exception ex) {
             if(log.isErrorEnabled()) {
-                log.error("failed reading retransmitted message",ex);
+                log.error("failed handling retransmitted message",ex);
             }
         }
     }
@@ -1188,15 +1172,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         long my_highest_rcvd;        // highest seqno received in my digest for a sender P
         long stability_highest_rcvd; // highest seqno received in the stability vector for a sender P
 
-        if(members == null || local_addr == null || digest == null) {
-            if(log.isWarnEnabled())
-                log.warn("members, local_addr or digest are null !");
+        if(members == null || local_addr == null || digest == null)
             return;
-        }
 
-        if(log.isTraceEnabled()) {
+        if(log.isTraceEnabled())
             log.trace(local_addr + ": received stable digest " + digest);
-        }
 
         stability_msgs.add(digest);
 
