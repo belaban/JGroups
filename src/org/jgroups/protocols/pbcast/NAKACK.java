@@ -5,10 +5,7 @@ import org.jgroups.annotations.*;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.*;
-import org.jgroups.util.BoundedList;
-import org.jgroups.util.Digest;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -107,10 +104,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @Property(description="Timeout to rebroadcast messages. Default is 2000 msec")
     private long max_rebroadcast_timeout=2000;
 
-    /**
-     * When not finding a message on an XMIT request, include the last N
-     * stability messages in the error message
-     */
+    /** When not finding a message on an XMIT request, include the last N stability messages in the error message */
     @Property(description="Should stability history be printed if we fail in retransmission. Default is false")
     protected boolean print_stability_history_on_failed_xmit=false;
 
@@ -142,6 +136,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
       "for details). 0 disables the queue.")
     protected int become_server_queue_size=50;
 
+    @Property(description="Time during which identical warnings about messages from a non member will be suppressed. " +
+      "0 disables this (every warning will be logged). Setting the log level to ERROR also disables this.")
+    protected long suppress_time_non_member_warnings=60000;
+
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
 
@@ -163,6 +161,17 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     @ManagedAttribute(description="Number of messages received")
     protected int num_messages_received=0;
+
+    @ManagedAttribute(description="Number of messages from non-members")
+    public int getNonMemberMessages() {
+        return non_member_cache != null? non_member_cache.size() : 0;
+    }
+
+    @ManagedOperation(description="Clears the cache for messages from non-members")
+    public void clearNonMemberCache() {
+        if(non_member_cache != null)
+            non_member_cache.clear();
+    }
 
 
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
@@ -197,6 +206,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     protected final BoundedList<String> digest_history=new BoundedList<String>(10);
 
     protected BoundedList<Message>      become_server_queue;
+
+    /** Cache to suppress identical warnings for messages from non-members */
+    protected SuppressCache<Address>    non_member_cache;
 
 
     public long getXmitRequestsReceived() {return xmit_reqs_received.get();}
@@ -318,6 +330,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         if(become_server_queue_size > 0)
             become_server_queue=new BoundedList<Message>(become_server_queue_size);
+
+        if(suppress_time_non_member_warnings > 0)
+            non_member_cache=new SuppressCache<Address>();
     }
 
 
@@ -510,6 +525,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 is_server=true;  // check vids from now on
                 if(!was_server)
                     flushBecomeServerQueue();
+                if(non_member_cache != null)
+                    non_member_cache.removeExpired(suppress_time_non_member_warnings);
                 break;
 
             case Event.BECOME_SERVER:
@@ -707,8 +724,19 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(win == null) {  // discard message if there is no entry for sender
             if(leaving)
                 return;
-            if(log.isWarnEnabled() && log_discard_msgs)
-                log.warn(Util.getMessage("MessageDroppedNak", local_addr, hdr.seqno, sender, view));
+            if(log.isWarnEnabled() && log_discard_msgs) {
+                if(non_member_cache != null) {
+                    SuppressCache.Value val=non_member_cache.putIfAbsent(sender, suppress_time_non_member_warnings);
+                    if(val != null) {
+                        if(val.count() == 1)
+                            log.warn(Util.getMessage("MsgDroppedNak", local_addr, hdr.seqno, sender, view, val.count(), val.age()));
+                        else
+                            log.warn(Util.getMessage("MsgDroppedNakDetail", local_addr, hdr.seqno, sender, view, val.count(), val.age()));
+                    }
+                }
+                else
+                    log.warn(Util.getMessage("MsgDroppedNak", local_addr, hdr.seqno, sender, view));
+            }
             return;
         }
 

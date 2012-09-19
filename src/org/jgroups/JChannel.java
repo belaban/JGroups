@@ -1121,6 +1121,11 @@ public class JChannel extends Channel {
             }
 
             Method method=MethodCall.findMethod(prot.getClass(), method_name, args);
+            if(method == null) {
+                if(log.isWarnEnabled())
+                    log.warn(local_addr + ": method " + prot.getClass().getSimpleName() + "." + method_name + " not found");
+                return;
+            }
             MethodCall call=new MethodCall(method);
             Object[] converted_args=null;
             if(args != null) {

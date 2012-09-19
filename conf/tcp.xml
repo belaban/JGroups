@@ -12,7 +12,6 @@
          loopback="false"
          recv_buf_size="${tcp.recv_buf_size:20M}"
          send_buf_size="${tcp.send_buf_size:640K}"
-         discard_incompatible_packets="true"
          max_bundle_size="64K"
          max_bundle_timeout="30"
          enable_bundling="true"

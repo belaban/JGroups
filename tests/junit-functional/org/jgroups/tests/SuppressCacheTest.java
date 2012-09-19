@@ -1,0 +1,46 @@
+package org.jgroups.tests;
+
+import org.jgroups.Global;
+import org.jgroups.util.SuppressCache;
+import org.jgroups.util.Util;
+import org.testng.annotations.Test;
+
+/**
+ * Tests SuppressCache
+ * @author Bela Ban
+ * @since 3.2
+ */
+@Test(groups=Global.FUNCTIONAL,sequential=false)
+public class SuppressCacheTest {
+
+
+    public void testPut() {
+        SuppressCache<String> cache=new SuppressCache<String>();
+
+        SuppressCache.Value val=cache.putIfAbsent("Bela", 5000);
+        System.out.println("cache = " + cache);
+        assert val.count() == 1;
+
+        val=cache.putIfAbsent("Bela", 5000);
+        System.out.println("cache = " + cache);
+        assert val == null; // already present
+
+
+        val=cache.putIfAbsent("Michelle", 5000);
+        assert val.count() == 1;
+
+        for(int i=0; i < 5; i++) {
+            val=cache.putIfAbsent("Michelle", 5000);
+            assert val == null;
+        }
+
+        Util.sleep(2000);
+        System.out.println("cache:\n" + cache);
+
+        val=cache.putIfAbsent("Bela", 500);
+        assert val.count() == 3;
+
+        val=cache.putIfAbsent("Bela", 5000);
+        assert val == null;
+    }
+}

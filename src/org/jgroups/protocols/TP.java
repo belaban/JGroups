@@ -137,7 +137,9 @@ public abstract class TP extends Protocol {
      * Discard packets with a different version. Usually minor version differences are okay. Setting this property
      * to true means that we expect the exact same version on all incoming packets
      */
-    @Property(description="Discard packets with a different version if true")
+    @Deprecated
+    @Property(description="Discard packets with a different version if true",
+              deprecatedMessage="incompatible packets are discarded anyway",writable=false)
     protected boolean discard_incompatible_packets=true;
 
 
@@ -255,6 +257,16 @@ public abstract class TP extends Protocol {
 
     @Property(description="Max number of attempts to fetch a physical address (when not in the cache) before giving up")
     protected int physical_addr_max_fetch_attempts=10;
+
+    @Property(description="Time during which identical warnings about messages from a member with a different version " +
+      "will be suppressed. 0 disables this (every warning will be logged). Setting the log level to ERROR also " +
+      "disables this.")
+    protected long suppress_time_different_version_warnings=60000;
+
+    @Property(description="Time during which identical warnings about messages from a member from a different cluster " +
+      "will be suppressed. 0 disables this (every warning will be logged). Setting the log level to ERROR also " +
+      "disables this.")
+    protected long suppress_time_different_cluster_warnings=60000;
 
 
 
@@ -430,6 +442,28 @@ public abstract class TP extends Protocol {
         return timer != null? timer.getClass().getSimpleName() : "null";
     }
 
+    @ManagedAttribute(description="Number of messages from members in a different cluster")
+    public int getDifferentClusterMessages() {
+        return different_cluster_cache != null? different_cluster_cache.size() : 0;
+    }
+
+    @ManagedAttribute(description="Number of messages from members with a different JGroups version")
+    public int getDifferentVersionMessages() {
+        return different_version_cache != null? different_version_cache.size() : 0;
+    }
+
+    @ManagedOperation(description="Clears the cache for messages from different clusters")
+    public void clearDifferentClusterCache() {
+        if(different_cluster_cache != null)
+            different_cluster_cache.clear();
+    }
+
+    @ManagedOperation(description="Clears the cache for messages from members with different versions")
+    public void clearDifferentVersionCache() {
+        if(different_version_cache != null)
+            different_version_cache.clear();
+    }
+
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
 
@@ -533,7 +567,17 @@ public abstract class TP extends Protocol {
 
     /** Cache keeping track of WHO_HAS requests for physical addresses (given a logical address) and expiring
      * them after who_has_cache_timeoout ms */
-    protected AgeOutCache<Address> who_has_cache;
+    protected AgeOutCache<Address>   who_has_cache;
+
+    /** Cache to suppress identical warnings for messages from members with different (incompatible) versions */
+    protected SuppressCache<Address> different_version_cache;
+
+    /** Cache to suppress identical warnings for messages from members in different clusters */
+    protected SuppressCache<Address> different_cluster_cache;
+
+    
+
+
 
 
     /**
@@ -693,8 +737,8 @@ public abstract class TP extends Protocol {
 
     public boolean isReceiveOnAllInterfaces() {return receive_on_all_interfaces;}
     public List<NetworkInterface> getReceiveInterfaces() {return receive_interfaces;}
-    public boolean isDiscardIncompatiblePackets() {return discard_incompatible_packets;}
-    public void setDiscardIncompatiblePackets(boolean flag) {discard_incompatible_packets=flag;}
+    public static boolean isDiscardIncompatiblePackets() {return true;}
+    public static void setDiscardIncompatiblePackets(boolean flag) {;}
     public boolean isEnableBundling() {return enable_bundling;}
     public void setEnableBundling(boolean flag) {enable_bundling=flag;}
     public boolean isEnableUnicastBundling() {return enable_unicast_bundling;}
@@ -894,6 +938,11 @@ public abstract class TP extends Protocol {
         }
 
         who_has_cache=new AgeOutCache<Address>(timer, who_has_cache_timeout);
+
+        if(suppress_time_different_version_warnings > 0)
+            different_version_cache=new SuppressCache<Address>();
+        if(suppress_time_different_cluster_warnings > 0)
+            different_cluster_cache=new SuppressCache<Address>();
 
         Util.verifyRejectionPolicy(oob_thread_pool_rejection_policy);
         Util.verifyRejectionPolicy(thread_pool_rejection_policy);
@@ -1224,8 +1273,22 @@ public abstract class TP extends Protocol {
             boolean is_protocol_adapter=tmp_prot instanceof ProtocolAdapter;
             // Discard if message's cluster name is not the same as our cluster name
             if(!is_protocol_adapter && perform_cluster_name_matching && channel_name != null && !channel_name.equals(ch_name)) {
-                if(log.isWarnEnabled() && log_discard_msgs)
-                    log.warn(Util.getMessage("MessageDroppedDiffCl", ch_name, channel_name, msg.getSrc()));
+                if(log.isWarnEnabled() && log_discard_msgs) {
+                    Address sender=msg.getSrc();
+                    if(different_cluster_cache != null) {
+
+                        SuppressCache.Value val=different_cluster_cache.putIfAbsent(sender, suppress_time_different_cluster_warnings);
+                        if(val != null) {
+                            if(val.count() == 1)
+                                log.warn(Util.getMessage("MsgDroppedDiffCluster", ch_name, channel_name, sender));
+                            else
+                                log.warn(Util.getMessage("MsgDroppedDiffClusterDetail", ch_name, channel_name, sender,
+                                                         val.count(), val.age()));
+                        }
+                    }
+                    else
+                        log.warn(Util.getMessage("MsgDroppedDiffCluster", ch_name, channel_name, sender));
+                }
                 return;
             }
 
@@ -1494,8 +1557,12 @@ public abstract class TP extends Protocol {
                     logical_addr_cache.retainAll(members);
                     fetchLocalAddresses();
                     UUID.retainAll(members);
-                }
 
+                    if(different_version_cache != null)
+                        different_version_cache.removeExpired(suppress_time_different_version_warnings);
+                    if(different_cluster_cache != null)
+                        different_cluster_cache.removeExpired(suppress_time_different_cluster_warnings);
+                }
                 break;
 
             case Event.CONNECT:
@@ -1737,17 +1804,24 @@ public abstract class TP extends Protocol {
                     version=dis.readShort();
                 }
                 catch(IOException ex) {
-                    if(discard_incompatible_packets)
-                        return;
-                    throw ex;
+                    return;
                 }
                 if(Version.isBinaryCompatible(version) == false) {
                     if(log.isWarnEnabled()) {
-                        log.warn(Util.getMessage(discard_incompatible_packets? "VersionMismatchDisc" : "VersionMismatchProb",
-                                                 sender, Version.print(version), Version.printVersion()));
+                        if(different_version_cache != null) {
+                            SuppressCache.Value val=different_version_cache.putIfAbsent(sender, suppress_time_different_version_warnings);
+                            if(val != null) {
+                                if(val.count() == 1)
+                                    log.warn(Util.getMessage("VersionMismatch", sender, Version.print(version), Version.printVersion()));
+                                else
+                                    log.warn(Util.getMessage("VersionMismatchDetail", sender, Version.print(version),
+                                                             Version.printVersion(), val.count(), val.age()));
+                            }
+                        }
+                        else
+                            log.warn(Util.getMessage("VersionMismatch", sender, Version.print(version), Version.printVersion()));
                     }
-                    if(discard_incompatible_packets)
-                        return;
+                    return;
                 }
 
                 flags=dis.readByte();

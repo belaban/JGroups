@@ -16,7 +16,6 @@
          mcast_recv_buf_size="25M"
          mcast_send_buf_size="640K"
          loopback="true"
-         discard_incompatible_packets="true"
          max_bundle_size="64K"
          max_bundle_timeout="30"
          ip_ttl="${jgroups.udp.ip_ttl:8}"
