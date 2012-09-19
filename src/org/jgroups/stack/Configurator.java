@@ -458,8 +458,8 @@ public class Configurator {
             if(!properties.isEmpty())
                 throw new IllegalArgumentException(Util.getMessage("ConfigurationError", protocol_name, properties));
         }
-        catch(Throwable t) {
-            throw new Exception(Util.getMessage("ProtocolCreateError",protocol_name,t.getLocalizedMessage()));
+        catch(InstantiationException inst_ex) {
+            throw new InstantiationException(Util.getMessage("ProtocolCreateError",protocol_name, inst_ex.getLocalizedMessage()));
         }
         return retval;
     }
