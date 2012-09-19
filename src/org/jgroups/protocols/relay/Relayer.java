@@ -174,6 +174,10 @@ public class Relayer {
             this.bridge=bridge;
         }
 
+        public JChannel getBridge() {return bridge;}
+
+        public Address getSiteMaster() {return site_master;}
+
         public String toString() {
             return site_master.toString();
         }

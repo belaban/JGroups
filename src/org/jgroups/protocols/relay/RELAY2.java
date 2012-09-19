@@ -143,6 +143,18 @@ public class RELAY2 extends Protocol {
         return relayer != null? relayer.printRoutes() : "n/a (not site master)";
     }
 
+    /**
+     * Returns the bridge channel to a given site
+     * @param site The site name, e.g. "SFO"
+     * @return The JChannel to the given site, or null if no route was found or we're not the coordinator
+     */
+    public JChannel getBridge(String site) {
+        Relayer tmp=relayer;
+        Relayer.Route route=tmp != null? tmp.getRoute(SiteUUID.getSite(site)): null;
+        return route != null? route.getBridge() : null;
+    }
+
+
 
     public Object down(Event evt) {
         switch(evt.getType()) {
