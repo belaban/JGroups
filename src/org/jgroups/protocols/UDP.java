@@ -532,10 +532,8 @@ public class UDP extends TP {
             sock.setSendBufferSize(send_buf_size);
             int actual_size=sock.getSendBufferSize();
             if(actual_size < send_buf_size && log.isWarnEnabled()) {
-                log.warn("send buffer of socket " + sock + " was set to " +
-                        Util.printBytes(send_buf_size) + ", but the OS only allocated " +
-                        Util.printBytes(actual_size) + ". This might lead to performance problems. Please set your " +
-                        "max send buffer in the OS correctly (e.g. net.core.wmem_max on Linux)");
+                log.warn(Util.getMessage("IncorrectBufferSize", "send", sock.getClass().getSimpleName(),
+                                         Util.printBytes(send_buf_size), Util.printBytes(actual_size), "send", "net.core.wmem_max"));
             }
         }
         catch(Throwable ex) {
@@ -546,10 +544,8 @@ public class UDP extends TP {
             sock.setReceiveBufferSize(recv_buf_size);
             int actual_size=sock.getReceiveBufferSize();
             if(actual_size < recv_buf_size && log.isWarnEnabled()) {
-                log.warn("receive buffer of socket " + sock + " was set to " +
-                        Util.printBytes(recv_buf_size) + ", but the OS only allocated " +
-                        Util.printBytes(actual_size) + ". This might lead to performance problems. Please set your " +
-                        "max receive buffer in the OS correctly (e.g. net.core.rmem_max on Linux)");
+                log.warn(Util.getMessage("IncorrectBufferSize", "receive", sock.getClass().getSimpleName(),
+                                         Util.printBytes(recv_buf_size), Util.printBytes(actual_size), "receive", "net.core.rmem_max"));
             }
         }
         catch(Throwable ex) {
