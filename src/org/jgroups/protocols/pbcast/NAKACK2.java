@@ -146,13 +146,13 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     @ManagedAttribute(description="Number of messages from non-members")
     public int getNonMemberMessages() {
-        return non_member_cache != null? non_member_cache.size() : 0;
+        return suppress_log_non_member != null? suppress_log_non_member.getCache().size() : 0;
     }
 
     @ManagedOperation(description="Clears the cache for messages from non-members")
     public void clearNonMemberCache() {
-        if(non_member_cache != null)
-            non_member_cache.clear();
+        if(suppress_log_non_member != null)
+            suppress_log_non_member.getCache().clear();
     }
 
 
@@ -190,8 +190,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     protected BoundedList<Message>      become_server_queue;
 
-     /** Cache to suppress identical warnings for messages from non-members */
-    protected SuppressCache<Address>    non_member_cache;
+     /** Log to suppress identical warnings for messages from non-members */
+    protected SuppressLog<Address>      suppress_log_non_member;
 
 
     public long    getXmitRequestsReceived()  {return xmit_reqs_received.get();}
@@ -381,7 +381,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             become_server_queue=new BoundedList<Message>(become_server_queue_size);
 
         if(suppress_time_non_member_warnings > 0)
-            non_member_cache=new SuppressCache<Address>();
+            suppress_log_non_member=new SuppressLog<Address>(log, "MsgDroppedNak", "SuppressMsg");
     }
 
 
@@ -488,8 +488,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 is_server=true;  // check vids from now on
                 if(!was_server)
                     flushBecomeServerQueue();
-                if(non_member_cache != null)
-                    non_member_cache.removeExpired(suppress_time_non_member_warnings);
+                if(suppress_log_non_member != null)
+                    suppress_log_non_member.removeExpired(suppress_time_non_member_warnings);
                 break;
 
             case Event.BECOME_SERVER:
@@ -693,14 +693,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             if(leaving)
                 return;
             if(log.isWarnEnabled() && log_discard_msgs) {
-                if(non_member_cache != null) {
-                    SuppressCache.Value val=non_member_cache.putIfAbsent(sender, suppress_time_non_member_warnings);
-                    if(val != null) {
-                        if(val.count() == 1)
-                            log.warn(Util.getMessage("MsgDroppedNak", local_addr, hdr.seqno, sender, view, val.count(), val.age()));
-                        else
-                            log.warn(Util.getMessage("MsgDroppedNakDetail", local_addr, hdr.seqno, sender, view, val.count(), val.age()));
-                    }
+                if(suppress_log_non_member != null) {
+                    suppress_log_non_member.log(SuppressLog.Level.warn, sender, suppress_time_non_member_warnings,
+                                                local_addr, hdr.seqno, sender, view);
                 }
                 else
                     log.warn(Util.getMessage("MsgDroppedNak", local_addr, hdr.seqno, sender, view));

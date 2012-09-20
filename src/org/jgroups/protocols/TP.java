@@ -444,24 +444,24 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute(description="Number of messages from members in a different cluster")
     public int getDifferentClusterMessages() {
-        return different_cluster_cache != null? different_cluster_cache.size() : 0;
+        return suppress_log_different_cluster != null? suppress_log_different_cluster.getCache().size() : 0;
     }
 
     @ManagedAttribute(description="Number of messages from members with a different JGroups version")
     public int getDifferentVersionMessages() {
-        return different_version_cache != null? different_version_cache.size() : 0;
+        return suppress_log_different_version != null? suppress_log_different_version.getCache().size() : 0;
     }
 
     @ManagedOperation(description="Clears the cache for messages from different clusters")
     public void clearDifferentClusterCache() {
-        if(different_cluster_cache != null)
-            different_cluster_cache.clear();
+        if(suppress_log_different_cluster != null)
+            suppress_log_different_cluster.getCache().clear();
     }
 
     @ManagedOperation(description="Clears the cache for messages from members with different versions")
     public void clearDifferentVersionCache() {
-        if(different_version_cache != null)
-            different_version_cache.clear();
+        if(suppress_log_different_version != null)
+            suppress_log_different_version.getCache().clear();
     }
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -569,11 +569,11 @@ public abstract class TP extends Protocol {
      * them after who_has_cache_timeoout ms */
     protected AgeOutCache<Address>   who_has_cache;
 
-    /** Cache to suppress identical warnings for messages from members with different (incompatible) versions */
-    protected SuppressCache<Address> different_version_cache;
+    /** Log to suppress identical warnings for messages from members with different (incompatible) versions */
+    protected SuppressLog<Address>   suppress_log_different_version;
 
-    /** Cache to suppress identical warnings for messages from members in different clusters */
-    protected SuppressCache<Address> different_cluster_cache;
+    /** Log to suppress identical warnings for messages from members in different clusters */
+    protected SuppressLog<Address>   suppress_log_different_cluster;
 
     
 
@@ -940,9 +940,9 @@ public abstract class TP extends Protocol {
         who_has_cache=new AgeOutCache<Address>(timer, who_has_cache_timeout);
 
         if(suppress_time_different_version_warnings > 0)
-            different_version_cache=new SuppressCache<Address>();
+            suppress_log_different_version=new SuppressLog<Address>(log, "VersionMismatch", "SuppressMsg");
         if(suppress_time_different_cluster_warnings > 0)
-            different_cluster_cache=new SuppressCache<Address>();
+            suppress_log_different_cluster=new SuppressLog<Address>(log, "MsgDroppedDiffCluster", "SuppressMsg");
 
         Util.verifyRejectionPolicy(oob_thread_pool_rejection_policy);
         Util.verifyRejectionPolicy(thread_pool_rejection_policy);
@@ -1275,19 +1275,12 @@ public abstract class TP extends Protocol {
             if(!is_protocol_adapter && perform_cluster_name_matching && channel_name != null && !channel_name.equals(ch_name)) {
                 if(log.isWarnEnabled() && log_discard_msgs) {
                     Address sender=msg.getSrc();
-                    if(different_cluster_cache != null) {
-
-                        SuppressCache.Value val=different_cluster_cache.putIfAbsent(sender, suppress_time_different_cluster_warnings);
-                        if(val != null) {
-                            if(val.count() == 1)
-                                log.warn(Util.getMessage("MsgDroppedDiffCluster", ch_name, channel_name, sender));
-                            else
-                                log.warn(Util.getMessage("MsgDroppedDiffClusterDetail", ch_name, channel_name, sender,
-                                                         val.count(), val.age()));
-                        }
-                    }
+                    if(suppress_log_different_cluster != null)
+                        suppress_log_different_cluster.log(SuppressLog.Level.warn, sender,
+                                                           suppress_time_different_cluster_warnings,
+                                                           ch_name, channel_name, sender);
                     else
-                        log.warn(Util.getMessage("MsgDroppedDiffCluster", ch_name, channel_name, sender));
+                        log.warn(Util.getMessage("MsgDroppedDiffCluster",ch_name,channel_name,sender));
                 }
                 return;
             }
@@ -1558,10 +1551,10 @@ public abstract class TP extends Protocol {
                     fetchLocalAddresses();
                     UUID.retainAll(members);
 
-                    if(different_version_cache != null)
-                        different_version_cache.removeExpired(suppress_time_different_version_warnings);
-                    if(different_cluster_cache != null)
-                        different_cluster_cache.removeExpired(suppress_time_different_cluster_warnings);
+                    if(suppress_log_different_version != null)
+                        suppress_log_different_version.removeExpired(suppress_time_different_version_warnings);
+                    if(suppress_log_different_cluster != null)
+                        suppress_log_different_cluster.removeExpired(suppress_time_different_cluster_warnings);
                 }
                 break;
 
@@ -1808,16 +1801,10 @@ public abstract class TP extends Protocol {
                 }
                 if(Version.isBinaryCompatible(version) == false) {
                     if(log.isWarnEnabled()) {
-                        if(different_version_cache != null) {
-                            SuppressCache.Value val=different_version_cache.putIfAbsent(sender, suppress_time_different_version_warnings);
-                            if(val != null) {
-                                if(val.count() == 1)
-                                    log.warn(Util.getMessage("VersionMismatch", sender, Version.print(version), Version.printVersion()));
-                                else
-                                    log.warn(Util.getMessage("VersionMismatchDetail", sender, Version.print(version),
-                                                             Version.printVersion(), val.count(), val.age()));
-                            }
-                        }
+                        if(suppress_log_different_version != null)
+                            suppress_log_different_version.log(SuppressLog.Level.warn, sender,
+                                                               suppress_time_different_version_warnings,
+                                                               sender, Version.print(version), Version.printVersion());
                         else
                             log.warn(Util.getMessage("VersionMismatch", sender, Version.print(version), Version.printVersion()));
                     }
