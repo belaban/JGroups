@@ -1086,8 +1086,8 @@ public class Configurator {
             if(propertyName != null && propertyValue != null) {
                 String deprecated_msg=annotation.deprecatedMessage();
                 if(deprecated_msg != null && deprecated_msg.length() > 0) {
-                    log.warn(method.getDeclaringClass().getSimpleName() + "." + methodName + " has been deprecated : " +
-                            deprecated_msg);
+                    log.warn(Util.getMessage("Deprecated", method.getDeclaringClass().getSimpleName() + "." + methodName,
+                                             deprecated_msg));
                 }
             }
 
@@ -1132,8 +1132,9 @@ public class Configurator {
             if(propertyName != null && propertyValue != null) {
                 String deprecated_msg=annotation.deprecatedMessage();
                 if(deprecated_msg != null && deprecated_msg.length() > 0) {
-                    log.warn(field.getDeclaringClass().getSimpleName() + "." + field.getName() + " has been deprecated: " +
-                            deprecated_msg);
+
+                    log.warn(Util.getMessage("Deprecated", field.getDeclaringClass().getSimpleName() + "." + field.getName(),
+                                             deprecated_msg));
                 }
             }
             
