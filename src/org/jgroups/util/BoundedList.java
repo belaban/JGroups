@@ -35,6 +35,9 @@ public class BoundedList<T> extends ConcurrentLinkedQueue<T> {
         return super.add(obj);
     }
 
+    public boolean addIfAbsent(T obj) {
+        return obj != null && !contains(obj) && add(obj);
+    }
 
 
     public T removeFromHead() {

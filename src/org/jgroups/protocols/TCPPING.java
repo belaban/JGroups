@@ -9,6 +9,7 @@ import org.jgroups.Message;
 import org.jgroups.Global;
 import org.jgroups.util.Util;
 import org.jgroups.util.Promise;
+import org.jgroups.util.BoundedList;
 import org.jgroups.stack.IpAddress;
 
 import java.util.*;
@@ -40,6 +41,12 @@ public class TCPPING extends Discovery {
     List<Address>       initial_hosts=null;  // hosts to be contacted for the initial membership
     final static String name="TCPPING";
 
+    Address local_addr=null; // our own address
+
+    protected int max_dynamic_hosts=0; // max number of hosts to keep beyond the ones in initial_hosts
+
+    // https://jira.jboss.org/jira/browse/JGRP-989
+    protected BoundedList<Address> dynamic_hosts;
 
 
     public String getName() {
@@ -82,11 +89,24 @@ public class TCPPING extends Discovery {
             }
         }
 
+        str=props.getProperty("max_dynamic_hosts");
+        if(str != null) {
+            max_dynamic_hosts=Integer.parseInt(str);
+            if (max_dynamic_hosts < 0) {
+               max_dynamic_hosts = 0;
+            }
+            props.remove("max_dynamic_hosts");
+        }
+
+        dynamic_hosts=new BoundedList<Address>(max_dynamic_hosts);
+
         return super.setProperties(props);
     }
 
 
     public void localAddressSet(Address addr) {
+        local_addr = addr;
+
         // Add own address to initial_hosts if not present: we must always be able to ping ourself !
         if(initial_hosts != null && addr != null) {
             if(initial_hosts.contains(addr)) {
@@ -99,8 +119,10 @@ public class TCPPING extends Discovery {
 
 
     public void sendGetMembersRequest(Promise promise) throws Exception {
+        Set<Address> combined_target_members = new HashSet<Address>(initial_hosts);
+        combined_target_members.addAll(dynamic_hosts);
 
-        for(Iterator<Address> it = initial_hosts.iterator();it.hasNext();){
+        for(Iterator<Address> it = combined_target_members.iterator();it.hasNext();){
             final Address addr = it.next();
             final Message msg = new Message(addr, null, null);
             msg.setFlag(Message.OOB);
@@ -156,5 +178,20 @@ public class TCPPING extends Discovery {
         return retval;
     }
 
+    public Object down(Event evt) {
+        Object retval=super.down(evt);
+        switch(evt.getType()) {
+            case Event.VIEW_CHANGE:
+                if(max_dynamic_hosts > 0) {
+                    for(Address addr: members) {
+                        if(!addr.equals(local_addr) && !initial_hosts.contains(addr)) {
+                            dynamic_hosts.addIfAbsent(addr);
+                        }
+                    }
+                }
+				break;
+        }
+        return retval;
+    }
 }
 

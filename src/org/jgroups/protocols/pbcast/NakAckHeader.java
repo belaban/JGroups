@@ -22,10 +22,10 @@ public class NakAckHeader extends Header implements Streamable {
     public static final byte XMIT_RSP=3;  // retransmit response (contains one or more messages)
 
 
-    byte  type=0;
-    long  seqno=-1;        // seqno of regular message (MSG)
-    Range range=null;      // range of msgs to be retransmitted (XMIT_REQ) or retransmitted (XMIT_RSP)
-    Address sender;        // the original sender of the message (for XMIT_REQ)
+    public byte  type=0;
+    public long  seqno=-1;        // seqno of regular message (MSG)
+    public Range range=null;      // range of msgs to be retransmitted (XMIT_REQ) or retransmitted (XMIT_RSP)
+    public Address sender;        // the original sender of the message (for XMIT_REQ)
     private static final long serialVersionUID=-4305600151593420827L;
 
 

@@ -1054,6 +1054,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     client_sock=srv_sock.accept();
                     if(log.isTraceEnabled()) // +++ remove
                         log.trace("accepted connection from " + client_sock.getInetAddress() + ':' + client_sock.getPort());
+                    client_sock.setKeepAlive(keep_alive);
                     ClientConnectionHandler client_conn_handler=new ClientConnectionHandler(client_sock, clients);
                     Thread t = getThreadFactory().newThread(client_conn_handler, "FD_SOCK client connection handler");
                     t.setDaemon(true);                    
