@@ -94,7 +94,7 @@ public class UDP extends TP {
 
 
     /** The multicast address (mcast address and port) this member uses */
-    protected IpAddress mcast_addr=null;
+    protected IpAddress       mcast_addr;
 
     /**
      * Socket used for
@@ -104,16 +104,16 @@ public class UDP extends TP {
      * </ol>
      * The address of this socket will be our local address (<tt>local_addr</tt>)
      */
-    protected DatagramSocket sock=null;
+    protected DatagramSocket  sock;
 
     /** IP multicast socket for <em>receiving</em> multicast packets */
     protected MulticastSocket mcast_sock=null;
 
     /** Runnable to receive multicast packets */
-    protected PacketReceiver mcast_receiver=null;
+    protected PacketReceiver  mcast_receiver=null;
 
     /** Runnable to receive unicast packets */
-    protected PacketReceiver ucast_receiver=null;
+    protected PacketReceiver  ucast_receiver=null;
 
 
     /**
