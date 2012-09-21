@@ -239,11 +239,8 @@ public abstract class BasicConnectionTable {
     * by several Connection handler threads. Therefore the receiver needs to be reentrant.
     */
    public void receive(Address sender, byte[] data, int offset, int length) {
-       if(receiver != null) {
+       if(receiver != null)
            receiver.receive(sender, data, offset, length);
-       }
-       else
-           if(log.isErrorEnabled()) log.error("receiver is null (not set) !");
    }
 
    public String toString() {

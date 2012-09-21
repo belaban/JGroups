@@ -353,11 +353,8 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
      */
     public <T> T sendMessage(Message msg, RequestOptions opts) throws Exception {
         Address dest=msg.getDest();
-        if(dest == null) {
-            if(log.isErrorEnabled())
-                log.error("the message's destination is null, cannot send message");
-            return null;
-        }
+        if(dest == null)
+            throw new IllegalArgumentException("message destination is null, cannot send message");
 
         if(opts != null) {
             msg.setFlag(opts.getFlags());
@@ -406,11 +403,8 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
      */
     public <T> NotifyingFuture<T> sendMessageWithFuture(Message msg, RequestOptions options) throws Exception {
         Address dest=msg.getDest();
-        if(dest == null) {
-            if(log.isErrorEnabled())
-                log.error("the message's destination is null, cannot send message");
-            return null;
-        }
+        if(dest == null)
+            throw new IllegalArgumentException("message destination is null, cannot send message");
 
         if(options != null) {
             msg.setFlag(options.getFlags());

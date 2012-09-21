@@ -639,8 +639,6 @@ public class UDP extends TP {
             if(thread == null || !thread.isAlive()) {
                 thread=getThreadFactory().newThread(this, name);
                 thread.start();
-                if(log.isDebugEnabled())
-                    log.debug("created " + name + " thread ");
             }
         }
 

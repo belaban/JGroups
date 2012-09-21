@@ -1,9 +1,7 @@
 package org.jgroups.blocks;
 
 
-import org.jgroups.Address;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.protocols.relay.SiteAddress;
 import org.jgroups.util.Rsp;
@@ -188,10 +186,19 @@ public class UnicastRequest<T> extends Request {
     }
 
 
+
     public T getValue() throws ExecutionException {
-        if(!result.hasException())
-            return result.getValue();
-        throw new ExecutionException(result.getException());
+        if(result.wasSuspected())
+            throw new ExecutionException(new SuspectedException(target));
+
+        if(result.hasException())
+            throw new ExecutionException(result.getException());
+
+        if(result.wasUnreachable())
+            throw new ExecutionException(new UnreachableException(target));
+        if(!result.wasReceived())
+            throw new ExecutionException(new TimeoutException("timeout sending message to " + target));
+        return result.getValue();
     }
 
 

@@ -101,8 +101,8 @@ public class RelayDemoRpc extends ReceiverAdapter {
                         Object rsp=disp.callRemoteMethod(dest, call, new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT));
                         System.out.println("rsp from " + dest + ": " + rsp);
                     }
-                    catch(Throwable throwable) {
-                        throwable.printStackTrace();
+                    catch(Throwable t) {
+                        t.printStackTrace();
                     }
                 }
             }
