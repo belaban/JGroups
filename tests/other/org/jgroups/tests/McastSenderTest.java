@@ -118,12 +118,22 @@ public class McastSenderTest {
                 buf=line.getBytes();
                 packet=new DatagramPacket(buf, buf.length, mcast_addr, port);
                 if(sock != null) {
-                    sock.send(packet);
+                    try {
+                        sock.send(packet);
+                    }
+                    catch(Throwable t) {
+                        System.err.println(t);
+                    }
                 }
                 else {
                     for(int i=0; i < sockets.size(); i++) {
                         MulticastSocket s=(MulticastSocket)sockets.get(i);
-                        s.send(packet);
+                        try {
+                            s.send(packet);
+                        }
+                        catch(Throwable t) {
+                            System.err.println(t);
+                        }
                     }
                 }
             }
