@@ -241,13 +241,15 @@ public class RELAY2 extends Protocol {
         if(final_dest != null)
             handleMessage(hdr, msg);
         else {
-            byte[] buf=msg.getBuffer();
+            // byte[] buf=msg.getBuffer();
             Message copy=msg.copy(true, false);
             copy.setDest(null); // final_dest is null !
             copy.setSrc(null);  // we'll use our own address
             copy.putHeader(id, hdr);
             down_prot.down(new Event(Event.MSG, copy));            // multicast locally
-            sendToBridges(msg.getSrc(), buf, from_site, site_id);  // forward to all bridges except self and from
+
+            // Don't forward: https://issues.jboss.org/browse/JGRP-1519
+            // sendToBridges(msg.getSrc(), buf, from_site, site_id);  // forward to all bridges except self and from
         }
     }
 
