@@ -1065,7 +1065,7 @@ public class JChannel extends Channel {
                             String attrname=tmp.substring(0, index);
                             String attrvalue=tmp.substring(index+1);
                             Protocol prot=prot_stack.findProtocol(protocol_name);
-                            Field field=Util.getField(prot.getClass(), attrname);
+                            Field field=prot != null? Util.getField(prot.getClass(), attrname) : null;
                             if(field != null) {
                                 Object value=MethodCall.convert(attrvalue, field.getType());
                                   if(value != null)
