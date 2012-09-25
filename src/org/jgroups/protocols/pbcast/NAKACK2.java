@@ -633,7 +633,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * Made seqno increment and adding to sent_msgs atomic, e.g. seqno won't get incremented if adding to
      * sent_msgs fails e.g. due to an OOM (see http://jira.jboss.com/jira/browse/JGRP-179). bela Jan 13 2006
      */
-    protected void send(Event evt, Message msg, boolean pass_down) {
+    protected void send(Event evt, Message msg) {
         if(msg == null)
             throw new NullPointerException("msg is null; event is " + evt);
 
@@ -667,9 +667,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             }
         }
 
-        if(!pass_down)
-            return;
-        
         // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
         if(log.isTraceEnabled())
             log.trace(local_addr + " sending " + local_addr + "#" + msg_id);
@@ -677,9 +674,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         num_messages_sent++;
     }
 
-    protected void send(Event evt, Message msg) {
-        send(evt,msg,true);
-    }
 
 
     /**

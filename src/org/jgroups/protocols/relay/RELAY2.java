@@ -76,15 +76,15 @@ public class RELAY2 extends Protocol {
 
         // Sanity check
         Collection<Short> site_ids=new TreeSet<Short>();
-        for(RelayConfig.SiteConfig site_config: sites.values()) {
-            site_ids.add(site_config.getId());
-            if(site.equals(site_config.getName()))
-                site_id=site_config.getId();
+        for(RelayConfig.SiteConfig cfg: sites.values()) {
+            site_ids.add(cfg.getId());
+            if(site.equals(cfg.getName()))
+                site_id=cfg.getId();
         }
 
         int index=0;
-        for(short id: site_ids) {
-            if(id != index)
+        for(short tmp_id: site_ids) {
+            if(tmp_id != index)
                 throw new Exception("site IDs need to start with 0 and are required to increase monotonically; " +
                                       "site IDs=" + site_ids);
             index++;
@@ -124,8 +124,8 @@ public class RELAY2 extends Protocol {
         try {
             input=ConfiguratorFactory.getConfigStream(config);
             sites=RelayConfig.parse(input);
-            for(RelayConfig.SiteConfig site_config: sites.values())
-                SiteUUID.addToCache(site_config.getId(), site_config.getName());
+            for(RelayConfig.SiteConfig cfg: sites.values())
+                SiteUUID.addToCache(cfg.getId(),cfg.getName());
             site_config=sites.get(site);
             if(site_config == null)
                 throw new Exception("site configuration for \"" + site + "\" not found in " + config);
@@ -145,12 +145,12 @@ public class RELAY2 extends Protocol {
 
     /**
      * Returns the bridge channel to a given site
-     * @param site The site name, e.g. "SFO"
+     * @param site_name The site name, e.g. "SFO"
      * @return The JChannel to the given site, or null if no route was found or we're not the coordinator
      */
-    public JChannel getBridge(String site) {
+    public JChannel getBridge(String site_name) {
         Relayer tmp=relayer;
-        Relayer.Route route=tmp != null? tmp.getRoute(SiteUUID.getSite(site)): null;
+        Relayer.Route route=tmp != null? tmp.getRoute(SiteUUID.getSite(site_name)): null;
         return route != null? route.getBridge() : null;
     }
 
@@ -236,7 +236,7 @@ public class RELAY2 extends Protocol {
 
 
     /** Called to handle a message received by the relayer */
-    protected void handleRelayMessage(Relay2Header hdr, Message msg, short from_site) {
+    protected void handleRelayMessage(Relay2Header hdr, Message msg) {
         Address final_dest=hdr.final_dest;
         if(final_dest != null)
             handleMessage(hdr, msg);

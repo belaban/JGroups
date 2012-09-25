@@ -283,7 +283,6 @@ public abstract class StreamingStateTransfer extends Protocol {
     }
 
     protected void handleStateChunk(Address sender, byte[] buffer, int offset, int length) {
-        ;
     }
 
     protected void handleEOF(Address sender) {
@@ -485,7 +484,6 @@ public abstract class StreamingStateTransfer extends Protocol {
     // protected boolean closeStreamAfterSettingState() {return true;}
 
     protected void modifyStateResponseHeader(StateHeader hdr) {
-        ;
     }
 
     

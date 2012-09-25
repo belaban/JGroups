@@ -211,18 +211,17 @@ public class Relayer {
                 log.warn("received a message without a relay header; discarding it");
                 return;
             }
-            SiteUUID forwarder=(SiteUUID)msg.getSrc();
-            relay.handleRelayMessage(hdr, msg, forwarder.getSite());
+            relay.handleRelayMessage(hdr, msg);
         }
 
-        public void viewAccepted(View view) {
-            List<Address> left_mbrs=this.view != null? Util.determineLeftMembers(this.view.getMembers(),view.getMembers()) : null;
-            this.view=view;
+        public void viewAccepted(View new_view) {
+            List<Address> left_mbrs=this.view != null? Util.determineLeftMembers(this.view.getMembers(),new_view.getMembers()) : null;
+            this.view=new_view;
 
             if(log.isTraceEnabled())
-                log.trace("[Relayer " + channel.getAddress() + "] view: " + view);
+                log.trace("[Relayer " + channel.getAddress() + "] view: " + new_view);
 
-            for(Address addr: view.getMembers()) {
+            for(Address addr: new_view.getMembers()) {
                 if(addr instanceof SiteUUID) {
                     SiteUUID site_uuid=(SiteUUID)addr;
                     short site=site_uuid.getSite();

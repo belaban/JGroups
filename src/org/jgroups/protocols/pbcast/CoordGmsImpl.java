@@ -20,7 +20,7 @@ import java.util.*;
  * @author Bela Ban
  */
 public class CoordGmsImpl extends ServerGmsImpl {
-    private final Long  MAX_SUSPEND_TIMEOUT=new Long(30000);
+    private static final Long  MAX_SUSPEND_TIMEOUT=30000L;
 
     public CoordGmsImpl(GMS g) {
         super(g);

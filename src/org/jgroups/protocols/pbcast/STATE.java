@@ -140,7 +140,7 @@ public class STATE extends StreamingStateTransfer {
         public void write(int b) throws IOException {
             if(closed.get())
                 throw new IOException("The output stream is closed");
-            byte buf[]=new byte[]{(byte)b};
+            byte buf[]={(byte)b};
             write(buf);
         }
 

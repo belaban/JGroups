@@ -113,7 +113,6 @@ public class STATE_SOCK extends StreamingStateTransfer {
 
 
     protected void createStreamToRequester(Address requester) {
-        ;
     }
 
     protected void createStreamToProvider(Address provider, StateHeader hdr) {
