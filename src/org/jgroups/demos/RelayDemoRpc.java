@@ -95,9 +95,9 @@ public class RelayDemoRpc extends ReceiverAdapter {
             else if(line.startsWith("site")) {
                 Collection<String> site_masters=parseSiteMasters(line.substring("site".length()));
                 for(String site_master: site_masters) {
-                    SiteMaster dest=new SiteMaster(site_master);
-                    System.out.println("invoking method in " + dest + ": ");
                     try {
+                        SiteMaster dest=new SiteMaster(site_master);
+                        System.out.println("invoking method in " + dest + ": ");
                         Object rsp=disp.callRemoteMethod(dest, call, new RequestOptions(ResponseMode.GET_ALL, RPC_TIMEOUT));
                         System.out.println("rsp from " + dest + ": " + rsp);
                     }
@@ -111,8 +111,14 @@ public class RelayDemoRpc extends ReceiverAdapter {
             else if(line.startsWith("mcast")) {
                 Collection<String> site_masters=parseSiteMasters(line.substring("mcast".length()));
                 Collection<Address> dests=new ArrayList<Address>(site_masters.size());
-                for(String site_master: site_masters)
-                    dests.add(new SiteMaster(site_master));
+                for(String site_master: site_masters) {
+                    try {
+                        dests.add(new SiteMaster(site_master));
+                    }
+                    catch(Throwable t) {
+                        System.err.println("failed adding SiteMaster for " + site_master + ": " + t);
+                    }
+                }
                 dests.addAll(view.getMembers());
                 System.out.println("invoking method in " + dests + ": ");
                 RspList<Object> rsps=disp.callRemoteMethods(dests, call,
