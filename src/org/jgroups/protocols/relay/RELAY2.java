@@ -298,11 +298,14 @@ public class RELAY2 extends Protocol {
         Relayer.Route route=null;
         int num_forward_attempts=0;
 
-        while((route=tmp.getRoute(target_site)) == null) {
+        while((route=tmp.getRoute(target_site)) == null && !Thread.currentThread().isInterrupted()) {
             if(++num_forward_attempts >= max_forward_attempts)
                 break;
             Util.sleep(forward_sleep);
         }
+
+        if(Thread.currentThread().isInterrupted())
+            return;
 
         if(route == null) {
             log.warn("route for " + SiteUUID.getSiteName(target_site) + " (" + target_site +
