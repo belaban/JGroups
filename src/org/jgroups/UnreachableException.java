@@ -22,6 +22,6 @@ public class UnreachableException extends RuntimeException {
 
 
     public String toString() {
-        return super.toString() + " (member=" + member + ")";
+        return getMessage() + ": member=" + member;
     }
 }
