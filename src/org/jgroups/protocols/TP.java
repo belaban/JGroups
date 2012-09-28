@@ -250,6 +250,9 @@ public abstract class TP extends Protocol {
     @Property(description="whether or not warnings about messages from different groups are logged")
     protected boolean log_discard_msgs=true;
 
+    @Property(description="whether or not warnings about messages from members with a different version are discarded")
+    protected boolean log_discard_msgs_version=true;
+
     @Property(description="Timeout (in ms) to determine how long to wait until a request to fetch the physical address " +
       "for a given logical address will be sent again. Subsequent requests for the same physical address will therefore " +
       "be spaced at least who_has_cache_timeout ms apart")
@@ -738,7 +741,7 @@ public abstract class TP extends Protocol {
     public boolean isReceiveOnAllInterfaces() {return receive_on_all_interfaces;}
     public List<NetworkInterface> getReceiveInterfaces() {return receive_interfaces;}
     public static boolean isDiscardIncompatiblePackets() {return true;}
-    public static void setDiscardIncompatiblePackets(boolean flag) {;}
+    public static void setDiscardIncompatiblePackets(boolean flag) {}
     public boolean isEnableBundling() {return enable_bundling;}
     public void setEnableBundling(boolean flag) {enable_bundling=flag;}
     public boolean isEnableUnicastBundling() {return enable_unicast_bundling;}
@@ -826,13 +829,11 @@ public abstract class TP extends Protocol {
             ((ThreadPoolExecutor)thread_pool).setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
     }
 
-    public void setLogDiscardMessages(boolean flag) {
-        log_discard_msgs=flag;
-    }
+    public void    setLogDiscardMessages(boolean flag)        {log_discard_msgs=flag;}
+    public boolean getLogDiscardMessages()                    {return log_discard_msgs;}
+    public void    setLogDiscardMessagesVersion(boolean flag) {log_discard_msgs_version=flag;}
+    public boolean getLogDiscardMessagesVersion()             {return log_discard_msgs_version;}
 
-    public boolean getLogDiscardMessages() {
-        return log_discard_msgs;
-    }
 
     @ManagedOperation(description="Dumps the contents of the logical address cache")
     public String printLogicalAddressCache() {
@@ -1076,7 +1077,7 @@ public abstract class TP extends Protocol {
                             retval.put("keys", sb.toString());
                         }
                         if(key.equals("info")) {
-                            if(singleton_name != null && singleton_name.length() > 0)
+                            if(singleton_name != null && !singleton_name.isEmpty())
                                 retval.put("singleton_name", singleton_name);
 
                         }
@@ -1219,7 +1220,6 @@ public abstract class TP extends Protocol {
             send(msg, dest, multicast);
         }
         catch(InterruptedIOException iex) {
-            ;
         }
         catch(InterruptedException interruptedEx) {
             Thread.currentThread().interrupt(); // let someone else handle the interrupt
@@ -1273,7 +1273,7 @@ public abstract class TP extends Protocol {
             boolean is_protocol_adapter=tmp_prot instanceof ProtocolAdapter;
             // Discard if message's cluster name is not the same as our cluster name
             if(!is_protocol_adapter && perform_cluster_name_matching && channel_name != null && !channel_name.equals(ch_name)) {
-                if(log.isWarnEnabled() && log_discard_msgs) {
+                if(log_discard_msgs && log.isWarnEnabled()) {
                     Address sender=msg.getSrc();
                     if(suppress_log_different_cluster != null)
                         suppress_log_different_cluster.log(SuppressLog.Level.warn, sender,
@@ -1800,7 +1800,7 @@ public abstract class TP extends Protocol {
                     return;
                 }
                 if(Version.isBinaryCompatible(version) == false) {
-                    if(log.isWarnEnabled()) {
+                    if(log_discard_msgs_version && log.isWarnEnabled()) {
                         if(suppress_log_different_version != null)
                             suppress_log_different_version.log(SuppressLog.Level.warn, sender,
                                                                suppress_time_different_version_warnings,
