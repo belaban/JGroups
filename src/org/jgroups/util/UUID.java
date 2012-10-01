@@ -67,7 +67,7 @@ public class UUID implements Address {
         * running in an untrusted environment with JNLP */
         try {
             tmp=Util.getProperty(new String[]{Global.PRINT_UUIDS}, null, null, false, "false");
-            print_uuids=Boolean.valueOf(tmp).booleanValue();
+            print_uuids=Boolean.valueOf(tmp);
         }
         catch (SecurityException ex){
         }

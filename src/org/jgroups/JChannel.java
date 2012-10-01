@@ -634,10 +634,10 @@ public class JChannel extends Channel {
                 Map<String,Object> cfg=(Map<String,Object>)evt.getArg();
                 if(cfg != null) {
                     if(cfg.containsKey("state_transfer")) {
-                        state_transfer_supported=((Boolean)cfg.get("state_transfer")).booleanValue();
+                        state_transfer_supported=(Boolean)cfg.get("state_transfer");
                     }
                     if(cfg.containsKey("flush_supported")) {
-                        flush_supported=((Boolean)cfg.get("flush_supported")).booleanValue();
+                        flush_supported=(Boolean)cfg.get("flush_supported");
                     }
                     cfg.putAll(cfg);
                 }
@@ -857,9 +857,9 @@ public class JChannel extends Channel {
         local_addr=address_generator != null? address_generator.generateAddress() : UUID.randomUUID();
         if(old_addr != null)
             down(new Event(Event.REMOVE_ADDRESS, old_addr));
-        if(name == null || name.length() == 0) // generate a logical name if not set
+        if(name == null || name.isEmpty()) // generate a logical name if not set
             name=Util.generateLocalName();
-        if(name != null && name.length() > 0)
+        if(name != null && !name.isEmpty())
             UUID.add(local_addr, name);
 
         Event evt=new Event(Event.SET_LOCAL_ADDRESS, local_addr);
