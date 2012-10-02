@@ -28,6 +28,13 @@ public class TopologyUUID extends UUID {
         this.machine_id=machine_id;
     }
 
+    protected TopologyUUID(long most_sig_bits, long least_sig_bits, String site_id, String rack_id, String machine_id) {
+           super(most_sig_bits, least_sig_bits);
+           this.site_id=site_id;
+           this.rack_id=rack_id;
+           this.machine_id=machine_id;
+       }
+
     public static TopologyUUID randomUUID(String site_id, String rack_id, String machine_id) {
         return new TopologyUUID(generateRandomBytes(), site_id, rack_id, machine_id);
     }

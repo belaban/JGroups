@@ -1,11 +1,16 @@
 package org.jgroups.protocols.relay;
 
 import org.jgroups.*;
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.protocols.FORWARD_TO_COORD;
 import org.jgroups.protocols.relay.config.RelayConfig;
+import org.jgroups.stack.AddressGenerator;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.TopologyUUID;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
@@ -33,6 +38,14 @@ public class RELAY2 extends Protocol {
 
     @Property(description="Name of the relay configuration",writable=false)
     protected String                             config;
+
+    @Property(description="Whether or not this node can become the site master. If false, " +
+      "and we become the coordinator, we won't start the bridge(s)",writable=false)
+    protected boolean                            can_become_site_master=true;
+
+    @Property(description="Whether or not we generate our own addresses in which we use can_become_site_master. " +
+      "If this property is false, can_become_site_master is ignored")
+    protected boolean                            enable_address_tagging=true;
 
     @Property(description="Whether or not to relay multicast (dest=null) messages")
     protected boolean                            relay_multicasts=true;
@@ -103,6 +116,23 @@ public class RELAY2 extends Protocol {
             log.warn(FORWARD_TO_COORD.class.getSimpleName() + " protocol not found below; " +
                        "unable to re-submit messages to the new coordinator if the current coordinator crashes");
 
+        if(enable_address_tagging) {
+            JChannel ch=getProtocolStack().getChannel();
+            final AddressGenerator old_generator=ch.getAddressGenerator();
+            ch.setAddressGenerator(new AddressGenerator() {
+                public Address generateAddress() {
+                    if(old_generator != null) {
+                        Address addr=old_generator.generateAddress();
+                        if(addr instanceof TopologyUUID)
+                            return new CanBeSiteMasterTopology((TopologyUUID)addr, can_become_site_master);
+                        else if(addr instanceof UUID)
+                            return new CanBeSiteMaster((UUID)addr, can_become_site_master);
+                        log.warn("address generator is already set (" + old_generator + "); will replace it with own generator");
+                    }
+                    return CanBeSiteMaster.randomUUID(can_become_site_master);
+                }
+            });
+        }
     }
 
     public void stop() {
@@ -377,7 +407,7 @@ public class RELAY2 extends Protocol {
 
         if(log.isTraceEnabled())
             log.trace("delivering message to " + dest + " in local cluster");
-        forwardTo(local_dest, dest, sender, buf, send_to_coord);
+        forwardTo(local_dest,dest,sender,buf,send_to_coord);
     }
 
     protected void deliver(Address dest, Address sender, byte[] buf) {
@@ -431,7 +461,7 @@ public class RELAY2 extends Protocol {
 
 
     protected void handleView(View view) {
-        Address old_coord=coord, new_coord=Util.getCoordinator(view);
+        Address old_coord=coord, new_coord=determineSiteMaster(view);
         boolean become_coord=new_coord.equals(local_addr) && (old_coord == null || !old_coord.equals(local_addr));
         boolean cease_coord=old_coord != null && old_coord.equals(local_addr) && !new_coord.equals(local_addr);
 
@@ -460,6 +490,21 @@ public class RELAY2 extends Protocol {
                     relayer.stop();
             }
         }
+    }
+
+    /**
+     * Gets the site master from view. Iterates through the members and skips members which are {@link CanBeSiteMaster}
+     * or {@link CanBeSiteMasterTopology} and its can_become_site_master field is false. If no valid member is found
+     * (e.g. all members have can_become_site_master set to false, then the first member will be returned
+     */
+    protected static Address determineSiteMaster(View view) {
+        List<Address> members=view.getMembers();
+        for(Address member: members) {
+            if((member instanceof CanBeSiteMasterTopology && ((CanBeSiteMasterTopology)member).canBecomeSiteMaster())
+              || ((member instanceof CanBeSiteMaster) && ((CanBeSiteMaster)member).canBecomeSiteMaster()))
+                return member;
+        }
+        return Util.getCoordinator(view);
     }
 
 

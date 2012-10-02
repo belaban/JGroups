@@ -122,7 +122,7 @@ public abstract class Protocol {
 
 
 
-    public ProtocolStack getProtocolStack(){
+    public ProtocolStack getProtocolStack() {
         return stack;
     }
 

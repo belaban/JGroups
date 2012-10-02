@@ -61,4 +61,7 @@
     <class id="98"  name="org.jgroups.protocols.relay.SiteMaster"/>
     <class id="99"  name="org.jgroups.protocols.relay.RELAY2$Relay2Header"/>
     <class id="100" name="org.jgroups.protocols.FORWARD_TO_COORD$ForwardHeader"/>
+    <class id="101" name="org.jgroups.protocols.relay.CanBeSiteMaster"/>
+    <class id="102" name="org.jgroups.protocols.relay.CanBeSiteMasterTopology"/>
+
 </magic-number-class-mapping>
