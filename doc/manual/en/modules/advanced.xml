@@ -2028,6 +2028,23 @@ On view change V:
                 site master of LON. If the site master changes, messages will get relayed to a different node, which
                 took over the role of the site master from the old (perhaps crashed) site master.
             </para>
+            <para>
+                Sometimes only certain members of a site should become site masters; e.g. the more powerful boxes
+                (as routing needs some additional CPU power), or multi-homed hosts which are connected to the external
+                network (over which the sites are connected with each other).
+            </para>
+            <para>
+                To do this, RELAY2 can generate special addresses which contain the knowledge about whether a member
+                should be skipped when selecting a site master from a view, or not. If can_become_site_master is
+                set to false in RELAY2, then the selection process will skip that member. However, if all members in
+                a given view are marked with can_become_site_master=false, then the first member of the view will
+                get picked.
+            </para>
+            <para>
+                When we have all members in a view marked with can_become_site_master=false, e.g. {B,C,D}, then B
+                is the site master. If we now start a member A with can_become_site_master=true, then B will stop
+                being the site master and A will become the new site master.
+            </para>
         </section>
 
         <section>
