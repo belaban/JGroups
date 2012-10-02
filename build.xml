@@ -331,7 +331,7 @@
 		description="Download jboss-test.jar containing the class org.jboss.ant.taskdefs.XMLFormatter">
 		
         <get usetimestamp="true"
-             src="http://repository.jboss.com/maven2/jboss/jboss-test/1.0.1.GA/jboss-test-1.0.1.GA.jar"
+             src="https://repository.jboss.org/nexus/content/groups/public-jboss/jboss/jboss-test/1.0.5.GA/jboss-test-1.0.5.GA.jar"
              dest="${lib.dir}/jboss-test.jar"/>
     
 	</target>
