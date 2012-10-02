@@ -12,6 +12,8 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 
 /**
@@ -25,7 +27,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address                local_addr=null;
     private                        long timeout=2000;   // number of millisecs to wait for an are-you-dead msg
     private                        int num_msgs=1;     // number of are-you-alive msgs and i-am-not-dead responses (for redundancy)
-    final Hashtable<Address,Long>  suspects=new Hashtable<Address,Long>();  // keys=Addresses, vals=time in mcses since added
+    final ConcurrentMap<Address,Long>  suspects=new ConcurrentHashMap<Address,Long>();  // keys=Addresses, vals=time in mcses since added
     private Thread                 timer=null;
     private boolean                use_icmp=false;     // use InetAddress.isReachable() to double-check (rather than an are-you-alive msg)
     private InetAddress            bind_addr;          // interface for ICMP pings
@@ -190,8 +192,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
             List<Address> confirmed_suspects=new LinkedList<Address>();
             synchronized(suspects) {
-                for(Enumeration<Address> e=suspects.keys(); e.hasMoreElements();) {
-                    Address mbr=e.nextElement();
+                for(Address mbr : suspects.keySet()) {
                     val=suspects.get(mbr).longValue();                    
                     diff=System.currentTimeMillis() - val;
                     if(diff >= timeout) {  // haven't been unsuspected, pass up SUSPECT
