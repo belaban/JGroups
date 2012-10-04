@@ -195,39 +195,32 @@ public class JChannel extends Channel {
             prot_stack.setChannel(this);
     }
 
-    protected Log getLog() {
-        return log;
-    }
+    protected Log getLog() {return log;}
 
     /**
      * Returns the protocol stack configuration in string format. An example of this property is<br/>
      * "UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:STATE_TRANSFER:QUEUE"
      */
-    public String getProperties() {
-        return prot_stack != null? prot_stack.printProtocolSpec(true) : null;
-    }
+    public String getProperties() {return prot_stack != null? prot_stack.printProtocolSpec(true) : null;}
 
-    public boolean statsEnabled() {
-        return stats;
-    }
+    public boolean statsEnabled() {return stats;}
 
-    public void enableStats(boolean stats) {
-        this.stats=stats;
-    }
+    public void enableStats(boolean stats) {this.stats=stats;}
+
+    @ManagedAttribute public boolean isOpen() {return !closed;}
+    @ManagedAttribute public boolean isConnected() {return connected;}
 
     @ManagedOperation
-    public void resetStats() {
-        sent_msgs=received_msgs=sent_bytes=received_bytes=0;
-    }
+    public void resetStats()          {sent_msgs=received_msgs=sent_bytes=received_bytes=0;}
 
     @ManagedAttribute
-    public long getSentMessages() {return sent_msgs;}
+    public long getSentMessages()     {return sent_msgs;}
     @ManagedAttribute
-    public long getSentBytes() {return sent_bytes;}
+    public long getSentBytes()        {return sent_bytes;}
     @ManagedAttribute
     public long getReceivedMessages() {return received_msgs;}
     @ManagedAttribute
-    public long getReceivedBytes() {return received_bytes;}
+    public long getReceivedBytes()    {return received_bytes;}
     @ManagedAttribute
     public int getNumberOfTasksInTimer() {
         TimeScheduler timer=getTimer();
@@ -259,7 +252,7 @@ public class JChannel extends Channel {
 
     @ManagedOperation(description="Connects the channel to a group")
     public synchronized void connect(String cluster_name) throws Exception {
-    	connect(cluster_name,true);
+    	connect(cluster_name, true);
     }
 
     /**
@@ -268,33 +261,13 @@ public class JChannel extends Channel {
      */
     @ManagedOperation(description="Connects the channel to a group")
     protected synchronized void connect(String cluster_name, boolean useFlushIfPresent) throws Exception {
-        if(connected) {
-            if(log.isTraceEnabled())
-                log.trace("already connected to " + cluster_name);
+        if(!_preConnect(cluster_name))
             return;
-        }
-
-        setAddress();
-        startStack(cluster_name);
 
         if(cluster_name != null) { // only connect if we are not a unicast channel
-
-            Event connect_event;
-            if(useFlushIfPresent) {
-                connect_event=new Event(Event.CONNECT_USE_FLUSH, cluster_name);
-            }
-            else {
-                connect_event=new Event(Event.CONNECT, cluster_name);
-            }
-
-            // waits forever until connected (or channel is closed)
-            Object res=down(connect_event);
-            if(res != null && res instanceof Exception) {
-                // the JOIN was rejected by the coordinator
-                stopStack(true, false);
-                init();
-                throw new Exception("connect() failed", (Throwable)res);
-            }
+            Event connect_event=useFlushIfPresent? new Event(Event.CONNECT_USE_FLUSH, cluster_name)
+              : new Event(Event.CONNECT, cluster_name);
+            _connect(connect_event);
         }
         connected=true;
         notifyChannelConnected(this);
@@ -325,30 +298,17 @@ public class JChannel extends Channel {
      */
     public synchronized void connect(String cluster_name, Address target, long timeout,
                                      boolean useFlushIfPresent) throws Exception {
-
-        if(connected) {
-            if(log.isTraceEnabled()) log.trace("already connected to " + this.cluster_name);
+        if(!_preConnect(cluster_name))
             return;
-        }
-
-        setAddress();
-        startStack(cluster_name);
-
-        boolean canFetchState=false;
 
         if(cluster_name == null) // only connect if we are not a unicast channel
             return;
 
+        boolean canFetchState=false;
         try {
             Event connect_event=useFlushIfPresent? new Event(Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH, cluster_name)
-                                                 : new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
-
-            Object res=down(connect_event); // waits forever until connected (or channel is closed)
-            if(res instanceof Exception) {
-                stopStack(true, false);
-                init();
-                throw new Exception("connect() failed", (Throwable)res);
-            }
+              : new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
+            _connect(connect_event);
 
             connected=true;
             notifyChannelConnected(this);
@@ -392,15 +352,6 @@ public class JChannel extends Channel {
 
 
 
-
-    @ManagedAttribute public boolean isOpen() {
-        return !closed;
-    }
-
-
-    @ManagedAttribute public boolean isConnected() {
-        return connected;
-    }
 
 
     @ManagedOperation
@@ -470,32 +421,20 @@ public class JChannel extends Channel {
     }
     
     @ManagedAttribute
-    public static String getVersion() {
-        return Version.printDescription();
-    }
+    public static String getVersion() {return Version.printDescription();}
 
 
-    public Address getAddress() {
-        return closed ? null : local_addr;
-    }
+    public Address getAddress() {return closed ? null : local_addr;}
 
     @ManagedAttribute(name="Address")
-    public String getAddressAsString() {
-        return local_addr != null? local_addr.toString() : "n/a";
-    }
+    public String getAddressAsString() {return local_addr != null? local_addr.toString() : "n/a";}
 
     @ManagedAttribute(name="Address (UUID)")
-    public String getAddressAsUUID() {
-        return local_addr instanceof UUID? ((UUID)local_addr).toStringLong() : null;
-    }
+    public String getAddressAsUUID() {return local_addr instanceof UUID? ((UUID)local_addr).toStringLong() : null;}
 
-    public String getName() {
-        return name;
-    }
+    public String getName() {return name;}
 
-    public String getName(Address member) {
-        return member != null? UUID.get(member) : null;
-    }
+    public String getName(Address member) {return member != null? UUID.get(member) : null;}
 
     @ManagedAttribute(writable=true, description="The logical name of this channel. Stays with the channel until " +
             "the channel is closed")
@@ -510,18 +449,14 @@ public class JChannel extends Channel {
     }
 
     @ManagedAttribute(description="Returns cluster name this channel is connected to")
-    public String getClusterName() {
-        return closed ? null : !connected ? null : cluster_name;
-    }
+    public String getClusterName() {return closed ? null : !connected ? null : cluster_name;}
 
     /**
      * Returns the current {@link AddressGenerator}, or null if none is set
      * @return
      * @since 2.12
      */
-    public AddressGenerator getAddressGenerator() {
-        return address_generator;
-    }
+    public AddressGenerator getAddressGenerator() {return address_generator;}
 
     /**
      * Sets the new {@link AddressGenerator}. New addresses will be generated using the new generator. This
@@ -529,9 +464,7 @@ public class JChannel extends Channel {
      * @param address_generator
      * @since 2.12
      */
-    public void setAddressGenerator(AddressGenerator address_generator) {
-        this.address_generator=address_generator;
-    }
+    public void setAddressGenerator(AddressGenerator address_generator) {this.address_generator=address_generator;}
 
 
     public void getState(Address target, long timeout) throws Exception {
@@ -550,6 +483,28 @@ public class JChannel extends Channel {
 		};
 		getState(target, timeout, useFlushIfPresent?flusher:null);
 	}
+
+    protected boolean _preConnect(String cluster_name) throws Exception {
+        if(connected) {
+            if(log.isTraceEnabled()) log.trace("already connected to " + this.cluster_name);
+            return false;
+        }
+
+        setAddress();
+        startStack(cluster_name);
+        return true;
+    }
+
+    protected void _connect(Event connect_event) throws Exception {
+        try {
+            down(connect_event);
+        }
+        catch(Throwable t) {
+            stopStack(true, false);
+            init();
+            throw new Exception("connecting to channel \"" + cluster_name + "\" failed", t);
+        }
+    }
     
 
     protected void getState(Address target, long timeout, Callable<Boolean> flushInvoker) throws Exception {
