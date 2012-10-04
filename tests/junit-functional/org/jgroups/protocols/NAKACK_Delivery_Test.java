@@ -72,6 +72,8 @@ public class NAKACK_Delivery_Test {
         // set dummy view
         nak.down(new Event(Event.VIEW_CHANGE, view));
 
+        nak.down(new Event(Event.BECOME_SERVER));
+
         pool=new ThreadPoolExecutor(1, 100, 1000, TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>());
         // pool=new DirectExecutor();
         // if(pool instanceof ThreadPoolExecutor)

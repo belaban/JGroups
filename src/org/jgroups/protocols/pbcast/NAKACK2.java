@@ -1,6 +1,9 @@
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.annotations.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -9,6 +12,7 @@ import org.jgroups.util.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -484,16 +488,13 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 members=new ArrayList<Address>(mbrs);
                 view=tmp_view;
                 adjustReceivers(mbrs);
-                boolean was_server=is_server;
                 is_server=true;  // check vids from now on
-                if(!was_server)
-                    flushBecomeServerQueue();
                 if(suppress_log_non_member != null)
                     suppress_log_non_member.removeExpired(suppress_time_non_member_warnings);
                 break;
 
             case Event.BECOME_SERVER:
-                was_server=is_server;
+                boolean was_server=is_server;
                 is_server=true;
                 if(!was_server)
                     flushBecomeServerQueue();
@@ -713,7 +714,12 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 if(msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED)) {
                     if(log.isTraceEnabled())
                         log.trace(new StringBuilder().append(local_addr).append(": delivering ").append(sender).append('#').append(hdr.seqno));
-                    up_prot.up(new Event(Event.MSG, msg));
+                    try {
+                        up_prot.up(new Event(Event.MSG, msg));
+                    }
+                    catch(Throwable t) {
+                        log.error("failed to deliver OOB message " + msg, t);
+                    }
                 }
             }
         }
@@ -754,7 +760,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                         up_prot.up(new Event(Event.MSG, msg_to_deliver));
                     }
                     catch(Throwable t) {
-                        log.error("couldn't deliver message " + msg_to_deliver, t);
+                        log.error("failed to deliver message " + msg_to_deliver, t);
                     }
                 }
             }
@@ -827,14 +833,31 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
 
+    /**
+     * Flushes the queue. Done in a separate thread as we don't want to block the
+     * {@link ClientGmsImpl#installView(org.jgroups.View,org.jgroups.util.Digest)} method (called when a view is installed).
+     */
     protected void flushBecomeServerQueue() {
         if(become_server_queue != null && !become_server_queue.isEmpty()) {
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": flushing become_server_queue (" + become_server_queue.size() + " elements)");
-            for(Message msg: become_server_queue) {
-                up(new Event(Event.MSG, msg));
+
+            TP transport=getTransport();
+            Executor thread_pool=transport.getDefaultThreadPool(), oob_thread_pool=transport.getOOBThreadPool();
+
+            for(final Message msg: become_server_queue) {
+                Executor pool=msg.isFlagSet(Message.Flag.OOB)? oob_thread_pool : thread_pool;
+                pool.execute(new Runnable() {
+                    public void run() {
+                        try {
+                            up(new Event(Event.MSG, msg));
+                        }
+                        finally {
+                            become_server_queue.remove(msg);
+                        }
+                    }
+                });
             }
-            become_server_queue.clear();
         }
     }
 
@@ -1258,7 +1281,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     protected static long sizeOfAllMessages(Table<Message> buf, boolean include_headers) {
         Counter counter=new Counter(include_headers);
-        buf.forEach(buf.getHighestDelivered()+1, buf.getHighestReceived(), counter);
+        buf.forEach(buf.getHighestDelivered() + 1, buf.getHighestReceived(), counter);
         return counter.getResult();
     }
 

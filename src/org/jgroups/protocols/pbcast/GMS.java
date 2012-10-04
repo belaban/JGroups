@@ -931,15 +931,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 down_prot.down(evt);
                 if(local_addr == null)
                     throw new IllegalStateException("local_addr is null");
-                try {
-                    if(state_transfer)
-                        impl.joinWithStateTransfer(local_addr, use_flush);
-                    else
-                        impl.join(local_addr, use_flush);
-                }
-                catch(Throwable e) {
-                    return e;
-                }
+
+                if(state_transfer)
+                    impl.joinWithStateTransfer(local_addr, use_flush);
+                else
+                    impl.join(local_addr, use_flush);
                 return null;  // don't pass down: event has already been passed down
 
             case Event.DISCONNECT:

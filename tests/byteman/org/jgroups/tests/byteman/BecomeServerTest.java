@@ -23,10 +23,12 @@ import org.testng.annotations.Test;
  */
 @Test(groups=Global.BYTEMAN,sequential=true)
 public class BecomeServerTest extends BMNGRunner {
-    JChannel a, b;
+    JChannel          a, b;
 
     @AfterMethod
-    protected void cleanup() {Util.close(b,a);}
+    protected void cleanup() {
+        Util.close(b,a);
+    }
 
 
     /**
@@ -38,46 +40,49 @@ public class BecomeServerTest extends BMNGRunner {
     public void testSendingOfMsgsOnUnconnectedChannel() throws Exception {
         a=createChannel("A");
         a.setReceiver(new ReceiverAdapter() {
-            public void receive(Message msg) {
+            public void receive(Message msg)  {
                 System.out.println("A: received message from " + msg.getSrc() + ": " + msg.getObject());
             }
         });
         a.connect("BecomeServerTest");
 
-        new Thread() {
+        new Thread("MsgSender-A") {
             public void run() {
-                // will be blocked by byteman rendezvous
-                sendMessage(a, "hello from A");
+                sendMessage(a, "hello from A"); // will be blocked by byteman rendezvous
             }
         }.start();
 
         b=createChannel("B");
         b.setReceiver(new ReceiverAdapter() {
             public void receive(Message msg) {
-                try {
-                    System.out.println("B: received message from " + msg.getSrc() + ": " + msg.getObject());
-                    if(msg.getSrc().equals(a.getAddress()))
-                        b.send(null, "This message should trigger an exception as the channel is not yet connected");
-                }
-                catch(Exception e) {
-                    System.err.println(e);
+                System.out.println("B: received message from " + msg.getSrc() + ": " + msg.getObject());
+                if(msg.getSrc().equals(a.getAddress())) {
+                    try {
+                        b.send(null, "This message triggers an exception if the channel is not yet connected");
+                    }
+                    catch(Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         });
+
         b.connect("BecomeServerTest");
 
         Util.waitUntilAllChannelsHaveSameSize(20000, 1000, a,b);
 
-        Util.sleep(2000);
+        System.out.println("\nA: " + a.getView() + "\nB: " + b.getView());
     }
 
 
     protected void sendMessage(JChannel ch, String message) {
         try {
-            ch.send(null, message);
+            Message msg=new Message(null, message);
+            msg.setFlag(Message.Flag.OOB);
+            ch.send(msg);
         }
         catch(Exception e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
     }
 
@@ -85,7 +90,7 @@ public class BecomeServerTest extends BMNGRunner {
 
     protected JChannel createChannel(String name) throws Exception {
         JChannel ch=Util.createChannel(new SHARED_LOOPBACK(),
-                                       new PING().setValue("timeout",200).setValue("num_initial_members",2),
+                                       new PING().setValue("timeout",1000).setValue("num_initial_members",2),
                                        new NAKACK2().setValue("become_server_queue_size",10),
                                        new UNICAST2(),
                                        new GMS().setValue("print_local_addr", false));

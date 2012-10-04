@@ -134,80 +134,68 @@ public class ClientGmsImpl extends GmsImpl {
                 sendJoinMessage(coord,mbr,joinWithStateTransfer,useFlushIfPresent);
             }
 
-            try {
-                if(rsp == null)
-                    rsp=join_promise.getResult(gms.join_timeout);
-                if(rsp == null) {
-                    join_attempts++;
+            if(rsp == null)
+                rsp=join_promise.getResult(gms.join_timeout);
+            if(rsp == null) {
+                join_attempts++;
+                if(log.isWarnEnabled())
+                    log.warn("JOIN(" + mbr + ") sent to " + coord + " timed out (after " + gms.join_timeout + " ms), on try " + join_attempts);
+
+                if(gms.max_join_attempts != 0 && join_attempts >= gms.max_join_attempts) {
                     if(log.isWarnEnabled())
-                        log.warn("JOIN(" + mbr + ") sent to " + coord + " timed out (after " + gms.join_timeout + " ms), on try " + join_attempts);
-
-                    if(gms.max_join_attempts != 0 && join_attempts >= gms.max_join_attempts) {
-                        if(log.isWarnEnabled())
-                            log.warn("Too many JOIN attempts: becoming singleton");
-                        becomeSingletonMember(mbr);
-                        return;
-                    }
-                    continue;
-                }
-
-                // 1. check whether JOIN was rejected
-                String failure=rsp.getFailReason();
-                if(failure != null)
-                    throw new SecurityException(failure);
-
-                // 2. Install digest
-                if(rsp.getDigest() == null || rsp.getDigest().size() == 0) {
-                    if(log.isWarnEnabled())
-                        log.warn("digest response has no senders: digest=" + rsp.getDigest());
-                    rsp=null;
-                    continue;
-                }
-                final Digest tmp_digest=rsp.getDigest();
-                tmp_view=rsp.getView();
-                if(tmp_view == null) {
-                    if(log.isErrorEnabled())
-                        log.error("JoinRsp has a null view, skipping it");
-                    rsp=null;
-                }
-                else {
-                    if(!tmp_digest.contains(gms.local_addr)) {
-                        throw new IllegalStateException("digest returned from " + coord + " with JOIN_RSP does not contain myself (" +
-                                gms.local_addr + "): join response: " + rsp);
-                    }
-
-                    if(log.isTraceEnabled())
-                        log.trace(gms.local_addr + ": JOIN-RSP=" + tmp_view + " [size=" + tmp_view.size() + "]\n\n");
-
-                    if(!installView(tmp_view, tmp_digest)) {
-                        if(log.isErrorEnabled())
-                            log.error("view installation failed, retrying to join group");
-                        rsp=null;
-                        continue;
-                    }
-
-                    // send VIEW_ACK to sender of view
-                    Message view_ack=new Message(coord, null, null);
-                    view_ack.setFlag(Message.OOB);
-                    GMS.GmsHeader tmphdr=new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK);
-                    view_ack.putHeader(gms.getId(), tmphdr);
-                    gms.getDownProtocol().down(new Event(Event.MSG, view_ack));
+                        log.warn("Too many JOIN attempts: becoming singleton");
+                    becomeSingletonMember(mbr);
                     return;
                 }
+                continue;
             }
-            catch(SecurityException security_ex) {
-                throw security_ex;
-            }
-            catch(IllegalArgumentException illegal_arg) {
-                throw illegal_arg;
-            }
-            catch(Throwable e) {
-                if(log.isDebugEnabled())
-                    log.debug("exception=" + e + ", retrying", e);
+
+            // 1. check whether JOIN was rejected
+            String failure=rsp.getFailReason();
+            if(failure != null)
+                throw new SecurityException(failure);
+
+            // 2. Install digest
+            if(rsp.getDigest() == null || rsp.getDigest().size() == 0) {
+                if(log.isWarnEnabled())
+                    log.warn("digest response has no senders: digest=" + rsp.getDigest());
                 rsp=null;
+                continue;
+            }
+            final Digest tmp_digest=rsp.getDigest();
+            tmp_view=rsp.getView();
+            if(tmp_view == null) {
+                if(log.isErrorEnabled())
+                    log.error("JoinRsp has a null view, skipping it");
+                rsp=null;
+            }
+            else {
+                if(!tmp_digest.contains(gms.local_addr)) {
+                    throw new IllegalStateException("digest returned from " + coord + " with JOIN_RSP does not contain myself (" +
+                                                      gms.local_addr + "): join response: " + rsp);
+                }
+
+                if(log.isTraceEnabled())
+                    log.trace(gms.local_addr + ": JOIN-RSP=" + tmp_view + " [size=" + tmp_view.size() + "]\n\n");
+
+                if(!installView(tmp_view, tmp_digest)) {
+                    if(log.isErrorEnabled())
+                        log.error("view installation failed, retrying to join group");
+                    rsp=null;
+                    continue;
+                }
+
+                // send VIEW_ACK to sender of view
+                Message view_ack=new Message(coord, null, null);
+                view_ack.setFlag(Message.OOB);
+                GMS.GmsHeader tmphdr=new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK);
+                view_ack.putHeader(gms.getId(), tmphdr);
+                gms.getDownProtocol().down(new Event(Event.MSG, view_ack));
+                return;
             }
         }
     }
+
 
     @SuppressWarnings("unchecked")
     private List<PingData> findInitialMembers(Promise<JoinRsp> promise) {

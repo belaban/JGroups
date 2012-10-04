@@ -6,14 +6,14 @@
 ##   - After the stack is started (so that NAKACK2 can receive messages), but before connect() returns,
 ##     a message is multicast from A
 ##   - B's NAKACK2 receives the message and queues it as is_server=false
-##   - On installation of view {A,B}, the queued message is delivered
+##   - On installation of view {A,B}, the queued message is delivered // this is incorrect, should be on BECOME_SERVER
 ##   - B sends a response message in the *same thread*
 ##   --> This will trigger an exception as the channel is yet unconnected
 ##       (will be set to 'connected' after connect() returns)
 
 
 ## The rendezvous that signals the sender on A to send its message (the sender on A is blocked until the main
-## test signals it)
+## thread enters the rendezvous)
 RULE CreateRendezvous
 CLASS BecomeServerTest
 METHOD testSendingOfMsgsOnUnconnectedChannel
@@ -23,32 +23,48 @@ IF TRUE
 ENDRULE
 
 
-## Blocks the sender on A from sending a message until signalled
-RULE BlockSenderOnRendezvousEntry
+## Blocks A from sending a message until signalled
+RULE MessageSending
 CLASS BecomeServerTest
 METHOD sendMessage
 AT ENTRY
 IF rendezvous("BecomeServerTest") != -1
-    DO System.out.println("--> A: before sending message");
+    DO System.out.println("--> A: sending message");
 ENDRULE
 
 
-## Blocks the sender on A from sending a message until signalled
-RULE BlockSenderOnRendezvousExit
-CLASS BecomeServerTest
-METHOD sendMessage
-AT EXIT
-IF rendezvous("BecomeServerTest") != -1
-    DO System.out.println("--> A: after sending message");
+## Signals that A's message has been received by B
+RULE MessageReception
+CLASS NAKACK2
+METHOD up
+AFTER INVOKE BoundedList.add(Message) ALL
+BIND len=$msg.getLength();
+IF len > 0
+   DO System.out.println("--> " + $0.local_addr + ": received message " + $msg.printHeaders() + ", added to queue");
+   rendezvous("BecomeServerTest");
 ENDRULE
 
 
-RULE TestSendingOfMsgsOnUnconnectedChannel
+## Blocks until A has sent the message and B has received (and queued) it
+RULE InstallView
 CLASS ClientGmsImpl
 METHOD installView
 AT ENTRY
 BIND local_addr_name=org.jgroups.util.UUID.get($0.gms.local_addr);
 IF local_addr_name.equals("B") AND rendezvous("BecomeServerTest") != -1
-   DO System.out.println("--> [B] installView(): entered rendezvous");
+   DO System.out.println("--> B: installView() entered rendezvous; blocking until message has been received");
       rendezvous("BecomeServerTest");
+      System.out.println("--> B: installView() was unblocked");
+ENDRULE
+
+
+## Simply prints a message flushing the queue
+RULE FlushQueue
+CLASS NAKACK2
+METHOD flushBecomeServerQueue
+AT ENTRY
+BIND queue=$0.become_server_queue;
+     local_addr_name=org.jgroups.util.UUID.get($0.local_addr);
+IF local_addr_name.equals("B")
+    DO System.out.println("--> " + $0.local_addr + ": flushing queue (" + queue.size() + " element(s))");
 ENDRULE
