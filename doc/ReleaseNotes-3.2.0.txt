@@ -24,18 +24,36 @@ New features
 RELAY2: multi-site clustering
 -----------------------------
 [https://issues.jboss.org/browse/JGRP-1433]
+[https://issues.jboss.org/browse/JGRP-1401]
+[https://issues.jboss.org/browse/JGRP-1521]
+[https://issues.jboss.org/browse/JGRP-1519]
 
 Provides clustering between multiple sites; successor to RELAY (which allowed for only 2 sites). RELAY2 is added to the
 top of the stack and relays both multicast and unicast messages between sites (local clusters).
 For documentation go to http://www.jgroups.org/manual-3.x/html/user-advanced.html#Relay2Advanced.
 
 
+I8N logging
+-----------
+[https://issues.jboss.org/browse/JGRP-1475]
+
+Use of ResourceBundles to internationalize certain warn and error messages. The JGroups/conf/jg-messages*.properties
+files contain the translations. Currently, only German is supported, but support for any language can be added easily,
+and without recompilation, e.g. by adding jg-messages_fr.properties (for French) to the classpath.
+
+
+Suppress identical log warnings
+-------------------------------
+[https://issues.jboss.org/browse/JGRP-1518]
+
+Sometimes we get a lot of log messages about the same problem, e.g. messages from a non-member, from a different cluster
+or from a member running a different version of JGroups.
+We can now suppress indentical warnings for a given period of time, so the logs don't get blown up beyond proportion.
+
 
 
 Optimizations
 =============
-
-
 
 
 
@@ -67,8 +85,23 @@ RSVP: incorrect updating of membership response list
 This could lead to TimeoutExceptions when a new view was received before the call terminated.
 
 
+MessageDispatcher allows sending of messages on a closed channel
+----------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1508]
+
+This can lead to timeouts as a caller may block waiting for response values, which will never be received as the channel
+is closed. Now an exception is thrown when we attempt to send a message via MessageDispatcher on a closed or unconnected
+channel. This is the same behavior now as with channel.
 
 
+NAKACK / NAKACK2: flushing queued messages on joining the cluster might lead to failed joins
+--------------------------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1522]
+
+When a new member joins, it flushes messages it received before becoming a server (optimization introduced in 3.2 to
+prevent retransmission). However, if any of the flushed messages sends a message in the same thread, this will hit
+an unconnected channel (the channel isonly connected after the JChannel.connect() call returns), so an exception
+will be thrown and JChannel.connect() fails.
 
 
 
@@ -87,5 +120,5 @@ Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Toronto, Canada
 Sanne Grinovero, Newcastle, Great Britain
 
-Aug 2012
+Oct 2012
 
