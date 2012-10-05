@@ -534,10 +534,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 break;
 
             case Event.BECOME_SERVER:
-                boolean was_server=is_server;
                 is_server=true;
-                if(!was_server)
-                    flushBecomeServerQueue();
+                flushBecomeServerQueue();
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
