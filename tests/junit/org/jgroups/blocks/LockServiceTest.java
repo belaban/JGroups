@@ -1,11 +1,5 @@
 package org.jgroups.blocks;
 
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.LockService;
@@ -18,6 +12,12 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 
 /** Tests {@link org.jgroups.blocks.locking.LockService}
  * @author Bela Ban
@@ -210,7 +210,7 @@ public class LockServiceTest extends ChannelTestBase {
         int NUM=10;
         final CyclicBarrier barrier=new CyclicBarrier(NUM +1);
         TryLocker[] lockers=new TryLocker[NUM];
-        LockService[] services=new LockService[]{s1, s2, s3};
+        LockService[] services={s1, s2, s3};
 
         for(int i=0; i < lockers.length; i++) {
             Lock mylock=services[i % services.length].getLock(LOCK);
@@ -226,7 +226,7 @@ public class LockServiceTest extends ChannelTestBase {
                 num_acquired++;
             }
         }
-        assert num_acquired == 1;
+        assert num_acquired == 1 : "expected 1 but got " + num_acquired;
     }
 
 
