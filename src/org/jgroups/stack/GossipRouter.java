@@ -783,9 +783,7 @@ public class GossipRouter {
         }
 
         private void handleConnect(GossipData request, Address addr, String group) throws Exception {
-            ConcurrentMap<Address, ConnectionHandler> map = null;                       
-            try {               
-                
+            try {
                 checkExistingConnection(addr,group);
                 
                 String logical_name = request.getLogicalName();
@@ -796,13 +794,6 @@ public class GossipRouter {
                 logical_addrs.add(addr); // allows us to remove the entries for this connection on socket close
 
                 addGroup(group, addr, this);
-
-                /*map = routingTable.get(group);
-                if (map == null) {
-                    map = new ConcurrentHashMap<Address, ConnectionHandler>();
-                    routingTable.put(group, map); // no concurrent requests on the same connection
-                }
-                map.put(addr, this);*/
 
                 Set<PhysicalAddress> physical_addrs;
                 if (request.getPhysicalAddresses() != null) {
