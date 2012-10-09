@@ -400,7 +400,7 @@ public class UnicastTest extends ReceiverAdapter {
                 long new_val=current_value.incrementAndGet();
                 if(((Value)data).buf != null)
                     total_bytes.addAndGet(((Value)data).buf.length);
-                if(new_val % print == 0)
+                if(print > 0 && new_val % print == 0)
                     System.out.println("received " + current_value);
                 if(new_val >= num_values) {
                     stop=System.currentTimeMillis();

@@ -492,7 +492,7 @@ public class GossipRouter {
                 
                 if(map.isEmpty()) {
                     boolean removed=removeGroupIfEmpty(group);
-                    if(log.isTraceEnabled() && removed)
+                    if(removed && log.isTraceEnabled())
                         log.trace("Removed group " + group);   
                 }                
             }
@@ -502,7 +502,7 @@ public class GossipRouter {
                 map=entry.getValue();
                 if(map != null && map.remove(addr) != null && map.isEmpty()) {
                     boolean removed=removeGroupIfEmpty(entry.getKey());
-                    if(log.isTraceEnabled() && removed)
+                    if(removed && log.isTraceEnabled())
                         log.trace("Removed " + entry.getKey() + " from group " + group);
                 }
             }
