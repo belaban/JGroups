@@ -298,7 +298,7 @@ public class FD_ALL extends Protocol {
         for(Iterator<Entry<Address,Long>> it=timestamps.entrySet().iterator(); it.hasNext();) {
             Entry<Address,Long> entry=it.next();
             sb.append(entry.getKey()).append(": ");
-            sb.append(current_time - entry.getValue().longValue()).append(" ms old\n");
+            sb.append(current_time - entry.getValue()).append(" ms old\n");
         }
         return sb.toString();
     }
@@ -370,7 +370,7 @@ public class FD_ALL extends Protocol {
                     it.remove();
                     continue;
                 }
-                diff=current_time - val.longValue();
+                diff=current_time - val;
                 if(diff > timeout) {
                     if(log.isDebugEnabled())
                         log.debug("haven't received a heartbeat from " + key + " for " + diff +
