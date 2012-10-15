@@ -1,6 +1,5 @@
 package org.jgroups.util;
 
-import org.jgroups.util.Util;
 import org.testng.annotations.*;
 
 import java.io.IOException;
