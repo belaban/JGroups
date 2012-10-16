@@ -47,7 +47,7 @@ public class Relayer {
         bridges=new ArrayList<Bridge>(bridge_configs.size());
         try {
             for(RelayConfig.BridgeConfig bridge_config: bridge_configs) {
-                Bridge bridge=new Bridge(bridge_config.getConfig(), bridge_config.getName(), bridge_name,
+                Bridge bridge=new Bridge(bridge_config.createChannel(), bridge_config.getClusterName(), bridge_name,
                                          new AddressGenerator() {
                                              public Address generateAddress() {
                                                  UUID uuid=UUID.randomUUID();
@@ -189,8 +189,8 @@ public class Relayer {
         protected final String cluster_name;
         protected View         view;
 
-        protected Bridge(final String config, final String cluster_name, String channel_name, AddressGenerator addr_generator) throws Exception {
-            channel=new JChannel(config);
+        protected Bridge(final JChannel ch, final String cluster_name, String channel_name, AddressGenerator addr_generator) throws Exception {
+            this.channel=ch;
             channel.setName(channel_name);
             channel.setReceiver(this);
             channel.setAddressGenerator(addr_generator);

@@ -1,5 +1,8 @@
 package org.jgroups.protocols.relay.config;
 
+import org.jgroups.JChannel;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 import org.w3c.dom.*;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -33,33 +36,31 @@ public class RelayConfig {
         return sb.toString();
     }*/
 
-    /** Returns a map between of site names and their configuration, e.g. "nyc" --> SiteConfig */
-    public static Map<String,SiteConfig> parse(InputStream input) throws Exception {
+    /** Parses site names and their configuration (e.g. "nyc" --> SiteConfig) into the map passed as argument */
+    public static void parse(InputStream input, final Map<String,SiteConfig> map) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setValidating(false); // for now
         DocumentBuilder builder=factory.newDocumentBuilder();
         Document document=builder.parse(input);
         Element root=document.getDocumentElement();
         match(RELAY_CONFIG, root.getNodeName(), true);
-        Map<String,SiteConfig> retval=new HashMap<String,SiteConfig>();
         NodeList children=root.getChildNodes();
         if(children == null || children.getLength() == 0)
-            return retval;
+            return;
         for(int i=0; i < children.getLength(); i++) {
             Node node=children.item(i);
             if(node.getNodeType() != Node.ELEMENT_NODE)
                 continue;
             String element_name=node.getNodeName();
             if(SITES.equals(element_name))
-                parseSites(retval, node);
+                parseSites(map, node);
             else
                 throw new Exception("expected <" + SITES + ">, but got " + "<" + element_name + ">");
         }
-        return retval;
     }
 
 
-    protected static void parseSites(Map<String,SiteConfig> map, Node root) throws Exception {
+    protected static void parseSites(final Map<String,SiteConfig> map, Node root) throws Exception {
         NodeList children=root.getChildNodes();
         if(children == null || children.getLength() == 0)
             return;
@@ -133,7 +134,7 @@ public class RelayConfig {
             Attr config_attr=(Attr)attrs.getNamedItem("config");
             String name=name_attr != null? name_attr.getValue() : null;
             String config=config_attr.getValue();
-            BridgeConfig bridge_config=new BridgeConfig(name, config);
+            BridgeConfig bridge_config=new PropertiesBridgeConfig(name, config);
             site_config.addBridge(bridge_config);
         }
     }
@@ -181,12 +182,11 @@ public class RelayConfig {
         public short  getId()   {return id;}
         public String getName() {return name;}
 
-
         public List<BridgeConfig>  getBridges()   {return bridges;}
         public List<ForwardConfig> getForwards()  {return forwards;}
 
-        public void addBridge(BridgeConfig bridge_config)    {bridges.add(bridge_config);}
-        public void addForward(ForwardConfig forward_config) {forwards.add(forward_config);}
+        public SiteConfig addBridge(BridgeConfig bridge_config)    {bridges.add(bridge_config);   return this;}
+        public SiteConfig addForward(ForwardConfig forward_config) {forwards.add(forward_config); return this;}
 
         public String toString() {
             StringBuilder sb=new StringBuilder("name=" + name + " (id=" + id + ")\n");
@@ -200,22 +200,47 @@ public class RelayConfig {
         }
     }
 
-    public static class BridgeConfig {
-        protected final String name;
+    public abstract static class BridgeConfig {
+        protected final String cluster_name;
+
+        protected BridgeConfig(String cluster_name) {this.cluster_name=cluster_name;}
+
+        public String            getClusterName()  {return cluster_name;}
+        public abstract JChannel createChannel() throws Exception;
+
+        public String toString() {return "cluster=" + cluster_name;}
+    }
+
+    public static class PropertiesBridgeConfig extends BridgeConfig {
         protected final String config;
 
-        public BridgeConfig(String name, String config) {
-            this.name=name;
+        public PropertiesBridgeConfig(String cluster_name, String config) {
+            super(cluster_name);
             this.config=config;
         }
 
-        public String getConfig() {return config;}
-        public String getName()   {return name;}
+        public JChannel createChannel() throws Exception {return new JChannel(config);}
+        public String toString() {return "config=" + config + super.toString();}
+    }
+
+
+    public static class ProgrammaticBridgeConfig extends BridgeConfig {
+        protected Protocol[] protocols;
+
+        public ProgrammaticBridgeConfig(String cluster_name, Protocol[] prots) {
+            super(cluster_name);
+            this.protocols=prots;
+        }
+
+        public JChannel createChannel() throws Exception {
+            return new JChannel(protocols);
+        }
 
         public String toString() {
-            return "config=" + config + (name != null? " (name=" + name + ")" : "");
+            return super.toString() + ", protocols=" + Util.array2String(protocols);
         }
     }
+
 
     public static class ForwardConfig {
         protected final String to;
@@ -235,8 +260,9 @@ public class RelayConfig {
     }
 
     public static void main(String[] args) throws Exception {
-        InputStream input=new FileInputStream("/home/bela/relay1.xml");
-        Map<String,SiteConfig> sites=RelayConfig.parse(input);
+        InputStream input=new FileInputStream("/home/bela/relay2.xml");
+        Map<String,SiteConfig> sites=new HashMap<String,SiteConfig>();
+        RelayConfig.parse(input, sites);
         System.out.println("sites:");
         for(Map.Entry<String,SiteConfig> entry: sites.entrySet())
             System.out.println(entry.getKey() + ":\n" + entry.getValue() + "\n");

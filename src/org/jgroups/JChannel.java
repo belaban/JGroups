@@ -168,6 +168,22 @@ public class JChannel extends Channel {
     }
 
 
+    /**
+     * Creates a channel from a list of protocols
+     * @param protocols The list of protocols, from bottom to top, ie. the first protocol in the list is the transport,
+     *                  the last the top protocol
+     * @throws Exception
+     */
+    public JChannel(Protocol ... protocols) throws Exception {
+        prot_stack=new ProtocolStack();
+        setProtocolStack(prot_stack);
+        for(Protocol prot: protocols) {
+            prot_stack.addProtocol(prot);
+            prot.setProtocolStack(prot_stack);
+        }
+        prot_stack.init();
+    }
+
 
     /**
      * Creates a channel with the same configuration as the channel passed to this constructor. This is used by

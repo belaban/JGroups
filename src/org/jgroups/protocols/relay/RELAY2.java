@@ -17,10 +17,7 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  *
@@ -34,58 +31,82 @@ public class RELAY2 extends Protocol {
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
     @Property(description="Name of the site (needs to be defined in the configuration)",writable=false)
-    protected String                             site;
+    protected String                                   site;
 
     @Property(description="Name of the relay configuration",writable=false)
-    protected String                             config;
+    protected String                                   config;
 
     @Property(description="Whether or not this node can become the site master. If false, " +
       "and we become the coordinator, we won't start the bridge(s)",writable=false)
-    protected boolean                            can_become_site_master=true;
+    protected boolean                                  can_become_site_master=true;
 
     @Property(description="Whether or not we generate our own addresses in which we use can_become_site_master. " +
       "If this property is false, can_become_site_master is ignored")
-    protected boolean                            enable_address_tagging=true;
+    protected boolean                                  enable_address_tagging=true;
 
     @Property(description="Whether or not to relay multicast (dest=null) messages")
-    protected boolean                            relay_multicasts=true;
+    protected boolean                                  relay_multicasts=true;
 
     @Property(description="The number of tries to forward a message to a remote site")
-    protected int                                max_forward_attempts=5;
+    protected int                                      max_forward_attempts=5;
 
     @Property(description="The time (in milliseconds) to sleep between forward attempts")
-    protected long                               forward_sleep=1000;
+    protected long                                     forward_sleep=1000;
 
 
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
     @ManagedAttribute(description="My site-ID")
-    protected short                              site_id=-1;
+    protected short                                    site_id=-1;
 
-    protected Map<String,RelayConfig.SiteConfig> sites;
+    /** A map containing site names (e.g. "LON") as keys and SiteConfigs as values */
+    protected final Map<String,RelayConfig.SiteConfig> sites=new HashMap<String,RelayConfig.SiteConfig>();
 
-    protected RelayConfig.SiteConfig             site_config;
+    protected RelayConfig.SiteConfig                   site_config;
 
     @ManagedAttribute(description="Whether this member is the coordinator")
-    protected volatile boolean                   is_coord=false;
+    protected volatile boolean                         is_coord=false;
 
-    protected volatile Address                   coord;
+    protected volatile Address                         coord;
 
-    protected Relayer                            relayer;
+    protected Relayer                                  relayer;
 
-    protected volatile Address                   local_addr;
+    protected volatile Address                         local_addr;
 
     /** Whether or not FORWARD_TO_COORD is on the stack */
     @ManagedAttribute(description="FORWARD_TO_COORD protocol is present below the current protocol")
-    protected boolean                            forwarding_protocol_present;
+    protected boolean                                  forwarding_protocol_present;
+
+
+    // Fluent configuration
+    public RELAY2 site(String site_name)             {site=site_name;              return this;}
+    public RELAY2 config(String cfg)                 {config=cfg;                  return this;}
+    public RELAY2 canBecomeSiteMaster(boolean flag)  {can_become_site_master=flag; return this;}
+    public RELAY2 enableAddressTagging(boolean flag) {enable_address_tagging=flag; return this;}
+    public RELAY2 relayMulticasts(boolean flag)      {relay_multicasts=flag;       return this;}
+    public RELAY2 maxForwardAttempts(int num)        {max_forward_attempts=num;    return this;}
+    public RELAY2 forwardSleep(long time)            {forward_sleep=time;          return this;}
+
+    public RELAY2 addSite(String site_name, RelayConfig.SiteConfig cfg) {
+        sites.put(site_name, cfg);
+        return this;
+    }
 
     
     public void init() throws Exception {
         super.init();
         if(site == null)
             throw new IllegalArgumentException("site cannot be null");
-        if(config == null)
-            throw new IllegalArgumentException("config cannot be null");
-        parseSiteConfiguration();
+        if(config != null)
+            parseSiteConfiguration(sites);
+
+        for(RelayConfig.SiteConfig cfg: sites.values())
+            SiteUUID.addToCache(cfg.getId(),cfg.getName());
+        site_config=sites.get(site);
+        if(site_config == null)
+            throw new Exception("site configuration for \"" + site + "\" not found in " + config);
+        if(log.isTraceEnabled())
+            log.trace("site configuration:\n" + site_config);
+
 
         // Sanity check
         Collection<Short> site_ids=new TreeSet<Short>();
@@ -145,22 +166,14 @@ public class RELAY2 extends Protocol {
     }
 
     /**
-     * Parses the configuration by reading the config file. Can be used to re-read a configuration.
+     * Parses the configuration by reading the config file.
      * @throws Exception
      */
-    @ManagedOperation(description="Reads the configuration file and build the internal config information.")
-    public void parseSiteConfiguration() throws Exception {
+    protected void parseSiteConfiguration(final Map<String,RelayConfig.SiteConfig> map) throws Exception {
         InputStream input=null;
         try {
             input=ConfiguratorFactory.getConfigStream(config);
-            sites=RelayConfig.parse(input);
-            for(RelayConfig.SiteConfig cfg: sites.values())
-                SiteUUID.addToCache(cfg.getId(),cfg.getName());
-            site_config=sites.get(site);
-            if(site_config == null)
-                throw new Exception("site configuration for \"" + site + "\" not found in " + config);
-            if(log.isTraceEnabled())
-                log.trace("site configuration:\n" + site_config);
+            RelayConfig.parse(input, map);
         }
         finally {
             Util.close(input);
