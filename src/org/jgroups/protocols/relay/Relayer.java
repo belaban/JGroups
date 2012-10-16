@@ -142,6 +142,16 @@ public class Relayer {
         return retval;
     }
 
+    protected View getBridgeView(String cluster_name) {
+        if(cluster_name == null)
+            return null;
+        for(Bridge bridge: bridges) {
+            if(bridge.cluster_name != null && bridge.cluster_name.equals(cluster_name))
+                return bridge.view;
+        }
+        return null;
+    }
+
     protected static boolean isExcluded(Route route, short... excluded_sites) {
         if(excluded_sites == null)
             return false;

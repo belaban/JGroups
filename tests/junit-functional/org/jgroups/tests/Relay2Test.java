@@ -30,6 +30,8 @@ public class Relay2Test {
     protected JChannel a, b, c;  // members in site "lon"
     protected JChannel x, y, z; // members in site "sfo"
 
+    protected static final String BRIDGE_CLUSTER="global";
+
     @AfterMethod protected void destroy() {Util.close(z,y,x,c,b,a);}
 
 
@@ -80,6 +82,9 @@ public class Relay2Test {
         System.out.println("Route at sfo to lon: " + route);
         assert route != null;
 
+        View bridge_view=xr.getBridgeView(BRIDGE_CLUSTER);
+        System.out.println("bridge_view = " + bridge_view);
+
         // Now make A and B form a cluster again:
         View merge_view=new MergeView(a.getAddress(), 10, Arrays.asList(a.getAddress(), b.getAddress()),
                                       Arrays.asList(Util.createView(a.getAddress(), 5, a.getAddress()),
@@ -91,6 +96,13 @@ public class Relay2Test {
 
         Util.waitUntilAllChannelsHaveSameSize(30000, 500, a, b);
         System.out.println("A's view: " + a.getView() + "\nB's view: " + b.getView());
+
+        for(int i=0; i < 20; i++) {
+            bridge_view=xr.getBridgeView(BRIDGE_CLUSTER);
+            if(bridge_view != null && bridge_view.size() == 2)
+                break;
+            Util.sleep(500);
+        }
 
         route=xr.getRoute("lon");
         System.out.println("Route at sfo to lon: " + route);
@@ -119,8 +131,8 @@ public class Relay2Test {
         RelayConfig.SiteConfig lon_cfg=new RelayConfig.SiteConfig("lon", (short)0),
           sfo_cfg=new RelayConfig.SiteConfig("sfo", (short)1);
 
-        lon_cfg.addBridge(new RelayConfig.ProgrammaticBridgeConfig("global", createBridgeStack()));
-        sfo_cfg.addBridge(new RelayConfig.ProgrammaticBridgeConfig("global", createBridgeStack()));
+        lon_cfg.addBridge(new RelayConfig.ProgrammaticBridgeConfig(BRIDGE_CLUSTER, createBridgeStack()));
+        sfo_cfg.addBridge(new RelayConfig.ProgrammaticBridgeConfig(BRIDGE_CLUSTER, createBridgeStack()));
 
         relay.addSite("lon", lon_cfg).addSite("sfo", sfo_cfg);
         return relay;

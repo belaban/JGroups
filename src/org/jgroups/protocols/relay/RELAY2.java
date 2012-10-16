@@ -91,6 +91,10 @@ public class RELAY2 extends Protocol {
         return this;
     }
 
+    public View getBridgeView(String cluster_name) {
+        Relayer tmp=relayer;
+        return tmp != null? tmp.getBridgeView(cluster_name) : null;
+    }
     
     public void init() throws Exception {
         super.init();
