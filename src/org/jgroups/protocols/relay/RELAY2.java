@@ -197,6 +197,16 @@ public class RELAY2 extends Protocol {
         return route != null? route.getBridge() : null;
     }
 
+    /**
+     * Returns the route to a given site
+     * @param site_name The site name, e.g. "SFO"
+     * @return The route to the given site, or null if no route was found or we're not the coordinator
+     */
+    public Relayer.Route getRoute(String site_name) {
+        Relayer tmp=relayer;
+        return tmp != null? tmp.getRoute(SiteUUID.getSite(site_name)): null;
+    }
+
 
 
     public Object down(Event evt) {
