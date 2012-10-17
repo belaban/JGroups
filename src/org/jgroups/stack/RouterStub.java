@@ -2,6 +2,7 @@ package org.jgroups.stack;
 
 import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.PingData;
@@ -10,13 +11,13 @@ import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Client stub that talks to a remote GossipRouter
@@ -26,33 +27,36 @@ public class RouterStub {
 
     public static enum ConnectionStatus {INITIAL, CONNECTION_BROKEN, CONNECTION_ESTABLISHED, CONNECTED,DISCONNECTED};
 
-    private final String router_host; // name of the router host
+    protected final String router_host; // name of the router host
 
-    private final int router_port; // port on which router listens on
+    protected final int router_port; // port on which router listens on
 
-    private Socket sock=null; // socket connecting to the router
+    protected Socket sock=null; // socket connecting to the router
 
-    private DataOutputStream output=null;
+    protected DataOutputStream output=null;
 
-    private DataInputStream input=null;
+    protected DataInputStream input=null;
 
-    private volatile ConnectionStatus connectionState=ConnectionStatus.INITIAL;
+    protected volatile ConnectionStatus connectionState=ConnectionStatus.INITIAL;
 
-    private static final Log log=LogFactory.getLog(RouterStub.class);
+    protected static final Log log=LogFactory.getLog(RouterStub.class);
 
-    private final ConnectionListener conn_listener;
+    protected final ConnectionListener conn_listener;
 
-    private final InetAddress bind_addr;
+    protected final InetAddress bind_addr;
 
-    private int sock_conn_timeout=3000; // max number of ms to wait for socket establishment to
+    protected int sock_conn_timeout=3000; // max number of ms to wait for socket establishment to
     // GossipRouter
 
-    private int sock_read_timeout=3000; // max number of ms to wait for socket reads (0 means block
+    protected int sock_read_timeout=3000; // max number of ms to wait for socket reads (0 means block
     // forever, or until the sock is closed)
 
-    private boolean tcp_nodelay=true;
+    protected boolean tcp_nodelay=true;
     
-    private StubReceiver receiver;
+    protected volatile StubReceiver receiver;
+
+    // used to synchronize access to socket, and input and output stream
+    protected final ReentrantLock lock=new ReentrantLock();
 
     public interface ConnectionListener {
         void connectionStatusChange(RouterStub stub, ConnectionStatus state);
@@ -71,11 +75,11 @@ public class RouterStub {
         conn_listener=l;        
     }
     
-    public synchronized void setReceiver(StubReceiver receiver) {
+    public void setReceiver(StubReceiver receiver) {
         this.receiver = receiver;
     }
     
-    public synchronized StubReceiver  getReceiver() {
+    public StubReceiver  getReceiver() {
         return receiver;
     }
 
@@ -87,17 +91,19 @@ public class RouterStub {
         this.tcp_nodelay=tcp_nodelay;
     }
 
-    public synchronized void interrupt() {
-        if(receiver != null) {
-            Thread thread = receiver.getThread();
+    public void interrupt() {
+        StubReceiver tmp=receiver;
+        if(tmp != null) {
+            Thread thread=tmp.getThread();
             if(thread != null)
                 thread.interrupt();
         }
     }
     
-    public synchronized void join(long wait) throws InterruptedException {
-        if(receiver != null) {
-            Thread thread = receiver.getThread();
+    public void join(long wait) throws InterruptedException {
+        StubReceiver tmp=receiver;
+        if(tmp != null) {
+            Thread thread=tmp.getThread();
             if(thread != null)
                 thread.join(wait);
         }
@@ -133,21 +139,40 @@ public class RouterStub {
      * Register this process with the router under <code>group</code>.
      * @param group The name of the group under which to register
      */
-    public synchronized void connect(String group, Address addr, String logical_name, List<PhysicalAddress> phys_addrs) throws Exception {
-        doConnect();
-        GossipData request=new GossipData(GossipRouter.CONNECT, group, addr, logical_name, phys_addrs);
-        request.writeTo(output);
-        output.flush();
-        byte result = input.readByte();
-        if(result == GossipRouter.CONNECT_OK) {
-            connectionStateChanged(ConnectionStatus.CONNECTED);   
-        } else {
-            connectionStateChanged(ConnectionStatus.DISCONNECTED);
-            throw new Exception("Connect failed received from GR " + getGossipRouterAddress());
+    public void connect(String group, Address addr, String logical_name, List<PhysicalAddress> phys_addrs) throws Exception {
+        lock.lock();
+        try {
+            _doConnect();
+            GossipData request=new GossipData(GossipRouter.CONNECT, group, addr, logical_name, phys_addrs);
+            request.writeTo(output);
+            output.flush();
+            byte result = input.readByte();
+            if(result == GossipRouter.CONNECT_OK) {
+                connectionStateChanged(ConnectionStatus.CONNECTED);
+            } else {
+                connectionStateChanged(ConnectionStatus.DISCONNECTED);
+                throw new Exception("Connect failed received from GR " + getGossipRouterAddress());
+            }
+        }
+        finally {
+            if(lock.isHeldByCurrentThread())
+                lock.unlock();
         }
     }
 
-    public synchronized void doConnect() throws Exception {
+    public void doConnect() throws Exception {
+        lock.lock();
+        try {
+            _doConnect();
+        }
+        finally {
+            if(lock.isHeldByCurrentThread())
+                lock.unlock();
+        }
+    }
+
+    @GuardedBy("lock")
+    protected void _doConnect() throws Exception {
         if(!isConnected()) {
             try {
                 sock=new Socket();
@@ -158,10 +183,10 @@ public class RouterStub {
                 sock.setKeepAlive(true);
                 Util.connect(sock, new InetSocketAddress(router_host, router_port), sock_conn_timeout);
                 output=new DataOutputStream(sock.getOutputStream());
-                input=new DataInputStream(sock.getInputStream());                
+                input=new DataInputStream(sock.getInputStream());
                 connectionStateChanged(ConnectionStatus.CONNECTION_ESTABLISHED);
             }
-            catch(Exception e) {                
+            catch(Exception e) {
                 Util.close(sock);
                 Util.close(input);
                 Util.close(output);
@@ -171,12 +196,14 @@ public class RouterStub {
         }
     }
 
+
     /**
      * Checks whether the connection is open
      * @return
      */
-    public synchronized void checkConnection() {
+    public void checkConnection() {
         GossipData request=new GossipData(GossipRouter.PING);
+        lock.lock();
         try {
             request.writeTo(output);
             output.flush();
@@ -184,31 +211,44 @@ public class RouterStub {
         catch(Exception e) {
             connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
         }
+        finally {
+            if(lock.isHeldByCurrentThread())
+                lock.unlock();
+        }
     }
 
 
-    public synchronized void disconnect(String group, Address addr) {
+    public void disconnect(String group, Address addr) {
+        lock.lock();
         try {
             GossipData request=new GossipData(GossipRouter.DISCONNECT, group, addr);
             request.writeTo(output);
             output.flush();
         }
         catch(Exception e) {
-        } finally {
+        }
+        finally {
             connectionStateChanged(ConnectionStatus.DISCONNECTED);
+            if(lock.isHeldByCurrentThread()) // not needed as connectionStateChanged() unlocks, but this gets rid of the warning
+                lock.unlock();
         }
     }
 
-    public synchronized void destroy() {
+    public void destroy() {
+        lock.lock();
         try {
             GossipData request = new GossipData(GossipRouter.CLOSE);
             request.writeTo(output);
             output.flush();
-        } catch (Exception e) {
-        } finally {
+        }
+        catch (Exception e) {
+        }
+        finally {
             Util.close(output);
             Util.close(input);
             Util.close(sock);
+            if(lock.isHeldByCurrentThread())
+                lock.unlock();
         }
     }
     
@@ -222,10 +262,10 @@ public class RouterStub {
     }
 
 
-    public synchronized List<PingData> getMembers(final String group) throws Exception {
+    public List<PingData> getMembers(final String group) throws Exception {
         List<PingData> retval=new ArrayList<PingData>();
+        lock.lock();
         try {
-
             if(!isConnected() || input == null) throw new Exception ("not connected");
             // we might get a spurious SUSPECT message from the router, just ignore it
             if(input.available() > 0) // fixes https://jira.jboss.org/jira/browse/JGRP-1151
@@ -241,12 +281,16 @@ public class RouterStub {
                 rsp.readFrom(input);
                 retval.add(rsp);
             }
+            return retval;
         }       
         catch(Exception e) {           
             connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
             throw new Exception("Connection to " + getGossipRouterAddress() + " broken. Could not send GOSSIP_GET request", e);
         }
-        return retval;
+        finally {
+            if(lock.isHeldByCurrentThread())
+                lock.unlock();
+        }
     }
 
     public InetSocketAddress getGossipRouterAddress() {
@@ -254,24 +298,29 @@ public class RouterStub {
     }
     
     public String toString() {
-        return "RouterStub[localsocket=" + ((sock != null) ? sock.getLocalSocketAddress().toString()
-                        : "null")+ ",router_host=" + router_host + "::" + router_port
-                                        + ",connected=" + isConnected() + "]";
+        return "RouterStub[localsocket=" + ((sock != null) ? sock.getLocalSocketAddress()
+                        : "null")+ ",router_host=" + router_host + "::" + router_port + ",connected=" + isConnected() + "]";
     }
 
     public void sendToAllMembers(String group, byte[] data, int offset, int length) throws Exception {
         sendToMember(group, null, data, offset, length); // null destination represents mcast
     }
 
-    public synchronized void sendToMember(String group, Address dest, byte[] data, int offset, int length) throws Exception {
+    public void sendToMember(String group, Address dest, byte[] data, int offset, int length) throws Exception {
+        lock.lock();
         try {
             GossipData request = new GossipData(GossipRouter.MESSAGE, group, dest, data, offset, length);
             request.writeTo(output);
             output.flush();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
             throw new Exception("Connection to " + getGossipRouterAddress()
                             + " broken. Could not send message to " + dest, e);
+        }
+        finally {
+            if(lock.isHeldByCurrentThread())
+                lock.unlock();
         }
     }
 
@@ -279,10 +328,13 @@ public class RouterStub {
         return input;
     }
 
-    private void connectionStateChanged(ConnectionStatus newState) {
+    protected void connectionStateChanged(ConnectionStatus newState) {
         boolean notify=connectionState != newState;
         connectionState=newState;
         if(notify && conn_listener != null) {
+            // release lock as the callback below might block: https://issues.jboss.org/browse/JGRP-1526
+            if(lock.isHeldByCurrentThread())
+                lock.unlock();
             try {
                 conn_listener.connectionStatusChange(this, newState);
             }
