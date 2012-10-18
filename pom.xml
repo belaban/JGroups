@@ -110,6 +110,7 @@
                 <directory>conf</directory>
                 <includes>
                     <include>*.xml</include>
+                    <include>jg-messages*.properties</include>
                 </includes>
                 <excludes>
                     <exclude>*-service.xml</exclude>
