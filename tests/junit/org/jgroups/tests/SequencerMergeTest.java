@@ -108,7 +108,7 @@ public class SequencerMergeTest extends BMNGRunner {
 
         for(int i=0; i < 20; i++) {
             boolean all_ok=true;
-            for(List<String> list: Arrays.asList(list_a, list_b, list_c, list_d)) {
+            for(List<String> list: new ArrayList<List<String>>(Arrays.asList(list_a, list_b, list_c, list_d))) {
                 if(!list.equals(expected)) {
                     all_ok=false;
                     break;

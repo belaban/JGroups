@@ -65,6 +65,9 @@ public class FD_ALL extends Protocol {
 
     protected final Set<Address> suspected_mbrs=new HashSet<Address>();
 
+    @ManagedAttribute(description="Shows whether there are currently any suspected members")
+    protected volatile boolean has_suspected_mbrs;
+
     private TimeScheduler timer=null;
 
     // task which multicasts HEARTBEAT message after 'interval' ms
@@ -147,6 +150,8 @@ public class FD_ALL extends Protocol {
         timer=getTransport().getTimer();
         if(timer == null)
             throw new Exception("timer not set");
+        suspected_mbrs.clear();
+        has_suspected_mbrs=false;
     }
 
 
@@ -154,6 +159,7 @@ public class FD_ALL extends Protocol {
         stopHeartbeatSender();
         stopTimeoutChecker();
         suspected_mbrs.clear();
+        has_suspected_mbrs=false;
     }
 
 
@@ -167,10 +173,14 @@ public class FD_ALL extends Protocol {
                 if(hdr != null) {
                     update(sender); // updates the heartbeat entry for 'sender'
                     num_heartbeats_received++;
+                    unsuspect(sender);
                     return null; // consume heartbeat message, do not pass to the layer above
-                } else if(msg_counts_as_heartbeat) {
+                }
+                else if(msg_counts_as_heartbeat) {
                     // message did not originate from FD_ALL layer, but still count as heartbeat
                     update(sender); // update when data is received too ? maybe a bit costly
+                    if(has_suspected_mbrs)
+                        unsuspect(sender);
                 }
                 break; // pass message to the layer above
         }
@@ -189,13 +199,9 @@ public class FD_ALL extends Protocol {
                 local_addr=(Address)evt.getArg();
                 break;
             case Event.UNSUSPECT:
-                Address member=(Address)evt.getArg();
-                if(member != null) {
-                    synchronized(this) {
-                        suspected_mbrs.remove(member);
-                    }
-                    update(member);
-                }
+                Address mbr=(Address)evt.getArg();
+                unsuspect(mbr);
+                update(mbr);
                 break;
         }
         return down_prot.down(evt);
@@ -273,7 +279,8 @@ public class FD_ALL extends Protocol {
         synchronized(this) {
             members.clear();
             members.addAll(mbrs);
-            suspected_mbrs.retainAll(mbrs);
+            if(suspected_mbrs.retainAll(mbrs))
+                has_suspected_mbrs=!suspected_mbrs.isEmpty();
             timestamps.keySet().retainAll(mbrs);
         }
 
@@ -303,8 +310,8 @@ public class FD_ALL extends Protocol {
         return sb.toString();
     }
 
-    void suspect(List<Address> suspects) {
-        if(suspects == null)
+    protected void suspect(List<Address> suspects) {
+        if(suspects == null || suspects.isEmpty())
             return;
 
         num_suspect_events+=suspects.size();
@@ -317,6 +324,7 @@ public class FD_ALL extends Protocol {
             }
             eligible_mbrs.addAll(members);
             eligible_mbrs.removeAll(suspected_mbrs);
+            has_suspected_mbrs=!suspected_mbrs.isEmpty();
         }
 
         // Check if we're coord, then send up the stack
@@ -331,6 +339,26 @@ public class FD_ALL extends Protocol {
                 }
             }
         }
+    }
+
+    /**
+     * Removes mbr from suspected_mbrs and sends a UNSUSPECT event up and down the stack
+     * @param mbr
+     * @return true if the member was removed from suspected_mbrs, otherwise false
+     */
+    protected boolean unsuspect(Address mbr) {
+        if(mbr == null) return false;
+        boolean do_unsuspect;
+        synchronized(this) {
+            do_unsuspect=!suspected_mbrs.isEmpty() && suspected_mbrs.remove(mbr);
+            if(do_unsuspect)
+                has_suspected_mbrs=!suspected_mbrs.isEmpty();
+        }
+        if(do_unsuspect) {
+            up_prot.up(new Event(Event.UNSUSPECT, mbr));
+            down_prot.down(new Event(Event.UNSUSPECT, mbr));
+        }
+        return do_unsuspect;
     }
 
 
