@@ -1,0 +1,57 @@
+
+
+Release Notes JGroups 3.3.0
+===========================
+
+
+Author: Bela Ban
+
+********************************************************************************
+!! JGroups 3.3.0 is *not* API-backwards compatible with 2.x.x releases !!
+!! JGroups 3.3.0 is       API-backwards compatible with previous 3.x releases !!
+********************************************************************************
+
+
+Below is a summary (with links to the detailed description) of the major new features, optimizations and bug fixes.
+
+
+
+
+New features
+============
+
+
+
+
+
+Optimizations
+=============
+
+
+
+
+Bug fixes
+=========
+
+
+
+
+
+
+Manual
+======
+
+The manual is at http://www.jgroups.org/manual-3.x/html/index.html.
+
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Toronto, Canada
+Sanne Grinovero, Newcastle, Great Britain
+
+DATE
+
