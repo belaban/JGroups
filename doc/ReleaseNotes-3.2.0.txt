@@ -27,6 +27,7 @@ RELAY2: multi-site clustering
 [https://issues.jboss.org/browse/JGRP-1401]
 [https://issues.jboss.org/browse/JGRP-1521]
 [https://issues.jboss.org/browse/JGRP-1519]
+[https://issues.jboss.org/browse/JGRP-1525]
 
 Provides clustering between multiple sites; successor to RELAY (which allowed for only 2 sites). RELAY2 is added to the
 top of the stack and relays both multicast and unicast messages between sites (local clusters).
@@ -102,6 +103,14 @@ When a new member joins, it flushes messages it received before becoming a serve
 prevent retransmission). However, if any of the flushed messages sends a message in the same thread, this will hit
 an unconnected channel (the channel isonly connected after the JChannel.connect() call returns), so an exception
 will be thrown and JChannel.connect() fails.
+
+
+RELAY2: partition causes dropping of inter-site route
+-----------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1524]
+
+When a partition occurs and subsequently heals in site S, the remote partitions lose the route to S.
+
 
 
 
