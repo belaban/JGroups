@@ -128,6 +128,7 @@ public class SEQUENCER extends Protocol {
 
     public void start() throws Exception {
         super.start();
+        running=true;
         ack_mode=true;
     }
 
@@ -370,7 +371,6 @@ public class SEQUENCER extends Protocol {
                     break;
             }
         }
-
     }
 
 
@@ -463,7 +463,7 @@ public class SEQUENCER extends Protocol {
         Address sender=msg.getSrc();
         if(sender == null) {
             if(log.isErrorEnabled())
-                log.error(local_addr + ": sender is null, cannot deliver " + sender + "::" + hdr.getSeqno());
+                log.error(local_addr + ": sender is null, cannot deliver " + "::" + hdr.getSeqno());
             return;
         }
         long msg_seqno=hdr.getSeqno();
