@@ -60,8 +60,8 @@ public class FORWARD_TO_COORD extends Protocol {
                 if(target == null)
                     throw new IllegalStateException("coord is null; dropping message");
                 Message msg=(Message)evt.getArg();
-                Long tmp_id=getNextId();
-                ForwardHeader hdr=new ForwardHeader(ForwardHeader.MSG,tmp_id);
+                long tmp_id=getNextId();
+                ForwardHeader hdr=new ForwardHeader(ForwardHeader.MSG, tmp_id);
                 msg.putHeader(id, hdr);
                 msg.setDest(target);
                 synchronized(msgs) {
