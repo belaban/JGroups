@@ -27,6 +27,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ForwardQueue {
     protected Protocol                          up_prot, down_prot;
 
+    protected Address                           local_addr;
+
     /** The address to send messages to (e.g. the coordinator in {@link org.jgroups.protocols.FORWARD_TO_COORD}) */
     // protected volatile Address                  target;
 
@@ -74,6 +76,9 @@ public class ForwardQueue {
     public Protocol getDownProt()                         {return down_prot;}
     public void     setDownProt(Protocol down_prot)       {this.down_prot=down_prot;}
 
+    public Address  getLocalAddr()                        {return local_addr;}
+    public void     setLocalAddr(Address local_addr)      {this.local_addr=local_addr;}
+
     public int      getDeliveryTableMaxSize()             {return delivery_table_max_size;}
     public void     setDeliveryTableMaxSize(int max_size) {this.delivery_table_max_size=max_size;}
 
@@ -109,18 +114,16 @@ public class ForwardQueue {
         Address sender=msg.getSrc();
         if(sender == null) {
             if(log.isErrorEnabled())
-                log.error("sender is null, cannot deliver message " + "::" + id);
+                log.error(local_addr + ": sender is null, cannot deliver message " + "::" + id);
             return;
         }
-        forward_table.remove(id);
-
         if(!canDeliver(sender, id)) {
             if(log.isWarnEnabled())
-                log.warn("dropped duplicate message " + sender + "::" + id);
+                log.warn(local_addr + ": dropped duplicate message " + sender + "::" + id);
             return;
         }
         if(log.isTraceEnabled())
-            log.trace("delivering " + sender + "::" + id);
+            log.trace(local_addr + ": delivering " + sender + "::" + id);
         up_prot.up(new Event(Event.MSG, msg));
     }
 
@@ -153,12 +156,12 @@ public class ForwardQueue {
         send_lock.lockInterruptibly();
         try {
             if(log.isTraceEnabled())
-                log.trace("target changed to " + new_target);
+                log.trace(local_addr + ": target changed to " + new_target);
             flushMessagesInForwardTable(new_target);
         }
         finally {
             if(log.isTraceEnabled())
-                log.trace("flushing completed");
+                log.trace(local_addr + ": flushing completed");
             flushing=false;
             send_cond.signalAll();
             send_lock.unlock();
@@ -186,28 +189,38 @@ public class ForwardQueue {
         // ==> C's message 4 is delivered *before* message 3 !
         // ==> By resending 3 until it is received, then resending 4 until it is received, we make sure this won't happen
         // (see https://issues.jboss.org/browse/JGRP-1449)
-        while(flushing && running && !forward_table.isEmpty()) {
-            Map.Entry<Long,Message> entry=forward_table.firstEntry();
-            final Long key=entry.getKey();
-            Message val=entry.getValue();
 
-            boolean first_ack_received=false; // we only ack the first message, after that the channel should be OK
-            while(flushing && running && !forward_table.isEmpty()) {
-                Message forward_msg=val.copy();
+        // Forward the first entry and wait for the ack
+        Map.Entry<Long,Message> first=forward_table.firstEntry();
+        if(first == null)
+            return;
+        Long key=first.getKey();
+        Message val=first.getValue();
+        Message forward_msg;
+
+        while(flushing && running && !forward_table.isEmpty()) {
+            forward_msg=val.copy();
+            forward_msg.setDest(target);
+            forward_msg.setFlag(Message.Flag.DONT_BUNDLE);
+            if(log.isTraceEnabled())
+                log.trace(local_addr + ": flushing (forwarding) " + "::" + key + " to target " + target);
+            ack_promise.reset();
+            down_prot.down(new Event(Event.MSG, forward_msg));
+            Long ack=ack_promise.getResult(500);
+            if((ack != null && ack.equals(key)) || !forward_table.containsKey(key))
+                break;
+        }
+
+        for(Map.Entry<Long,Message> entry: forward_table.entrySet()) {
+            key=entry.getKey();
+            val=entry.getValue();
+            if(flushing && running) {
+                forward_msg=val.copy();
                 forward_msg.setDest(target);
                 forward_msg.setFlag(Message.Flag.DONT_BUNDLE);
                 if(log.isTraceEnabled())
-                    log.trace("flushing (forwarding) " + "::" + key + " to target " + target);
-                if(!first_ack_received)
-                    ack_promise.reset();
+                    log.trace(local_addr + ": flushing (forwarding) " + "::" + key + " to target " + target);
                 down_prot.down(new Event(Event.MSG, forward_msg));
-                if(!first_ack_received) {
-                    Long ack=ack_promise.getResult(500);
-                    if((ack != null && ack.equals(key)) || !forward_table.containsKey(key)) {
-                        first_ack_received=true;
-                        break;
-                    }
-                }
             }
         }
     }
@@ -270,7 +283,7 @@ public class ForwardQueue {
     protected synchronized void startFlusher(final Address new_coord) {
         if(flusher == null || !flusher.isAlive()) {
             if(log.isTraceEnabled())
-                log.trace("flushing started");
+                log.trace(local_addr + ": flushing started");
             // causes subsequent message sends (broadcasts and forwards) to block (https://issues.jboss.org/browse/JGRP-1495)
             flushing=true;
 

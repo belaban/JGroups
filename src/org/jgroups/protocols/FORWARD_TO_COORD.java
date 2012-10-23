@@ -98,6 +98,7 @@ public class FORWARD_TO_COORD extends Protocol {
 
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
+                fwd_queue.setLocalAddr(local_addr);
                 break;
         }
         return down_prot.down(evt);
