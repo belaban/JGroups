@@ -17,9 +17,20 @@
 RULE CreateRendezvous
 CLASS BecomeServerTest
 METHOD testSendingOfMsgsOnUnconnectedChannel
+AT ENTRY
 IF TRUE
    DO System.out.println("--> Creating rendezvous");
       createRendezvous("BecomeServerTest",  2, true);
+ENDRULE
+
+## Delete the rendezvous when the test is done
+RULE DeleteRendezvous
+CLASS BecomeServerTest
+METHOD testSendingOfMsgsOnUnconnectedChannel
+AT EXIT
+IF TRUE
+   DO System.out.println("--> Deleting rendezvous");
+      deleteRendezvous("BecomeServerTest",  2);
 ENDRULE
 
 
