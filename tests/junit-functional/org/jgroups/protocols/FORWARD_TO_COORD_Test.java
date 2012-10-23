@@ -50,7 +50,7 @@ public class FORWARD_TO_COORD_Test {
                                              .setValue("log_view_warnings",false)
                                              .setValue("view_ack_collection_timeout",2000)
                                              .setValue("log_collect_msgs",false),
-                                           new FORWARD_TO_COORD().setValue("resend_delay", 500));
+                                           new FORWARD_TO_COORD());
             String name=String.valueOf((char)(i + BASE));
             channels[i].setName(name);
             receivers[i]=new MyReceiver();
