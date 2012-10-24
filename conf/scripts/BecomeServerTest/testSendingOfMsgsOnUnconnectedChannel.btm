@@ -20,7 +20,7 @@ METHOD testSendingOfMsgsOnUnconnectedChannel
 AT ENTRY
 IF TRUE
    DO System.out.println("--> Creating rendezvous");
-      createRendezvous("BecomeServerTest",  2, true);
+      createRendezvous("rv", 2, true); ## we use this RV 2 times, so it needs to be rejoinable
 ENDRULE
 
 ## Delete the rendezvous when the test is done
@@ -30,7 +30,7 @@ METHOD testSendingOfMsgsOnUnconnectedChannel
 AT EXIT
 IF TRUE
    DO System.out.println("--> Deleting rendezvous");
-      deleteRendezvous("BecomeServerTest",  2);
+      deleteRendezvous("rv", 2);
 ENDRULE
 
 
@@ -39,7 +39,7 @@ RULE MessageSending
 CLASS BecomeServerTest
 METHOD sendMessage
 AT ENTRY
-IF rendezvous("BecomeServerTest") != -1
+IF rendezvous("rv") != -1
     DO System.out.println("--> A: sending message");
 ENDRULE
 
@@ -50,10 +50,22 @@ CLASS NAKACK2
 METHOD up
 AFTER INVOKE BoundedList.add(Message) ALL
 BIND len=$msg.getLength();
+     is_server=$0.is_server;
 IF len > 0
-   DO System.out.println("--> " + $0.local_addr + ": received message " + $msg.printHeaders() + ", added to queue");
-   rendezvous("BecomeServerTest");
+   DO System.out.println("--> " + $0.local_addr + ": received message " + $msg.printHeaders() + ", added to queue, is_server=" + is_server);
+   rendezvous("rv");
 ENDRULE
+
+
+#RULE dummy
+#CLASS BoundedList
+##METHOD BoundedList.add(Message)
+#METHOD add
+#AT EXIT
+##BIND len=$1.getLength();
+#IF TRUE
+#   DO System.out.println("**** ADDED " + $1);
+#ENDRULE
 
 
 ## Blocks until A has sent the message and B has received (and queued) it
@@ -62,9 +74,9 @@ CLASS ClientGmsImpl
 METHOD installView
 AT ENTRY
 BIND local_addr_name=org.jgroups.util.UUID.get($0.gms.local_addr);
-IF local_addr_name.equals("B") AND rendezvous("BecomeServerTest") != -1
-   DO System.out.println("--> B: installView() entered rendezvous; blocking until message has been received");
-      rendezvous("BecomeServerTest");
+IF local_addr_name.equals("B") AND rendezvous("rv") != -1
+   DO System.out.println("--> B: installView() waiting on rendezvous until message has been received");
+      rendezvous("rv");
       System.out.println("--> B: installView() was unblocked");
 ENDRULE
 

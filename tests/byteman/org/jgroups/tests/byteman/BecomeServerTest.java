@@ -58,7 +58,7 @@ public class BecomeServerTest extends BMNGRunner {
                 System.out.println("B: received message from " + msg.getSrc() + ": " + msg.getObject());
                 if(msg.getSrc().equals(a.getAddress())) {
                     try {
-                        b.send(null, "This message triggers an exception if the channel is not yet connected");
+                        b.send(null, "This message would trigger an exception if the channel was not yet connected");
                     }
                     catch(Exception e) {
                         throw new RuntimeException(e);
@@ -89,9 +89,10 @@ public class BecomeServerTest extends BMNGRunner {
 
 
     protected JChannel createChannel(String name) throws Exception {
-        JChannel ch=Util.createChannel(new SHARED_LOOPBACK(),
-                                       new PING().setValue("timeout",1000).setValue("num_initial_members",2),
-                                       new NAKACK2().setValue("become_server_queue_size",10),
+        JChannel ch=Util.createChannel(new SHARED_LOOPBACK().setValue("enable_bundling", false)
+                                         .setValue("enable_unicast_bundling", false),
+                                       new PING().setValue("timeout", 500).setValue("num_initial_members", 2),
+                                       new NAKACK2().setValue("become_server_queue_size", 10),
                                        new UNICAST2(),
                                        new GMS().setValue("print_local_addr", false));
         ch.setName(name);
