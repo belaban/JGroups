@@ -10,10 +10,10 @@
     <MERGE2/>
     <FD/>
     <VERIFY_SUSPECT/>
-    <ENCRYPT encrypt_entire_message="false" sym_init="128" sym_algorithm="AES/ECB/PKCS5Padding" asym_init="512" asym_algorithm="RSA"/>
     <pbcast.NAKACK2/>
     <UNICAST/>
     <pbcast.STABLE/>
     <FRAG2/>
     <pbcast.GMS/>
+    <ENCRYPT encrypt_entire_message="false" sym_init="128" sym_algorithm="AES/ECB/PKCS5Padding" asym_init="512" asym_algorithm="RSA"/>
 </config>

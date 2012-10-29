@@ -518,7 +518,7 @@ public class JChannel extends Channel {
         catch(Throwable t) {
             stopStack(true, false);
             init();
-            throw new Exception("connecting to channel \"" + cluster_name + "\" failed", t);
+            throw new Exception("connecting to channel \"" + connect_event.getArg() + "\" failed", t);
         }
     }
     

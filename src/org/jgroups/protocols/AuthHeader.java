@@ -42,5 +42,9 @@ public class AuthHeader extends Header {
         //need to fix this
         return Util.sizeOf(this);
     }
+
+    public String toString() {
+        return "token=[" + token + "]";
+    }
 }
 

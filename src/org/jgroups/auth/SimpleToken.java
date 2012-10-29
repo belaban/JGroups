@@ -1,12 +1,11 @@
 package org.jgroups.auth;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Util;
+
+import java.io.DataInput;
+import java.io.DataOutput;
 
 /**
  * <p>
@@ -101,5 +100,9 @@ public class SimpleToken extends AuthToken {
             log.debug("SimpleToken readFrom()");
         }
         this.auth_value = Util.readString(in);
+    }
+
+    public String toString() {
+        return "auth_value=" + auth_value;
     }
 }
