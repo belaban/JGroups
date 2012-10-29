@@ -3,7 +3,7 @@
        parallel="false"
        thread-count="1" >
 
-    <test name="byteman" junit="false" time-out="1200000">
+    <test name="byteman" junit="false" time-out="30000">
         <groups>
             <run>            	
                 <include name="byteman"/>

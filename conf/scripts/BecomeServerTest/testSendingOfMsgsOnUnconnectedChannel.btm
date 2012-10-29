@@ -45,27 +45,34 @@ ENDRULE
 
 
 ## Signals that A's message has been received by B
+#RULE MessageReception
+#CLASS NAKACK2
+#METHOD up
+#HELPER org.jgroups.tests.helpers.BecomeServerTestHelper
+#AFTER INVOKE BoundedList.add(Message) ALL
+#BIND len=$msg.getLength();
+#     is_server=$0.is_server;
+#IF len > 0
+#   DO System.out.println("--> " + $0.local_addr + ": received message " + $msg.printHeaders() + ", added to queue, is_server=" + is_server);
+#   rendezvous("rv");
+#ENDRULE
+
+
+## Signals that A's message has been received by B
 RULE MessageReception
 CLASS NAKACK2
 METHOD up
+HELPER org.jgroups.tests.helpers.BecomeServerTestHelper
 AFTER INVOKE BoundedList.add(Message) ALL
-BIND len=$msg.getLength();
+BIND queue=$0.become_server_queue;
      is_server=$0.is_server;
-IF len > 0
-   DO System.out.println("--> " + $0.local_addr + ": received message " + $msg.printHeaders() + ", added to queue, is_server=" + is_server);
-   rendezvous("rv");
+     local_addr_name=org.jgroups.util.UUID.get($0.local_addr);
+AFTER INVOKE BoundedList.add ALL
+IF !is_server && local_addr_name.equals("B") && messageReceived(queue)
+  DO rendezvous("rv");
 ENDRULE
 
 
-#RULE dummy
-#CLASS BoundedList
-##METHOD BoundedList.add(Message)
-#METHOD add
-#AT EXIT
-##BIND len=$1.getLength();
-#IF TRUE
-#   DO System.out.println("**** ADDED " + $1);
-#ENDRULE
 
 
 ## Blocks until A has sent the message and B has received (and queued) it
