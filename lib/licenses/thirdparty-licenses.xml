@@ -89,10 +89,10 @@
     </module>
     <module name='testng'
             licenseType='apache-2.0'
-            version='6.3.1'
+            version='6.8'
             projectHome='http://www.testng.org'
             description='Used for unit testing'>
-        <jar name='testng.jar' />
+        <jar name='testng-6.8.jar' />
     </module>
     <module name='xalan'
             licenseType='apache-2.0'
