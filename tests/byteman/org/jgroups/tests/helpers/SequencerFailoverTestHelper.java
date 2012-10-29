@@ -1,5 +1,7 @@
 package org.jgroups.tests.helpers;
 
+import org.jboss.byteman.rule.Rule;
+import org.jboss.byteman.rule.helper.Helper;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
@@ -8,7 +10,11 @@ import org.jgroups.stack.Protocol;
  * @author Bela Ban
  * @since 3.1
  */
-public class SequencerFailoverTestHelper {
+public class SequencerFailoverTestHelper extends Helper {
+
+    protected SequencerFailoverTestHelper(Rule rule) {
+        super(rule);
+    }
 
     public void sendMessages(final Protocol prot, final int start, final int end) {
         final Thread sender=new Thread() {
