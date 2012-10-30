@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class TCPConnectionMap{
+public class TCPConnectionMap {
 
     private final Mapper mapper;
     private final InetAddress bind_addr;
@@ -374,7 +374,7 @@ public class TCPConnectionMap{
         private long last_access=System.currentTimeMillis(); // last time a message was sent or received           
         private Sender sender;
         private ConnectionPeerReceiver connectionPeerReceiver;
-        private AtomicBoolean active = new AtomicBoolean(false);
+        private final AtomicBoolean active=new AtomicBoolean(false);
 
         TCPConnection(Address peer_addr) throws Exception {
             if(peer_addr == null)
@@ -383,6 +383,8 @@ public class TCPConnectionMap{
             this.sock=socket_factory.createSocket("jgroups.tcp.sock");
             try {
                 this.sock.bind(new InetSocketAddress(bind_addr, 0));
+                if(this.sock.getLocalSocketAddress().equals(destAddr))
+                    throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
                 Util.connect(this.sock, destAddr, sock_conn_timeout);
             }
             catch(Exception t) {
@@ -555,7 +557,7 @@ public class TCPConnectionMap{
         }
         
         private class ConnectionPeerReceiver implements Runnable {
-            private Thread recv;
+            private final Thread recv;
             private final AtomicBoolean receiving = new AtomicBoolean(false);
 
 
