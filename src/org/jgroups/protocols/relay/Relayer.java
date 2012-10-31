@@ -108,7 +108,7 @@ public class Relayer {
 
     protected void _addRoute(short site, Route route) {
         if(log.isTraceEnabled())
-            log.trace("added site " + SiteUUID.getSiteName(site));
+            log.trace("added route " + SiteUUID.getSiteName(site));
         routes[site]=route;
     }
 
