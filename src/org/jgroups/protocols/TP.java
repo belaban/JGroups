@@ -1016,17 +1016,18 @@ public abstract class TP extends Protocol {
             logical_addr_cache_reaper=null;
         }
 
-        if(timer != null) {
+        if(timer != null)
             timer.stop();
-        }
 
         // 3. Stop the thread pools
         if(oob_thread_pool instanceof ThreadPoolExecutor) {
             shutdownThreadPool(oob_thread_pool);
+            oob_thread_pool=null;
         }
 
         if(thread_pool instanceof ThreadPoolExecutor) {
             shutdownThreadPool(thread_pool);
+            thread_pool=null;
         }
 
        // if(pool_thread_group.activeCount() == 0 && !pool_thread_group.isDestroyed())
