@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.MergeView;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.FORWARD_TO_COORD;
 import org.jgroups.protocols.PING;
 import org.jgroups.protocols.SHARED_LOOPBACK;
@@ -12,13 +9,16 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.Relayer;
+import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Various RELAY2-related tests
@@ -31,6 +31,8 @@ public class Relay2Test {
     protected JChannel x, y, z; // members in site "sfo"
 
     protected static final String BRIDGE_CLUSTER="global";
+    protected static final String LON_CLUSTER="lon-cluster";
+    protected static final String SFO_CLUSTER="sfo-cluster";
 
     @AfterMethod protected void destroy() {Util.close(z,y,x,c,b,a);}
 
@@ -40,11 +42,11 @@ public class Relay2Test {
      * (https://issues.jboss.org/browse/JGRP-1524)
      */
     public void testMissingRouteAfterMerge() throws Exception {
-        a=createNode("lon", "A", "london-cluster");
-        b=createNode("lon", "B", "london-cluster");
+        a=createNode("lon", "A", LON_CLUSTER);
+        b=createNode("lon", "B", LON_CLUSTER);
         Util.waitUntilAllChannelsHaveSameSize(30000, 500, a,b);
 
-        x=createNode("sfo", "X", "sfo-cluster");
+        x=createNode("sfo", "X", SFO_CLUSTER);
         assert x.getView().size() == 1;
 
         RELAY2 ar=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class),
@@ -110,6 +112,135 @@ public class Relay2Test {
     }
 
 
+    /**
+     * Tests whether the bridge channel connects and disconnects ok.
+     * @throws Exception
+     */
+    public void testConnectAndReconnectOfBridgeStack() throws Exception {
+        a=new JChannel(createBridgeStack());
+        a.setName("A");
+        b=new JChannel(createBridgeStack());
+        b.setName("B");
+
+        a.connect(BRIDGE_CLUSTER);
+        b.connect(BRIDGE_CLUSTER);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
+
+        b.disconnect();
+        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a);
+
+        b.connect(BRIDGE_CLUSTER);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
+    }
+
+
+
+    /**
+     * Tests sites LON and SFO, with SFO disconnecting (bridge view on LON should be 1) and reconnecting (bridge view on
+     * LON and SFO should be 2)
+     * @throws Exception
+     */
+    public void testDisconnectAndReconnect() throws Exception {
+        a=createNode("lon", "A", LON_CLUSTER);
+        x=createNode("sfo", "X", SFO_CLUSTER);
+
+        System.out.println("Started A and X; waiting for bridge view of 2 on A and X");
+        waitForBridgeView(2, 20000, 500, a, x);
+
+        System.out.println("Disconnecting X; waiting for a bridge view on 1 on A");
+        x.disconnect();
+        waitForBridgeView(1, 20000, 500, a);
+
+        System.out.println("Reconnecting X again; waiting for a bridge view of 2 on A and X");
+        x.connect(SFO_CLUSTER);
+        waitForBridgeView(2, 20000, 500, a, x);
+    }
+
+
+
+
+
+    /**
+     * Tests that queued messages are forwarded successfully. The scenario is:
+     * <ul>
+     *     <li>Node A in site LON, node X in site SFO</li>
+     *     <li>Node X is brought down (gracefully)</li>
+     *     <li>Node A sends a few unicast messages to the site master of SFO (queued)</li>
+     *     <li>Node X is started again</li>
+     *     <li>The queued messages on A should be forwarded to the site master of SFO</li>
+     * </ul>
+     * https://issues.jboss.org/browse/JGRP-1528
+     */
+    public void testQueueingAndForwarding() throws Exception {
+        a=createNode("lon", "A", LON_CLUSTER);
+        x=createNode("sfo", "X", null); // don't connect yet
+        MyReceiver rx=new MyReceiver();
+        x.setReceiver(rx);
+        x.connect(SFO_CLUSTER);
+
+        System.out.println("Waiting for site SFO to be UP");
+        RELAY2 relay_a=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class);
+        Relayer.Route sfo_route=relay_a.getRoute("sfo");
+
+        for(int i=0; i < 20; i++) {
+            if(sfo_route.getStatus() == RELAY2.RouteStatus.UP)
+                break;
+            Util.sleep(500);
+        }
+        System.out.println("Route to SFO: " + sfo_route);
+        assert sfo_route.getStatus() == RELAY2.RouteStatus.UP;
+
+        Address sm_sfo=new SiteMaster("sfo");
+        System.out.println("Sending message 0 to the site master of SFO");
+        a.send(sm_sfo, 0);
+
+        List<Integer> list=rx.getList();
+        for(int i=0; i < 20; i++) {
+            if(!list.isEmpty())
+                break;
+            Util.sleep(500);
+        }
+        System.out.println("list = " + list);
+        assert list.size() == 1 && list.get(0) == 0;
+        rx.clear();
+
+        x.disconnect();
+        System.out.println("Waiting for site SFO to be UNKNOWN");
+
+        for(int i=0; i < 20; i++) {
+            if(sfo_route.getStatus() == RELAY2.RouteStatus.UNKNOWN)
+                break;
+            Util.sleep(500);
+        }
+        System.out.println("Route to SFO: " + sfo_route);
+        assert sfo_route.getStatus() == RELAY2.RouteStatus.UNKNOWN;
+
+
+        System.out.println("sending 5 messages from A to site master SFO - they should all get queued");
+        for(int i=1; i <= 5; i++)
+            a.send(sm_sfo, i);
+
+        System.out.println("Starting X again; the queued messages should now get re-sent");
+        x.connect(SFO_CLUSTER);
+
+        /*x=createNode("sfo", "X", null); // don't connect yet
+        x.setReceiver(rx);
+        x.connect(SFO_CLUSTER);*/
+
+
+
+        for(int i=0; i < 20; i++) {
+            if(list.size() == 5)
+                break;
+            Util.sleep(500);
+        }
+        System.out.println("list = " + list);
+        assert list.size() == 5;
+        for(int i=1; i <= 5; i++)
+            assert list.contains(i);
+    }
+
+
 
     protected JChannel createNode(String site_name, String node_name, String cluster_name) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
@@ -117,10 +248,11 @@ public class Relay2Test {
                                  new NAKACK2(),
                                  new UNICAST2(),
                                  new GMS(),
-                                 new FORWARD_TO_COORD().setValue("resend_delay", 500),
+                                 new FORWARD_TO_COORD(),
                                  createRELAY2(site_name));
         ch.setName(node_name);
-        ch.connect(cluster_name);
+        if(cluster_name != null)
+            ch.connect(cluster_name);
         return ch;
     }
 
@@ -152,6 +284,51 @@ public class Relay2Test {
             View view=Util.createView(ch.getAddress(), 5, ch.getAddress());
             GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
+        }
+    }
+
+    protected void waitForBridgeView(int expected_size, long timeout, long interval, JChannel ... channels) {
+        long deadline=System.currentTimeMillis() + timeout;
+
+        while(System.currentTimeMillis() < deadline) {
+            boolean views_correct=true;
+            for(JChannel ch: channels) {
+                RELAY2 relay=(RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class);
+                View bridge_view=relay.getBridgeView(BRIDGE_CLUSTER);
+                if(bridge_view.size() != expected_size) {
+                    views_correct=false;
+                    break;
+                }
+            }
+            if(views_correct)
+                break;
+            Util.sleep(interval);
+        }
+
+        System.out.println("Bridge views:\n");
+        for(JChannel ch: channels) {
+            RELAY2 relay=(RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class);
+            View bridge_view=relay.getBridgeView(BRIDGE_CLUSTER);
+            System.out.println(ch.getAddress() + ": " + bridge_view);
+        }
+
+        for(JChannel ch: channels) {
+            RELAY2 relay=(RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class);
+            View bridge_view=relay.getBridgeView(BRIDGE_CLUSTER);
+            assert bridge_view.size() == expected_size : ch.getAddress() + ": bridge view=" + bridge_view + ", expected=" + expected_size;
+        }
+    }
+
+
+    protected static class MyReceiver extends ReceiverAdapter {
+        protected final List<Integer> list=new ArrayList<Integer>(5);
+
+        public List<Integer> getList()            {return list;}
+        public void          clear()              {list.clear();}
+
+        public void          receive(Message msg) {
+            list.add((Integer)msg.getObject());
+            System.out.println("<-- " + msg.getObject());
         }
     }
 

@@ -206,7 +206,7 @@ public class RelayConfig {
         protected BridgeConfig(String cluster_name) {this.cluster_name=cluster_name;}
 
         public String            getClusterName()  {return cluster_name;}
-        public abstract JChannel createChannel() throws Exception;
+        public abstract JChannel  createChannel() throws Exception;
 
         public String toString() {return "cluster=" + cluster_name;}
     }
