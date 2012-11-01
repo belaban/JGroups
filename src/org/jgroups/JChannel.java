@@ -1070,7 +1070,8 @@ public class JChannel extends Channel {
             String prot_name=operation.substring(0, index);
             Protocol prot=prot_stack.findProtocol(prot_name);
             if(prot == null)
-                throw new IllegalArgumentException("protocol " + prot_name + " not found");
+                return; // less drastic than throwing an exception...
+
 
             int args_index=operation.indexOf("[");
             String method_name;
