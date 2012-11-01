@@ -66,6 +66,10 @@ public class RELAY2 extends Protocol {
       "back to the sender of a message to that site")
     protected long                                     site_down_timeout=8000;
 
+    @Property(description="If true, the creation of the relay channel (and the connect()) are done in the background. " +
+      "Async relay creation is recommended, so the view callback won't be blocked")
+    protected boolean                                  async_relay_creation=true;
+
 
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
     @ManagedAttribute(description="My site-ID")
@@ -145,7 +149,7 @@ public class RELAY2 extends Protocol {
         if(site_config == null)
             throw new Exception("site configuration for \"" + site + "\" not found in " + config);
         if(log.isTraceEnabled())
-            log.trace("site configuration:\n" + site_config);
+            log.trace(local_addr + ": site configuration:\n" + site_config);
 
 
         // Sanity check
@@ -168,13 +172,13 @@ public class RELAY2 extends Protocol {
             throw new IllegalArgumentException("site_id could not be determined from site \"" + site + "\"");
 
         if(!site_config.getForwards().isEmpty())
-            log.warn("Forwarding routes are currently not supported and will be ignored. This will change " +
+            log.warn(local_addr + ": forwarding routes are currently not supported and will be ignored. This will change " +
                        "with hierarchical routing (https://issues.jboss.org/browse/JGRP-1506)");
 
         List<Integer> available_down_services=getDownServices();
         forwarding_protocol_present=available_down_services != null && available_down_services.contains(Event.FORWARD_TO_COORD);
         if(!forwarding_protocol_present && log.isWarnEnabled())
-            log.warn(FORWARD_TO_COORD.class.getSimpleName() + " protocol not found below; " +
+            log.warn(local_addr + ": " + FORWARD_TO_COORD.class.getSimpleName() + " protocol not found below; " +
                        "unable to re-submit messages to the new coordinator if the current coordinator crashes");
 
         if(enable_address_tagging) {
@@ -188,7 +192,8 @@ public class RELAY2 extends Protocol {
                             return new CanBeSiteMasterTopology((TopologyUUID)addr, can_become_site_master);
                         else if(addr instanceof UUID)
                             return new CanBeSiteMaster((UUID)addr, can_become_site_master);
-                        log.warn("address generator is already set (" + old_generator + "); will replace it with own generator");
+                        log.warn(local_addr + ": address generator is already set (" + old_generator +
+                                   "); will replace it with own generator");
                     }
                     return CanBeSiteMaster.randomUUID(can_become_site_master);
                 }
@@ -200,7 +205,7 @@ public class RELAY2 extends Protocol {
         super.stop();
         is_coord=false;
         if(log.isTraceEnabled())
-            log.trace("I ceased to be site master; closing bridges");
+            log.trace(local_addr + ": ceased to be site master; closing bridges");
         if(relayer != null)
             relayer.stop();
     }
@@ -384,13 +389,13 @@ public class RELAY2 extends Protocol {
         }
         Relayer tmp=relayer;
         if(tmp == null) {
-            log.warn("not site master; dropping message");
+            log.warn(local_addr + ": not site master; dropping message");
             return;
         }
 
         Relayer.Route route=tmp.getRoute(target_site);
         if(route == null)
-            log.error("no route to " + SiteUUID.getSiteName(target_site) + ": dropping message");
+            log.error(local_addr + ": no route to " + SiteUUID.getSiteName(target_site) + ": dropping message");
         else
             route.send(target_site, dest, sender, buf);
     }
@@ -403,12 +408,12 @@ public class RELAY2 extends Protocol {
             return;
         for(Relayer.Route route: routes) {
             if(log.isTraceEnabled())
-                log.trace("relaying multicast message from " + sender + " via route " + route);
+                log.trace(local_addr + ": relaying multicast message from " + sender + " via route " + route);
             try {
                 route.send(((SiteAddress)route.getSiteMaster()).getSite(), null, sender, buf);
             }
             catch(Exception ex) {
-                log.error("failed relaying message from " + sender + " via route " + route, ex);
+                log.error(local_addr + ": failed relaying message from " + sender + " via route " + route, ex);
             }
         }
     }
@@ -424,7 +429,7 @@ public class RELAY2 extends Protocol {
     protected void forwardTo(Address next_dest, SiteAddress final_dest, Address original_sender, byte[] buf,
                              boolean forward_to_current_coord) {
         if(log.isTraceEnabled())
-            log.trace("forwarding message to final destination " + final_dest + " to " +
+            log.trace(local_addr + ": forwarding message to final destination " + final_dest + " to " +
                         (forward_to_current_coord? " the current coordinator" : next_dest));
         Message msg=new Message(next_dest, buf);
         Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_dest, original_sender);
@@ -453,7 +458,7 @@ public class RELAY2 extends Protocol {
             local_dest=dest;
 
         if(log.isTraceEnabled())
-            log.trace("delivering message to " + dest + " in local cluster");
+            log.trace(local_addr + ": delivering message to " + dest + " in local cluster");
         forwardTo(local_dest, dest, sender, buf, send_to_coord);
     }
 
@@ -463,7 +468,7 @@ public class RELAY2 extends Protocol {
             original_msg.setSrc(sender);
             original_msg.setDest(dest);
             if(log.isTraceEnabled())
-                log.trace("delivering message from " + sender);
+                log.trace(local_addr + ": delivering message from " + sender);
             up_prot.up(new Event(Event.MSG, original_msg));
         }
         catch(Exception e) {
@@ -494,28 +499,42 @@ public class RELAY2 extends Protocol {
         Address old_coord=coord, new_coord=determineSiteMaster(view);
         boolean become_coord=new_coord.equals(local_addr) && (old_coord == null || !old_coord.equals(local_addr));
         boolean cease_coord=old_coord != null && old_coord.equals(local_addr) && !new_coord.equals(local_addr);
-
         coord=new_coord;
 
-        // This member is the new coordinator: start the Relayer
         if(become_coord) {
             is_coord=true;
-            String bridge_name="_" + UUID.get(local_addr);
-            relayer=new Relayer(this, log);
-            try {
-                if(log.isTraceEnabled())
-                    log.trace("I became site master; starting bridges");
-                relayer.start(sites.size(), site_config.getBridges(), bridge_name, site_id);
+            final String bridge_name="_" + UUID.get(local_addr);
+            relayer=new Relayer(this, log, sites.size());
+            if(async_relay_creation) {
+                timer.execute(new Runnable() {
+                    public void run() {
+                        try {
+                            if(log.isTraceEnabled())
+                                log.trace(local_addr + ": became site master; starting bridges");
+                            relayer.start(site_config.getBridges(), bridge_name, site_id);
+                        }
+                        catch(Throwable t) {
+                            log.error(local_addr + ": failed starting relayer", t);
+                        }
+                    }
+                });
             }
-            catch(Throwable t) {
-                log.error("failed starting relayer", t);
+            else {
+                try {
+                    if(log.isTraceEnabled())
+                        log.trace(local_addr + ": became site master; starting bridges");
+                    relayer.start(site_config.getBridges(), bridge_name, site_id);
+                }
+                catch(Throwable t) {
+                    log.error(local_addr + ": failed starting relayer", t);
+                }
             }
         }
         else {
             if(cease_coord) { // ceased being the coordinator (site master): stop the Relayer
                 is_coord=false;
                 if(log.isTraceEnabled())
-                    log.trace("I ceased to be site master; closing bridges");
+                    log.trace(local_addr + ": ceased to be site master; closing bridges");
                 if(relayer != null)
                     relayer.stop();
             }

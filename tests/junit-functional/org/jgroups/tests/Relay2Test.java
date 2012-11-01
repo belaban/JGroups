@@ -1,10 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.FORWARD_TO_COORD;
-import org.jgroups.protocols.PING;
-import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.UNICAST2;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.relay.RELAY2;
@@ -42,11 +39,11 @@ public class Relay2Test {
      * (https://issues.jboss.org/browse/JGRP-1524)
      */
     public void testMissingRouteAfterMerge() throws Exception {
-        a=createNode("lon", "A", LON_CLUSTER);
-        b=createNode("lon", "B", LON_CLUSTER);
+        a=createNode("lon", "A", LON_CLUSTER, null);
+        b=createNode("lon", "B", LON_CLUSTER, null);
         Util.waitUntilAllChannelsHaveSameSize(30000, 500, a,b);
 
-        x=createNode("sfo", "X", SFO_CLUSTER);
+        x=createNode("sfo", "X", SFO_CLUSTER, null);
         assert x.getView().size() == 1;
 
         RELAY2 ar=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class),
@@ -54,15 +51,16 @@ public class Relay2Test {
 
         assert ar != null && xr != null;
 
-        JChannel a_bridge=ar.getBridge("sfo");
-        JChannel x_bridge=xr.getBridge("lon");
-        assert a_bridge != null && x_bridge != null;
-
+        JChannel a_bridge=null, x_bridge=null;
         for(int i=0; i < 20; i++) {
-            if(a_bridge.getView().size() == 2 && x_bridge.getView().size() == 2)
+            a_bridge=ar.getBridge("sfo");
+            x_bridge=xr.getBridge("lon");
+            if(a_bridge != null && x_bridge != null && a_bridge.getView().size() == 2 && x_bridge.getView().size() == 2)
                 break;
             Util.sleep(500);
         }
+
+        assert a_bridge != null && x_bridge != null;
 
         System.out.println("A's bridge channel: " + a_bridge.getView());
         System.out.println("X's bridge channel: " + x_bridge.getView());
@@ -141,8 +139,8 @@ public class Relay2Test {
      * @throws Exception
      */
     public void testDisconnectAndReconnect() throws Exception {
-        a=createNode("lon", "A", LON_CLUSTER);
-        x=createNode("sfo", "X", SFO_CLUSTER);
+        a=createNode("lon", "A", LON_CLUSTER, null);
+        x=createNode("sfo", "X", SFO_CLUSTER, null);
 
         System.out.println("Started A and X; waiting for bridge view of 2 on A and X");
         waitForBridgeView(2, 20000, 500, a, x);
@@ -172,11 +170,9 @@ public class Relay2Test {
      * https://issues.jboss.org/browse/JGRP-1528
      */
     public void testQueueingAndForwarding() throws Exception {
-        a=createNode("lon", "A", LON_CLUSTER);
-        x=createNode("sfo", "X", null); // don't connect yet
         MyReceiver rx=new MyReceiver();
-        x.setReceiver(rx);
-        x.connect(SFO_CLUSTER);
+        a=createNode("lon", "A", LON_CLUSTER, null);
+        x=createNode("sfo", "X", SFO_CLUSTER, rx);
 
         System.out.println("Waiting for site SFO to be UP");
         RELAY2 relay_a=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class);
@@ -223,12 +219,6 @@ public class Relay2Test {
         System.out.println("Starting X again; the queued messages should now get re-sent");
         x.connect(SFO_CLUSTER);
 
-        /*x=createNode("sfo", "X", null); // don't connect yet
-        x.setReceiver(rx);
-        x.connect(SFO_CLUSTER);*/
-
-
-
         for(int i=0; i < 20; i++) {
             if(list.size() == 5)
                 break;
@@ -242,7 +232,8 @@ public class Relay2Test {
 
 
 
-    protected JChannel createNode(String site_name, String node_name, String cluster_name) throws Exception {
+
+    protected JChannel createNode(String site_name, String node_name, String cluster_name, Receiver receiver) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
                                  new PING().setValue("timeout", 300).setValue("num_initial_members", 2),
                                  new NAKACK2(),
@@ -251,6 +242,8 @@ public class Relay2Test {
                                  new FORWARD_TO_COORD(),
                                  createRELAY2(site_name));
         ch.setName(node_name);
+        if(receiver != null)
+            ch.setReceiver(receiver);
         if(cluster_name != null)
             ch.connect(cluster_name);
         return ch;
@@ -271,11 +264,13 @@ public class Relay2Test {
     }
 
     protected static Protocol[] createBridgeStack() {
-        return new Protocol[]{new SHARED_LOOPBACK(),
-          new PING().setValue("timeout", 300).setValue("num_initial_members", 2),
+        return new Protocol[]{
+          new SHARED_LOOPBACK(),
+          new PING().setValue("timeout", 500).setValue("num_initial_members", 2),
           new NAKACK2(),
           new UNICAST2(),
-          new GMS()};
+          new GMS()
+        };
     }
 
     /** Creates a singleton view for each channel listed and injects it */
@@ -295,7 +290,7 @@ public class Relay2Test {
             for(JChannel ch: channels) {
                 RELAY2 relay=(RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class);
                 View bridge_view=relay.getBridgeView(BRIDGE_CLUSTER);
-                if(bridge_view.size() != expected_size) {
+                if(bridge_view == null || bridge_view.size() != expected_size) {
                     views_correct=false;
                     break;
                 }
@@ -315,7 +310,8 @@ public class Relay2Test {
         for(JChannel ch: channels) {
             RELAY2 relay=(RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class);
             View bridge_view=relay.getBridgeView(BRIDGE_CLUSTER);
-            assert bridge_view.size() == expected_size : ch.getAddress() + ": bridge view=" + bridge_view + ", expected=" + expected_size;
+            assert bridge_view != null && bridge_view.size() == expected_size
+              : ch.getAddress() + ": bridge view=" + bridge_view + ", expected=" + expected_size;
         }
     }
 

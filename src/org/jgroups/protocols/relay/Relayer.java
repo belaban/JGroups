@@ -7,10 +7,7 @@ import org.jgroups.stack.AddressGenerator;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -24,7 +21,7 @@ public class Relayer {
     protected Route[]                      routes;
 
     /** The bridges which are used to connect to different sites */
-    protected List<Bridge>                 bridges;
+    protected final Queue<Bridge>          bridges=new ConcurrentLinkedQueue<Bridge>();
 
     protected final Log                    log;
 
@@ -36,9 +33,10 @@ public class Relayer {
 
 
 
-    public Relayer(RELAY2 relay, Log log) {
+    public Relayer(RELAY2 relay, Log log, int num_routes) {
         this.relay=relay;
         this.log=log;
+        init(num_routes);
     }
 
     
@@ -47,15 +45,10 @@ public class Relayer {
      * @param bridge_configs A list of bridge configurations
      * @param bridge_name The name of the local bridge channel, prefixed with '_'.
      * @param my_site_id The ID of this site
-     * @param num_sites The number of sites
      * @throws Throwable
      */
-    public void start(int num_sites, List<RelayConfig.BridgeConfig> bridge_configs, String bridge_name, final short my_site_id)
+    public void start(List<RelayConfig.BridgeConfig> bridge_configs, String bridge_name, final short my_site_id)
       throws Throwable {
-        routes=new Route[num_sites];
-        for(short i=0; i < num_sites; i++)
-            routes[i]=new Route(null, null, RELAY2.RouteStatus.DOWN);
-        bridges=new ArrayList<Bridge>(bridge_configs.size());
         try {
             for(RelayConfig.BridgeConfig bridge_config: bridge_configs) {
                 Bridge bridge=new Bridge(bridge_config.createChannel(), bridge_config.getClusterName(), bridge_name,
@@ -82,6 +75,14 @@ public class Relayer {
             throw t;
         }
     }
+
+
+    protected void init(int num_routes) {
+        routes=new Route[num_routes];
+        for(short i=0; i < num_routes; i++)
+            routes[i]=new Route(null, null, RELAY2.RouteStatus.DOWN);
+    }
+
 
     /**
      * Disconnects and destroys all bridges
@@ -141,7 +142,7 @@ public class Relayer {
     }
 
     protected View getBridgeView(String cluster_name) {
-        if(cluster_name == null)
+        if(cluster_name == null || bridges == null)
             return null;
         for(Bridge bridge: bridges) {
             if(bridge.cluster_name != null && bridge.cluster_name.equals(cluster_name))
