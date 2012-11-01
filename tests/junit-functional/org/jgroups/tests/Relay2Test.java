@@ -179,12 +179,12 @@ public class Relay2Test {
         Relayer.Route sfo_route=relay_a.getRoute("sfo");
 
         for(int i=0; i < 20; i++) {
-            if(sfo_route.getStatus() == RELAY2.RouteStatus.UP)
+            if(sfo_route.status() == RELAY2.RouteStatus.UP)
                 break;
             Util.sleep(500);
         }
         System.out.println("Route to SFO: " + sfo_route);
-        assert sfo_route.getStatus() == RELAY2.RouteStatus.UP;
+        assert sfo_route.status() == RELAY2.RouteStatus.UP;
 
         Address sm_sfo=new SiteMaster("sfo");
         System.out.println("Sending message 0 to the site master of SFO");
@@ -204,12 +204,12 @@ public class Relay2Test {
         System.out.println("Waiting for site SFO to be UNKNOWN");
 
         for(int i=0; i < 20; i++) {
-            if(sfo_route.getStatus() == RELAY2.RouteStatus.UNKNOWN)
+            if(sfo_route.status() == RELAY2.RouteStatus.UNKNOWN)
                 break;
             Util.sleep(500);
         }
         System.out.println("Route to SFO: " + sfo_route);
-        assert sfo_route.getStatus() == RELAY2.RouteStatus.UNKNOWN;
+        assert sfo_route.status() == RELAY2.RouteStatus.UNKNOWN;
 
 
         System.out.println("sending 5 messages from A to site master SFO - they should all get queued");

@@ -239,7 +239,7 @@ public class RELAY2 extends Protocol {
     public JChannel getBridge(String site_name) {
         Relayer tmp=relayer;
         Relayer.Route route=tmp != null? tmp.getRoute(SiteUUID.getSite(site_name)): null;
-        return route != null? route.getBridge() : null;
+        return route != null? route.bridge() : null;
     }
 
     /**
@@ -410,7 +410,7 @@ public class RELAY2 extends Protocol {
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": relaying multicast message from " + sender + " via route " + route);
             try {
-                route.send(((SiteAddress)route.getSiteMaster()).getSite(), null, sender, buf);
+                route.send(((SiteAddress)route.siteMaster()).getSite(), null, sender, buf);
             }
             catch(Exception ex) {
                 log.error(local_addr + ": failed relaying message from " + sender + " via route " + route, ex);
@@ -508,27 +508,12 @@ public class RELAY2 extends Protocol {
             if(async_relay_creation) {
                 timer.execute(new Runnable() {
                     public void run() {
-                        try {
-                            if(log.isTraceEnabled())
-                                log.trace(local_addr + ": became site master; starting bridges");
-                            relayer.start(site_config.getBridges(), bridge_name, site_id);
-                        }
-                        catch(Throwable t) {
-                            log.error(local_addr + ": failed starting relayer", t);
-                        }
+                        startRelayer(bridge_name);
                     }
                 });
             }
-            else {
-                try {
-                    if(log.isTraceEnabled())
-                        log.trace(local_addr + ": became site master; starting bridges");
-                    relayer.start(site_config.getBridges(), bridge_name, site_id);
-                }
-                catch(Throwable t) {
-                    log.error(local_addr + ": failed starting relayer", t);
-                }
-            }
+            else
+                startRelayer(bridge_name);
         }
         else {
             if(cease_coord) { // ceased being the coordinator (site master): stop the Relayer
@@ -540,6 +525,19 @@ public class RELAY2 extends Protocol {
             }
         }
     }
+
+
+    protected void startRelayer(String bridge_name) {
+        try {
+            if(log.isTraceEnabled())
+                log.trace(local_addr + ": became site master; starting bridges");
+            relayer.start(site_config.getBridges(), bridge_name, site_id);
+        }
+        catch(Throwable t) {
+            log.error(local_addr + ": failed starting relayer", t);
+        }
+    }
+
 
     /**
      * Gets the site master from view. Iterates through the members and skips members which are {@link CanBeSiteMaster}
