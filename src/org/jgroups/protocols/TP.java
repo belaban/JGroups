@@ -950,7 +950,8 @@ public abstract class TP extends Protocol {
 
         // ========================================== OOB thread pool ==============================
 
-        if(oob_thread_pool == null) {
+        if(oob_thread_pool == null
+          || (oob_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)oob_thread_pool).isShutdown())) {
             if(oob_thread_pool_enabled) {
                 if(oob_thread_pool_queue_enabled)
                     oob_thread_pool_queue=new LinkedBlockingQueue<Runnable>(oob_thread_pool_queue_max_size);
@@ -966,7 +967,8 @@ public abstract class TP extends Protocol {
 
         // ====================================== Regular thread pool ===========================
 
-        if(thread_pool == null) {
+        if(thread_pool == null
+          || (thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)thread_pool).isShutdown())) {
             if(thread_pool_enabled) {
                 if(thread_pool_queue_enabled)
                     thread_pool_queue=new LinkedBlockingQueue<Runnable>(thread_pool_queue_max_size);
@@ -1022,12 +1024,10 @@ public abstract class TP extends Protocol {
         // 3. Stop the thread pools
         if(oob_thread_pool instanceof ThreadPoolExecutor) {
             shutdownThreadPool(oob_thread_pool);
-            oob_thread_pool=null;
         }
 
         if(thread_pool instanceof ThreadPoolExecutor) {
             shutdownThreadPool(thread_pool);
-            thread_pool=null;
         }
 
        // if(pool_thread_group.activeCount() == 0 && !pool_thread_group.isDestroyed())
