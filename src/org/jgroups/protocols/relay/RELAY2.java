@@ -85,7 +85,7 @@ public class RELAY2 extends Protocol {
 
     protected volatile Address                         coord;
 
-    protected Relayer                                  relayer;
+    protected volatile Relayer                         relayer;
 
     protected TimeScheduler                            timer;
 
@@ -109,6 +109,7 @@ public class RELAY2 extends Protocol {
     public RELAY2 forwardSleep(long time)            {                             return this;}
     public RELAY2 forwardQueueMaxSize(int size)      {fwd_queue_max_size=size;     return this;}
     public RELAY2 siteDownTimeout(long timeout)      {site_down_timeout=timeout;   return this;}
+    public RELAY2 asyncRelayCreation(boolean flag)   {async_relay_creation=flag;   return this;}
 
     public String  site()                            {return site;}
     public String  config()                          {return config;}
@@ -117,6 +118,7 @@ public class RELAY2 extends Protocol {
     public boolean relayMulticasts()                 {return relay_multicasts;}
     public int     forwardQueueMaxSize()             {return fwd_queue_max_size;}
     public long    siteDownTimeout()                 {return site_down_timeout;}
+    public boolean asyncRelayCreation()              {return async_relay_creation;}
 
 
     public Address       getLocalAddress()           {return local_addr;}
@@ -504,16 +506,19 @@ public class RELAY2 extends Protocol {
         if(become_coord) {
             is_coord=true;
             final String bridge_name="_" + UUID.get(local_addr);
+            if(relayer != null)
+                relayer.stop();
             relayer=new Relayer(this, log, sites.size());
+            final Relayer tmp=relayer;
             if(async_relay_creation) {
                 timer.execute(new Runnable() {
                     public void run() {
-                        startRelayer(bridge_name);
+                        startRelayer(tmp, bridge_name);
                     }
                 });
             }
             else
-                startRelayer(bridge_name);
+                startRelayer(relayer, bridge_name);
         }
         else {
             if(cease_coord) { // ceased being the coordinator (site master): stop the Relayer
@@ -527,11 +532,11 @@ public class RELAY2 extends Protocol {
     }
 
 
-    protected void startRelayer(String bridge_name) {
+    protected void startRelayer(Relayer rel, String bridge_name) {
         try {
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": became site master; starting bridges");
-            relayer.start(site_config.getBridges(), bridge_name, site_id);
+            rel.start(site_config.getBridges(), bridge_name, site_id);
         }
         catch(Throwable t) {
             log.error(local_addr + ": failed starting relayer", t);

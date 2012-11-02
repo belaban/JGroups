@@ -12,7 +12,8 @@ import java.util.concurrent.*;
 
 /**
  * Maintains bridges and routing table. Does the routing of outgoing messages and dispatches incoming messages to
- * the right members.
+ * the right members.<p/>
+ * A Relayer cannot be reused once it is stopped, but a new Relayer instance must be created.
  * @author Bela Ban
  * @since 3.2
  */
@@ -27,9 +28,18 @@ public class Relayer {
 
     protected final RELAY2                 relay;
 
+    /** Flag set when stop() is called. Since a Relayer should not be used after stop() has been called, a new
+     * instance needs to be created */
+    protected volatile boolean             done;
+
     // Used to store messages for a site with status UNKNOWN. Messages will be flushed when the status changes to UP, or
     // a SITE-UNREACHABLE message will be sent to each member *once* when the status changes to DOWN
     protected final ConcurrentMap<Short,BlockingQueue<Message>> fwd_queue=new ConcurrentHashMap<Short,BlockingQueue<Message>>();
+
+    /** Map to store tasks which set the status of a site from UNKNOWN to DOWN. These are started when a site is
+     * set to UNKNOWN, but they need to be cancelled when the status goes from UNKNOWN back to UP <em>before</em>
+     * they kick in.*/
+    protected final ConcurrentMap<Short,Future<?>>   down_tasks=new ConcurrentHashMap<Short,Future<?>>();
 
 
 
@@ -38,6 +48,9 @@ public class Relayer {
         this.log=log;
         init(num_routes);
     }
+
+
+    public boolean done() {return done;}
 
     
     /**
@@ -49,6 +62,11 @@ public class Relayer {
      */
     public void start(List<RelayConfig.BridgeConfig> bridge_configs, String bridge_name, final short my_site_id)
       throws Throwable {
+        if(done) {
+            if(log.isTraceEnabled())
+                log.trace(relay.getLocalAddress() + ": will not start the Relayer as stop() has been called");
+            return;
+        }
         try {
             for(RelayConfig.BridgeConfig bridge_config: bridge_configs) {
                 Bridge bridge=new Bridge(bridge_config.createChannel(), bridge_config.getClusterName(), bridge_name,
@@ -60,19 +78,19 @@ public class Relayer {
                                          });
                 bridges.add(bridge);
             }
-        }
-        catch(Throwable t) {
-            stop();
-            throw t;
-        }
-
-        try {
             for(Bridge bridge: bridges)
                 bridge.start();
         }
         catch(Throwable t) {
             stop();
             throw t;
+        }
+        finally {
+            if(done) {
+                if(log.isTraceEnabled())
+                    log.trace(relay.getLocalAddress() + ": stop() was called while starting the relayer; stopping the relayer now");
+                stop();
+            }
         }
     }
 
@@ -91,6 +109,12 @@ public class Relayer {
      * Disconnects and destroys all bridges
      */
     public void stop() {
+        done=true;
+        List<Future<?>> tasks=new ArrayList<Future<?>>(down_tasks.values());
+        down_tasks.clear();
+        for(Future<?> task: tasks)
+            task.cancel(true);
+
         for(Bridge bridge: bridges)
             bridge.stop();
         bridges.clear();
@@ -278,40 +302,50 @@ public class Relayer {
                 log.trace("[Relayer " + channel.getAddress() + "] view: " + new_view);
 
             if(left_mbrs != null) {
-                for(Address addr: left_mbrs) {
-                    if(addr instanceof SiteUUID) {
-                        SiteUUID site_uuid=(SiteUUID)addr;
-                        final short site=site_uuid.getSite();
-                        changeStatusToUnknown(site);
-                        relay.getTimer().schedule(new Runnable() {
-                            public void run() {
-                                Route route=routes[site];
-                                if(route.status() == RELAY2.RouteStatus.UNKNOWN)
-                                    changeStatusToDown(site);
-                            }
-                        }, relay.siteDownTimeout(), TimeUnit.MILLISECONDS);
-                    }
-                }
+                Set<Short> sites=new HashSet<Short>(); // site-ids to be set to UNKNOWN
+                for(Address addr: left_mbrs)
+                    if(addr instanceof SiteUUID)
+                        sites.add(((SiteUUID)addr).getSite());
+                for(short site: sites)
+                    changeStatusToUnknown(site);
             }
 
-            for(Address addr: new_view.getMembers()) {
-                if(addr instanceof SiteUUID) {
-                    SiteUUID site_uuid=(SiteUUID)addr;
-                    short site=site_uuid.getSite();
-                    changeStatusToUp(site, channel, site_uuid);
-                }
-            }
+            // map of site-ids and associated site master addresses
+            Map<Short,Address> sites=new HashMap<Short,Address>();     // site-ids to be set to UP
+            for(Address addr: new_view.getMembers())
+                if(addr instanceof SiteUUID)
+                    sites.put(((SiteUUID)addr).getSite(), addr);
+            for(Map.Entry<Short,Address> entry: sites.entrySet())
+                changeStatusToUp(entry.getKey(), channel, entry.getValue());
         }
 
 
-        protected void changeStatusToUnknown(short id) {
-            Route route=routes[id];
+        protected void changeStatusToUnknown(final short site) {
+            Route route=routes[site];
             route.status(RELAY2.RouteStatus.UNKNOWN); // messages are queued from now on
+            Future<?> task=relay.getTimer().schedule(new Runnable() {
+                public void run() {
+                    Route route=routes[site];
+                    if(route.status() == RELAY2.RouteStatus.UNKNOWN)
+                        changeStatusToDown(site);
+                }
+            }, relay.siteDownTimeout(), TimeUnit.MILLISECONDS);
+
+            if(task == null) // schedule() failed as the pool was already shut down
+                return;
+            Future<?> existing_task=down_tasks.put(site, task);
+            if(existing_task != null)
+                existing_task.cancel(true);
         }
 
         protected void changeStatusToDown(short id) {
             Route route=routes[id];
-            route.status(RELAY2.RouteStatus.DOWN);    // SITE-UNREACHABLE responses are sent in this state
+            if(route.status() == RELAY2.RouteStatus.UP)
+                route.status(RELAY2.RouteStatus.DOWN);    // SITE-UNREACHABLE responses are sent in this state
+            else {
+                log.warn(relay.getLocalAddress() + ": didn't change status of " + id + " to DOWN as it is UP");
+                return;
+            }
             BlockingQueue<Message> msgs=fwd_queue.remove(id);
             if(msgs != null && !msgs.isEmpty()) {
                 Set<Address> targets=new HashSet<Address>(); // we need to send a SITE-UNREACHABLE only *once* to every sender
@@ -339,6 +373,7 @@ public class Relayer {
             switch(old_status) {
                 case UNKNOWN:
                 case DOWN: // queue should be empty, but anyway...
+                    cancelTask(id);
                     relay.getTimer().execute(new Runnable() {
                         public void run() {
                             flushQueue(id, route);
@@ -346,6 +381,12 @@ public class Relayer {
                     });
                     break;
             }
+        }
+
+        protected void cancelTask(short id) {
+            Future<?> task=down_tasks.remove(id);
+            if(task != null)
+                task.cancel(true);
         }
 
         // Resends all messages in the queue, then clears the queue
