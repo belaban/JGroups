@@ -204,7 +204,7 @@ public class DiagnosticsHandler implements Runnable {
         for(Iterator<NetworkInterface> it=interfaces.iterator(); it.hasNext();) {
             NetworkInterface i=it.next();
             try {
-                if (i.getInetAddresses().hasMoreElements()) { // fix for VM crash - suggested by JJalenak@netopia.com
+                if (i.isUp() && !i.getInterfaceAddresses().isEmpty()) { // fix for VM crash - suggested by JJalenak@netopia.com
                     s.joinGroup(group_addr, i);
                     if(log.isTraceEnabled())
                         log.trace("joined " + group_addr + " on " + i.getName());
