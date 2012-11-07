@@ -31,9 +31,10 @@
     </licenses>
 
     <scm>
-        <connection>cvs -d:pserver:anonymous@javagroups.cvs.sourceforge.net:/cvsroot/javagroups</connection>
-        <developerConnection>cvs -d:ext:USER@javagroups.cvs.sf.net/cvsroot/javagroups</developerConnection>
-        <url>cvs -d:pserver:anonymous@javagroups.cvs.sourceforge.net:/cvsroot/javagroups</url>
+        <connection>git://github.com/belaban/JGroups.git</connection>
+        <developerConnection>git@github.com:belaban/JGroups.git</developerConnection>
+        <tag>master</tag>
+        <url>https://github.com/belaban/JGroups</url>
     </scm>
 
     <issueManagement>
@@ -93,7 +94,7 @@
         <dependency>
             <groupId>org.jboss.byteman</groupId>
             <artifactId>byteman-bmunit</artifactId>
-            <version>2.0.0</version>
+            <version>2.1.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
