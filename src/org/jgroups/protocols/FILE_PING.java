@@ -313,7 +313,7 @@ public class FILE_PING extends Discovery {
         }
         catch(Exception e) {
             Util.close(out);
-        	log.error("Failed to write temporary file: "+file.getAbsolutePath());
+        	log.error("Failed to write temporary file: "+file.getAbsolutePath(), e);
         	deleteFile(file);
         	return null;
         }
