@@ -31,9 +31,8 @@
     </licenses>
 
     <scm>
-        <connection>git://github.com/belaban/JGroups.git</connection>
-        <developerConnection>git@github.com:belaban/JGroups.git</developerConnection>
-        <tag>master</tag>
+        <connection>scm:git:git://github.com/belaban/JGroups.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/belaban/JGroups.git</developerConnection>
         <url>https://github.com/belaban/JGroups</url>
     </scm>
 
