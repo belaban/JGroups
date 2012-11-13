@@ -20,7 +20,7 @@ import org.jgroups.annotations.Immutable;
 @Immutable
 public class Version {
     public static final short  major = 3;
-    public static final short  minor = 2;
+    public static final short  minor = 3;
     public static final short  micro = 0;
     public static final String description="3.3.0.Alpha1";
 
