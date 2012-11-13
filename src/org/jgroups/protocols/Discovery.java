@@ -271,7 +271,7 @@ public abstract class Discovery extends Protocol {
                     msg.setFlag(Message.OOB);
                     msg.putHeader(this.id, hdr);
                     if(log.isTraceEnabled())
-                        log.trace("[FIND_INITIAL_MBRS] sending discovery request to " + msg.getDest());
+                        log.trace(local_addr + ": sending discovery request to " + msg.getDest());
                     if(!sendDiscoveryRequestsInParallel()) {
                         down_prot.down(new Event(Event.MSG, msg));
                     }
@@ -283,7 +283,7 @@ public abstract class Discovery extends Protocol {
                                 }
                                 catch(Exception ex){
                                     if(log.isErrorEnabled())
-                                        log.error("failed sending discovery request to " + addr + ": " +  ex);
+                                        log.error(local_addr + ": failed sending discovery request to " + addr + ": " +  ex);
                                 }
                             }
                         });
@@ -376,7 +376,7 @@ public abstract class Discovery extends Protocol {
                         else {
                             if(!group_addr.equals(hdr.cluster_name)) {
                                 if(log.isWarnEnabled())
-                                    log.warn("discarding discovery request for cluster '" + hdr.cluster_name + "' from " +
+                                    log.warn(local_addr + ": discarding discovery request for cluster '" + hdr.cluster_name + "' from " +
                                             msg.getSrc() + "; our cluster name is '" + group_addr + "'. " +
                                             "Please separate your clusters cleanly.");
                                 return null;
@@ -530,7 +530,7 @@ public abstract class Discovery extends Protocol {
                 List<PingData> rsps=find_all_views? findAllViews(promise) : findInitialMembers(promise);
                 long diff=System.currentTimeMillis() - start;
                 if(log.isTraceEnabled())
-                    log.trace("discovery took "+ diff + " ms: responses: " + Util.printPingData(rsps));
+                    log.trace(local_addr + ": discovery took "+ diff + " ms: responses: " + Util.printPingData(rsps));
                 return rsps;
 
             case Event.TMP_VIEW:
@@ -642,7 +642,7 @@ public abstract class Discovery extends Protocol {
         }
 
         if(log.isTraceEnabled())
-            log.trace("received GET_MBRS_REQ from " + sender + ", sending response " + rsp_hdr);
+            log.trace(local_addr + ": received GET_MBRS_REQ from " + sender + ", sending response " + rsp_hdr);
         down_prot.down(new Event(Event.MSG, rsp_msg));
     }
 

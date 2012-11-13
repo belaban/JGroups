@@ -169,7 +169,9 @@ public class JChannel extends Channel {
 
 
     /**
-     * Creates a channel from a list of protocols
+     * Creates a channel from a list of protocols. Note that after a {@link org.jgroups.JChannel#close()}, the protocol
+     * list <em>should not</em> be reused, ie. new JChannel(protocols) would reuse the same protocol list, and this
+     * might lead to problems !
      * @param protocols The list of protocols, from bottom to top, ie. the first protocol in the list is the transport,
      *                  the last the top protocol
      * @throws Exception
@@ -1070,7 +1072,8 @@ public class JChannel extends Channel {
             String prot_name=operation.substring(0, index);
             Protocol prot=prot_stack.findProtocol(prot_name);
             if(prot == null)
-                throw new IllegalArgumentException("protocol " + prot_name + " not found");
+                return; // less drastic than throwing an exception...
+
 
             int args_index=operation.indexOf("[");
             String method_name;

@@ -73,8 +73,8 @@ public class SEQUENCER extends Protocol {
     @Property(description="Size of the set to store received seqnos (for duplicate checking)")
     protected int  delivery_table_max_size=2000;
 
-    @Property(description="Number of acks needed before going from ack-mode to normal mode. 0 disables this, which means " +
-      "that ack-mode is always on")
+    @Property(description="Number of acks needed before going from ack-mode to normal mode. " +
+      "0 disables this, which means that ack-mode is always on")
     protected int  threshold=10;
 
     protected int  num_acks=0;
@@ -128,6 +128,7 @@ public class SEQUENCER extends Protocol {
 
     public void start() throws Exception {
         super.start();
+        running=true;
         ack_mode=true;
     }
 
@@ -370,7 +371,6 @@ public class SEQUENCER extends Protocol {
                     break;
             }
         }
-
     }
 
 
@@ -463,7 +463,7 @@ public class SEQUENCER extends Protocol {
         Address sender=msg.getSrc();
         if(sender == null) {
             if(log.isErrorEnabled())
-                log.error(local_addr + ": sender is null, cannot deliver " + sender + "::" + hdr.getSeqno());
+                log.error(local_addr + ": sender is null, cannot deliver " + "::" + hdr.getSeqno());
             return;
         }
         long msg_seqno=hdr.getSeqno();

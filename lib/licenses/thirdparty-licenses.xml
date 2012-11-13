@@ -44,25 +44,25 @@
     </module>
     <module name='byteman'
             licenseType='LGPL 2.1'
-            version='2.0.3'
+            version='2.1.0'
             projectHome='http://www.jboss.org/byteman'>
         <jar name='byteman.jar' />
     </module>
     <module name='byteman-bmunit'
             licenseType='LGPL 2.1'
-            version='2.0.3 (temp)'
+            version='2.1.0'
             projectHome='http://www.jboss.org/byteman'>
         <jar name='byteman-bmunit.jar' />
     </module>
     <module name='byteman-install'
             licenseType='LGPL 2.1'
-            version='2.0.3'
+            version='2.1.0'
             projectHome='http://www.jboss.org/byteman'>
         <jar name='byteman-install.jar' />
     </module>
     <module name='byteman-submit'
             licenseType='LGPL 2.1'
-            version='2.0.3'
+            version='2.1.0'
             projectHome='http://www.jboss.org/byteman'>
         <jar name='byteman-submit.jar' />
     </module>
@@ -89,10 +89,10 @@
     </module>
     <module name='testng'
             licenseType='apache-2.0'
-            version='6.3.1'
+            version='6.8'
             projectHome='http://www.testng.org'
             description='Used for unit testing'>
-        <jar name='testng.jar' />
+        <jar name='testng-6.8.jar' />
     </module>
     <module name='xalan'
             licenseType='apache-2.0'

@@ -8,11 +8,11 @@ import org.jgroups.stack.Protocol;
 
 /**
  * @author Bela Ban
- * @since 3.1
+ * @since 3.3
  */
-public class SequencerFailoverTestHelper extends Helper {
+public class ForwardToCoordFailoverTestHelper extends Helper {
 
-    protected SequencerFailoverTestHelper(Rule rule) {
+    protected ForwardToCoordFailoverTestHelper(Rule rule) {
         super(rule);
     }
 
@@ -20,9 +20,9 @@ public class SequencerFailoverTestHelper extends Helper {
         final Thread sender=new Thread() {
             public void run() {
                 for(int i=start; i <= end; i++) {
-                    Message msg=new Message(null, i);
-                    System.out.println("[" + prot.getValue("local_addr") + "] --> sending message " + i);
-                    prot.down(new Event(Event.MSG,msg));
+                    Event evt=new Event(Event.FORWARD_TO_COORD, new Message(null, i));
+                    System.out.println("[byteman] --> sending message " + i);
+                    prot.down(evt);
                 }
             }
         };

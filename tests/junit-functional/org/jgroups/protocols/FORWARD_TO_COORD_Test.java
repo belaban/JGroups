@@ -33,7 +33,7 @@ public class FORWARD_TO_COORD_Test {
         for(int i=0; i < NUM; i++) {
             channels[i]=Util.createChannel(new SHARED_LOOPBACK(),
                                            new DISCARD(),
-                                           new PING().setValue("timeout",1000).setValue("num_initial_members",NUM)
+                                           new PING().setValue("timeout",500).setValue("num_initial_members",NUM)
                                              .setValue("force_sending_discovery_rsps", true),
                                            new NAKACK2().setValue("use_mcast_xmit",false)
                                              .setValue("discard_delivered_msgs",true)
@@ -50,7 +50,7 @@ public class FORWARD_TO_COORD_Test {
                                              .setValue("log_view_warnings",false)
                                              .setValue("view_ack_collection_timeout",2000)
                                              .setValue("log_collect_msgs",false),
-                                           new FORWARD_TO_COORD().setValue("resend_delay", 500));
+                                           new FORWARD_TO_COORD());
             String name=String.valueOf((char)(i + BASE));
             channels[i].setName(name);
             receivers[i]=new MyReceiver();
@@ -58,8 +58,10 @@ public class FORWARD_TO_COORD_Test {
             channels[i].connect("FORWARD_TO_COORD_Test");
             System.out.print(name + " ");
             if(i == 0)
-                Util.sleep(4000);
+                Util.sleep(1500);
         }
+        System.out.println("\n");
+        System.out.flush();
         Util.waitUntilAllChannelsHaveSameSize(30000,1000,channels);
     }
 
@@ -169,7 +171,7 @@ public class FORWARD_TO_COORD_Test {
 
     /**
      * Tests the case where a view is not installed at the same time in all members. C thinks B is the new coord and
-     * forwards a message to B. B, howeverm doesn't yet have the same view, so it rejects (NOT_COORD message to C) the
+     * forwards a message to B. B, however doesn't yet have the same view, so it rejects (NOT_COORD message to C) the
      * message. C in turn resends the message to B and so on. Only when B finally installs the view, will the message
      * get accepted.
      */
@@ -192,10 +194,13 @@ public class FORWARD_TO_COORD_Test {
         System.out.println("C: forwarding the message to B");
         channels[NUM-1].down(new Event(Event.FORWARD_TO_COORD,msg));
 
-        Util.sleep(3000);
+        Util.sleep(500);
 
-        System.out.println("Injecting view " + new_view + " into B");
+        System.out.println("Injecting view " + new_view + " into B and C");
         GMS gms=(GMS)channels[1].getProtocolStack().findProtocol(GMS.class);
+        gms.up(new Event(Event.VIEW_CHANGE, new_view));
+
+        gms=(GMS)channels[NUM-1].getProtocolStack().findProtocol(GMS.class);
         gms.up(new Event(Event.VIEW_CHANGE, new_view));
 
         MyReceiver receiver=receivers[1]; // B

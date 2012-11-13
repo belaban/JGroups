@@ -17,9 +17,20 @@
 RULE CreateRendezvous
 CLASS BecomeServerTest
 METHOD testSendingOfMsgsOnUnconnectedChannel
+AT ENTRY
 IF TRUE
    DO System.out.println("--> Creating rendezvous");
-      createRendezvous("BecomeServerTest",  2, true);
+      createRendezvous("rv", 2, true); ## we use this RV 2 times, so it needs to be rejoinable
+ENDRULE
+
+## Delete the rendezvous when the test is done
+RULE DeleteRendezvous
+CLASS BecomeServerTest
+METHOD testSendingOfMsgsOnUnconnectedChannel
+AT EXIT
+IF TRUE
+   DO System.out.println("--> Deleting rendezvous");
+      deleteRendezvous("rv", 2);
 ENDRULE
 
 
@@ -28,21 +39,40 @@ RULE MessageSending
 CLASS BecomeServerTest
 METHOD sendMessage
 AT ENTRY
-IF rendezvous("BecomeServerTest") != -1
+IF rendezvous("rv") != -1
     DO System.out.println("--> A: sending message");
 ENDRULE
+
+
+## Signals that A's message has been received by B
+#RULE MessageReception
+#CLASS NAKACK2
+#METHOD up
+#HELPER org.jgroups.tests.helpers.BecomeServerTestHelper
+#AFTER INVOKE BoundedList.add(Message) ALL
+#BIND len=$msg.getLength();
+#     is_server=$0.is_server;
+#IF len > 0
+#   DO System.out.println("--> " + $0.local_addr + ": received message " + $msg.printHeaders() + ", added to queue, is_server=" + is_server);
+#   rendezvous("rv");
+#ENDRULE
 
 
 ## Signals that A's message has been received by B
 RULE MessageReception
 CLASS NAKACK2
 METHOD up
+HELPER org.jgroups.tests.helpers.BecomeServerTestHelper
 AFTER INVOKE BoundedList.add(Message) ALL
-BIND len=$msg.getLength();
-IF len > 0
-   DO System.out.println("--> " + $0.local_addr + ": received message " + $msg.printHeaders() + ", added to queue");
-   rendezvous("BecomeServerTest");
+BIND queue=$0.become_server_queue;
+     is_server=$0.is_server;
+     local_addr_name=org.jgroups.util.UUID.get($0.local_addr);
+AFTER INVOKE BoundedList.add ALL
+IF !is_server && local_addr_name.equals("B") && messageReceived(queue)
+  DO rendezvous("rv");
 ENDRULE
+
+
 
 
 ## Blocks until A has sent the message and B has received (and queued) it
@@ -51,9 +81,9 @@ CLASS ClientGmsImpl
 METHOD installView
 AT ENTRY
 BIND local_addr_name=org.jgroups.util.UUID.get($0.gms.local_addr);
-IF local_addr_name.equals("B") AND rendezvous("BecomeServerTest") != -1
-   DO System.out.println("--> B: installView() entered rendezvous; blocking until message has been received");
-      rendezvous("BecomeServerTest");
+IF local_addr_name.equals("B") AND rendezvous("rv") != -1
+   DO System.out.println("--> B: installView() waiting on rendezvous until message has been received");
+      rendezvous("rv");
       System.out.println("--> B: installView() was unblocked");
 ENDRULE
 

@@ -2,7 +2,6 @@ package org.jgroups.protocols.relay.config;
 
 import org.jgroups.JChannel;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
 import org.w3c.dom.*;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -206,7 +205,7 @@ public class RelayConfig {
         protected BridgeConfig(String cluster_name) {this.cluster_name=cluster_name;}
 
         public String            getClusterName()  {return cluster_name;}
-        public abstract JChannel createChannel() throws Exception;
+        public abstract JChannel  createChannel() throws Exception;
 
         public String toString() {return "cluster=" + cluster_name;}
     }
@@ -237,7 +236,22 @@ public class RelayConfig {
         }
 
         public String toString() {
-            return super.toString() + ", protocols=" + Util.array2String(protocols);
+            return super.toString() + ", protocols=" + printProtocols(protocols);
+        }
+
+
+        protected static String printProtocols(Protocol[] protocols) {
+            StringBuilder sb=new StringBuilder("[");
+            boolean first=true;
+            for(Protocol prot: protocols) {
+                if(first)
+                    first=false;
+                else
+                    sb.append(", ");
+                sb.append(prot.getName());
+            }
+            sb.append("]");
+            return sb.toString();
         }
     }
 

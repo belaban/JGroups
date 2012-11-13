@@ -216,6 +216,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         this.discard_delivered_msgs=discard_delivered_msgs;
     }
 
+    @ManagedAttribute(description="Actual size of the become_server_queue")
+    public int getBecomeServerQueueSizeActual() {
+        return become_server_queue != null? become_server_queue.size() : -1;
+    }
+
     /** Returns the receive window for sender; only used for testing. Do not use ! */
     public Table<Message> getWindow(Address sender) {
         return xmit_table.get(sender);
