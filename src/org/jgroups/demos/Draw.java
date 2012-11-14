@@ -22,7 +22,7 @@ import java.io.*;
  * @author Bela Ban, Oct 17 2001
  */
 public class Draw extends ReceiverAdapter implements ActionListener, ChannelListener {
-    String                         groupname="DrawGroupDemo";
+    String                         groupname="draw-cluster";
     private Channel                channel=null;
     private int                    member_size=1;
     private JFrame                 mainFrame=null;

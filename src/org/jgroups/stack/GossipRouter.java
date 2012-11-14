@@ -103,8 +103,8 @@ public class GossipRouter {
 
     protected List<ConnectionTearListener> connectionTearListeners=new CopyOnWriteArrayList<ConnectionTearListener>();
 
-    protected ThreadFactory default_thread_factory=new DefaultThreadFactory(new ThreadGroup("GosipRouter"), "gossip-handlers", true, true);
-    
+    protected ThreadFactory default_thread_factory=new DefaultThreadFactory("gossip-handlers", true, true);
+
     protected Timer timer=null;
 
     protected final Log log=LogFactory.getLog(this.getClass());

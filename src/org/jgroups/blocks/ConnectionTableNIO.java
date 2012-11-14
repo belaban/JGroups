@@ -314,8 +314,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        if(log.isDebugEnabled()) log.debug("server socket created on " + local_addr);
 
 
-       //Roland Kurmann 4/7/2003, put in thread_group
-       acceptor=getThreadFactory().newThread(thread_group, this, "ConnectionTable.AcceptorThread");       
+       // Roland Kurmann 4/7/2003, put in thread_group -- removed bela Nov 2012
+       acceptor=getThreadFactory().newThread(this, "ConnectionTable.AcceptorThread");
        acceptor.setDaemon(true);
        acceptor.start();
        m_backGroundThreads.add(acceptor);
@@ -349,9 +349,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
           requestProcessors.setThreadFactory(new ThreadFactory() {
               public Thread newThread(Runnable runnable) {
-                  Thread new_thread=new Thread(thread_group, runnable);
+                  Thread new_thread=new Thread(runnable, "ConnectionTableNIO.Thread");
                   new_thread.setDaemon(true);
-                  new_thread.setName("ConnectionTableNIO.Thread");
                   m_backGroundThreads.add(new_thread);
                   return new_thread;
               }
@@ -360,8 +359,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
           m_requestProcessors = requestProcessors;
       }
 
-      m_writeHandlers = WriteHandler.create(getThreadFactory(),getWriterThreads(), thread_group, m_backGroundThreads, log);
-      m_readHandlers = ReadHandler.create(getThreadFactory(),getReaderThreads(), this, thread_group, m_backGroundThreads, log);
+      m_writeHandlers = WriteHandler.create(getThreadFactory(),getWriterThreads(), m_backGroundThreads, log);
+      m_readHandlers = ReadHandler.create(getThreadFactory(),getReaderThreads(), this, m_backGroundThreads, log);
    }
 
 
@@ -675,7 +674,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        *
        * @param workerThreads is the number of threads to create.
        */
-      private static ReadHandler[] create(org.jgroups.util.ThreadFactory f,int workerThreads, ConnectionTableNIO ct, ThreadGroup tg, List<Thread> backGroundThreads, Log log)
+      private static ReadHandler[] create(org.jgroups.util.ThreadFactory f,int workerThreads, ConnectionTableNIO ct, List<Thread> backGroundThreads, Log log)
       {
          ReadHandler[] handlers = new ReadHandler[workerThreads];
          for (int looper = 0; looper < workerThreads; looper++)
@@ -683,7 +682,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             handlers[looper] = new ReadHandler(ct, log);
 
             
-            Thread thread = f.newThread(tg, handlers[looper], "nioReadHandlerThread");
+            Thread thread = f.newThread(handlers[looper], "nioReadHandlerThread");
             thread.setDaemon(true);
             thread.start();
             backGroundThreads.add(thread);
@@ -1079,14 +1078,14 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        *
        * @param workerThreads is the number of threads to create.
        */
-      private static WriteHandler[] create(org.jgroups.util.ThreadFactory f, int workerThreads, ThreadGroup tg, List<Thread> backGroundThreads, Log log)
+      private static WriteHandler[] create(org.jgroups.util.ThreadFactory f, int workerThreads, List<Thread> backGroundThreads, Log log)
       {
          WriteHandler[] handlers = new WriteHandler[workerThreads];
          for (int looper = 0; looper < workerThreads; looper++)
          {
             handlers[looper] = new WriteHandler(log);
 
-            Thread thread = f.newThread(tg, handlers[looper], "nioWriteHandlerThread");
+            Thread thread = f.newThread(handlers[looper], "nioWriteHandlerThread");
             thread.setDaemon(true);
             thread.start();
             backGroundThreads.add(thread);

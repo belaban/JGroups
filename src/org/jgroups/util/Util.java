@@ -4412,8 +4412,8 @@ public class Util {
      * @param group
      * @param thread_name
      */
-    public static void runAsync(Runnable task, ThreadFactory factory, ThreadGroup group, String thread_name) {
-        Thread thread=factory.newThread(group, task, thread_name);
+    public static void runAsync(Runnable task, ThreadFactory factory, String thread_name) {
+        Thread thread=factory.newThread(task, thread_name);
         thread.start();
     }
 

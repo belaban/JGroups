@@ -42,11 +42,10 @@ public class MergeTest3 {
         handler=new MyDiagnosticsHandler(InetAddress.getByName("224.0.75.75"), 7500,
                                          LogFactory.getLog(DiagnosticsHandler.class),
                                          new DefaultSocketFactory(),
-                                         new DefaultThreadFactory(new ThreadGroup("MergeTest3"), "", false));
+                                         new DefaultThreadFactory("", false));
         handler.start();
         
-        ThreadGroup test_group=new ThreadGroup("MergeTest3");
-        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory(test_group, "Timer", true, true),
+        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory("Timer", true, true),
                                                5,10,
                                                3000, 1000, "abort");
 

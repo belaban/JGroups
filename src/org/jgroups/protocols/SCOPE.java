@@ -53,8 +53,6 @@ public class SCOPE extends Protocol {
 
     protected Executor thread_pool;
 
-    protected ThreadGroup thread_group;
-    
     protected ThreadFactory thread_factory;
 
     protected TimeScheduler timer;
@@ -161,8 +159,7 @@ public class SCOPE extends Protocol {
     public void init() throws Exception {
         super.init();
         timer=getTransport().getTimer();
-        thread_group=new ThreadGroup(getTransport().getPoolThreadGroup(), "SCOPE Threads");
-        thread_factory=new DefaultThreadFactory(thread_group, "SCOPE", false, true);
+        thread_factory=new DefaultThreadFactory("SCOPE", false, true);
         setInAllThreadFactories(cluster_name, local_addr, thread_naming_pattern);
 
         // sanity check for expiration

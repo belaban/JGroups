@@ -15,7 +15,7 @@ public class ThreadFactoryTest {
     private static final String CLUSTER="MyCluster";
 
     public void testNoNumbering() {
-        factory=new DefaultThreadFactory(null, BASE, true, false);
+        factory=new DefaultThreadFactory(BASE, true, false);
         Thread thread=factory.newThread(new MyRunnable(), BASE);
         String name=thread.getName();
         System.out.println("name = " + name);
@@ -23,7 +23,7 @@ public class ThreadFactoryTest {
     }
 
     public void testNumbering() {
-        factory=new DefaultThreadFactory(null, BASE, true, true);
+        factory=new DefaultThreadFactory(BASE, true, true);
         Thread thread=factory.newThread(new MyRunnable(), BASE);
         String name=thread.getName();
         System.out.println("name = " + name);
@@ -36,7 +36,7 @@ public class ThreadFactoryTest {
     }
 
     public void testPatterns() {
-        factory=new DefaultThreadFactory(null, BASE, true, false);
+        factory=new DefaultThreadFactory(BASE, true, false);
         factory.setAddress(ADDR);
         Thread thread=factory.newThread(new MyRunnable(), BASE);
         String name=thread.getName();

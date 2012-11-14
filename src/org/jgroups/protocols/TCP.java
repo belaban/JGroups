@@ -67,9 +67,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                               external_addr,
                               external_port,
                               bind_port,
-                              bind_port+port_range,
-                              getChannelThreadGroup()
-                              );
+                              bind_port+port_range);
         ct.setReceiveBufferSize(recv_buf_size);      
         ct.setSendQueueSize(send_queue_size);
         ct.setUseSendQueues(use_send_queues);
@@ -126,9 +124,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                                    InetAddress externalAddress,
                                                    int external_port,
                                                    int startPort,
-                                                   int endPort,
-                                                   ThreadGroup group
-    ) throws Exception {
+                                                   int endPort) throws Exception {
         TCPConnectionMap cTable;
         if(reaperInterval == 0 && connExpireTime == 0) {
             cTable=new TCPConnectionMap("jgroups.tcp.srv_sock",
@@ -139,9 +135,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                         externalAddress,
                                         external_port,
                                         startPort,
-                                        endPort,
-                                        group
-            );
+                                        endPort);
         }
         else {
             if(reaperInterval == 0) {
@@ -164,9 +158,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                         startPort,
                                         endPort,
                                         reaperInterval,
-                                        connExpireTime,
-                                        group
-            );
+                                        connExpireTime);
         }
 
         return cTable;

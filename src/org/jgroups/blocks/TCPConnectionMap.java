@@ -25,7 +25,6 @@ public class TCPConnectionMap {
     private final Mapper mapper;
     private final InetAddress bind_addr;
     private final Address local_addr; // bind_addr + port of srv_sock
-    private final ThreadGroup thread_group; // =new ThreadGroup(Util.getGlobalThreadGroup(),"ConnectionMap");
     private final ServerSocket srv_sock;
     private Receiver receiver;
     private final long conn_expire_time;
@@ -50,10 +49,9 @@ public class TCPConnectionMap {
                             InetAddress external_addr,
                             int external_port,
                             int srv_port,
-                            int max_port,
-                            ThreadGroup group
+                            int max_port
                             ) throws Exception {
-        this(service_name, f,socket_factory, r,bind_addr,external_addr,external_port, srv_port,max_port,0,0, group);
+        this(service_name, f,socket_factory, r,bind_addr,external_addr,external_port, srv_port,max_port,0,0);
     }
 
     public TCPConnectionMap(String service_name,
@@ -65,10 +63,9 @@ public class TCPConnectionMap {
                             int srv_port,
                             int max_port,
                             long reaper_interval,
-                            long conn_expire_time,
-                            ThreadGroup group
+                            long conn_expire_time
                             ) throws Exception {
-        this(service_name, f, null, r, bind_addr, external_addr, external_port, srv_port, max_port, reaper_interval, conn_expire_time, group);
+        this(service_name, f, null, r, bind_addr, external_addr, external_port, srv_port, max_port, reaper_interval, conn_expire_time);
     }
 
     public TCPConnectionMap(String service_name,
@@ -81,8 +78,7 @@ public class TCPConnectionMap {
                             int srv_port,
                             int max_port,
                             long reaper_interval,
-                            long conn_expire_time,
-                            ThreadGroup group
+                            long conn_expire_time
                             ) throws Exception {
         this.mapper = new Mapper(f,reaper_interval);
         this.receiver=r;
@@ -103,10 +99,7 @@ public class TCPConnectionMap {
         else
             local_addr=new IpAddress(srv_sock.getLocalPort());
 
-        this.thread_group=group;
-
-        acceptor=thread_group != null? f.newThread(thread_group, new ConnectionAcceptor(),"ConnectionMap.Acceptor") :
-          f.newThread(new ConnectionAcceptor(),"ConnectionMap.Acceptor");
+        acceptor=f.newThread(new ConnectionAcceptor(),"ConnectionMap.Acceptor");
     }
     
     public Address getLocalAddress() {       

@@ -43,11 +43,10 @@ public class RSVPTest {
         handler=new MyDiagnosticsHandler(InetAddress.getByName("224.0.75.75"), 7500,
                                          LogFactory.getLog(DiagnosticsHandler.class),
                                          new DefaultSocketFactory(),
-                                         new DefaultThreadFactory(new ThreadGroup("RSVPTest"), "", false));
+                                         new DefaultThreadFactory("", false));
         handler.start();
         
-        ThreadGroup test_group=new ThreadGroup("RSVPTest");
-        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory(test_group, "Timer", true, true),
+        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory("Timer", true, true),
                                                5,20,
                                                3000, 5000, "abort");
 

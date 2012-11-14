@@ -478,10 +478,6 @@ public abstract class TP extends Protocol {
      * members contains *all* members from all channels sitting on the shared transport */
     protected final Set<Address> members=new CopyOnWriteArraySet<Address>();
 
-    // Used to be the global thread group (moved here from Util)
-    protected ThreadGroup channel_thread_group;
-
-    protected ThreadGroup pool_thread_group;
 
     /** Keeps track of connects and disconnects, in order to start and stop threads */
     protected int connect_count=0;
@@ -629,13 +625,6 @@ public abstract class TP extends Protocol {
         diag_handler=handler;
     }
 
-    public ThreadGroup getPoolThreadGroup() {
-        return pool_thread_group;
-    }
-
-    public ThreadGroup getChannelThreadGroup() {
-        return channel_thread_group;
-    }
 
     public void setThreadPoolQueueEnabled(boolean flag) {thread_pool_queue_enabled=flag;}
 
@@ -885,33 +874,21 @@ public abstract class TP extends Protocol {
         if(physical_addr_max_fetch_attempts < 1)
             throw new IllegalArgumentException("Property \"physical_addr_max_fetch_attempts\" cannot be less than 1");
 
-
-        channel_thread_group=new ThreadGroup("JGroups channel") {
-            public void uncaughtException(Thread t, Throwable e) {
-                log.error("uncaught exception in " + t + " (thread group=" + this + " )", e);
-                final ThreadGroup tgParent = getParent();
-                if(tgParent != null)
-                    tgParent.uncaughtException(t,e);
-            }
-        };
-
-        pool_thread_group=new ThreadGroup(getChannelThreadGroup(), "Thread Pools");
-
         // Create the default thread factory
         if(global_thread_factory == null)
-            global_thread_factory=new DefaultThreadFactory(getChannelThreadGroup(), "", false);
+            global_thread_factory=new DefaultThreadFactory("", false);
 
         // Create the timer and the associated thread factory - depends on singleton_name
         if(timer_thread_factory == null)
-            timer_thread_factory=new LazyThreadFactory(getChannelThreadGroup(), "Timer", true, true);
+            timer_thread_factory=new LazyThreadFactory("Timer", true, true);
         if(isSingleton())
             timer_thread_factory.setIncludeClusterName(false);
 
         if(default_thread_factory == null)
-            default_thread_factory=new DefaultThreadFactory(pool_thread_group, "Incoming", false, true);
+            default_thread_factory=new DefaultThreadFactory("Incoming", false, true);
         
         if(oob_thread_factory == null)
-            oob_thread_factory=new DefaultThreadFactory(pool_thread_group, "OOB", false, true);
+            oob_thread_factory=new DefaultThreadFactory("OOB", false, true);
 
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
@@ -1022,19 +999,11 @@ public abstract class TP extends Protocol {
             timer.stop();
 
         // 3. Stop the thread pools
-        if(oob_thread_pool instanceof ThreadPoolExecutor) {
+        if(oob_thread_pool instanceof ThreadPoolExecutor)
             shutdownThreadPool(oob_thread_pool);
-        }
 
-        if(thread_pool instanceof ThreadPoolExecutor) {
+        if(thread_pool instanceof ThreadPoolExecutor)
             shutdownThreadPool(thread_pool);
-        }
-
-       // if(pool_thread_group.activeCount() == 0 && !pool_thread_group.isDestroyed())
-         //   pool_thread_group.destroy();
-
-        //if(channel_thread_group.activeCount() == 0 && !channel_thread_group.isDestroyed())
-          //  channel_thread_group.destroy();
     }
 
     /**
@@ -1682,14 +1651,13 @@ public abstract class TP extends Protocol {
 
         boolean is_shared_transport=isSingleton();
 
-        for(ThreadFactory factory:factories) {
-            if(pattern != null) {
+        for(ThreadFactory factory: factories) {
+            if(pattern != null && !is_shared_transport) {
                 factory.setPattern(pattern);
-                if(is_shared_transport)
-                    factory.setIncludeClusterName(false);
             }
-            if(cluster_name != null && !is_shared_transport) // only set cluster name if we don't have a shared transport
-                factory.setClusterName(cluster_name);
+            if(cluster_name != null) { // if we have a shared transport, use singleton_name as cluster_name
+                factory.setClusterName(is_shared_transport? singleton_name : cluster_name);
+            }
             if(local_address != null)
                 factory.setAddress(local_address.toString());
         }
@@ -2526,6 +2494,7 @@ public abstract class TP extends Protocol {
         protected SocketFactory socket_factory=new DefaultSocketFactory();
         Address                 local_addr;
 
+        // kludge, only used by TUNNEL
         static final ThreadLocal<ProtocolAdapter> thread_local=new ThreadLocal<ProtocolAdapter>();
 
         public ProtocolAdapter(String cluster_name, Address local_addr, short transport_id, Protocol up, Protocol down, String pattern) {
@@ -2535,7 +2504,7 @@ public abstract class TP extends Protocol {
             this.up_prot=up;
             this.down_prot=down;
             this.header=new TpHeader(cluster_name);
-            this.factory=new DefaultThreadFactory(getChannelThreadGroup(), "", false);
+            this.factory=new DefaultThreadFactory("", false);
             factory.setPattern(pattern);
             if(local_addr != null)
                 factory.setAddress(local_addr.toString());

@@ -50,11 +50,10 @@ public class LargeMergeTest {
         handler=new MyDiagnosticsHandler(InetAddress.getByName("224.0.75.75"), 7500,
                                          LogFactory.getLog(DiagnosticsHandler.class),
                                          new DefaultSocketFactory(),
-                                         new DefaultThreadFactory(new ThreadGroup("LargeMergeTest"), "", false));
+                                         new DefaultThreadFactory("", false));
         handler.start();
         
-        ThreadGroup test_group=new ThreadGroup("LargeMergeTest");
-        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory(test_group, "Timer", true, true),
+        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory("Timer", true, true),
                                                5,20,
                                                3000, 5000, "abort");
 
@@ -166,7 +165,7 @@ public class LargeMergeTest {
             if(i++ > 0) {
                 int num_singleton_views=0;
                 for(Map.Entry<ViewId,Integer> entry: views.entrySet()) {
-                    if(entry.getValue().intValue() == 1)
+                    if(entry.getValue() == 1)
                         num_singleton_views++;
                     else {
                         System.out.println("==> " + entry.getKey() + ": " + entry.getValue() + " members");
