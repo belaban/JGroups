@@ -449,6 +449,17 @@
             </para>
         </section>
 
+        <section>
+            <title>PDC - Persistent Discovery Cache</title>
+            <para>
+                The Persistent Discovery Cache can be used to cache the results of the discovery process persistently.
+                E.g. if we have TCPPING.initial_hosts configured to include only members A and B, but have a lot more
+                members, then other members can bootstrap themselves and find the right coordinator even when neither
+                A nor B are running.
+            </para>
+            ${PDC}
+        </section>
+
     </section>
 
     <section>

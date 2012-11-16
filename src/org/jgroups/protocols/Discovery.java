@@ -33,15 +33,15 @@ public abstract class Discovery extends Protocol {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @Property(description="Timeout to wait for the initial members")
-    protected long timeout=3000;
+    protected long    timeout=3000;
 
     @Property(description="Minimum number of initial members to get a response from")
-    protected int num_initial_members=10;
+    protected int     num_initial_members=10;
 
     @Deprecated
     @Property(description="Minimum number of server responses (PingData.isServer()=true). If this value is " +
             "greater than 0, we'll ignore num_initial_members",deprecatedMessage="not used anymore")
-    protected int num_initial_srv_members=0;
+    protected int     num_initial_srv_members=0;
 
     @Property(description="Return from the discovery phase as soon as we have 1 coordinator response")
     protected boolean break_on_coord_rsp=true;
@@ -53,10 +53,15 @@ public abstract class Discovery extends Protocol {
     @Property(description="If greater than 0, we'll wait a random number of milliseconds in range [0..stagger_timeout] " +
       "before sending a discovery response. This prevents traffic spikes in large clusters when everyone sends their " +
       "discovery response at the same time")
-    protected long stagger_timeout=0;
+    protected long    stagger_timeout=0;
 
     @Property(description="Always sends a discovery response, no matter what",writable=true)
     protected boolean force_sending_discovery_rsps=true;
+
+
+    @Property(description="If a persistent disk cache (PDC) is present, combine the discovery results with the " +
+      "contents of the disk cache before returning the results")
+    protected boolean use_disk_cache=false;
 
 
     @ManagedOperation(description="Sets force_sending_discovery_rsps")
@@ -72,7 +77,7 @@ public abstract class Discovery extends Protocol {
 
     /** The largest cluster size found so far (gets reset on stop()) */
     @ManagedAttribute
-    private volatile int max_found_members=0;
+    private int max_found_members=0;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -162,7 +167,7 @@ public abstract class Discovery extends Protocol {
 
     protected boolean isMergeRunning() {
         Object retval=up_prot.up(new Event(Event.IS_MERGE_IN_PROGRESS));
-        return retval instanceof Boolean && ((Boolean)retval).booleanValue();
+        return retval instanceof Boolean && (Boolean)retval;
     }
 
     public List<Integer> providedUpServices() {
@@ -243,10 +248,8 @@ public abstract class Discovery extends Protocol {
         PingData data=null;
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
 
-        if(view_id == null) {
-            List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
-            data=new PingData(local_addr, null, false, UUID.get(local_addr), physical_addrs);
-        }
+        if(view_id == null)
+            data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
 
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
         hdr.view_id=view_id;
@@ -259,6 +262,15 @@ public abstract class Discovery extends Protocol {
             sendMcastDiscoveryRequest(msg);
         }
         else {
+            if(use_disk_cache) {
+                // this only makes sense if we have PDC below us
+                Collection<PhysicalAddress> list=(Collection<PhysicalAddress>)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESSES));
+                if(list != null)
+                    for(PhysicalAddress phys_addr: list)
+                        if(!cluster_members.contains(phys_addr))
+                            cluster_members.add(phys_addr);
+            }
+
             if(cluster_members.isEmpty()) { // if we don't find any members, return immediately
                 if(promise != null)
                     promise.setResult(null);
@@ -389,10 +401,10 @@ public abstract class Discovery extends Protocol {
                                 logical_addr=msg.getSrc();
                             Collection<PhysicalAddress> physical_addrs=data.getPhysicalAddrs();
                             PhysicalAddress physical_addr=physical_addrs != null && !physical_addrs.isEmpty()? physical_addrs.iterator().next() : null;
-                            if(logical_addr != null && physical_addr != null)
-                                down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
                             if(logical_addr != null && data.getLogicalName() != null)
                                 UUID.add(logical_addr, data.getLogicalName());
+                            if(logical_addr != null && physical_addr != null)
+                                down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
                             discoveryRequestReceived(msg.getSrc(), data.getLogicalName(), physical_addrs);
 
                             synchronized(ping_responses) {
@@ -456,10 +468,10 @@ public abstract class Discovery extends Protocol {
                             Collection<PhysicalAddress> addrs=data.getPhysicalAddrs();
                             PhysicalAddress physical_addr=addrs != null && !addrs.isEmpty()?
                                     addrs.iterator().next() : null;
-                            if(logical_addr != null && physical_addr != null)
-                                down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
                             if(logical_addr != null && data.getLogicalName() != null)
                                 UUID.add(logical_addr, data.getLogicalName());
+                            if(logical_addr != null && physical_addr != null)
+                                down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(logical_addr, physical_addr)));
 
                             if(log.isTraceEnabled())
                                 log.trace(local_addr + ": received GET_MBRS_RSP from " + response_sender + ": " + data);

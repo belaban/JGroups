@@ -1138,9 +1138,8 @@ public abstract class TP extends Protocol {
      * modified Message to the send queue of the layer below it, by calling down()).
      */
     public Object down(Event evt) {
-        if(evt.getType() != Event.MSG) {  // unless it is a message handle it and respond
+        if(evt.getType() != Event.MSG)  // unless it is a message handle it and respond
             return handleDownEvent(evt);
-        }
 
         Message msg=(Message)evt.getArg();
         if(header != null) {
