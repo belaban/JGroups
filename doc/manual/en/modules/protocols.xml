@@ -457,6 +457,18 @@
                 members, then other members can bootstrap themselves and find the right coordinator even when neither
                 A nor B are running.
             </para>
+            <para>
+                An example of a TCP-based stack configuration is:
+            </para>
+            <programlisting language="XML">
+&lt;TCP /&gt;
+&lt;PDC cache_dir="/tmp/jgroups"  /&gt;
+&lt;TCPPING timeout="2000" num_initial_members="20"
+         initial_hosts="192.168.1.5[7000]" port_range="0"
+         return_entire_cache="true"
+         use_disk_cache="true" /&gt;
+            </programlisting>
+
             ${PDC}
         </section>
 
