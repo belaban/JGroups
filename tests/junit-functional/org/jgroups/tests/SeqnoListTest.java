@@ -20,6 +20,7 @@ public class SeqnoListTest {
         SeqnoList list=new SeqnoList().add(1).add(5,10).add(15);
         System.out.println("list = " + list);
         assert list.size() == 8;
+        assert list.getLast() == 15;
     }
 
     public void testRemoval() {
@@ -37,6 +38,20 @@ public class SeqnoListTest {
         }
 
         assert list.size() == 1;
+    }
+
+
+    public void testRemoval2() {
+        SeqnoList list=new SeqnoList(1).add(10,15);
+        assert list.size() == 7;
+
+        list.remove(12);
+        assert list.size() == 3;
+    }
+
+    public void testLast() {
+        SeqnoList list=new SeqnoList().add(3).add(5,10);
+        assert list.getLast() == 10;
     }
 
     public void testIteration() {

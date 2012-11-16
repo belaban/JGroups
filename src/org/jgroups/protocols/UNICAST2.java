@@ -137,16 +137,13 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     protected Future<?>              connection_reaper; // closes idle connections
 
 
-
+    @Deprecated
     public int[] getTimeout() {return timeout;}
 
     @Deprecated
     @Property(name="timeout",converter=PropertyConverters.IntegerArray.class,
               description="list of timeouts", deprecatedMessage="not used anymore")
-    public void setTimeout(int[] val) {
-        if(val != null)
-            timeout=val;
-    }
+    public void setTimeout(int[] val) {}
 
     public void setMaxMessageBatchSize(int size) {
         if(size >= 1)

@@ -70,6 +70,18 @@ public class SeqnoList implements Streamable, Iterable<Long> {
         }
     }
 
+    /** Returns the last seqno, this should also be the highest seqno in the list as we're supposed to add seqnos
+     * in order
+     * @return
+     */
+    public long getLast() {
+        int size=seqnos.size();
+        if(size == 0)
+            return 0;
+        Seqno seqno=seqnos.get(size - 1);
+        return seqno instanceof SeqnoRange? ((SeqnoRange)seqno).to : seqno.from;
+    }
+
     public void writeTo(DataOutput out) throws Exception {
         out.writeInt(seqnos.size());
         for(Seqno seqno: seqnos) {

@@ -172,6 +172,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     /** RetransmitTask running every xmit_interval ms */
     protected Future<?>                 xmit_task;
+    /** Used by the retransmit task to keep the last retransmitted seqno per sender (https://issues.jboss.org/browse/JGRP-1539) */
+    protected final Map<Address,Long>   xmit_task_map=new HashMap<Address,Long>();
 
     protected volatile boolean          leaving=false;
     protected volatile boolean          running=false;
@@ -442,6 +444,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         if(become_server_queue != null)
             become_server_queue.clear();
         stopRetransmitTask();
+        xmit_task_map.clear();
         reset();
     }
 
@@ -1307,25 +1310,32 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * sends retransmit request to all members from which we have missing messages
      */
     protected class RetransmitTask implements Runnable {
-
         public void run() {
-            for(Map.Entry<Address,Table<Message>> entry: xmit_table.entrySet()) {
-                Address target=entry.getKey(); // target to send retransmit requests to
-                Table<Message> buf=entry.getValue();
-                if(buf.getNumMissing() > 0) {
-                    SeqnoList missing=buf.getMissing();
-                    if(missing != null) {
-                        // Just a double-check to avoid unneeded retransmissions: messages might have been added to or
-                        // removed from the table after calling getMissing(), and so we remove all
-                        // seqnos <= the highest delivered seqno from the retransmit list
-                        missing.remove(buf.getHighestDelivered());
-                        if(missing.size()  > 0)
-                            retransmit(missing, target, false);
-                    }
+            triggerXmit();
+        }
+    }
+
+    @ManagedOperation(description="Triggers the retransmission task, asking all senders for missing messages")
+    public void triggerXmit() {
+        for(Map.Entry<Address,Table<Message>> entry: xmit_table.entrySet()) {
+            Address target=entry.getKey(); // target to send retransmit requests to
+            Table<Message> buf=entry.getValue();
+            if(buf.getNumMissing() > 0) {  // fast operation
+                SeqnoList missing=buf.getMissing();
+                if(missing != null) {
+                    // Just a double-check to avoid unneeded retransmissions: messages might have been added to or
+                    // removed from the table after calling getMissing(), and so we remove all
+                    // seqnos <= the highest delivered seqno from the retransmit list
+                    missing.remove(buf.getHighestDelivered());
+                    if(missing.size()  > 0)
+                        retransmit(missing, target, false);
                 }
             }
         }
     }
+
+
+
 
     protected static class Counter implements Table.Visitor<Message> {
         protected final boolean count_size; // use size() or length()
