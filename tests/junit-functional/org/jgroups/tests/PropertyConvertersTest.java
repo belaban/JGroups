@@ -38,7 +38,15 @@ public class PropertyConvertersTest {
      */
     public static void testNetworkList() throws Exception {
         PropertyConverter conv=new PropertyConverters.NetworkInterfaceList();
-        Object tmp=conv.convert(null, List.class, "bela", "lo", false);
+
+        Object tmp;
+        try {
+            tmp=conv.convert(null, List.class, "bela", "lo", false);
+        }
+        catch(Throwable t) {
+            tmp=conv.convert(null, List.class, "bela", "lo0", false); // when running on Mac OS
+        }
+
         Object str=conv.toString(tmp);
         System.out.println("str = " + str);
         assert str.equals("lo");
