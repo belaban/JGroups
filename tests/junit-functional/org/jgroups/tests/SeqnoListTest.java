@@ -49,6 +49,27 @@ public class SeqnoListTest {
         assert list.size() == 3;
     }
 
+
+    public void testRemoveHigherThan() {
+        SeqnoList list=new SeqnoList(1).add(10,15);
+        list.removeHigherThan(15);
+        assert list.size() == 7;
+
+        list.removeHigherThan(14);
+        assert list.size() == 6;
+
+        list.removeHigherThan(3);
+        assert list.size() ==1;
+    }
+
+    public void testRemoveHigherThan2() {
+        SeqnoList list=new SeqnoList(1).add(10,15);
+        list.removeHigherThan(10);
+        assert list.size() == 2;
+    }
+
+
+
     public void testLast() {
         SeqnoList list=new SeqnoList().add(3).add(5,10);
         assert list.getLast() == 10;

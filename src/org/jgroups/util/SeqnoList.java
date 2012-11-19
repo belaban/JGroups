@@ -70,6 +70,29 @@ public class SeqnoList implements Streamable, Iterable<Long> {
         }
     }
 
+
+    /** Removes all seqnos > seqno */
+    public void removeHigherThan(long max_seqno) {
+        for(Iterator<Seqno> it=seqnos.iterator(); it.hasNext();) {
+            Seqno tmp=it.next();
+            if(tmp instanceof SeqnoRange) {
+                SeqnoRange range=(SeqnoRange)tmp;
+                if(range.from > max_seqno)
+                    it.remove();
+                else {
+                    if(range.to > max_seqno)
+                        range.to=max_seqno;
+                }
+            }
+            else {
+                if(tmp.from > max_seqno)
+                    it.remove();
+            }
+        }
+    }
+
+
+
     /** Returns the last seqno, this should also be the highest seqno in the list as we're supposed to add seqnos
      * in order
      * @return
