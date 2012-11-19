@@ -234,10 +234,8 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
 
 
     /**
-     * Sends a message to the members listed in dests. If dests is null, the message is sent to all current group
-     * members.
-     * @param dests A list of group members to send the message to. The message is sent to all members of the current
-     *        group if null
+     * Sends a message to all members and expects responses from members in dests (if non-null).
+     * @param dests A list of group members from which to expect responses (if the call is blocking).
      * @param msg The message to be sent
      * @param options A set of options that govern the call. See {@link org.jgroups.blocks.RequestOptions} for details
      * @return RspList A list of Rsp elements
@@ -252,10 +250,8 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
 
 
     /**
-     * Sends a message to the members listed in dests. If dests is null, the message is sent to all current group
-     * members.
-     * @param dests A list of group members to send the message to. The message is sent to all members of the current
-     *        group if null
+     * Sends a message to all members and expects responses from members in dests (if non-null).
+     * @param dests A list of group members from which to expect responses (if the call is blocking).
      * @param msg The message to be sent
      * @param options A set of options that govern the call. See {@link org.jgroups.blocks.RequestOptions} for details
      * @return NotifyingFuture<T> A future from which the results (RspList) can be retrieved

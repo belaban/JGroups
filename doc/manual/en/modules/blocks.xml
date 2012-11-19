@@ -100,7 +100,7 @@
                       Anycasting: if set to true, this means we'll use unicasts to individual members rather than sending
                       multicasts. For example, if we have have TCP as transport, and the cluster is {A,B,C,D,E}, and we
                       send a message through MessageDispatcher where dests={C,D}, and we do <emphasis>not</emphasis>
-                      want to send the request to everyone, and everyone except C and D discard the message, then we'd
+                      want to send the request to everyone, then we'd
                       set anycasting=true. This will send the request to C and D only, as unicasts, which is better if
                       we use a transport such as TCP which cannot use IP multicasting (sending 1 packet to reach all
                       members).
@@ -120,8 +120,9 @@
                   </listitem>
                   <listitem>
                       Exclusion list: here we can pass a list of members (addresses) that should be excluded. For example,
-                      if the view is A,B,C,D,E, and we set exclusion list to A,C then the caller will wait for responses
-                      from everyone except A and C.
+                      if the view is A,B,C,D,E, and we set the exclusion list to A,C then the caller will wait for
+                      responses from everyone except A and C. Also, every recipient that's in the exclusion list
+                      will discard the message.
                   </listitem>
               </itemizedlist>
           </para>
@@ -224,6 +225,37 @@ public class RspList&lt;T&gt; implements Map&lt;Address,Rsp&gt; {
           members that failed (e.g. crashed) during the wait for responses. <methodname>getResults()</methodname>
           returns a list of return values. <methodname>get()</methodname> returns the return value for a specific member.
       </para>
+
+    <section id="MessageDispatcherDests">
+        <title>Requests and target destinations</title>
+        <para>
+            When a non-null list of addresses is passed (as the destination list) to MessageDispatcher.castMessage() or
+            RpcDispatcher.callRemoteMethods(), then this does <emphasis>not</emphasis> mean that only the members
+            included in the list will receive the message, but rather it means that we'll only wait for responses from
+            those members, if the call is blocking.
+        </para>
+        <para>
+            If we want to restrict the reception of a message to the destination members, there are a few ways to do
+            this:
+            <itemizedlist>
+                <listitem>
+                    If we only have a few destinations to send the message to, use several unicasts.
+                </listitem>
+                <listitem>
+                    Use anycasting. E.g. if we have a membership of {A,B,C,D,E,F}, but only want A and C to receive the
+                    message, then set the destination list to A and C and enable anycasting in the RequestOptions passed
+                    to the call (see above). This means that the transport will send 2 unicasts.
+                </listitem>
+                <listitem>
+                    Use exclusion lists. If we have a membership of {A,B,C,D,E,F}, and want to send a message to almost
+                    all members, but exclude D and E, then we can define an exclusion list: this is done by
+                    settting the destination list to null (= send to all members), or to {A,B,C,D,E,F} and set the
+                    exclusion list in the RequestOptions passed to the call to D and E.
+                </listitem>
+            </itemizedlist>
+        </para>
+
+    </section>
 
     <section id="MessageDispatcherExample">
         <title>Example</title>

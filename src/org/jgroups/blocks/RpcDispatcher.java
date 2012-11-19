@@ -105,8 +105,8 @@ public class RpcDispatcher extends MessageDispatcher {
 
 
     /**
-     * Invokes a method in all members contained in dests (or all members if dests is null).
-     * @param dests dests A list of addresses. If null, the method will be invoked on all cluster members
+     * Invokes a method in all members and expects responses from members contained in dests (or all members if dests is null).
+     * @param dests A list of addresses. If null, we'll wait for responses from all cluster members
      * @param method_name The name of the target method
      * @param args The arguments to be passed
      * @param types The types of the arguments
@@ -125,8 +125,8 @@ public class RpcDispatcher extends MessageDispatcher {
 
 
     /**
-     * Invokes a method in all members contained in dests (or all members if dests is null).
-     * @param dests A list of addresses. If null, the method will be invoked on all cluster members
+     * Invokes a method in all members and expects responses from members contained in dests (or all members if dests is null).
+     * @param dests A list of addresses. If null, we'll wait for responses from all cluster members
      * @param method_call The method (plus args) to be invoked
      * @param options A collection of call options, e.g. sync versus async, timeout etc
      * @return RspList A list of return values and flags (suspected, not received) per member
@@ -169,8 +169,8 @@ public class RpcDispatcher extends MessageDispatcher {
 
 
     /**
-     * Invokes a method in all members contained in dests (or all members if dests is null).
-     * @param dests A list of addresses. If null, the method will be invoked on all cluster members
+     * Invokes a method in all members and expects responses from members contained in dests (or all members if dests is null).
+     * @param dests A list of addresses. If null, we'll wait for responses from all cluster members
      * @param method_call The method (plus args) to be invoked
      * @param options A collection of call options, e.g. sync versus async, timeout etc
      * @return NotifyingFuture A future from which the results can be fetched
