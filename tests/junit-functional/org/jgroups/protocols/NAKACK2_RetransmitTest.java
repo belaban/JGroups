@@ -66,7 +66,8 @@ public class NAKACK2_RetransmitTest {
         assertReceived(1,2,3,4);  // only messages 1-4 are delivered, there's a gap at 5
 
         nak.triggerXmit();
-        assertXmitRequests(5, 7,  9,10,11,12,13,   18);
+        // assertXmitRequests(5, 7,  9,10,11,12,13,   18);
+        assertXmitRequests(); // the first time, there will *not* be any retransmit requests !
 
         injectMessages(7,  9,  13,  18,  23, 24,  26, 27, 28, 29,   31);
         nak.triggerXmit();
@@ -143,7 +144,7 @@ public class NAKACK2_RetransmitTest {
                         break;
                     if(hdr.getType() == NakAckHeader2.XMIT_REQ) {
                         SeqnoList seqnos=(SeqnoList)msg.getObject();
-                        System.out.println("-- missing messages are " + seqnos);
+                        System.out.println("-- XMIT-REQ: request retransmission for " + seqnos);
                         for(Long seqno: seqnos)
                             xmit_requests.add(seqno);
                     }

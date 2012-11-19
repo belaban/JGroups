@@ -499,6 +499,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 is_server=true;  // check vids from now on
                 if(suppress_log_non_member != null)
                     suppress_log_non_member.removeExpired(suppress_time_non_member_warnings);
+                xmit_task_map.keySet().retainAll(tmp_view.getMembers());
                 break;
 
             case Event.BECOME_SERVER:
@@ -1327,8 +1328,21 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     // removed from the table after calling getMissing(), and so we remove all
                     // seqnos <= the highest delivered seqno from the retransmit list
                     missing.remove(buf.getHighestDelivered());
-                    if(missing.size()  > 0)
-                        retransmit(missing, target, false);
+                    if(missing.size()  > 0) {
+                        long highest=missing.getLast();
+                        Long prev_seqno=xmit_task_map.get(target);
+                        if(prev_seqno == null) {
+                            xmit_task_map.put(target, highest); // no retransmission
+                        }
+                        else {
+                            missing.removeHigherThan(prev_seqno);
+                            if(highest > prev_seqno)
+                                xmit_task_map.put(target, highest);
+                            retransmit(missing, target, false);
+                        }
+                    }
+                    else
+                        xmit_task_map.remove(target); // no current gaps for target
                 }
             }
         }
