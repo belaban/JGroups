@@ -5,6 +5,7 @@ import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import java.io.*;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -51,6 +52,10 @@ public class SiteUUID extends UUID implements SiteAddress {
     public static void replaceInCache(short site, String name) {
         site_cache.put(site, name);
     }
+
+    public static Collection<String> cacheValues() {return site_cache.values();}
+
+    public static boolean hasCacheValues() {return !site_cache.isEmpty();}
 
     public static String getSiteName(short site) {
         return site_cache.get(site);

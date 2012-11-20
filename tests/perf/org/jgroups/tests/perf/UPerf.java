@@ -6,6 +6,8 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
+import org.jgroups.protocols.relay.SiteMaster;
+import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -28,11 +30,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Bela Ban
  */
 public class UPerf extends ReceiverAdapter {
-    private JChannel             channel;
-    private Address              local_addr;
-    private RpcDispatcher        disp;
-    static final String          groupname="uperf";
-    private final List<Address>  members=new ArrayList<Address>();
+    private JChannel               channel;
+    private Address                local_addr;
+    private RpcDispatcher          disp;
+    static final String            groupname="uperf";
+    protected final List<Address>  members=new ArrayList<Address>();
+    protected final List<Address>  site_masters=new ArrayList<Address>();
 
 
     // ============ configurable properties ==================
@@ -94,7 +97,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
 
-    public void init(String props, String name) throws Throwable {
+    public void init(String props, String name, boolean xsite) throws Throwable {
         channel=new JChannel(props);
         if(name != null)
             channel.setName(name);
@@ -107,6 +110,18 @@ public class UPerf extends ReceiverAdapter {
         disp.setRequestMarshaller(new CustomMarshaller());
         channel.connect(groupname);
         local_addr=channel.getAddress();
+
+        if(xsite) {
+            if(SiteUUID.hasCacheValues())
+                for(String site_master: SiteUUID.cacheValues()) {
+                    try {
+                        site_masters.add(new SiteMaster(site_master));
+                    }
+                    catch(Throwable t) {
+                        System.err.println("failed creating SiteMaster(" + site_master + "): " + t);
+                    }
+                }
+        }
 
         try {
             MBeanServer server=Util.getMBeanServer();
@@ -145,11 +160,23 @@ public class UPerf extends ReceiverAdapter {
         System.out.println("** view: " + new_view);
         members.clear();
         members.addAll(new_view.getMembers());
+        addSiteMastersToMembers();
+    }
+
+    protected void addSiteMastersToMembers() {
+        if(!site_masters.isEmpty()) {
+            for(Address sm: site_masters)
+                if(!members.contains(sm))
+                    members.add(sm);
+        }
     }
 
     // =================================== callbacks ======================================
 
     public Results startTest() throws Throwable {
+
+        addSiteMastersToMembers();
+
         System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) +
                              ", sync=" + sync + ", oob=" + oob + ", use_anycast_addrs=" + use_anycast_addrs);
         int total_gets=0, total_puts=0;
@@ -233,6 +260,8 @@ public class UPerf extends ReceiverAdapter {
 
     public void eventLoop() throws Throwable {
         int c;
+
+        addSiteMastersToMembers();
 
         while(true) {
             c=Util.keyPress("[1] Send msgs [2] Print view [3] Print conns " +
@@ -401,7 +430,7 @@ public class UPerf extends ReceiverAdapter {
 
 
     void printView() {
-        System.out.println("\n-- view: " + channel.getView() + '\n');
+        System.out.println("\n-- view: " + members + '\n');
         try {
             System.in.skip(System.in.available());
         }
@@ -704,8 +733,9 @@ public class UPerf extends ReceiverAdapter {
 
 
     public static void main(String[] args) {
-        String props=null;
-        String name=null;
+        String  props=null;
+        String  name=null;
+        boolean xsite=true;
 
 
         for(int i=0; i < args.length; i++) {
@@ -717,6 +747,10 @@ public class UPerf extends ReceiverAdapter {
                 name=args[++i];
                 continue;
             }
+            if("-xsite".equals(args[i])) {
+                xsite=Boolean.valueOf(args[++i]);
+                continue;
+            }
             help();
             return;
         }
@@ -724,7 +758,7 @@ public class UPerf extends ReceiverAdapter {
         UPerf test=null;
         try {
             test=new UPerf();
-            test.init(props, name);
+            test.init(props, name, xsite);
             test.eventLoop();
         }
         catch(Throwable ex) {
@@ -735,7 +769,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("UPerf [-props <props>] [-name name]");
+        System.out.println("UPerf [-props <props>] [-name name] [-xsite <true | false>]");
     }
 
 
