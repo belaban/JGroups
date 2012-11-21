@@ -1241,34 +1241,29 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
     @ManagedOperation(description="Triggers the retransmission task, asking all senders for missing messages")
     public void triggerXmit() {
+        SeqnoList missing;
+
         for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
             Address target=entry.getKey(); // target to send retransmit requests to
             ReceiverEntry val=entry.getValue();
             Table<Message> buf=val != null? val.received_msgs : null;
-            if(buf != null && buf.getNumMissing() > 0) {
-                SeqnoList missing=buf.getMissing();
-                if(missing != null) {
-                    // Just a double-check to avoid unneeded retransmissions: messages might have been added to or
-                    // removed from the table after calling getMissing(), and so we remove all
-                    // seqnos <= the highest delivered seqno from the retransmit list
-                    missing.remove(buf.getHighestDelivered());
-                    if(missing.size()  > 0) {
-                        long highest=missing.getLast();
-                        Long prev_seqno=xmit_task_map.get(target);
-                        if(prev_seqno == null) {
-                            xmit_task_map.put(target, highest); // no retransmission
-                        }
-                        else {
-                            missing.removeHigherThan(prev_seqno);
-                            if(highest > prev_seqno)
-                                xmit_task_map.put(target, highest);
-                            retransmit(missing, target);
-                        }
-                    }
-                    else
-                        xmit_task_map.remove(target); // no current gaps for target
+
+            if(buf != null && buf.getNumMissing() > 0 && (missing=buf.getMissing()) != null) { // getNumMissing() is fast
+                long highest=missing.getLast();
+                Long prev_seqno=xmit_task_map.get(target);
+                if(prev_seqno == null) {
+                    xmit_task_map.put(target, highest); // no retransmission
+                }
+                else {
+                    missing.removeHigherThan(prev_seqno); // we only retransmit the 'previous batch'
+                    if(highest > prev_seqno)
+                        xmit_task_map.put(target, highest);
+                    if(missing.size() > 0)
+                        retransmit(missing, target);
                 }
             }
+            else if(!xmit_task_map.isEmpty())
+                xmit_task_map.remove(target); // no current gaps for target
         }
     }
 
