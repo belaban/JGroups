@@ -55,7 +55,7 @@
     <FD_ALL/>
     <VERIFY_SUSPECT timeout="1500"  />
     <BARRIER />
-    <pbcast.NAKACK2 xmit_interval="2000"
+    <pbcast.NAKACK2 xmit_interval="500"
                     xmit_table_num_rows="100"
                     xmit_table_msgs_per_row="2000"
                     xmit_table_max_compaction_time="30000"
