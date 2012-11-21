@@ -49,7 +49,7 @@ public class PropertyConvertersTest {
 
         Object str=conv.toString(tmp);
         System.out.println("str = " + str);
-        assert str.equals("lo");
+        assert str.equals("lo") || str.equals("lo0");
     }
 
 
