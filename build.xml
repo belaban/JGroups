@@ -409,6 +409,7 @@
                 >
         	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
         	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
             <xmlfileset dir="${testng.conf.dir}" includes="byteman.xml"/>
         </testng>
     </target>
