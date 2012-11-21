@@ -384,6 +384,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         stopStableTask();
         stopConnectionReaper();
         stopRetransmitTask();
+        xmit_task_map.clear();
         removeAllConnections();
     }
 
@@ -512,6 +513,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     for(Address non_mbr: non_members)
                         removeConnection(non_mbr);
                 }
+                xmit_task_map.keySet().retainAll(view.getMembers());
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -1250,8 +1252,6 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     // removed from the table after calling getMissing(), and so we remove all
                     // seqnos <= the highest delivered seqno from the retransmit list
                     missing.remove(buf.getHighestDelivered());
-                    //if(missing.size()  > 0)
-                    //  retransmit(missing, target);
                     if(missing.size()  > 0) {
                         long highest=missing.getLast();
                         Long prev_seqno=xmit_task_map.get(target);
