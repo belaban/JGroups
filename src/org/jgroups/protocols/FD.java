@@ -212,7 +212,7 @@ public class FD extends Protocol {
                     startMonitor();
                 }
                 catch(Exception ex) {
-                    if(log.isWarnEnabled()) log.warn("exception when calling startMonitor(): " + ex);
+                    if(log.isWarnEnabled()) log.warn(local_addr + ": exception when calling startMonitor(): " + ex);
                 }
             }
         }
@@ -233,7 +233,7 @@ public class FD extends Protocol {
                     case FdHeader.HEARTBEAT:                       // heartbeat request; send heartbeat ack
                         Address hb_sender=msg.getSrc();
                         if(log.isTraceEnabled())
-                            log.trace("received are-you-alive from " + hb_sender + ", sending response");
+                            log.trace(local_addr + ": received are-you-alive from " + hb_sender + ", sending response");
                         sendHeartbeatResponse(hb_sender);
                         break;                                     // don't pass up !
 
@@ -243,12 +243,12 @@ public class FD extends Protocol {
 
                     case FdHeader.SUSPECT:
                         if(hdr.mbrs != null) {
-                            if(log.isTraceEnabled()) log.trace("[SUSPECT] suspect hdr is " + hdr);
+                            if(log.isTraceEnabled()) log.trace(local_addr + ": suspect hdr is " + hdr);
                             for(Address mbr: hdr.mbrs) {
                                 if(local_addr != null && mbr.equals(local_addr)) {
                                     if(log.isWarnEnabled())
-                                        log.warn("I was suspected by " + msg.getSrc() + "; ignoring the SUSPECT " +
-                                                "message and sending back a HEARTBEAT_ACK");
+                                        log.warn(local_addr + ": I was suspected by " + msg.getSrc() +
+                                                   "; ignoring the SUSPECT message and sending back a HEARTBEAT_ACK");
                                     sendHeartbeatResponse(msg.getSrc());
                                     continue;
                                 }
@@ -425,8 +425,8 @@ public class FD extends Protocol {
             try {
                 if(ping_dest == null) {
                     if(log.isWarnEnabled())
-                        log.warn("ping_dest is null: members=" + members + ", pingable_mbrs=" +
-                                pingable_mbrs + ", local_addr=" + local_addr);
+                        log.warn(local_addr + ": ping_dest is null: members=" + members + ", pingable_mbrs=" +
+                                   pingable_mbrs + ", local_addr=" + local_addr);
                     return;
                 }
                 else
@@ -442,7 +442,7 @@ public class FD extends Protocol {
             hb_req.setFlag(Message.OOB);
             hb_req.putHeader(id, new FdHeader(FdHeader.HEARTBEAT));  // send heartbeat request
             if(log.isDebugEnabled())
-                log.debug("sending are-you-alive msg to " + dest + " (own address=" + local_addr + ')');
+                log.debug(local_addr + ": sending are-you-alive msg to " + dest + " (own address=" + local_addr + ')');
             down_prot.down(new Event(Event.MSG, hb_req));
             num_heartbeats++;
 
@@ -454,9 +454,8 @@ public class FD extends Protocol {
             if(not_heard_from > timeout + 500) { // no heartbeat ack for more than timeout msecs
                 if(num_tries >= max_tries) {
                     if(log.isDebugEnabled())
-                        log.debug("[" + local_addr + "]: received no heartbeat ack from " + dest +
-                                " for " + (num_tries +1) + " times (" + ((num_tries+1) * timeout) +
-                                " milliseconds), suspecting it");
+                        log.debug(local_addr + ": received no heartbeat ack from " + dest + " for " + (num_tries +1) +
+                                    " times (" + ((num_tries+1) * timeout) + " milliseconds), suspecting it");
                     // broadcast a SUSPECT message to all members - loop until
                     // unsuspect or view change is received
                     bcast_task.addSuspectedMember(dest);
@@ -468,7 +467,7 @@ public class FD extends Protocol {
                 }
                 else {
                     if(log.isDebugEnabled())
-                        log.debug("heartbeat missing from " + dest + " (number=" + num_tries + ')');
+                        log.debug(local_addr + ": heartbeat missing from " + dest + " (number=" + num_tries + ')');
                     num_tries++;
                 }
             }
@@ -510,7 +509,7 @@ public class FD extends Protocol {
                                                               timeout, // then every timeout milliseconds, until cancelled
                                                               TimeUnit.MILLISECONDS);
                     if(log.isTraceEnabled())
-                        log.trace("BroadcastTask started");
+                        log.trace(local_addr + ": BroadcastTask started");
                 }
                 else {
                     task.addSuspectedMember(suspect);
@@ -549,7 +548,7 @@ public class FD extends Protocol {
 
         void removeSuspectedMember(Address suspected_mbr) {
             if(suspected_mbr == null) return;
-            if(log.isDebugEnabled()) log.debug("member is " + suspected_mbr);
+            if(log.isDebugEnabled()) log.debug(local_addr + ": member is " + suspected_mbr);
             synchronized(suspected_mbrs) {
                 suspected_mbrs.remove(suspected_mbr);
                 if(suspected_mbrs.isEmpty())
@@ -581,7 +580,7 @@ public class FD extends Protocol {
         public void stop() {
             suspected_members.clear();
             if(log.isTraceEnabled())
-                log.trace("BroadcastTask stopped");
+                log.trace(local_addr + ": BroadcastTask stopped");
         }
 
 
@@ -603,7 +602,7 @@ public class FD extends Protocol {
             suspect_msg.setFlag(Message.OOB);
             suspect_msg.putHeader(id, hdr);
             if(log.isDebugEnabled())
-                log.debug("broadcasting SUSPECT message [suspected_mbrs=" + suspected_members + "] to group");
+                log.debug(local_addr + ": broadcasting SUSPECT message [suspected_mbrs=" + suspected_members + "] to group");
             down_prot.down(new Event(Event.MSG, suspect_msg));
         }
 

@@ -169,7 +169,7 @@ public class JChannel extends Channel {
 
 
     /**
-     * Creates a channel from a list of protocols. Note that after a {@link org.jgroups.JChannel#close()}, the protocol
+     * Creates a channel from an array of protocols. Note that after a {@link org.jgroups.JChannel#close()}, the protocol
      * list <em>should not</em> be reused, ie. new JChannel(protocols) would reuse the same protocol list, and this
      * might lead to problems !
      * @param protocols The list of protocols, from bottom to top, ie. the first protocol in the list is the transport,
@@ -177,6 +177,18 @@ public class JChannel extends Channel {
      * @throws Exception
      */
     public JChannel(Protocol ... protocols) throws Exception {
+        this(Arrays.asList(protocols));
+    }
+
+    /**
+     * Creates a channel from an array of protocols. Note that after a {@link org.jgroups.JChannel#close()}, the protocol
+     * list <em>should not</em> be reused, ie. new JChannel(protocols) would reuse the same protocol list, and this
+     * might lead to problems !
+     * @param protocols The list of protocols, from bottom to top, ie. the first protocol in the list is the transport,
+     *                  the last the top protocol
+     * @throws Exception
+     */
+    public JChannel(Collection<Protocol> protocols) throws Exception {
         prot_stack=new ProtocolStack();
         setProtocolStack(prot_stack);
         for(Protocol prot: protocols) {

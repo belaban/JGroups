@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 
-import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jgroups.*;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
@@ -25,7 +24,7 @@ import java.util.*;
  * @since 3.1
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
-public class SequencerMergeTest extends BMNGRunner {
+public class SequencerMergeTest {
     JChannel a, b, c, d;
     static final String GROUP="SequencerMergeTest";
 
@@ -194,19 +193,17 @@ public class SequencerMergeTest extends BMNGRunner {
 
 
     protected JChannel create(String name, boolean insert_discard) throws Exception {
-        JChannel ch=Util.createChannel(new UDP(),
-                                       new DISCARD().setValue("discard_all", insert_discard),
-                                       new PING().setValue("timeout",100),
-                                       new NAKACK2().setValue("use_mcast_xmit",false)
-                                         .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
-                                       new UNICAST2(),
-                                       new STABLE().setValue("max_bytes",50000),
-                                       new SEQUENCER(), // below GMS, to establish total order between views and messages
-                                       new GMS().setValue("print_local_addr",false)
-                                         .setValue("leave_timeout",100)
-                                         .setValue("log_view_warnings",false)
-                                         .setValue("view_ack_collection_timeout",50)
-                                         .setValue("log_collect_msgs",false));
+        JChannel ch=new JChannel(new SHARED_LOOPBACK(),
+                                 new DISCARD().setValue("discard_all", insert_discard),
+                                 new PING().setValue("timeout",100),
+                                 new NAKACK2().setValue("use_mcast_xmit",false)
+                                   .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
+                                 new UNICAST2(),
+                                 new STABLE().setValue("max_bytes",50000),
+                                 new SEQUENCER(), // below GMS, to establish total order between views and messages
+                                 new GMS().setValue("print_local_addr",false).setValue("leave_timeout",100)
+                                   .setValue("log_view_warnings",false).setValue("view_ack_collection_timeout",50)
+                                   .setValue("log_collect_msgs",false));
         ch.setName(name);
         return ch;
     }

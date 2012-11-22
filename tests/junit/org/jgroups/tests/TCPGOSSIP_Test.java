@@ -33,23 +33,23 @@ public class TCPGOSSIP_Test {
     private final static String GROUP = "TCPGOSSIP_Test";
     private GossipRouter        gossipRouter;
     private int                 gossip_router_port;
-    private final String        bind_addr = getRouterBindAddress();
+    protected InetAddress       bind_addr;
 
 
     @BeforeClass
     void startRouter() throws Exception {
-        gossip_router_port=ResourceManager.getNextTcpPort(InetAddress.getByName(bind_addr));
+        String tmp=Util.getProperty(Global.BIND_ADDR);
+        if(tmp == null) {
+            StackType type=Util.getIpStackType();
+            tmp=type == StackType.IPv6? "::1" : "127.0.0.1";
+        }
+
+        bind_addr=InetAddress.getByName(tmp);
+        gossip_router_port=ResourceManager.getNextTcpPort(bind_addr);
         gossipRouter=new GossipRouter(gossip_router_port, null);
         gossipRouter.start();
     }
 
-    private static String getRouterBindAddress() {
-        StackType type = Util.getIpStackType();
-        if (type == StackType.IPv6)
-            return "::1";
-        else
-            return "127.0.0.1";
-    }
 
     @AfterClass(alwaysRun = true)
     void stopRouter() throws Exception {
@@ -83,7 +83,7 @@ public class TCPGOSSIP_Test {
         coordinator.connect(GROUP);
         channel.connect(GROUP);
         TCPGOSSIP p = (TCPGOSSIP) channel.getProtocolStack().findProtocol(TCPGOSSIP.class);
-        String tmp_bind_addr = getRouterBindAddress();
+        String tmp_bind_addr = bind_addr.getHostAddress();
         assert p.removeInitialHost(tmp_bind_addr, gossip_router_port);
         p.addInitialHost(tmp_bind_addr, gossip_router_port);
        
@@ -181,13 +181,14 @@ public class TCPGOSSIP_Test {
         initial_hosts.add(new InetSocketAddress(bind_addr, gossip_router_port));
         gossip.setInitialHosts(initial_hosts);
 
-        JChannel ch=Util.createChannel(new TCP().setValue("use_send_queues",true).setValue("sock_conn_timeout",300),
-                                       gossip,
-                                       new MERGE2().setValue("min_interval",1000).setValue("max_interval",3000),
-                                       new FD().setValue("timeout",2000).setValue("max_tries",2),
-                                       new VERIFY_SUSPECT(),
-                                       new NAKACK2().setValue("use_mcast_xmit",false),
-                                       new UNICAST(),new STABLE(),new GMS());
+        JChannel ch=new JChannel(new TCP().setValue("use_send_queues",true)
+                                   .setValue("sock_conn_timeout",300).setValue("bind_addr", bind_addr),
+                                 gossip,
+                                 new MERGE2().setValue("min_interval",1000).setValue("max_interval",3000),
+                                 new FD().setValue("timeout",2000).setValue("max_tries",2),
+                                 new VERIFY_SUSPECT(),
+                                 new NAKACK2().setValue("use_mcast_xmit",false),
+                                 new UNICAST(),new STABLE(),new GMS());
         if(name != null)
             ch.setName(name);
         return ch;

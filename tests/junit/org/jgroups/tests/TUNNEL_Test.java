@@ -7,6 +7,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.GossipRouter;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.StackType;
@@ -17,6 +18,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -28,25 +32,24 @@ import java.net.InetAddress;
  **/
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNEL_Test extends ChannelTestBase{
-    private JChannel            channel, coordinator;
-    private final static String GROUP="TUNNEL_Test";
-    private GossipRouter        gossipRouter;
-    private int                 gossip_router_port;
-    private String              gossip_router_hosts;
+    protected JChannel            channel, coordinator;
+    protected final static String GROUP="TUNNEL_Test";
+    protected GossipRouter        gossipRouter;
+    protected int                 gossip_router_port;
+    protected String              gossip_router_hosts;
+    protected InetAddress         bind_addr;
 
     @BeforeClass
     void startRouter() throws Exception {
-        String bind_addr=Util.getProperty(Global.BIND_ADDR);
-        if(bind_addr == null) {
+        String tmp=Util.getProperty(Global.BIND_ADDR);
+        if(tmp == null) {
             StackType type=Util.getIpStackType();
-            if(type == StackType.IPv6)
-                bind_addr="::1";
-            else
-                bind_addr="127.0.0.1";
+            tmp=type == StackType.IPv6? "::1" : "127.0.0.1";
         }
 
-        gossip_router_port=ResourceManager.getNextTcpPort(InetAddress.getByName(bind_addr));
-        gossip_router_hosts=bind_addr + "[" + gossip_router_port + "]";
+        bind_addr=InetAddress.getByName(tmp);
+        gossip_router_port=ResourceManager.getNextTcpPort(bind_addr);
+        gossip_router_hosts=bind_addr.getHostAddress() + "[" + gossip_router_port + "]";
         gossipRouter=new GossipRouter(gossip_router_port, null);
         gossipRouter.start();
     }
@@ -96,10 +99,8 @@ public class TUNNEL_Test extends ChannelTestBase{
      * (using default configuration).
      **/
     public void testDisconnectConnectTwo_Default() throws Exception {
-        coordinator=createTunnelChannel("B");
-
-        channel=createTunnelChannel("A");
-
+        coordinator=createTunnelChannel("B", false);
+        channel=createTunnelChannel("A", false);
         coordinator.connect(GROUP);
         channel.connect("DisconnectTest.testgroup-1");
         channel.disconnect();
@@ -169,7 +170,7 @@ public class TUNNEL_Test extends ChannelTestBase{
              coord_gms.setLevel("trace");
 
          View view;
-         long end_time=System.currentTimeMillis() + 10000;
+         long end_time=System.currentTimeMillis() + 20000;
          while(System.currentTimeMillis() < end_time) {
              view=coordinator.getView();
              if(view.size() == 1)
@@ -251,15 +252,18 @@ public class TUNNEL_Test extends ChannelTestBase{
 
 
     protected JChannel createTunnelChannel(String name) throws Exception {
-        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("enable_bundling",false);
+        return createTunnelChannel(name, true);
+    }
+
+    protected JChannel createTunnelChannel(String name, boolean include_failure_detection) throws Exception {
+        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("enable_bundling",false).setValue("bind_addr", bind_addr);
         tunnel.setGossipRouterHosts(gossip_router_hosts);
-        JChannel ch=Util.createChannel(tunnel,
-                                       new PING(),
-                                       new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000),
-                                       new FD().setValue("timeout", 2000).setValue("max_tries", 2),
-                                       new VERIFY_SUSPECT(),
-                                       new NAKACK2().setValue("use_mcast_xmit", false),
-                                       new UNICAST(), new STABLE(), new GMS());
+        List<Protocol> protocols=new ArrayList<Protocol>();
+        protocols.addAll(Arrays.asList(tunnel, new PING(), new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000)));
+        if(include_failure_detection)
+            protocols.addAll(Arrays.asList(new FD().setValue("timeout", 2000).setValue("max_tries", 2), new VERIFY_SUSPECT()));
+        protocols.addAll(Arrays.asList(new NAKACK2().setValue("use_mcast_xmit", false), new UNICAST(), new STABLE(), new GMS()));
+        JChannel ch=new JChannel(protocols);
         if(name != null)
             ch.setName(name);
         return ch;
