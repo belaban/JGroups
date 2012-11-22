@@ -289,7 +289,7 @@ public class TimeSchedulerTest {
             assert !future.isCancelled();
             assert !future.isDone();
 
-            Thread.sleep(3500);
+            Thread.sleep(5000);
             assert !future.isCancelled();
             assert future.isDone();
 
