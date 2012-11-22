@@ -30,16 +30,16 @@ public class Message implements Streamable {
     protected Address src_addr;
 
     /** The payload */
-    private byte[]    buf;
+    private byte[]             buf;
 
     /** The index into the payload (usually 0) */
-    protected int     offset;
+    protected int              offset;
 
     /** The number of bytes in the buffer (usually buf.length is buf not equal to null). */
-    protected int     length;
+    protected int              length;
 
     /** All headers are placed here */
-    protected Headers headers;
+    protected Headers          headers;
 
     private volatile short     flags;
 
