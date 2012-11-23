@@ -33,8 +33,7 @@ public class ForwardQueue {
     // protected volatile Address                  target;
 
     /** Maintains messages forwarded to the target which which no ack has been received yet.
-     *  Needs to be sorted so we can resend them in the right order
-     */
+     *  Needs to be sorted so we can resend them in the right order */
     protected final NavigableMap<Long,Message>  forward_table=new ConcurrentSkipListMap<Long,Message>();
 
     protected final Lock                        send_lock=new ReentrantLock();

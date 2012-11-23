@@ -12,6 +12,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Forwards a message to the current coordinator. When the coordinator changes, forwards all pending messages to
@@ -43,7 +44,7 @@ public class FORWARD_TO_COORD extends Protocol {
     protected volatile Address        local_addr;
 
     /** ID to be used to identify forwarded messages. Wrap-around shouldn't be an issue. */
-    protected long                    current_id=0;
+    protected final AtomicLong        current_id=new AtomicLong(0);
 
     protected final ForwardQueue      fwd_queue=new ForwardQueue(log);
 
@@ -152,7 +153,7 @@ public class FORWARD_TO_COORD extends Protocol {
 
 
     
-    protected synchronized long getNextId() {return current_id++;}
+    protected long getNextId() {return current_id.incrementAndGet();}
 
 
     protected void handleViewChange(View view) {
