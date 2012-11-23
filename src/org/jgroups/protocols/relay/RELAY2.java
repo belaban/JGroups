@@ -269,7 +269,7 @@ public class RELAY2 extends Protocol {
                 SiteAddress sender=src instanceof SiteMaster? new SiteMaster(((SiteMaster)src).getSite())
                   : new SiteUUID((UUID)local_addr, UUID.get(local_addr), site_id);
 
-                // target is in the same site; we can deliver the message locally
+                // target is in the same site; we can deliver the message in our local cluster
                 if(target.getSite() == site_id ) {
                     if(local_addr.equals(target) || (target instanceof SiteMaster && is_coord)) {
                         // we cannot simply pass msg down, as the transport doesn't know how to send a message to a (e.g.) SiteMaster
