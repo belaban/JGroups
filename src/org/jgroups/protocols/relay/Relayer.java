@@ -217,7 +217,7 @@ public class Relayer {
         public Route              status(RELAY2.RouteStatus new_status)  {status=new_status; return this;}
         public Route              reset()     {return bridge(null).siteMaster(null).status(RELAY2.RouteStatus.DOWN);}
 
-        public void send(short target_site, Address final_destination, Address original_sender, byte[] buf) {
+        public void send(short target_site, Address final_destination, Address original_sender, byte[] buf, short flags) {
             switch(status) {
                 case DOWN:    // send SITE-UNREACHABLE message back to sender
                     relay.sendSiteUnreachableTo(original_sender, target_site);
@@ -231,7 +231,7 @@ public class Relayer {
                             queue=existing;
                     }
                     try {
-                        queue.put(createMessage(new SiteMaster(target_site), final_destination, original_sender, buf));
+                        queue.put(createMessage(new SiteMaster(target_site), final_destination, original_sender, buf, flags));
                     }
                     catch(InterruptedException e) {
                     }
@@ -242,7 +242,7 @@ public class Relayer {
             if(log.isTraceEnabled())
                 log.trace("routing message to " + final_destination + " via " + site_master);
             try {
-                Message msg=createMessage(site_master, final_destination, original_sender, buf);
+                Message msg=createMessage(site_master, final_destination, original_sender, buf, flags);
                 bridge.send(msg);
             }
             catch(Exception e) {
@@ -255,9 +255,9 @@ public class Relayer {
             return (site_master != null? site_master + " " : "") + "[" + status + "]";
         }
 
-        protected Message createMessage(Address target, Address final_destination, Address original_sender, byte[] buf) {
-            Message msg=new Message(target, buf);
-            RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, final_destination, original_sender);
+        protected Message createMessage(Address target, Address final_destination, Address original_sender, byte[] buf, short flags) {
+            Message msg=new Message(target, buf).setFlag(flags);
+            RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, final_destination, original_sender, flags);
             msg.putHeader(relay.getId(), hdr);
             return msg;
         }
