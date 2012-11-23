@@ -886,14 +886,7 @@ public abstract class TP extends Protocol {
             throw new IllegalArgumentException("Property \"physical_addr_max_fetch_attempts\" cannot be less than 1");
 
 
-        channel_thread_group=new ThreadGroup("JGroups channel") {
-            public void uncaughtException(Thread t, Throwable e) {
-                log.error("uncaught exception in " + t + " (thread group=" + this + " )", e);
-                final ThreadGroup tgParent = getParent();
-                if(tgParent != null)
-                    tgParent.uncaughtException(t,e);
-            }
-        };
+        channel_thread_group= new ChannelThreadGroup();
 
         pool_thread_group=new ThreadGroup(getChannelThreadGroup(), "Thread Pools");
 
@@ -2666,6 +2659,21 @@ public abstract class TP extends Protocol {
 
         public String[] supportedKeys() {
             return null;
+        }
+    }
+
+    private static class ChannelThreadGroup extends ThreadGroup {
+        private final Log log = LogFactory.getLog(this.getClass());
+
+        public ChannelThreadGroup() {
+            super("JGroups channel");
+        }
+
+        public void uncaughtException(Thread t, Throwable e) {
+            log.error("uncaught exception in " + t + " (thread group=" + this + " )", e);
+            final ThreadGroup tgParent = getParent();
+            if(tgParent != null)
+                tgParent.uncaughtException(t,e);
         }
     }
 }
