@@ -59,7 +59,7 @@ public class ForwardQueue {
     protected final Log                         log;
 
     /** Size of the set to store received seqnos (for duplicate checking) */
-    protected int                               delivery_table_max_size=2000;
+    protected int                               delivery_table_max_size=500;
 
 
 
@@ -242,6 +242,8 @@ public class ForwardQueue {
         int size=seqno_set.size();
         if(size > delivery_table_max_size) {
             // trim the seqno_set to delivery_table_max_size elements by removing the first N seqnos
+
+            // iteration: very bad !!!
             for(int i=0; i < size - delivery_table_max_size; i++) {
                 if(seqno_set.pollFirst() == null)
                     break;
