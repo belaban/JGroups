@@ -483,20 +483,6 @@ public class RELAY2 extends Protocol {
     }
 
 
-    protected static byte[] marshal(Message msg) {
-        Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // // we only copy headers from building blocks
-        // setting dest and src to null reduces the serialized size of the message; we'll set dest/src from the header later
-        tmp.setDest(null);
-        tmp.setSrc(null);
-        try {
-            return Util.streamableToByteBuffer(tmp);
-        }
-        catch(Throwable t) {
-            throw new RuntimeException("failed marshalling message " + msg, t);
-        }
-    }
-
-
 
     protected void handleView(View view) {
         Address old_coord=coord, new_coord=determineSiteMaster(view);
