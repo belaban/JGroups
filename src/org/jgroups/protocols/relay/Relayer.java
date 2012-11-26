@@ -340,10 +340,10 @@ public class Relayer {
 
         protected void changeStatusToDown(short id) {
             Route route=routes[id];
-            if(route.status() == RELAY2.RouteStatus.UP)
+            if(route.status() == RELAY2.RouteStatus.UNKNOWN)
                 route.status(RELAY2.RouteStatus.DOWN);    // SITE-UNREACHABLE responses are sent in this state
             else {
-                log.warn(relay.getLocalAddress() + ": didn't change status of " + id + " to DOWN as it is UP");
+                log.warn(relay.getLocalAddress() + ": didn't change status of " + SiteUUID.getSiteName(id) + " to DOWN as it is UP");
                 return;
             }
             BlockingQueue<Message> msgs=fwd_queue.remove(id);
@@ -374,11 +374,13 @@ public class Relayer {
                 case UNKNOWN:
                 case DOWN: // queue should be empty, but anyway...
                     cancelTask(id);
-                    relay.getTimer().execute(new Runnable() {
-                        public void run() {
-                            flushQueue(id, route);
-                        }
-                    });
+                    if(old_status == RELAY2.RouteStatus.UNKNOWN) {
+                        relay.getTimer().execute(new Runnable() {
+                            public void run() {
+                                flushQueue(id, route);
+                            }
+                        });
+                    }
                     break;
             }
         }
@@ -398,7 +400,6 @@ public class Relayer {
             JChannel bridge=route.bridge();
             if(log.isTraceEnabled())
                 log.trace(relay.getLocalAddress() + ": forwarding " + msgs.size() + " queued messages");
-            System.out.println(relay.getLocalAddress() + ": forwarding " + msgs.size() + " queued messages");
             while((msg=msgs.poll()) != null && route.status() == RELAY2.RouteStatus.UP) {
                 try {
                     msg.setDest(route.siteMaster()); // the message in the queue is already a copy !
