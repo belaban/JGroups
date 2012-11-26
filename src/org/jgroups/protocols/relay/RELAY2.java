@@ -95,6 +95,8 @@ public class RELAY2 extends Protocol {
     @ManagedAttribute(description="FORWARD_TO_COORD protocol is present below the current protocol")
     protected boolean                                  forwarding_protocol_present;
 
+    // protocol IDs above RELAY2
+    protected short[]                                  prots_above;
 
 
     // Fluent configuration
@@ -201,7 +203,10 @@ public class RELAY2 extends Protocol {
                 }
             });
         }
+
+        prots_above=getIdsAbove();
     }
+
 
     public void stop() {
         super.stop();
@@ -273,18 +278,18 @@ public class RELAY2 extends Protocol {
                 if(target.getSite() == site_id ) {
                     if(local_addr.equals(target) || (target instanceof SiteMaster && is_coord)) {
                         // we cannot simply pass msg down, as the transport doesn't know how to send a message to a (e.g.) SiteMaster
-                        forwardTo(local_addr, target, sender, marshal(msg), false, msg.getFlags());
+                        forwardTo(local_addr, target, sender, msg, false);
                     }
                     else
-                        deliverLocally(target, sender, marshal(msg), msg.getFlags());
+                        deliverLocally(target, sender, msg);
                     return null;
                 }
 
                 // forward to the coordinator unless we're the coord (then route the message directly)
                 if(!is_coord)
-                    forwardTo(coord, target, sender, marshal(msg), true, msg.getFlags());
+                    forwardTo(coord, target, sender, msg, true);
                 else
-                    route(target, sender, marshal(msg), msg.getFlags());
+                    route(target, sender, msg);
                 return null;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -309,15 +314,15 @@ public class RELAY2 extends Protocol {
                     // forward a multicast message to all bridges except myself, then pass up
                     if(dest == null && is_coord && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
                         Address sender=new SiteUUID((UUID)msg.getSrc(), UUID.get(msg.getSrc()), site_id);
-                        sendToBridges(sender, marshal(msg), site_id, hdr.flags);
+                        sendToBridges(sender, msg, site_id);
                     }
                     break; // pass up
                 }
                 else { // header is not null
                     if(dest != null)
-                        handleMessage(hdr, msg, hdr.flags);
+                        handleMessage(hdr, msg);
                     else
-                        deliver(null, hdr.original_sender, msg.getBuffer());
+                        deliver(null, hdr.original_sender, msg);
                 }
                 return null;
 
@@ -333,10 +338,10 @@ public class RELAY2 extends Protocol {
     protected void handleRelayMessage(Relay2Header hdr, Message msg) {
         Address final_dest=hdr.final_dest;
         if(final_dest != null)
-            handleMessage(hdr, msg, hdr.flags);
+            handleMessage(hdr, msg);
         else {
             // byte[] buf=msg.getBuffer();
-            Message copy=msg.copy(true, false).setFlag(hdr.flags);
+            Message copy=msg.copy(true, false);
             copy.setDest(null); // final_dest is null !
             copy.setSrc(null);  // we'll use our own address
             copy.putHeader(id, hdr);
@@ -350,10 +355,10 @@ public class RELAY2 extends Protocol {
 
 
     /** Called to handle a message received by the transport */
-    protected void handleMessage(Relay2Header hdr, Message msg, short original_flags) {
+    protected void handleMessage(Relay2Header hdr, Message msg) {
         switch(hdr.type) {
             case Relay2Header.DATA:
-                route((SiteAddress)hdr.final_dest, (SiteAddress)hdr.original_sender, msg.getBuffer(), original_flags);
+                route((SiteAddress)hdr.final_dest, (SiteAddress)hdr.original_sender, msg);
                 break;
             case Relay2Header.SITE_UNREACHABLE:
                 up_prot.up(new Event(Event.SITE_UNREACHABLE, hdr.final_dest));
@@ -373,14 +378,14 @@ public class RELAY2 extends Protocol {
      * @param dest
      * @param buf
      */
-    protected void route(SiteAddress dest, SiteAddress sender, byte[] buf, short original_flags) {
+    protected void route(SiteAddress dest, SiteAddress sender, Message msg) {
         short target_site=dest.getSite();
         if(target_site == site_id) {
             if(local_addr.equals(dest) || ((dest instanceof SiteMaster) && is_coord)) {
-                deliver(dest, sender, buf);
+                deliver(dest, sender, msg);
             }
             else
-                deliverLocally(dest, sender, buf, original_flags); // send to member in same local site
+                deliverLocally(dest, sender, msg); // send to member in same local site
             return;
         }
         Relayer tmp=relayer;
@@ -393,12 +398,12 @@ public class RELAY2 extends Protocol {
         if(route == null)
             log.error(local_addr + ": no route to " + SiteUUID.getSiteName(target_site) + ": dropping message");
         else
-            route.send(target_site, dest, sender, buf, original_flags);
+            route.send(target_site, dest, sender, msg);
     }
 
 
     /** Sends the message via all bridges excluding the excluded_sites bridges */
-    protected void sendToBridges(Address sender, byte[] buf, short original_flag, short ... excluded_sites) {
+    protected void sendToBridges(Address sender, final Message msg, short ... excluded_sites) {
         Relayer tmp=relayer;
         List<Relayer.Route> routes=tmp != null? tmp.getRoutes(excluded_sites) : null;
         if(routes == null)
@@ -407,7 +412,7 @@ public class RELAY2 extends Protocol {
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": relaying multicast message from " + sender + " via route " + route);
             try {
-                route.send(((SiteAddress)route.siteMaster()).getSite(), null, sender, buf, original_flag);
+                route.send(((SiteAddress)route.siteMaster()).getSite(), null, sender, msg);
             }
             catch(Exception ex) {
                 log.error(local_addr + ": failed relaying message from " + sender + " via route " + route, ex);
@@ -418,27 +423,27 @@ public class RELAY2 extends Protocol {
     protected void sendSiteUnreachableTo(Address dest, short target_site) {
         Message msg=new Message(dest).setFlag(Message.Flag.OOB);
         msg.setSrc(new SiteUUID((UUID)local_addr, UUID.get(local_addr), site_id));
-        Relay2Header hdr=new Relay2Header(Relay2Header.SITE_UNREACHABLE, new SiteMaster(target_site), null, (short)0);
+        Relay2Header hdr=new Relay2Header(Relay2Header.SITE_UNREACHABLE, new SiteMaster(target_site), null);
         msg.putHeader(id, hdr);
         down_prot.down(new Event(Event.MSG, msg));
     }
 
-    protected void forwardTo(Address next_dest, SiteAddress final_dest, Address original_sender, byte[] buf,
-                             boolean forward_to_current_coord, short original_flags) {
+    protected void forwardTo(Address next_dest, SiteAddress final_dest, Address original_sender, final Message msg,
+                             boolean forward_to_current_coord) {
         if(log.isTraceEnabled())
             log.trace(local_addr + ": forwarding message to final destination " + final_dest + " to " +
                         (forward_to_current_coord? " the current coordinator" : next_dest));
-        Message msg=new Message(next_dest, buf).setFlag(original_flags);
-        Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_dest, original_sender, original_flags);
-        msg.putHeader(id, hdr);
+        Message copy=copy(msg).dest(next_dest).src(null);
+        Relay2Header hdr=new Relay2Header(Relay2Header.DATA, final_dest, original_sender);
+        copy.putHeader(id, hdr);
         if(forward_to_current_coord && forwarding_protocol_present)
-            down_prot.down(new Event(Event.FORWARD_TO_COORD, msg));
+            down_prot.down(new Event(Event.FORWARD_TO_COORD, copy));
         else
-            down_prot.down(new Event(Event.MSG, msg));
+            down_prot.down(new Event(Event.MSG, copy));
     }
 
 
-    protected void deliverLocally(SiteAddress dest, SiteAddress sender, byte[] buf, short original_flags) {
+    protected void deliverLocally(SiteAddress dest, SiteAddress sender, Message msg) {
         Address local_dest;
         boolean send_to_coord=false;
         if(dest instanceof SiteUUID) {
@@ -456,24 +461,26 @@ public class RELAY2 extends Protocol {
 
         if(log.isTraceEnabled())
             log.trace(local_addr + ": delivering message to " + dest + " in local cluster");
-        forwardTo(local_dest, dest, sender, buf, send_to_coord, original_flags);
+        forwardTo(local_dest, dest, sender, msg, send_to_coord);
     }
 
 
-    protected void deliver(Address dest, Address sender, byte[] buf) {
+    protected void deliver(Address dest, Address sender, final Message msg) {
         try {
-            Message original_msg=(Message)Util.streamableFromByteBuffer(Message.class, buf);
-            original_msg.setSrc(sender);
-            original_msg.setDest(dest);
+            Message copy=copy(msg).dest(dest).src(sender);
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": delivering message from " + sender);
-            up_prot.up(new Event(Event.MSG, original_msg));
+            up_prot.up(new Event(Event.MSG, copy));
         }
         catch(Exception e) {
             log.error("failed unmarshalling message", e);
         }
     }
 
+    /** Copies the message, but only the headers above the current protocol (RELAY) (or RpcDispatcher related headers) */
+    protected Message copy(Message msg) {
+        return msg.copy(true, Global.BLOCKS_START_ID, this.prots_above);
+    }
 
 
     protected static byte[] marshal(Message msg) {
@@ -570,40 +577,35 @@ public class RELAY2 extends Protocol {
         protected byte    type;
         protected Address final_dest;
         protected Address original_sender;
-        protected short   flags; // flags of the original message
 
 
         public Relay2Header() {
         }
 
-        public Relay2Header(byte type, Address final_dest, Address original_sender, short flags) {
+        public Relay2Header(byte type, Address final_dest, Address original_sender) {
             this.type=type;
             this.final_dest=final_dest;
             this.original_sender=original_sender;
-            this.flags=flags;
         }
 
         public int size() {
-            return Global.BYTE_SIZE + Util.size(final_dest) + Util.size(original_sender) + Global.SHORT_SIZE;
+            return Global.BYTE_SIZE + Util.size(final_dest) + Util.size(original_sender);
         }
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             Util.writeAddress(final_dest, out);
             Util.writeAddress(original_sender, out);
-            out.writeShort(flags);
         }
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
             final_dest=Util.readAddress(in);
             original_sender=Util.readAddress(in);
-            flags=in.readShort();
         }
 
         public String toString() {
-            return typeToString(type) + " [dest=" + final_dest + ", sender=" + original_sender +
-              ", flags=" + Message.flagsToString(flags) + "]";
+            return typeToString(type) + " [dest=" + final_dest + ", sender=" + original_sender + "]";
         }
 
         protected static String typeToString(byte type) {

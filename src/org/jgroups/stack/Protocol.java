@@ -70,21 +70,21 @@ public abstract class Protocol {
      * (capitalization not relevant)
      */
     @Property(name="level", description="Sets the logger level (see javadocs)")
-    public void setLevel(String level) {
-        log.setLevel(level);
-    }
-
-    public String getLevel() {
-        return log.getLevel();
-    }
-
-    public boolean isErgonomics() {
-        return ergonomics;
-    }
-
-    public void setErgonomics(boolean ergonomics) {
-        this.ergonomics=ergonomics;
-    }
+    public void          setLevel(String level)            {log.setLevel(level);}
+    public String        getLevel()                        {return log.getLevel();}
+    public boolean       isErgonomics()                    {return ergonomics;}
+    public void          setErgonomics(boolean ergonomics) {this.ergonomics=ergonomics;}
+    public ProtocolStack getProtocolStack()                {return stack;}
+    public boolean       statsEnabled()                    {return stats;}
+    public void          enableStats(boolean flag)         {stats=flag;}
+    public String        getName()                         {return name;}
+    public short         getId()                           {return id;}
+    public void          setId(short id)                   {this.id=id;}
+    public Protocol      getUpProtocol()                   {return up_prot;}
+    public Protocol      getDownProtocol()                 {return down_prot;}
+    public void          setUpProtocol(Protocol prot)      {this.up_prot=prot;}
+    public void          setDownProtocol(Protocol prot)    {this.down_prot=prot;}
+    public void          setProtocolStack(ProtocolStack s) {this.stack=s;}
 
 
     public Object getValue(String name) {
@@ -122,10 +122,6 @@ public abstract class Protocol {
 
 
 
-    public ProtocolStack getProtocolStack() {
-        return stack;
-    }
-
     /**
      * After configuring the protocol itself from the properties defined in the XML config, a protocol might have
      * additional objects which need to be configured. This callback allows a protocol developer to configure those
@@ -133,9 +129,23 @@ public abstract class Protocol {
      * been configured. See AUTH for an example.
      * @return
      */
-    protected List<Object> getConfigurableObjects() {
-        return null;
+    protected List<Object> getConfigurableObjects() {return null;}
+
+    /** Returns the protocol IDs of all protocols above this one (excluding the current protocol) */
+    public short[] getIdsAbove() {
+        short[]     retval;
+        List<Short> ids=new ArrayList<Short>();
+        Protocol    current=up_prot;
+        while(current != null) {
+            ids.add(current.getId());
+            current=current.up_prot;
+        }
+        retval=new short[ids.size()];
+        for(int i=0; i < ids.size(); i++)
+            retval[i]=ids.get(i);
+        return retval;
     }
+
 
     protected TP getTransport() {
         Protocol retval=this;
@@ -172,14 +182,6 @@ public abstract class Protocol {
             down_prot.setSocketFactory(factory);
     }
 
-
-    public boolean statsEnabled() {
-        return stats;
-    }
-
-    public void enableStats(boolean flag) {
-        stats=flag;
-    }
 
     @ManagedOperation(description="Resets all stats")
     public void resetStatistics() {resetStats();}
@@ -336,39 +338,6 @@ public abstract class Protocol {
         return retval;
     }
 
-
-    /** All protocol names have to be unique ! */
-    public String getName() {
-        return name;
-    }
-
-    public short getId() {
-        return id;
-    }
-
-    public void setId(short id) {
-        this.id=id;
-    }
-
-    public Protocol getUpProtocol() {
-        return up_prot;
-    }
-
-    public Protocol getDownProtocol() {
-        return down_prot;
-    }
-
-    public void setUpProtocol(Protocol up_prot) {
-        this.up_prot=up_prot;
-    }
-
-    public void setDownProtocol(Protocol down_prot) {
-        this.down_prot=down_prot;
-    }
-
-    public void setProtocolStack(ProtocolStack stack) {
-        this.stack=stack;
-    }
 
 
     /**
