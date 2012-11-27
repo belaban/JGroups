@@ -558,7 +558,7 @@ public class RELAY2 extends Protocol {
     public static class Relay2Header extends Header {
         public static final byte DATA             = 1;
         public static final byte SITE_UNREACHABLE = 2; // final_dest is a SiteMaster
-        public static final byte HOST_UNREACHABLE = 3; // final_dest is a SiteUUID
+        public static final byte HOST_UNREACHABLE = 3; // final_dest is a SiteUUID (not currently used)
 
         protected byte    type;
         protected Address final_dest;

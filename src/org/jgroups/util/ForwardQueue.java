@@ -6,10 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.logging.Log;
 import org.jgroups.stack.Protocol;
 
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.NavigableSet;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -20,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Forwards messages in FIFO order to a destination. Uses IDs to prevent duplicates. Used by
- * {@link org.jgroups.protocols.SEQUENCER} and {@link org.jgroups.protocols.FORWARD_TO_COORD}.
+ * {@link org.jgroups.protocols.FORWARD_TO_COORD}.
  * @author Bela Ban
  * @since 3.3
  */
@@ -80,6 +77,15 @@ public class ForwardQueue {
 
     public int      getDeliveryTableMaxSize()             {return delivery_table_max_size;}
     public void     setDeliveryTableMaxSize(int max_size) {this.delivery_table_max_size=max_size;}
+
+
+    /** Total size of all queues of the delivery table */
+    public int deliveryTableSize() {
+        int retval=0;
+        for(Set<Long> val: delivery_table.values())
+            retval+=val.size();
+        return retval;
+    }
 
 
     public void start() {
