@@ -252,7 +252,7 @@ public class RequestCorrelator {
                 SiteMaster site_master=(SiteMaster)evt.getArg();
                 short site=site_master.getSite();
                 setSiteUnreachable(site);
-                return true;
+                break; // let others have a stab at this event, too
         }
         return false;
     }

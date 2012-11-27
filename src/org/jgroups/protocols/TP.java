@@ -220,7 +220,7 @@ public abstract class TP extends Protocol {
 
     /** Enable bundling for unicast messages. Ignored if enable_bundling is off */
     @Property(description="Enable bundling of smaller messages into bigger ones for unicast messages. Default is false")
-    protected boolean enable_unicast_bundling=false;
+    protected boolean enable_unicast_bundling=true;
 
     @Property(description="Switch to enable diagnostic probing. Default is true")
     protected boolean enable_diagnostics=true;

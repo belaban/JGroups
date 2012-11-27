@@ -478,6 +478,76 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     /* ----------------------------------------------------------------------- */
 
 
+    protected Object handleUpEvent(Event evt) throws Exception {
+        switch(evt.getType()) {
+            case Event.MSG:
+                if(msg_listener != null)
+                    msg_listener.receive((Message) evt.getArg());
+                break;
+
+            case Event.GET_APPLSTATE: // reply with GET_APPLSTATE_OK
+                byte[] tmp_state=null;
+                if(msg_listener != null) {
+                    ByteArrayOutputStream output=new ByteArrayOutputStream(1024);
+                    msg_listener.getState(output);
+                    tmp_state=output.toByteArray();
+                }
+                return new StateTransferInfo(null, 0L, tmp_state);
+
+            case Event.GET_STATE_OK:
+                if(msg_listener != null) {
+                    StateTransferResult result=(StateTransferResult)evt.getArg();
+                    ByteArrayInputStream input=new ByteArrayInputStream(result.getBuffer());
+                    msg_listener.setState(input);
+                }
+                break;
+
+            case Event.STATE_TRANSFER_OUTPUTSTREAM:
+                OutputStream os=(OutputStream)evt.getArg();
+                if(msg_listener != null && os != null) {
+                    msg_listener.getState(os);
+                }
+                break;
+
+            case Event.STATE_TRANSFER_INPUTSTREAM:
+                InputStream is=(InputStream)evt.getArg();
+                if(msg_listener != null && is!=null)
+                    msg_listener.setState(is);
+                break;
+
+            case Event.VIEW_CHANGE:
+                View v=(View) evt.getArg();
+                List<Address> new_mbrs=v.getMembers();
+                setMembers(new_mbrs);
+                if(membership_listener != null)
+                    membership_listener.viewAccepted(v);
+                break;
+
+            case Event.SET_LOCAL_ADDRESS:
+                if(log.isTraceEnabled())
+                    log.trace("setting local_addr (" + local_addr + ") to " + evt.getArg());
+                local_addr=(Address)evt.getArg();
+                break;
+
+            case Event.SUSPECT:
+                if(membership_listener != null)
+                    membership_listener.suspect((Address) evt.getArg());
+                break;
+
+            case Event.BLOCK:
+                if(membership_listener != null)
+                    membership_listener.block();
+                break;
+            case Event.UNBLOCK:
+                if(membership_listener != null)
+                    membership_listener.unblock();
+                break;
+        }
+
+        return null;
+    }
+
+
     class MyProbeHandler implements DiagnosticsHandler.ProbeHandler {
 
         public Map<String,String> handleProbe(String... keys) {
@@ -518,82 +588,6 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
         public String getName() {
             return "MessageDispatcher";
         }
-
-
-
-        protected Object handleUpEvent(Event evt) throws Exception {
-            switch(evt.getType()) {
-                case Event.MSG:
-                    if(msg_listener != null) {
-                        msg_listener.receive((Message) evt.getArg());
-                    }
-                    break;
-
-                case Event.GET_APPLSTATE: // reply with GET_APPLSTATE_OK
-                    byte[] tmp_state=null;
-                    if(msg_listener != null) {
-                        ByteArrayOutputStream output=new ByteArrayOutputStream(1024);
-                        msg_listener.getState(output);
-                        tmp_state=output.toByteArray();
-                    }
-                    return new StateTransferInfo(null, 0L, tmp_state);
-
-                case Event.GET_STATE_OK:
-                    if(msg_listener != null) {
-                        StateTransferResult result=(StateTransferResult)evt.getArg();
-                        ByteArrayInputStream input=new ByteArrayInputStream(result.getBuffer());
-                        msg_listener.setState(input);
-                    }
-                    break;
-
-                case Event.STATE_TRANSFER_OUTPUTSTREAM:
-                    OutputStream os=(OutputStream)evt.getArg();
-                    if(msg_listener != null && os != null) {
-                        msg_listener.getState(os);
-                    }
-                    break;
-
-                case Event.STATE_TRANSFER_INPUTSTREAM:
-                    InputStream is=(InputStream)evt.getArg();
-                    if(msg_listener != null && is!=null)
-                        msg_listener.setState(is);
-                    break;
-
-                case Event.VIEW_CHANGE:
-                    View v=(View) evt.getArg();
-                    List<Address> new_mbrs=v.getMembers();
-                    setMembers(new_mbrs);
-                    if(membership_listener != null)
-                        membership_listener.viewAccepted(v);
-                    break;
-
-                case Event.SET_LOCAL_ADDRESS:
-                    if(log.isTraceEnabled())
-                        log.trace("setting local_addr (" + local_addr + ") to " + evt.getArg());
-                    local_addr=(Address)evt.getArg();
-                    break;
-
-                case Event.SUSPECT:
-                    if(membership_listener != null)
-                        membership_listener.suspect((Address) evt.getArg());
-                    break;
-
-                case Event.BLOCK:
-                    if(membership_listener != null)
-                        membership_listener.block();
-                    break;
-                case Event.UNBLOCK:
-                    if(membership_listener != null)
-                        membership_listener.unblock();
-                    break;
-            }
-
-            return null;
-        }
-
-
-
-
 
 
         /**

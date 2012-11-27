@@ -200,8 +200,8 @@ public class UnicastTestRpc extends ReceiverAdapter {
         double time_per_req=time / (double)num_msgs;
         double reqs_sec=num_msgs / (time / 1000.0);
         double throughput=num_msgs * msg_size / (time / 1000.0);
-        System.out.println(Util.bold("\ninvoked " + num_msgs + " requests in " + time + " ms: " + time_per_req + " ms / req, " +
-                                       String.format("%.2f", reqs_sec) + " reqs/sec, " + Util.printBytes(throughput) + " / sec\n"));
+        System.out.println(Util.bold("\ninvoked " + num_msgs + " requests in " + time + " ms: " + time_per_req + " ms/req, " +
+                                       String.format("%.2f", reqs_sec) + " reqs/sec, " + Util.printBytes(throughput) + "/sec\n"));
     }
 
     void setSenderThreads() throws Exception {

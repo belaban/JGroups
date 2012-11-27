@@ -26,24 +26,24 @@ import java.util.Map;
  * @author Bela Ban
  */
 public class Message implements Streamable {
-    protected Address dest_addr;
-    protected Address src_addr;
+    protected Address          dest_addr;
+    protected Address          src_addr;
 
     /** The payload */
-    private byte[]    buf;
+    protected byte[]           buf;
 
     /** The index into the payload (usually 0) */
-    protected int     offset;
+    protected int              offset;
 
     /** The number of bytes in the buffer (usually buf.length is buf not equal to null). */
-    protected int     length;
+    protected int              length;
 
     /** All headers are placed here */
-    protected Headers headers;
+    protected Headers          headers;
 
-    private volatile short     flags;
+    protected volatile short   flags;
 
-    private volatile byte      transient_flags; // transient_flags is neither marshalled nor copied
+    protected volatile byte    transient_flags; // transient_flags is neither marshalled nor copied
 
     protected static final Log log=LogFactory.getLog(Message.class);
 
@@ -208,21 +208,14 @@ public class Message implements Streamable {
             headers=createHeaders(3);
     }
 
-    public Address getDest() {
-        return dest_addr;
-    }
-
-    public void setDest(Address new_dest) {
-        dest_addr=new_dest;
-    }
-
-    public Address getSrc() {
-        return src_addr;
-    }
-
-    public void setSrc(Address new_src) {
-        src_addr=new_src;
-    }
+    public Address getDest()                 {return dest_addr;}
+    public Address dest()                    {return dest_addr;}
+    public void    setDest(Address new_dest) {dest_addr=new_dest;}
+    public Message dest(Address new_dest)    {dest_addr=new_dest; return this;}
+    public Address getSrc()                  {return src_addr;}
+    public Address src()                     {return src_addr;}
+    public void    setSrc(Address new_src)   {src_addr=new_src;}
+    public Message src(Address new_src)      {src_addr=new_src; return this;}
 
    /**
     * Returns a <em>reference</em> to the payload (byte buffer). Note that this buffer should not be
@@ -576,15 +569,23 @@ public class Message implements Streamable {
     * @return A message with headers whose ID are >= starting_id
     */
     public Message copy(boolean copy_buffer, short starting_id) {
-        Message retval=copy(copy_buffer, false);
-        if(starting_id > 0) {
-            for(Map.Entry<Short,Header> entry: getHeaders().entrySet()) {
-                short id=entry.getKey();
-                if(id >= starting_id)
-                    retval.putHeader(id, entry.getValue());
-            }
-        }
+        return copy(copy_buffer, starting_id, (short[])null);
+    }
 
+    /**
+     * Copies a message. Copies only headers with IDs >= starting_id or IDs which are in the copy_only_ids list
+     * @param copy_buffer
+     * @param starting_id
+     * @param copy_only_ids
+     * @return
+     */
+    public Message copy(boolean copy_buffer, short starting_id, short ... copy_only_ids) {
+        Message retval=copy(copy_buffer, false);
+        for(Map.Entry<Short,Header> entry: getHeaders().entrySet()) {
+            short id=entry.getKey();
+            if(id >= starting_id || containsId(id, copy_only_ids))
+                retval.putHeader(id, entry.getValue());
+        }
         return retval;
     }
 
@@ -676,7 +677,7 @@ public class Message implements Streamable {
         // 1. write the leading byte first
         out.write(leading);
 
-        // 2. the flags (e.g. OOB, LOW_PRIO)
+        // 2. the flags (e.g. OOB, LOW_PRIO), skip the transient flags
         out.writeShort(flags);
 
         // 3. dest_addr
@@ -891,14 +892,24 @@ public class Message implements Streamable {
         return sb.toString();
     }
 
-    private static void writeHeader(Header hdr, DataOutput out) throws Exception {
+    protected static void writeHeader(Header hdr, DataOutput out) throws Exception {
         short magic_number=ClassConfigurator.getMagicNumber(hdr.getClass());
         out.writeShort(magic_number);
         hdr.writeTo(out);
     }
 
 
-    private static Header readHeader(DataInput in) throws Exception {
+    protected static boolean containsId(short id, short[] ids) {
+        if(ids == null)
+            return false;
+        for(short tmp: ids)
+            if(tmp == id)
+                return true;
+        return false;
+    }
+
+
+    protected static Header readHeader(DataInput in) throws Exception {
         short magic_number=in.readShort();
         Class clazz=ClassConfigurator.get(magic_number);
         if(clazz == null)
@@ -909,12 +920,12 @@ public class Message implements Streamable {
         return hdr;
     }
 
-    private static Headers createHeaders(int size) {
+    protected static Headers createHeaders(int size) {
         return size > 0? new Headers(size) : new Headers(3);
     }
 
 
-    private static Headers createHeaders(Headers m) {
+    protected static Headers createHeaders(Headers m) {
         return new Headers(m);
     }
 

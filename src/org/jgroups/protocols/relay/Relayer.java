@@ -217,7 +217,7 @@ public class Relayer {
         public Route              status(RELAY2.RouteStatus new_status)  {status=new_status; return this;}
         public Route              reset()     {return bridge(null).siteMaster(null).status(RELAY2.RouteStatus.DOWN);}
 
-        public void send(short target_site, Address final_destination, Address original_sender, byte[] buf) {
+        public void send(short target_site, Address final_destination, Address original_sender, final Message msg) {
             switch(status) {
                 case DOWN:    // send SITE-UNREACHABLE message back to sender
                     relay.sendSiteUnreachableTo(original_sender, target_site);
@@ -231,7 +231,7 @@ public class Relayer {
                             queue=existing;
                     }
                     try {
-                        queue.put(createMessage(new SiteMaster(target_site), final_destination, original_sender, buf));
+                        queue.put(createMessage(new SiteMaster(target_site), final_destination, original_sender, msg));
                     }
                     catch(InterruptedException e) {
                     }
@@ -242,8 +242,8 @@ public class Relayer {
             if(log.isTraceEnabled())
                 log.trace("routing message to " + final_destination + " via " + site_master);
             try {
-                Message msg=createMessage(site_master, final_destination, original_sender, buf);
-                bridge.send(msg);
+                Message copy=createMessage(site_master, final_destination, original_sender, msg);
+                bridge.send(copy);
             }
             catch(Exception e) {
                 log.error("failure relaying message", e);
@@ -255,11 +255,11 @@ public class Relayer {
             return (site_master != null? site_master + " " : "") + "[" + status + "]";
         }
 
-        protected Message createMessage(Address target, Address final_destination, Address original_sender, byte[] buf) {
-            Message msg=new Message(target, buf);
+        protected Message createMessage(Address target, Address final_destination, Address original_sender, final Message msg) {
+            Message copy=relay.copy(msg).dest(target).src(null);
             RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, final_destination, original_sender);
-            msg.putHeader(relay.getId(), hdr);
-            return msg;
+            copy.putHeader(relay.getId(), hdr);
+            return copy;
         }
     }
 
@@ -340,10 +340,10 @@ public class Relayer {
 
         protected void changeStatusToDown(short id) {
             Route route=routes[id];
-            if(route.status() == RELAY2.RouteStatus.UP)
+            if(route.status() == RELAY2.RouteStatus.UNKNOWN)
                 route.status(RELAY2.RouteStatus.DOWN);    // SITE-UNREACHABLE responses are sent in this state
             else {
-                log.warn(relay.getLocalAddress() + ": didn't change status of " + id + " to DOWN as it is UP");
+                log.warn(relay.getLocalAddress() + ": didn't change status of " + SiteUUID.getSiteName(id) + " to DOWN as it is UP");
                 return;
             }
             BlockingQueue<Message> msgs=fwd_queue.remove(id);
@@ -374,11 +374,13 @@ public class Relayer {
                 case UNKNOWN:
                 case DOWN: // queue should be empty, but anyway...
                     cancelTask(id);
-                    relay.getTimer().execute(new Runnable() {
-                        public void run() {
-                            flushQueue(id, route);
-                        }
-                    });
+                    if(old_status == RELAY2.RouteStatus.UNKNOWN) {
+                        relay.getTimer().execute(new Runnable() {
+                            public void run() {
+                                flushQueue(id, route);
+                            }
+                        });
+                    }
                     break;
             }
         }
@@ -398,12 +400,10 @@ public class Relayer {
             JChannel bridge=route.bridge();
             if(log.isTraceEnabled())
                 log.trace(relay.getLocalAddress() + ": forwarding " + msgs.size() + " queued messages");
-            System.out.println(relay.getLocalAddress() + ": forwarding " + msgs.size() + " queued messages");
             while((msg=msgs.poll()) != null && route.status() == RELAY2.RouteStatus.UP) {
                 try {
-                    Message copy=msg.copy(); // need the copy to change the destination to the site master
-                    copy.setDest(route.siteMaster());
-                    bridge.send(copy);
+                    msg.setDest(route.siteMaster()); // the message in the queue is already a copy !
+                    bridge.send(msg);
                 }
                 catch(Throwable ex) {
                     log.error("failed forwarding queued message to " + SiteUUID.getSiteName(id), ex);

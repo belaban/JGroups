@@ -6,10 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.logging.Log;
 import org.jgroups.stack.Protocol;
 
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.NavigableSet;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -20,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Forwards messages in FIFO order to a destination. Uses IDs to prevent duplicates. Used by
- * {@link org.jgroups.protocols.SEQUENCER} and {@link org.jgroups.protocols.FORWARD_TO_COORD}.
+ * {@link org.jgroups.protocols.FORWARD_TO_COORD}.
  * @author Bela Ban
  * @since 3.3
  */
@@ -33,8 +30,7 @@ public class ForwardQueue {
     // protected volatile Address                  target;
 
     /** Maintains messages forwarded to the target which which no ack has been received yet.
-     *  Needs to be sorted so we can resend them in the right order
-     */
+     *  Needs to be sorted so we can resend them in the right order */
     protected final NavigableMap<Long,Message>  forward_table=new ConcurrentSkipListMap<Long,Message>();
 
     protected final Lock                        send_lock=new ReentrantLock();
@@ -60,7 +56,7 @@ public class ForwardQueue {
     protected final Log                         log;
 
     /** Size of the set to store received seqnos (for duplicate checking) */
-    protected int                               delivery_table_max_size=2000;
+    protected int                               delivery_table_max_size=500;
 
 
 
@@ -81,6 +77,15 @@ public class ForwardQueue {
 
     public int      getDeliveryTableMaxSize()             {return delivery_table_max_size;}
     public void     setDeliveryTableMaxSize(int max_size) {this.delivery_table_max_size=max_size;}
+
+
+    /** Total size of all queues of the delivery table */
+    public int deliveryTableSize() {
+        int retval=0;
+        for(Set<Long> val: delivery_table.values())
+            retval+=val.size();
+        return retval;
+    }
 
 
     public void start() {
@@ -243,6 +248,8 @@ public class ForwardQueue {
         int size=seqno_set.size();
         if(size > delivery_table_max_size) {
             // trim the seqno_set to delivery_table_max_size elements by removing the first N seqnos
+
+            // iteration: very bad !!!
             for(int i=0; i < size - delivery_table_max_size; i++) {
                 if(seqno_set.pollFirst() == null)
                     break;
