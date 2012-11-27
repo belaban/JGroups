@@ -59,8 +59,10 @@ public class FORWARD_TO_COORD extends Protocol {
 
 
     @ManagedAttribute(description="Number of messages for which no ack has been received yet")
-    public int           getPendingMessages() {return fwd_queue.size();}
-    public List<Integer> providedUpServices() {return Arrays.asList(Event.FORWARD_TO_COORD);}
+    public int           getForwardTableSize()  {return fwd_queue.size();}
+    @ManagedAttribute(description="Total number of all seqnos maintained for all receivers")
+    public int           getDeliveryTableSize() {return fwd_queue.deliveryTableSize();}
+    public List<Integer> providedUpServices()   {return Arrays.asList(Event.FORWARD_TO_COORD);}
 
     public void start() throws Exception {
         super.start();
