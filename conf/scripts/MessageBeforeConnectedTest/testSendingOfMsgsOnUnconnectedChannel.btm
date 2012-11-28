@@ -1,0 +1,20 @@
+
+
+## Test case for https://issues.jboss.org/browse/JGRP-1545
+## - Join A
+## - Before the channel is set to 'connected', deliver a unicast message to A
+## - A sends a response and the response triggers an exception as the channel is not yet connected
+
+
+
+## After JChannel._preConnect() (which starts the socket listener), we send a unicast message up the stack
+
+RULE injectUnicastRpc
+CLASS JChannel
+METHOD _preConnect
+HELPER org.jgroups.tests.helpers.MessageBeforeConnectedTestHelper
+AT EXIT
+IF TRUE
+  DO sendUnicast($0);
+ENDRULE
+
