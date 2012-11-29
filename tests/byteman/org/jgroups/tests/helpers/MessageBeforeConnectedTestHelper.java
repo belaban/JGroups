@@ -18,16 +18,21 @@ public class MessageBeforeConnectedTestHelper extends Helper {
     }
 
     /**
-     * Sends a unicast message
+     * Sends a unicast message up UNICAST2
      */
     public void sendUnicast(JChannel ch) throws Exception {
-        Message msg=new Message(ch.getAddress(), ch.getAddress(), "hello-1");
+        final Message msg=new Message(ch.getAddress(), ch.getAddress(), "hello-1");
 
         // Add a UNICAST2 header
-        UNICAST2 unicast=(UNICAST2)ch.getProtocolStack().findProtocol(UNICAST2.class);
+        final UNICAST2 unicast=(UNICAST2)ch.getProtocolStack().findProtocol(UNICAST2.class);
         UNICAST2.Unicast2Header hdr=UNICAST2.Unicast2Header.createDataHeader(1, (short)1, true);
         msg.putHeader(unicast.getId(), hdr);
 
-        unicast.up(new Event(Event.MSG, msg));
+        new Thread() {
+            public void run() {
+                unicast.up(new Event(Event.MSG, msg));
+            }
+        }.start();
     }
+
 }

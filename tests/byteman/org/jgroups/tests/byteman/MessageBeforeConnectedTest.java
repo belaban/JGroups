@@ -15,6 +15,9 @@ import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Tests the behavior of receiving a unicast message before being connected and sending a response which will
  * throw an exception as the channel is not connected yet (https://issues.jboss.org/browse/JGRP-1545).
@@ -27,14 +30,16 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
     protected static final String HELLO1="hello-1";
     protected static final String HELLO2="hello-2";
     protected Throwable           ex;
+    protected final List<String>  msgs=new ArrayList<String>();
 
     @AfterMethod
     protected void cleanup() {
         Util.close(a);
     }
 
-    public void receive(Message msg) {
+    protected void receive(Message msg) {
         String greeting=(String)msg.getObject();
+        msgs.add(greeting);
         System.out.println("received " + greeting + " from " + msg.getSrc());
         if(HELLO1.equals(greeting)) {
             try {
@@ -47,9 +52,9 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
     }
 
     /**
-     * When we flush the server queue and one or more of the delivered messages triggers a response (in the same thread),
-     * we need to make sure the channel is connected, or else the JOIN will fail as the exception happens on the same
-     * thread. Note that the suggested fix on JGRP-1522 will solve this. Issue: https://issues.jboss.org/browse/JGRP-1522
+     * When we connect to a channel, but before the state is changed to 'connected', we send a message which will
+     * trigger an exception.
+     * Issue: https://issues.jboss.org/browse/JGRP-1545
      */
     @BMScript(dir="scripts/MessageBeforeConnectedTest", value="testSendingOfMsgsOnUnconnectedChannel")
     public void testSendingOfMsgsOnUnconnectedChannel() throws Throwable {
@@ -63,6 +68,15 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
         System.out.println("\nA: " + a.getView());
         if(ex != null)
             throw ex;
+
+        System.out.println("msgs = " + msgs);
+        for(int i=0; i < 20; i++) {
+            if(msgs.size() == 2)
+                break;
+            Util.sleep(500);
+        }
+
+        assert msgs.size() == 2 && msgs.contains(HELLO1) && msgs.contains(HELLO2) : "msgs: " + msgs;
     }
 
 

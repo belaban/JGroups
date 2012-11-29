@@ -17,7 +17,6 @@ import java.util.List;
 @Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class ChannelTest extends ChannelTestBase {       
 
-    @Test
     public void testBasicOperations() throws Exception {
         JChannel c1 = createChannel(true,1);
         JChannel c2=null;
@@ -101,9 +100,33 @@ public class ChannelTest extends ChannelTestBase {
         finally {
             Util.close(c1,c2);
         }
-    }  
+    }
 
-    @Test
+
+    public void testSendOnDisconnectedChannel() throws Exception {
+        JChannel ch=createChannel();
+        try {
+            ch.send(null, "hello world");
+            assert false : "sending on a disconnected channel should have failed";
+        }
+        catch(IllegalStateException ex) {
+            System.out.println("received \"" + ex + "\" as expected: sending on a disconnected channel is not allowed");
+        }
+    }
+
+    public void testSendOnClosedChannel() throws Exception {
+        JChannel ch=createChannel();
+        try {
+            Util.close(ch);
+            ch.send(null, "hello world");
+            assert false : "sending on a closed channel should have failed";
+        }
+        catch(IllegalStateException ex) {
+            System.out.println("received \"" + ex + "\" as expected: sending on a closed channel is not allowed");
+        }
+    }
+
+
     public void testViewChange() throws Exception {
         JChannel ch1 = createChannel(true,2);
         ViewChecker checker=new ViewChecker(ch1);
@@ -123,7 +146,6 @@ public class ChannelTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testIsConnectedOnFirstViewChange() throws Exception {
         JChannel ch1 = createChannel(true,2);        
         Channel ch2=createChannel(ch1);
@@ -141,7 +163,6 @@ public class ChannelTest extends ChannelTestBase {
 
 
 
-    @Test
     public void testNoViewIsReceivedAfterDisconnect() throws Exception {
         JChannel ch1 = createChannel(true,2);        
         Channel ch2=createChannel(ch1);
@@ -149,8 +170,8 @@ public class ChannelTest extends ChannelTestBase {
         ch2.setReceiver(ra);
 
         try {
-            ch1.connect("testNoViewIsReceivedAferDisconnect");
-            ch2.connect("testNoViewIsReceivedAferDisconnect");
+            ch1.connect("testNoViewIsReceivedAfterDisconnect");
+            ch2.connect("testNoViewIsReceivedAfterDisconnect");
             Util.sleep(500);
             ch2.disconnect();
             Util.sleep(1000);
@@ -160,8 +181,8 @@ public class ChannelTest extends ChannelTestBase {
             Util.close(ch1,ch2);
         }
     }
-    
-    @Test
+
+
     public void testNoViewIsReceivedAfterClose() throws Exception {
         JChannel ch1 = createChannel(true,2);        
         Channel ch2=createChannel(ch1);
@@ -169,8 +190,8 @@ public class ChannelTest extends ChannelTestBase {
         ch2.setReceiver(ra);
 
         try {
-            ch1.connect("testNoViewIsReceivedAferClose");
-            ch2.connect("testNoViewIsReceivedAferClose");
+            ch1.connect("testNoViewIsReceivedAfterClose");
+            ch2.connect("testNoViewIsReceivedAfterClose");
             Util.sleep(200);
             ch2.close();
             Util.sleep(1000);
@@ -194,7 +215,7 @@ public class ChannelTest extends ChannelTestBase {
         }             
     }
 
-    @Test
+
     public void testOrdering() throws Exception {
         final int NUM=100;
         JChannel ch=createChannel(true, 2);
@@ -203,7 +224,7 @@ public class ChannelTest extends ChannelTestBase {
         try {
             ch.connect("testOrdering");
             for(int i=1;i <= NUM;i++) {
-                ch.send(new Message(null, null, new Integer(i)));
+                ch.send(new Message(null, null, i));
                 // System.out.println("-- sent " + i);
             }
             receiver.waitForCompletion();
@@ -275,7 +296,6 @@ public class ChannelTest extends ChannelTestBase {
 
         public void viewAccepted(View new_view) {
             connected=channel.isConnected();
-            // System.out.println("ConnectedChecker: channel.isConnected()=" + connected + ", view=" + new_view);
         }
     }
 
