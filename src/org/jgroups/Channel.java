@@ -52,13 +52,29 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 @MBean(description="Channel")
 public abstract class Channel /* implements Transport */ {
+
+    public static enum State {
+        OPEN,       // initial state, after channel has been created, or after a disconnect()
+        CONNECTING, // when connect() is called
+        CONNECTED,  // after successful connect()
+        CLOSED      // after close() has been called
+    }
+
+
+    /** The current state of the channel */
+    protected volatile State       state=State.OPEN;
     protected UpHandler            up_handler=null;   // when set, <em>all</em> events are passed to it !
     protected Set<ChannelListener> channel_listeners=null;
     protected Receiver             receiver=null;
     protected SocketFactory        socket_factory=new DefaultSocketFactory();
 
     @ManagedAttribute(description="Whether or not to discard messages sent by this channel",writable=true)
-    protected boolean discard_own_messages=false;
+    protected boolean              discard_own_messages=false;
+
+
+    @ManagedAttribute(description="The current state")
+    public String getState() {return state.toString();}
+
 
     protected abstract Log getLog();
 
@@ -142,21 +158,31 @@ public abstract class Channel /* implements Transport */ {
 
 
    /**
-    * Determines whether the channel is open; ie. the protocol stack has been created (may not be
-    * connected though).
-    * 
+    * Determines whether the channel is open; ie. the protocol stack has been created (may not be connected though).
     * @return true is channel is open, false otherwise
     */
-    abstract public boolean isOpen();
+   @ManagedAttribute public boolean isOpen()       {return state != State.CLOSED;}
 
 
    /**
     * Determines whether the channel is connected to a group.
-    * 
-    * @return true if channel is connected to cluster (group) and can send/receive messages, false otherwise 
+    * @return true if channel is connected to cluster (group) and can send/receive messages, false otherwise
     */
-    abstract public boolean isConnected();
+   @ManagedAttribute public boolean isConnected()  {return state == State.CONNECTED;}
 
+    /**
+     * Determines whether the channel is in the connecting state; this means {@link Channel#connect(String)} has been
+     * called, but hasn't returned yet
+     * @return true if the channel is in the connecting state, false otherwise
+     */
+    @ManagedAttribute public boolean isConnecting() {return state == State.CONNECTING;}
+
+
+    /**
+     * Determines whether the channel is in the closed state.
+     * @return
+     */
+    @ManagedAttribute public boolean isClosed()     {return state == State.CLOSED;}
 
 
    /**

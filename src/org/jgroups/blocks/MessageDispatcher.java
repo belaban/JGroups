@@ -611,7 +611,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
 
         public Object down(Event evt) {
             if(channel != null) {
-                if(evt.getType() == Event.MSG && !channel.isConnected())
+                if(evt.getType() == Event.MSG && !(channel.isConnected() || channel.isConnecting()))
                     throw new IllegalStateException("channel is not connected");
                 return channel.down(evt);
             }
