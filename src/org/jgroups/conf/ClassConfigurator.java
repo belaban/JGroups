@@ -2,7 +2,6 @@
 package org.jgroups.conf;
 
 
-import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -149,7 +148,7 @@ public class ClassConfigurator {
      * @param magic the magic number that maps to the class
      * @return a Class object that represents a class that implements java.io.Externalizable
      */
-    public static Class<Address> get(short magic) {
+    public static Class<?> get(short magic) {
         return magic < MIN_CUSTOM_MAGIC_NUMBER? magicMap[magic] : magicMapUser.get(magic);
     }
 

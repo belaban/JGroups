@@ -59,6 +59,10 @@ public class FixedMembershipToken extends AuthToken {
     public FixedMembershipToken() {
     }
 
+    public FixedMembershipToken(String token) {
+        this.token=token;
+    }
+
     public String getName() {
         return "org.jgroups.auth.FixedMembershipToken";
     }
@@ -145,5 +149,9 @@ public class FixedMembershipToken extends AuthToken {
             log.debug("SimpleToken readFrom()");
         }
         this.token = Util.readString(in);
+    }
+
+    public int size() {
+        return Util.size(token);
     }
 }

@@ -118,4 +118,8 @@ public class RegexMembership extends AuthToken {
      */
     public void readFrom(DataInput in) throws Exception {
     }
+
+    public int size() {
+        return 0;
+    }
 }

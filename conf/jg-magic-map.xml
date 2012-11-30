@@ -63,5 +63,8 @@
     <class id="100" name="org.jgroups.protocols.FORWARD_TO_COORD$ForwardHeader"/>
     <class id="101" name="org.jgroups.protocols.relay.CanBeSiteMaster"/>
     <class id="102" name="org.jgroups.protocols.relay.CanBeSiteMasterTopology"/>
-
+    <class id="103" name="org.jgroups.auth.SimpleToken"/>
+    <class id="104" name="org.jgroups.auth.FixedMembershipToken"/>
+    <class id="105" name="org.jgroups.auth.MD5Token"/>
+    <class id="106" name="org.jgroups.auth.X509Token"/>
 </magic-number-class-mapping>

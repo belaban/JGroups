@@ -1,11 +1,11 @@
 package org.jgroups.auth;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Util;
+
+import java.io.DataInput;
+import java.io.DataOutput;
 
 /**
  * <p>
@@ -131,5 +131,9 @@ public class MD5Token extends AuthToken {
             log.debug("MD5Token readFrom()");
         }
         this.auth_value = Util.readString(in);
+    }
+
+    public int size() {
+        return Util.size(this.auth_value);
     }
 }

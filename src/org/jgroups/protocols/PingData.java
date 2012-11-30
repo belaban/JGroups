@@ -2,7 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.util.Streamable;
+import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -15,7 +15,7 @@ import java.util.Collection;
  * physical address(es)
  * @author Bela Ban
  */
-public class PingData implements Streamable {
+public class PingData implements SizeStreamable {
     protected Address sender=null;  // the sender of this PingData
     protected View    view=null;    // only sent with merge-triggered discovery response (if ViewIds differ)
     protected ViewId  view_id=null; // only sent with GMS-triggered discovery response

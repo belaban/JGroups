@@ -102,6 +102,10 @@ public class SimpleToken extends AuthToken {
         this.auth_value = Util.readString(in);
     }
 
+    public int size() {
+        return Util.size(auth_value);
+    }
+
     public String toString() {
         return "auth_value=" + auth_value;
     }

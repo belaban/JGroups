@@ -1,25 +1,19 @@
 package org.jgroups.auth;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableEntryException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import org.jgroups.Message;
+import org.jgroups.annotations.Property;
+import org.jgroups.util.Util;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-
-import org.jgroups.Message;
-import org.jgroups.annotations.Property;
-import org.jgroups.util.Util;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.security.*;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 /**
  * <p>
@@ -99,6 +93,12 @@ public class X509Token extends AuthToken {
             cert_password = keystore_password;
     }
 
+    /** To be used for testing only */
+    public X509Token encryptedToken(byte[] buf) {
+        encryptedToken=buf;
+        return this;
+    }
+
     public String getName() {
         return "org.jgroups.auth.X509Token";
     }
@@ -158,6 +158,10 @@ public class X509Token extends AuthToken {
         }
         this.encryptedToken = Util.readByteBuffer(in);
         this.valueSet = true;
+    }
+
+    public int size() {
+        return Util.size(encryptedToken);
     }
 
     /**

@@ -3,24 +3,24 @@ package org.jgroups.stack;
 
 
 import org.jgroups.Address;
-import org.jgroups.PhysicalAddress;
 import org.jgroups.Global;
-import org.jgroups.util.Streamable;
+import org.jgroups.PhysicalAddress;
+import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Collection;
-import java.util.ArrayList;
 
 
 /**
  * Encapsulates data sent between GossipRouter and GossipClient
  * @author Bela Ban Oct 4 2001
  */
-public class GossipData implements Streamable {
+public class GossipData implements SizeStreamable {
     byte           type=0;      // One of GossipRouter type, e.g. CONNECT, REGISTER etc
     String         group=null;  // CONNECT, GET_REQ and GET_RSP
     Address        addr=null;   // CONNECT

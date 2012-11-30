@@ -3,6 +3,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
+import org.jgroups.auth.*;
 import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.*;
@@ -16,7 +17,10 @@ import org.jgroups.util.UUID;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.util.*;
 
 
@@ -92,6 +96,16 @@ public class SizeTest {
 
          data=new PingData(self, Util.createView(self, 1, self), true, "logical-name", null);
         _testSize(data);
+    }
+
+    public static void testAuthHeader() throws Exception {
+        _testSize(new AuthHeader(new SimpleToken("secret")));
+        _testSize(new AuthHeader(new FixedMembershipToken("192.168.1.5[7800],192.168.1.3[7800]")));
+        _testSize(new AuthHeader(new MD5Token("myauthvalue")));
+        _testSize(new AuthHeader(new RegexMembership()));
+
+        X509Token tok=new X509Token().encryptedToken(new byte[]{'b', 'e', 'l', 'a'});
+        _testSize(new AuthHeader(tok));
     }
 
     public static void testGossipData() throws Exception {
@@ -811,8 +825,11 @@ public class SizeTest {
     private static void _testSize(Header hdr) throws Exception {
         long size=hdr.size();
         byte[] serialized_form=Util.streamableToByteBuffer(hdr);
-        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
+        System.out.println(hdr.getClass().getSimpleName() + ": size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
+
+        Header hdr2=(Header)Util.streamableFromByteBuffer(hdr.getClass(), serialized_form);
+        assert hdr2.size() == hdr.size();
     }
 
 
@@ -871,15 +888,8 @@ public class SizeTest {
         assert Util.match(rsp.getFailReason(), rsp2.getFailReason());
     }
 
-    private static void _testSize(PingData data) throws Exception {
-        System.out.println("\ndata: " + data);
-        long size=data.size();
-        byte[] serialized_form=Util.streamableToByteBuffer(data);
-        System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        assert serialized_form.length == size : "serialized length=" + serialized_form.length + ", size=" + size;
-    }
 
-    private static void _testSize(GossipData data) throws Exception {
+    private static void _testSize(SizeStreamable data) throws Exception {
         System.out.println("\ndata: " + data);
         long size=data.size();
         byte[] serialized_form=Util.streamableToByteBuffer(data);

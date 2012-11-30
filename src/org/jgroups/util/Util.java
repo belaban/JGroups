@@ -901,10 +901,10 @@ public class Util {
 
     private static Address readOtherAddress(DataInput in) throws Exception {
         short magic_number=in.readShort();
-        Class<Address> cl=ClassConfigurator.get(magic_number);
+        Class<?> cl=ClassConfigurator.get(magic_number);
         if(cl == null)
             throw new RuntimeException("class for magic number " + magic_number + " not found");
-        Address addr=cl.newInstance();
+        Address addr=(Address)cl.newInstance();
         addr.readFrom(in);
         return addr;
     }
