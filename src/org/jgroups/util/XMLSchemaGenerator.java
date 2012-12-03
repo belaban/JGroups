@@ -1,5 +1,19 @@
 package org.jgroups.util;
 
+import org.jgroups.Version;
+import org.jgroups.annotations.Property;
+import org.jgroups.stack.Protocol;
+import org.w3c.dom.DOMImplementation;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -9,22 +23,6 @@ import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
-import org.jgroups.Version;
-import org.jgroups.annotations.Property;
-import org.jgroups.stack.Configurator;
-import org.jgroups.stack.Protocol;
-import org.w3c.dom.DOMImplementation;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 /**
  * Iterates over all concrete Protocol classes and creates XML schema used for validation of
@@ -87,6 +85,11 @@ public class XMLSchemaGenerator {
          for (Class<?> clazz : classes) {
             classToXML(xmldoc, allType, clazz, "tom.");
          }
+
+          classes = getClasses("org.jgroups.protocols.relay", Protocol.class);
+          for (Class<?> clazz : classes) {
+              classToXML(xmldoc, allType, clazz, "relay.");
+          }
 
          DOMSource domSource = new DOMSource(xmldoc);
          StreamResult streamResult = new StreamResult(fw);
