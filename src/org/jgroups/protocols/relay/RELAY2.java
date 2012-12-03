@@ -70,6 +70,10 @@ public class RELAY2 extends Protocol {
       "Async relay creation is recommended, so the view callback won't be blocked")
     protected boolean                                  async_relay_creation=true;
 
+    @Property(description="If true, logs a warning if the FORWARD_TO_COORD protocol is not found. This property might " +
+      "get deprecated soon")
+    protected boolean                                  warn_when_ftc_missing=true;
+
 
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
     @ManagedAttribute(description="My site-ID")
@@ -181,7 +185,7 @@ public class RELAY2 extends Protocol {
 
         List<Integer> available_down_services=getDownServices();
         forwarding_protocol_present=available_down_services != null && available_down_services.contains(Event.FORWARD_TO_COORD);
-        if(!forwarding_protocol_present && log.isWarnEnabled())
+        if(!forwarding_protocol_present && warn_when_ftc_missing && log.isWarnEnabled())
             log.warn(local_addr + ": " + FORWARD_TO_COORD.class.getSimpleName() + " protocol not found below; " +
                        "unable to re-submit messages to the new coordinator if the current coordinator crashes");
 
