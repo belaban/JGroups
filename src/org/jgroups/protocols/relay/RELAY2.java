@@ -52,6 +52,7 @@ public class RELAY2 extends Protocol {
               deprecatedMessage="not used anymore, will be ignored")
     protected int                                      max_forward_attempts=5;
 
+    @Deprecated
     @Property(description="The time (in milliseconds) to sleep between forward attempts",
               deprecatedMessage="not used anymore, will be ignored")
     protected long                                     forward_sleep=1000;
