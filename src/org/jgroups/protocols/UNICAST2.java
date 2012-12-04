@@ -615,7 +615,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             };
             stable_task_future=timer.scheduleWithFixedDelay(stable_task, stable_interval, stable_interval, TimeUnit.MILLISECONDS);
             if(log.isTraceEnabled())
-                log.trace(local_addr + ": stable task started");
+                log.trace(local_addr + ": stable task started (interval=" + stable_interval + ")");
         }
     }
 

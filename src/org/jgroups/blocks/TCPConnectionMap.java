@@ -200,12 +200,6 @@ public class TCPConnectionMap {
 
     
     private void setSocketParameters(Socket client_sock) throws SocketException {
-        if(log.isTraceEnabled())
-            log.trace("[" + local_addr
-                      + "] accepted connection from "
-                      + client_sock.getInetAddress()
-                      + ":"
-                      + client_sock.getPort());
         try {
             client_sock.setSendBufferSize(send_buf_size);
         }
@@ -246,7 +240,11 @@ public class TCPConnectionMap {
                 TCPConnection conn=null;
                 Socket client_sock = null;
                 try {
-                    client_sock=srv_sock.accept();                      
+                    client_sock=srv_sock.accept();
+                    if(log.isTraceEnabled())
+                        log.trace("[" + local_addr + "] accepted connection from " +
+                                    client_sock.getInetAddress() + ":" + client_sock.getPort());
+
                     conn=new TCPConnection(client_sock);
                     Address peer_addr=conn.getPeerAddress();
                     mapper.getLock().lock();
@@ -779,12 +777,12 @@ public class TCPConnectionMap {
                 conn.start(getThreadFactory());
                 addConnection(dest,conn); // listener notification should not be under the getLock() either
                 if(log.isTraceEnabled())
-                    log.trace("created socket to " + dest);
+                    log.trace("[" + local_addr + "] established connection to " + dest);
 
             }
             catch(Exception ex) {
                 if(log.isTraceEnabled())
-                    log.trace("failed creating connection to " + dest);
+                    log.trace("[" + local_addr + "] failed creating connection to " + dest);
                 if(conn != null) { // should not happen, either conn.start or addConnection failed -still make sure
                     // it's a "proper rollback"
                     TCPConnection existing;
