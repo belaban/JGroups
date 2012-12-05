@@ -1,17 +1,12 @@
 package org.jgroups.tests;
 
+import org.jgroups.util.StackType;
+import org.jgroups.util.Util;
+
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.StringTokenizer;
-
-import org.jgroups.util.StackType;
-import org.jgroups.util.Util;
+import java.util.*;
 
 /**
  * Discovers all UDP-based members running on a certain mcast address
@@ -193,7 +188,8 @@ public class Probe {
 
     static void help() {
         System.out.println("Probe [-help] [-addr <addr>] [-bind_addr <addr>] " +
-                             "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-weed_out_duplicates] [-match pattern]" +
+                             "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-passcode <code>] [-weed_out_duplicates] " +
+                             "[-match pattern]" +
                              "[key[=value]]*\n\n" +
                              "Examples:\n" +
                              "probe.sh keys // dumps all valid commands\n" +
