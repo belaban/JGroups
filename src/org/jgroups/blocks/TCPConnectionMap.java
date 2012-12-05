@@ -163,8 +163,7 @@ public class TCPConnectionMap {
         }
 
         // 1. Try to obtain correct Connection (or create one if not yet existent)
-        TCPConnection conn;
-        conn=mapper.getConnection(dest);           
+        TCPConnection conn=mapper.getConnection(dest);
 
         // 2. Send the message using that connection
         if(conn != null) {
@@ -251,9 +250,9 @@ public class TCPConnectionMap {
                     try {                        
                         boolean currentConnectionOpen=mapper.hasOpenConnection(peer_addr);
                         boolean replaceWithNewConnection=false;
-                        if(currentConnectionOpen) {
+                        if(currentConnectionOpen)
                             replaceWithNewConnection=peer_addr.compareTo(local_addr) > 0;
-                        }
+
                         if(!currentConnectionOpen || replaceWithNewConnection) {
                             mapper.removeConnection(peer_addr);
                             mapper.addConnection(peer_addr, conn);
@@ -775,7 +774,7 @@ public class TCPConnectionMap {
 
                 conn=new TCPConnection(dest);
                 conn.start(getThreadFactory());
-                addConnection(dest,conn); // listener notification should not be under the getLock() either
+                addConnection(dest, conn); // listener notification should not be under the getLock() either
                 if(log.isTraceEnabled())
                     log.trace("[" + local_addr + "] established connection to " + dest);
 
