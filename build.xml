@@ -102,6 +102,7 @@
             description="Compiles all Java files">
         <javac destdir="${compile.dir}"
                source="1.6"
+               target="1.6"
                classpathref="jg.classpath"
                includeantruntime="false"
                debug="on"
@@ -128,6 +129,7 @@
         <javac srcdir="${src.dir}"
                destdir="${compile.dir}"
                source="1.6"
+               target="1.6"
                classpathref="jg.classpath"
                includeantruntime="false"
                debug="on"
@@ -144,6 +146,7 @@
             description="Compiles only tests shipped with JGroups">
         <javac destdir="${compile.dir}"
                source="1.6"
+               target="1.6"
                classpathref="jg.classpath"
                includeantruntime="false"
                debug="on"
