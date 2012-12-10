@@ -189,7 +189,7 @@ public class Probe {
     static void help() {
         System.out.println("Probe [-help] [-addr <addr>] [-bind_addr <addr>] " +
                              "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-passcode <code>] [-weed_out_duplicates] " +
-                             "[-match pattern]" +
+                             "[-match pattern] " +
                              "[key[=value]]*\n\n" +
                              "Examples:\n" +
                              "probe.sh keys // dumps all valid commands\n" +

@@ -566,7 +566,7 @@ public abstract class TP extends Protocol {
 
     /** Cache keeping track of WHO_HAS requests for physical addresses (given a logical address) and expiring
      * them after who_has_cache_timeoout ms */
-    protected AgeOutCache<Address>   who_has_cache;
+    protected ExpiryCache<Address>   who_has_cache;
 
     /** Log to suppress identical warnings for messages from members with different (incompatible) versions */
     protected SuppressLog<Address>   suppress_log_different_version;
@@ -829,6 +829,9 @@ public abstract class TP extends Protocol {
         return logical_addr_cache.printCache(print_function);
     }
 
+    @ManagedOperation(description="Prints the contents of the who-has cache")
+    public String printWhoHasCache() {return who_has_cache.toString();}
+
     @ManagedOperation(description="Evicts elements in the logical address cache which have expired")
     public void evictLogicalAddressCache() {
         evictLogicalAddressCache(false);
@@ -915,7 +918,7 @@ public abstract class TP extends Protocol {
             }
         }
 
-        who_has_cache=new AgeOutCache<Address>(timer, who_has_cache_timeout);
+        who_has_cache=new ExpiryCache<Address>(who_has_cache_timeout);
 
         if(suppress_time_different_version_warnings > 0)
             suppress_log_different_version=new SuppressLog<Address>(log, "VersionMismatch", "SuppressMsg");
@@ -1362,8 +1365,7 @@ public abstract class TP extends Protocol {
         int cnt=1;
         long sleep_time=20;
         while((physical_dest=getPhysicalAddressFromCache(dest)) == null && cnt++ <= physical_addr_max_fetch_attempts) {
-            if(!who_has_cache.contains(dest)) {
-                who_has_cache.add(dest);
+            if(who_has_cache.addIfAbsentOrExpired(dest)) { // true if address was added
                 Util.sleepRandom(1, 500); // to prevent a discovery flood in large clusters (by staggering requests)
                 if((physical_dest=getPhysicalAddressFromCache(dest)) != null)
                     break;
@@ -1525,6 +1527,7 @@ public abstract class TP extends Protocol {
                     if(suppress_log_different_cluster != null)
                         suppress_log_different_cluster.removeExpired(suppress_time_different_cluster_warnings);
                 }
+                who_has_cache.removeExpiredElements();
                 break;
 
             case Event.CONNECT:
