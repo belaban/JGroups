@@ -69,25 +69,10 @@ public class SiteUUID extends UUID implements SiteAddress {
         return site;
     }
 
-//    public int compareTo(Address other) {
-//        int retval=super.compareTo(other);
-//        if(retval != 0)
-//            return retval;
-//        SiteUUID tmp=(SiteUUID)other;
-//        return site == tmp.site ? 0: site < tmp.site? -1 : 1;
-//    }
-
     public UUID copy() {
         return new SiteUUID(mostSigBits, leastSigBits, name, site);
     }
 
-//    public boolean equals(Object obj) {
-//        return obj instanceof UUID && compareTo((Address)obj) == 0;
-//    }
-
-//    public int hashCode() {
-//        return super.hashCode() + site;
-//    }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);

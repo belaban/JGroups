@@ -425,6 +425,12 @@ public class RELAY2 extends Protocol {
         }
     }
 
+    /**
+     * Sends a SITE-UNREACHABLE message to the sender of the message. Because the sender is always local (we're the
+     * relayer), no routing needs to be done
+     * @param dest
+     * @param target_site
+     */
     protected void sendSiteUnreachableTo(Address dest, short target_site) {
         Message msg=new Message(dest).setFlag(Message.Flag.OOB);
         msg.setSrc(new SiteUUID((UUID)local_addr, UUID.get(local_addr), site_id));
