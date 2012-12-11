@@ -1564,7 +1564,16 @@ public abstract class TP extends Protocol {
                 break;
 
             case Event.GET_PHYSICAL_ADDRESS:
-                return getPhysicalAddressFromCache((Address)evt.getArg());
+                Address addr=(Address)evt.getArg();
+                PhysicalAddress physical_addr=getPhysicalAddressFromCache(addr);
+                if(physical_addr != null)
+                    return physical_addr;
+                if(addr != null && local_addr != null && addr.equals(local_addr)) {
+                    physical_addr=getPhysicalAddress();
+                    if(physical_addr != null)
+                        addPhysicalAddressToCache(addr, physical_addr);
+                }
+                return physical_addr;
 
             case Event.GET_PHYSICAL_ADDRESSES:
                 return getAllPhysicalAddressesFromCache();
