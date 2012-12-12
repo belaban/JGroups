@@ -89,6 +89,13 @@ public class UFC extends FlowControl {
         return retval;
     }
 
+    public void init() throws Exception {
+        super.init();
+        TP transport=getTransport();
+        if(transport instanceof BasicTCP)
+            log.info(this.getClass().getSimpleName() + " is not needed (and can be removed) as we're running on a TCP transport");
+    }
+
     public void stop() {
         super.stop();
         for(Credit cred: sent.values())

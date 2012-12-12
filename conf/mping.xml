@@ -20,7 +20,6 @@ Author: Bela Ban
     <UNICAST/>
     <pbcast.STABLE/>
     <pbcast.GMS/>
-    <UFC/>
     <MFC/>
     <FRAG2/>
     <pbcast.STATE_TRANSFER />
