@@ -425,7 +425,7 @@ public abstract class Discovery extends Protocol {
                               || current_coord == null || current_coord.equals(msg.getSrc());
                             if(!send_discovery_rsp) {
                                 if(log.isTraceEnabled())
-                                    log.trace(local_addr + ": suppressing merge response as I'm not a coordinator and the " +
+                                    log.trace(local_addr + ": suppressing discovery response as I'm not a coordinator and the " +
                                                 "discovery request was not sent by a coordinator");
                                 return null;
                             }
@@ -433,7 +433,7 @@ public abstract class Discovery extends Protocol {
 
                         if(isMergeRunning()) {
                             if(log.isTraceEnabled())
-                                log.trace(local_addr + ": suppressing merge response as a merge is already in progress");
+                                log.trace(local_addr + ": suppressing discovery response as a merge is in progress");
                             return null;
                         }
 
