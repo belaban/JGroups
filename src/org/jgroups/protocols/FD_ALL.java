@@ -376,9 +376,7 @@ public class FD_ALL extends Protocol {
      */
     class HeartbeatSender implements Runnable {
         public void run() {
-            Message heartbeat=new Message(); // send to all
-            heartbeat.setFlag(Message.OOB);
-            heartbeat.putHeader(id, new HeartbeatHeader());
+            Message heartbeat=new Message().setFlag(Message.OOB).putHeader(id, new HeartbeatHeader());
             down_prot.down(new Event(Event.MSG, heartbeat));
             num_heartbeats_sent++;
         }

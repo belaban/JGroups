@@ -223,7 +223,7 @@ public class Message implements Streamable {
     * is simply a reference to the old buffer.<br/>
     * Even if offset and length are used: we return the <em>entire</em> buffer, not a subset.
     */
-    public byte[] getRawBuffer() {
+   public byte[] getRawBuffer() {
         return buf;
     }
 
@@ -244,28 +244,25 @@ public class Message implements Streamable {
         }
     }
 
-    final public void setBuffer(byte[] b) {
+    final public Message setBuffer(byte[] b) {
         buf=b;
         if(buf != null) {
             offset=0;
             length=buf.length;
         }
-        else {
+        else
             offset=length=0;
-        }
+        return this;
     }
 
-   /**
-    * Set the internal buffer to point to a subset of a given buffer
-    * 
-    * @param b
-    *           The reference to a given buffer. If null, we'll reset the buffer to null
-    * @param offset
-    *           The initial position
-    * @param length
-    *           The number of bytes
-    */
-    final public void setBuffer(byte[] b, int offset, int length) {
+    /**
+     * Set the internal buffer to point to a subset of a given buffer
+     *
+     * @param b The reference to a given buffer. If null, we'll reset the buffer to null
+     * @param offset The initial position
+     * @param length The number of bytes
+     */
+    final public Message setBuffer(byte[] b, int offset, int length) {
         buf=b;
         if(buf != null) {
             if(offset < 0 || offset > buf.length)
@@ -275,31 +272,32 @@ public class Message implements Streamable {
             this.offset=offset;
             this.length=length;
         }
-        else {
+        else
             this.offset=this.length=0;
-        }
+        return this;
     }
 
-   /**
-    * <em>
-    * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
-    * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
-    * retransmit a changed byte[] buffer !
-    * </em>
-    */
-     public final void setBuffer(Buffer buf) {
+    /**
+     * <em>
+     * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
+     * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
+     * retransmit a changed byte[] buffer !
+     * </em>
+     */
+    public final Message setBuffer(Buffer buf) {
         if(buf != null) {
             this.buf=buf.getBuf();
             this.offset=buf.getOffset();
             this.length=buf.getLength();
         }
+        return this;
     }
 
-   /**
-    * 
-    * Returns the offset into the buffer at which the data starts
-    * 
-    */
+    /**
+     *
+     * Returns the offset into the buffer at which the data starts
+     *
+     */
     public int getOffset() {
         return offset;
     }
@@ -329,40 +327,35 @@ public class Message implements Streamable {
         return headers != null? headers.size() : 0;
     }
 
-   /**
-    * Takes an object and uses Java serialization to generate the byte[] buffer which is set in the
-    * message. Parameter 'obj' has to be serializable (e.g. implementing Serializable,
-    * Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).
-    */
-    final public void setObject(Object obj) {
-        if(obj == null) return;
-        if(obj instanceof byte[]) {
-            setBuffer((byte[])obj);
-            return;
-        }
-        if(obj instanceof Buffer) {
-            setBuffer((Buffer)obj);
-            return;
-        }
+    /**
+     * Takes an object and uses Java serialization to generate the byte[] buffer which is set in the
+     * message. Parameter 'obj' has to be serializable (e.g. implementing Serializable,
+     * Externalizable or Streamable, or be a basic type (e.g. Integer, Short etc)).
+     */
+    final public Message setObject(Object obj) {
+        if(obj == null) return this;
+        if(obj instanceof byte[])
+            return setBuffer((byte[])obj);
+        if(obj instanceof Buffer)
+            return setBuffer((Buffer)obj);
         try {
-            byte[] tmp=Util.objectToByteBuffer(obj);
-            setBuffer(tmp);
+            return setBuffer(Util.objectToByteBuffer(obj));
         }
         catch(Exception ex) {
             throw new IllegalArgumentException(ex);
         }
     }
 
-   /**
-    * Uses custom serialization to create an object from the buffer of the message. Note that this
-    * is dangerous when using your own classloader, e.g. inside of an application server ! Most
-    * likely, JGroups will use the system classloader to deserialize the buffer into an object,
-    * whereas (for example) a web application will want to use the webapp's classloader, resulting
-    * in a ClassCastException. The recommended way is for the application to use their own
-    * serialization and only pass byte[] buffer to JGroups.
-    * 
-    * @return
-    */
+    /**
+     * Uses custom serialization to create an object from the buffer of the message. Note that this
+     * is dangerous when using your own classloader, e.g. inside of an application server ! Most
+     * likely, JGroups will use the system classloader to deserialize the buffer into an object,
+     * whereas (for example) a web application will want to use the webapp's classloader, resulting
+     * in a ClassCastException. The recommended way is for the application to use their own
+     * serialization and only pass byte[] buffer to JGroups.
+     *
+     * @return
+     */
     final public Object getObject() {
         try {
             return Util.objectFromByteBuffer(buf, offset, length);
@@ -473,8 +466,9 @@ public class Message implements Streamable {
     }
 
 
-    public void setScope(short scope) {
+    public Message setScope(short scope) {
         Util.setScope(this, scope);
+        return this;
     }
 
     public short getScope() {
@@ -484,10 +478,11 @@ public class Message implements Streamable {
     /*---------------------- Used by protocol layers ----------------------*/
 
     /** Puts a header given an ID into the hashmap. Overwrites potential existing entry. */
-    public void putHeader(short id, Header hdr) {
+    public Message putHeader(short id, Header hdr) {
         if(id < 0)
             throw new IllegalArgumentException("An ID of " + id + " is invalid");
         headers.putHeader(id, hdr);
+        return this;
     }
 
    /**
@@ -634,7 +629,6 @@ public class Message implements Streamable {
 
     /** Tries to read an object from the message's buffer and prints it */
     public String toStringAsObject() {
-
         if(buf == null) return null;
         try {
             Object obj=getObject();
