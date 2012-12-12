@@ -81,41 +81,15 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     }
 
 
-    public void setThreadFactory(ThreadFactory factory) {
-        pool.setThreadFactory(factory);
-    }
-
-    public int getMinThreads() {
-        return pool.getCorePoolSize();
-    }
-
-    public void setMinThreads(int size) {
-        pool.setCorePoolSize(size);
-    }
-
-    public int getMaxThreads() {
-        return pool.getMaximumPoolSize();
-    }
-
-    public void setMaxThreads(int size) {
-        pool.setMaximumPoolSize(size);
-    }
-
-    public long getKeepAliveTime() {
-        return pool.getKeepAliveTime(TimeUnit.MILLISECONDS);
-    }
-
-    public void setKeepAliveTime(long time) {
-        pool.setKeepAliveTime(time, TimeUnit.MILLISECONDS);
-    }
-
-    public int getCurrentThreads() {
-        return pool.getPoolSize();
-    }
-
-    public int getQueueSize() {
-        return pool.getQueue().size();
-    }
+    public void setThreadFactory(ThreadFactory f) {pool.setThreadFactory(f);}
+    public int  getMinThreads()                   {return pool.getCorePoolSize();}
+    public void setMinThreads(int size)           {pool.setCorePoolSize(size);}
+    public int  getMaxThreads()                   {return pool.getMaximumPoolSize();}
+    public void setMaxThreads(int size)           {pool.setMaximumPoolSize(size);}
+    public long getKeepAliveTime()                {return pool.getKeepAliveTime(TimeUnit.MILLISECONDS);}
+    public void setKeepAliveTime(long time)       {pool.setKeepAliveTime(time, TimeUnit.MILLISECONDS);}
+    public int  getCurrentThreads()               {return pool.getPoolSize();}
+    public int  getQueueSize()                    {return pool.getQueue().size();}
 
 
     public String dumpTimerTasks() {
@@ -151,7 +125,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             if((retval=existing.add(work)) != null)
                 break;
 
-            // Else the existing entry is completed.  It'll be removed shortly, so we just loop round again.
+            // Else the existing entry is completed.  It'll be removed shortly, so we just loop around again.
             // Don't remove the entry ourselves - see JGRP-1457.
         }
 
@@ -281,11 +255,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             for(Map.Entry<Long,Entry> entry: head_map.entrySet()) {
                 final Long key=entry.getKey();
                 final Entry val=entry.getValue();
-                Runnable task=new Runnable() {
-                    public void run() {
-                        val.execute();
-                    }
-                };
+                Runnable task=new Runnable() {public void run() {val.execute();}};
                 try {
                     pool.execute(task);
                 }
@@ -297,7 +267,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                 }
                 keys.add(key);
             }
-            // removed performance hotspot (https://issues.jboss.org/browse/JGRP-1490)
+            // we cannot use headMap.clear(); removed performance hotspot (https://issues.jboss.org/browse/JGRP-1490)
             for(Long key: keys)
                 tasks.remove(key);
         }
