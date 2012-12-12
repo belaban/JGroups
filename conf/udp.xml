@@ -23,7 +23,7 @@
          enable_diagnostics="true"
          thread_naming_pattern="cl"
 
-         timer_type="new"
+         timer_type="old"
          timer.min_threads="4"
          timer.max_threads="10"
          timer.keep_alive_time="3000"

@@ -190,9 +190,9 @@ public abstract class TP extends Protocol {
     protected String thread_pool_rejection_policy="Discard";
 
     @Property(description="Type of timer to be used. Valid values are \"old\" (DefaultTimeScheduler, used up to 2.10), " +
-            "\"new\" (TimeScheduler2) and \"wheel\". Note that this property might disappear " +
-            "in future releases, if one of the 3 timers is chosen as default timer")
-    protected String timer_type="new";
+      "\"new\" or \"new2\" (TimeScheduler2), \"new3\" (TimeScheduler3) and \"wheel\". Note that this property " +
+      "might disappear in future releases, if one of the 3 timers is chosen as default timer")
+    protected String timer_type="new3";
 
     protected int timer_min_threads=4;
 
@@ -204,7 +204,7 @@ public abstract class TP extends Protocol {
     protected int timer_queue_max_size=500;
 
     @Property(name="timer.rejection_policy",description="Timer rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
-    protected String timer_rejection_policy="run";
+    protected String timer_rejection_policy="abort"; // abort will spawn a new thread if the timer thread pool is full
 
     // hashed timing wheel specific props
     @Property(name="timer.wheel_size",
@@ -508,7 +508,7 @@ public abstract class TP extends Protocol {
     protected BlockingQueue<Runnable> thread_pool_queue=null;
 
     // ================================== Timer thread pool  =========================
-    protected TimeScheduler timer=null;
+    protected TimeScheduler timer;
 
     protected ThreadFactory timer_thread_factory;
 
@@ -905,8 +905,12 @@ public abstract class TP extends Protocol {
                 }
                 timer=new DefaultTimeScheduler(timer_thread_factory, timer_min_threads);
             }
-            else if(timer_type.equalsIgnoreCase("new")) {
+            else if(timer_type.equalsIgnoreCase("new") || timer_type.equalsIgnoreCase("new2")) {
                 timer=new TimeScheduler2(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
+                                         timer_queue_max_size, timer_rejection_policy);
+            }
+            else if(timer_type.equalsIgnoreCase("new3")) {
+                timer=new TimeScheduler3(timer_thread_factory, timer_min_threads, timer_max_threads, timer_keep_alive_time,
                                          timer_queue_max_size, timer_rejection_policy);
             }
             else if(timer_type.equalsIgnoreCase("wheel")) {
@@ -914,7 +918,7 @@ public abstract class TP extends Protocol {
                                             timer_queue_max_size, wheel_size, tick_time);
             }
             else {
-                throw new Exception("timer_type has to be either \"old\", \"new\" or \"wheel\"");
+                throw new Exception("timer_type has to be either \"old\", \"new\", \"new2\", \"new3\" or \"wheel\"");
             }
         }
 
@@ -983,7 +987,7 @@ public abstract class TP extends Protocol {
                 }
 
                 public String toString() {
-                    return "TP.LogicalAddressCacheReaper (interval=" + logical_addr_cache_expiration + " ms)";
+                    return TP.this.getClass().getSimpleName() + ": LogicalAddressCacheReaper (interval=" + logical_addr_cache_expiration + " ms)";
                 }
             }, logical_addr_cache_expiration, logical_addr_cache_expiration, TimeUnit.MILLISECONDS);
         }
@@ -1826,10 +1830,10 @@ public abstract class TP extends Protocol {
             }
 
             if(!multicast) {
-                Address dest=msg.getDest();
-                if(dest != null && local_addr != null && !dest.equals(local_addr)) {
+                Address dest=msg.getDest(), target=local_addr;
+                if(dest != null && target != null && !dest.equals(target)) {
                     if(log.isWarnEnabled())
-                        log.warn("dropping unicast message to wrong destination " + dest + "; my local_addr is " + local_addr);
+                        log.warn("dropping unicast message to wrong destination " + dest + "; my local_addr is " + target);
                     return;
                 }
             }
@@ -2002,7 +2006,7 @@ public abstract class TP extends Protocol {
             }
 
             public String toString() {
-                return getClass().getSimpleName();
+                return TP.this.getClass() + ": BundlingTimer";
             }
         }
     }

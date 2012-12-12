@@ -1230,6 +1230,10 @@ public class FD_SOCK extends Protocol implements Runnable {
             down_prot.down(new Event(Event.MSG, suspect_msg));
             if(log.isTraceEnabled()) log.trace("task done");
         }
+
+        public String toString() {
+            return FD_SOCK.class.getSimpleName() + ": " + getClass().getSimpleName();
+        }
     }
 
 

@@ -594,7 +594,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
-            sb.append(getClass().getSimpleName() + ": task=" + task + ", cancelled=" + isCancelled());
+            sb.append(task + ", cancelled=" + isCancelled());
             return sb.toString();
         }
     }

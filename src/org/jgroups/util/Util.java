@@ -2508,9 +2508,10 @@ public class Util {
 
     public static Object[][] createTimer() {
         return new Object[][] {
-                {new DefaultTimeScheduler(5)},
-                {new TimeScheduler2()},
-                {new HashedTimingWheel(5)}
+          {new DefaultTimeScheduler(5)},
+          {new TimeScheduler2()},
+          {new TimeScheduler3()},
+          {new HashedTimingWheel(5)}
         };
     }
 

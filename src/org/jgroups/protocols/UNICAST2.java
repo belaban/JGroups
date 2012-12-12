@@ -612,6 +612,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                         log.error("sending of STABLE messages failed", t);
                     }
                 }
+
+                public String toString() {
+                    return UNICAST2.class.getSimpleName() + ": StableTask (interval=" + stable_interval + " ms)";
+                }
             };
             stable_task_future=timer.scheduleWithFixedDelay(stable_task, stable_interval, stable_interval, TimeUnit.MILLISECONDS);
             if(log.isTraceEnabled())
@@ -1226,6 +1230,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         public void run() {
             reapIdleConnections();
         }
+
+        public String toString() {
+            return UNICAST2.class.getSimpleName() + ": ConnectionReaper (interval=" + conn_expiry_timeout + " ms)";
+        }
     }
 
     /**
@@ -1236,6 +1244,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
         public void run() {
             triggerXmit();
+        }
+
+        public String toString() {
+            return UNICAST2.class.getSimpleName() + ": RetransmitTask (interval=" + xmit_interval + " ms)";
         }
     }
 

@@ -661,6 +661,8 @@ public class STABLE extends Protocol {
                 public void run() {
                     down_prot.down(new Event(Event.MSG, msg));
                 }
+
+                public String toString() {return STABLE.class.getSimpleName() + ": STABLE-GOSSIP";}
             };
 
             // Run in a separate thread so we don't potentially block (http://jira.jboss.com/jira/browse/JGRP-532)
@@ -804,6 +806,8 @@ public class STABLE extends Protocol {
             sendStableMessage(my_digest);
         }
 
+        public String toString() {return STABLE.class.getSimpleName() + ": StableTask";}
+
         long computeSleepTime() {
             return getRandom((mbrs.size() * desired_avg_gossip * 2));
         }
@@ -845,19 +849,21 @@ public class STABLE extends Protocol {
                 down_prot.down(new Event(Event.MSG, msg));
             }
         }
+
+        public String toString() {return STABLE.class.getSimpleName() + ": StabilityTask";}
     }
 
 
-    private class ResumeTask implements Runnable {
-        ResumeTask() {
-        }
+    protected class ResumeTask implements Runnable {
 
         public void run() {
             if(suspended)
                 log.warn("ResumeTask resumed message garbage collection - this should be done by a RESUME_STABLE event; " +
-                         "check why this event was not received (or increase max_suspend_time for large state transfers)");
+                           "check why this event was not received (or increase max_suspend_time for large state transfers)");
             resume();
         }
+
+        public String toString() {return STABLE.class.getSimpleName() + ": ResumeTask";}
     }
 
 

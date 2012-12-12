@@ -2,9 +2,9 @@
 package org.jgroups.util;
 
 
+import org.jgroups.Global;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.Global;
 
 import java.util.concurrent.*;
 
@@ -167,7 +167,7 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
     /**
      * Class which catches exceptions in run() - https://jira.jboss.org/jira/browse/JGRP-1062
      */
-    static class RobustRunnable implements Runnable {
+    protected static class RobustRunnable implements Runnable {
         final Runnable command;
 
         public RobustRunnable(Runnable command) {
@@ -185,10 +185,14 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
                 }
             }
         }
+
+        public String toString() {
+            return command != null? command.toString() : null;
+        }
     }
 
 
-    private class TaskWrapper<V> implements Runnable, Future<V> {
+    protected class TaskWrapper<V> implements Runnable, Future<V> {
         private final Task         task;
         private volatile Future<?> future; // cannot be null !
         private volatile boolean   cancelled=false;

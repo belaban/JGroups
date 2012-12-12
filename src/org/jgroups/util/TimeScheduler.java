@@ -24,7 +24,7 @@ public interface TimeScheduler {
     /** The interface that dynamic tasks
      * ({@link TimeScheduler#scheduleWithDynamicInterval(org.jgroups.util.TimeScheduler.Task)}) must implement */
     public interface Task extends Runnable {
-        /** @return the next scheduled interval. If <= 0 the task will not be re-scheduled */
+        /** @return the next scheduled interval in ms. If <= 0 the task will not be re-scheduled */
         long nextInterval();
     }
 

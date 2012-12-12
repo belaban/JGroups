@@ -1194,6 +1194,10 @@ public class COUNTER extends Protocol {
             if(responses != null)
                 responses.reset();
         }
+
+        public String toString() {
+            return COUNTER.class.getSimpleName() + ": " + getClass().getSimpleName();
+        }
     }
 
 }

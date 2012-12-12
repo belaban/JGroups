@@ -1034,6 +1034,10 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
         public void run() {
             reapIdleConnections();
         }
+
+        public String toString() {
+            return UNICAST.class.getSimpleName() + ": ConnectionReaper (interval=" + conn_expiry_timeout + " ms)";
+        }
     }
 
 
@@ -1055,6 +1059,10 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                     }
                 }
             }
+        }
+
+        public String toString() {
+            return UNICAST.class.getSimpleName() + ": RetransmitTask (interval=" + xmit_interval + " ms)";
         }
     }
 

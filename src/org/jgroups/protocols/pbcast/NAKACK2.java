@@ -1314,6 +1314,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         public void run() {
             triggerXmit();
         }
+
+        public String toString() {
+            return NAKACK2.class.getSimpleName() + ": RetransmitTask (interval=" + xmit_interval + " ms)";
+        }
     }
 
     @ManagedOperation(description="Triggers the retransmission task, asking all senders for missing messages")

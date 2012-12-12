@@ -464,6 +464,10 @@ public class FD extends Protocol {
                 }
             }
         }
+
+        public String toString() {
+            return FD.class.getSimpleName() + ": Monitor (timeout=" + timeout + "ms)";
+        }
     }
 
 
@@ -598,6 +602,10 @@ public class FD extends Protocol {
             if(suspect != null && !suspected_members.contains(suspect)) {
                 suspected_members.add(suspect);
             }
+        }
+
+        public String toString() {
+            return "BroadcastTask (" + suspected_members.size() + " suspected mbrs)";
         }
     }
 

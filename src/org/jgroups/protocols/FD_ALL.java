@@ -380,6 +380,10 @@ public class FD_ALL extends Protocol {
             down_prot.down(new Event(Event.MSG, heartbeat));
             num_heartbeats_sent++;
         }
+
+        public String toString() {
+            return FD_ALL.class.getSimpleName() + ": " + getClass().getSimpleName();
+        }
     }
 
 
@@ -406,6 +410,11 @@ public class FD_ALL extends Protocol {
             }
             if(!suspects.isEmpty())
                 suspect(suspects);
+        }
+
+        public String toString() {
+            return FD_ALL.class.getSimpleName() + ": " + getClass().getSimpleName() +
+              " (interval=" + timeout_check_interval + " ms)";
         }
     }
 }

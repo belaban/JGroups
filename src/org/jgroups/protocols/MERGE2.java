@@ -225,6 +225,10 @@ public class MERGE2 extends Protocol {
                     public void run() {
                         findAndNotify();
                     }
+
+                    public String toString() {
+                        return MERGE2.class.getSimpleName() + ": " + getClass().getSimpleName();
+                    }
                 });
             }
         }

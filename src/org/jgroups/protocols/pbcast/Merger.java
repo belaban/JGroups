@@ -804,6 +804,10 @@ public class Merger {
         public void run() {
             cancelMerge(my_merge_id);
         }
+
+        public String toString() {
+            return Merger.class.getSimpleName() + ": " + getClass().getSimpleName();
+        }
     }
 
 }

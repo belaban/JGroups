@@ -58,6 +58,11 @@ public class AgeOutCache<K> {
                 if(tmp != null)
                     tmp.cancel(true);
             }
+
+            public String toString() {
+                return "AgeOutCache (timeout=" + timeout +
+                  ", handler=" + (handler != null? handler.getClass().getSimpleName() : null) + ")";
+            }
         }, timeout, TimeUnit.MILLISECONDS);
         Future<?> result=map.putIfAbsent(key, future);
         if(result != null)

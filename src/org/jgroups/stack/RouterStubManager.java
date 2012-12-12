@@ -142,6 +142,10 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
                         log.warn("failed reconnecting stub to GR at "+ stub.getGossipRouterAddress() + ": " + ex);
                 }
             }
+
+            public String toString() {
+                return RouterStubManager.class.getSimpleName() + ": Reconnector";
+            }
         };
         f = timer.scheduleWithFixedDelay(reconnector, 0, interval, TimeUnit.MILLISECONDS);
         futures.putIfAbsent(stub.getGossipRouterAddress(), f);
@@ -165,6 +169,10 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
                     if (log.isWarnEnabled())
                         log.warn("failed pinging stub, GR at " + stub.getGossipRouterAddress()+ ": " + ex);
                 }
+            }
+
+            public String toString() {
+                return RouterStubManager.class.getSimpleName() + ": Pinger";
             }
         };
         f = timer.scheduleWithFixedDelay(pinger, 1000, interval, TimeUnit.MILLISECONDS);
