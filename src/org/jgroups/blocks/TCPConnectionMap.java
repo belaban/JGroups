@@ -22,23 +22,25 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class TCPConnectionMap {
 
-    private final Mapper mapper;
-    private final InetAddress bind_addr;
-    private final Address local_addr; // bind_addr + port of srv_sock
-    private final ServerSocket srv_sock;
-    private Receiver receiver;
-    private final long conn_expire_time;
-    private final Log log=LogFactory.getLog(getClass());
-    private int recv_buf_size=120000;
-    private int send_buf_size=60000;
-    private int send_queue_size = 0;
-    private int sock_conn_timeout=1000; // max time in millis to wait for Socket.connect() to return    
-    private boolean tcp_nodelay=false;
-    private int linger=-1;    
-    private final Thread acceptor;
-    private final AtomicBoolean running = new AtomicBoolean(false);
-    private volatile boolean use_send_queues=false;
-    protected SocketFactory socket_factory=new DefaultSocketFactory();
+    protected final Mapper        mapper;
+    protected final InetAddress   bind_addr;
+    protected InetAddress         client_bind_addr;
+    protected int                 client_bind_port;
+    protected final Address       local_addr; // bind_addr + port of srv_sock
+    protected final ServerSocket  srv_sock;
+    protected Receiver            receiver;
+    protected final long          conn_expire_time;
+    protected final Log           log=LogFactory.getLog(getClass());
+    protected int                 recv_buf_size=120000;
+    protected int                 send_buf_size=60000;
+    protected int                 send_queue_size = 0;
+    protected int                 sock_conn_timeout=1000; // max time in millis to wait for Socket.connect() to return    
+    protected boolean             tcp_nodelay=false;
+    protected int                 linger=-1;    
+    protected final Thread        acceptor;
+    protected final AtomicBoolean running = new AtomicBoolean(false);
+    protected volatile boolean    use_send_queues=false;
+    protected SocketFactory       socket_factory=new DefaultSocketFactory();
 
 
     public TCPConnectionMap(String service_name,
@@ -102,25 +104,15 @@ public class TCPConnectionMap {
         acceptor=f.newThread(new ConnectionAcceptor(),"ConnectionMap.Acceptor");
     }
     
-    public Address getLocalAddress() {       
-        return local_addr;
-    }
-
-    public Receiver getReceiver() {
-        return receiver;
-    }
-
-    public void setReceiver(Receiver receiver) {
-        this.receiver=receiver;
-    }
-
-    public SocketFactory getSocketFactory() {
-        return socket_factory;
-    }
-
-    public void setSocketFactory(SocketFactory socket_factory) {
-        this.socket_factory=socket_factory;
-    }
+    public Address          getLocalAddress()                       {return local_addr;}
+    public Receiver         getReceiver()                           {return receiver;}
+    public void             setReceiver(Receiver receiver)          {this.receiver=receiver;}
+    public SocketFactory    getSocketFactory()                      {return socket_factory;}
+    public void             setSocketFactory(SocketFactory factory) {this.socket_factory=factory;}
+    public InetAddress      clientBindAddress()                     {return client_bind_addr;}
+    public TCPConnectionMap clientBindAddress(InetAddress addr)     {this.client_bind_addr=addr; return this;}
+    public int              clientBindPort()                        {return client_bind_port;}
+    public TCPConnectionMap clientBindPort(int port)                {this.client_bind_port=port; return this;}
 
     public void addConnectionMapListener(AbstractConnectionMap.ConnectionMapListener<TCPConnection> l) {
         mapper.addConnectionMapListener(l);
@@ -198,7 +190,7 @@ public class TCPConnectionMap {
 
 
     
-    private void setSocketParameters(Socket client_sock) throws SocketException {
+    protected void setSocketParameters(Socket client_sock) throws SocketException {
         try {
             client_sock.setSendBufferSize(send_buf_size);
         }
@@ -227,7 +219,7 @@ public class TCPConnectionMap {
         void receive(Address sender, byte[] data, int offset, int length);
     }
 
-    private class ConnectionAcceptor implements Runnable {
+    protected class ConnectionAcceptor implements Runnable {
 
         /**
          * Acceptor thread. Continuously accept new connections. Create a new
@@ -353,18 +345,18 @@ public class TCPConnectionMap {
     
     public class TCPConnection implements Connection {
 
-        private final Socket sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
-        private final Lock send_lock=new ReentrantLock(); // serialize send()        
-        private final Log log=LogFactory.getLog(getClass());        
-        private final byte[] cookie= { 'b', 'e', 'l', 'a' };  
-        private final DataOutputStream out;
-        private final DataInputStream in;    
-        private final Address peer_addr; // address of the 'other end' of the connection
-        private final int peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
-        private long last_access=System.currentTimeMillis(); // last time a message was sent or received           
-        private Sender sender;
-        private ConnectionPeerReceiver connectionPeerReceiver;
-        private final AtomicBoolean active=new AtomicBoolean(false);
+        protected final Socket sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
+        protected final Lock send_lock=new ReentrantLock(); // serialize send()        
+        protected final Log log=LogFactory.getLog(getClass());        
+        protected final byte[] cookie= { 'b', 'e', 'l', 'a' };  
+        protected final DataOutputStream out;
+        protected final DataInputStream in;    
+        protected final Address peer_addr; // address of the 'other end' of the connection
+        protected final int peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
+        protected long last_access=System.currentTimeMillis(); // last time a message was sent or received           
+        protected Sender sender;
+        protected ConnectionPeerReceiver connectionPeerReceiver;
+        protected final AtomicBoolean active=new AtomicBoolean(false);
 
         TCPConnection(Address peer_addr) throws Exception {
             if(peer_addr == null)
@@ -372,7 +364,7 @@ public class TCPConnectionMap {
             SocketAddress destAddr=new InetSocketAddress(((IpAddress)peer_addr).getIpAddress(),((IpAddress)peer_addr).getPort());
             this.sock=socket_factory.createSocket("jgroups.tcp.sock");
             try {
-                this.sock.bind(new InetSocketAddress(bind_addr, 0));
+                this.sock.bind(new InetSocketAddress(client_bind_addr, client_bind_port));
                 if(this.sock.getLocalSocketAddress().equals(destAddr))
                     throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
                 Util.connect(this.sock, destAddr, sock_conn_timeout);
@@ -398,15 +390,15 @@ public class TCPConnectionMap {
             this.sock=s;
         }  
         
-        private Address getPeerAddress() {
+        protected Address getPeerAddress() {
             return peer_addr;
         }
 
-        private void updateLastAccessed() {
+        protected void updateLastAccessed() {
             last_access=System.currentTimeMillis();
         }
 
-        private void start(ThreadFactory f) {
+        protected void start(ThreadFactory f) {
             //only start once....
             if(active.compareAndSet(false, true)) {
                 connectionPeerReceiver = new ConnectionPeerReceiver(f);            
@@ -419,11 +411,11 @@ public class TCPConnectionMap {
             }
         }
         
-        private boolean isSenderUsed(){
+        protected boolean isSenderUsed(){
             return getSenderQueueSize() > 0 && use_send_queues;
         }
 
-        private String getSockAddress() {
+        protected String getSockAddress() {
             StringBuilder sb=new StringBuilder();
             if(sock != null) {
                 sb.append(sock.getLocalAddress().getHostAddress())
@@ -445,7 +437,7 @@ public class TCPConnectionMap {
          * @param offset
          * @param length
          */
-        private void send(byte[] data, int offset, int length) throws Exception {
+        protected void send(byte[] data, int offset, int length) throws Exception {
             if (isSenderUsed()) {
                 // we need to copy the byte[] buffer here because the original buffer might get
                 // changed meanwhile
@@ -466,7 +458,7 @@ public class TCPConnectionMap {
          * @param acquire_lock
          * @throws Exception 
          */
-        private void _send(byte[] data, int offset, int length, boolean acquire_lock) throws Exception {
+        protected void _send(byte[] data, int offset, int length, boolean acquire_lock) throws Exception {
             if(acquire_lock)
                 send_lock.lock();
 
@@ -483,7 +475,7 @@ public class TCPConnectionMap {
             }
         }
 
-        private void doSend(byte[] data, int offset, int length) throws Exception {
+        protected void doSend(byte[] data, int offset, int length) throws Exception {
             out.writeInt(length); // write the length of the data buffer first
             out.write(data, offset, length);
             out.flush(); // may not be very efficient (but safe)           
@@ -493,7 +485,7 @@ public class TCPConnectionMap {
          * Reads the peer's address. First a cookie has to be sent which has to
          * match my own cookie, otherwise the connection will be refused
          */
-        private Address readPeerAddress(Socket client_sock) throws Exception {                    
+        protected Address readPeerAddress(Socket client_sock) throws Exception {                    
             int timeout=client_sock.getSoTimeout();
             client_sock.setSoTimeout(peer_addr_read_timeout);
 
@@ -528,7 +520,7 @@ public class TCPConnectionMap {
          * 
          * @throws Exception
          */
-        private void sendLocalAddress(Address local_addr) throws Exception {
+        protected void sendLocalAddress(Address local_addr) throws Exception {
             // write the cookie
             out.write(cookie, 0, cookie.length);
 
@@ -539,16 +531,16 @@ public class TCPConnectionMap {
             updateLastAccessed();
         }       
 
-        private boolean matchCookie(byte[] input) {
+        protected boolean matchCookie(byte[] input) {
             if(input == null || input.length < cookie.length) return false;
             for(int i=0; i < cookie.length; i++)
                 if(cookie[i] != input[i]) return false;
             return true;
         }
         
-        private class ConnectionPeerReceiver implements Runnable {
-            private final Thread recv;
-            private final AtomicBoolean receiving = new AtomicBoolean(false);
+        protected class ConnectionPeerReceiver implements Runnable {
+            protected final Thread recv;
+            protected final AtomicBoolean receiving = new AtomicBoolean(false);
 
 
             public ConnectionPeerReceiver(ThreadFactory f) {
@@ -602,11 +594,11 @@ public class TCPConnectionMap {
             }
         }
         
-        private class Sender implements Runnable {
+        protected class Sender implements Runnable {
 
             final BlockingQueue<byte[]> send_queue;
             final Thread runner;
-            private final AtomicBoolean running= new AtomicBoolean(false);
+            protected final AtomicBoolean running= new AtomicBoolean(false);
 
             public Sender(ThreadFactory tf,int send_queue_size) {
                 this.runner=tf.newThread(this, "Connection.Sender [" + getSockAddress() + "]");
@@ -733,7 +725,7 @@ public class TCPConnectionMap {
         }
     }
     
-    private class Mapper extends AbstractConnectionMap<TCPConnection> {
+    protected class Mapper extends AbstractConnectionMap<TCPConnection> {
 
         public Mapper(ThreadFactory factory) {
             super(factory);            
