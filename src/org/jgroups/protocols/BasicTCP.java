@@ -2,9 +2,12 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
+import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
 
+import java.net.InetAddress;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -12,40 +15,51 @@ import java.util.Set;
 /**
  * Shared base class for TCP protocols
  * @author Scott Marlow
+ * @author Bela Ban
  */
 public abstract class BasicTCP extends TP {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
     @Property(description="Reaper interval in msec. Default is 0 (no reaping)")
-    protected long reaper_interval=0; // time in msecs between connection reaps
+    protected long        reaper_interval=0; // time in msecs between connection reaps
 
     @Property(description="Max time connection can be idle before being reaped (in ms)")
-    protected long conn_expire_time=0; // max time a conn can be idle before being reaped
+    protected long        conn_expire_time=0; // max time a conn can be idle before being reaped
 
     @Property(description="Should separate send queues be used for each connection")
-    boolean use_send_queues=true;
+    protected boolean     use_send_queues=true;
     
     @Property(description="Max number of messages in a send queue")
-    int send_queue_size=10000;
+    protected int         send_queue_size=10000;
     
     @Property(description="Receiver buffer size in bytes")
-    int recv_buf_size=150000;
+    protected int         recv_buf_size=150000;
     
     @Property(description="Send buffer size in bytes")
-    int send_buf_size=150000;
+    protected int         send_buf_size=150000;
     
     @Property(description="Max time allowed for a socket creation in connection table")
-    int sock_conn_timeout=2000; // max time in millis for a socket creation in connection table
+    protected int         sock_conn_timeout=2000; // max time in millis for a socket creation in connection table
     
     @Property(description="Max time to block on reading of peer address")
-    int peer_addr_read_timeout=1000; // max time to block on reading of peer address
+    protected int         peer_addr_read_timeout=1000; // max time to block on reading of peer address
     
     @Property(description="Should TCP no delay flag be turned on")
-    boolean tcp_nodelay=true;
+    protected boolean     tcp_nodelay=true;
     
     @Property(description="SO_LINGER in msec. Default of -1 disables it")
-    int linger=-1; // SO_LINGER (number of ms, -1 disables it)
+    protected int         linger=-1; // SO_LINGER (number of ms, -1 disables it)
+
+    @LocalAddress
+    @Property(name="client_bind_addr",
+              description="The address of a local network interface which should be used by client sockets to bind to. " +
+                "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
+              systemProperty={Global.TCP_CLIENT_BIND_ADDR},writable=false)
+    protected InetAddress client_bind_addr=null;
+
+    @Property(description="The local port a client socket should bind to. If 0, an ephemeral port will be picked.")
+    protected int         client_bind_port=0;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */

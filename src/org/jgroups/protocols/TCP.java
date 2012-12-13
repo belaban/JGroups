@@ -139,9 +139,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                         externalAddress,
                                         external_port,
                                         startPort,
-                                        endPort,
-                                        group
-            );
+                                        endPort, null).clientBindAddress(client_bind_addr).clientBindPort(client_bind_port);
         }
         else {
             if(reaperInterval == 0) {
@@ -164,9 +162,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                         startPort,
                                         endPort,
                                         reaperInterval,
-                                        connExpireTime,
-                                        group
-            );
+                                        connExpireTime, null).clientBindAddress(client_bind_addr).clientBindPort(client_bind_port);
         }
 
         return cTable;
