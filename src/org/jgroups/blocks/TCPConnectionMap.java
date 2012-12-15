@@ -24,6 +24,7 @@ public class TCPConnectionMap{
 
     private final Mapper mapper;
     private final InetAddress bind_addr;
+    private final boolean defer_client_bind_addr;
     private final Address local_addr; // bind_addr + port of srv_sock
     private final ThreadGroup thread_group=new ThreadGroup(Util.getGlobalThreadGroup(),"ConnectionMap");
     private final ServerSocket srv_sock;
@@ -47,18 +48,33 @@ public class TCPConnectionMap{
                             SocketFactory socket_factory,
                             Receiver r,
                             InetAddress bind_addr,
+                            boolean defer_client_bind_addr,
                             InetAddress external_addr,
                             int external_port,
                             int srv_port,
                             int max_port
                             ) throws Exception {
-        this(service_name, f,socket_factory, r,bind_addr,external_addr,external_port, srv_port,max_port,0,0);
+        this(service_name, f,socket_factory, r,bind_addr,defer_client_bind_addr,external_addr,external_port, srv_port,max_port,0,0);
+    }
+    
+    public TCPConnectionMap(String service_name,
+            ThreadFactory f,
+            SocketFactory socket_factory,
+            Receiver r,
+            InetAddress bind_addr,
+            InetAddress external_addr,
+            int external_port,
+            int srv_port,
+            int max_port
+            ) throws Exception {
+    	this(service_name, f,socket_factory, r,bind_addr,false,external_addr,external_port, srv_port,max_port,0,0);
     }
 
     public TCPConnectionMap(String service_name,
                             ThreadFactory f,
                             Receiver r,
                             InetAddress bind_addr,
+                            boolean defer_client_bind_addr,
                             InetAddress external_addr,
                             int external_port,
                             int srv_port,
@@ -66,7 +82,21 @@ public class TCPConnectionMap{
                             long reaper_interval,
                             long conn_expire_time
                             ) throws Exception {
-        this(service_name, f, null, r, bind_addr, external_addr, external_port, srv_port, max_port, reaper_interval, conn_expire_time);
+        this(service_name, f, null, r, bind_addr, defer_client_bind_addr, external_addr, external_port, srv_port, max_port, reaper_interval, conn_expire_time);
+    }
+    
+    public TCPConnectionMap(String service_name,
+            ThreadFactory f,
+            Receiver r,
+            InetAddress bind_addr,
+            InetAddress external_addr,
+            int external_port,
+            int srv_port,
+            int max_port,
+            long reaper_interval,
+            long conn_expire_time
+            ) throws Exception {
+    	this(service_name, f, null, r, bind_addr, false, external_addr, external_port, srv_port, max_port, reaper_interval, conn_expire_time);
     }
 
     public TCPConnectionMap(String service_name,
@@ -74,6 +104,7 @@ public class TCPConnectionMap{
                             SocketFactory socket_factory,
                             Receiver r,
                             InetAddress bind_addr,
+                            boolean defer_client_bind_addr,
                             InetAddress external_addr,
                             int external_port,
                             int srv_port,
@@ -84,6 +115,7 @@ public class TCPConnectionMap{
         this.mapper = new Mapper(f,reaper_interval);
         this.receiver=r;
         this.bind_addr=bind_addr;
+        this.defer_client_bind_addr = defer_client_bind_addr;
         this.conn_expire_time = conn_expire_time;
         if(socket_factory != null)
             this.socket_factory=socket_factory;
@@ -378,10 +410,13 @@ public class TCPConnectionMap{
             SocketAddress destAddr=new InetSocketAddress(((IpAddress)peer_addr).getIpAddress(),((IpAddress)peer_addr).getPort());
             this.sock=socket_factory.createSocket("jgroups.tcp.sock");
             try {
-                this.sock.bind(new InetSocketAddress(bind_addr, 0));
+            	if (!defer_client_bind_addr)
+            		this.sock.bind(new InetSocketAddress(bind_addr, 0));
                 Util.connect(this.sock, destAddr, sock_conn_timeout);
             }
             catch(Exception t) {
+            	if(log.isDebugEnabled())
+            		t.printStackTrace();
                 socket_factory.close(this.sock);
                 throw t;
             }
