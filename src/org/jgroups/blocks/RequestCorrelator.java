@@ -15,6 +15,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.NotSerializableException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 
@@ -505,8 +506,12 @@ public class RequestCorrelator {
                 rsp_buf=marshaller != null? marshaller.objectToBuffer(t) : Util.objectToByteBuffer(t);
                 threw_exception=true;
             }
+            catch(NotSerializableException not_serializable) {
+                if(log.isErrorEnabled()) log.error("failed marshalling rsp (" + retval + "): not serializable");
+                return;
+            }
             catch(Throwable tt) {
-                if(log.isErrorEnabled()) log.error("failed sending rsp: return value (" + retval + ") is not serializable");
+                if(log.isErrorEnabled()) log.error("failed marshalling rsp (" + retval + "): " + tt);
                 return;
             }
         }
@@ -515,12 +520,16 @@ public class RequestCorrelator {
         prepareResponse(rsp);
         rsp.setFlag(Message.OOB);
         rsp.setFlag(Message.DONT_BUNDLE);
+
+        // why don't we simply copy the flags ?
         if(req.isFlagSet(Message.NO_FC))
             rsp.setFlag(Message.NO_FC);
         if(req.isFlagSet(Message.NO_RELIABILITY))
             rsp.setFlag(Message.NO_RELIABILITY);
         if(req.isFlagSet(Message.NO_TOTAL_ORDER))
             rsp.setFlag(Message.NO_TOTAL_ORDER);
+        if(req.isFlagSet(Message.Flag.NO_RELAY))
+            rsp.setFlag(Message.Flag.NO_RELAY);
 
         if(rsp_buf instanceof Buffer)
             rsp.setBuffer((Buffer)rsp_buf);
