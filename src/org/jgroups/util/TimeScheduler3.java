@@ -127,14 +127,17 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
 
     /**
      * Stops the timer, cancelling all tasks
-     *
-     * @throws InterruptedException if interrupted while waiting for thread to return
      */
     public void stop() {
         stopRunner();
 
-        for(Task entry: queue)
-            entry.cancel(true);
+        // we may need to do multiple iterations as the iterator works on a copy and tasks might have been added just
+        // after the iterator() call returned
+        while(!queue.isEmpty())
+            for(Task entry: queue) {
+                entry.cancel(true);
+                queue.remove(entry);
+            }
         queue.clear();
 
         List<Runnable> remaining_tasks=pool.shutdownNow();
@@ -165,7 +168,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
                 // flag is cleared and we check if the loop should be terminated at the top of the loop
             }
             catch(Throwable t) {
-                log.error("failed executing tasks(s)", t);
+                log.error("failed submitting task to thread pool", t);
             }
         }
     }
@@ -186,8 +189,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
             submitToPool(task);
             return task;
         }
-        queue.add(task);
-        return task;
+        return add(task);
     }
 
 
@@ -205,7 +207,14 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         }
     }
 
-
+    protected Task add(Task task) {
+        if(!running) {
+            log.error("failed adding task to queue as timer is not running; task: "+ task);
+            return null;
+        }
+        queue.add(task);
+        return task;
+    }
 
 
 
@@ -321,7 +330,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
                     execution_time=System.nanoTime() + delay;
                     break;
             }
-            queue.add(this); // schedule this task again
+            add(this); // schedule this task again
         }
     }
 

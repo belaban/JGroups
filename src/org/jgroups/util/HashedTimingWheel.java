@@ -30,7 +30,7 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
 
     private final Lock lock=new ReentrantLock();
 
-    protected volatile boolean running=false;
+    protected volatile boolean running;
 
     protected static final Log log=LogFactory.getLog(HashedTimingWheel.class);
 
@@ -152,6 +152,8 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
 
     public Future<?> schedule(Runnable work, long delay, TimeUnit unit) {
         if(work == null)
+            throw new NullPointerException();
+        if (isShutdown() || !running)
             return null;
 
         MyTask retval=null;
@@ -178,7 +180,7 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
     public Future<?> scheduleWithFixedDelay(Runnable task, long initial_delay, long delay, TimeUnit unit) {
         if(task == null)
             throw new NullPointerException();
-        if (isShutdown())
+        if (isShutdown() || !running)
             return null;
         RecurringTask wrapper=new FixedIntervalTask(task, delay);
         wrapper.doSchedule(initial_delay);
@@ -189,7 +191,7 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
     public Future<?> scheduleAtFixedRate(Runnable task, long initial_delay, long delay, TimeUnit unit) {
         if(task == null)
             throw new NullPointerException();
-        if (isShutdown())
+        if (isShutdown() || !running)
             return null;
         RecurringTask wrapper=new FixedRateTask(task, delay);
         wrapper.doSchedule(initial_delay);
@@ -210,7 +212,7 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
     public Future<?> scheduleWithDynamicInterval(Task task) {
         if(task == null)
             throw new NullPointerException();
-        if (isShutdown())
+        if (isShutdown() || !running)
             return null;
         RecurringTask task_wrapper=new DynamicIntervalTask(task);
         task_wrapper.doSchedule(); // calls schedule() in ScheduledThreadPoolExecutor

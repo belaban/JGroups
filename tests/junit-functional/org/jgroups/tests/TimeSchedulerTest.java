@@ -37,13 +37,18 @@ public class TimeSchedulerTest {
 
     @Test(dataProvider="createTimer")
     public void testExecute(TimeScheduler timer) {
-        Promise<Boolean> promise=new Promise<Boolean>();
-        long start=System.currentTimeMillis();
-        timer.execute(new ImmediateTask(promise));
-        promise.getResult(2000);
-        long diff=System.currentTimeMillis() - start;
-        assert diff < 1000 : " took " + diff + " ms to execute";
-        System.out.println("The task took " + diff + " ms to execute");
+        try {
+            Promise<Boolean> promise=new Promise<Boolean>();
+            long start=System.currentTimeMillis();
+            timer.execute(new ImmediateTask(promise));
+            promise.getResult(2000);
+            long diff=System.currentTimeMillis() - start;
+            assert diff < 1000 : " took " + diff + " ms to execute";
+            System.out.println("The task took " + diff + " ms to execute");
+        }
+        finally {
+            timer.stop();
+        }
     }
 
 
@@ -152,7 +157,7 @@ public class TimeSchedulerTest {
 
     @Test(dataProvider="createTimer")
     public void testShutdown(TimeScheduler timer) {
-        for(int i=100; i < 1000; i+=100) { // delays in ms
+        for(int i=100; i <= 1000; i+=100) { // delays in ms
             timer.schedule(new Runnable() {
                 public void run() {
                     System.out.print(".");
@@ -167,9 +172,8 @@ public class TimeSchedulerTest {
 
         Util.sleep(400);
         timer.stop();
-        System.out.println("timer.dumpTimerTasks() = " + timer.dumpTimerTasks());
         int size=timer.size();
-        assert size == 0;
+        assert size == 0 : "size=" + size + " (should be 0)";
     }
 
 
@@ -184,7 +188,6 @@ public class TimeSchedulerTest {
             }
         }, 500, TimeUnit.MILLISECONDS);
 
-        System.out.println("timer.dumpTimerTasks() = " + timer.dumpTimerTasks());
         int size=timer.size();
         assert size == 0;
     }
@@ -553,29 +556,35 @@ public class TimeSchedulerTest {
         long execution_time=4000;
         final long base=System.currentTimeMillis();
 
-        for(int num: new Integer[]{1,2,3}) {
-            final int cnt=num;
-            timer.schedule(new Runnable() {
-                public void run() {
-                    results.add(cnt);
-                    System.out.println("[" + (System.currentTimeMillis() - base) + "] " + cnt);
-                }
-            }, execution_time, TimeUnit.MILLISECONDS);
-            execution_time-=1300;
-            Util.sleep(300);
-        }
+        try {
 
-        for(int i=0; i < 10; i++) {
-            if(results.size() == 3)
-                break;
-            Util.sleep(500);
-        }
+            for(int num: new Integer[]{1,2,3}) {
+                final int cnt=num;
+                timer.schedule(new Runnable() {
+                    public void run() {
+                        results.add(cnt);
+                        System.out.println("[" + (System.currentTimeMillis() - base) + "] " + cnt);
+                    }
+                }, execution_time, TimeUnit.MILLISECONDS);
+                execution_time-=1300;
+                Util.sleep(300);
+            }
 
-        System.out.println("results = " + results);
-        assert results.size() == 3: "results = " + results;
-        assert results.get(0) == 3: "results = " + results;
-        assert results.get(1) == 2: "results = " + results;
-        assert results.get(2) == 1: "results = " + results;
+            for(int i=0; i < 10; i++) {
+                if(results.size() == 3)
+                    break;
+                Util.sleep(500);
+            }
+
+            System.out.println("results = " + results);
+            assert results.size() == 3: "results = " + results;
+            assert results.get(0) == 3: "results = " + results;
+            assert results.get(1) == 2: "results = " + results;
+            assert results.get(2) == 1: "results = " + results;
+        }
+        finally {
+            timer.stop();
+        }
     }
 
 
@@ -587,36 +596,41 @@ public class TimeSchedulerTest {
     public void testSchedulerWithFixedDelay(TimeScheduler timer) {
         final AtomicBoolean set=new AtomicBoolean(false);
 
-        Future<?> future=timer.scheduleWithFixedDelay(new Runnable() {
-            public void run() {
-                set.set(true);
-            }
-        }, 0, 3000, TimeUnit.MILLISECONDS);
+        try {
+            Future<?> future=timer.scheduleWithFixedDelay(new Runnable() {
+                public void run() {
+                    set.set(true);
+                }
+            }, 0, 3000, TimeUnit.MILLISECONDS);
 
-        Util.sleep(500);
-        future.cancel(true);
+            Util.sleep(500);
+            future.cancel(true);
 
-        System.out.println("variable was set: " + set);
-        assert set.get();
+            System.out.println("variable was set: " + set);
+            assert set.get();
 
-        future=timer.scheduleWithFixedDelay(new Runnable() {
-            public void run() {
-                set.set(true);
-            }
-        }, 300, 3000, TimeUnit.MILLISECONDS);
+            future=timer.scheduleWithFixedDelay(new Runnable() {
+                public void run() {
+                    set.set(true);
+                }
+            }, 300, 3000, TimeUnit.MILLISECONDS);
 
-        Util.sleep(1000);
-        future.cancel(true);
+            Util.sleep(1000);
+            future.cancel(true);
 
-        System.out.println("variable was set: " + set);
-        assert set.get();
+            System.out.println("variable was set: " + set);
+            assert set.get();
+        }
+        finally {
+            timer.stop();
+        }
     }
 
 
     protected static String printExecutionTimes(RepeatingTask task) {
-         StringBuilder sb=new StringBuilder();
-         List<Long> times=task.getExecutionTimes();
-         if(times.isEmpty())
+        StringBuilder sb=new StringBuilder();
+        List<Long> times=task.getExecutionTimes();
+        if(times.isEmpty())
              return "[]";
          int cnt=1;
          for(Long time: times) {
