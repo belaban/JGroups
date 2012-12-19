@@ -192,7 +192,7 @@ public abstract class TP extends Protocol {
     @Property(description="Type of timer to be used. Valid values are \"old\" (DefaultTimeScheduler, used up to 2.10), " +
             "\"new\" (TimeScheduler2) and \"wheel\". Note that this property might disappear " +
             "in future releases, if one of the 3 timers is chosen as default timer")
-    protected String timer_type="new";
+    protected String timer_type="old";
 
     protected int timer_min_threads=4;
 
