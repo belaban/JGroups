@@ -47,6 +47,8 @@ public abstract class BasicTCP extends TP {
     @Property(description="SO_LINGER in msec. Default of -1 disables it")
     int linger=-1; // SO_LINGER (number of ms, -1 disables it)
 
+    @Property(description="If true, client sockets will skip binding to bind_addr")
+    protected boolean defer_client_bind_addr=false;
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
