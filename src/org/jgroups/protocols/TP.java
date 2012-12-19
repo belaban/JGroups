@@ -80,6 +80,9 @@ public abstract class TP extends Protocol {
               defaultValueIPv4=Global.NON_LOOPBACK_ADDRESS, defaultValueIPv6=Global.NON_LOOPBACK_ADDRESS,
               systemProperty={Global.BIND_ADDR},writable=false)
     protected InetAddress bind_addr=null;
+    
+    @Property(description="If true, client sockets will not explicitly bind to bind_addr but will defer to the native socket")
+    protected boolean defer_client_bind_addr=false;
 
     @Property(description="Use \"external_addr\" if you have hosts on different networks, behind " +
       "firewalls. On each firewall, set up a port forwarding rule (sometimes called \"virtual server\") to " +
@@ -192,7 +195,7 @@ public abstract class TP extends Protocol {
     @Property(description="Type of timer to be used. Valid values are \"old\" (DefaultTimeScheduler, used up to 2.10), " +
             "\"new\" (TimeScheduler2) and \"wheel\". Note that this property might disappear " +
             "in future releases, if one of the 3 timers is chosen as default timer")
-    protected String timer_type="new";
+    protected String timer_type="old";
 
     protected int timer_min_threads=4;
 
