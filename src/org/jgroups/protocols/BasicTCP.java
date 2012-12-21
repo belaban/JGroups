@@ -61,6 +61,9 @@ public abstract class BasicTCP extends TP {
     @Property(description="The local port a client socket should bind to. If 0, an ephemeral port will be picked.")
     protected int         client_bind_port=0;
 
+    @Property(description="If true, client sockets will not explicitly bind to bind_addr but will defer to the native socket")
+    protected boolean     defer_client_bind_addr=false;
+
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     

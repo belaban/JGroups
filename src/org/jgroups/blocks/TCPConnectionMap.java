@@ -26,6 +26,7 @@ public class TCPConnectionMap {
     protected final InetAddress   bind_addr;
     protected InetAddress         client_bind_addr;
     protected int                 client_bind_port;
+    protected boolean             defer_client_binding;
     protected final Address       local_addr; // bind_addr + port of srv_sock
     protected final ServerSocket  srv_sock;
     protected Receiver            receiver;
@@ -113,6 +114,8 @@ public class TCPConnectionMap {
     public TCPConnectionMap clientBindAddress(InetAddress addr)     {this.client_bind_addr=addr; return this;}
     public int              clientBindPort()                        {return client_bind_port;}
     public TCPConnectionMap clientBindPort(int port)                {this.client_bind_port=port; return this;}
+    public boolean          deferClientBinding()                    {return defer_client_binding;}
+    public TCPConnectionMap deferClientBinding(boolean defer)       {this.defer_client_binding=defer; return this;}
 
     public void addConnectionMapListener(AbstractConnectionMap.ConnectionMapListener<TCPConnection> l) {
         mapper.addConnectionMapListener(l);
@@ -364,7 +367,8 @@ public class TCPConnectionMap {
             SocketAddress destAddr=new InetSocketAddress(((IpAddress)peer_addr).getIpAddress(),((IpAddress)peer_addr).getPort());
             this.sock=socket_factory.createSocket("jgroups.tcp.sock");
             try {
-                this.sock.bind(new InetSocketAddress(client_bind_addr, client_bind_port));
+                if(!defer_client_binding)
+                    this.sock.bind(new InetSocketAddress(client_bind_addr, client_bind_port));
                 if(this.sock.getLocalSocketAddress().equals(destAddr))
                     throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
                 Util.connect(this.sock, destAddr, sock_conn_timeout);
