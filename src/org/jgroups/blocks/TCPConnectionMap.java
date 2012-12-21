@@ -26,6 +26,7 @@ public class TCPConnectionMap{
     protected final InetAddress   bind_addr;
     protected InetAddress         client_bind_addr;
     protected int                 client_bind_port;
+    protected boolean 			  defer_client_bind_addr;
     protected final Address       local_addr; // bind_addr + port of srv_sock
     protected final ServerSocket  srv_sock;
     protected Receiver            receiver;
@@ -54,8 +55,23 @@ public class TCPConnectionMap{
                             int max_port,
                             ThreadGroup group
                             ) throws Exception {
-        this(service_name, f,socket_factory, r,bind_addr,external_addr,external_port, srv_port,max_port,0,0, group);
+        this(service_name, f,socket_factory, r,bind_addr,false,external_addr,external_port, srv_port,max_port,0,0, group);
     }
+    
+    public TCPConnectionMap(String service_name,
+            ThreadFactory f,
+            SocketFactory socket_factory,
+            Receiver r,
+            InetAddress bind_addr,
+            boolean defer_client_bind_addr,
+            InetAddress external_addr,
+            int external_port,
+            int srv_port,
+            int max_port,
+            ThreadGroup group
+            ) throws Exception {
+    	this(service_name, f,socket_factory, r,bind_addr,defer_client_bind_addr,external_addr,external_port, srv_port,max_port,0,0, group);
+	}
 
     public TCPConnectionMap(String service_name,
                             ThreadFactory f,
@@ -69,7 +85,7 @@ public class TCPConnectionMap{
                             long conn_expire_time,
                             ThreadGroup group
                             ) throws Exception {
-        this(service_name, f, null, r, bind_addr, external_addr, external_port, srv_port, max_port, reaper_interval, conn_expire_time, group);
+        this(service_name, f, null, r, bind_addr, false, external_addr, external_port, srv_port, max_port, reaper_interval, conn_expire_time, group);
     }
 
     public TCPConnectionMap(String service_name,
@@ -77,6 +93,7 @@ public class TCPConnectionMap{
                             SocketFactory socket_factory,
                             Receiver r,
                             InetAddress bind_addr,
+                            boolean defer_client_bind_addr,
                             InetAddress external_addr,
                             int external_port,
                             int srv_port,
@@ -88,6 +105,7 @@ public class TCPConnectionMap{
         this.mapper = new Mapper(f,reaper_interval);
         this.receiver=r;
         this.bind_addr=bind_addr;
+        this.defer_client_bind_addr = defer_client_bind_addr;
         this.conn_expire_time = conn_expire_time;
         if(socket_factory != null)
             this.socket_factory=socket_factory;
@@ -363,7 +381,8 @@ public class TCPConnectionMap{
             SocketAddress destAddr=new InetSocketAddress(((IpAddress)peer_addr).getIpAddress(),((IpAddress)peer_addr).getPort());
             this.sock=socket_factory.createSocket("jgroups.tcp.sock");
             try {
-                this.sock.bind(new InetSocketAddress(client_bind_addr, client_bind_port));
+            	if (!defer_client_bind_addr)
+            		this.sock.bind(new InetSocketAddress(client_bind_addr, client_bind_port));
                 if(this.sock.getLocalSocketAddress().equals(destAddr))
                     throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
                 Util.connect(this.sock, destAddr, sock_conn_timeout);
