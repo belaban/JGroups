@@ -30,7 +30,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private JChannel                  channel;
     private Address                   local_addr;
     private RpcDispatcher             disp;
-    static final String               groupname="UTestRpc";
+    private String                    groupname="UTestRpc";
     private boolean                   sync=false, oob=false, anycasting=false;
     private int                       num_threads=1;
     private int                       num_msgs=50000, msg_size=1000, print=num_msgs / 10;
@@ -56,7 +56,9 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
 
-    public void init(String props, String name) throws Exception {
+    public void init(String props, String name, String cluster_name) throws Exception {
+        if(cluster_name != null)
+            groupname=cluster_name;
         channel=new JChannel(props);
         if(name != null)
             channel.setName(name);
@@ -173,7 +175,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
                              (anycasting? anycast_mbrs : destination) + ", sync=" + sync + ", oob=" + oob + ", anycasting=" + anycasting);
         
         // The first call needs to be synchronous with OOB !
-        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0, anycasting, null);
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 15000, anycasting, null);
         if(sync) options.setFlags(Message.DONT_BUNDLE);
         if(oob) options.setFlags(Message.OOB);
 
@@ -385,6 +387,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
     public static void main(String[] args) {
         String props=null;
         String name=null;
+        String cluster_name=null;
 
 
         for(int i=0; i < args.length; i++) {
@@ -396,6 +399,10 @@ public class UnicastTestRpc extends ReceiverAdapter {
                 name=args[++i];
                 continue;
             }
+            if("-cluster".endsWith(args[i])) {
+                cluster_name=args[++i];
+                continue;
+            }
             help();
             return;
         }
@@ -403,7 +410,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
         UnicastTestRpc  test=null;
         try {
             test=new UnicastTestRpc();
-            test.init(props, name);
+            test.init(props, name, cluster_name);
             test.eventLoop();
         }
         catch(Throwable ex) {
@@ -414,7 +421,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("UnicastTestRpc [-help] [-props <props>] [-name name]");
+        System.out.println("UnicastTestRpc [-help] [-props <props>] [-name name] [-cluster name]");
     }
 
 

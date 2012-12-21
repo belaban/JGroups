@@ -32,6 +32,8 @@ public class Relayer {
      * instance needs to be created */
     protected volatile boolean             done;
 
+    protected boolean                      stats;
+
     // Used to store messages for a site with status UNKNOWN. Messages will be flushed when the status changes to UP, or
     // a SITE-UNREACHABLE message will be sent to each member *once* when the status changes to DOWN
     protected final ConcurrentMap<Short,BlockingQueue<Message>> fwd_queue=new ConcurrentHashMap<Short,BlockingQueue<Message>>();
@@ -45,6 +47,7 @@ public class Relayer {
 
     public Relayer(RELAY2 relay, Log log, int num_routes) {
         this.relay=relay;
+        stats=relay.statsEnabled();
         this.log=log;
         init(num_routes);
     }
@@ -241,9 +244,14 @@ public class Relayer {
             // at this point status is RUNNING
             if(log.isTraceEnabled())
                 log.trace("routing message to " + final_destination + " via " + site_master);
+            long start=stats? System.nanoTime() : 0;
             try {
                 Message copy=createMessage(site_master, final_destination, original_sender, msg);
                 bridge.send(copy);
+                if(stats) {
+                    relay.addToRelayedTime(System.nanoTime() - start);
+                    relay.incrementRelayed();
+                }
             }
             catch(Exception e) {
                 log.error("failure relaying message", e);
