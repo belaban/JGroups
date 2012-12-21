@@ -11,7 +11,6 @@ import java.util.*;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.20 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
