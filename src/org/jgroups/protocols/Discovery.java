@@ -91,7 +91,7 @@ public abstract class Discovery extends Protocol {
     protected boolean               is_coord;
     protected Address               local_addr=null;
     protected Address               current_coord;
-    protected String                group_addr=null;
+    protected String                group_addr;
     protected final Set<Responses>  ping_responses=new HashSet<Responses>();
 
 
@@ -256,9 +256,8 @@ public abstract class Discovery extends Protocol {
 
         Collection<PhysicalAddress> cluster_members=fetchClusterMembers(cluster_name);
         if(cluster_members == null) {
-            Message msg=new Message(null);  // multicast msg
-            msg.setFlag(Message.OOB);
-            msg.putHeader(getId(), hdr);
+            // multicast msg
+            Message msg=new Message(null).setFlag(Message.OOB).putHeader(getId(), hdr);
             sendMcastDiscoveryRequest(msg);
         }
         else {
@@ -429,13 +428,13 @@ public abstract class Discovery extends Protocol {
                                                 "discovery request was not sent by a coordinator");
                                 return null;
                             }
+                            if(isMergeRunning()) {
+                                if(log.isTraceEnabled())
+                                    log.trace(local_addr + ": suppressing discovery response as a merge is in progress");
+                                return null;
+                            }
                         }
 
-                        if(isMergeRunning()) {
-                            if(log.isTraceEnabled())
-                                log.trace(local_addr + ": suppressing discovery response as a merge is in progress");
-                            return null;
-                        }
 
                         if(return_entire_cache) {
                             Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
@@ -633,8 +632,7 @@ public abstract class Discovery extends Protocol {
             data=new PingData(logical_addr, null, view_id, is_server, logical_name, physical_addrs);
         }
 
-        final Message rsp_msg=new Message(sender, null, null);
-        rsp_msg.setFlag(Message.OOB);
+        final Message rsp_msg=new Message(sender).setFlag(Message.OOB);
         final PingHeader rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, data);
         rsp_msg.putHeader(this.id, rsp_hdr);
 
