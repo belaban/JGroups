@@ -593,6 +593,26 @@ public class UtilTest {
         assert !(Util.match(c, a));
     }
 
+    public static void testChanged() {
+        Address a=null, b=null;
+        assert !Util.different(a,b);
+
+        a=Util.createRandomAddress("A");
+        assert Util.different(a,b);
+        assert Util.different(b,a);
+
+        b=Util.createRandomAddress("B");
+        assert Util.different(a,b);
+        assert Util.different(b,a);
+
+        b=a;
+        assert !Util.different(a,b);
+        assert !Util.different(b,a);
+        a=null;
+        assert Util.different(a,b);
+        assert Util.different(b,a);
+    }
+
 
     public static void testLeftMembers() {
         final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();

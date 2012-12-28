@@ -111,24 +111,25 @@ public class FD_ICMP extends FD {
                 stop=System.currentTimeMillis();
                 num_heartbeats++;
                 if(rc) {
-                    num_tries=0;
+                    num_tries.set(0);
                     if(log.isTraceEnabled())
                         log.trace("successfully received response from " + host + " (after " + (stop-start) + "ms)");
                 }
                 else {
-                    num_tries++;
+                    num_tries.incrementAndGet();
                     if(log.isDebugEnabled())
                         log.debug("could not ping " + ping_dest + " (tries=" + num_tries + ") after " + (stop-start) + "ms)");
                 }
 
-                if(num_tries >= max_tries) {
+                int tmp_tries=num_tries.get();
+                if(tmp_tries >= max_tries) {
                     if(log.isDebugEnabled())
-                        log.debug("[" + local_addr + "]: could not ping " + ping_dest + " for " + (num_tries +1) +
-                                " times (" + ((num_tries+1) * timeout) + " milliseconds), suspecting it");
+                        log.debug("[" + local_addr + "]: could not ping " + ping_dest + " for " + (tmp_tries +1) +
+                                " times (" + ((tmp_tries+1) * timeout) + " milliseconds), suspecting it");
                     // broadcast a SUSPECT message to all members - loop until
                     // unsuspect or view change is received
                     bcast_task.addSuspectedMember(ping_dest);
-                    num_tries=0;
+                    num_tries.set(0);
                     if(stats) {
                         num_suspect_events++;
                         suspect_history.add(ping_dest);
