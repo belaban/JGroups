@@ -66,7 +66,7 @@ public class FdMonitorTest {
     protected JChannel createChannel(String name) throws Exception {
         JChannel ch=Util.createChannel(new SHARED_LOOPBACK(),
                                        new PING().setValue("timeout",500).setValue("num_initial_members",2),
-                                       new FD().setValue("timeout", 1000).setValue("num_tries", 3),
+                                       new FD().setValue("timeout", 1000).setValue("max_tries", 3),
                                        new NAKACK2(),
                                        new UNICAST2(),
                                        new GMS().setValue("print_local_addr",false));

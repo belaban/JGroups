@@ -1342,7 +1342,7 @@ public class Util {
 
 
 
-    public static boolean match(Object obj1, Object obj2) {
+    public static <T> boolean match(T obj1, T obj2) {
         if(obj1 == null && obj2 == null)
             return true;
         if(obj1 != null)
@@ -1372,6 +1372,12 @@ public class Util {
         }
         return true;
     }
+
+
+    public static <T> boolean different(T one, T two) {
+        return !match(one, two);
+    }
+
 
     /** Sleep for timeout msecs. Returns when timeout has elapsed or thread was interrupted */
     public static void sleep(long timeout) {
