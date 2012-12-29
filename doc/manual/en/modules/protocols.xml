@@ -1643,6 +1643,20 @@ keytool -genseckey -alias myKey -keypass changeit -storepass changeit  -keyalg B
             ${COUNTER}
         </section>
 
+        <section id="SUPERVISOR">
+            <title>SUPERVISOR</title>
+            <para>
+                SUPERVISOR is a protocol which runs rules which periodically (or event triggered) check conditions and
+                take corrective action if a condition is not met. Example: org.jgroups.protocols.rules.CheckFDMonitor is
+                a rule which periodically checks if FD's monitor task is running when the cluster size is > 1. If not,
+                the monitor task is started.
+            </para>
+            <para>
+                The SUPERVISOR is explained in more detail in <xref linkend="Supervisor"/>
+            </para>
+            ${SUPERVISOR}
+        </section>
+
     </section>
 
    

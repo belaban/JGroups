@@ -186,7 +186,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
             channel.connect(groupname);            
         }
         mainFrame=new JFrame();
-        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        mainFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         panel=new DrawPanel(use_state);
         panel.setBackground(background_color);
         sub_panel=new JPanel();

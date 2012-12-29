@@ -2548,6 +2548,104 @@ A: 2000000 msgs, 2GB received, msgs/sec=137959.58, throughput=137.96MB
         </para>
     </section>
 
+    <section id="Supervisor">
+        <title>Supervising a running stack</title>
+        <para>
+            SUPERVISOR (<xref linkend="SUPERVISOR"/>) provides a rule based fault detection and correction protocol. It
+            allows for rules to be installed, which are periodically invoked. When invoked, a condition can be checked
+            and corrective action can be taken to fix the problem. Essentially, SUPERVISOR acts like a human
+            administrator, except that condition checking and action triggering is done automatically.
+        </para>
+        <para>
+            An example of a rule is org.jgroups.protocols.rules.CheckFDMonitor: invoked periodically, it checks if
+            the monitor task in FD is running when the membership is 2 or more and - if not - restarts it. The sections
+            below show how to write the rule and how to invoke it.
+        </para>
+        <para>
+            All rules to be installed in SUPERVISOR are listed in an XML file, e.g. rules.xml:
+        </para>
+        <programlisting language="XML">
+&lt;rules xmlns="urn:jgroups:rules:1.0"&gt;
+     &lt;rule name="rule1" class="org.jgroups.protocols.rules.CheckFDMonitorRule"
+           interval="1000"/&gt;
+&lt;/rules&gt;
+        </programlisting>
+        <para>
+            There is only one rule "rule1" present, which is run every second. The name of the class implementing the
+            rule is "org.jgroups.protocols.rules.CheckFDMonitorRule", and its implementation is:
+        </para>
+        <programlisting language="Java">
+public class CheckFDMonitor extends Rule {
+    protected FD fd;
+
+    public String name() {return "sample";}
+
+    public String description() {
+        return "Starts FD.Monitor if membership > 1 and monitor isn't running";
+    }
+
+    public void init() {
+        super.init();
+        fd=(FD)sv.getProtocolStack().findProtocol(FD.class);
+        if(fd == null) {
+            log.info("FD was not found, uninstalling myself (sample)");
+            sv.uninstallRule("sample");
+        }
+    }
+
+    public boolean eval() {
+        return sv.getView() != null &amp;&amp; sv.getView().size() > 1
+            &amp;&amp; !fd.isMonitorRunning();
+    }
+
+    public String condition() {
+        View view=sv.getView();
+        return "Membership is " + (view != null? view.size() : "n/a") +
+            ", FD.Monitor running=" + fd.isMonitorRunning();
+    }
+
+    public void trigger() throws Throwable {
+        System.out.println(sv.getLocalAddress() + ": starting failure detection");
+        fd.startFailureDetection();
+    }
+}
+        </programlisting>
+        <para>
+            CheckFDMonitor extends abstract class Rule which sets a reference to SUPERVISOR and the log when the rule
+            has been installed.
+        </para>
+        <para>
+            Method name() needs to return a unique name by which the rule can be uninstalled later if necessary.
+        </para>
+        <para>
+            Description() should provide a meaningful description (used by JMX).
+        </para>
+        <para>
+            In init(), a reference to FD is set by getting the protocol stack from the SUPERVISOR (sv). If not found,
+            e.g. because there is no FD protocol present in a given stack, the rule uninstalls itself.
+        </para>
+        <para>
+            Method eval() is called every second. It checks that the monitor task in FD is running (when the membership
+            is 2 or more) and, if not, returns true. In that case, method trigger() will get called by the code in
+            the Rule superclass and it simply restarts the stopped monitor task.
+        </para>
+        <para>
+            Note that rules can be installed and uninstalled dynamically at runtime, e.g. via probe.sh:
+        </para>
+        <screen>
+probe.sh op=SUPERVISOR.installRule["myrule", 1000,"org.jgroups.protocols.rules.CheckFDMonitor"]
+        </screen>
+        installs rule CheckFDMonitor as "myrule" into the running system, and this rule will be run every 1000 ms.
+        <screen>
+probe.sh op=SUPERVISOR.uninstallRule["myrule"]
+        </screen>
+        uninstalls "myrule" again.
+        <screen>
+probe.sh op=SUPERVISOR.dumpRules
+        </screen>
+        dumps a list of currently installed rules to stdout.
+    </section>
+
     <section id="Probe">
         <title>Probe</title>
         <para>

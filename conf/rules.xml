@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!--
+     Sample config file for SUPERVISOR
+ -->
+
+<rules xmlns="urn:jgroups:rules:1.0">
+    <rule name="rule1" class="org.jgroups.protocols.rules.CheckFDMonitorRule" interval="1000"/>
+</rules>

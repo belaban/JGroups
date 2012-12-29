@@ -175,19 +175,33 @@ public class MethodCall implements Externalizable {
     }
 
 
+    /** Called by the ProbeHandler impl. All args are strings. Needs to find a method where all parameter
+     * types are primitive types, so the strings can be converted */
     public static Method findMethod(Class target_class, String method_name, Object[] args) throws Exception {
         int len=args != null? args.length : 0;
-
+        Method retval=null;
         Method[] methods=getAllMethods(target_class);
         for(int i=0; i < methods.length; i++) {
             Method m=methods[i];
             if(m.getName().equals(method_name)) {
-                if(m.getParameterTypes().length == len)
-                    return m;
+                Class<?>[] parameter_types=m.getParameterTypes();
+                if(parameter_types.length == len) {
+                    retval=m;
+                    // now check if all parameter types are primitive types:
+                    boolean all_primitive=true;
+                    for(Class<?> parameter_type: parameter_types) {
+                        if(!isPrimitiveType(parameter_type)) {
+                            all_primitive=false;
+                            break;
+                        }
+                    }
+                    if(all_primitive)
+                        return m;
+                }
             }
         }
 
-        return null;
+        return retval;
     }
 
 
@@ -473,6 +487,18 @@ public class MethodCall implements Externalizable {
         if(type == double.class || type == Double.class)
             return Double.valueOf(arg);
         return arg;
+    }
+
+    public static boolean isPrimitiveType(Class<?> type) {
+        return type == String.class ||
+          type == boolean.class     || type == Boolean.class   ||
+          type == char.class        || type == Character.class ||
+          type == byte.class        || type == Byte.class      ||
+          type == short.class       || type == Short.class     ||
+          type == int.class         || type == Integer.class   ||
+          type == long.class        || type == Long.class      ||
+          type == float.class       || type == Float.class     ||
+          type == double.class      || type == Double.class;
     }
 }
 
