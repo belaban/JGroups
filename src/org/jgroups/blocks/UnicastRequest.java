@@ -117,6 +117,9 @@ public class UnicastRequest<T> extends Request {
         if(!(target instanceof SiteAddress))
             return;
 
+        if(((SiteAddress)target).getSite() != site)
+            return;
+
         lock.lock();
         try {
             if(done)
