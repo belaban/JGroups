@@ -75,7 +75,7 @@ public class ConnectionMapUnitTest {
         long       NUM=1000, total_time;
         Address    myself=ct1.getLocalAddress();
         MyReceiver r=new MyReceiver(ct1, NUM, false);
-        byte[]     data=new byte[] {'b', 'e', 'l', 'a'};
+        byte[]     data={'b', 'e', 'l', 'a'};
 
         ct1.setReceiver(r);
 
@@ -95,7 +95,7 @@ public class ConnectionMapUnitTest {
         long       NUM=1000, total_time;
         Address    other=ct2.getLocalAddress();
         MyReceiver r=new MyReceiver(ct2, NUM, false);
-        byte[]     data=new byte[] {'b', 'e', 'l', 'a'};
+        byte[]     data={'b', 'e', 'l', 'a'};
 
         ct2.setReceiver(r);
 
@@ -117,7 +117,7 @@ public class ConnectionMapUnitTest {
         Address    other=ct2.getLocalAddress();
         MyReceiver r1=new MyReceiver(ct1, NUM, false);
         MyReceiver r2=new MyReceiver(ct2, NUM, true); // send response
-        byte[]     data=new byte[] {'b', 'e', 'l', 'a'};
+        byte[]     data={'b', 'e', 'l', 'a'};
 
         ct1.setReceiver(r1);
         ct2.setReceiver(r2);
@@ -194,14 +194,12 @@ public class ConnectionMapUnitTest {
         }
 
 
-        public void waitForCompletion() {
-            synchronized(this) {
-                while(!done) {
-                    try {
-                        wait();
-                    }
-                    catch(InterruptedException e) {
-                    }
+        public synchronized void waitForCompletion() {
+            while(!done) {
+                try {
+                    wait();
+                }
+                catch(InterruptedException e) {
                 }
             }
         }

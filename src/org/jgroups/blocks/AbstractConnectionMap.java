@@ -1,7 +1,5 @@
 package org.jgroups.blocks;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.util.ThreadFactory;
@@ -15,14 +13,13 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class AbstractConnectionMap<V extends Connection> implements ConnectionMap<V> {
         
     protected final List<ConnectionMapListener<V>> conn_listeners=new ArrayList<ConnectionMapListener<V>>();
-    protected final Map<Address,V> conns=new HashMap<Address,V>();
-    protected final Lock lock = new ReentrantLock(); // syncs conns
-    protected final Lock sock_creation_lock= new ReentrantLock(true); // syncs socket establishment
-    protected final ThreadFactory factory; 
-    protected final long reaperInterval;
-    protected final Reaper reaper;
-    protected final Log log=LogFactory.getLog(getClass());
-    
+    protected final Map<Address,V>                 conns=new HashMap<Address,V>();
+    protected final Lock                           lock = new ReentrantLock(); // syncs conns
+    protected final Lock                           sock_creation_lock= new ReentrantLock(true); // syncs socket establishment
+    protected final ThreadFactory                  factory;
+    protected final long                           reaperInterval;
+    protected final Reaper                         reaper;
+
     public AbstractConnectionMap(ThreadFactory factory) {
         this(factory,0);        
     }
@@ -30,48 +27,22 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
     public AbstractConnectionMap(ThreadFactory factory,long reaperInterval) {
         super();
         this.factory=factory;        
-        this.reaperInterval = reaperInterval;       
-        if(reaperInterval > 0){
-            reaper = new Reaper();
-        }else{
-            reaper = null;
-        }
+        this.reaperInterval=reaperInterval;
+        reaper=reaperInterval > 0?  new Reaper() : null;
     }
     
     public Lock getLock(){
         return lock;
     }
     
-    public boolean hasOpenConnection(Address address) {
-        lock.lock();
-        try {
-            V v=conns.get(address);
-            return v != null && v.isOpen();
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-    
+
     public boolean hasConnection(Address address) {
-        lock.lock();
-        try {
-            return conns.containsKey(address);
-        }
-        finally {
-            lock.unlock();
-        }
+        return conns.containsKey(address);
     }
 
     public void addConnection(Address address, V conn) {
-        lock.lock();
-        try {
-            V previous = conns.put(address, conn);
-            Util.close(previous);           
-        }
-        finally {
-            lock.unlock();
-        }
+        V previous = conns.put(address, conn);
+        Util.close(previous); // closes previous connection (if present)
         notifyConnectionOpened(address, conn);
     }
 
@@ -84,6 +55,20 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
         lock.lock();
         try {
             return conns.size();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    public int getNumOpenConnections() {
+        int retval=0;
+        lock.lock();
+        try {
+            for(Connection conn: conns.values())
+                if(conn.isOpen())
+                    retval++;
+            return retval;
         }
         finally {
             lock.unlock();
@@ -110,16 +95,23 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
         return factory;
     }
 
-    public void removeConnection(Address address) {
-        Connection conn = null;
+
+    /** Only removes the connection if conns.get(address) == conn */
+    public void removeConnectionIfPresent(Address address, V conn) {
+        if(address == null || conn == null)
+            return;
+
         lock.lock();
         try {
-            conn=conns.remove(address);
+            V existing=conns.get(address);
+            if(conn == existing) {
+                V tmp=conns.remove(address);
+                Util.close(tmp);
+            }
         }
         finally {
             lock.unlock();
-        }       
-        Util.close(conn);
+        }
     }
 
     public void removeConnectionMapListener(ConnectionMapListener<V> cml) {
@@ -161,9 +153,9 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
     }
 
     public void stop() {
-        if(reaper != null) {              
+        if(reaper != null)
             reaper.stop();
-        }
+
         lock.lock();
         try {
             for(Iterator<Entry<Address,V>> i = conns.entrySet().iterator();i.hasNext();) {
@@ -195,15 +187,12 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
     }
 
     protected void notifyConnectionOpened(Address address, V conn) {
-       
-        for(ConnectionMapListener<V> l:conn_listeners) {
+        for(ConnectionMapListener<V> l:conn_listeners)
             l.connectionOpened(address, conn);
-        }
     }
         
     
     class Reaper implements Runnable {
-
         private Thread thread;
 
         public synchronized void start() {
@@ -233,8 +222,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
                         Entry<Address,V> entry=it.next();
                         V c=entry.getValue();
                         if(c.isExpired(System.currentTimeMillis())) {
-                            log.debug("Connection " + c.toString() + " reaped");
-                            Util.close(c);                                            
+                            Util.close(c);
                             it.remove();                           
                         }
                     }
@@ -248,9 +236,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
     }
 
     public interface ConnectionMapListener<V> {
-
         public void connectionClosed(Address address);
-
         public void connectionOpened(Address address, V conn);
 
     }

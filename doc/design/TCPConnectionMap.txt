@@ -1,0 +1,67 @@
+
+
+Design for concurrent connects
+=================================================
+
+Author: Bela Ban
+JIRA:   https://issues.jboss.org/browse/JGRP-1549
+
+
+The goal is to avoid initial message loss (and subsequent retransmission) in TCP when 2 members connect to each other at
+exactly the same time. The idea is to use a simple arbiter mechanism that deterministically favors one connection
+over the other. We could use the peer address (IpAddress) sent as part of the connection or the socket's local and
+remote addresses. To avoid having to wait for the peer address to be received, the latter was picked.
+
+Correction: we pick the peer address, because it is always the same for the same member, whereas socket addresses
+can change and we could possibly have a ping-pong of connection establishments and rejection (would have to be verified).
+
+
+CT=ConnectionTable
+CREATE=connection creation
+
+
+getConnection(dest):
+--------------------
+
+- lock CT
+    - if conn for dest exists and is connected: -> return it // fast track, unhindered by conn creation
+- unlock CT
+
+- lock CREATE // for creation of new conn
+    - lock CT
+        - if conn for dest exists and is connected -> return it // conn could have been created in the meantime
+        - create conn-stub
+        - add conn-stub to connections (not yet connected), destroy prev conn (if present)
+    - unlock CT
+
+    - call connect() on conn-stub
+    - if connect() throws an exception -> store the exception in EXCEPTION
+
+    - lock CT
+        - if conn for dest is present and is connected and != conn-stub: // result of accept() replacing conn for dest
+            - destroy conn-stub
+            - return conn
+        - else
+            - if EXCEPTION -> destroy conn-stub, remove it and re-throw exception
+            - else return conn-stub // meanwhile, conn-stub was turned into a regular conn
+    - unlock CT
+
+- unlock CREATE
+
+
+
+accept() --> client_sock:
+-------------------------
+
+- read peer_addr (remote) from client_sock
+- lock CT
+    - if conn for peer_addr doesn't exist:
+        - create conn with client_sock and add it to connections
+        - return
+    // conn already exists, can only be from our own connect(); accept() was received before connect() returns
+    - if local peer_addr < remote peer_addr: // the existing conn loses
+        - remove existing conn // don't destroy conn as this is done when our own connect() returns and sees a new conn
+        - create conn with client_sock and add it to connections
+    - else // the existing conn wins
+        - close the client_sock // reject accept() from client with 'lower' connection
+- unlock CT

@@ -565,7 +565,7 @@ public abstract class TP extends Protocol {
     };
 
     /** Cache keeping track of WHO_HAS requests for physical addresses (given a logical address) and expiring
-     * them after who_has_cache_timeoout ms */
+     * them after who_has_cache_timeout ms */
     protected ExpiryCache<Address>   who_has_cache;
 
     /** Log to suppress identical warnings for messages from members with different (incompatible) versions */

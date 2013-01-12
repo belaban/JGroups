@@ -73,6 +73,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
         ct.setUseSendQueues(use_send_queues);
         ct.setSendBufferSize(send_buf_size);
         ct.setSocketConnectionTimeout(sock_conn_timeout);
+        ct.peerAddressReadTimeout(peer_addr_read_timeout);
         ct.setTcpNodelay(tcp_nodelay);
         ct.setLinger(linger);
         ct.setSocketFactory(getSocketFactory());

@@ -72,19 +72,15 @@ public abstract class BasicTCP extends TP {
         super();        
     }
 
-    public boolean supportsMulticasting() {
-        return false;
-    }
-
-    public long getReaperInterval() {return reaper_interval;}
-    public void setReaperInterval(long reaper_interval) {this.reaper_interval=reaper_interval;}
-    public long getConnExpireTime() {return conn_expire_time;}
-    public void setConnExpireTime(long conn_expire_time) {this.conn_expire_time=conn_expire_time;}
+    public boolean supportsMulticasting()           {return false;}
+    public long    getReaperInterval()              {return reaper_interval;}
+    public void    setReaperInterval(long interval) {this.reaper_interval=interval;}
+    public long    getConnExpireTime()              {return conn_expire_time;}
+    public void    setConnExpireTime(long time)     {this.conn_expire_time=time;}
 
 
     public void init() throws Exception {
         super.init();
-
         if(!isSingleton() && bind_port <= 0) {
             Discovery discovery_prot=(Discovery)stack.findProtocol(Discovery.class);
             if(discovery_prot != null && !discovery_prot.isDynamic())

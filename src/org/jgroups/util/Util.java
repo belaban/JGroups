@@ -370,6 +370,11 @@ public class Util {
         }
     }
 
+    public static void close(Connection ... conns) {
+        for(Connection conn: conns)
+            close(conn);
+    }
+
     /** Drops messages to/from other members and then closes the channel. Note that this member won't get excluded from
      * the view until failure detection has kicked in and the new coord installed the new view */
     public static void shutdown(Channel ch) throws Exception {
