@@ -33,7 +33,7 @@ import java.util.Map;
     		String propertyName=field.getName();
     		if(props.containsKey(annotation.name())) {
     			propertyName=annotation.name();
-    			boolean isDeprecated=annotation.deprecatedMessage().length() > 0;
+    			boolean isDeprecated=!annotation.deprecatedMessage().isEmpty();
     			if(isDeprecated && log.isWarnEnabled()) {
     				log.warn(propertyName + " has been deprecated: " + annotation.deprecatedMessage());
     			}
@@ -50,7 +50,7 @@ import java.util.Map;
     			throw new IllegalArgumentException("Cannot get property name for method " + 
     					method.getName() + " which is not annotated with @Property") ;
     		}    		
-    		String propertyName=annotation.name().length() > 0? annotation.name() : method.getName();
+    		String propertyName=!annotation.name().isEmpty()? annotation.name() : method.getName();
     		propertyName=Util.methodNameToAttributeName(propertyName);
     		return propertyName ;
     	}

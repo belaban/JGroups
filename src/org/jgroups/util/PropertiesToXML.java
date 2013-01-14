@@ -168,13 +168,12 @@ public class PropertiesToXML {
         // iterate methods
         Method[] methods = clazz.getDeclaredMethods();
         for (Method method : methods) {
-            if (method.isAnnotationPresent(Property.class)
-              && method.getName().startsWith("set")) {
+            if (method.isAnnotationPresent(Property.class)) {
 
                 Property annotation = method.getAnnotation(Property.class);
                 String desc = annotation.description();
 
-                if(desc == null || desc.length() == 0)
+                if(desc == null || desc.isEmpty())
                     desc="n/a";
 
                 String name = annotation.name();

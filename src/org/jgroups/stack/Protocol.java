@@ -18,7 +18,10 @@ import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -201,15 +204,23 @@ public abstract class Protocol {
             Field[] fields=clazz.getDeclaredFields();
             for(Field field: fields) {
                 if(field.isAnnotationPresent(ManagedAttribute.class) ||
-                        (field.isAnnotationPresent(Property.class) && field.getAnnotation(Property.class).exposeAsManagedAttribute())) {
-                    String attributeName=field.getName();
+                  (field.isAnnotationPresent(Property.class) && field.getAnnotation(Property.class).exposeAsManagedAttribute())) {
+
+                    ManagedAttribute attr_annotation=field.getAnnotation(ManagedAttribute.class);
+                    Property         prop=field.getAnnotation(Property.class);
+                    String attr_name=attr_annotation != null? attr_annotation.name() : prop != null? prop.name() : null;
+                    if(attr_name != null && !attr_name.trim().isEmpty())
+                        attr_name=attr_name.trim();
+                    else
+                        attr_name=field.getName();
+
                     try {
                         field.setAccessible(true);
                         Object value=field.get(this);
-                        map.put(attributeName, value != null? value.toString() : null);
+                        map.put(attr_name, value != null? value.toString() : null);
                     }
                     catch(Exception e) {
-                        log.warn("Could not retrieve value of attribute (field) " + attributeName,e);
+                        log.warn("Could not retrieve value of attribute (field) " + attr_name, e);
                     }
                 }
             }
@@ -219,8 +230,17 @@ public abstract class Protocol {
                 if(method.isAnnotationPresent(ManagedAttribute.class) ||
                         (method.isAnnotationPresent(Property.class) && method.getAnnotation(Property.class).exposeAsManagedAttribute())) {
 
-                    String method_name=method.getName();
-                    if(method_name.startsWith("is") || method_name.startsWith("get")) {
+                    ManagedAttribute attr_annotation=method.getAnnotation(ManagedAttribute.class);
+                    Property         prop=method.getAnnotation(Property.class);
+                    String method_name=attr_annotation != null? attr_annotation.name() : prop != null? prop.name() : null;
+                    if(method_name != null && !method_name.trim().isEmpty())
+                        method_name=method_name.trim();
+                    else {
+                        String field_name=Util.methodNameToAttributeName(method.getName());
+                        method_name=Util.attributeNameToMethodName(field_name);
+                    }
+
+                    if(ResourceDMBean.isGetMethod(method)) {
                         try {
                             Object value=method.invoke(this);
                             String attributeName=Util.methodNameToAttributeName(method_name);
@@ -228,20 +248,6 @@ public abstract class Protocol {
                         }
                         catch(Exception e) {
                             log.warn("Could not retrieve value of attribute (method) " + method_name,e);
-                        }
-                    }
-                    else if(method_name.startsWith("set")) {
-                        String stem=method_name.substring(3);
-                        Method getter=ResourceDMBean.findGetter(getClass(), stem);
-                        if(getter != null) {
-                            try {
-                                Object value=getter.invoke(this);
-                                String attributeName=Util.methodNameToAttributeName(method_name);
-                                map.put(attributeName, value != null? value.toString() : null);
-                            }
-                            catch(Exception e) {
-                                log.warn("Could not retrieve value of attribute (method) " + method_name, e);
-                            }
                         }
                     }
                 }

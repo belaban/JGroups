@@ -34,10 +34,10 @@ public class DISCARD extends Protocol {
     boolean excludeItself=true;   // if true don't discard messages sent/received in this stack
     Address localAddress;
 
-    @ManagedAttribute(description="Number of dropped down messages",name="droppedDownMessages")
+    @ManagedAttribute(description="Number of dropped down messages",name="dropped_down_messages")
     int num_down=0;
 
-    @ManagedAttribute(description="Number of dropped up messages",name="droppedUpMessages")
+    @ManagedAttribute(description="Number of dropped up messages",name="dropped_up_messages")
     int num_up=0;
     
     final Set<Address> ignoredMembers = new HashSet<Address>();

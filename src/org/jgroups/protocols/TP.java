@@ -792,7 +792,7 @@ public abstract class TP extends Protocol {
         return thread_pool_queue_max_size;
     }
 
-    @ManagedAttribute(name="TimerTasks",description="Number of timer tasks queued up for execution")
+    @ManagedAttribute(name="timer_tasks",description="Number of timer tasks queued up for execution")
     public int getNumTimerTasks() {
         return timer != null? timer.size() : -1;
     }
@@ -2564,12 +2564,12 @@ public abstract class TP extends Protocol {
             return local_addr;
         }
 
-        @ManagedAttribute(name="Address", description="local address")
+        @ManagedAttribute(name="address", description="local address")
         public String getAddressAsString() {
             return local_addr != null? local_addr.toString() : null;
         }
 
-        @ManagedAttribute(name="AddressUUID", description="local address")
+        @ManagedAttribute(name="address_uuid", description="local address")
         public String getAddressAsUUID() {
             return (local_addr instanceof UUID)? ((UUID)local_addr).toStringLong() : null;
         }

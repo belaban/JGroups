@@ -43,7 +43,6 @@ public class XMLSchemaGenerator {
          String arg = args[i];
          if ("-o".equals(arg)) {
             outputDir = args[++i];
-            continue;
          } else {
             System.out.println("XMLSchemaGenerator -o <path to newly created xsd schema file>");
             return;
@@ -89,6 +88,11 @@ public class XMLSchemaGenerator {
           classes = getClasses("org.jgroups.protocols.relay", Protocol.class);
           for (Class<?> clazz : classes) {
               classToXML(xmldoc, allType, clazz, "relay.");
+          }
+
+          classes = getClasses("org.jgroups.protocols.rules", Protocol.class);
+          for (Class<?> clazz : classes) {
+              classToXML(xmldoc, allType, clazz, "rules.");
           }
 
          DOMSource domSource = new DOMSource(xmldoc);
@@ -143,7 +147,7 @@ public class XMLSchemaGenerator {
 
       Element classElement = xmldoc.createElement("xs:element");
       String elementName = preAppendToSimpleClassName + clazz.getSimpleName();
-      if(elementName == null || elementName.length()==0) {
+      if(elementName == null || elementName.isEmpty()) {
           throw new IllegalArgumentException("Cannot create empty attribute name for element xs:element, class is " + clazz);
       }
       classElement.setAttribute("name",elementName);
@@ -158,12 +162,12 @@ public class XMLSchemaGenerator {
             if (field.isAnnotationPresent(Property.class)) {
                String property = field.getName();
                Property r = field.getAnnotation(Property.class);
-               boolean annotationRedefinesName = r.name().length() > 0
-                        && r.deprecatedMessage().length() == 0;
+               boolean annotationRedefinesName =!r.name().isEmpty()
+                        && r.deprecatedMessage().isEmpty();
                if (annotationRedefinesName) {
                   property = r.name();
                }
-               if(property == null || property.length()==0) {
+               if(property == null || property.isEmpty()) {
                    throw new IllegalArgumentException("Cannot create empty attribute name for element xs:attribute, field is " + field);
                }
                Element attributeElement = xmldoc.createElement("xs:attribute");
@@ -190,7 +194,7 @@ public class XMLSchemaGenerator {
       // iterate methods
       Method[] methods = clazz.getMethods();
       for (Method method : methods) {
-         if (method.isAnnotationPresent(Property.class) && method.getName().startsWith("set")) {
+         if (method.isAnnotationPresent(Property.class)) {
 
             Property annotation = method.getAnnotation(Property.class);
             String name = annotation.name();
@@ -203,13 +207,13 @@ public class XMLSchemaGenerator {
             complexType.appendChild(attributeElement);
 
             String desc = annotation.description();
-            if (desc.length() > 0) {
-               Element annotationElement = xmldoc.createElement("xs:annotation");
-               attributeElement.appendChild(annotationElement);
+            if (!desc.isEmpty()) {
+                Element annotationElement = xmldoc.createElement("xs:annotation");
+                attributeElement.appendChild(annotationElement);
 
-               Element documentationElement = xmldoc.createElement("xs:documentation");
-               documentationElement.setTextContent(annotation.description());
-               annotationElement.appendChild(documentationElement);
+                Element documentationElement = xmldoc.createElement("xs:documentation");
+                documentationElement.setTextContent(annotation.description());
+                annotationElement.appendChild(documentationElement);
             }
          }
       }

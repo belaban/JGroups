@@ -259,6 +259,27 @@ public class Util {
     }
 
 
+    /**
+     * Waits until a list has the expected number of elements. Throws an exception if not met
+     * @param list The list
+     * @param expected_size The expected size
+     * @param timeout The time to wait (in ms)
+     * @param interval The interval at which to get the size of the list (in ms)
+     * @param <T> The type of the list
+     */
+    public static <T> void waitUntilListHasSize(List<T> list, int expected_size, long timeout, long interval) {
+        if(list == null)
+            throw new IllegalStateException("list is null");
+        long target_time=System.currentTimeMillis() + timeout;
+        while(System.currentTimeMillis() < target_time) {
+            if(list.size() == expected_size)
+                break;
+            Util.sleep(interval);
+        }
+        assert list.size() == expected_size : "list doesn't have the expected (" + expected_size + " elements: " + list;
+    }
+
+
     public static void addFlush(Channel ch, FLUSH flush) {
         if(ch == null || flush == null)
             throw new IllegalArgumentException("ch and flush have to be non-null");
@@ -2784,28 +2805,61 @@ public class Util {
     }
 
     public static void setField(Field field, Object target, Object value) {
-           if(!Modifier.isPublic(field.getModifiers())) {
-               field.setAccessible(true);
-           }
-           try {
-               field.set(target, value);
-           }
-           catch(IllegalAccessException iae) {
-               throw new IllegalArgumentException("Could not set field " + field, iae);
-           }
-       }
+        if(!Modifier.isPublic(field.getModifiers())) {
+            field.setAccessible(true);
+        }
+        try {
+            field.set(target, value);
+        }
+        catch(IllegalAccessException iae) {
+            throw new IllegalArgumentException("Could not set field " + field, iae);
+        }
+    }
 
-       public static Object getField(Field field, Object target) {
-           if(!Modifier.isPublic(field.getModifiers())) {
-               field.setAccessible(true);
-           }
-           try {
-               return field.get(target);
-           }
-           catch(IllegalAccessException iae) {
-               throw new IllegalArgumentException("Could not get field " + field, iae);
-           }
-       }
+    public static Object getField(Field field, Object target) {
+        if(!Modifier.isPublic(field.getModifiers())) {
+            field.setAccessible(true);
+        }
+        try {
+            return field.get(target);
+        }
+        catch(IllegalAccessException iae) {
+            throw new IllegalArgumentException("Could not get field " + field, iae);
+        }
+    }
+
+
+    public static Field findField(Object target, List<String> possible_names) {
+        if(target == null)
+            return null;
+        for(Class<?> clazz=target.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+            for(String name: possible_names) {
+                try {
+                    return clazz.getDeclaredField(name);
+                }
+                catch(Exception e) {
+                }
+            }
+        }
+        return null;
+    }
+
+
+    public static Method findMethod(Object target, List<String> possible_names, Class<?> ... parameter_types) {
+        if(target == null)
+            return null;
+        for(Class<?> clazz=target.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+            for(String name: possible_names) {
+                try {
+                    return clazz.getDeclaredMethod(name, parameter_types);
+                }
+                catch(Exception e) {
+                }
+            }
+        }
+        return null;
+    }
+
 
 
     public static <T> Set<Class<T>> findClassesAssignableFrom(String packageName, Class<T> assignableFrom)
@@ -4374,16 +4428,24 @@ public class Util {
         }
     }
 
+    /**
+     * Converts a method name to an attribute name, e.g. getFooBar() --> foo_bar, isFlag --> flag.
+     * @param methodName
+     * @return
+     */
+    public static String methodNameToAttributeName(final String methodName) {
+        String name=methodName;
+        if((methodName.startsWith("get") || methodName.startsWith("set")) && methodName.length() > 3)
+            name=methodName.substring(3);
+        else if(methodName.startsWith("is") && methodName.length() > 2)
+            name=methodName.substring(2);
 
-    public static String methodNameToAttributeName(String methodName) {
-        methodName=methodName.startsWith("get") || methodName.startsWith("set")? methodName.substring(3): methodName;
-        methodName=methodName.startsWith("is")? methodName.substring(2) : methodName;
         // Pattern p=Pattern.compile("[A-Z]+");
-        Matcher m=METHOD_NAME_TO_ATTR_NAME_PATTERN.matcher(methodName);
+        Matcher m=METHOD_NAME_TO_ATTR_NAME_PATTERN.matcher(name);
         StringBuffer sb=new StringBuffer();
         while(m.find()) {
             int start=m.start(), end=m.end();
-            String str=methodName.substring(start, end).toLowerCase();
+            String str=name.substring(start, end).toLowerCase();
             if(str.length() > 1) {
                 String tmp1=str.substring(0, str.length() -1);
                 String tmp2=str.substring(str.length() -1);
@@ -4396,8 +4458,25 @@ public class Util {
                 m.appendReplacement(sb, "_" + str);
         }
         m.appendTail(sb);
-        return sb.toString();
+        return sb.length() > 0? sb.toString() : methodName;
     }
+
+    /**
+     * Converts a method name to a Java attribute name, e.g. getFooBar() --> fooBar, isFlag --> flag.
+     * @param methodName
+     * @return
+     */
+    public static String methodNameToJavaAttributeName(final String methodName) {
+          String name=methodName;
+          if((methodName.startsWith("get") || methodName.startsWith("set")) && methodName.length() > 3)
+              name=methodName.substring(3);
+          else if(methodName.startsWith("is") && methodName.length() > 2)
+              name=methodName.substring(2);
+
+        if(Character.isUpperCase(name.charAt(0)))
+            return name.substring(0, 1).toLowerCase() + name.substring(1);
+        return name;
+      }
 
 
     public static String attributeNameToMethodName(String attr_name) {
@@ -4424,6 +4503,15 @@ public class Util {
             }
         }
     }
+
+    public static String attributeNameToJavaMethodName(String attr_name) {
+        String retval=attributeNameToMethodName(attr_name);
+        if(Character.isUpperCase(retval.charAt(0)))
+            return retval.substring(0, 1).toLowerCase() + retval.substring(1);
+        return retval;
+    }
+
+
 
     /**
      * Runs a task on a separate thread

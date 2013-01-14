@@ -200,9 +200,8 @@ public class ProtocolStack extends Protocol {
                         List<String> possible_names=new LinkedList<String>();
                         if(annotation.name() != null)
                             possible_names.add(annotation.name());
-                        possible_names.add(methodName.substring(3));
                         possible_names.add(Util.methodNameToAttributeName(methodName));
-                        Field field=findField(prot, possible_names);
+                        Field field=Util.findField(prot, possible_names);
                         if(field != null) {
                             Object value=Util.getField(field, prot);
                             Util.setField(field, new_prot, value);
@@ -214,23 +213,7 @@ public class ProtocolStack extends Protocol {
         return retval;
     }
 
-    private static Field findField(Object target, List<String> possible_names) {
-        if(target == null)
-            return null;
-        for(Class<?> clazz=target.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
-            for(String name: possible_names) {
-                try {
-                    Field field=clazz.getDeclaredField(name);
-                    if(field != null)
-                        return field;
-                }
-                catch(NoSuchFieldException e) {
-                }
-            }
-        }
 
-        return null;
-    }
 
 
     /** Returns the bottom most protocol */
@@ -436,9 +419,8 @@ public class ProtocolStack extends Protocol {
                     List<String> possible_names=new LinkedList<String>();
                     if(annotation.name() != null)
                         possible_names.add(annotation.name());
-                    possible_names.add(methodName.substring(3));
                     possible_names.add(Util.methodNameToAttributeName(methodName));
-                    Field field=findField(prot, possible_names);
+                    Field field=Util.findField(prot, possible_names);
                     if(field != null) {
                         Object value=Util.getField(field, prot);
                         if(value != null) {

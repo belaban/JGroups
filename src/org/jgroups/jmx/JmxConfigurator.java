@@ -173,7 +173,7 @@ public class JmxConfigurator {
                 }
             }
 
-            ResourceDMBean res = new ResourceDMBean(obj);
+            ResourceDMBean res=new ResourceDMBean(obj);
             server.registerMBean(res, objName);
         } catch (InstanceAlreadyExistsException e) {
             if (log.isErrorEnabled()) {
@@ -192,7 +192,7 @@ public class JmxConfigurator {
     private static void internalUnregister(Object obj, MBeanServer server, String name)
                     throws MBeanRegistrationException {
         try {
-            if (name != null && name.length() > 0) {
+            if (name != null && !name.isEmpty()) {
                 server.unregisterMBean(new ObjectName(name));
             } else if (obj != null) {
                 server.unregisterMBean(getObjectName(obj, null));
@@ -215,9 +215,9 @@ public class JmxConfigurator {
 
     private static ObjectName getObjectName(Object obj, String name) throws MalformedObjectNameException {
         MBean resource = obj.getClass().getAnnotation(MBean.class);
-        if (name != null && name.length() > 0) {
+        if (name != null && !name.isEmpty()) {
             return new ObjectName(name);
-        } else if (resource.objectName() != null && resource.objectName().length() > 0) {
+        } else if (resource.objectName() != null && !resource.objectName().isEmpty()) {
             return new ObjectName(resource.objectName());
         } else {
             throw new MalformedObjectNameException(obj + " of class " + obj.getClass() + " has an invalid object name");

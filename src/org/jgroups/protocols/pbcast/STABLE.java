@@ -153,7 +153,7 @@ public class STABLE extends Protocol {
         this.original_max_bytes=max_bytes;
     }
 
-    @ManagedAttribute(name="BytesReceived")
+    @ManagedAttribute(name="bytes_received")
     public long getBytes() {return num_bytes_received;}
     @ManagedAttribute
     public int getStableSent() {return num_stable_msgs_sent;}

@@ -1,77 +1,65 @@
 package org.jgroups.jmx;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-
-import javax.management.Attribute;
-import javax.management.AttributeList;
-import javax.management.DynamicMBean;
-import javax.management.MBeanAttributeInfo;
-import javax.management.MBeanException;
-import javax.management.MBeanInfo;
-import javax.management.MBeanOperationInfo;
-import javax.management.ReflectionException;
-
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
+
+import javax.management.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.*;
 
 /**
  * 
- * A DynamicMBean wrapping an annotated object instance.
+ * A DynamicMBean wrapping an annotated object instance and exposing attributes annotated with @ManagedAttribute and
+ * operations annotated with @ManagedOperation.
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @see ManagedAttribute
- * @see ManagedOperation
- * @see MBean
- * 
+ * @author Bela Ban
+ * @see org.jgroups.annotations.ManagedAttribute
+ * @see org.jgroups.annotations.ManagedOperation
+ * @see org.jgroups.annotations.MBean
+ *
  */
 public class ResourceDMBean implements DynamicMBean {
-    private static final Class<?>[] primitives= { int.class,
-                                                 byte.class,
-                                                 short.class,
-                                                 long.class,
-                                                 float.class,
-                                                 double.class,
-                                                 boolean.class,
-                                                 char.class };
+    protected static final Class<?>[]              primitives= {int.class, byte.class, short.class, long.class,
+                                                                float.class, double.class, boolean.class, char.class };
 
-    private static final String MBEAN_DESCRITION="Dynamic MBean Description";
+    protected static final String                  MBEAN_DESCRITION="MBeanDescription";
+    protected static final List<Method>            OBJECT_METHODS; // all methods of java.lang.Object
+    protected final boolean                        expose_all;
+    protected final Log                            log=LogFactory.getLog(ResourceDMBean.class);
+    protected final Object                         obj;
+    protected final MBeanAttributeInfo[]           attrInfo;
+    protected final MBeanOperationInfo[]           opInfo;
+    protected final HashMap<String,AttributeEntry> atts=new HashMap<String,AttributeEntry>();
+    protected final List<MBeanOperationInfo>       ops=new ArrayList<MBeanOperationInfo>();
 
-    private final Log log=LogFactory.getLog(ResourceDMBean.class);
-    private final Object obj;
-    private String description="";
+    static {OBJECT_METHODS=new ArrayList<Method>(Arrays.asList(Object.class.getMethods()));}
 
-    private final MBeanAttributeInfo[] attrInfo;
-    private final MBeanOperationInfo[] opInfo;
-
-    private final HashMap<String,AttributeEntry> atts=new HashMap<String,AttributeEntry>();
-    private final List<MBeanOperationInfo> ops=new ArrayList<MBeanOperationInfo>();
 
     public ResourceDMBean(Object instance) {
         if(instance == null)
             throw new NullPointerException("Cannot make an MBean wrapper for null instance");
-        
         this.obj=instance;
-        findDescription();
+        Class<? extends Object> c=obj.getClass();
+        expose_all=c.isAnnotationPresent(MBean.class) && c.getAnnotation(MBean.class).exposeAll();
+
         findFields();
         findMethods();
+        fixFields();
 
         attrInfo=new MBeanAttributeInfo[atts.size()];
         int i=0;
         MBeanAttributeInfo info=null;
-        for(AttributeEntry entry:atts.values()) {
-            info=entry.getInfo();
+        for(AttributeEntry entry: atts.values()) {
+            info=entry.info;
             attrInfo[i++]=info;
         }
 
@@ -79,102 +67,81 @@ public class ResourceDMBean implements DynamicMBean {
         ops.toArray(opInfo);
     }
 
-    Object getObject() {
-        return obj;
+
+
+    public MBeanInfo getMBeanInfo() {
+        return new MBeanInfo(obj.getClass().getCanonicalName(), "DynamicMBean", attrInfo, null, opInfo, null);
     }
 
-    private void findDescription() {
-        MBean mbean=getObject().getClass().getAnnotation(MBean.class);
-        if(mbean != null && mbean.description() != null && mbean.description().trim().length() > 0) {
-            description=mbean.description();
-            MBeanAttributeInfo info=new MBeanAttributeInfo(ResourceDMBean.MBEAN_DESCRITION,
-                                                           "java.lang.String",
-                                                           "MBean description",
-                                                           true,
-                                                           false,
-                                                           false);
-            try {
-                atts.put(ResourceDMBean.MBEAN_DESCRITION,
-                         new FieldAttributeEntry(info,getClass().getDeclaredField("description")));
-            }
-            catch(NoSuchFieldException e) {
-               //this should not happen unless somebody removes description field 
-               log.warn("Could not reflect field description of this class. Was it removed?");               
-            }
-        }
-    }
-
-    public synchronized MBeanInfo getMBeanInfo() {
-
-        return new MBeanInfo(getObject().getClass().getCanonicalName(),
-                             description,
-                             attrInfo,
-                             null,
-                             opInfo,
-                             null);
-    }
-
-    public synchronized Object getAttribute(String name) {
-        if(name == null || name.length() == 0)
+    public Object getAttribute(String name) {
+        if(name == null || name.isEmpty())
             throw new NullPointerException("Invalid attribute requested " + name);
         Attribute attr=getNamedAttribute(name);
-        return attr.getValue();
+        return attr != null? attr.getValue() : null;
     }
 
-    public synchronized void setAttribute(Attribute attribute) {
+    public void setAttribute(Attribute attribute) {
         if(attribute == null || attribute.getName() == null)
             throw new NullPointerException("Invalid attribute requested " + attribute);
-                
         setNamedAttribute(attribute);
     }
 
-    public synchronized AttributeList getAttributes(String[] names) {       
+    public AttributeList getAttributes(String[] names) {
         AttributeList al=new AttributeList();
-        for(String name:names) {
+        for(String name: names) {
             Attribute attr=getNamedAttribute(name);
-            if(attr != null) {
+            if(attr != null)
                 al.add(attr);
-            }
-            else {
+            else
                 log.warn("Did not find attribute " + name);
-            }
         }
         return al;
     }
 
-    public synchronized AttributeList setAttributes(AttributeList list) {        
+    public AttributeList setAttributes(AttributeList list) {
         AttributeList results=new AttributeList();
         for(int i=0;i < list.size();i++) {
             Attribute attr=(Attribute)list.get(i);
-
-            if(setNamedAttribute(attr)) {
+            if(setNamedAttribute(attr))
                 results.add(attr);
-            }
             else {
-                if(log.isWarnEnabled()) {
+                if(log.isWarnEnabled())
                     log.warn("Failed to update attribute name " + attr.getName() + " with value " + attr.getValue());
-                }
             }
         }
         return results;
     }
 
-    public Object invoke(String name, Object[] args, String[] sig) throws MBeanException,
-                                                                  ReflectionException {
+    public Object invoke(String name, Object[] args, String[] sig) throws MBeanException, ReflectionException {
         try {
             Class<?>[] classes=new Class[sig.length];
-            for(int i=0;i < classes.length;i++) {
+            for(int i=0;i < classes.length;i++)
                 classes[i]=getClassForName(sig[i]);
-            }
-            Method method=getObject().getClass().getMethod(name, classes);
-            return method.invoke(getObject(), args);
+            Method method=obj.getClass().getMethod(name, classes);
+            return method.invoke(obj, args);
         }
         catch(Exception e) {
             throw new MBeanException(e);
         }
     }
 
-    public static Class<?> getClassForName(String name) throws ClassNotFoundException {
+
+    public static boolean isSetMethod(Method method) {
+        return method.getParameterTypes().length == 1;
+    }
+
+    public static boolean isGetMethod(Method method) {
+        return method.getParameterTypes().length == 0 && method.getReturnType() != Void.TYPE;
+    }
+
+    public static boolean isIsMethod(Method method) {
+        return method.getParameterTypes().length == 0 &&
+          (method.getReturnType() == boolean.class || method.getReturnType() == Boolean.class);
+    }
+
+
+
+    protected static Class<?> getClassForName(String name) throws ClassNotFoundException {
         try {
             return Class.forName(name);
         }
@@ -189,243 +156,175 @@ public class ResourceDMBean implements DynamicMBean {
         throw new ClassNotFoundException("Class " + name + " cannot be found");
     }
 
-    private void findMethods() {
-        //find all methods but don't include methods from Object class
-        List<Method> methods = new ArrayList<Method>(Arrays.asList(getObject().getClass().getMethods()));
-        List<Method> objectMethods = new ArrayList<Method>(Arrays.asList(Object.class.getMethods()));
-        methods.removeAll(objectMethods);
+    protected void findMethods() {
+        // find all methods but don't include methods from Object class
+        List<Method> methods = new ArrayList<Method>(Arrays.asList(obj.getClass().getMethods()));
+        methods.removeAll(OBJECT_METHODS);
 
-        for(Method method:methods) {
-            //does method have @ManagedAttribute annotation?
+        for(Method method: methods) {
+            // does method have @ManagedAttribute annotation?
             if(method.isAnnotationPresent(ManagedAttribute.class) || method.isAnnotationPresent(Property.class)) {
                 exposeManagedAttribute(method);
             }
             //or @ManagedOperation
-            else if (method.isAnnotationPresent(ManagedOperation.class) || isMBeanAnnotationPresentWithExposeAll()){
-                exposeManagedOperation(method);
+            else if (method.isAnnotationPresent(ManagedOperation.class) || expose_all){
+                ManagedOperation op=method.getAnnotation(ManagedOperation.class);
+                ops.add(new MBeanOperationInfo(op != null? op.description() : "",method));
             }
         }
     }
 
-    /** find all methods but don't include methods from Object class */
-    /*private void findMethods() {
-        for(Class<?> clazz=getObject().getClass();clazz != null; clazz=clazz.getSuperclass()) {
-            if(clazz.equals(Object.class))
-                break;
-
-            Method[] methods=clazz.getDeclaredMethods();
-            for(Method method: methods) {
-                //does method have @ManagedAttribute annotation?
-                if(method.isAnnotationPresent(ManagedAttribute.class) || method.isAnnotationPresent(Property.class)) {
-                    exposeManagedAttribute(method);
-                }
-                //or @ManagedOperation
-                else if (method.isAnnotationPresent(ManagedOperation.class) || isMBeanAnnotationPresentWithExposeAll()){
-                    exposeManagedOperation(method);
-                }
-            }
-        }
-    }*/
-
-    private void exposeManagedOperation(Method method) {
-        ManagedOperation op=method.getAnnotation(ManagedOperation.class);                
-        String attName=method.getName();
-        if(isSetMethod(method) || isGetMethod(method)) {
-            attName=attName.substring(3);
-        }
-        else if(isIsMethod(method)) {
-            attName=attName.substring(2);
-        }
-        //expose unless we already exposed matching attribute field
-        boolean isAlreadyExposed=atts.containsKey(attName);
-        if(!isAlreadyExposed) {
-            ops.add(new MBeanOperationInfo(op != null? op.description() : "", method));
+    /** Provides field-based getter and/or setters for all attributes in atts if not present */
+    protected void fixFields() {
+        for(AttributeEntry attr: atts.values()) {
+            if(attr.getter == null)
+                attr.getter=findGetter(obj, attr.name);
+            if(attr.setter == null)
+                attr.setter=findSetter(obj, attr.name);
         }
     }
-    
-    private void exposeManagedAttribute(Method method){
-        String methodName=method.getName();
-        if(!methodName.startsWith("get") && !methodName.startsWith("set") && !methodName.startsWith("is")) {
-            if(log.isWarnEnabled())
-                log.warn("method name " + methodName + " doesn't start with \"get\", \"set\", or \"is\""
-                        + ", but is annotated with @ManagedAttribute: will be ignored");
-            return;
-        }
-        ManagedAttribute attr = method.getAnnotation(ManagedAttribute.class);
-        Property prop=method.getAnnotation(Property.class);
+
+
+
+    protected void exposeManagedAttribute(Method method) {
+        String           methodName=method.getName();
+        ManagedAttribute attr_annotation=method.getAnnotation(ManagedAttribute.class);
+        Property         prop=method.getAnnotation(Property.class);
 
         boolean expose_prop=prop != null && prop.exposeAsManagedAttribute();
-        boolean expose=attr != null || expose_prop;
+        boolean expose=attr_annotation != null || expose_prop;
         if(!expose)
             return;
 
-        // Is name field of @ManagedAttributed used?
-        String attributeName=attr != null? attr.name() : null;
-        if(attributeName != null && attributeName.trim().length() > 0)
-            attributeName=attributeName.trim();
-        else
-            attributeName=null;
-            
-        String descr=attr != null ? attr.description() : prop != null? prop.description() : null;
+        boolean writable=(prop != null && prop.writable()) || (attr_annotation != null && attr_annotation.writable());
 
-        boolean writeAttribute=false;
-        MBeanAttributeInfo info=null;
-        if(isSetMethod(method)) { // setter
-            attributeName=(attributeName==null)?methodName.substring(3):attributeName;
-            info=new MBeanAttributeInfo(attributeName,
-                                        method.getParameterTypes()[0].getCanonicalName(),
-                                        descr,
-                                        true,
-                                        true,
-                                        false);
-            writeAttribute=true;
-        }
-        else { // getter
-            if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
-                boolean hasSetter=atts.containsKey(attributeName);
-                //we found is method
-                if(methodName.startsWith("is")) {
-                    attributeName=(attributeName==null)?methodName.substring(2):attributeName;
-                    info=new MBeanAttributeInfo(attributeName,
-                                                method.getReturnType().getCanonicalName(),
-                                                descr,
-                                                true,
-                                                hasSetter,
-                                                true);
-                }
-                else {
-                    // this has to be get
-                    attributeName=(attributeName==null)?methodName.substring(3):attributeName;
-                    info=new MBeanAttributeInfo(attributeName,
-                                                method.getReturnType().getCanonicalName(),
-                                                descr,
-                                                true,
-                                                hasSetter,
-                                                false);
-                }
-            }
-            else {
-                if(log.isWarnEnabled()) {
-                    log.warn("Method " + method.getName() + " must have a valid return type and zero parameters");
-                }
-                //silently skip this method
-                return;
-            }
-        }
-            
-        AttributeEntry ae=atts.get(attributeName);
-        //is it a read method?
-        if(!writeAttribute) {
-            //we already have annotated field as read
-            if(ae instanceof FieldAttributeEntry && ae.getInfo().isReadable()) {
-                log.warn("not adding annotated method " + method + " since we already have read attribute");
-            }
-            //we already have annotated set method
-            else if(ae instanceof MethodAttributeEntry) {
-                MethodAttributeEntry mae=(MethodAttributeEntry)ae;
-                if(mae.hasSetMethod()) {
-                    atts.put(attributeName,
-                             new MethodAttributeEntry(mae.getInfo(), mae.getSetMethod(), method));
-                }
-            } //we don't have such entry
-            else {
-                atts.put(attributeName, new MethodAttributeEntry(info, findSetter(obj.getClass(), attributeName), method));
-            }
-        } //is it a set method?
+        // Is name of @ManagedAttributed or @Property used?
+        String attr_name=attr_annotation != null? attr_annotation.name() : prop != null? prop.name() : null;
+        if(attr_name != null && !attr_name.trim().isEmpty())
+            attr_name=attr_name.trim();
         else {
-            if(ae instanceof FieldAttributeEntry) {
-                //we already have annotated field as write
-                if(ae.getInfo().isWritable()) {
-                    log.warn("Not adding annotated method " + methodName + " since we already have writable attribute");
-                }
-                else {
-                    //we already have annotated field as read
-                    //lets make the field writable
-                    Field f = ((FieldAttributeEntry)ae).getField();
-                    MBeanAttributeInfo i=new MBeanAttributeInfo(ae.getInfo().getName(),
-                                                                f.getType().getCanonicalName(),
-                                                                descr,
-                                                                true,
-                                                                !Modifier.isFinal(f.getModifiers()),
-                                                                false);
-                    atts.put(attributeName,new FieldAttributeEntry(i,f));
-                }
+            // getFooBar() --> foo_bar
+            attr_name=Util.methodNameToAttributeName(methodName);
+            if(!atts.containsKey(attr_name)) {
+
+                // hmm, maybe we need to look for an attribute fooBar
+                String tmp=Util.methodNameToJavaAttributeName(methodName);
+                if(atts.containsKey(tmp))
+                    attr_name=tmp;
             }
-            //we already have annotated getOrIs method
-            else if(ae instanceof MethodAttributeEntry) {
-                MethodAttributeEntry mae=(MethodAttributeEntry)ae;
-                if(mae.hasIsOrGetMethod()) {
-                    atts.put(attributeName,
-                             new MethodAttributeEntry(info,
-                                                      method,
-                                                      mae.getIsOrGetMethod()));
+        }
+
+        String descr=attr_annotation != null ? attr_annotation.description() : prop != null? prop.description() : null;
+        AttributeEntry attr=atts.get(attr_name);
+        if(attr != null) {
+            if(isSetMethod(method)) {
+                if(attr.setter != null) {
+                    if(log.isWarnEnabled())
+                        log.warn("setter for \"" + attr_name + "\" is already defined (new method=" + method.getName() + ")");
                 }
-            } // we don't have such entry
+                else
+                    attr.setter=new MethodAccessor(method, obj);
+            }
             else {
-                atts.put(attributeName, new MethodAttributeEntry(info, method, findGetter(obj.getClass(), attributeName)));
+                if(attr.getter != null) {
+                    if(log.isWarnEnabled())
+                        log.warn("getter for \"" + attr_name + "\" is already defined (new method=" + method.getName() + ")");
+                }
+                else
+                    attr.getter=new MethodAccessor(method, obj);
             }
         }
-    }
-
-    
-    private static boolean isSetMethod(Method method) {
-        return(method.getName().startsWith("set") && 
-               method.getParameterTypes().length == 1 && 
-               method.getReturnType() == java.lang.Void.TYPE);
-    }
-
-    private static boolean isGetMethod(Method method) {
-        return(method.getParameterTypes().length == 0 && 
-               method.getReturnType() != java.lang.Void.TYPE && 
-               method.getName().startsWith("get"));
-    }
-
-    private static boolean isIsMethod(Method method) {
-        return(method.getParameterTypes().length == 0 && 
-              (method.getReturnType() == boolean.class || method.getReturnType() == Boolean.class) && 
-               method.getName().startsWith("is"));
-    }
-
-    public static Method findGetter(Class clazz, String name) {
-        try {
-            return clazz.getMethod("get" + name);
+        else { // create a new entry in atts
+            boolean is_setter=isSetMethod(method);
+            String type=is_setter? method.getParameterTypes()[0].getCanonicalName() : method.getReturnType().getCanonicalName();
+            MBeanAttributeInfo info=new MBeanAttributeInfo(attr_name, type, descr, true, writable, methodName.startsWith("is"));
+            AttributeEntry entry=new AttributeEntry(Util.methodNameToAttributeName(methodName), info);
+            if(is_setter)
+                entry.setter(new MethodAccessor(method, obj));
+            else
+                entry.getter(new MethodAccessor(method, obj));
+            atts.put(attr_name, entry);
         }
-        catch(NoSuchMethodException e) {
-        }
-
-        try {
-            return clazz.getMethod("is" + name);
-        }
-        catch(NoSuchMethodException ex) {
-        }
-        return null;
     }
 
 
-    public static Method findSetter(Class clazz, String name) {
-        try {
-            return clazz.getMethod("set" + name);
-        }
-        catch(NoSuchMethodException e) {
+
+    /** Finds an accessor for an attribute. Tries to find getAttrName(), isAttrName(), attrName() methods. If not
+     * found, tries to use reflection to get the value of attr_name. If still not found, creates a NullAccessor. */
+    protected static Accessor findGetter(Object target, String attr_name) {
+        final String name=Util.attributeNameToMethodName(attr_name);
+        Class<?> clazz=target.getClass();
+        Method   method=Util.findMethod(target, Arrays.asList("get" + name, "is" + name, toLowerCase(name)));
+
+        if(method != null && (isGetMethod(method) || isIsMethod(method)))
+            return new MethodAccessor(method, target);
+
+
+         // 4. Find a field last_name
+        Field field=Util.getField(clazz, attr_name);
+        if(field != null)
+            return new FieldAccessor(field, target);
+
+        return new NoopAccessor();
+    }
+
+    /** Finds an accessor for an attribute. Tries to find setAttrName(), attrName() methods. If not
+     * found, tries to use reflection to set the value of attr_name. If still not found, creates a NullAccessor. */
+    protected static Accessor findSetter(Object target, String attr_name) {
+        final String name=Util.attributeNameToMethodName(attr_name);
+        final String fluent_name=toLowerCase(name);
+        Class<?> clazz=target.getClass();
+        Class<?> field_type=null;
+        Field field=Util.getField(clazz, attr_name);
+        field_type=field != null? field.getType() : null;
+
+        if(field_type != null) {
+            Method method=Util.findMethod(target, Arrays.asList(fluent_name, "set" + name), field_type);
+            if(method != null && isSetMethod(method))
+                return new MethodAccessor(method, target);
         }
 
-        return null;
+        // Find all methods but don't include methods from Object class
+        List<Method> methods=new ArrayList<Method>(Arrays.asList(clazz.getMethods()));
+        methods.removeAll(OBJECT_METHODS);
+
+        for(Method method: methods) {
+            String method_name=method.getName();
+            if((method_name.equals(name) || method_name.equals(fluent_name)) && isSetMethod(method))
+                return new MethodAccessor(method, target);
+        }
+
+        // Find a field last_name
+        if(field != null)
+            return new FieldAccessor(field, target);
+
+        return new NoopAccessor();
+    }
+
+    /** Returns a string with the first letter being lowercase */
+    protected static String toLowerCase(String input) {
+        if(Character.isUpperCase(input.charAt(0)))
+            return input.substring(0, 1).toLowerCase() + input.substring(1);
+        return input;
     }
 
 
-    private void findFields() {
-        //traverse class hierarchy and find all annotated fields
-        for(Class<?> clazz=getObject().getClass();clazz != null; clazz=clazz.getSuperclass()) {
+    protected void findFields() {
+        // traverse class hierarchy and find all annotated fields
+        for(Class<?> clazz=obj.getClass(); clazz != null && clazz != Object.class; clazz=clazz.getSuperclass()) {
 
             Field[] fields=clazz.getDeclaredFields();
-            for(Field field:fields) {
+            for(Field field: fields) {
                 ManagedAttribute attr=field.getAnnotation(ManagedAttribute.class);
                 Property prop=field.getAnnotation(Property.class);
                 boolean expose_prop=prop != null && prop.exposeAsManagedAttribute();
                 boolean expose=attr != null || expose_prop;
 
                 if(expose) {
-                    String fieldName = Util.attributeNameToMethodName(field.getName());
+                    String fieldName=attr != null? attr.name() : (prop != null? prop.name() : null);
+                    if(fieldName != null && fieldName.trim().isEmpty())
+                        fieldName=field.getName();
+
                     String descr=attr != null? attr.description() : prop.description();
                     boolean writable=attr != null? attr.writable() : prop.writable();
 
@@ -436,145 +335,142 @@ public class ResourceDMBean implements DynamicMBean {
                                                                    !Modifier.isFinal(field.getModifiers()) && writable,
                                                                    false);
 
-                    atts.put(fieldName, new FieldAttributeEntry(info, field));
+                    atts.put(fieldName, new AttributeEntry(field.getName(), info));
                 }
             }
         }
     }
 
-    private Attribute getNamedAttribute(String name) {
-        Attribute result=null;
-        if(name.equals(ResourceDMBean.MBEAN_DESCRITION)) {
-            result=new Attribute(ResourceDMBean.MBEAN_DESCRITION, this.description);
+
+    protected Attribute getNamedAttribute(String name) {
+        AttributeEntry entry=atts.get(name);
+        if(entry != null) {
+            try {
+                return new Attribute(name, entry.getter.invoke(null));
+            }
+            catch(Exception e) {
+                log.warn(Util.getMessage("AttrReadFailure", name, e));
+            }
         }
         else {
-            AttributeEntry entry=atts.get(name);
-            if(entry != null) {
-                try {
-                    result=new Attribute(name, entry.invoke(null));
-                }
-                catch(Exception e) {
-                    log.warn(Util.getMessage("AttrReadFailure", name, e));
-                }
-            }
-            else {
-                log.warn(Util.getMessage("MissingAttribute", name));
-            }
+            log.warn(Util.getMessage("MissingAttribute", name));
         }
-        return result;
+        return null;
     }
 
-    private boolean setNamedAttribute(Attribute attribute) {
-        boolean result=false;
+
+    protected boolean setNamedAttribute(Attribute attribute) {
         AttributeEntry entry=atts.get(attribute.getName());
         if(entry != null) {
             try {
-                entry.invoke(attribute);
-                result=true;
+                entry.setter.invoke(attribute.getValue());
+                return true;
             }
-            catch(Exception e) {
+            catch(Throwable e) {
                 log.warn(Util.getMessage("AttrWriteFailure", attribute.getName(), e));
             }            
         }
         else {
             log.warn(Util.getMessage("MissingAttribute", attribute.getName()));
         }
-        return result;
+        return false;
     }
     
     
 
-    private boolean isMBeanAnnotationPresentWithExposeAll(){
-        Class<? extends Object> c=getObject().getClass();
-    	return c.isAnnotationPresent(MBean.class) && c.getAnnotation(MBean.class).exposeAll();
-    }
-       
-    private class MethodAttributeEntry implements AttributeEntry {
 
-        final MBeanAttributeInfo info;
 
-        final Method isOrGetmethod;
 
-        final Method setMethod;
+    protected static class AttributeEntry {
 
-        public MethodAttributeEntry(final MBeanAttributeInfo info,
-                                    final Method setMethod,
-                                    final Method isOrGetMethod) {
-            super();
+        /** The name of the field or method. Can be different from the key in atts when name in @Property or
+         * @ManagedAttribute  was used */
+        protected final String             name;
+        protected final MBeanAttributeInfo info;
+        protected Accessor                 getter;
+        protected Accessor                 setter;
+
+        protected AttributeEntry(String name, MBeanAttributeInfo info) {
+            this(name, info, null, null);
+        }
+
+        protected AttributeEntry(String name, MBeanAttributeInfo info, Accessor getter, Accessor setter) {
+            this.name=name;
             this.info=info;
-            this.setMethod=setMethod;
-            this.isOrGetmethod=isOrGetMethod;
+            this.getter=getter;
+            this.setter=setter;
         }
 
-        public Object invoke(Attribute a) throws Exception {
-            if(a == null && isOrGetmethod != null)
-                return isOrGetmethod.invoke(getObject());
-            else if(a != null && setMethod != null)
-                return setMethod.invoke(getObject(), a.getValue());
-            else
-                return null;
-        }
+        protected Accessor       getter()                    {return getter;}
+        protected AttributeEntry getter(Accessor new_getter) {this.getter=new_getter; return this;}
+        protected Accessor       setter()                    {return setter;}
+        protected AttributeEntry setter(Accessor new_setter) {this.setter=new_setter; return this;}
 
-        public MBeanAttributeInfo getInfo() {
-            return info;
-        }
 
-        public boolean hasIsOrGetMethod() {
-            return isOrGetmethod != null;
-        }
-
-        public boolean hasSetMethod() {
-            return setMethod != null;
-        }
-
-        public Method getIsOrGetMethod() {
-            return isOrGetmethod;
-        }
-
-        public Method getSetMethod() {
-            return setMethod;
+        public String toString() {
+            StringBuilder sb=new StringBuilder();
+            sb.append("AttributeEntry[" + name);
+            if(getter != null)
+                sb.append(", getter=" + getter);
+            if(setter() != null)
+                sb.append(", setter=" + setter);
+            sb.append("]");
+            return sb.toString();
         }
     }
 
-    private class FieldAttributeEntry implements AttributeEntry {
 
-        private final MBeanAttributeInfo info;
+    protected static interface Accessor {
+        /** Invokes a getter or setter. For the getter, new_val must be ignored (null) */
+        public Object invoke(Object new_val) throws Exception;
+    }
 
-        private final Field field;
 
-        public FieldAttributeEntry(final MBeanAttributeInfo info,final Field field) {
-            super();
-            this.info=info;
+    protected static class MethodAccessor implements Accessor {
+        protected final Method method;
+        protected final Object target;
+
+        public MethodAccessor(Method method, Object target) {
+            this.method=method;
+            this.target=target;
+        }
+
+        public Object invoke(Object new_val) throws Exception {
+            return new_val != null? method.invoke(target, new_val) : method.invoke(target);
+        }
+
+        public String toString() {return method.getName() + "()";}
+    }
+
+    protected static class FieldAccessor implements Accessor {
+        protected final Field  field;
+        protected final Object target;
+
+        public FieldAccessor(Field field, Object target) {
             this.field=field;
-            if(!field.isAccessible()) {
+            this.target=target;
+            if(!field.isAccessible())
                 field.setAccessible(true);
-            }
-        }
-        
-        public Field getField(){
-            return field;
         }
 
-        public Object invoke(Attribute a) throws Exception {
-            if(a == null) {
-                return field.get(getObject());
-            }
+        public Object invoke(Object new_val) throws Exception {
+            if(new_val == null)
+                return field.get(target);
             else {
-                field.set(getObject(), a.getValue());
+                field.set(target, new_val);
                 return null;
             }
         }
 
-        public MBeanAttributeInfo getInfo() {
-            return info;
-        }
-
+        public String toString() {return "field[" + field.getName() + "]";}
     }
 
-    private interface AttributeEntry {
-        public Object invoke(Attribute a) throws Exception;
 
-        public MBeanAttributeInfo getInfo();
+    protected static class NoopAccessor implements Accessor {
+        public Object invoke(Object new_val) throws Exception {return null;}
+
+        public String toString() {return "NoopAccessor";}
     }
+
 
 }

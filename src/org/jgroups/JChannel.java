@@ -450,7 +450,7 @@ public class JChannel extends Channel {
         return state == State.CONNECTED ? my_view : null;
     }
     
-    @ManagedAttribute(name="View")
+    @ManagedAttribute(name="view")
     public String getViewAsString() {
         View v=getView();
         return v != null ? v.toString() : "n/a";
@@ -462,10 +462,10 @@ public class JChannel extends Channel {
 
     public Address getAddress() {return state == State.CLOSED ? null : local_addr;}
 
-    @ManagedAttribute(name="Address")
+    @ManagedAttribute(name="address")
     public String getAddressAsString() {return local_addr != null? local_addr.toString() : "n/a";}
 
-    @ManagedAttribute(name="Address (UUID)")
+    @ManagedAttribute(name="address_uuid")
     public String getAddressAsUUID() {return local_addr instanceof UUID? ((UUID)local_addr).toStringLong() : null;}
 
     public String getName() {return name;}

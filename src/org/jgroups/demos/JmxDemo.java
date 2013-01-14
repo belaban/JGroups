@@ -39,7 +39,7 @@ public class JmxDemo extends NotificationBroadcasterSupport {
     @ManagedAttribute
     public void setNumber(int num) {number=num;}
 
-    @ManagedAttribute(name="NumberAsString")
+    @ManagedAttribute
     public String getNumberAsString() {
         return String.valueOf(number);
     }
@@ -97,7 +97,7 @@ public class JmxDemo extends NotificationBroadcasterSupport {
     public int add(int a, int b) {return a+b;} // exposed because @MBean is on the class
 
 
-    
+
 
 
     public static void main(String[] args) {

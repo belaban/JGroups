@@ -972,7 +972,13 @@ public class UtilTest {
         _testMethodNameToAttributeName("setOOBMinPoolSize", "oob_min_pool_size");
         _testMethodNameToAttributeName("isOOBThreadPoolEnabled", "oob_thread_pool_enabled");
         _testMethodNameToAttributeName("OOBMinPoolSize", "oob_min_pool_size");
-        _testMethodNameToAttributeName("inetAddressMethod", "inet_address_method"); 
+        _testMethodNameToAttributeName("inetAddressMethod", "inet_address_method");
+        _testMethodNameToAttributeName("getAge", "age");
+        _testMethodNameToAttributeName("get", "get");
+        _testMethodNameToAttributeName("set", "set");
+        _testMethodNameToAttributeName("is", "is");
+        _testMethodNameToAttributeName("age", "age");
+        _testMethodNameToAttributeName("lastName", "last_name");
     }
 
     private static void _testMethodNameToAttributeName(String input, String expected_output) {
