@@ -316,6 +316,9 @@ public abstract class Channel /* implements Transport */ {
     */
     abstract public void setName(String name);
 
+    /** Names a channel, same as {@link #setName(String)} */
+    abstract public Channel name(String name);
+
 
    /**
     * Returns the cluster name of the group of which the channel is a member. This is the object

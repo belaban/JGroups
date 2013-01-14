@@ -5,8 +5,6 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.blocks.LazyRemovalCache;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -1871,7 +1869,6 @@ public abstract class TP extends Protocol {
         int                                        num_bundling_tasks=0;
         long                                       last_bundle_time; // in nanoseconds
         final ReentrantLock                        lock=new ReentrantLock();
-        final Log                                  log=LogFactory.getLog(getClass());
 
         public void start() {
         }
@@ -2035,7 +2032,6 @@ public abstract class TP extends Protocol {
         int                                        num_msgs=0;
         protected final AtomicInteger              thread_cnt=new AtomicInteger(0);
         final ReentrantLock                        lock=new ReentrantLock();
-        final Log                                  log=LogFactory.getLog(getClass());
 
         public void start() {}
         public void stop() {}
@@ -2178,7 +2174,6 @@ public abstract class TP extends Protocol {
         final int                          threshold;
         final BlockingQueue<Message>       buffer;
         volatile Thread                    bundler_thread;
-        final Log                          log=LogFactory.getLog(getClass());
 
         /** Keys are destinations, values are lists of Messages */
         final Map<SingletonAddress,List<Message>>  msgs=new HashMap<SingletonAddress,List<Message>>(36);
@@ -2357,7 +2352,6 @@ public abstract class TP extends Protocol {
         final int                                  threshold;
         final BlockingQueue<Message>               buffer;
         volatile Thread                            bundler_thread;
-        final Log                                  log=LogFactory.getLog(getClass());
 
         /** Keys are destinations, values are lists of Messages */
         final Map<SingletonAddress,List<Message>>  msgs=new HashMap<SingletonAddress,List<Message>>(36);

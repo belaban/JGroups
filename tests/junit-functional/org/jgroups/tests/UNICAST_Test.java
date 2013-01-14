@@ -155,7 +155,7 @@ public class UNICAST_Test {
     }
 
 
-    private void printStats(int num_received) {
+    private static void printStats(int num_received) {
         System.out.println("-- num received=" + num_received);
     }
 

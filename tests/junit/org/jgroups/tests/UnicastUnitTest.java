@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -25,10 +26,7 @@ public class UnicastUnitTest extends ChannelTestBase {
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        if(ch2 != null)
-            ch2.close();
-        if(ch1 != null)
-            ch1.close();
+        Util.close(ch2, ch1);
     }
 
 

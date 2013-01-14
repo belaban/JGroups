@@ -484,6 +484,10 @@ public class JChannel extends Channel {
         }
     }
 
+    public JChannel name(String name) {setName(name); return this;}
+
+    public JChannel receiver(Receiver r) {setReceiver(r); return this;}
+
     @ManagedAttribute(description="Returns cluster name this channel is connected to")
     public String getClusterName() {return state == State.CONNECTED? cluster_name : null;}
 
