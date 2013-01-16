@@ -276,7 +276,7 @@ public class Util {
                 break;
             Util.sleep(interval);
         }
-        assert list.size() == expected_size : "list doesn't have the expected (" + expected_size + " elements: " + list;
+        assert list.size() == expected_size : "list doesn't have the expected (" + expected_size + ") elements: " + list;
     }
 
 

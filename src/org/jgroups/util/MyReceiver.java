@@ -24,10 +24,10 @@ public class MyReceiver<T> extends ReceiverAdapter {
         }
     }
 
-    public List<T>    list()                {return list;}
-    public MyReceiver verbose(boolean flag) {verbose=flag; return this;}
-    public String     name()                {return name;}
-    public MyReceiver name(String name)     {this.name=name; return this;}
-    public MyReceiver reset()               {list.clear(); return this;}
-    public int        size()                {return list.size();}
+    public List<T>       list()                {return list;}
+    public MyReceiver<T> verbose(boolean flag) {verbose=flag; return this;}
+    public String        name()                {return name;}
+    public MyReceiver<T> name(String name)     {this.name=name; return this;}
+    public MyReceiver<T> reset()               {list.clear(); return this;}
+    public int           size()                {return list.size();}
 }
