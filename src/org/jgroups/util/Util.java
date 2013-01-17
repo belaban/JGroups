@@ -259,6 +259,27 @@ public class Util {
     }
 
 
+    /**
+     * Waits until a list has the expected number of elements. Throws an exception if not met
+     * @param list The list
+     * @param expected_size The expected size
+     * @param timeout The time to wait (in ms)
+     * @param interval The interval at which to get the size of the list (in ms)
+     * @param <T> The type of the list
+     */
+    public static <T> void waitUntilListHasSize(List<T> list, int expected_size, long timeout, long interval) {
+        if(list == null)
+            throw new IllegalStateException("list is null");
+        long target_time=System.currentTimeMillis() + timeout;
+        while(System.currentTimeMillis() < target_time) {
+            if(list.size() == expected_size)
+                break;
+            Util.sleep(interval);
+        }
+        assert list.size() == expected_size : "list doesn't have the expected (" + expected_size + ") elements: " + list;
+    }
+
+
     public static void addFlush(Channel ch, FLUSH flush) {
         if(ch == null || flush == null)
             throw new IllegalArgumentException("ch and flush have to be non-null");

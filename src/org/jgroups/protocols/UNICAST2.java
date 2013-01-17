@@ -412,12 +412,21 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 switch(hdr.type) {
                     case Unicast2Header.DATA:      // received regular message
                         handleDataReceived(src, hdr.seqno, hdr.conn_id, hdr.first, msg, evt);
+                        if(hdr.first)
+                            sendAck(src, hdr.seqno);
                         return null; // we pass the deliverable message up in handleDataReceived()
                     case Unicast2Header.XMIT_REQ:  // received ACK for previously sent message
                         handleXmitRequest(src, (SeqnoList)msg.getObject());
                         break;
                     case Unicast2Header.SEND_FIRST_SEQNO:
                         handleResendingOfFirstMessage(src, hdr.seqno);
+                        break;
+                    case Unicast2Header.ACK:
+                        if(log.isTraceEnabled())
+                            log.trace(local_addr + " <-- ACK(" + src + "," + hdr.seqno + ")");
+                        SenderEntry entry=send_table.get(msg.getSrc());
+                        if(entry != null)
+                            entry.connEstablished(true);
                         break;
                     case Unicast2Header.STABLE:
                         stable(msg.getSrc(), hdr.conn_id, hdr.seqno, hdr.high_seqno);
@@ -470,7 +479,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 long sleep=10;
                 while(running) {
                     try {
-                        msg.putHeader(this.id, Unicast2Header.createDataHeader(seqno,send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
+                        msg.putHeader(this.id, Unicast2Header.createDataHeader(seqno, send_conn_id, seqno == DEFAULT_FIRST_SEQNO));
                         entry.sent_msgs.add(seqno,msg);  // add *including* UnicastHeader, adds to retransmitter
                         if(conn_expiry_timeout > 0)
                             entry.update();
@@ -611,10 +620,14 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                         log.error("sending of STABLE messages failed", t);
                     }
                 }
+
+                public String toString() {
+                    return UNICAST2.class.getSimpleName() + ": StableTask (interval=" + stable_interval + " ms)";
+                }
             };
             stable_task_future=timer.scheduleWithFixedDelay(stable_task, stable_interval, stable_interval, TimeUnit.MILLISECONDS);
             if(log.isTraceEnabled())
-                log.trace(local_addr + ": stable task started");
+                log.trace(local_addr + ": stable task started (interval=" + stable_interval + ")");
         }
     }
 
@@ -938,6 +951,15 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         down_prot.down(new Event(Event.MSG, msg));
     }
 
+    protected void sendAck(Address dest, long seqno) {
+        Message msg=new Message(dest).setFlag(Message.OOB);
+        Unicast2Header hdr=Unicast2Header.createAckHeader(seqno);
+        msg.putHeader(this.id, hdr);
+        if(log.isTraceEnabled())
+            log.trace(local_addr + " --> ACK(" + dest + "," + seqno + ")");
+        down_prot.down(new Event(Event.MSG, msg));
+    }
+
     @ManagedOperation(description="Closes connections that have been idle for more than conn_expiry_timeout ms")
     public void reapIdleConnections() {
         if(conn_expiry_timeout <= 0)
@@ -982,9 +1004,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         public static final byte XMIT_REQ         = 1;
         public static final byte SEND_FIRST_SEQNO = 2;
         public static final byte STABLE           = 3;
+        public static final byte ACK              = 4;
 
         byte    type;
-        long    seqno;       // DATA and STABLE
+        long    seqno;       // DATA, STABLE, SEND_FIRST_SEQNO and ACK
         long    high_seqno;  // STABLE
         short   conn_id;     // DATA, STABLE
         boolean first;       // DATA
@@ -1011,6 +1034,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
         public static Unicast2Header createSendFirstSeqnoHeader(long seqno_received) {
             return new Unicast2Header(SEND_FIRST_SEQNO, seqno_received);
+        }
+
+        public static Unicast2Header createAckHeader(long acked_seqno) {
+            return new Unicast2Header(ACK, acked_seqno);
         }
 
         protected Unicast2Header(byte type) {
@@ -1046,7 +1073,6 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             return conn_id;
         }
 
-
         public boolean isFirst() {
             return first;
         }
@@ -1065,6 +1091,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 case XMIT_REQ:         return "XMIT_REQ";
                 case SEND_FIRST_SEQNO: return "SEND_FIRST_SEQNO";
                 case STABLE:           return "STABLE";
+                case ACK:              return "ACK";
                 default:               return "<unknown>";
             }
         }
@@ -1083,6 +1110,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     retval+=Util.size(seqno, high_seqno) + Global.SHORT_SIZE; // conn_id
                     break;
                 case SEND_FIRST_SEQNO:
+                case ACK:
                     retval+=Util.size(seqno);
                     break;
             }
@@ -1110,6 +1138,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     out.writeShort(conn_id);
                     break;
                 case SEND_FIRST_SEQNO:
+                case ACK:
                     Util.writeLong(seqno, out);
                     break;
             }
@@ -1132,6 +1161,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     conn_id=in.readShort();
                     break;
                 case SEND_FIRST_SEQNO:
+                case ACK:
                     seqno=Util.readLong(in);
                     break;
             }
@@ -1146,6 +1176,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         final AtomicLong           sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
         final short                send_conn_id;
         protected final AtomicLong timestamp=new AtomicLong(0);
+        protected volatile boolean ack_received; // true if ack for the first message was received
 
         public SenderEntry(short send_conn_id) {
             this.send_conn_id=send_conn_id;
@@ -1154,15 +1185,18 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             update();
         }
 
-
-        void update() {timestamp.set(System.currentTimeMillis());}
-        long age()    {return System.currentTimeMillis() - timestamp.longValue();}
+        protected void        update()                      {timestamp.set(System.currentTimeMillis());}
+        protected long        age()                         {return System.currentTimeMillis() - timestamp.longValue();}
+        protected boolean     connEstablished()             {return ack_received;}
+        protected SenderEntry connEstablished(boolean flag) {ack_received=flag; return this;}
+        protected Message     getFirstMessage()             {return sent_msgs.get(sent_msgs.getLow() +1);}
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
             if(sent_msgs != null)
                 sb.append(sent_msgs).append(", ");
-            sb.append("send_conn_id=" + send_conn_id).append(" (" + age() + " ms old)");
+            sb.append("send_conn_id=" + send_conn_id).append(" (" + age() + " ms old) [")
+              .append((ack_received? "acked" : "not acked") + "])");
             return sb.toString();
         }
     }
@@ -1225,6 +1259,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         public void run() {
             reapIdleConnections();
         }
+
+        public String toString() {
+            return UNICAST2.class.getSimpleName() + ": ConnectionReaper (interval=" + conn_expiry_timeout + " ms)";
+        }
     }
 
     /**
@@ -1234,20 +1272,54 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     protected class RetransmitTask implements Runnable {
 
         public void run() {
-            for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
-                Address target=entry.getKey(); // target to send retransmit requests to
-                ReceiverEntry val=entry.getValue();
-                Table<Message> buf=val != null? val.received_msgs : null;
-                if(buf != null && buf.getNumMissing() > 0) {
-                    SeqnoList missing=buf.getMissing();
-                    if(missing != null) {
-                        // Just a double-check to avoid unneeded retransmissions: messages might have been added to or
-                        // removed from the table after calling getMissing(), and so we remove all
-                        // seqnos <= the highest delivered seqno from the retransmit list
-                        missing.remove(buf.getHighestDelivered());
-                        if(missing.size()  > 0)
-                            retransmit(missing, target);
-                    }
+            triggerXmit();
+        }
+
+        public String toString() {
+            return UNICAST2.class.getSimpleName() + ": RetransmitTask (interval=" + xmit_interval + " ms)";
+        }
+    }
+
+    @ManagedOperation(description="Triggers the retransmission task, asking all senders for missing messages")
+    public void triggerXmit() {
+        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+            Address target=entry.getKey(); // target to send retransmit requests to
+            ReceiverEntry val=entry.getValue();
+            Table<Message> buf=val != null? val.received_msgs : null;
+            if(buf != null && buf.getNumMissing() > 0) {
+                SeqnoList missing=buf.getMissing();
+                if(missing != null) {
+                    // Just a double-check to avoid unneeded retransmissions: messages might have been added to or
+                    // removed from the table after calling getMissing(), and so we remove all
+                    // seqnos <= the highest delivered seqno from the retransmit list
+                    missing.remove(buf.getHighestDelivered());
+                    if(missing.size()  > 0)
+                        retransmit(missing, target);
+                }
+            }
+        }
+
+        // Now check all SenderEntries for !ack_received and resend the first message if true
+        // (https://issues.jboss.org/browse/JGRP-1563)
+        for(SenderEntry entry: send_table.values()) {
+            if(!entry.connEstablished()) {
+                Message msg=entry.getFirstMessage();
+                Unicast2Header hdr=(Unicast2Header)msg.getHeader(id);
+                if(hdr.first) {
+                    if(log.isTraceEnabled())
+                        log.trace(local_addr + ": resending first message " + hdr.seqno + " to " + msg.getDest());
+                    down_prot.down(new Event(Event.MSG,msg));
+                }
+                else {
+                    Message copy=msg.copy();
+                    hdr=(Unicast2Header)copy.getHeader(id);
+                    Unicast2Header newhdr=hdr.copy();
+                    newhdr.first=true;
+                    copy.putHeader(id, newhdr);
+                    if(log.isTraceEnabled())
+                        log.trace(local_addr + ": resending first message " + hdr.seqno + " to " + msg.getDest());
+                    down_prot.down(new Event(Event.MSG, copy));
+
                 }
             }
         }

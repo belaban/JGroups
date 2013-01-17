@@ -72,6 +72,7 @@ public abstract class Protocol {
     @Property(name="level", description="Sets the logger level (see javadocs)")
     public void          setLevel(String level)            {log.setLevel(level);}
     public String        getLevel()                        {return log.getLevel();}
+    public Protocol      level(String level)               {this.log.setLevel(level); return this;}
     public boolean       isErgonomics()                    {return ergonomics;}
     public void          setErgonomics(boolean ergonomics) {this.ergonomics=ergonomics;}
     public ProtocolStack getProtocolStack()                {return stack;}
