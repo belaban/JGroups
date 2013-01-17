@@ -186,10 +186,8 @@ public class ClientGmsImpl extends GmsImpl {
                 }
 
                 // send VIEW_ACK to sender of view
-                Message view_ack=new Message(coord, null, null);
-                view_ack.setFlag(Message.OOB);
-                GMS.GmsHeader tmphdr=new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK);
-                view_ack.putHeader(gms.getId(), tmphdr);
+                Message view_ack=new Message(coord).setFlag(Message.OOB)
+                  .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK));
                 gms.getDownProtocol().down(new Event(Event.MSG, view_ack));
                 return;
             }
