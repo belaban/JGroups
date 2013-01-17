@@ -209,7 +209,6 @@ public class SCOPE extends Protocol {
 
 
     public Object up(Event evt) {
-
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
@@ -229,7 +228,6 @@ public class SCOPE extends Protocol {
 
                 MessageQueue queue=getOrCreateQueue(msg.getSrc(), hdr.scope);
                 queue.add(msg);
-
                 if(!queue.acquire())
                     return null;
 
@@ -245,6 +243,34 @@ public class SCOPE extends Protocol {
         return up_prot.up(evt);
     }
 
+    public void up(MessageBatch batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
+            if(!msg.isFlagSet(Message.SCOPED) || msg.isFlagSet(Message.OOB)) // we don't handle unscoped or OOB messages
+                continue;
+
+            ScopeHeader hdr=(ScopeHeader)msg.getHeader(id);
+            if(hdr == null) {
+                log.error("message doesn't have a ScopeHeader attached");
+                continue;
+            }
+
+            it.remove(); // we do handle the message from here on
+
+            if(hdr.type == ScopeHeader.EXPIRE) {
+                removeScope(msg.getSrc(), hdr.scope);
+                continue;
+            }
+
+            MessageQueue queue=getOrCreateQueue(msg.getSrc(), hdr.scope);
+            queue.add(msg);
+            if(queue.acquire())
+                thread_pool.execute(new QueueThread(queue));
+        }
+
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     protected MessageQueue getOrCreateQueue(Address sender, short scope) {
         ConcurrentMap<Short,MessageQueue> val=queues.get(sender);

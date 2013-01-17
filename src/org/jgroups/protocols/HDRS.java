@@ -7,6 +7,7 @@ import org.jgroups.Header;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 
 import java.util.Map;
 
@@ -29,7 +30,6 @@ public class HDRS extends Protocol {
         StringBuilder sb=new StringBuilder();
         int hdrs_size=0;
         for(Map.Entry<Short,Header> entry: hdrs.entrySet()) {
-
             Class clazz=ClassConfigurator.getProtocol(entry.getKey());
             String name=clazz != null? clazz.getSimpleName() : null;
             Header hdr=entry.getValue();
@@ -53,7 +53,13 @@ public class HDRS extends Protocol {
         return up_prot.up(evt); // Pass up to the layer above us
     }
 
-
+    public void up(MessageBatch batch) {
+        for(Message msg: batch)
+            if(msg !=  null)
+                printMessage(msg, "up");
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     public Object down(Event evt) {
         if(evt.getType() == Event.MSG) {

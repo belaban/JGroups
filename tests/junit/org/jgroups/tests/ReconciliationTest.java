@@ -251,41 +251,33 @@ public class ReconciliationTest extends ChannelTestBase {
     }
 
     private static void insertDISCARD(JChannel ch, Address exclude) throws Exception {
-        DISCARD discard=new DISCARD();
+        DISCARD discard=new DISCARD().localAddress(ch.getAddress());
         discard.setExcludeItself(true);
         discard.addIgnoreMember(exclude); // ignore messages from this member
         ch.getProtocolStack().insertProtocol(discard, ProtocolStack.BELOW, NAKACK2.class);
     }
 
     private static void removeDISCARD(JChannel...channels) throws Exception {
-        for(JChannel ch:channels) {
-            ch.getProtocolStack().removeProtocol("DISCARD");
-        }
+        for(JChannel ch:channels)
+            ch.getProtocolStack().removeProtocol(DISCARD.class);
     }
 
     private interface FlushTrigger {
         void triggerFlush();
     }
 
-    private class MyReceiver extends ReceiverAdapter {
-        Map<Address,List<Integer>> msgs=new HashMap<Address,List<Integer>>(10);
-
-        Channel channel;
-
-        String name;
+    protected static class MyReceiver extends ReceiverAdapter {
+        protected final Map<Address,List<Integer>> msgs=new HashMap<Address,List<Integer>>(10);
+        protected final Channel channel;
+        protected final String  name;
 
         public MyReceiver(Channel ch,String name) {
             this.channel=ch;
             this.name=name;
         }
 
-        public Map<Address,List<Integer>> getMsgs() {
-            return msgs;
-        }
-
-        public void reset() {
-            msgs.clear();
-        }
+        public Map<Address,List<Integer>> getMsgs() {return msgs;}
+        public void                       reset()   {msgs.clear();}
 
         public void receive(Message msg) {
             List<Integer> list=msgs.get(msg.getSrc());
@@ -294,13 +286,7 @@ public class ReconciliationTest extends ChannelTestBase {
                 msgs.put(msg.getSrc(), list);
             }
             list.add((Integer)msg.getObject());
-            log.debug("[" + name
-                               + " / "
-                               + channel.getAddress()
-                               + "]: received message from "
-                               + msg.getSrc()
-                               + ": "
-                               + msg.getObject());
+            System.out.println(name + ": <-- " + msg.getObject() + " from " + msg.getSrc());
         }
     }
 

@@ -24,7 +24,9 @@ SingleMessage:
 
 MessageList:
 - length: int. Number of messages in the list
+- dest address: Address
 - src address: Address
+- cluster-name: UTF-8 string
 - 1-m Messages: --> SingleMessage, but with no src and dest addresses
 
 

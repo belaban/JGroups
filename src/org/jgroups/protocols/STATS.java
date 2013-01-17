@@ -7,6 +7,7 @@ import org.jgroups.Message;
 import org.jgroups.Address;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.util.MessageBatch;
 
 import java.util.*;
 
@@ -75,6 +76,11 @@ public class STATS extends Protocol {
     }
 
 
+    public void up(MessageBatch batch) {
+        for(Message msg: batch)
+            updateStats(msg, UP);
+        up_prot.up(batch);
+    }
 
     public Object down(Event evt) {
         if(evt.getType() == Event.MSG) {

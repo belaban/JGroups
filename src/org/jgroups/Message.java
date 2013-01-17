@@ -578,7 +578,7 @@ public class Message implements Streamable {
         Message retval=copy(copy_buffer, false);
         for(Map.Entry<Short,Header> entry: getHeaders().entrySet()) {
             short id=entry.getKey();
-            if(id >= starting_id || containsId(id, copy_only_ids))
+            if(id >= starting_id || Util.containsId(id, copy_only_ids))
                 retval.putHeader(id, entry.getValue());
         }
         return retval;
@@ -707,9 +707,10 @@ public class Message implements Streamable {
     * 
     * @param src
     * @param out
+    * @param excluded_headers Don't marshal headers that are part of excluded_headers
     * @throws Exception
     */
-    public void writeToNoAddrs(Address src, DataOutputStream out) throws Exception {
+    public void writeToNoAddrs(Address src, DataOutputStream out, short ... excluded_headers) throws Exception {
         byte leading=0;
 
         boolean write_src_addr=src == null || src_addr != null && !src_addr.equals(src);
@@ -737,12 +738,14 @@ public class Message implements Streamable {
         }
 
         // 6. headers
-        int size=headers.size();
+        int size=headers.size(excluded_headers);
         out.writeShort(size);
         final short[]  ids=headers.getRawIDs();
         final Header[] hdrs=headers.getRawHeaders();
         for(int i=0; i < ids.length; i++) {
             if(ids[i] > 0) {
+                if(excluded_headers != null && Util.containsId(ids[i], excluded_headers))
+                    continue;
                 out.writeShort(ids[i]);
                 writeHeader(hdrs[i], out);
             }
@@ -892,15 +895,6 @@ public class Message implements Streamable {
         hdr.writeTo(out);
     }
 
-
-    protected static boolean containsId(short id, short[] ids) {
-        if(ids == null)
-            return false;
-        for(short tmp: ids)
-            if(tmp == id)
-                return true;
-        return false;
-    }
 
 
     protected static Header readHeader(DataInput in) throws Exception {

@@ -369,11 +369,11 @@ public abstract class Discovery extends Protocol {
                 if(hdr == null)
                     return up_prot.up(evt);
 
-                PingData data=hdr.data;
-                Address logical_addr=data != null? data.getAddress() : null;
-
                 if(is_leaving)
                     return null; // prevents merging back a leaving member (https://issues.jboss.org/browse/JGRP-1336)
+
+                PingData data=hdr.data;
+                Address logical_addr=data != null? data.getAddress() : null;
 
                 switch(hdr.type) {
 
@@ -512,6 +512,7 @@ public abstract class Discovery extends Protocol {
 
         return up_prot.up(evt);
     }
+
 
 
     /**

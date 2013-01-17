@@ -1,6 +1,18 @@
 
 package org.jgroups.protocols;
 
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.Property;
+import org.jgroups.stack.*;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.ExposedByteArrayOutputStream;
+import org.jgroups.util.ExposedDataOutputStream;
+import org.jgroups.util.Util;
+
 import java.io.DataInputStream;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
@@ -9,24 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Global;
-import org.jgroups.Message;
-import org.jgroups.PhysicalAddress;
-import org.jgroups.annotations.Experimental;
-import org.jgroups.annotations.Property;
-import org.jgroups.stack.GossipData;
-import org.jgroups.stack.GossipRouter;
-import org.jgroups.stack.RouterStubManager;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.RouterStub;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.ExposedByteArrayOutputStream;
-import org.jgroups.util.ExposedDataOutputStream;
-import org.jgroups.util.Util;
 
 /**
  * Replacement for UDP. Instead of sending packets via UDP, a TCP connection is opened to a Router

@@ -4,6 +4,7 @@ package org.jgroups.stack;
 
 
 import org.jgroups.Event;
+import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
@@ -12,16 +13,14 @@ import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.SocketFactory;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -63,6 +62,7 @@ public abstract class Protocol {
     protected short            id=ClassConfigurator.getProtocolId(getClass());
 
     protected final Log        log=LogFactory.getLog(this.getClass());
+
 
 
 
@@ -358,6 +358,52 @@ public abstract class Protocol {
      */
     public Object up(Event evt) {
         return up_prot.up(evt);
+    }
+
+    /**
+     * Called by the default implementation of {@link #up(org.jgroups.util.MessageBatch)} for each message to determine
+     * if the message should be removed from the message batch (and handled by the current protocol) or not.
+     * @param msg The message. Guaranteed to be non-null
+     * @return True if the message should be handled by this protocol (will be removed from the batch), false if the
+     * message should remain in the batch and be passed up.<p/>
+     * The default implementation tries to find a header matching the current protocol's ID and returns true if there
+     * is a match, or false otherwise
+     */
+    protected boolean accept(Message msg) {
+        short tmp_id=getId();
+        return tmp_id > 0 && msg.getHeader(tmp_id) != null;
+    }
+
+
+    /**
+     * Sends up a multiple messages in a {@link MessageBatch}. The sender of the batch is always the same, and so is the
+     * destination (null == multicast messages). Messages in a batch can be OOB messages, regular messages, or mixed
+     * messages, although the transport itself will create initial MessageBatches that contain only either OOB or
+     * regular messages.<p/>
+     * The default processing below sends messages up the stack individually, based on a matching criteria
+     * (calling {@link #accept(org.jgroups.Message)}), and - if true - calls {@link #up(org.jgroups.Event)}
+     * for that message and removes the message. If the batch is not empty, it is passed up, or else it is dropped.<p/>
+     * Subclasses should check if there are any messages destined for them (e.g. using
+     * {@link MessageBatch#getMatchingMessages(short,boolean)}), then possibly remove and process them and finally pass
+     * the batch up to the next protocol. Protocols can also modify messages in place, e.g. ENCRYPT could decrypt all
+     * encrypted messages in the batch, not remove them, and pass the batch up when done.
+     * @param batch The message batch
+     */
+    public void up(MessageBatch batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
+            if(msg != null && accept(msg)) {
+                it.remove();
+                try {
+                    up(new Event(Event.MSG, msg));
+                }
+                catch(Throwable t) {
+                    log.error("failed passing message up", t);
+                }
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
     }
 
 

@@ -291,9 +291,6 @@ public class MERGE3 extends Protocol {
     }
 
 
-
-
-
     public static List<View> detectDifferentViews(Map<Address,View> map) {
         final List<View> ret=new ArrayList<View>();
         for(View view: map.values()) {

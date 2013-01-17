@@ -4,8 +4,8 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
-import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
 
 import java.util.Collections;
@@ -23,18 +23,20 @@ import java.util.concurrent.TimeUnit;
  */
 @Experimental
 public class SHUFFLE extends Protocol {
-    protected TimeScheduler timer=null;
+    protected TimeScheduler       timer=null;
     protected final List<Message> up_msgs=new LinkedList<Message>();
     protected final List<Message> down_msgs=new LinkedList<Message>();
-    protected Future<?> task=null;
+    protected Future<?>           task=null;
 
 
-    @Property protected boolean up=true;
-    @Property protected boolean down=false;
+    @Property protected boolean   up=true;
+    @Property protected boolean   down=false;
+
     @Property(description="max number of messages before we bundle")
-    protected int max_size=10;
+    protected int                 max_size=10;
+
     @Property(description="max time (ms) before we pass the bundled messages up or down")
-    protected long max_time=1500L;
+    protected long                max_time=1500L;
 
 
     public boolean isUp() {
@@ -89,6 +91,25 @@ public class SHUFFLE extends Protocol {
         else
             startTask();
         return null;
+    }
+
+    public void up(MessageBatch batch) {
+        if(!up) {
+            up_prot.up(batch);
+            return;
+        }
+
+        synchronized(up_msgs) {
+            for(Message msg: batch)
+                if(msg != null)
+                    up_msgs.add(msg);
+        }
+        batch.removeAll();
+
+        if(up_msgs.size() >= max_size)
+            shuffleAndSendMessages();
+        else
+            startTask();
     }
 
     public Object down(Event evt) {

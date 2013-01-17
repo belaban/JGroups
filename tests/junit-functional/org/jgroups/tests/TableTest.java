@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.util.SeqnoList;
 import org.jgroups.util.Table;
+import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -26,7 +27,6 @@ public class TableTest {
         assertIndices(table, 0, 0, 0);
     }
 
-
     public void testAdd() {
         Table<Integer> buf=new Table<Integer>(3, 10, 0);
         buf.add(1, 322649);
@@ -35,17 +35,19 @@ public class TableTest {
         assert buf.size() == 2;
     }
 
+    public void testAddList() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        List<Tuple<Long,Integer>> msgs=createList(1,2);
+        boolean rc=buf.add(msgs);
+        System.out.println("buf = " + buf);
+        assert rc;
+        assert buf.size() == 2;
+    }
+
     public static void testAddition() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
         assert !table.add(0, 0);
-        addAndGet(table,  1);
-        addAndGet(table,  5);
-        addAndGet(table,  9);
-        addAndGet(table, 10);
-        addAndGet(table, 11);
-        addAndGet(table, 19);
-        addAndGet(table, 20);
-        addAndGet(table, 29);
+        addAndGet(table,  1,5,9,10,11,19,20,29);
         System.out.println("table: " + table.dump());
         assert table.size() == 8;
         int size=table.computeSize();
@@ -56,18 +58,43 @@ public class TableTest {
     }
 
 
+    public static void testAdditionList() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        List<Tuple<Long,Integer>> msgs=createList(0);
+        assert !table.add(msgs);
+        long[] seqnos={1,5,9,10,11,19,20,29};
+        msgs=createList(seqnos);
+        assert table.add(msgs);
+        System.out.println("table: " + table.dump());
+        for(long seqno: seqnos)
+            assert table.get(seqno) == seqno;
+        assert table.size() == 8;
+        int size=table.computeSize();
+        assert size == 8;
+        assert table.size() == table.computeSize();
+        assert table.capacity() == 30;
+        assertIndices(table, 0, 0, 29);
+    }
+
     public static void testAdditionWithOffset() {
         Table<Integer> table=new Table<Integer>(3, 10, 100);
-        addAndGet(table, 101);
-        addAndGet(table, 105);
-        addAndGet(table, 109);
-        addAndGet(table, 110);
-        addAndGet(table, 111);
-        addAndGet(table, 119);
-        addAndGet(table, 120);
-        addAndGet(table, 129);
+        addAndGet(table, 101,105,109,110,111,119,120,129);
         System.out.println("table: " + table.dump());
         assert table.size() == 8;
+        assert table.capacity() == 30;
+        assertIndices(table, 100, 100, 129);
+    }
+
+
+    public static void testAdditionListWithOffset() {
+        Table<Integer> table=new Table<Integer>(3, 10, 100);
+        long seqnos[]={101,105,109,110,111,119,120,129};
+        List<Tuple<Long,Integer>> msgs=createList(seqnos);
+        System.out.println("table: " + table.dump());
+        assert table.add(msgs);
+        assert table.size() == 8;
+        for(long seqno: seqnos)
+            assert table.get(seqno) == seqno;
         assert table.capacity() == 30;
         assertIndices(table, 100, 100, 129);
     }
@@ -76,16 +103,9 @@ public class TableTest {
 
     public static void testAdditionWithOffset2() {
         Table<Integer> table=new Table<Integer>(3, 10, 2);
-        addAndGet(table, 1000);
-        addAndGet(table, 1001);
+        addAndGet(table, 1000,1001);
         table.compact();
-        addAndGet(table, 1005);
-        addAndGet(table, 1009);
-        addAndGet(table, 1010);
-        addAndGet(table, 1011);
-        addAndGet(table, 1019);
-        addAndGet(table, 1020);
-        addAndGet(table, 1029);
+        addAndGet(table, 1005,1009,1010,1011,1019,1020,1029);
         System.out.println("table: " + table.dump());
         assert table.size() == 9;
         assertIndices(table, 2, 2, 1029);
@@ -186,11 +206,7 @@ public class TableTest {
     
     public static void testDuplicateAddition() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
-        addAndGet(table,  1);
-        addAndGet(table,  5);
-        addAndGet(table,  9);
-        addAndGet(table, 10);
-
+        addAndGet(table,  1,5,9,10);
         assert !table.add(5,5);
         assert table.get(5) == 5;
         assert table.size() == 4;
@@ -1031,11 +1047,22 @@ public class TableTest {
 
 
 
-    protected static void addAndGet(Table<Integer> table, int seqno) {
-        boolean added=table.add((long)seqno,seqno);
-        assert added;
-        Integer val=table.get(seqno);
-        assert val != null && val == seqno;
+    protected static void addAndGet(Table<Integer> table, int ... seqnos) {
+        for(int seqno: seqnos) {
+            boolean added=table.add((long)seqno, seqno);
+            assert added;
+            Integer val=table.get(seqno);
+            assert val != null && val == seqno;
+        }
+    }
+
+    protected static List<Tuple<Long,Integer>> createList(long ... seqnos) {
+        if(seqnos == null)
+            return null;
+        List<Tuple<Long,Integer>> msgs=new ArrayList<Tuple<Long,Integer>>(seqnos.length);
+        for(long seqno: seqnos)
+            msgs.add(new Tuple<Long,Integer>(seqno, (int)seqno));
+        return msgs;
     }
 
     protected static <T> void assertIndices(Table<T> table, long low, long hd, long hr) {

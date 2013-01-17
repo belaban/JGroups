@@ -2341,6 +2341,16 @@ public class Util {
         return false;
     }
 
+    public static boolean containsId(short id, short[] ids) {
+        if(ids == null)
+            return false;
+        for(short tmp: ids)
+            if(tmp == id)
+                return true;
+        return false;
+    }
+
+
     public static List<View> detectDifferentViews(Map<Address,View> map) {
         final List<View> ret=new ArrayList<View>();
         for(View view: map.values()) {

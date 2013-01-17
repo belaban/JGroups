@@ -6,6 +6,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -155,7 +156,32 @@ public class DAISYCHAIN extends Protocol {
         return up_prot.up(evt);
     }
 
+    public void up(MessageBatch batch) {
+        for(Message msg: batch) {
+            DaisyHeader hdr=(DaisyHeader)msg.getHeader(getId());
+            if(hdr != null) {
+                // 1. forward the message to the next in line if ttl > 0
+                short ttl=hdr.getTTL();
+                if(log.isTraceEnabled())
+                    log.trace(local_addr + ": received message from " + msg.getSrc() + " with ttl=" + ttl);
+                if(--ttl > 0) {
+                    Message copy=msg.copy(true);
+                    copy.setDest(next);
+                    copy.putHeader(getId(), new DaisyHeader(ttl));
+                    msgs_forwarded++;
+                    if(log.isTraceEnabled())
+                        log.trace(local_addr + ": forwarding message to " + next + " with ttl=" + ttl);
+                    down_prot.down(new Event(Event.MSG, copy));
+                }
 
+                // 2. Pass up
+                msg.setDest(null);
+            }
+        }
+
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     protected void handleView(View view) {
         view_size=view.size();

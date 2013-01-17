@@ -1,12 +1,15 @@
 package org.jgroups.protocols;
 
-import java.util.Comparator;
-import java.util.concurrent.PriorityBlockingQueue;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
+
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.concurrent.PriorityBlockingQueue;
 
 /**
  * This protocol will provide message sending and receiving prioritization.  The protocol assumes that any prioritized
@@ -113,6 +116,23 @@ public class PRIO extends Protocol {
         }
     }
 
+
+    public void up(MessageBatch batch) {
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message message=it.next();
+            if(message.isFlagSet(Message.Flag.OOB))
+                continue;
+            PrioHeader hdr=(PrioHeader)message.getHeader(id);
+            if(hdr != null) {
+                log.trace( "Adding priority message " + hdr.getPriority() + " to UP queue" );
+                upMessageQueue.add( new PriorityMessage( new Event(Event.MSG, message), hdr.getPriority() ) );
+                it.remove(); // sent up by UpMessageThread; we don't need to send it up, too
+            }
+        }
+
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     /**
      * An event is to be sent down the stack. The layer may want to examine its type and perform

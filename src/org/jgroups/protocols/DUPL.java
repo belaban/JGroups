@@ -1,20 +1,20 @@
 package org.jgroups.protocols;
 
-import org.jgroups.stack.Protocol;
-import org.jgroups.annotations.Property;
-import org.jgroups.annotations.Unsupported;
+import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.Address;
+import org.jgroups.annotations.Property;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /** Duplicates outgoing or incoming messages by copying them
  * @author Bela Ban
  */
-@Unsupported
 public class DUPL extends Protocol {
-
-    private static enum Direction {UP,DOWN};
-
+    protected static enum Direction {UP,DOWN};
 
     @Property(description="Number of copies of each incoming message (0=no copies)")
     protected int incoming_copies=1;
@@ -100,6 +100,27 @@ public class DUPL extends Protocol {
         }
 
         return up_prot.up(evt);
+    }
+
+
+    public void up(MessageBatch batch) {
+        boolean copy=(copy_multicast_msgs || copy_unicast_msgs) && incoming_copies > 0;
+        if(copy) {
+            List<Message> copies=new ArrayList<Message>();
+            for(Message msg: batch) {
+                Address dest=msg.getDest();
+                boolean multicast=dest == null;
+                if((multicast && copy_multicast_msgs) ||  (!multicast && copy_unicast_msgs)) {
+                    for(int i=0; i < incoming_copies; i++)
+                        copies.add(msg.copy(true));
+                }
+            }
+            for(Message copied_msg: copies)
+                batch.add(copied_msg);
+        }
+
+        if(!batch.isEmpty())
+            up_prot.up(batch);
     }
 
     private void copy(Message msg, int num_copies, Direction direction) {

@@ -14,11 +14,9 @@ import org.jgroups.stack.Protocol;
  */
 @Unsupported
 public class DISCARD_PAYLOAD extends Protocol {
-    @Property
-    long seqno=3; // drop 3
-    @Property
-    long duplicate=4; // duplicate 4 (one time)
-    int num_discards=0;
+    @Property protected long seqno=3; // drop 3
+    @Property protected long duplicate=4; // duplicate 4 (one time)
+    protected int            num_discards=0;
 
     public DISCARD_PAYLOAD() {
     }
@@ -30,9 +28,7 @@ public class DISCARD_PAYLOAD extends Protocol {
                 try {
                     Long payload=(Long)msg.getObject();
                     if(payload != null) {
-                        long val=payload.longValue();
-
-                        if(val == seqno) {
+                        if(payload == seqno) {
                             synchronized(this) {
                                 if(num_discards < 3) {
                                     num_discards++;
@@ -40,7 +36,7 @@ public class DISCARD_PAYLOAD extends Protocol {
                                 }
                             }
                         }
-                        if(val == duplicate) { // inject a duplicate message
+                        if(payload == duplicate) { // inject a duplicate message
                             super.down(evt); // pass it down, will passed down a second time by the default down_prot.down(evt)
                         }
                     }

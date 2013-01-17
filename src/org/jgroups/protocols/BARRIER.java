@@ -7,6 +7,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
@@ -101,42 +102,12 @@ public class BARRIER extends Protocol {
                 if(msg.getDest() != null) // https://issues.jboss.org/browse/JGRP-1341: let unicast messages pass
                     return up_prot.up(evt);
                 Thread current_thread=Thread.currentThread();
-                in_flight_threads.put(current_thread, NULL);
-                if(barrier_closed.get()) {
-                    lock.lock();
-                    try {
-                        // Feb 28 2008 (Gray Watson): remove myself because barrier is closed
-                        in_flight_threads.remove(current_thread);
-                        while(barrier_closed.get()) {
-                            try {
-                                barrier_opened.await();
-                            }
-                            catch(InterruptedException e) {
-                            }
-                        }
-                    }
-                    finally {
-                        // Feb 28 2008 (Gray Watson): barrier is now open, put myself back in_flight
-                        in_flight_threads.put(current_thread, NULL);
-                        lock.unlock();
-                    }
-                }
-
+                blockIfBarrierClosed(current_thread);
                 try {
                     return up_prot.up(evt);
                 }
                 finally {
-                    if(in_flight_threads.remove(current_thread) == NULL &&
-                            barrier_closed.get() &&
-                            in_flight_threads.isEmpty()) {
-                        lock.lock();
-                        try {
-                            no_msgs_pending.signalAll();
-                        }
-                        finally {
-                            lock.unlock();
-                        }
-                    }
+                    unblock(current_thread);
                 }
             case Event.CLOSE_BARRIER:
                 closeBarrier();
@@ -148,6 +119,58 @@ public class BARRIER extends Protocol {
         return up_prot.up(evt);
     }
 
+
+
+    public void up(MessageBatch batch) {
+        if(batch.dest() != null) { // let unicast messages pass
+            up_prot.up(batch);
+            return;
+        }
+        Thread current_thread=Thread.currentThread();
+        blockIfBarrierClosed(current_thread);
+        try {
+            up_prot.up(batch);
+        }
+        finally {
+            unblock(current_thread);
+        }
+    }
+
+
+    protected void blockIfBarrierClosed(final Thread current_thread) {
+        in_flight_threads.put(current_thread, NULL);
+        if(barrier_closed.get()) {
+            lock.lock();
+            try {
+                // Feb 28 2008 (Gray Watson): remove myself because barrier is closed
+                in_flight_threads.remove(current_thread);
+                while(barrier_closed.get()) {
+                    try {
+                        barrier_opened.await();
+                    }
+                    catch(InterruptedException e) {
+                    }
+                }
+            }
+            finally {
+                // Feb 28 2008 (Gray Watson): barrier is now open, put myself back in_flight
+                in_flight_threads.put(current_thread, NULL);
+                lock.unlock();
+            }
+        }
+    }
+
+    protected void unblock(final Thread current_thread) {
+        if(in_flight_threads.remove(current_thread) == NULL && barrier_closed.get() && in_flight_threads.isEmpty()) {
+            lock.lock();
+            try {
+                no_msgs_pending.signalAll();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+    }
 
     /** Close the barrier. Temporarily remove all threads which are waiting or blocked, re-insert them after the call */
     private void closeBarrier() {

@@ -149,6 +149,19 @@ public class Headers {
         return retval;
     }
 
+    public int size(short ... excluded_ids) {
+         int retval=0;
+         for(int i=0; i < ids.length; i++) {
+             if(ids[i] > 0) {
+                 if(!Util.containsId(ids[i], excluded_ids))
+                     retval++;
+             }
+             else
+                 break;
+         }
+         return retval;
+     }
+
     public int capacity() {
         return ids.length;
     }

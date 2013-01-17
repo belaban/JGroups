@@ -5,6 +5,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -44,6 +45,16 @@ public class EXAMPLE extends Protocol {
         return up_prot.up(evt);            // Pass up to the layer above us
     }
 
+    public void up(MessageBatch batch) {
+        for(Message msg: batch) {
+            if(msg != null) {
+                // do something; perhaps check for the presence of a header
+            }
+        }
+
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     public Object down(Event evt) {
 

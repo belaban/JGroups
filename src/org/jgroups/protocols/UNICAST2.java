@@ -396,44 +396,35 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     public Object up(Event evt) {
-        Message        msg;
-        Address        dst, src;
-        Unicast2Header hdr;
-
         switch(evt.getType()) {
-
             case Event.MSG:
-                msg=(Message)evt.getArg();
-                dst=msg.getDest();
-
-                if(dst == null || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
+                Message msg=(Message)evt.getArg();
+                if(msg.getDest() == null || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
                     break;  // pass up
-
-                // changed from removeHeader(): we cannot remove the header because if we do loopback=true at the
-                // transport level, we will not have the header on retransmit ! (bela Aug 22 2006)
-                hdr=(Unicast2Header)msg.getHeader(this.id);
+                Unicast2Header hdr=(Unicast2Header)msg.getHeader(this.id);
                 if(hdr == null)
                     break;
-                src=msg.getSrc();
+
+                Address sender=msg.getSrc();
                 switch(hdr.type) {
                     case Unicast2Header.DATA:      // received regular message
-                        if(handleDataReceived(src, hdr.seqno, hdr.conn_id, hdr.first, msg, evt) && hdr.first)
-                            sendAck(src, hdr.seqno, hdr.conn_id);
+                        if(handleDataReceived(sender, hdr.seqno, hdr.conn_id, hdr.first, msg, evt) && hdr.first)
+                            sendAck(sender, hdr.seqno, hdr.conn_id);
                         return null; // we pass the deliverable message up in handleDataReceived()
                     case Unicast2Header.XMIT_REQ:  // received ACK for previously sent message
-                        handleXmitRequest(src, (SeqnoList)msg.getObject());
+                        handleXmitRequest(sender, (SeqnoList)msg.getObject());
                         break;
                     case Unicast2Header.SEND_FIRST_SEQNO:
-                        handleResendingOfFirstMessage(src, hdr.seqno);
+                        handleResendingOfFirstMessage(sender, hdr.seqno);
                         break;
                     case Unicast2Header.ACK:
                         if(log.isTraceEnabled())
-                            log.trace(local_addr + " <-- ACK(" + src + "," + hdr.seqno + " [conn_id=" + hdr.conn_id + "])");
+                            log.trace(local_addr + " <-- ACK(" + sender + "," + hdr.seqno + " [conn_id=" + hdr.conn_id + "])");
                         SenderEntry entry=send_table.get(msg.getSrc());
                         if(entry != null) {
                             if(entry.send_conn_id != hdr.conn_id) {
                                 if(log.isTraceEnabled())
-                                    log.trace(local_addr + ": ACK from " + src + " is discarded as the connection IDs don't match: " +
+                                    log.trace(local_addr + ": ACK from " + sender + " is discarded as the connection IDs don't match: " +
                                                 "my conn-id=" + entry.send_conn_id + ", hdr.conn_id=" + hdr.conn_id);
                             }
                             else
@@ -453,6 +444,35 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         return up_prot.up(evt);   // Pass up to the layer above us
     }
 
+
+    public void up(MessageBatch batch) {
+        int                       size=batch.size();
+        Map<Short,List<Message>>  msgs=new TreeMap<Short,List<Message>>(); // map of messages, keyed by conn-id
+
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            final Message msg=it.next();
+            if(msg == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))
+                continue;
+            Unicast2Header hdr=(Unicast2Header)msg.getHeader(id);
+            if(hdr == null)
+                continue;
+            it.remove(); // remove the message from the batch, so it won't be passed up the stack
+
+            if(hdr.type != Unicast2Header.DATA) {
+                up(new Event(Event.MSG, msg));
+                return;
+            }
+
+            List<Message> list=msgs.get(hdr.conn_id);
+            if(list == null)
+                msgs.put(hdr.conn_id, list=new ArrayList<Message>(size));
+            list.add(msg);
+        }
+
+        handleBatchReceived(batch.sender(), msgs); // process msgs:
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
 
     public Object down(Event evt) {
@@ -766,25 +786,106 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             }
         }
 
+        removeAndPassUp(win);
+        return true;
+    }
+
+
+    protected void handleBatchReceived(Address sender, Map<Short,List<Message>> map) {
+        for(Map.Entry<Short,List<Message>> element: map.entrySet()) {
+            final List<Message> msg_list=element.getValue();
+            if(log.isTraceEnabled()) {
+                StringBuilder sb=new StringBuilder();
+                sb.append(local_addr).append(" <-- DATA(").append(sender).append(": " + printMessageList(msg_list)).append(')');
+                log.trace(sb);
+            }
+
+            short          conn_id=element.getKey();
+            ReceiverEntry  entry=null;
+            Table<Message> win=null;
+            boolean        added=false; // set to true when at least 1 message was added
+            int            total_len=0;
+            for(Message msg: msg_list) {
+                Unicast2Header hdr=(Unicast2Header)msg.getHeader(id);
+                entry=getReceiverEntry(sender, hdr.seqno, hdr.first, conn_id);
+                if(entry == null)
+                    continue;
+                win=entry.received_msgs;
+                boolean msg_added=win.add(hdr.seqno, msg); // win is guaranteed to be non-null if we get here
+                added|=msg_added;
+                num_messages_received++;
+                total_len+=msg.getLength();
+
+                if(hdr.first && msg_added)
+                    sendAck(sender, hdr.seqno, hdr.conn_id);
+
+                // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
+                // http://jira.jboss.com/jira/browse/JGRP-377
+                if(msg.isFlagSet(Message.OOB) && msg_added) {
+                    try {
+                        up_prot.up(new Event(Event.MSG, msg));
+                    }
+                    catch(Throwable t) {
+                        log.error("couldn't deliver OOB message " + msg, t);
+                    }
+                }
+            }
+            if(entry != null && conn_expiry_timeout > 0)
+                entry.update();
+            if(added && total_len > 0 && entry.incrementStable(total_len))
+                sendStableMessage(sender, entry.recv_conn_id, win.getHighestDelivered(), win.getHighestReceived());
+        }
+
+        ReceiverEntry tmp=recv_table.get(sender);
+        Table<Message> win=tmp != null? tmp.received_msgs : null;
+        if(win != null)
+            removeAndPassUp(win);
+    }
+
+
+    protected String printMessageList(List<Message> list) {
+        StringBuilder sb=new StringBuilder();
+        int size=list.size();
+        Message first=size > 0? list.get(0) : null, second=size > 1? list.get(size-1) : null;
+        Unicast2Header hdr;
+        if(first != null) {
+            hdr=(Unicast2Header)first.getHeader(id);
+            if(hdr != null)
+                sb.append("#" + hdr.seqno);
+        }
+        if(second != null) {
+            hdr=(Unicast2Header)second.getHeader(id);
+            if(hdr != null)
+                sb.append(" - #" + hdr.seqno);
+        }
+        return sb.toString();
+    }
+
+
+    /**
+     * Try to remove as many messages as possible and pass them up. Prevents concurrent passing up of messages by
+     * different threads (http://jira.jboss.com/jira/browse/JGRP-198); this is all the more important once we have a
+     * concurrent stack (http://jira.jboss.com/jira/browse/JGRP-181), where lots of threads can come up to this point
+     * concurrently, but only 1 is allowed to pass at a time.<p/>
+     * We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
+     * delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
+     * order in which they were sent by their senders
+     */
+    protected void removeAndPassUp(Table<Message> win) {
         final AtomicBoolean processing=win.getProcessing();
         if(!processing.compareAndSet(false, true))
-            return true;
+            return;
 
-        // Try to remove as many messages as possible and pass them up.
-        // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
-        // this is all the more important once we have a concurrent stack (http://jira.jboss.com/jira/browse/JGRP-181),
-        // where lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time
-        // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
-        // delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
-        // order in which they were sent by their senders
         boolean released_processing=false;
         try {
             while(true) {
                 List<Message> msgs=win.removeMany(processing, true, max_msg_batch_size); // remove my own messages
                 if(msgs == null || msgs.isEmpty()) {
                     released_processing=true;
-                    return true;
+                    //System.out.println(Thread.currentThread().getId() + " ======> done with batch, win: " + win);
+                    return;
                 }
+                //System.out.println(Thread.currentThread().getId() + " ==> processing " + msgs.size() + " msgs");
 
                 for(Message m: msgs) {
                     // discard OOB msg: it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)

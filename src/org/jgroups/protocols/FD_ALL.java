@@ -3,10 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.BoundedList;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Tuple;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -185,6 +182,19 @@ public class FD_ALL extends Protocol {
                 break; // pass message to the layer above
         }
         return up_prot.up(evt); // pass up to the layer above us
+    }
+
+
+    public void up(MessageBatch batch) {
+        Collection<Message> msgs=batch.getMatchingMessages(id, true);
+        if((msgs != null && !msgs.isEmpty()) || msg_counts_as_heartbeat) {
+            update(batch.sender());
+            num_heartbeats_received++;
+            if(has_suspected_mbrs)
+                unsuspect(batch.sender());
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
     }
 
 

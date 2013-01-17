@@ -1,9 +1,10 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.DELAY_JOIN_REQ;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.Discovery;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -160,8 +161,7 @@ public class JoinTest extends ChannelTestBase {
         }
 
         stack=c1.getProtocolStack();
-        DELAY_JOIN_REQ delay=new DELAY_JOIN_REQ();
-        delay.setDelay(delay_join_req);
+        DELAY_JOIN_REQ delay=new DELAY_JOIN_REQ().delay(delay_join_req);
         stack.insertProtocol(delay, ProtocolStack.BELOW, "GMS");
 
         System.out.println(new Date() + ": joining c2");
@@ -201,4 +201,40 @@ public class JoinTest extends ChannelTestBase {
             System.out.println("[" + name + "] view: " + new_view);
         }
     }
+
+
+    protected class DELAY_JOIN_REQ extends Protocol {
+        private long        delay=4000;
+        private final short gms_id=ClassConfigurator.getProtocolId(GMS.class);
+
+        public long           delay()           {return delay;}
+        public DELAY_JOIN_REQ delay(long delay) {this.delay=delay; return this;}
+
+        public Object up(final Event evt) {
+            switch(evt.getType()) {
+                case Event.MSG:
+                    Message msg=(Message)evt.getArg();
+                    final GMS.GmsHeader hdr=(GMS.GmsHeader)msg.getHeader(gms_id);
+                    if(hdr != null) {
+                        switch(hdr.getType()) {
+                            case GMS.GmsHeader.JOIN_REQ:
+                            case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
+                                System.out.println(new Date() + ": delaying JOIN-REQ by " + delay + " ms");
+                                Thread thread=new Thread() {
+                                    public void run() {
+                                        Util.sleep(delay);
+                                        System.out.println(new Date() + ": sending up delayed JOIN-REQ by " + hdr.getMember());
+                                        up_prot.up(evt);
+                                    }
+                                };
+                                thread.start();
+                                return null;
+                        }
+                    }
+                    break;
+            }
+            return up_prot.up(evt);
+        }
+    }
+
 }

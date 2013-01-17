@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
@@ -205,11 +206,28 @@ public class MERGE2 extends Protocol {
         return up_prot.up(evt);
     }
 
+
+    public void up(MessageBatch batch) {
+        if(merge_fast && batch.dest() == null) {
+            final Address sender=batch.sender();
+            if(!members.contains(sender) && merge_candidates.add(sender)) {
+                timer.schedule(new Runnable() {
+                    public void run() {
+                        if(!members.contains(sender))
+                            task.findAndNotify();
+                    }
+                }, merge_fast_delay, TimeUnit.MILLISECONDS);
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
+
     /**
-	 * Task periodically executing (if role is coordinator). Gets the initial membership and determines
-	 * whether there are subgroups (multiple coordinators for the same group). If yes, it sends a MERGE event
-	 * with the list of the coordinators up the stack
-	 */
+     * Task periodically executing (if role is coordinator). Gets the initial membership and determines
+     * whether there are subgroups (multiple coordinators for the same group). If yes, it sends a MERGE event
+     * with the list of the coordinators up the stack
+     */
     protected class FindSubgroupsTask {
         @GuardedBy("this")
         private Future<?> future;

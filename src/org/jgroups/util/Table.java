@@ -172,29 +172,31 @@ public class Table<T> {
     public boolean add(long seqno, T element) {
         lock.lock();
         try {
-            if(seqno <= hd)
-                return false;
-
-            int row_index=computeRow(seqno);
-            if(row_index >= matrix.length) {
-                resize(seqno);
-                row_index=computeRow(seqno);
-            }
-            T[] row=getRow(row_index);
-            int index=computeIndex(seqno);
-            T existing_element=row[index];
-            if(existing_element == null) {
-                row[index]=element;
-                size++;
-                if(seqno > hr)
-                    hr=seqno;
-                return true;
-            }
-            return false;
+            return _add(seqno, element);
         }
         finally {
             lock.unlock();
         }
+    }
+
+
+    public boolean add(List<Tuple<Long,T>> elements) {
+        if(elements == null)
+            return false;
+        boolean added=false;
+        lock.lock();
+        try {
+            for(Tuple<Long,T> tuple: elements) {
+                long seqno=tuple.getVal1();
+                T element=tuple.getVal2();
+                if(_add(seqno, element))
+                    added=true;
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+        return added;
     }
 
 
@@ -222,6 +224,7 @@ public class Table<T> {
         }
     }
 
+
     /**
      * To be used only for testing; doesn't do any index or sanity checks
      * @param seqno
@@ -243,7 +246,6 @@ public class Table<T> {
             lock.unlock();
         }
     }
-
 
 
 
@@ -304,19 +306,19 @@ public class Table<T> {
 
 
     public List<T> removeMany(final AtomicBoolean processing, boolean nullify, int max_results) {
-           lock.lock();
-           try {
-               Remover remover=new Remover(nullify, max_results);
-               forEach(hd+1, hr, remover);
-               List<T> retval=remover.getList();
-               if(processing != null && (retval == null || retval.isEmpty()))
-                   processing.set(false);
-               return retval;
-           }
-           finally {
-               lock.unlock();
-           }
-       }
+        lock.lock();
+        try {
+            Remover remover=new Remover(nullify, max_results);
+            forEach(hd+1, hr, remover);
+            List<T> retval=remover.getList();
+            if(processing != null && (retval == null || retval.isEmpty()))
+                processing.set(false);
+            return retval;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
 
 
     /**
@@ -420,6 +422,28 @@ public class Table<T> {
                 current_row=row+1 > matrix.length? null : matrix[row];
             }
         }
+    }
+
+    protected boolean _add(long seqno, T element) {
+        if(seqno <= hd)
+            return false;
+
+        int row_index=computeRow(seqno);
+        if(row_index >= matrix.length) {
+            resize(seqno);
+            row_index=computeRow(seqno);
+        }
+        T[] row=getRow(row_index);
+        int index=computeIndex(seqno);
+        T existing_element=row[index];
+        if(existing_element == null) {
+            row[index]=element;
+            size++;
+            if(seqno > hr)
+                hr=seqno;
+            return true;
+        }
+        return false;
     }
 
     /** Moves rows down the matrix, by removing purged rows. If resizing to accommodate seqno is still needed, computes

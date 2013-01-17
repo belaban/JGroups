@@ -1,11 +1,10 @@
 
 package org.jgroups.protocols;
 import org.jgroups.Event;
-import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 
 
-@Unsupported
 public class TRACE extends Protocol {
 
     public TRACE() {}
@@ -17,6 +16,13 @@ public class TRACE extends Protocol {
         return up_prot.up(evt);
     }
 
+
+    public void up(MessageBatch batch) {
+        System.out.println("---------------- TRACE (received) ----------------------");
+        System.out.println("message batch (" + batch.size() + " messages");
+        System.out.println("--------------------------------------------------------");
+        up_prot.up(batch);
+    }
 
     public Object down(Event evt) {
         System.out.println("------------------- TRACE (sent) -----------------------");
