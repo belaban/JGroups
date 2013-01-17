@@ -119,10 +119,11 @@ public class UNICAST2_Test {
             ch.getProtocolStack().findProtocol(UNICAST2.class).level(level);
     }
 
-    /*public static void main(String[] args) throws Exception {
+    @Test(enabled=false)
+    public static void main(String[] args) throws Exception {
         UNICAST2_Test test=new UNICAST2_Test();
         test.setup();
         test.testFirstMessageDropped();
         test.destroy();
-    }*/
+    }
 }
