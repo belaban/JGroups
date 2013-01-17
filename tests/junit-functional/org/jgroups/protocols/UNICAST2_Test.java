@@ -23,7 +23,7 @@ import java.util.List;
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class UNICAST2_Test {
     protected JChannel            a, b;
-    protected MyReceiver<Integer> rb=new MyReceiver<Integer>().name("B").verbose(true);
+    protected MyReceiver<Integer> rb;
     protected DISCARD             discard; // on A
 
     @BeforeMethod protected void setup() throws Exception {
@@ -31,12 +31,13 @@ public class UNICAST2_Test {
         discard=(DISCARD)a.getProtocolStack().findProtocol(DISCARD.class);
         assert discard != null;
         a.connect("UNICAST2_Test");
+        rb=new MyReceiver<Integer>().name("B").verbose(true);
         b=createChannel("B").receiver(rb);
         b.connect("UNICAST2_Test");
         Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
     }
 
-    @AfterMethod protected void destroy() {Util.close(b, a);}
+    @AfterMethod protected void destroy() {setLevel("warn", a, b); Util.close(b, a); rb.reset();;}
 
 
     /**
@@ -63,6 +64,7 @@ public class UNICAST2_Test {
      * https://issues.jboss.org/browse/JGRP-1563 now needs to make sure message 1 is retransmitted to B
      * within a short time period, and we don't have to rely on the stable task to kick in.
      */
+    // @Test(invocationCount=10,threadPoolSize=0)
     public void testFirstMessageDropped() throws Exception {
         Address dest=b.getAddress();
 
@@ -80,9 +82,17 @@ public class UNICAST2_Test {
         a.send(new Message(dest,1));
 
         List<Integer> msgs=rb.list();
+        try {
         Util.waitUntilListHasSize(msgs, 1, 5000, 500);
+        }
+        catch(AssertionError err) {
+            printConnectionTables(a, b);
+            throw err;
+        }
         System.out.println("list=" + msgs);
-        setLevel("warn", a, b);
+
+        printConnectionTables(a, b);
+        assert ((UNICAST2)a.getProtocolStack().findProtocol(UNICAST2.class)).connectionEstablished(b.getAddress());
     }
 
 
@@ -96,8 +106,23 @@ public class UNICAST2_Test {
           .name(name);
     }
 
+    protected void printConnectionTables(JChannel ... channels) {
+        System.out.println("**** CONNECTIONS:");
+        for(JChannel ch: channels) {
+            UNICAST2 ucast=(UNICAST2)ch.getProtocolStack().findProtocol(UNICAST2.class);
+            System.out.println(ch.getName() + ":\n" + ucast.printConnections() + "\n");
+        }
+    }
+
     protected void setLevel(String level, JChannel ... channels) {
         for(JChannel ch: channels)
             ch.getProtocolStack().findProtocol(UNICAST2.class).level(level);
+    }
+
+    public static void main(String[] args) throws Exception {
+        UNICAST2_Test test=new UNICAST2_Test();
+        test.setup();
+        test.testFirstMessageDropped();
+        test.destroy();
     }
 }

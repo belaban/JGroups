@@ -193,6 +193,12 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         return sb.toString();
     }
 
+    /** Is the send connection to target established  */
+    public boolean connectionEstablished(Address target) {
+        SenderEntry entry=target != null? send_table.get(target) : null;
+        return entry != null && entry.connEstablished();
+    }
+
     @ManagedAttribute(description="Whether the ConnectionReaper task is running")
     public boolean isConnectionReaperRunning() {return connection_reaper != null && !connection_reaper.isDone();}
 
@@ -411,9 +417,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 src=msg.getSrc();
                 switch(hdr.type) {
                     case Unicast2Header.DATA:      // received regular message
-                        handleDataReceived(src, hdr.seqno, hdr.conn_id, hdr.first, msg, evt);
-                        if(hdr.first)
-                            sendAck(src, hdr.seqno);
+                        if(handleDataReceived(src, hdr.seqno, hdr.conn_id, hdr.first, msg, evt) && hdr.first)
+                            sendAck(src, hdr.seqno, hdr.conn_id);
                         return null; // we pass the deliverable message up in handleDataReceived()
                     case Unicast2Header.XMIT_REQ:  // received ACK for previously sent message
                         handleXmitRequest(src, (SeqnoList)msg.getObject());
@@ -423,10 +428,17 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                         break;
                     case Unicast2Header.ACK:
                         if(log.isTraceEnabled())
-                            log.trace(local_addr + " <-- ACK(" + src + "," + hdr.seqno + ")");
+                            log.trace(local_addr + " <-- ACK(" + src + "," + hdr.seqno + " [conn_id=" + hdr.conn_id + "])");
                         SenderEntry entry=send_table.get(msg.getSrc());
-                        if(entry != null)
-                            entry.connEstablished(true);
+                        if(entry != null) {
+                            if(entry.send_conn_id != hdr.conn_id) {
+                                if(log.isTraceEnabled())
+                                    log.trace(local_addr + ": ACK from " + src + " is discarded as the connection IDs don't match: " +
+                                                "my conn-id=" + entry.send_conn_id + ", hdr.conn_id=" + hdr.conn_id);
+                            }
+                            else
+                                entry.connEstablished(true);
+                        }
                         break;
                     case Unicast2Header.STABLE:
                         stable(msg.getSrc(), hdr.conn_id, hdr.seqno, hdr.high_seqno);
@@ -718,7 +730,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
      * e.received_msgs is null and <code>first</code> is true: create a new AckReceiverWindow(seqno) and
      * add message. Set e.received_msgs to the new window. Else just add the message.
      */
-    protected void handleDataReceived(Address sender, long seqno, short conn_id, boolean first, Message msg, Event evt) {
+    protected boolean handleDataReceived(Address sender, long seqno, short conn_id, boolean first, Message msg, Event evt) {
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno);
@@ -730,7 +742,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         
         ReceiverEntry entry=getReceiverEntry(sender, seqno, first, conn_id);
         if(entry == null)
-            return;
+            return false;
         if(conn_expiry_timeout > 0)
             entry.update();
         Table<Message> win=entry.received_msgs;
@@ -755,9 +767,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         }
 
         final AtomicBoolean processing=win.getProcessing();
-        if(!processing.compareAndSet(false, true)) {
-            return;
-        }
+        if(!processing.compareAndSet(false, true))
+            return true;
 
         // Try to remove as many messages as possible and pass them up.
         // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
@@ -772,7 +783,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 List<Message> msgs=win.removeMany(processing, true, max_msg_batch_size); // remove my own messages
                 if(msgs == null || msgs.isEmpty()) {
                     released_processing=true;
-                    return;
+                    return true;
                 }
 
                 for(Message m: msgs) {
@@ -952,12 +963,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         down_prot.down(new Event(Event.MSG, msg));
     }
 
-    protected void sendAck(Address dest, long seqno) {
-        Message msg=new Message(dest).setFlag(Message.OOB);
-        Unicast2Header hdr=Unicast2Header.createAckHeader(seqno);
-        msg.putHeader(this.id, hdr);
+    protected void sendAck(Address dest, long seqno, short conn_id) {
+        Message msg=new Message(dest).setFlag(Message.OOB).putHeader(this.id, Unicast2Header.createAckHeader(seqno, conn_id));
         if(log.isTraceEnabled())
-            log.trace(local_addr + " --> ACK(" + dest + "," + seqno + ")");
+            log.trace(local_addr + " --> ACK(" + dest + "," + seqno + " [conn_id=" + conn_id + "])");
         down_prot.down(new Event(Event.MSG, msg));
     }
 
@@ -1010,7 +1019,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         byte    type;
         long    seqno;       // DATA, STABLE, SEND_FIRST_SEQNO and ACK
         long    high_seqno;  // STABLE
-        short   conn_id;     // DATA, STABLE
+        short   conn_id;     // DATA, STABLE, ACK
         boolean first;       // DATA
 
 
@@ -1037,8 +1046,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             return new Unicast2Header(SEND_FIRST_SEQNO, seqno_received);
         }
 
-        public static Unicast2Header createAckHeader(long acked_seqno) {
-            return new Unicast2Header(ACK, acked_seqno);
+        public static Unicast2Header createAckHeader(long acked_seqno, short conn_id) {
+            Unicast2Header retval=new Unicast2Header(ACK,acked_seqno);
+            retval.conn_id=conn_id;
+            return retval;
         }
 
         protected Unicast2Header(byte type) {
@@ -1111,8 +1122,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     retval+=Util.size(seqno, high_seqno) + Global.SHORT_SIZE; // conn_id
                     break;
                 case SEND_FIRST_SEQNO:
-                case ACK:
                     retval+=Util.size(seqno);
+                    break;
+                case ACK:
+                    retval+=Util.size(seqno) + Global.SHORT_SIZE; // conn_id
                     break;
             }
             return retval;
@@ -1139,8 +1152,11 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     out.writeShort(conn_id);
                     break;
                 case SEND_FIRST_SEQNO:
+                    Util.writeLong(seqno, out);
+                    break;
                 case ACK:
                     Util.writeLong(seqno, out);
+                    out.writeShort(conn_id);
                     break;
             }
         }
@@ -1162,8 +1178,11 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     conn_id=in.readShort();
                     break;
                 case SEND_FIRST_SEQNO:
+                    seqno=Util.readLong(in);
+                    break;
                 case ACK:
                     seqno=Util.readLong(in);
+                    conn_id=in.readShort();
                     break;
             }
         }
