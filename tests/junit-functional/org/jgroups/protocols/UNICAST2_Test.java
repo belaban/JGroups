@@ -83,7 +83,7 @@ public class UNICAST2_Test {
 
         List<Integer> msgs=rb.list();
         try {
-        Util.waitUntilListHasSize(msgs, 1, 5000, 500);
+            Util.waitUntilListHasSize(msgs, 1, 5000, 500);
         }
         catch(AssertionError err) {
             printConnectionTables(a, b);
