@@ -1323,6 +1323,8 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         for(SenderEntry entry: send_table.values()) {
             if(!entry.connEstablished()) {
                 Message msg=entry.getFirstMessage();
+                if(msg == null)
+                    continue;
                 Unicast2Header hdr=(Unicast2Header)msg.getHeader(id);
                 if(hdr.first) {
                     if(log.isTraceEnabled())
