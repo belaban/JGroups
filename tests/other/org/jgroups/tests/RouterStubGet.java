@@ -12,7 +12,7 @@ public class RouterStubGet {
     public static void main(String[] args) throws Exception {
         String host="localhost";
         int port=12001;
-        String cluster_name="DrawGroupDemo";
+        String cluster_name="draw-cluster";
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-host")) {
