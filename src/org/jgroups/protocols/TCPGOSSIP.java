@@ -1,21 +1,20 @@
 
 package org.jgroups.protocols;
 
-import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.jgroups.*;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.stack.RouterStubManager;
 import org.jgroups.stack.RouterStub;
+import org.jgroups.stack.RouterStubManager;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.UUID;
 
+import java.net.InetSocketAddress;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * The TCPGOSSIP protocol layer retrieves the initial membership (used by the
@@ -170,7 +169,9 @@ public class TCPGOSSIP extends Discovery {
             log.trace("consolidated mbrs from GossipRouter(s) are " + initial_mbrs);
 
         PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-        PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
+        PingData data=null;
+        if(view_id == null)
+            data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
 
         for (Address mbr_addr : initial_mbrs) {
             Message msg = new Message(mbr_addr);
@@ -179,7 +180,7 @@ public class TCPGOSSIP extends Discovery {
             hdr.view_id=view_id;
             msg.putHeader(this.id, hdr);
             if (log.isTraceEnabled())
-                log.trace("[FIND_INITIAL_MBRS] sending GET_MBRS_REQ request to " + mbr_addr);            
+                log.trace("[FIND_INITIAL_MBRS] sending GET_MBRS_REQ request to " + mbr_addr);
             down_prot.down(new Event(Event.MSG, msg));
         }
     }
