@@ -115,6 +115,7 @@ public class STABLE extends Protocol {
 
     /** The total number of bytes received from unicast and multicast messages */
     @GuardedBy("received")
+    @ManagedAttribute(description="Bytes accumulated so far")
     private long num_bytes_received=0;
 
     private final Lock received=new ReentrantLock();
@@ -631,6 +632,7 @@ public class STABLE extends Protocol {
 
         // pass STABLE event down the stack, so NAKACK can garbage collect old messages
         down_prot.down(new Event(Event.STABLE, stable_digest));
+        num_bytes_received=0; // reset, so all members have more or less the same value
     }
 
 
