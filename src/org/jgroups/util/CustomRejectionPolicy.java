@@ -20,18 +20,14 @@ public class CustomRejectionPolicy implements RejectedExecutionHandler {
         }
         String className = rejection_policy.substring(7);
         try {
-            Class<?> policyClass = Class.forName(className);
+            Class<?> policyClass = Util.loadClass(className, Util.class);
             Object policy = policyClass.newInstance();
             if (!(policy instanceof RejectedExecutionHandler)) {
                 throw new IllegalArgumentException(className + " does not implement RejectedExecutionHandler");
             } else {
                 custom = (RejectedExecutionHandler) policy;
             }
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Cannot instantiate rejection policy '" + rejection_policy + "'", e);
-        } catch (InstantiationException e) {
-            throw new RuntimeException("Cannot instantiate rejection policy '" + rejection_policy + "'", e);
-        } catch (IllegalAccessException e) {
+        } catch (Throwable e) {
             throw new RuntimeException("Cannot instantiate rejection policy '" + rejection_policy + "'", e);
         }
     }
