@@ -616,11 +616,8 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
         // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
         // order in which they were sent by their senders
-        int num_msgs=removeAndDeliver(processing, win);
-        if(num_msgs > 0) {
-            long hd=win.getHighestDelivered();
-            sendAck(sender, hd);
-        }
+        removeAndDeliver(processing, win);
+        sendAck(sender, win.getHighestDelivered());
     }
 
     protected int removeAndDeliver(final AtomicBoolean processing, Table<Message> win) {

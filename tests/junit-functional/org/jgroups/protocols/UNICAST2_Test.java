@@ -37,7 +37,7 @@ public class UNICAST2_Test {
         Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
     }
 
-    @AfterMethod protected void destroy() {setLevel("warn", a, b); Util.close(b, a); rb.reset();;}
+    @AfterMethod protected void destroy() {setLevel("warn", a, b); Util.close(b, a); rb.reset();}
 
 
     /**
