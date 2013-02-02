@@ -44,6 +44,8 @@ public class StompConnection implements Runnable {
 
     protected final Set<String> subscriptions=new HashSet<String>();
 
+    protected final Set<ConnectionCallback> callbacks =new HashSet<ConnectionCallback>();
+
     protected Thread runner;
 
     protected volatile boolean running=false;
@@ -87,9 +89,19 @@ public class StompConnection implements Runnable {
             listeners.add(listener);
     }
 
+    public void addCallback(ConnectionCallback cb) {
+        if(cb != null)
+            callbacks.add(cb);
+    }
+
     public void removeListener(Listener listener) {
         if(listener != null)
             listeners.remove(listener);
+    }
+
+    public void removeCallback(ConnectionCallback cb) {
+        if(cb != null)
+            callbacks.remove(cb);
     }
 
     protected synchronized void startRunner() {
@@ -212,24 +224,31 @@ public class StompConnection implements Runnable {
     }
 
     public void run() {
-        int timeout = 1;
+        int timeout = 0;
         while(running) {
             try {
                 if (!isConnected() && reconnect) {
-                    log.error("Reconnecting in "+timeout+"s.");
+                    log.info("Reconnecting in "+timeout+"s.");
                     try {
                         Thread.sleep(timeout * 1000);
                     }
                     catch (InterruptedException e1) {
                         // pass
                     }
-                    timeout = timeout*2 > 60 ? 60 : timeout*2;
+                    timeout = timeout*2 > 60 ? 60 : (timeout+1)*2;
 
-                    connect();
+                    try {
+                        connect();
+                    }
+                    catch (IOException e) {
+                        // continue and attempt reconnect
+                        continue;
+                    }
+
+                    for (ConnectionCallback cb : callbacks) {
+                        cb.onConnect();
+                    }
                 }
-
-                // reset the connection backoff when we successfully connect.
-                timeout = 1;
 
                 STOMP.Frame frame=STOMP.readFrame(in);
                 if(frame != null) {
@@ -267,6 +286,9 @@ public class StompConnection implements Runnable {
                             throw new IllegalArgumentException("verb " + verb + " is not known");
                     }
                 }
+
+                // reset the connection backoff when we successfully connect.
+                timeout = 0;
             }
             catch(IOException e) {
                 log.error("Connection closed unexpectedly:", e);
@@ -310,15 +332,16 @@ public class StompConnection implements Runnable {
             try {
                 connectToDestination(dest);
                 sendConnect();
-                for(String subscription: subscriptions)
+                for(String subscription: subscriptions) {
                      sendSubscribe(subscription);
-                if(log.isDebugEnabled())
-                    log.debug("connected to " + dest);
+                }
+
+                log.info("Connected to " + dest);
                 break;
             }
             catch(IOException ex) {
                 if(log.isErrorEnabled())
-                    log.error("failed connecting to " + dest, ex);
+                    log.error("failed connecting to " + dest + ":" + ex);
                 closeConnections();
             }
         }
@@ -363,6 +386,10 @@ public class StompConnection implements Runnable {
     public static interface Listener {
         void onMessage(Map<String,String> headers, byte[] buf, int offset, int length);
         void onInfo(Map<String,String> information);
+    }
+
+    public static interface ConnectionCallback {
+        void onConnect();
     }
 
     public static void main(String[] args) throws IOException {
