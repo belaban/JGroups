@@ -98,7 +98,7 @@ public class UNICAST2_Test {
 
     protected JChannel createChannel(String name) throws Exception {
         return new JChannel(new SHARED_LOOPBACK(),
-                            new PING().setValue("timeout", 500),
+                            new PING().setValue("timeout", 1000),
                             new NAKACK2().setValue("use_mcast_xmit", false),
                             new DISCARD(),
                             new UNICAST2().setValue("xmit_interval", 500),
