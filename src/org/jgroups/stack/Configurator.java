@@ -405,7 +405,7 @@ public class Configurator {
 
     protected static Protocol createLayer(ProtocolStack stack, ProtocolConfiguration config) throws Exception {
         String              protocol_name=config.getProtocolName();
-        Map<String, String> properties=config.getProperties();
+        Map<String, String> properties=new HashMap<String,String>(config.getProperties());
         Protocol            retval=null;
 
         if(protocol_name == null || properties == null)
@@ -628,7 +628,7 @@ public class Configurator {
     		String protocolName = protocol.getName();
 
     		// regenerate the Properties which were destroyed during basic property processing
-    		Map<String,String> properties = protocol_config.getOriginalProperties();
+    		Map<String,String> properties = new HashMap<String,String>(protocol_config.getProperties());
 
     		// check which InetAddress-related properties are ***non-null ***, and
     		// create an InetAddressInfo structure for them
@@ -753,7 +753,7 @@ public class Configurator {
             String protocolName=protocol.getName();
 
             // regenerate the Properties which were destroyed during basic property processing
-            Map<String,String> properties=protocol_config.getOriginalProperties();
+            Map<String,String> properties=new HashMap<String,String>(protocol_config.getProperties());
 
             Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(protocol.getClass(), Property.class);
             for(int j=0; j < methods.length; j++) {
