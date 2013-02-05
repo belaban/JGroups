@@ -20,8 +20,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class TCPConnectionMap{
-
+/**
+ * Class that manages TCP connections between members
+ * @author Vladimir Blagojevic
+ * @author Bela Ban
+ */
+public class TCPConnectionMap {
     protected final Mapper        mapper;
     protected final InetAddress   bind_addr;
     protected InetAddress         client_bind_addr;
@@ -35,7 +39,8 @@ public class TCPConnectionMap{
     protected int                 recv_buf_size=120000;
     protected int                 send_buf_size=60000;
     protected int                 send_queue_size = 0;
-    protected int                 sock_conn_timeout=1000; // max time in millis to wait for Socket.connect() to return    
+    protected int                 sock_conn_timeout=1000; // max time in millis to wait for Socket.connect() to return
+    protected int                 peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
     protected boolean             tcp_nodelay=false;
     protected int                 linger=-1;    
     protected final Thread        acceptor;
@@ -52,26 +57,11 @@ public class TCPConnectionMap{
                             InetAddress external_addr,
                             int external_port,
                             int srv_port,
-                            int max_port,
-                            ThreadGroup group
+                            int max_port
                             ) throws Exception {
-        this(service_name, f,socket_factory, r,bind_addr,false,external_addr,external_port, srv_port,max_port,0,0, group);
+        this(service_name, f,socket_factory, r,bind_addr,false,external_addr,external_port, srv_port,max_port,0,0);
     }
     
-    public TCPConnectionMap(String service_name,
-            ThreadFactory f,
-            SocketFactory socket_factory,
-            Receiver r,
-            InetAddress bind_addr,
-            boolean defer_client_bind_addr,
-            InetAddress external_addr,
-            int external_port,
-            int srv_port,
-            int max_port,
-            ThreadGroup group
-            ) throws Exception {
-    	this(service_name, f,socket_factory, r,bind_addr,defer_client_bind_addr,external_addr,external_port, srv_port,max_port,0,0, group);
-	}
 
     public TCPConnectionMap(String service_name,
                             ThreadFactory f,
@@ -82,10 +72,9 @@ public class TCPConnectionMap{
                             int srv_port,
                             int max_port,
                             long reaper_interval,
-                            long conn_expire_time,
-                            ThreadGroup group
+                            long conn_expire_time
                             ) throws Exception {
-        this(service_name, f, null, r, bind_addr, false, external_addr, external_port, srv_port, max_port, reaper_interval, conn_expire_time, group);
+        this(service_name, f, null, r, bind_addr, false, external_addr, external_port, srv_port, max_port, reaper_interval, conn_expire_time);
     }
 
     public TCPConnectionMap(String service_name,
@@ -99,8 +88,7 @@ public class TCPConnectionMap{
                             int srv_port,
                             int max_port,
                             long reaper_interval,
-                            long conn_expire_time,
-                            ThreadGroup group
+                            long conn_expire_time
                             ) throws Exception {
         this.mapper = new Mapper(f,reaper_interval);
         this.receiver=r;
@@ -134,6 +122,7 @@ public class TCPConnectionMap{
     public TCPConnectionMap clientBindAddress(InetAddress addr)     {this.client_bind_addr=addr; return this;}
     public int              clientBindPort()                        {return client_bind_port;}
     public TCPConnectionMap clientBindPort(int port)                {this.client_bind_port=port; return this;}
+    public TCPConnectionMap peerAddressReadTimeout(int timeout)     {this.peer_addr_read_timeout=timeout; return this;}
 
     public void addConnectionMapListener(AbstractConnectionMap.ConnectionMapListener<TCPConnection> l) {
         mapper.addConnectionMapListener(l);
@@ -362,18 +351,16 @@ public class TCPConnectionMap{
     }
     
     public class TCPConnection implements Connection {
-        protected final Socket sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
-        protected final Lock send_lock=new ReentrantLock(); // serialize send()        
-        protected final Log log=LogFactory.getLog(getClass());        
-        protected final byte[] cookie= { 'b', 'e', 'l', 'a' };  
+        protected final Socket           sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
+        protected final Lock             send_lock=new ReentrantLock(); // serialize send()
+        protected final byte[]           cookie= { 'b', 'e', 'l', 'a' };
         protected final DataOutputStream out;
-        protected final DataInputStream in;    
-        protected final Address peer_addr; // address of the 'other end' of the connection
-        protected final int peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
-        protected long last_access=System.currentTimeMillis(); // last time a message was sent or received           
-        protected Sender sender;
+        protected final DataInputStream  in;
+        protected final Address          peer_addr; // address of the 'other end' of the connection
+        protected long                   last_access=System.currentTimeMillis(); // last time a message was sent or received
+        protected Sender                 sender;
         protected ConnectionPeerReceiver connectionPeerReceiver;
-        protected final AtomicBoolean active=new AtomicBoolean(false);
+        protected final AtomicBoolean    active=new AtomicBoolean(false);
 
         TCPConnection(Address peer_addr) throws Exception {
             if(peer_addr == null)

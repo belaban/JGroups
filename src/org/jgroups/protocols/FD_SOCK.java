@@ -1011,7 +1011,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         final void start() {
             if(acceptor == null) {
-                acceptor=getThreadFactory().newThread(this, "FD_SOCK server socket acceptor");
+                acceptor=getThreadFactory().newThread(this, "FD_SOCK acceptor");
                 acceptor.setDaemon(true);
                 acceptor.start();
             }

@@ -20,19 +20,17 @@ public class ConnectionMapUnitTest {
     TCPConnectionMap ct1, ct2;
     static final int port1=15555, port2=16666;
 
-    static final ThreadGroup group=new ThreadGroup("ConnectionMapUnitTest");
-
     @BeforeMethod
     protected void setUp() throws Exception {
         ct1=new TCPConnectionMap("TCPConnectionMap1",
-                                 new DefaultThreadFactory(group, "test", true),
-                                 null, null, null, null, 0, port1, port1, group);
+                                 new DefaultThreadFactory("test", true),
+                                 null, null, null, null, 0, port1, port1);
 
         ct1.setUseSendQueues(false);
         ct1.start();
         ct2=new TCPConnectionMap("TCPConnectionMap2",
-                                 new DefaultThreadFactory(group, "test", true),
-                                 null, null, null, null, 0, port2, port2,group);
+                                 new DefaultThreadFactory("test2", true),
+                                 null, null, null, null, 0, port2, port2);
         ct2.setUseSendQueues(false);
         ct2.start();
     }

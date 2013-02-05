@@ -44,7 +44,6 @@ public abstract class BasicConnectionTable {
     long                  conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
     int                   sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
     int                   peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
-    final ThreadGroup     thread_group=new ThreadGroup("ConnectionTable");
     protected final Log   log= LogFactory.getLog(getClass());
     final byte[]          cookie={'b', 'e', 'l', 'a'};
     boolean               use_reaper=false;            // by default we don't reap idle conns
@@ -71,7 +70,7 @@ public abstract class BasicConnectionTable {
 
 
     protected BasicConnectionTable() {        
-        factory = new DefaultThreadFactory(new ThreadGroup("ConnectionTable"),"Connection Table", false);
+        factory = new DefaultThreadFactory("Connection Table", false);
     }
 
     public final void setReceiver(Receiver r) {
@@ -445,8 +444,8 @@ public abstract class BasicConnectionTable {
        void init() {
            is_running=true;
            if(receiverThread == null || !receiverThread.isAlive()) {
-               // Roland Kurmann 4/7/2003, put in thread_group
-               receiverThread=getThreadFactory().newThread(thread_group,this, "ConnectionTable.Connection.Receiver [" + getSockAddress() + "]");               
+               // Roland Kurmann 4/7/2003, put in thread_group - removed bela Nov 2012
+               receiverThread=getThreadFactory().newThread(this, "ConnectionTable.Connection.Receiver [" + getSockAddress() + "]");
                receiverThread.start();
                if(log.isTraceEnabled())
                    log.trace("receiver started: " + receiverThread);
@@ -716,11 +715,11 @@ public abstract class BasicConnectionTable {
 
        class Sender implements Runnable {
            AtomicReference<Thread> senderThread = new AtomicReference<Thread>();
-           private AtomicBoolean is_it_running=new AtomicBoolean();
+           private final AtomicBoolean is_it_running=new AtomicBoolean();
 
            void start() {
                Thread localThread=senderThread.getAndSet(getThreadFactory()
-                                                           .newThread(thread_group, this,
+                                                           .newThread(this,
                                                                       "ConnectionTable.Connection.Sender local_addr=" + local_addr + " [" + getSockAddress() + "]"));
                if(localThread == null ) {
                    is_it_running.set(true);
@@ -790,8 +789,8 @@ public abstract class BasicConnectionTable {
            if(t != null && !t.isAlive())
                t=null;
            if(t == null) {
-               //RKU 7.4.2003, put in threadgroup
-               t=getThreadFactory().newThread(thread_group, this, "ConnectionTable.ReaperThread");              
+               // RKU 7.4.2003, put in threadgroup -- removed bela Nov 2012
+               t=getThreadFactory().newThread(this, "ConnectionTable.ReaperThread");
                t.setDaemon(true); // will allow us to terminate if all remaining threads are daemons
                t.start();
            }

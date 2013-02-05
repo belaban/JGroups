@@ -84,7 +84,7 @@ public class VERIFY_SUSPECT_Test {
             }
 
             public ThreadFactory getThreadFactory() {
-                return new DefaultThreadFactory(new ThreadGroup("bla"),"foo",false,true);
+                return new DefaultThreadFactory("foo",false,true);
             }
         });
 
@@ -121,6 +121,6 @@ public class VERIFY_SUSPECT_Test {
 
     protected static class NoopProtocol extends Protocol {
         public Object down(Event evt) {return null;}
-        public ThreadFactory getThreadFactory() {return new DefaultThreadFactory(new ThreadGroup("x"),"y",false,true);}
+        public ThreadFactory getThreadFactory() {return new DefaultThreadFactory("y",false,true);}
     }
 }

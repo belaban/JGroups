@@ -62,7 +62,7 @@ public abstract class BasicTCP extends TP {
     protected int         client_bind_port=0;
 
     @Property(description="If true, client sockets will not explicitly bind to bind_addr but will defer to the native socket")
-    protected boolean defer_client_bind_addr=false;
+    protected boolean     defer_client_bind_addr=false;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */

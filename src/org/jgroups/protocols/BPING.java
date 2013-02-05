@@ -13,7 +13,6 @@ import org.jgroups.util.Util;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -89,7 +88,7 @@ public class BPING extends PING implements Runnable {
 
     private void startReceiver() {
         if(receiver == null || !receiver.isAlive()) {
-            receiver=new Thread(getChannelThreadGroup(), this, "ReceiverThread");
+            receiver=new Thread(this, "ReceiverThread");
             receiver.setDaemon(true);
             receiver.start();
             if(log.isTraceEnabled())
