@@ -678,8 +678,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         ReceiverEntry entry2=recv_table.remove(mbr);
         if(entry2 != null) {
             Table<Message> win=entry2.received_msgs;
-            if(win != null)
-                sendStableMessage(mbr, entry2.recv_conn_id, win.getHighestDelivered(), win.getHighestReceived());
+            if(win != null) {
+                long[] digest=win.getDigest();
+                sendStableMessage(mbr, entry2.recv_conn_id, digest[0], digest[1]);
+            }
             entry2.reset();
         }
     }
@@ -750,8 +752,10 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
         if(added) {
             int len=msg.getLength();
-            if(len > 0 &&  entry.incrementStable(len))
-                sendStableMessage(sender, entry.recv_conn_id, win.getHighestDelivered(), win.getHighestReceived());
+            if(len > 0 &&  entry.incrementStable(len)) {
+                long[] digest=win.getDigest();
+                sendStableMessage(sender, entry.recv_conn_id, digest[0], digest[1]);
+            }
         }
 
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
