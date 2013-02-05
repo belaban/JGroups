@@ -1414,7 +1414,7 @@ public abstract class TP extends Protocol {
                     last_discovery_request=current_time == 0? System.currentTimeMillis() : current_time;
                     if(log.isWarnEnabled())
                         log.warn(local_addr + ": logical address cache didn't contain all physical address, sending up a discovery request");
-                    up_prot.up(new Event(Event.FIND_INITIAL_MBRS));
+                    up(new Event(Event.FIND_INITIAL_MBRS));
                 }
             }
         }
