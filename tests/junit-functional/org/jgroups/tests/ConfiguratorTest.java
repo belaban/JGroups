@@ -155,7 +155,7 @@ public class ConfiguratorTest {
         System.out.println("config:\n" + ret);
         Assert.assertEquals(14, ret.size());
 
-        config="UDP(mcast_addr=ff18:eb72:479f::2:3;mcast_port=2453):pbcast.FD:FRAG(frag_size=2292):FD_SIMPLE(s=22;d=33):MERGE2(a=22)";
+        config="UDP(mcast_addr=ff18:eb72:479f::2:3;mcast_port=2453):pbcast.FD:FRAG(frag_size=2292):FD_ALL(s=22;d=33):MERGE2(a=22)";
         ret=Configurator.parseConfigurations(config);
         System.out.println("config:\n" + ret);
         Assert.assertEquals(5, ret.size());

@@ -35,13 +35,6 @@
             description='Encryption algorithms. Used by ENCRYPT and AUTH (runtime)'>
         <jar name='bouncycastle.jar' />
     </module>
-    <module name='Beanshell'
-            licenseType='lgpl (dual license, but LGPL may be chosen)'
-            version='2.0b5'
-            projectHome='http://www.beanshell.org'
-            description='Lightweight Scripting for Java. Uused mainly by the BSH protocol (uncomplete) (runtime)'>
-        <jar name='bsh.jar' />
-    </module>
     <module name='byteman'
             licenseType='LGPL 2.1'
             version='2.1.2'

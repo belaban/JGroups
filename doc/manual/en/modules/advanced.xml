@@ -2659,12 +2659,6 @@ probe.sh op=SUPERVISOR.dumpRules
             system. When done, the protocol can be removed again.
         </para>
         <para>
-            Of course, probe could be used to do crazy things: one could insert the BSH (BeanShell, a Java interpreter)
-            protocol into all cluster members, then connect to the individual nodes (listening on a TCP port), and
-            inject Java code into the running JVM ! To prevent this, probing can be disabled (see below). The default
-            configurations have it <emphasis>enabled</emphasis>.
-        </para>
-        <para>
             Probe is a script (<filename>probe.sh</filename> in the <filename>bin</filename> directory of the source
             distribution) that can be invoked on any of the hosts in same network in which a cluster is running.
         </para>

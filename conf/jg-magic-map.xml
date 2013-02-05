@@ -26,7 +26,6 @@
     <class id="56"  name="org.jgroups.protocols.TpHeader"/>
     <class id="57"  name="org.jgroups.protocols.ENCRYPT$EncryptHeader"/>
     <class id="58"  name="org.jgroups.protocols.SEQUENCER$SequencerHeader"/>
-    <class id="59"  name="org.jgroups.protocols.FD_SIMPLE$FdHeader"/>
     <class id="61"  name="org.jgroups.protocols.FD_ALL$HeartbeatHeader"/>
     <class id="64"  name="org.jgroups.protocols.pbcast.FLUSH$FlushHeader"/>
     <class id="65"  name="org.jgroups.protocols.pbcast.StreamingStateTransfer$StateHeader"/>

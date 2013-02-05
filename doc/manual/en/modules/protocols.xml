@@ -673,29 +673,6 @@
         </section>
 
 
-        <section>
-            <title>FD_ICMP</title>
-            Uses InetAddress.isReachable() to
-            determine whether a host is up or not. Note that this is only available in
-            JDK 5, so reflection is used to determine whether InetAddress provides
-            such a method. If not, an exception will be thrown at protocol
-            initialization time.
-            <para/>
-            The problem with InetAddress.isReachable()
-            is that it may or may not use ICMP in its implementation ! For example, an
-            implementation might try to establish a TCP connection to port 9 (echo
-            service), and - if the echo service is not running - the host would be
-            suspected, although a real ICMP packet would
-            <emphasis>not</emphasis>
-            have
-            suspected the host ! Please check your JDK/OS combo before running this
-            protocol.
-            ${FD_ICMP}
-        </section>
-
-
-
-
 
         <section>
             <title>VERIFY_SUSPECT</title>
