@@ -51,7 +51,7 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
      */
     public View(ViewId vid, List<Address> members) {
         this.vid=vid;
-        this.members=new ArrayList<Address>(members);
+        this.members=Collections.unmodifiableList(members);
     }
 
     /**
@@ -86,14 +86,11 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
     }
 
     /**
-     * Returns a reference to the List of members (ordered)
-     * Do NOT change this list, hence your will invalidate the view
-     * Make a copy if you have to modify it.
-     *
-     * @return a reference to the ordered list of members in this view
+     * Returns the member list
+     * @return an unmodifiable list of members
      */
     public List<Address> getMembers() {
-        return Collections.unmodifiableList(members);
+        return members;
     }
 
     /**
@@ -132,7 +129,8 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
 
 
     public View copy() {
-        return new View(vid.copy(), members);
+        // to avoid cascading refs (UnmodifiableList keeps a ref to the wrapped list)
+        return new View(vid.copy(), new ArrayList<Address>(members));
     }
 
 
@@ -156,7 +154,7 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
     public void readFrom(DataInput in) throws Exception {
         vid=new ViewId();
         vid.readFrom(in);
-        members=(List<Address>)Util.readAddresses(in, ArrayList.class);
+        members=Collections.unmodifiableList((List<? extends Address>)Util.readAddresses(in, ArrayList.class));
     }
 
     public int serializedSize() {

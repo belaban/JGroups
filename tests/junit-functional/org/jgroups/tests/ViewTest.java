@@ -41,6 +41,30 @@ public class ViewTest {
 
     }
 
+    public void testGetMembers() throws Exception {
+        List<Address> mbrs=view.getMembers();
+        try {
+            mbrs.add(a);
+            assert false: "adding a member to a view should throw an exception";
+        }
+        catch(UnsupportedOperationException ex) {
+            System.out.println("adding a member threw " + ex.getClass().getSimpleName() + " as expected");
+        }
+
+        byte[] buf=Util.objectToByteBuffer(view);
+        View view2=(View)Util.objectFromByteBuffer(buf);
+        System.out.println("view2 = " + view2);
+
+        mbrs=view2.getMembers();
+        try {
+            mbrs.add(a);
+            assert false: "adding a member to a view should throw an exception";
+        }
+        catch(UnsupportedOperationException ex) {
+            System.out.println("adding a member threw " + ex.getClass().getSimpleName() + " as expected");
+        }
+    }
+
     public void testContainsMember() {
         assert view.containsMember(a) : "Member should be in view";
         assert view.containsMember(b) : "Member should be in view";
@@ -69,11 +93,20 @@ public class ViewTest {
     }
  
 
-    public void testCopy() {
+    public void testCopy() throws Exception {
         View view2=view.copy();
         System.out.println("view = " + view);
         System.out.println("view2 = " + view2);
         assert view.equals(view2);
+
+        List<Address> mbrs=view2.getMembers();
+        try {
+            mbrs.add(a);
+            assert false: "adding a member to a view should throw an exception";
+        }
+        catch(UnsupportedOperationException ex) {
+            System.out.println("adding a member threw " + ex.getClass().getSimpleName() + " as expected");
+        }
     }
 
 
