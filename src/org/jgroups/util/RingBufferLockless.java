@@ -339,7 +339,7 @@ public class RingBufferLockless<T> implements Iterable<T> {
      * @throws NoSuchElementException is HD is moved forward during the iteration
      */
     public Iterator<T> iterator() {
-        return new RingBufferIterator<T>(buf);
+        return new RingBufferIterator(buf);
     }
 
     public String toString() {
@@ -391,7 +391,7 @@ public class RingBufferLockless<T> implements Iterable<T> {
     }
 
 
-    protected class RingBufferIterator<T> implements Iterator<T> {
+    protected class RingBufferIterator implements Iterator<T> {
         protected final AtomicReferenceArray<T> buffer;
         protected long current=hd+1;
 
