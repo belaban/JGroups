@@ -441,7 +441,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                         entry=existing;
                     else {
                         if(log.isTraceEnabled())
-                            log.trace(local_addr + ": created connection to " + dst);
+                            log.trace(local_addr + ": created sender window for " + dst + " (conn-id=" + entry.send_conn_id + ")");
                         if(cache != null && !members.contains(dst))
                             cache.add(dst);
                     }
