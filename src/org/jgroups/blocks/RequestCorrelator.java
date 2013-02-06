@@ -518,18 +518,8 @@ public class RequestCorrelator {
 
         rsp=req.makeReply();
         prepareResponse(rsp);
-        rsp.setFlag(Message.OOB);
-        rsp.setFlag(Message.DONT_BUNDLE);
-
-        // why don't we simply copy the flags ?
-        if(req.isFlagSet(Message.NO_FC))
-            rsp.setFlag(Message.NO_FC);
-        if(req.isFlagSet(Message.NO_RELIABILITY))
-            rsp.setFlag(Message.NO_RELIABILITY);
-        if(req.isFlagSet(Message.NO_TOTAL_ORDER))
-            rsp.setFlag(Message.NO_TOTAL_ORDER);
-        if(req.isFlagSet(Message.Flag.NO_RELAY))
-            rsp.setFlag(Message.Flag.NO_RELAY);
+        rsp.setFlag(req.getFlags());
+        rsp.clearFlag(Message.Flag.RSVP, Message.Flag.SCOPED);
 
         if(rsp_buf instanceof Buffer)
             rsp.setBuffer((Buffer)rsp_buf);
