@@ -11,10 +11,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
@@ -23,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
  */
-public class RouterStub {
+public class RouterStub implements Comparable<RouterStub> {
 
     public static enum ConnectionStatus {INITIAL, CONNECTION_BROKEN, CONNECTION_ESTABLISHED, CONNECTED,DISCONNECTED};
 
@@ -74,7 +71,11 @@ public class RouterStub {
         bind_addr=bindAddress;
         conn_listener=l;        
     }
-    
+
+    public RouterStub(InetSocketAddress addr) {
+        this(addr.getHostName(), addr.getPort(), null, null);
+    }
+
     public void setReceiver(StubReceiver receiver) {
         this.receiver = receiver;
     }
@@ -89,6 +90,23 @@ public class RouterStub {
 
     public void setTcpNoDelay(boolean tcp_nodelay) {
         this.tcp_nodelay=tcp_nodelay;
+    }
+
+    // Note that this would fail to return 0 if we had a dotted decimal and a symbolic addr resolving to the same host !
+    public int compareTo(RouterStub o) {
+        int rc=router_host.compareTo(o.router_host);
+        if(rc != 0)
+            return rc;
+        return router_port < o.router_port? -1 : router_port > o.router_port? 1 : 0;
+    }
+
+    public boolean equals(Object obj) {
+        RouterStub o=(RouterStub)obj;
+        return compareTo(o) == 0;
+    }
+
+    public int hashCode() {
+        return router_host.hashCode() + router_port;
     }
 
     public void interrupt() {

@@ -182,8 +182,9 @@ public class TCPGOSSIP extends Discovery {
 
     @ManagedOperation
     public boolean removeInitialHost(String hostname, int port) {
-        InetSocketAddress isa = new InetSocketAddress(hostname, port);        
-        RouterStub unregisterStub = stubManager.unregisterStub(isa);
+        InetSocketAddress isa = new InetSocketAddress(hostname, port);
+        RouterStub stub=new RouterStub(isa);
+        RouterStub unregisterStub = stubManager.unregisterStub(stub);
         if(unregisterStub != null) {
             stubManager.stopReconnecting(unregisterStub);
             unregisterStub.destroy();

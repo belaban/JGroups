@@ -507,10 +507,6 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
-    protected void send(Message msg, Event evt) {
-        down_prot.down(evt);
-        num_msgs_sent++;
-    }
 
     /**
      * Removes and resets from connection table (which is already locked). Returns true if member was found,
