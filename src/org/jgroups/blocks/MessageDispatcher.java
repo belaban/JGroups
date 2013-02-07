@@ -37,24 +37,25 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Bela Ban
  */
-public class MessageDispatcher implements RequestHandler, ChannelListener {
-    protected Channel channel=null;
-    protected RequestCorrelator corr=null;
-    protected MessageListener msg_listener=null;
-    protected MembershipListener membership_listener=null;
-    protected RequestHandler req_handler=null;
-    protected ProtocolAdapter prot_adapter=null;
-    protected volatile Collection<Address> members=new HashSet<Address>();
-    protected Address local_addr=null;
-    protected final Log log=LogFactory.getLog(getClass());
-    protected boolean hardware_multicast_supported=false;
-    protected final AtomicInteger sync_unicasts=new AtomicInteger(0);
-    protected final AtomicInteger async_unicasts=new AtomicInteger(0);
-    protected final AtomicInteger sync_multicasts=new AtomicInteger(0);
-    protected final AtomicInteger async_multicasts=new AtomicInteger(0);
-    protected final AtomicInteger sync_anycasts=new AtomicInteger(0);
-    protected final AtomicInteger async_anycasts=new AtomicInteger(0);
-    protected final Set<ChannelListener> channel_listeners=new CopyOnWriteArraySet<ChannelListener>();
+public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
+    protected Channel                               channel;
+    protected RequestCorrelator                     corr;
+    protected MessageListener                       msg_listener;
+    protected MembershipListener                    membership_listener;
+    protected RequestHandler                        req_handler;
+    protected boolean                               async_dispatching;
+    protected ProtocolAdapter                       prot_adapter;
+    protected volatile Collection<Address>          members=new HashSet<Address>();
+    protected Address                               local_addr;
+    protected final Log                             log=LogFactory.getLog(getClass());
+    protected boolean                               hardware_multicast_supported=false;
+    protected final AtomicInteger                   sync_unicasts=new AtomicInteger(0);
+    protected final AtomicInteger                   async_unicasts=new AtomicInteger(0);
+    protected final AtomicInteger                   sync_multicasts=new AtomicInteger(0);
+    protected final AtomicInteger                   async_multicasts=new AtomicInteger(0);
+    protected final AtomicInteger                   sync_anycasts=new AtomicInteger(0);
+    protected final AtomicInteger                   async_anycasts=new AtomicInteger(0);
+    protected final Set<ChannelListener>            channel_listeners=new CopyOnWriteArraySet<ChannelListener>();
     protected final DiagnosticsHandler.ProbeHandler probe_handler=new MyProbeHandler();
 
 
@@ -70,9 +71,8 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
         }
         setMessageListener(l);
         setMembershipListener(l2);
-        if(channel != null) {
+        if(channel != null)
             installUpHandler(prot_adapter, true);
-        }
         start();
     }
 
@@ -85,6 +85,14 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     }
 
 
+    public boolean asyncDispatching() {return async_dispatching;}
+
+    public MessageDispatcher asyncDispatching(boolean flag) {
+        async_dispatching=flag;
+        if(corr != null)
+            corr.asyncDispatching(flag);
+        return this;
+    }
 
 
     public UpHandler getProtocolAdapter() {
@@ -121,7 +129,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
 
     public void start() {
         if(corr == null)
-            corr=createRequestCorrelator(prot_adapter, this, local_addr);
+            corr=createRequestCorrelator(prot_adapter, this, local_addr).asyncDispatching(async_dispatching);
         correlatorStarted();
         corr.start();
 
@@ -260,7 +268,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     public <T> NotifyingFuture<RspList<T>> castMessageWithFuture(final Collection<Address> dests,
                                                                  Message msg,
                                                                  RequestOptions options) throws Exception {
-        GroupRequest<T> req=cast(dests, msg, options, false);
+        GroupRequest<T> req=cast(dests,msg,options,false);
         return req != null? req : new NullFuture<RspList>(new RspList());
     }
 
@@ -430,6 +438,26 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     }
     /* -------------------- End of RequestHandler Interface ------------------- */
 
+
+
+    /* -------------------- AsyncRequestHandler Interface --------------------- */
+    public void handle(Message request, Response response) throws Exception {
+        if(req_handler != null) {
+            if(req_handler instanceof AsyncRequestHandler)
+                ((AsyncRequestHandler)req_handler).handle(request, response);
+            else {
+                Object retval=req_handler.handle(request);
+                if(response != null)
+                    response.send(retval, false);
+            }
+            return;
+        }
+
+        Object retval=handle(request);
+        if(response != null)
+            response.send(retval, false);
+    }
+    /* ------------------ End of AsyncRequestHandler Interface----------------- */
 
 
 

@@ -601,7 +601,7 @@ public void testResponseFilter() throws Exception {
                   the call if it wasn't for the timeout of 10 seconds !
               </para>
               <para>
-                  This will be fixed in 3.1; a blocking call will always return if we've received as many responses as
+                  This was fixed in 3.1; a blocking call will always return if we've received as many responses as
                   we have members in 'dests', regardless of what the RspFilter says.
               </para>
           </warning>
@@ -609,6 +609,125 @@ public void testResponseFilter() throws Exception {
 
   </section>
 
+    <section id="AsyncInvocation">
+        <title>Asynchronous invocation in MessageDispatcher and RpcDispatcher</title>
+        <para>
+            By default, a message received by a MessageDispatcher or RpcDispatcher is dispatched into application code
+            by calling method handle from RequestHandler:
+        </para>
+
+        <programlisting language="Java">
+public interface RequestHandler {
+    Object handle(Message msg) throws Exception;
+}
+        </programlisting>
+
+        <para>
+            In the case of RpcDispatcher, the handle() method converts the message's contents into a method call,
+            invokes the method against the target object and returns the result (or throws an exception). The return value
+            of handle() is then sent back to the sender of the message.
+        </para>
+
+        <para>
+            The invocation is <emphasis>synchronous</emphasis>, ie. done on the thread responsible for dispatching this
+            particular message from the network up the stack all the way into the application. The thread is therefore
+            <emphasis>unusable</emphasis> for the duration of the method invocation.
+        </para>
+        <para>
+            If the invocation takes a while, e.g. because locks are acquired or the application waits on some I/O, as
+            the current thread is busy, another thread will be used for a different request message. This can quickly
+            lead to the thread pool being exhausted or many messages getting queued if the pool has an associated queue.
+        </para>
+        <para>
+            Therefore a new way of dispatching messages to the application was devised: the asynchronous invocation API:
+        </para>
+        <note><para>The asynchronous invocation API was added in 3.3</para></note>
+        <programlisting language="Java">
+public interface AsyncRequestHandler extends RequestHandler {
+    void handle(Message request, Response response) throws Exception;
+}
+        </programlisting>
+
+        <para>
+            Extending RequestHandler, interface AsyncRequestHandler adds an additional method taking a request message
+            and a Response object. The request message contains the same information as before (e.g. a method call plus
+            args). The Response argument is used to send a rely (if needed) at a later time, when processing is done.
+        </para>
+
+        <programlisting language="Java">
+public interface Response {
+    void send(Object reply, boolean is_exception);
+}
+        </programlisting>
+
+        <para>
+            Response encapsulates information about the request (e.g. request ID and sender), and has method reply() to
+            send a response. The is_exception parameter can be set to true if the reply is actually an exception, e.g.
+            that was thrown when handle() ran application code.
+        </para>
+
+        <para>
+            The advantage of the new API is that it can, but doesn't have to, be used asynchronously. The default
+            implementation still uses the synchronous invocation style:
+        </para>
+        <programlisting language="Java">
+public void handle(Message request, Response response) throws Exception {
+    Object retval=handle(request);
+    if(response != null)
+        response.send(retval, false);
+}
+        </programlisting>
+
+        <para>
+            Method handle() is called, which synchronously calls into application code and returns a result, which is
+            subsequently sent back to the sender of the request message.
+        </para>
+
+        <para>
+            However, an application could subclass MessageDispatcher or RpcDispatcher (as done in Infinispan), or it
+            could set a custom request handler via MessageDispatcher.setRequestHandler(), and implement handle() by
+            dispatching the processing to a thread from a thread pool. The thread which guided the request message from
+            the network up to this point would be therefore immediately released and could be used for other messages.
+            The response would be sent whenever the invocation of application code is done, and thus the thread from
+            the thread pool would not be blocked on I/O, trying to acquire locks or anything else that blocks in
+            application code.
+        </para>
+
+        <para>
+            To set the mode which is used, method MessageDispatcher.asyncDispatching(boolean) can be used. This can be
+            changed even at runtime, to switch between sync and async invocation style.
+        </para>
+
+        <para>
+            Asynchrounous invocation is typically used in conjunction with an application thread pool. The application
+            knows (JGroups doesn't) which requests can be processed in parallel and which ones can't. For example,
+            all OOB calls could be dispatched directly to the thread pool, as ordering of OOB requests is not important,
+            but regular requests should be added to a queue where they are processed sequentually.
+        </para>
+
+        <para>
+            The main benefit here is that request dispatching (and ordering) is now under application control
+            <emphasis>if the application wants to do that</emphasis>. If not, we can still use synchronous invocation.
+        </para>
+
+        <para>
+            A good example where asynchronous invocation makes sense are replicated web sessions. If a cluster node A
+            has 1000 web sessions, then replication of updates across the cluster generates messages from A. Because
+            JGroups delivers messages from the <emphasis>same</emphasis> sender <emphasis>sequentially</emphasis>, even
+            updates to unrelated web sessions are delivered in strict order.
+        </para>
+        <para>
+            With asynchronous invocation, the application could devise a dispatching strategy which assigns updates to
+            different (unrelated) web sessions to any available thread from the pool, but queues updates to the same
+            session, and processes those by the same thread, to provide ordering of updates to the same session. This
+            would speed up overall processing, as updates to a web session 1 on A don't have to wait until all
+            updates to an unrelated web session 2 on A have been processed.
+        </para>
+        <para>
+            This is similar to what the <xref linkend="SCOPE">SCOPE</xref> protocol tried to achieve.
+        </para>
+
+    </section>
 
     <section id="ReplicatedHashMap">
         <title>ReplicatedHashMap</title>

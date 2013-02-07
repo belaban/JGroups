@@ -40,33 +40,34 @@ import java.util.concurrent.ConcurrentMap;
 public class RequestCorrelator {
 
     /** The protocol layer to use to pass up/down messages. Can be either a Protocol or a Transport */
-    protected Protocol transport=null;
+    protected Protocol                               transport;
 
-    /**
-     * The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>)
-     */
-    protected final ConcurrentMap<Long, RspCollector> requests=Util.createConcurrentMap();
+    /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
+    protected final ConcurrentMap<Long,RspCollector> requests=Util.createConcurrentMap();
 
 
     /** The handler for the incoming requests. It is called from inside the dispatcher thread */
-    protected RequestHandler request_handler=null;
+    protected RequestHandler                         request_handler;
 
     /** Possibility for an external marshaller to marshal/unmarshal responses */
-    protected RpcDispatcher.Marshaller marshaller=null;
+    protected RpcDispatcher.Marshaller               marshaller;
 
     /** makes the instance unique (together with IDs) */
-    protected short id=ClassConfigurator.getProtocolId(this.getClass());
+    protected short                                  id=ClassConfigurator.getProtocolId(this.getClass());
 
     /** The address of this group member */
-    protected Address local_addr=null;
+    protected Address                                local_addr;
 
-    protected volatile View view;
+    protected volatile View                          view;
 
-    protected boolean started=false;
+    protected boolean                                started=false;
 
-    private final MyProbeHandler probe_handler=new MyProbeHandler(requests);
+    /** Whether or not to use async dispatcher */
+    protected boolean                                async_dispatching=false;
 
-    protected static final Log log=LogFactory.getLog(RequestCorrelator.class);
+    private final MyProbeHandler                     probe_handler=new MyProbeHandler(requests);
+
+    protected static final Log                       log=LogFactory.getLog(RequestCorrelator.class);
 
 
     /**
@@ -107,13 +108,10 @@ public class RequestCorrelator {
 
 
 
-    public RpcDispatcher.Marshaller getMarshaller() {
-        return marshaller;
-    }
-
-    public void setMarshaller(RpcDispatcher.Marshaller marshaller) {
-        this.marshaller=marshaller;
-    }
+    public RpcDispatcher.Marshaller getMarshaller() {return marshaller;}
+    public void                     setMarshaller(RpcDispatcher.Marshaller marshaller) {this.marshaller=marshaller;}
+    public boolean                  asyncDispatching() {return async_dispatching;}
+    public RequestCorrelator        asyncDispatching(boolean flag) {async_dispatching=flag; return this;}
 
     public void sendRequest(long id, List<Address> dest_mbrs, Message msg, RspCollector coll) throws Exception {
         sendRequest(id, dest_mbrs, msg, coll, new RequestOptions().setAnycasting(false));
@@ -338,21 +336,16 @@ public class RequestCorrelator {
      * @return true if the message was consumed, don't pass it further up, else false
      */
     public boolean receiveMessage(Message msg) {
-
-        // i. If header is not an instance of request correlator header, ignore
-        //
-        // ii. Check whether the message was sent by a request correlator with
-        // the same name (there may be multiple request correlators in the same
-        // protocol stack...)
         Header hdr=(Header)msg.getHeader(this.id);
         if(hdr == null)
             return false;
 
+        // Check if the message was sent by a request correlator with the same name;
+        // there may be multiple request correlators in the same protocol stack
         if(hdr.corrId != this.id) {
-            if(log.isTraceEnabled()) {
+            if(log.isTraceEnabled())
                 log.trace(new StringBuilder("id of request correlator header (").append(hdr.corrId).
                           append(") is different from ours (").append(this.id).append("). Msg not accepted, passed up"));
-            }
             return false;
         }
 
@@ -381,13 +374,6 @@ public class RequestCorrelator {
         // <tt>RspCollector</tt> that a reply has been received
         switch(hdr.type) {
             case Header.REQ:
-                if(request_handler == null) {
-                    if(log.isWarnEnabled()) {
-                        log.warn("there is no request handler installed to deliver request !");
-                    }
-                    return true;
-                }
-
                 handleRequest(msg, hdr);
                 break;
 
@@ -458,76 +444,72 @@ public class RequestCorrelator {
 
     /**
      * Handle a request msg for this correlator
-     *
      * @param req the request msg
      */
     protected void handleRequest(Message req, Header hdr) {
         Object        retval;
-        Object        rsp_buf; // either byte[] or Buffer
-        Header        rsp_hdr;
-        Message       rsp;
         boolean       threw_exception=false;
-
-        // i. Get the request correlator header from the msg and pass it to
-        // the registered handler
-        //
-        // ii. If a reply is expected, pack the return value from the request
-        // handler to a reply msg and send it back. The reply msg has the same
-        // ID as the request and the name of the sender request correlator
 
         if(log.isTraceEnabled()) {
             log.trace(new StringBuilder("calling (").append((request_handler != null? request_handler.getClass().getName() : "null")).
                       append(") with request ").append(hdr.id));
+        }
+        if(async_dispatching && request_handler instanceof AsyncRequestHandler) {
+            Response rsp=hdr.rsp_expected? new ResponseImpl(req, hdr.id) : null;
+            try {
+                ((AsyncRequestHandler)request_handler).handle(req, rsp);
+            }
+            catch(Throwable t) {
+                if(rsp != null)
+                    rsp.send(t, true);
+                else
+                    log.error(local_addr + ": failed dispatching request asynchronously: " + t);
+            }
+            return;
         }
 
         try {
             retval=request_handler.handle(req);
         }
         catch(Throwable t) {
-            // if(log.isErrorEnabled()) log.error("error invoking method", t);
             threw_exception=true;
             retval=t;
         }
+        if(hdr.rsp_expected)
+            sendReply(req, hdr.id, retval, threw_exception);
+    }
 
-        if(!hdr.rsp_expected) // asynchronous call, we don't need to send a response; terminate call here
-            return;
 
-        if(transport == null) {
-            if(log.isErrorEnabled()) log.error("failure sending response; no transport available");
-            return;
-        }
-
-        // changed (bela Feb 20 2004): catch exception and return exception
+    protected void sendReply(final Message req, final long req_id, Object reply, boolean is_exception) {
+        Object rsp_buf; // either byte[] or Buffer
         try {  // retval could be an exception, or a real value
-            rsp_buf=marshaller != null? marshaller.objectToBuffer(retval) : Util.objectToByteBuffer(retval);
+            rsp_buf=marshaller != null? marshaller.objectToBuffer(reply) : Util.objectToByteBuffer(reply);
         }
         catch(Throwable t) {
             try {  // this call should succeed (all exceptions are serializable)
                 rsp_buf=marshaller != null? marshaller.objectToBuffer(t) : Util.objectToByteBuffer(t);
-                threw_exception=true;
+                is_exception=true;
             }
             catch(NotSerializableException not_serializable) {
-                if(log.isErrorEnabled()) log.error("failed marshalling rsp (" + retval + "): not serializable");
+                if(log.isErrorEnabled()) log.error("failed marshalling rsp (" + reply + "): not serializable");
                 return;
             }
             catch(Throwable tt) {
-                if(log.isErrorEnabled()) log.error("failed marshalling rsp (" + retval + "): " + tt);
+                if(log.isErrorEnabled()) log.error("failed marshalling rsp (" + reply + "): " + tt);
                 return;
             }
         }
 
-        rsp=req.makeReply();
+        Message rsp=req.makeReply().setFlag(req.getFlags()).clearFlag(Message.Flag.RSVP, Message.Flag.SCOPED);
         prepareResponse(rsp);
-        rsp.setFlag(req.getFlags());
-        rsp.clearFlag(Message.Flag.RSVP, Message.Flag.SCOPED);
 
         if(rsp_buf instanceof Buffer)
             rsp.setBuffer((Buffer)rsp_buf);
-        else if (rsp_buf instanceof byte[])
+        else if(rsp_buf instanceof byte[])
             rsp.setBuffer((byte[])rsp_buf);
 
-        rsp_hdr=new Header(threw_exception? Header.EXC_RSP : Header.RSP, hdr.id, false, this.id);
-        rsp.putHeader(this.id, rsp_hdr);
+        Header rsp_hdr=new Header(is_exception? Header.EXC_RSP : Header.RSP, req_id, false, id);
+        rsp.putHeader(id, rsp_hdr);
         if(log.isTraceEnabled())
             log.trace(new StringBuilder("sending rsp for ").append(rsp_hdr.id).append(" to ").append(rsp.getDest()));
 
@@ -541,7 +523,19 @@ public class RequestCorrelator {
     // .......................................................................
 
 
+    protected class ResponseImpl implements Response {
+        protected final Message req;
+        protected final long    req_id;
 
+        public ResponseImpl(Message req, long req_id) {
+            this.req=req;
+            this.req_id=req_id;
+        }
+
+        public void send(Object reply, boolean is_exception) {
+            sendReply(req, req_id, reply, is_exception);
+        }
+    }
 
 
     /**
