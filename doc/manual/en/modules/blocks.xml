@@ -651,7 +651,7 @@ public interface AsyncRequestHandler extends RequestHandler {
         <para>
             Extending RequestHandler, interface AsyncRequestHandler adds an additional method taking a request message
             and a Response object. The request message contains the same information as before (e.g. a method call plus
-            args). The Response argument is used to send a rely (if needed) at a later time, when processing is done.
+            args). The Response argument is used to send a reply (if needed) at a later time, when processing is done.
         </para>
 
         <programlisting language="Java">
