@@ -3,10 +3,10 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.TP;
-import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -72,7 +72,7 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBUnicasts() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.BELOW, UNICAST.class, UNICAST2.class);
+        stack.insertProtocol(discard, ProtocolStack.BELOW,(Class<? extends Protocol>[])Util.getUnicastProtocols());
 
         Address dest=b.getAddress();
         Message m1=new Message(dest, 1);
@@ -100,7 +100,7 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBUnicasts2() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.BELOW, UNICAST.class, UNICAST2.class);
+        stack.insertProtocol(discard, ProtocolStack.BELOW,(Class<? extends Protocol>[])Util.getUnicastProtocols());
 
         Address dest=b.getAddress();
         Message m1=new Message(dest, 1);

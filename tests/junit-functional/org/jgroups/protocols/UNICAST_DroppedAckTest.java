@@ -7,7 +7,7 @@ import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
@@ -20,10 +20,9 @@ import org.testng.annotations.Test;
 public class UNICAST_DroppedAckTest {
     protected JChannel a, b;
 
-    @BeforeMethod
-    protected void setup() throws Exception {
-        a=createChannel("A");
-        b=createChannel("B");
+    protected void setup(Class<? extends Protocol> unicast_class) throws Exception {
+        a=createChannel(unicast_class, "A");
+        b=createChannel(unicast_class, "B");
         a.connect("UNICAST_DroppedAckTest");
         b.connect("UNICAST_DroppedAckTest");
         Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
@@ -31,34 +30,52 @@ public class UNICAST_DroppedAckTest {
 
     @AfterMethod protected void destroy() {Util.close(b, a);}
 
-    public void testNotEndlessXmits() throws Exception {
-        DISCARD discard_a=(DISCARD)a.getProtocolStack().findProtocol(DISCARD.class);
+    @DataProvider
+    static Object[][] configProvider() {
+        return new Object[][]{
+          {UNICAST.class},
+          {UNICAST3.class}
+        };
+    }
 
+    @Test(dataProvider="configProvider")
+    public void testNotEndlessXmits(Class<? extends Protocol> unicast_class) throws Exception {
+        setup(unicast_class);
+
+        DISCARD discard_a=(DISCARD)a.getProtocolStack().findProtocol(DISCARD.class);
         discard_a.setDropDownUnicasts(5); // drops the next 5 ACKs
 
         for(int i=1; i <= 5; i++)
             b.send(a.getAddress(), i);
 
-        UNICAST unicast_b=(UNICAST)b.getProtocolStack().findProtocol(UNICAST.class);
+        Protocol unicast_b=b.getProtocolStack().findProtocol(UNICAST.class, UNICAST3.class);
         for(int i=0; i < 10; i++) {
-            int num_unacked_msgs=unicast_b.getNumUnackedMessages();
+            int num_unacked_msgs=numUnackedMessages(unicast_b);
             System.out.println("num_unacked_msgs=" + num_unacked_msgs);
             if(num_unacked_msgs == 0)
                 break;
             Util.sleep(1000);
         }
 
-        assert unicast_b.getNumUnackedMessages() == 0 : "num_unacked_msgs on B should be 0 but is " + unicast_b.getNumUnackedMessages();
+        assert numUnackedMessages(unicast_b) == 0 : "num_unacked_msgs on B should be 0 but is " + numUnackedMessages(unicast_b);
+    }
+
+    protected int numUnackedMessages(Protocol unicast) {
+        if(unicast instanceof UNICAST)
+            return ((UNICAST)unicast).getNumUnackedMessages();
+        if(unicast instanceof UNICAST3)
+            return ((UNICAST3)unicast).getNumUnackedMessages();
+        throw new IllegalArgumentException("Protocol " + unicast.getClass().getSimpleName() + " needs to be UNICAST or UNICAST3");
     }
 
 
-    protected JChannel createChannel(String name) throws Exception {
+    protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
         return new JChannel(new Protocol[] {
           new SHARED_LOOPBACK(),
           new PING().setValue("timeout", 300),
           new NAKACK2(),
           new DISCARD(),
-          new UNICAST(),
+          unicast_class.newInstance().setValue("xmit_interval", 500),
           new GMS()
         }).name(name);
     }

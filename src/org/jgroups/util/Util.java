@@ -83,7 +83,9 @@ public class Util {
      * reduces the amount of log data */
     public static int MAX_LIST_PRINT_SIZE=20;
 
-    
+    public static final Class<?>[] getUnicastProtocols() {
+        return new Class<?>[]{UNICAST.class, UNICAST2.class, UNICAST3.class};
+    }
 
     public static enum AddressScope {GLOBAL, SITE_LOCAL, LINK_LOCAL, LOOPBACK, NON_LOOPBACK};
 

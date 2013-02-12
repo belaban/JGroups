@@ -144,8 +144,23 @@ public class Table<T> {
     public void setMaxCompactionTime(long max_compaction_time) {
         this.max_compaction_time=TimeUnit.NANOSECONDS.convert(max_compaction_time, TimeUnit.MILLISECONDS);
     }
-    public int getNumRows()              {return matrix.length;}
+    public int  getNumRows()             {return matrix.length;}
     public void resetStats()             {num_compactions=num_moves=num_resizes=num_purges=0;}
+
+    /** Returns the highest deliverable (= removable) seqno. This may be higher than {@link #getHighestDelivered()},
+     * e.g. if messages have been added but not yet removed */
+    public long getHighestDeliverable() {
+        HighestDeliverable visitor=new HighestDeliverable();
+        lock.lock();
+        try {
+            forEach(hd+1, hr, visitor);
+            long retval=visitor.getResult();
+            return retval == -1? hd : retval;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
 
     /**
      * Only used internally by JGroups on a state transfer. Please don't use this in application code, or you're on
@@ -615,7 +630,6 @@ public class Table<T> {
     protected class Counter implements Visitor<T> {
         protected int           result=0;
 
-
         public int getResult() {return result;}
 
         public boolean visit(long seqno, T element, int row, int column) {
@@ -726,7 +740,19 @@ public class Table<T> {
             }
             return true;
         }
+    }
 
+    protected class HighestDeliverable implements Visitor<T> {
+        protected long highest_deliverable=-1;
+
+        public long getResult() {return highest_deliverable;}
+
+        public boolean visit(long seqno, T element, int row, int column) {
+            if(element == null)
+                return false;
+            highest_deliverable=seqno;
+            return true;
+        }
     }
 
 }

@@ -5,7 +5,7 @@
 
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.1.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.3.xsd">
     <UDP/>
     <PING/>
     <MERGE2/>
@@ -13,7 +13,7 @@
     <FD_ALL/>
     <VERIFY_SUSPECT/>
     <pbcast.NAKACK2/>
-    <UNICAST/>
+    <UNICAST3/>
     <pbcast.STABLE/>
     <pbcast.GMS/>
     <UFC/>

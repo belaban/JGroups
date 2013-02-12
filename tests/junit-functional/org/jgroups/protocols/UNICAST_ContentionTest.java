@@ -4,9 +4,9 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
-import org.testng.annotations.Test;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,14 +15,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests for contention on UNICAST, measured by the number of retransmissions in UNICAST 
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_INDEPENDENT, sequential=true)
+@Test(groups=Global.FUNCTIONAL, sequential=true)
 public class UNICAST_ContentionTest {
     JChannel c1, c2;
     static final String unicast_props="SHARED_LOOPBACK(thread_pool.queue_max_size=5000;" +
             "thread_pool.rejection_policy=discard;thread_pool.min_threads=20;thread_pool.max_threads=20;" +
             "oob_thread_pool.rejection_policy=discard;enable_bundling=true)"+
-            ":UNICAST(xmit_interval=2000)";
+            ":UNICAST(xmit_interval=500)";
     static final String unicast2_props=unicast_props.replace("UNICAST", "UNICAST2");
+    static final String unicast3_props=unicast_props.replace("UNICAST", "UNICAST3");
     static final int NUM_THREADS=100;
     static final int NUM_MSGS=100;
     static final int SIZE=1000; // default size of a message in bytes
@@ -31,6 +32,16 @@ public class UNICAST_ContentionTest {
     protected void tearDown() throws Exception {
         Util.close(c2, c1);
     }
+
+    @DataProvider
+    static Object[][] provider() {
+        return new Object[][] {
+          {unicast_props},
+          {unicast2_props},
+          {unicast3_props}
+        };
+    }
+
 
     @Test(dataProvider="provider")
     public void testSimpleMessageReception(String props) throws Exception {
@@ -121,17 +132,10 @@ public class UNICAST_ContentionTest {
         assert r2.getNum() == NUM_EXPECTED_MSGS : "expected " + NUM_EXPECTED_MSGS + ", but got " + r2.getNum();
     }
 
-    @DataProvider
-    static Object[][] provider() {
-        return new Object[][] {
-                {unicast_props},
-                {unicast2_props}
-        };
-    }
 
 
     private static long getNumberOfRetransmissions(JChannel ch) {
-        Protocol prot=ch.getProtocolStack().findProtocol(UNICAST.class, UNICAST2.class);
+        Protocol prot=ch.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         if(prot instanceof UNICAST)
             return ((UNICAST)prot).getNumXmits();
         return -1;

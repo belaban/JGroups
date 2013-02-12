@@ -1,13 +1,11 @@
-package org.jgroups.tests;
+package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.protocols.UNICAST;
-import org.jgroups.protocols.UNICAST2;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -20,30 +18,35 @@ import java.util.concurrent.CyclicBarrier;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class UNICAST_ConnectionTests {
-    private JChannel a, b;
-    private Address a_addr, b_addr;
-    private MyReceiver r1, r2;
-    private Protocol u1, u2;
-    private static final String props="SHARED_LOOPBACK:UNICAST";
-    private static final String CLUSTER="UNICAST_ConnectionTests";
+    protected JChannel   a, b;
+    protected Address    a_addr, b_addr;
+    protected MyReceiver r1, r2;
+    protected Protocol   u1, u2;
+    protected static final String CLUSTER="UNICAST_ConnectionTests";
 
+    
+    @DataProvider
+    static Object[][] configProvider() {
+        return new Object[][]{
+          {UNICAST.class},
+          {UNICAST2.class},
+          {UNICAST3.class}
+        };
+    }
 
-    @BeforeMethod
-    void start() throws Exception {
+    protected void setup(Class<? extends Protocol> unicast_class) throws Exception {
         r1=new MyReceiver("A");
         r2=new MyReceiver("B");
-        a=new JChannel(props);
-        a.setName("A");
+        a=createChannel(unicast_class, "A");
         a.connect(CLUSTER);
         a_addr=a.getAddress();
         a.setReceiver(r1);
-        u1=a.getProtocolStack().findProtocol(UNICAST.class);
-        b=new JChannel(props);
-        b.setName("B");
+        u1=a.getProtocolStack().findProtocol(unicast_class);
+        b=createChannel(unicast_class, "B");
         b.connect(CLUSTER);
         b_addr=b.getAddress();
         b.setReceiver(r2);
-        u2=b.getProtocolStack().findProtocol(UNICAST.class);
+        u2=b.getProtocolStack().findProtocol(unicast_class);
     }
 
 
@@ -54,16 +57,20 @@ public class UNICAST_ConnectionTests {
      * Tests cases #1 and #2 of UNICAST.new.txt
      * @throws Exception
      */
-    public void testRegularMessageReception() throws Exception {
+    @Test(dataProvider="configProvider")
+    public void testRegularMessageReception(Class<? extends Protocol> unicast) throws Exception {
+        setup(unicast);
         sendAndCheck(a, b_addr, 100, r2);
-        sendAndCheck(b, a_addr,  50, r1);
+        sendAndCheck(b,a_addr,50,r1);
     }
 
 
     /**
      * Tests case #3 of UNICAST.new.txt
      */
-    public void testBothChannelsClosing() throws Exception {
+    @Test(dataProvider="configProvider")
+    public void testBothChannelsClosing(Class<? extends Protocol> unicast) throws Exception {
+        setup(unicast);
         sendToEachOtherAndCheck(10);
         
         // now close the connections to each other
@@ -80,7 +87,9 @@ public class UNICAST_ConnectionTests {
     /**
      * Scenario #4 (A closes the connection unilaterally (B keeps it open), then reopens it and sends messages)
      */
-    public void testAClosingUnilaterally() throws Exception {
+    @Test(dataProvider="configProvider")
+    public void testAClosingUnilaterally(Class<? extends Protocol> unicast) throws Exception {
+        setup(unicast);
         sendToEachOtherAndCheck(10);
 
         // now close connection on A unilaterally
@@ -94,7 +103,9 @@ public class UNICAST_ConnectionTests {
     /**
      * Scenario #5 (B closes the connection unilaterally (A keeps it open), then A sends messages to B)
      */
-    public void testBClosingUnilaterally() throws Exception {
+    @Test(dataProvider="configProvider")
+    public void testBClosingUnilaterally(Class<? extends Protocol> unicast) throws Exception {
+        setup(unicast);
         sendToEachOtherAndCheck(10);
 
         // now close connection on A unilaterally
@@ -110,7 +121,9 @@ public class UNICAST_ConnectionTests {
      * Scenario #6 (A closes the connection unilaterally (B keeps it open), then reopens it and sends messages,
      * but loses the first message
      */
-    public void testAClosingUnilaterallyButLosingFirstMessage() throws Exception {
+    @Test(dataProvider="configProvider")
+    public void testAClosingUnilaterallyButLosingFirstMessage(Class<? extends Protocol> unicast) throws Exception {
+        setup(unicast);
         sendAndCheck(a, b_addr, 10, r2);
 
         // now close connection on A unilaterally
@@ -119,14 +132,16 @@ public class UNICAST_ConnectionTests {
 
         // add a Drop protocol to drop the first unicast message
         Drop drop=new Drop(true);
-        a.getProtocolStack().insertProtocol(drop, ProtocolStack.BELOW, UNICAST.class);
+        a.getProtocolStack().insertProtocol(drop, ProtocolStack.BELOW,(Class<? extends Protocol>[])Util.getUnicastProtocols());
 
         // then send messages from A to B
         sendAndCheck(a, b_addr, 10, r2);
     }
 
     /** Tests concurrent reception of multiple messages with a different conn_id (https://issues.jboss.org/browse/JGRP-1347) */
-    public void testMultipleConcurrentResets() throws Exception {
+    @Test(dataProvider="configProvider")
+    public void testMultipleConcurrentResets(Class<? extends Protocol> unicast) throws Exception {
+        setup(unicast);
         sendAndCheck(a, b_addr, 1, r2);
 
         // now close connection on A unilaterally
@@ -135,16 +150,16 @@ public class UNICAST_ConnectionTests {
 
         r2.clear();
 
-        final UNICAST unicast=(UNICAST)b.getProtocolStack().findProtocol(UNICAST.class);
+        final Protocol ucast=b.getProtocolStack().findProtocol(Util.getUnicastProtocols());
 
         int NUM=10;
 
         final List<Message> msgs=new ArrayList<Message>(NUM);
 
         for(int i=1; i <= NUM; i++) {
-            Message msg=new Message(b_addr, a_addr, "m" + i);
-            UNICAST.UnicastHeader hdr=UNICAST.UnicastHeader.createDataHeader(1, (short)2, true);
-            msg.putHeader(unicast.getId(), hdr);
+            Message msg=new Message(b_addr, a_addr, i);
+            Header hdr=createDataHeader(ucast, 1, (short)2, true);
+            msg.putHeader(ucast.getId(), hdr);
             msgs.add(msg);
         }
 
@@ -157,7 +172,7 @@ public class UNICAST_ConnectionTests {
                 public void run() {
                     try {
                         barrier.await();
-                        unicast.up(new Event(Event.MSG, msgs.get(index)));
+                        ucast.up(new Event(Event.MSG,msgs.get(index)));
                     }
                     catch(Exception e) {
                         e.printStackTrace();
@@ -171,12 +186,23 @@ public class UNICAST_ConnectionTests {
         for(Thread thread: threads)
             thread.join();
 
-        List<Message> list=r2.getMessages();
+        List<Integer> list=r2.getMessages();
         System.out.println("list = " + print(list));
 
         assert list.size() == 1 : "list must have 1 element but has " + list.size() + ": " + print(list);
     }
 
+
+    protected Header createDataHeader(Protocol unicast, long seqno, short conn_id, boolean first) {
+        if(unicast instanceof UNICAST)
+            return UNICAST.UnicastHeader.createDataHeader(seqno,conn_id, first);
+        if(unicast instanceof UNICAST2)
+            return UNICAST2.Unicast2Header.createDataHeader(seqno, conn_id, first);
+        if(unicast instanceof UNICAST3)
+            return UNICAST3.Header.createDataHeader(seqno, conn_id, first);
+        throw new IllegalArgumentException("protocol " + unicast.getClass().getSimpleName() + " needs to be " +
+                                             "UNICAST, UNICAST2 or UNICAST3");
+    }
 
 
     /**
@@ -184,13 +210,13 @@ public class UNICAST_ConnectionTests {
      * @param num
      * @throws Exception
      */
-    private void sendToEachOtherAndCheck(int num) throws Exception {
+    protected void sendToEachOtherAndCheck(int num) throws Exception {
         for(int i=1; i <= num; i++) {
-            a.send(b_addr, "m" + i);
-            b.send(a_addr, "m" + i);
+            a.send(b_addr, i);
+            b.send(a_addr, i);
         }
-        List<Message> l1=r1.getMessages();
-        List<Message> l2=r2.getMessages();
+        List<Integer> l1=r1.getMessages();
+        List<Integer> l2=r2.getMessages();
         for(int i=0; i < 10; i++) {
             if(l1.size()  == num && l2.size() == num)
                 break;
@@ -202,11 +228,11 @@ public class UNICAST_ConnectionTests {
         assert l2.size() == num;
     }
 
-    private static void sendAndCheck(JChannel channel, Address dest, int num, MyReceiver receiver) throws Exception {
+    protected static void sendAndCheck(JChannel channel, Address dest, int num, MyReceiver receiver) throws Exception {
         receiver.clear();
         for(int i=1; i <= num; i++)
-            channel.send(dest, "m" + i);
-        List<Message> list=receiver.getMessages();
+            channel.send(dest, i);
+        List<Integer> list=receiver.getMessages();
         for(int i=0; i < 20; i++) {
             if(list.size() == num)
                 break;
@@ -226,44 +252,52 @@ public class UNICAST_ConnectionTests {
             UNICAST2 unicast=(UNICAST2)prot;
             unicast.removeConnection(target);
         }
+        else if(prot instanceof UNICAST3) {
+            UNICAST3 unicast=(UNICAST3)prot;
+            unicast.removeConnection(target);
+        }
         else
-            throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST or UNICAST2");
+            throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST, UNICAST2 or UNICAST3");
     }
 
 
-    private static String print(List<Message> list) {
-        List<String> tmp=new ArrayList<String>(list.size());
-        for(Message msg: list)
-            tmp.add((String)msg.getObject());
-        return Util.printListWithDelimiter(tmp, " ");
+    protected static String print(List<Integer> list) {
+        return Util.printListWithDelimiter(list, " ");
     }
 
 
-    private static class MyReceiver extends ReceiverAdapter {
-        final String name;
-        final List<Message> msgs=new ArrayList<Message>(20);
+    protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
+        Protocol unicast=unicast_class.newInstance();
+        if(unicast instanceof UNICAST2)
+            unicast.setValue("stable_interval", 1000);
+        return new JChannel(new Protocol[]{new SHARED_LOOPBACK(), unicast}).name(name);
+    }
+
+    protected static class MyReceiver extends ReceiverAdapter {
+        final String        name;
+        final List<Integer> msgs=new ArrayList<Integer>(20);
 
         public MyReceiver(String name) {
             this.name=name;
         }
 
         public void receive(Message msg) {
-            msgs.add(msg);
+            msgs.add((Integer)msg.getObject());
         }
 
-        public List<Message> getMessages() { return msgs; }
-        public void clear() {msgs.clear();}
-        public int size() {return msgs.size();}
+        public List<Integer> getMessages() { return msgs; }
+        public void          clear()       {msgs.clear();}
+        public int           size()        {return msgs.size();}
 
         public String toString() {
             return name;
         }
     }
 
-    private static class Drop extends Protocol {
-        private volatile boolean drop_next=false;
+    protected static class Drop extends Protocol {
+        protected volatile boolean drop_next=false;
 
-        private Drop(boolean drop_next) {
+        protected Drop(boolean drop_next) {
             this.drop_next=drop_next;
         }
 

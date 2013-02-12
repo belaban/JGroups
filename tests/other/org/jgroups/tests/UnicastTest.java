@@ -103,7 +103,7 @@ public class UnicastTest extends ReceiverAdapter {
     }
 
     private void printConnections() {
-        Protocol prot=channel.getProtocolStack().findProtocol(UNICAST.class, UNICAST2.class);
+        Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         if(prot instanceof UNICAST)
             System.out.println(((UNICAST)prot).printConnections());
         else if(prot instanceof UNICAST2)
@@ -113,7 +113,7 @@ public class UnicastTest extends ReceiverAdapter {
     private void removeConnection() {
         Address member=getReceiver();
         if(member != null) {
-            Protocol prot=channel.getProtocolStack().findProtocol(UNICAST.class, UNICAST2.class);
+            Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
             if(prot instanceof UNICAST)
                 ((UNICAST)prot).removeConnection(member);
             else if(prot instanceof UNICAST2)
@@ -122,7 +122,7 @@ public class UnicastTest extends ReceiverAdapter {
     }
 
     private void removeAllConnections() {
-        Protocol prot=channel.getProtocolStack().findProtocol(UNICAST.class, UNICAST2.class);
+        Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         if(prot instanceof UNICAST)
             ((UNICAST)prot).removeAllConnections();
         else if(prot instanceof UNICAST2)

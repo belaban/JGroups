@@ -1,5 +1,15 @@
 package org.jgroups.tests.perf;
 
+import org.jgroups.*;
+import org.jgroups.blocks.*;
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.UNICAST2;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.*;
+
+import javax.management.MBeanServer;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.lang.reflect.Method;
@@ -10,29 +20,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.management.MBeanServer;
-
-import org.jgroups.Address;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
-import org.jgroups.blocks.MethodCall;
-import org.jgroups.blocks.MethodLookup;
-import org.jgroups.blocks.RequestOptions;
-import org.jgroups.blocks.ResponseMode;
-import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.protocols.UNICAST;
-import org.jgroups.protocols.UNICAST2;
-import org.jgroups.stack.Protocol;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
 
 
 /**
@@ -68,7 +55,6 @@ public class UUPerf extends ReceiverAdapter {
     private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[] GET_RSP=new byte[msg_size];
 
-    private static final Class<?>[] unicast_protocols=new Class<?>[]{UNICAST.class,UNICAST2.class};
 
     static NumberFormat f;
 
@@ -274,7 +260,7 @@ public class UUPerf extends ReceiverAdapter {
     }
 
     private void printConnections() {
-        Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+        Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         if(prot instanceof UNICAST)
             System.out.println("connections:\n" + ((UNICAST)prot).printConnections());
         else if(prot instanceof UNICAST2)
@@ -284,7 +270,7 @@ public class UUPerf extends ReceiverAdapter {
     private void removeConnection() {
         Address member=getReceiver();
         if(member != null) {
-            Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+            Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
             if(prot instanceof UNICAST)
                 ((UNICAST)prot).removeConnection(member);
             else if(prot instanceof UNICAST2)
@@ -293,7 +279,7 @@ public class UUPerf extends ReceiverAdapter {
     }
 
     private void removeAllConnections() {
-        Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+        Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         if(prot instanceof UNICAST)
             ((UNICAST)prot).removeAllConnections();
         else if(prot instanceof UNICAST2)
@@ -324,7 +310,7 @@ public class UUPerf extends ReceiverAdapter {
         double total_reqs_sec=total_reqs / (total_time / 1000.0);
         double throughput=total_reqs_sec * msg_size;
         double ms_per_req=total_time / (double)total_reqs;
-        Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+        Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         System.out.println("\n");
         System.out.println(Util.bold("Average of " + f.format(total_reqs_sec) + " requests / sec (" +
                                        Util.printBytes(throughput) + " / sec), " +

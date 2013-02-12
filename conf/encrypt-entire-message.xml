@@ -1,17 +1,17 @@
 <!-- ************ JGroups Protocol Stack Configuration ************** -->
-<!-- This encrypts the entire message, even UNICAST and NAKACK headers (to reveal sequence numbers).
+<!-- This encrypts the entire message, even UNICAST3 and NAKACK headers (to reveal sequence numbers).
      Note that ENCRYPT could be placed even lower, e.g. just above UDP -->
 
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.1.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.3.xsd">
     <UDP/>
     <PING/>
     <MERGE2/>
     <FD/>
     <VERIFY_SUSPECT/>
     <pbcast.NAKACK2/>
-    <UNICAST/>
+    <UNICAST3/>
     <pbcast.STABLE/>
     <FRAG2/>
     <pbcast.GMS/>

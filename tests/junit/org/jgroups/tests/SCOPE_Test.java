@@ -3,8 +3,6 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.SCOPE;
-import org.jgroups.protocols.UNICAST;
-import org.jgroups.protocols.UNICAST2;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -56,7 +54,7 @@ public class SCOPE_Test extends ChannelTestBase {
 
     public void testOrderWithScopedMulticasts() throws Exception {
         ProtocolStack stack=c2.getProtocolStack();
-        Protocol neighbor=stack.findProtocol(UNICAST.class, UNICAST2.class);
+        Protocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
         SCOPE scope=new SCOPE();
         stack.insertProtocolInStack(scope, neighbor, ProtocolStack.ABOVE);
         scope.init();
@@ -67,7 +65,7 @@ public class SCOPE_Test extends ChannelTestBase {
 
         MyScopedReceiver receiver=new MyScopedReceiver();
         c2.setReceiver(receiver);
-        Short[] scopes=new Short[]{'X', 'Y', 'Z'};
+        Short[] scopes={'X', 'Y', 'Z'};
 
         for(short scope_id: scopes) {
             for(long i=1; i <=5; i++) {
@@ -117,7 +115,7 @@ public class SCOPE_Test extends ChannelTestBase {
     private void sendMessages(Address dest, boolean use_scopes) throws Exception {
         if(use_scopes) {
             ProtocolStack stack=c2.getProtocolStack();
-            Protocol neighbor=stack.findProtocol(UNICAST.class, UNICAST2.class);
+            Protocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
             SCOPE scope=new SCOPE();
             stack.insertProtocolInStack(scope, neighbor, ProtocolStack.ABOVE);
             scope.init();
@@ -197,7 +195,7 @@ public class SCOPE_Test extends ChannelTestBase {
         public void receive(Message msg) {
             Util.sleep(SLEEP_TIME);
             Short scope=msg.getScope();
-            if(scope.shortValue() > 0) {
+            if(scope > 0) {
                 List<Long> list=msgs.get(scope);
                 if(list == null) {
                     list=new ArrayList<Long>(5);

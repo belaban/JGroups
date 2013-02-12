@@ -58,7 +58,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
     @Property(description="Time (in milliseconds) after which an idle incoming or outgoing connection is closed. The " +
       "connection will get re-established when used again. 0 disables connection reaping")
-    protected long   conn_expiry_timeout=60000;
+    protected long   conn_expiry_timeout=0;
 
     @Deprecated
     @Property(description="Size (in bytes) of a Segment in the segments table. Only for experts, do not use !",
@@ -399,7 +399,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                         handleDataReceived(src, hdr.seqno, hdr.conn_id, hdr.first, msg, evt);
                         return null; // we pass the deliverable message up in handleDataReceived()
                     case UnicastHeader.ACK:  // received ACK for previously sent message
-                        handleAckReceived(src, hdr.seqno);
+                        handleAckReceived(src, hdr.seqno, hdr.conn_id);
                         break;
                     case UnicastHeader.SEND_FIRST_SEQNO:
                         handleResendingOfFirstMessage(src, hdr.seqno);
@@ -613,7 +613,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
         // order in which they were sent by their senders
         removeAndDeliver(processing, win);
-        sendAck(sender, win.getHighestDelivered());
+        sendAck(sender, win.getHighestDelivered(), conn_id);
     }
 
     protected int removeAndDeliver(final AtomicBoolean processing, Table<Message> win) {
@@ -702,12 +702,20 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
         return entry;
     }
 
-    /** Add the ACK to hashtable.sender.sent_msgs */
-    protected void handleAckReceived(Address sender, long seqno) {
+
+    protected void handleAckReceived(Address sender, long seqno, short conn_id) {
         if(log.isTraceEnabled())
             log.trace(new StringBuilder().append(local_addr).append(" <-- ACK(").append(sender).
-                    append(": #").append(seqno).append(')'));
+              append(": #").append(seqno).append(", conn-id=").append(conn_id).append(')'));
         SenderEntry entry=send_table.get(sender);
+
+        if(entry != null && entry.send_conn_id != conn_id) {
+            if(log.isTraceEnabled())
+                log.trace(local_addr + ": my conn_id (" + entry.send_conn_id +
+                            ") != received conn_id (" + conn_id + "); discarding ACK");
+            return;
+        }
+
         Table<Message> win=entry != null? entry.sent_msgs : null;
         if(win != null) {
             win.purge(seqno, true); // removes all messages <= seqno (forced purge)
@@ -770,11 +778,11 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
 
 
-    protected void sendAck(Address dst, long seqno) {
+    protected void sendAck(Address dst, long seqno, short conn_id) {
         if(!running) // if we are disconnected, then don't send any acks which throw exceptions on shutdown
             return;
         Message ack=new Message(dst);
-        ack.putHeader(this.id, UnicastHeader.createAckHeader(seqno));
+        ack.putHeader(this.id, UnicastHeader.createAckHeader(seqno, conn_id));
         if(log.isTraceEnabled())
             log.trace(new StringBuilder().append(local_addr).append(" --> ACK(").append(dst).
               append(": #").append(seqno).append(')'));
@@ -870,8 +878,8 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
             return new UnicastHeader(DATA, seqno, conn_id, first);
         }
 
-        public static UnicastHeader createAckHeader(long seqno) {
-            return new UnicastHeader(ACK, seqno);
+        public static UnicastHeader createAckHeader(long seqno, short conn_id) {
+            return new UnicastHeader(ACK, seqno, conn_id, false);
         }
 
         public static UnicastHeader createSendFirstSeqnoHeader(long seqno_received) {
@@ -920,7 +928,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                       + Global.BYTE_SIZE;    // first
                     break;
                 case ACK:
-                    retval+=Util.size(seqno); // seqno
+                    retval+=Util.size(seqno) + Global.SHORT_SIZE; // conn_id
                     break;
                 case SEND_FIRST_SEQNO:
                     retval+=Util.size(seqno);
@@ -944,6 +952,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                     break;
                 case ACK:
                     Util.writeLong(seqno, out);
+                    out.writeShort(conn_id);
                     break;
                 case SEND_FIRST_SEQNO:
                     Util.writeLong(seqno, out);
@@ -961,6 +970,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                     break;
                 case ACK:
                     seqno=Util.readLong(in);
+                    conn_id=in.readShort();
                     break;
                 case SEND_FIRST_SEQNO:
                     seqno=Util.readLong(in);
@@ -1000,11 +1010,11 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected static final class ReceiverEntry {
         protected final Table<Message>  received_msgs;  // stores all msgs rcvd by a certain peer in seqno-order
-        protected final long            recv_conn_id;
+        protected final short           recv_conn_id;
         protected final AtomicLong      timestamp=new AtomicLong(0);
 
         
-        public ReceiverEntry(Table<Message> received_msgs, long recv_conn_id) {
+        public ReceiverEntry(Table<Message> received_msgs, short recv_conn_id) {
             this.received_msgs=received_msgs;
             this.recv_conn_id=recv_conn_id;
             update();

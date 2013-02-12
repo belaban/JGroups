@@ -1,14 +1,21 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.MERGE3;
+import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Tests merging on all stacks
@@ -17,49 +24,54 @@ import java.util.*;
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class MergeTest extends ChannelTestBase {
+    protected JChannel[] channels=null;
+
+    @AfterMethod protected void destroy() {
+        for(JChannel ch: channels)
+            try {
+                Util.shutdown(ch);
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+    }
    
-    @Test
     public void testMerging2Members() throws Exception {
         mergeHelper("MergeTest.testMerging2Members", "A", "B");
     }
     
-    @Test
     public void testMerging4Members() throws Exception {
         mergeHelper("MergeTest.testMerging4Members", "A", "B", "C", "D");
     }
 
 
     protected void mergeHelper(String cluster_name, String ... members) throws Exception {
-        JChannel[] channels=null;
-        try {
-            channels=createChannels(cluster_name, members);
-            print(channels);
+        channels=createChannels(cluster_name, members);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 500, channels);
+        print(channels);
 
-            System.out.println("\ncreating partitions: ");
-            createPartitions(channels, members);
-            print(channels);
-            for(String member: members) {
-                JChannel ch=findChannel(member, channels);
-                assert ch.getView().size() == 1 : "view of " + ch.getAddress() + ": " + ch.getView();
-            }
+        System.out.println("\ncreating partitions: ");
+        createPartitions(channels);
 
-            Address merge_leader=determineLeader(channels, members);
-            System.out.println("\n==== injecting merge event into merge leader : " + merge_leader + " ====");
-            injectMergeEvent(channels, merge_leader, members);
-            for(int i=0; i < 40; i++) {
-                System.out.print(".");
-                if(allChannelsHaveViewOf(channels, members.length))
-                    break;
-                Util.sleep(1000);
-            }
-            System.out.println("\n");
-            print(channels);
-            assertAllChannelsHaveViewOf(channels, members.length);
+        print(channels);
+        for(JChannel ch: channels)
+            assert ch.getView().size() == 1 : "view is " + ch.getView();
+
+        Address merge_leader=determineLeader(channels, members);
+        System.out.println("\n==== injecting merge event into merge leader : " + merge_leader + " ====");
+        for(JChannel ch: channels)
+            ch.getProtocolStack().removeProtocol(DISCARD.class);
+        injectMergeEvent(channels, merge_leader, members);
+        for(int i=0; i < 40; i++) {
+            System.out.print(".");
+            if(allChannelsHaveViewOf(channels, members.length))
+                break;
+            Util.sleep(1000);
         }
-        finally {
-            if(channels != null)
-                close(channels);
-        }
+        System.out.println("\n");
+        print(channels);
+        assertAllChannelsHaveViewOf(channels, members.length);
+
     }
 
     private JChannel[] createChannels(String cluster_name, String[] members) throws Exception {
@@ -81,7 +93,7 @@ public class MergeTest extends ChannelTestBase {
             if(nakack != null)
                 nakack.setLogDiscardMessages(false);
 
-            stack.removeProtocol(MERGE2.class);
+            stack.removeProtocol(MERGE2.class,MERGE3.class);
 
             tmp.connect(cluster_name);
             retval[i]=tmp;
@@ -91,34 +103,24 @@ public class MergeTest extends ChannelTestBase {
     }
 
     private static void close(JChannel[] channels) {
-        if(channels == null) return;
-        for(int i=channels.length -1; i <= 0; i--) {
-            JChannel ch=channels[i];
-            Util.close(ch);
-        }
+        Util.close(channels);
     }
 
 
-    private static void createPartitions(JChannel[] channels, String ... partitions) throws Exception {
-        checkUniqueness(partitions);
-        List<View> views=new ArrayList<View>(partitions.length);
-        for(String partition: partitions) {
-            View view=createView(partition, channels);
-            views.add(view);
+    private static void createPartitions(JChannel[] channels) throws Exception {
+        for(JChannel ch: channels) {
+            DISCARD discard=new DISCARD();
+            discard.setDiscardAll(true);
+            ch.getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE,TP.class);
         }
-        applyViews(views, channels);
+
+        for(JChannel ch: channels) {
+            View view=Util.createView(ch.getAddress(), 10, ch.getAddress());
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            gms.installView(view);
+        }
     }
 
-
-    private static void checkUniqueness(String[] ... partitions) throws Exception {
-         Set<String> set=new HashSet<String>();
-         for(String[] partition: partitions) {
-             for(String tmp: partition) {
-                 if(!set.add(tmp))
-                     throw new Exception("partitions are overlapping: element " + tmp + " is in multiple partitions");
-             }
-         }
-     }
 
     private static void injectMergeEvent(JChannel[] channels, String leader, String ... coordinators) {
         Address leader_addr=leader != null? findAddress(leader, channels) : determineLeader(channels);
@@ -138,24 +140,6 @@ public class MergeTest extends ChannelTestBase {
         gms.up(new Event(Event.MERGE, views));
     }
 
-
-    private static View createView(String partition, JChannel[] channels) throws Exception {
-        List<Address> members=new ArrayList<Address>();
-        Address addr=findAddress(partition, channels);
-        if(addr == null)
-            throw new Exception(partition + " not associated with a channel");
-        members.add(addr);
-        return new View(members.get(0), 10, members);
-    }
-
-
-    private static JChannel findChannel(String tmp, JChannel[] channels) {
-        for(JChannel ch: channels) {
-            if(ch.getName().equals(tmp))
-                return ch;
-        }
-        return null;
-    }
 
     private static JChannel findChannel(Address addr, JChannel[] channels) {
         for(JChannel ch: channels) {

@@ -806,6 +806,21 @@
             ${UNICAST2}
         </section>
 
+        <section id="UNICAST3">
+            <title>UNICAST3</title>
+            <para>
+                UNICAST3 (available in 3.3) is the successor to UNICAST2, but is based on UNICAST, as it uses a
+                positive acknowledgment mechanism. However, speed wise it is similar to UNICAST2
+            </para>
+
+            <para>
+                Details of UNICAST3's design can be found here:
+                <ulink url="https://github.com/belaban/JGroups/blob/master/doc/design/UNICAST3.txt">UNICAST3</ulink>
+            </para>
+
+            ${UNICAST3}
+        </section>
+
         <section id="RSVP">
             <title>RSVP</title>
             <para>

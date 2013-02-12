@@ -252,7 +252,7 @@ public class SizeTest {
         hdr=UNICAST.UnicastHeader.createDataHeader(322649, (short)(Short.MAX_VALUE -10), true);
         _testSize(hdr);
 
-        hdr=UNICAST.UnicastHeader.createAckHeader(322649);
+        hdr=UNICAST.UnicastHeader.createAckHeader(322649,(short)2);
         _testSize(hdr);
 
         hdr=UNICAST.UnicastHeader.createSendFirstSeqnoHeader(33333);

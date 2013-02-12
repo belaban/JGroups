@@ -7,7 +7,7 @@
 -->
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.1.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.3.xsd">
     <TCP bind_port="7800"
          loopback="false"
          recv_buf_size="${tcp.recv_buf_size:20M}"
@@ -52,7 +52,7 @@
     <BARRIER />
     <pbcast.NAKACK2 use_mcast_xmit="false"
                    discard_delivered_msgs="true"/>
-    <UNICAST />
+    <UNICAST3 />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="4M"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"

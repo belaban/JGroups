@@ -1,19 +1,14 @@
-package org.jgroups.tests;
+package org.jgroups.protocols;
 
 
-import org.jgroups.Address;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.protocols.DISCARD_PAYLOAD;
-import org.jgroups.protocols.UNICAST;
-import org.jgroups.protocols.UNICAST2;
-import org.jgroups.stack.ProtocolStack;
+import org.jgroups.*;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
@@ -24,28 +19,39 @@ import java.util.List;
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
-public class UNICAST_OOB_Test extends ChannelTestBase {
-    JChannel c1, c2;
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class UNICAST_OOB_Test {
+    JChannel a, b;
 
 
-    @BeforeMethod
-    void setUp() throws Exception {
-        c1=createChannel(true, 2);
-        c2=createChannel(c1);
+    void setUp(Class<? extends Protocol> unicast_class) throws Exception {
+        a=createChannel(unicast_class, "A");
+        b=createChannel(unicast_class, "B");
     }
 
     @AfterMethod
     void tearDown() throws Exception {
-        Util.close(c2, c1);
+        Util.close(b,a);
     }
 
+    @DataProvider
+    static Object[][] configProvider() {
+        return new Object[][]{
+          {UNICAST.class},
+          {UNICAST2.class},
+          {UNICAST3.class}
+        };
+    }
 
-    public void testRegularMessages() throws Exception {
+    @Test(dataProvider="configProvider")
+    public void testRegularMessages(Class<? extends Protocol> unicast_class) throws Exception {
+        setUp(unicast_class);
         sendMessages(false);
     }
 
-    public void testOutOfBandMessages() throws Exception {
+    @Test(dataProvider="configProvider")
+    public void testOutOfBandMessages(Class<? extends Protocol> unicast_class) throws Exception {
+        setUp(unicast_class);
         sendMessages(true);
     }
 
@@ -56,25 +62,25 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
     private void sendMessages(boolean oob) throws Exception {
         DISCARD_PAYLOAD discard=new DISCARD_PAYLOAD();
         MyReceiver receiver=new MyReceiver();
-        c2.setReceiver(receiver);
+        b.setReceiver(receiver);
 
         // the first channel will discard the unicast messages with seqno #3 two times, the let them pass down
-        ProtocolStack stack=c1.getProtocolStack();
-        Protocol neighbor=stack.findProtocol(UNICAST.class, UNICAST2.class);
+        ProtocolStack stack=a.getProtocolStack();
+        Protocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
         System.out.println("Found unicast protocol " + neighbor.getClass().getSimpleName());
-        stack.insertProtocolInStack(discard, neighbor, ProtocolStack.BELOW);
+        stack.insertProtocolInStack(discard,neighbor,ProtocolStack.BELOW);
 
-        c1.connect("UNICAST_OOB_Test");
-        c2.connect("UNICAST_OOB_Test");
-        assert c2.getView().size() == 2 : "ch2.view is " + c2.getView();
+        a.connect("UNICAST_OOB_Test");
+        b.connect("UNICAST_OOB_Test");
+        assert b.getView().size() == 2 : "ch2.view is " + b.getView();
 
-        Address dest=c2.getAddress();
+        Address dest=b.getAddress();
         for(int i=1; i <=5; i++) {
-            Message msg=new Message(dest, null, new Long(i));
+            Message msg=new Message(dest, null,(long)i);
             if(i == 4 && oob)
                 msg.setFlag(Message.OOB);
             System.out.println("-- sending message #" + i);
-            c1.send(msg);
+            a.send(msg);
             Util.sleep(100);
         }
 
@@ -109,6 +115,20 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
         }
     }
 
+
+    protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
+        Protocol unicast=unicast_class.newInstance().setValue("xmit_interval",500);
+        if(unicast instanceof UNICAST2)
+            unicast.setValue("stable_interval", 1000);
+        return new JChannel(new Protocol[] {
+          new SHARED_LOOPBACK(),
+          new PING().setValue("timeout", 300),
+          new NAKACK2(),
+          new DISCARD(),
+          unicast,
+          new GMS()
+        }).name(name);
+    }
 
 
 

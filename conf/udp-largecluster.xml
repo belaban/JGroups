@@ -7,7 +7,7 @@
 
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.1.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.3.xsd">
 
 
     <UDP mcast_addr="${jgroups.udp.mcast_addr:239.9.9.9}"
@@ -62,7 +62,7 @@
                     max_msg_batch_size="500"
                     use_mcast_xmit="true"
                     discard_delivered_msgs="true"/>
-    <UNICAST2 max_bytes="20M"
+    <UNICAST3
               xmit_table_num_rows="100"
               xmit_table_msgs_per_row="1000"
               xmit_table_max_compaction_time="30000"

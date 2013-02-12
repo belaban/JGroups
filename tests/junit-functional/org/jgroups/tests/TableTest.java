@@ -712,6 +712,56 @@ public class TableTest {
     }
 
 
+    public void testGetHighestDeliverable() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        System.out.println("table = " + table);
+        long highest_deliverable=table.getHighestDeliverable(), hd=table.getHighestDelivered();
+        System.out.println("highest delivered=" + hd + ", highest deliverable=" + highest_deliverable);
+        assert hd == 0;
+        assert highest_deliverable == 0;
+
+        for(int num: Arrays.asList(1,2,3,4,5,6,8))
+            table.add(num, num);
+        System.out.println("table = " + table);
+        highest_deliverable=table.getHighestDeliverable();
+        hd=table.getHighestDelivered();
+        System.out.println("highest delivered=" + hd + ", highest deliverable=" + highest_deliverable);
+        assert hd == 0;
+        assert highest_deliverable == 6;
+
+        table.removeMany(true, 4);
+        System.out.println("table = " + table);
+        highest_deliverable=table.getHighestDeliverable();
+        hd=table.getHighestDelivered();
+        System.out.println("highest delivered=" + hd + ", highest deliverable=" + highest_deliverable);
+        assert hd == 4;
+        assert highest_deliverable == 6;
+
+        table.removeMany(true, 100);
+        System.out.println("table = " + table);
+        highest_deliverable=table.getHighestDeliverable();
+        hd=table.getHighestDelivered();
+        System.out.println("highest delivered=" + hd + ", highest deliverable=" + highest_deliverable);
+        assert hd == 6;
+        assert highest_deliverable == 6;
+
+        table.add(7,7);
+        System.out.println("table = " + table);
+        highest_deliverable=table.getHighestDeliverable();
+        hd=table.getHighestDelivered();
+        System.out.println("highest delivered=" + hd + ", highest deliverable=" + highest_deliverable);
+        assert hd == 6;
+        assert highest_deliverable == 8;
+
+        table.removeMany(true, 100);
+        System.out.println("table = " + table);
+        highest_deliverable=table.getHighestDeliverable();
+        hd=table.getHighestDelivered();
+        System.out.println("highest delivered=" + hd + ", highest deliverable=" + highest_deliverable);
+        assert hd == 8;
+        assert highest_deliverable == 8;
+    }
+
     public static void testMassAddition() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
         final int NUM_ELEMENTS=10005;

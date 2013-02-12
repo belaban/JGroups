@@ -9,7 +9,7 @@
 
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.1.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.3.xsd">
     <UDP/>
     <PING/>
     <MERGE2/>
@@ -18,7 +18,7 @@
     <VERIFY_SUSPECT/>
     <BARRIER />
     <pbcast.NAKACK2/>
-    <UNICAST/>
+    <UNICAST3/>
     <pbcast.STABLE/>
 
     <!-- Allow only hosts in the 192.168 or 10.5 network to join -->
