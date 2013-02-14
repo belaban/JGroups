@@ -211,16 +211,20 @@ public abstract class TP extends Protocol {
               description="Tick duration in the HashedTimingWheel timer. Only applicable if timer_type is \"wheel\"")
     protected long tick_time=50L;
 
-    @Property(description="Enable bundling of smaller messages into bigger ones. Default is true")
+    @Property(description="Enable bundling of smaller messages into bigger ones. Default is true",
+              deprecatedMessage="will be ignored as bundling is on by default")
+    @Deprecated
     protected boolean enable_bundling=true;
 
     /** Enable bundling for unicast messages. Ignored if enable_bundling is off */
-    @Property(description="Enable bundling of smaller messages into bigger ones for unicast messages. Default is false")
+    @Property(description="Enable bundling of smaller messages into bigger ones for unicast messages. Default is true",
+              deprecatedMessage="will be ignored")
+    @Deprecated
     protected boolean enable_unicast_bundling=true;
 
 
-    @Property(description="Allows the transport to pass received messages batches up as MessagesBatch instances " +
-      "(up(MessageBatch)), rather than individual Message instances. This flag will be pulled in a future version " +
+    @Property(description="Allows the transport to pass received message batches up as MessagesBatch instances " +
+      "(up(MessageBatch)), rather than individual messages. This flag will be removed in a future version " +
       "when batching has been implemented by all protocols")
     protected boolean enable_batching=true;
 
@@ -732,10 +736,10 @@ public abstract class TP extends Protocol {
     public List<NetworkInterface> getReceiveInterfaces() {return receive_interfaces;}
     public static boolean isDiscardIncompatiblePackets() {return true;}
     public static void setDiscardIncompatiblePackets(boolean flag) {}
-    public boolean isEnableBundling() {return enable_bundling;}
-    public void setEnableBundling(boolean flag) {enable_bundling=flag;}
-    public boolean isEnableUnicastBundling() {return enable_unicast_bundling;}
-    public void setEnableUnicastBundling(boolean enable_unicast_bundling) {this.enable_unicast_bundling=enable_unicast_bundling;}
+    @Deprecated public static boolean isEnableBundling() {return true;}
+    @Deprecated public void setEnableBundling(boolean flag) {}
+    @Deprecated public static boolean isEnableUnicastBundling() {return true;}
+    @Deprecated public void setEnableUnicastBundling(boolean enable_unicast_bundling) {}
     public void setPortRange(int range) {this.port_range=range;}
     public int getPortRange() {return port_range ;}
 
@@ -1075,23 +1079,21 @@ public abstract class TP extends Protocol {
             preregistered_probe_handlers.clear();
         }
 
-        if(enable_bundling) {
-            if(bundler_type.startsWith("new")) {
-                if(bundler_type.endsWith("new2"))
-                    log.warn("bundler_type=\"new2\" has been removed; using TransferQueueBundler (new)");
-                bundler=new TransferQueueBundler(bundler_capacity);
-            }
-            else if(bundler_type.startsWith("old")) {
-                if(bundler_type.endsWith("old2"))
-                    log.warn("bundler_type=\"old2\" has been removed; using DefaultBundler (old)");
-                bundler=new DefaultBundler();
-            }
-            else
-                log.warn("bundler_type \"" + bundler_type + "\" not known; using default bundler (new)");
-            if(bundler == null)
-                bundler=new TransferQueueBundler(bundler_capacity);
-            bundler.start();
+        if(bundler_type.startsWith("new")) {
+            if(bundler_type.endsWith("new2"))
+                log.warn("bundler_type=\"new2\" has been removed; using TransferQueueBundler (new)");
+            bundler=new TransferQueueBundler(bundler_capacity);
         }
+        else if(bundler_type.startsWith("old")) {
+            if(bundler_type.endsWith("old2"))
+                log.warn("bundler_type=\"old2\" has been removed; using DefaultBundler (old)");
+            bundler=new DefaultBundler();
+        }
+        else
+            log.warn("bundler_type \"" + bundler_type + "\" not known; using default bundler (new)");
+        if(bundler == null)
+            bundler=new TransferQueueBundler(bundler_capacity);
+        bundler.start();
 
         // local_addr is null when shared transport
         setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
@@ -1438,16 +1440,10 @@ public abstract class TP extends Protocol {
 
     /** Serializes and sends a message. This method is not reentrant */
     protected void send(Message msg, Address dest, boolean multicast) throws Exception {
-
-        // bundle only regular messages; send OOB messages directly
-        if(enable_bundling && !(msg.isFlagSet(Message.OOB) || msg.isFlagSet(Message.DONT_BUNDLE))) {
-            if(!enable_unicast_bundling && !multicast) {
-                ; // don't bundle unicast msgs if enable_unicast_bundling is off (http://jira.jboss.com/jira/browse/JGRP-429)
-            }
-            else {
-                bundler.send(msg);
-                return;
-            }
+        // bundle all messages except when tagged with DONT_BUNDLE
+        if(!msg.isFlagSet(Message.DONT_BUNDLE)) {
+            bundler.send(msg);
+            return;
         }
 
         // we can create between 300'000 - 400'000 output streams and do the marshalling per second,

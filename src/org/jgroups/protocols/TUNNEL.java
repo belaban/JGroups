@@ -104,12 +104,6 @@ public class TUNNEL extends TP {
 
     public void init() throws Exception {
         super.init();
-
-        if(enable_bundling) {
-            log.warn("bundling is currently not supported by TUNNEL; bundling is disabled");
-            enable_bundling=false;
-        }
-
         if (timer == null)
             throw new Exception("timer cannot be retrieved from protocol stack");
       

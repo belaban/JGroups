@@ -8,7 +8,7 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.3.xsd">
   
-    <TUNNEL gossip_router_hosts="${jgroups.tunnel.gossip_router_hosts:localhost[12001]}" enable_bundling="false"/>
+    <TUNNEL gossip_router_hosts="${jgroups.tunnel.gossip_router_hosts:localhost[12001]}"/>
     <PING/>
     <MERGE2/>
     <FD/>
