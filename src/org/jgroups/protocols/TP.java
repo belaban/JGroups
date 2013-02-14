@@ -2421,7 +2421,7 @@ public abstract class TP extends Protocol {
 
 
     /**
-     * Similarly to DefaultBundler2, this bundler accumulates messages until max size or time have been exceeded, but does
+     * Similarly to DefaultBundler2, this bundler accumulates messages until max size has been exceeded, but does
      * send individual messages immediately when no other messages are available. The difference to DefaultBundler2 is
      * that we use a transfer queue and a bundler thread, whereas DefaultBundler2 makes the sender's thread send the
      * accumulated messages.
