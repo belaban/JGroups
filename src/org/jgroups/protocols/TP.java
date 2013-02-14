@@ -20,7 +20,6 @@ import java.net.NetworkInterface;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -288,12 +287,11 @@ public abstract class TP extends Protocol {
      */
     protected long max_bundle_timeout=20;
 
-    @Property(description="The type of bundler used. Has to be \"old\" (default) or \"new\"")
+    @Property(description="The type of bundler used. Has to be \"old\" or \"new\" (default)")
     protected String bundler_type="new";
 
-    @Experimental
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations")
-    protected int bundler_capacity=200000;
+    protected int bundler_capacity=20000;
 
 
     @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
@@ -522,7 +520,7 @@ public abstract class TP extends Protocol {
     // ================================= Default SocketFactory ========================
     protected SocketFactory socket_factory=new DefaultSocketFactory();
 
-    protected Bundler bundler=null;
+    protected Bundler bundler;
 
     protected DiagnosticsHandler diag_handler=null;
     protected final List<DiagnosticsHandler.ProbeHandler> preregistered_probe_handlers=new LinkedList<DiagnosticsHandler.ProbeHandler>();
@@ -1078,20 +1076,20 @@ public abstract class TP extends Protocol {
         }
 
         if(enable_bundling) {
-            if(bundler_type.equals("new")) 
+            if(bundler_type.startsWith("new")) {
+                if(bundler_type.endsWith("new2"))
+                    log.warn("bundler_type=\"new2\" has been removed; using TransferQueueBundler (new)");
                 bundler=new TransferQueueBundler(bundler_capacity);
-            else if(bundler_type.equals("new2"))
-                bundler=new TransferQueueBundler2(bundler_capacity);
-            else if(bundler_type.equals("old"))
+            }
+            else if(bundler_type.startsWith("old")) {
+                if(bundler_type.endsWith("old2"))
+                    log.warn("bundler_type=\"old2\" has been removed; using DefaultBundler (old)");
                 bundler=new DefaultBundler();
-            else if(bundler_type.endsWith("old2")) {
-                bundler=new DefaultBundler2();
             }
             else
-                log.warn("bundler_type \"" + bundler_type + "\" not known; using default bundler");
+                log.warn("bundler_type \"" + bundler_type + "\" not known; using default bundler (new)");
             if(bundler == null)
-                bundler=new DefaultBundler();
-
+                bundler=new TransferQueueBundler(bundler_capacity);
             bundler.start();
         }
 
@@ -1931,7 +1929,6 @@ public abstract class TP extends Protocol {
      * number of timer tasks to send bundled messages after a certain time has elapsed. This is necessary e.g. when a
      * message is added that doesn't exceed the max size, but then no further messages are added, so elapsed time
      * will trigger the sending, not exceeding of the max size.
-     * TODO: reuse code for hashmap based bundling for the bundlers below
      */
     protected class DefaultBundler implements Bundler {
     	static final int 		   		           MIN_NUMBER_OF_BUNDLING_TASKS=2;
@@ -1945,11 +1942,8 @@ public abstract class TP extends Protocol {
         long                                       last_bundle_time; // in nanoseconds
         final ReentrantLock                        lock=new ReentrantLock();
 
-        public void start() {
-        }
-
-        public void stop() {
-        }
+        public void start() {}
+        public void stop()  {}
 
         public void send(Message msg) throws Exception {
             long length=msg.size();
@@ -1978,7 +1972,6 @@ public abstract class TP extends Protocol {
 
         /** Run with lock acquired */
         private void addMessage(Message msg) {
-            Address dst=msg.getDest();
             String cluster_name;
 
             if(!isSingleton())
@@ -1988,7 +1981,7 @@ public abstract class TP extends Protocol {
                 cluster_name=hdr.channel_name;
             }
 
-            SingletonAddress dest=new SingletonAddress(cluster_name, dst);
+            SingletonAddress dest=new SingletonAddress(cluster_name, msg.getDest());
 
             if(msgs.isEmpty())
                 last_bundle_time=System.nanoTime();
@@ -2085,348 +2078,13 @@ public abstract class TP extends Protocol {
     }
 
 
-    /**
-     * Similarly to DefaultBundler, this bundler type uses the sender's thread to send accumulated messages. Before a
-     * message is added, a thread count is increment (and decremented when returning). If the current message
-     * would exceed the max size, the current thread sends all accumulated messages. Else, it decrements the
-     * thread count and returns if it is > 0. This means that some other sender is adding a message to the bundler and
-     * that thread (or yet some other thread) will send the accumulated messages. If the thread count is 0, the
-     * accumulated messages are sent.<p/>
-     * The difference to DefaultBundler is that (single) messages are sent immediately when no other messages are present,
-     * ignoring max size and max time. This benefits applications which send (e.g.) synchronous RPCs that don't exceed
-     * time or size as they are sent immediately (not incurring the max time for the request and response), yet when
-     * sending many sync RPCs they are bundled (increasing performance).
-     */
-    protected class DefaultBundler2 implements Bundler {
-        /** Keys are destinations, values are lists of Messages */
-        final Map<SingletonAddress,List<Message>>  msgs=new HashMap<SingletonAddress,List<Message>>(8);
-        final ExposedByteArrayOutputStream         bundler_out_stream=new ExposedByteArrayOutputStream(1024);
-        final ExposedDataOutputStream              bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
-
-        @GuardedBy("lock")
-        long                                       count=0;    // current number of bytes accumulated
-        int                                        num_msgs=0;
-        protected final AtomicInteger              thread_cnt=new AtomicInteger(0);
-        final ReentrantLock                        lock=new ReentrantLock();
-
-        public void start() {}
-        public void stop() {}
-
-        public void send(Message msg) throws Exception {
-            long length=msg.size();
-            checkLength(length);
-
-            thread_cnt.incrementAndGet();
-
-            lock.lock();
-            try {
-                if(count + length >= max_bundle_size) {
-                    sendBundledMessages(msgs);
-                }
-                addMessage(msg);
-                count+=length;
-                if(thread_cnt.decrementAndGet() == 0) {
-                    if(num_msgs == 1)
-                        sendSingleMessage(msg);
-                    else
-                        sendBundledMessages(msgs);
-                }
-            }
-            finally {
-                lock.unlock();
-            }
-        }
-        
-
-        /** Run with lock acquired */
-        private void addMessage(Message msg) {
-            Address dst=msg.getDest();
-            String cluster_name;
-
-            if(!isSingleton())
-                cluster_name=TP.this.channel_name;
-            else {
-                TpHeader hdr=(TpHeader)msg.getHeader(id);
-                cluster_name=hdr.channel_name;
-            }
-
-            SingletonAddress dest=new SingletonAddress(cluster_name, dst);
-
-            List<Message> tmp=msgs.get(dest);
-            if(tmp == null) {
-                tmp=new ArrayList<Message>();
-                msgs.put(dest, tmp);
-            }
-            tmp.add(msg);
-            num_msgs++;
-        }
-
-
-        /**
-         * Sends all messages from the map, all messages for the same destination are bundled into 1 message.
-         * This method may be called by timer and bundler concurrently
-         * @param msgs
-         */
-        private void sendBundledMessages(final Map<SingletonAddress,List<Message>> msgs) {
-
-            // System.out.println("sending " + num_msgs + " msgs, count=" + count);
-
-            if(log.isTraceEnabled()) {
-                double percentage=100.0 / max_bundle_size * count;
-                StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
-                num_msgs=0;
-                sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size)");
-                sb.append(" to ").append(msgs.size()).append(" destination(s)");
-                if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
-                log.trace(sb);
-            }
-
-            num_msgs=0;
-
-            for(Map.Entry<SingletonAddress,List<Message>> entry: msgs.entrySet()) {
-                List<Message> list=entry.getValue();
-                if(list.isEmpty())
-                    continue;
-                SingletonAddress dst=entry.getKey();
-                Address dest=dst.getAddress();
-                String cluster_name=dst.getClusterName();
-                Address src_addr=list.get(0).getSrc();
-
-                boolean multicast=dest == null;
-                try {
-                    bundler_out_stream.reset();
-                    bundler_dos.reset();
-                    writeMessageList(dest, src_addr, cluster_name, list, bundler_dos, multicast, id); // flushes output stream when done
-                    Buffer buffer=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
-                    doSend(buffer, dest, multicast);
-                }
-                catch(Throwable e) {
-                    if(log.isErrorEnabled()) log.error("exception sending bundled msgs", e);
-                }
-            }
-            msgs.clear();
-            count=0;
-        }
-
-
-        private void sendSingleMessage(final Message msg) {
-            num_msgs=0;
-            msgs.clear();
-            count=0;
-
-            Address dest=msg.getDest();
-            boolean multicast=dest == null;
-            try {
-                bundler_out_stream.reset();
-                bundler_dos.reset();
-                writeMessage(msg, bundler_dos, multicast);
-                Buffer buffer=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
-                doSend(buffer, dest, multicast);
-            }
-            catch(Throwable e) {
-                if(log.isErrorEnabled()) log.error("exception sending msg " + msg, e);
-            }
-
-        }
-
-
-
-        private void checkLength(long len) throws Exception {
-            if(len > max_bundle_size)
-                throw new Exception("message size (" + len + ") is greater than max bundling size (" + max_bundle_size +
-                        "). Set the fragmentation/bundle size in FRAG and TP correctly");
-        }
-
-    }
 
 
     /**
-     * Uses a queue to transfer messages between the sender's thread and a single bundler thread. The latter continually
-     * removes messages from the queue and adds them to a hashmap. If a max size has been exceeded or max time has
-     * elapsed, all accumulated messages are sent by the bundler thread. The advantage here is that the sender's thread
-     * doesn't have to send the accumulated messages, although it might block when adding a message to the (bounded)
-     * queue when the queue is full.
+     * This bundler adds all (unicast or multicast) messages to a queue until max size has been exceeded, but does send
+     * messages immediately when no other messages are available. https://issues.jboss.org/browse/JGRP-1540
      */
     protected class TransferQueueBundler implements Bundler, Runnable {
-        final int                          threshold;
-        final BlockingQueue<Message>       buffer;
-        volatile Thread                    bundler_thread;
-
-        /** Keys are destinations, values are lists of Messages */
-        final Map<SingletonAddress,List<Message>>  msgs=new HashMap<SingletonAddress,List<Message>>(36);
-        long                               count=0;    // current number of bytes accumulated
-        int                                num_msgs=0;
-        long                               next_bundle_time;
-        volatile boolean                   running=true;
-        public static final String         THREAD_NAME="TransferQueueBundler";
-
-
-
-        private TransferQueueBundler(int capacity) {
-            if(capacity <=0) throw new IllegalArgumentException("Bundler capacity cannot be " + capacity);
-            buffer=new LinkedBlockingQueue<Message>(capacity);
-            threshold=(int)(capacity * .9); // 90% of capacity
-        }
-
-        public void start() {
-            if(bundler_thread == null || !bundler_thread.isAlive()) {
-                bundler_thread=getThreadFactory().newThread(this, THREAD_NAME);
-                running=true;
-                bundler_thread.start();
-            }
-        }
-
-        public Thread getThread() {return bundler_thread;}
-
-        public void stop() {
-            running=false;
-            if(bundler_thread != null)
-                bundler_thread.interrupt();
-        }
-
-        public void send(Message msg) throws Exception {
-            long length=msg.size();
-            checkLength(length);
-            buffer.put(msg);
-        }
-
-        public int getBufferSize() {
-            return buffer.size();
-        }
-
-
-
-        public void run() {
-            long max_bundle_timeout_in_nanos=TimeUnit.MILLISECONDS.toNanos(max_bundle_timeout);
-
-            next_bundle_time=System.nanoTime() + max_bundle_timeout_in_nanos;
-            while(running) {
-                Message msg=null;
-                long sleep_time=next_bundle_time - System.nanoTime();
-
-                try {
-                    if(count == 0)
-                        msg=buffer.take();
-                    else
-                        msg=buffer.poll(sleep_time, TimeUnit.NANOSECONDS);
-
-                    long size=msg != null? msg.size() : 0;
-                    boolean send_msgs=(msg != null && count + size >= max_bundle_size) ||
-                      buffer.size() >= threshold ||
-                      System.nanoTime() >= next_bundle_time;
-
-                    if(send_msgs) {
-                        next_bundle_time=System.nanoTime() + max_bundle_timeout_in_nanos;
-                        try {
-                            if(!msgs.isEmpty()) {
-                                sendBundledMessages(msgs);
-                                msgs.clear();
-                            }
-                            count=0;
-                        }
-                        catch(Exception e) {
-                            log.error("failed sending bundled messages: " + e.getMessage());
-                        }
-                    }
-
-                    if(msg != null) {
-                        count+=size;
-                        addMessage(msg);
-                    }
-                }
-                catch(Throwable t) {
-                }
-            }
-        }
-
-
-        private void checkLength(long len) throws Exception {
-            if(len > max_bundle_size)
-                throw new Exception("message size (" + len + ") is greater than max bundling size (" + max_bundle_size +
-                                      "). Set the fragmentation/bundle size in FRAG and TP correctly");
-        }
-
-
-        private void addMessage(Message msg) {
-            Address dst=msg.getDest();
-            String cluster_name;
-
-            if(!isSingleton())
-                cluster_name=TP.this.channel_name;
-            else {
-                TpHeader hdr=(TpHeader)msg.getHeader(id);
-                cluster_name=hdr.channel_name;
-            }
-
-            SingletonAddress dest=new SingletonAddress(cluster_name, dst);
-
-            List<Message> tmp=msgs.get(dest);
-            if(tmp == null) {
-                tmp=new LinkedList<Message>();
-                msgs.put(dest, tmp);
-            }
-            tmp.add(msg);
-            num_msgs++;
-        }
-
-
-
-        /**
-         * Sends all messages from the map, all messages for the same destination are bundled into 1 message.
-         * This method may be called by timer and bundler concurrently
-         * @param msgs
-         */
-        private void sendBundledMessages(final Map<SingletonAddress,List<Message>> msgs) {
-            boolean   multicast;
-
-            if(log.isTraceEnabled()) {
-                double percentage=100.0 / max_bundle_size * count;
-                StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
-                sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size)");
-                sb.append(" to ").append(msgs.size()).append(" destination(s)");
-                if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
-                log.trace(sb);
-                num_msgs=0;
-            }
-
-            ExposedByteArrayOutputStream bundler_out_stream=new ExposedByteArrayOutputStream((int)(count + 50));
-            ExposedDataOutputStream bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
-
-            for(Map.Entry<SingletonAddress,List<Message>> entry: msgs.entrySet()) {
-                List<Message> list=entry.getValue();
-                if(list.isEmpty())
-                    continue;
-
-                SingletonAddress dst=entry.getKey();
-                Address dest=dst.getAddress();
-                String cluster_name=dst.getClusterName();
-                Address src_addr=list.get(0).getSrc();
-
-                multicast=dest == null;
-                try {
-                    bundler_out_stream.reset();
-                    bundler_dos.reset();
-                    writeMessageList(dest, src_addr, cluster_name, list, bundler_dos, multicast, id); // flushes output stream when done
-                    Buffer buf=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
-                    doSend(buf, dest, multicast);
-                }
-                catch(Throwable e) {
-                    if(log.isErrorEnabled()) log.error("exception sending bundled msgs: " + e + ":, cause: " + e.getCause());
-                }
-            }
-        }
-
-
-    }
-
-
-    /**
-     * Similarly to DefaultBundler2, this bundler accumulates messages until max size has been exceeded, but does
-     * send individual messages immediately when no other messages are available. The difference to DefaultBundler2 is
-     * that we use a transfer queue and a bundler thread, whereas DefaultBundler2 makes the sender's thread send the
-     * accumulated messages.
-     */
-    protected class TransferQueueBundler2 implements Bundler, Runnable {
         final int                                  threshold;
         final BlockingQueue<Message>               buffer;
         volatile Thread                            bundler_thread;
@@ -2436,14 +2094,14 @@ public abstract class TP extends Protocol {
 
         final ExposedByteArrayOutputStream         bundler_out_stream=new ExposedByteArrayOutputStream(1024);
         final ExposedDataOutputStream              bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
-        long                                       count=0;    // current number of bytes accumulated
-        int                                        num_msgs=0;
+        long                                       count;    // current number of bytes accumulated
+        int                                        num_msgs;
         volatile boolean                           running=true;
         public static final String                 THREAD_NAME="TransferQueueBundler";
 
 
 
-        private TransferQueueBundler2(int capacity) {
+        protected TransferQueueBundler(int capacity) {
             if(capacity <=0) throw new IllegalArgumentException("Bundler capacity cannot be " + capacity);
             buffer=new LinkedBlockingQueue<Message>(capacity);
             threshold=(int)(capacity * .9); // 90% of capacity
@@ -2457,7 +2115,9 @@ public abstract class TP extends Protocol {
             }
         }
 
-        public Thread getThread() {return bundler_thread;}
+        public Thread getThread()     {return bundler_thread;}
+        public int    getBufferSize() {return buffer.size();}
+
 
         public void stop() {
             running=false;
@@ -2470,12 +2130,6 @@ public abstract class TP extends Protocol {
             checkLength(length);
             buffer.put(msg);
         }
-
-        public int getBufferSize() {
-            return buffer.size();
-        }
-
-
 
         public void run() {
             while(running) {
@@ -2509,21 +2163,20 @@ public abstract class TP extends Protocol {
         }
 
 
-        void sendMessages() {
+        protected void sendMessages() {
             sendBundledMessages(msgs);
             msgs.clear();
             count=0;
         }
 
-        private void checkLength(long len) throws Exception {
+        protected void checkLength(long len) throws Exception {
             if(len > max_bundle_size)
                 throw new Exception("message size (" + len + ") is greater than max bundling size (" + max_bundle_size +
                         "). Set the fragmentation/bundle size in FRAG and TP correctly");
         }
 
 
-        private void addMessage(Message msg) {
-            Address dst=msg.getDest();
+        protected void addMessage(Message msg) {
             String cluster_name;
 
             if(!isSingleton())
@@ -2533,7 +2186,7 @@ public abstract class TP extends Protocol {
                 cluster_name=hdr.channel_name;
             }
 
-            SingletonAddress dest=new SingletonAddress(cluster_name, dst);
+            SingletonAddress dest=new SingletonAddress(cluster_name, msg.getDest());
 
             List<Message> tmp=msgs.get(dest);
             if(tmp == null) {
@@ -2551,9 +2204,7 @@ public abstract class TP extends Protocol {
          * This method may be called by timer and bundler concurrently
          * @param msgs
          */
-        private void sendBundledMessages(final Map<SingletonAddress,List<Message>> msgs) {
-            boolean   multicast;
-
+        protected void sendBundledMessages(final Map<SingletonAddress,List<Message>> msgs) {
             if(log.isTraceEnabled()) {
                 double percentage=100.0 / max_bundle_size * count;
                 StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
@@ -2575,7 +2226,7 @@ public abstract class TP extends Protocol {
                 String cluster_name=dst.getClusterName();
                 Address src_addr=list.get(0).getSrc();
 
-                multicast=dest == null;
+                boolean multicast=dest == null;
                 try {
                     bundler_out_stream.reset();
                     bundler_dos.reset();
@@ -2588,8 +2239,6 @@ public abstract class TP extends Protocol {
                 }
             }
         }
-
-
     }
 
 
