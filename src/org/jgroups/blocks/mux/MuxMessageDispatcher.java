@@ -1,20 +1,11 @@
 package org.jgroups.blocks.mux;
 
-import java.util.Collection;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.MembershipListener;
-import org.jgroups.Message;
-import org.jgroups.MessageListener;
-import org.jgroups.UpHandler;
-import org.jgroups.blocks.GroupRequest;
-import org.jgroups.blocks.MessageDispatcher;
-import org.jgroups.blocks.RequestCorrelator;
-import org.jgroups.blocks.RequestHandler;
-import org.jgroups.blocks.RequestOptions;
-import org.jgroups.blocks.RspFilter;
+import org.jgroups.*;
+import org.jgroups.blocks.*;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.FutureListener;
+
+import java.util.Collection;
 
 /**
  * A multiplexed message dispatcher.
@@ -89,5 +80,16 @@ public class MuxMessageDispatcher extends MessageDispatcher {
                                                        (filter != null) ? new NoMuxHandlerRspFilter(filter) : new NoMuxHandlerRspFilter(),
                                                        options.getFlags());
         return super.cast(dests, msg, newOptions, blockForResults);
+    }
+
+    @Override
+    protected <T> GroupRequest<T> cast(Collection<Address> dests, Message msg,
+                                       RequestOptions options, boolean blockForResults,
+                                       FutureListener<T> listener) throws Exception {
+        RspFilter filter=options.getRspFilter();
+        RequestOptions newOptions = new RequestOptions(options.getMode(), options.getTimeout(), options.getAnycasting(),
+                                                       (filter != null) ? new NoMuxHandlerRspFilter(filter) : new NoMuxHandlerRspFilter(),
+                                                       options.getFlags());
+        return super.cast(dests, msg, newOptions, blockForResults, listener);
     }
 }

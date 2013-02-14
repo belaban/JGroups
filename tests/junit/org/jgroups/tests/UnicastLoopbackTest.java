@@ -18,16 +18,8 @@ import org.testng.annotations.Test;
 public class UnicastLoopbackTest extends ChannelTestBase {
     JChannel channel=null;
 
-
-    @BeforeMethod
-    protected void setUp() throws Exception {
-        channel=createChannel(true, 1);
-    }
-
-    @AfterMethod
-    protected void tearDown() throws Exception {
-        Util.close(channel);
-    }
+    @BeforeMethod protected void setUp()    throws Exception {channel=createChannel(true, 1);}
+    @AfterMethod  protected void tearDown() throws Exception {Util.close(channel);}
 
 
     /**
@@ -43,10 +35,10 @@ public class UnicastLoopbackTest extends ChannelTestBase {
     	long num_msgs_sent_before = 0 ;
     	long num_msgs_sent_after = 0 ;
 
-    	Promise<Boolean> p = new Promise<Boolean>() ;
-    	MyReceiver receiver = new MyReceiver(NUM, p) ;
+    	Promise<Boolean> promise = new Promise<Boolean>() ;
+    	MyReceiver receiver = new MyReceiver(NUM, promise) ;
     	channel.setReceiver(receiver) ;
-    	channel.connect("demo-group") ;
+    	channel.connect("UnicastLoopbackTest") ;
 
     	Address local_addr=channel.getAddress();
 
@@ -57,7 +49,7 @@ public class UnicastLoopbackTest extends ChannelTestBase {
 
     	// send NUM UNICAST messages to ourself 
     	for(int i=1; i <= NUM; i++) {
-    		channel.send(new Message(local_addr, null, new Integer(i)));
+    		channel.send(new Message(local_addr, null,i));
     		if(i % 100 == 0)
     			System.out.println("-- sent " + i);
     	}
@@ -71,11 +63,11 @@ public class UnicastLoopbackTest extends ChannelTestBase {
 
         try {
     		// wait for all messages to be received
-    		p.getResultWithTimeout(TIMEOUT) ;
+    		promise.getResultWithTimeout(TIMEOUT) ;
     	}
     	catch(TimeoutException te) {
     		// timeout exception occurred 
-    		Assert.fail("Test timed out before all messages were received") ;
+    		Assert.fail("Test timed out before all messages were received; received " + receiver.getNumMsgsReceived()) ;
     	}
 
     }
@@ -89,12 +81,9 @@ public class UnicastLoopbackTest extends ChannelTestBase {
      * @throws Exception
      */
     private static long getNumMessagesSentViaNetwork(JChannel ch) throws Exception {
-
     	TP transport = ch.getProtocolStack().getTransport();
-    	if (transport == null) {
+    	if (transport == null)
     		throw new Exception("transport layer is not present - check default stack configuration") ;
-    	}
-
     	return transport.getNumMessagesSent();
     }
 
@@ -107,11 +96,9 @@ public class UnicastLoopbackTest extends ChannelTestBase {
      * @throws Exception
      */
     private static void setLoopbackProperty(JChannel ch, boolean loopback) throws Exception {
-
     	TP transport =ch.getProtocolStack().getTransport();
-    	if (transport == null) {
+    	if (transport == null)
     		throw new Exception("transport layer is not present - check default stack configuration") ;
-    	}
 
     	// check if already set correctly
     	if ((loopback && transport.isLoopback()) || (!loopback && !transport.isLoopback()))
@@ -128,7 +115,7 @@ public class UnicastLoopbackTest extends ChannelTestBase {
     private static class MyReceiver extends ReceiverAdapter {
 
     	private final int numExpected ;
-    	private int numReceived;
+    	private int       numReceived;
     	private final Promise<Boolean> p ;
 
     	public MyReceiver(int numExpected, Promise<Boolean> p) {
@@ -142,7 +129,7 @@ public class UnicastLoopbackTest extends ChannelTestBase {
 
     		Integer num=(Integer)msg.getObject();
     		numReceived++;
-    		if(num != null && num.intValue() % 100 == 0)
+    		if(num != null && num % 100 == 0)
     			System.out.println("-- received " + num);
 
     		// if we have received NUM messages, set the result

@@ -135,25 +135,28 @@ public abstract class Discovery extends Protocol {
 
     }
 
-    public long getTimeout() {
-        return timeout;
-    }
+    public long      getTimeout()                       {return timeout;}
+    public void      setTimeout(long timeout)           {this.timeout=timeout;}
+    public int       getNumInitialMembers()             {return num_initial_members;}
+    public void      setNumInitialMembers(int num)      {this.num_initial_members=num;}
+    public int       getNumberOfDiscoveryRequestsSent() {return num_discovery_requests;}
+    public long      timeout()                          {return timeout;}
+    public Discovery timeout(long timeout)              {this.timeout=timeout; return this;}
+    public long      numInitialMembers()                {return num_initial_members;}
+    public Discovery numInitialMembers(int num)         {this.num_initial_members=num; return this;}
+    public boolean   breakOnCoordResponse()             {return break_on_coord_rsp;}
+    public Discovery breakOnCoordResponse(boolean flag) {break_on_coord_rsp=flag; return this;}
+    public boolean   returnEntireCache()                {return return_entire_cache;}
+    public Discovery returnEntireCache(boolean flag)    {return_entire_cache=flag; return this;}
+    public long      staggerTimeout()                   {return stagger_timeout;}
+    public Discovery staggerTimeout(long timeout)       {stagger_timeout=timeout; return this;}
+    public boolean   forceDiscoveryResponses()          {return force_sending_discovery_rsps;}
+    public Discovery forceDiscoveryResponses(boolean f) {force_sending_discovery_rsps=f; return this;}
+    public boolean   useDiskCache()                     {return use_disk_cache;}
+    public Discovery useDiskCache(boolean flag)         {use_disk_cache=flag; return this;}
 
-    public void setTimeout(long timeout) {
-        this.timeout=timeout;
-    }
 
-    public int getNumInitialMembers() {
-        return num_initial_members;
-    }
 
-    public void setNumInitialMembers(int num_initial_members) {
-        this.num_initial_members=num_initial_members;
-    }
-
-    public int getNumberOfDiscoveryRequestsSent() {
-        return num_discovery_requests;
-    }
 
     @ManagedAttribute
     public String getView() {return view != null? view.getViewId().toString() : "null";}

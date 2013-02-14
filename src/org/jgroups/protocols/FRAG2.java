@@ -68,12 +68,14 @@ public class FRAG2 extends Protocol {
     @ManagedAttribute(description="Number of received fragments")
     AtomicLong num_received_frags=new AtomicLong(0);
 
-    public int getFragSize() {return frag_size;}
-    public void setFragSize(int s) {frag_size=s;}
-    public long getNumberOfSentMessages() {return num_sent_msgs.get();}
-    public long getNumberOfSentFragments() {return num_sent_frags.get();}
-    public long getNumberOfReceivedMessages() {return num_received_msgs.get();}
-    public long getNumberOfReceivedFragments() {return num_received_frags.get();}
+    public int   getFragSize()                  {return frag_size;}
+    public void  setFragSize(int s)             {frag_size=s;}
+    public long  getNumberOfSentMessages()      {return num_sent_msgs.get();}
+    public long  getNumberOfSentFragments()     {return num_sent_frags.get();}
+    public long  getNumberOfReceivedMessages()  {return num_received_msgs.get();}
+    public long  getNumberOfReceivedFragments() {return num_received_frags.get();}
+    public int   fragSize()                     {return frag_size;}
+    public FRAG2 fragSize(int size)             {frag_size=size; return this;}
 
 
     synchronized int getNextId() {

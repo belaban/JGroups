@@ -12,7 +12,6 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.FutureListener;
-import org.jgroups.util.NotifyingFuture;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -57,20 +56,20 @@ public class RpcDispatcherAsyncInvocationTest {
 
     /** Tests that 10 sync regular RPCs (each taking 500ms) take roughly 5 seconds */
     public void testRegularInvocation() throws Exception {
-        invoke(10, false, false, 5000, 8000);
+        invoke(10, false, 5000, 8000);
     }
 
     public void testRegularAsyncInvocation() throws Exception {
-        invoke(10, true, false, 5000, 8000);
+        invoke(10, false, 5000, 8000);
     }
 
     public void testOOBAsyncInvocation() throws Exception {
-        invoke(10, true, true, 500, 1000);
+        invoke(10, true, 500, 1000);
     }
 
 
 
-    protected void invoke(int num_invocations, boolean async, boolean use_oob, long expected_min, long expected_max) throws Exception {
+    protected void invoke(int num_invocations, boolean use_oob, long expected_min, long expected_max) throws Exception {
         long start=System.currentTimeMillis();
         List<Integer> list=invokeRpc(num_invocations, use_oob);
         long time=System.currentTimeMillis() - start;
@@ -87,6 +86,7 @@ public class RpcDispatcherAsyncInvocationTest {
             opts.setFlags(Message.Flag.OOB);
 
         final List<Integer> results=new ArrayList<Integer>(num_invocations);
+
         FutureListener<Integer> listener=new FutureListener<Integer>() {
             public void futureDone(Future<Integer> future) {
                 try {
@@ -105,8 +105,7 @@ public class RpcDispatcherAsyncInvocationTest {
         };
 
         for(int i=0; i < num_invocations; i++) {
-            NotifyingFuture<Integer> future=disp1.callRemoteMethodWithFuture(b.getAddress(),new MethodCall(incr_method),opts);
-            future.setListener(listener);
+            disp1.callRemoteMethodWithFuture(b.getAddress(),new MethodCall(incr_method),opts, listener);
         }
 
         for(int i=0; i < 20; i++) {

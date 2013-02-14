@@ -10,6 +10,8 @@ import org.jgroups.logging.Log;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
@@ -218,6 +220,19 @@ public class Util {
     public static String getMessage(String key, Object ... args) {
         String msg=getMessage(key);
         return msg != null? MessageFormat.format(msg, args) : null;
+    }
+
+
+    public static Protocol[] getTestStack() {
+        return new Protocol[]{
+          new SHARED_LOOPBACK(),
+          new PING().timeout(500),
+          new NAKACK2(),  // todo: replace with UNICAST3
+          new UNICAST2(),
+          new STABLE(),
+          new GMS(),
+          new FRAG2().fragSize(8000)
+        };
     }
 
 

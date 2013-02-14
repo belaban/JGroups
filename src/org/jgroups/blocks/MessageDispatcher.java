@@ -262,19 +262,36 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
      * @param dests A list of group members from which to expect responses (if the call is blocking).
      * @param msg The message to be sent
      * @param options A set of options that govern the call. See {@link org.jgroups.blocks.RequestOptions} for details
+     * @param listener A FutureListener which will be registered (if non null) with the future <em>before</em> the call is invoked
+     * @return NotifyingFuture<T> A future from which the results (RspList) can be retrieved
+     * @throws Exception If the request cannot be sent
+     */
+    public <T> NotifyingFuture<RspList<T>> castMessageWithFuture(final Collection<Address> dests,
+                                                                 Message msg,
+                                                                 RequestOptions options,
+                                                                 FutureListener<T> listener) throws Exception {
+        GroupRequest<T> req=cast(dests,msg,options,false, listener);
+        return req != null? req : new NullFuture<RspList>(new RspList());
+    }
+
+    /**
+     * Sends a message to all members and expects responses from members in dests (if non-null).
+     * @param dests A list of group members from which to expect responses (if the call is blocking).
+     * @param msg The message to be sent
+     * @param options A set of options that govern the call. See {@link org.jgroups.blocks.RequestOptions} for details
      * @return NotifyingFuture<T> A future from which the results (RspList) can be retrieved
      * @throws Exception If the request cannot be sent
      */
     public <T> NotifyingFuture<RspList<T>> castMessageWithFuture(final Collection<Address> dests,
                                                                  Message msg,
                                                                  RequestOptions options) throws Exception {
-        GroupRequest<T> req=cast(dests,msg,options,false);
-        return req != null? req : new NullFuture<RspList>(new RspList());
+        return castMessageWithFuture(dests, msg, options, null);
     }
 
-    protected <T> GroupRequest<T> cast(final Collection<Address> dests, Message msg,
-                                       RequestOptions options,
-                                       boolean block_for_results) throws Exception {
+
+
+    protected <T> GroupRequest<T> cast(final Collection<Address> dests, Message msg, RequestOptions options,
+                                       boolean block_for_results, FutureListener<T> listener) throws Exception {
         List<Address> real_dests;
 
         // we need to clone because we don't want to modify the original
@@ -328,6 +345,8 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
         }
 
         GroupRequest<T> req=new GroupRequest<T>(msg, corr, real_dests, options);
+        if(listener != null)
+            req.setListener(listener);
         if(options != null) {
             req.setResponseFilter(options.getRspFilter());
             req.setAnycasting(options.getAnycasting());
@@ -338,6 +357,11 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
         req.setBlockForResults(block_for_results);
         req.execute();
         return req;
+    }
+
+    protected <T> GroupRequest<T> cast(final Collection<Address> dests, Message msg, RequestOptions options,
+                                       boolean block_for_results) throws Exception {
+        return cast(dests, msg, options, block_for_results, null);
     }
 
 
@@ -400,12 +424,14 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
      * Sends a unicast message to the target defined by msg.getDest() and returns a future
      * @param msg The unicast message to be sent. msg.getDest() must not be null
      * @param options
+     * @param listener A FutureListener which will be registered (if non null) with the future <em>before</em> the call is invoked
      * @return NotifyingFuture<T> A future from which the result can be fetched
      * @throws Exception If there was problem sending the request, processing it at the receiver, or processing
      *                   it at the sender. {@link java.util.concurrent.Future#get()} will throw this exception
      * @throws TimeoutException If the call didn't succeed within the timeout defined in options (if set)
      */
-    public <T> NotifyingFuture<T> sendMessageWithFuture(Message msg, RequestOptions options) throws Exception {
+    public <T> NotifyingFuture<T> sendMessageWithFuture(Message msg, RequestOptions options,
+                                                        FutureListener<T> listener) throws Exception {
         Address dest=msg.getDest();
         if(dest == null)
             throw new IllegalArgumentException("message destination is null, cannot send message");
@@ -421,11 +447,27 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
         }
 
         UnicastRequest<T> req=new UnicastRequest<T>(msg, corr, dest, options);
+        if(listener != null)
+            req.setListener(listener);
         req.setBlockForResults(false);
         req.execute();
         if(options != null && options.getMode() == ResponseMode.GET_NONE)
             return new NullFuture<T>(null);
         return req;
+    }
+
+
+    /**
+     * Sends a unicast message to the target defined by msg.getDest() and returns a future
+     * @param msg The unicast message to be sent. msg.getDest() must not be null
+     * @param options
+     * @return NotifyingFuture<T> A future from which the result can be fetched
+     * @throws Exception If there was problem sending the request, processing it at the receiver, or processing
+     *                   it at the sender. {@link java.util.concurrent.Future#get()} will throw this exception
+     * @throws TimeoutException If the call didn't succeed within the timeout defined in options (if set)
+     */
+    public <T> NotifyingFuture<T> sendMessageWithFuture(Message msg, RequestOptions options) throws Exception {
+        return sendMessageWithFuture(msg, options, null);
     }
 
 

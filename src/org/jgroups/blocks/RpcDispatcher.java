@@ -173,6 +173,7 @@ public class RpcDispatcher extends MessageDispatcher {
      * @param dests A list of addresses. If null, we'll wait for responses from all cluster members
      * @param method_call The method (plus args) to be invoked
      * @param options A collection of call options, e.g. sync versus async, timeout etc
+     * @param listener A FutureListener which will be registered (if non null) with the future <em>before</em> the call is invoked
      * @return NotifyingFuture A future from which the results can be fetched
      * @throws Exception If the sending of the message threw an exception. Note that <em>no</em> exception will be
      *                   thrown if any of the target members threw an exception; such an exception will be in the Rsp
@@ -180,7 +181,8 @@ public class RpcDispatcher extends MessageDispatcher {
      */
     public <T> NotifyingFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests,
                                                                        MethodCall method_call,
-                                                                       RequestOptions options) throws Exception {
+                                                                       RequestOptions options,
+                                                                       FutureListener<T> listener) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
             if(log.isTraceEnabled())
                 log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
@@ -205,9 +207,26 @@ public class RpcDispatcher extends MessageDispatcher {
                 msg.setScope(options.getScope());
         }
         
-        NotifyingFuture<RspList<T>>  retval=super.castMessageWithFuture(dests, msg, options);
+        NotifyingFuture<RspList<T>>  retval=super.castMessageWithFuture(dests, msg, options, listener);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
+    }
+
+
+    /**
+     * Invokes a method in all members and expects responses from members contained in dests (or all members if dests is null).
+     * @param dests A list of addresses. If null, we'll wait for responses from all cluster members
+     * @param method_call The method (plus args) to be invoked
+     * @param options A collection of call options, e.g. sync versus async, timeout etc
+     * @return NotifyingFuture A future from which the results can be fetched
+     * @throws Exception If the sending of the message threw an exception. Note that <em>no</em> exception will be
+     *                   thrown if any of the target members threw an exception; such an exception will be in the Rsp
+     *                   element for the particular member in the RspList
+     */
+    public <T> NotifyingFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests,
+                                                                       MethodCall method_call,
+                                                                       RequestOptions options) throws Exception {
+        return callRemoteMethodsWithFuture(dests, method_call, options, null);
     }
 
 
@@ -263,11 +282,13 @@ public class RpcDispatcher extends MessageDispatcher {
      * @param dest The target member on which to invoke the method
      * @param call The call to be invoked, including method are arguments
      * @param options The options (e.g. blocking, timeout etc)
+     * @param listener A FutureListener which will be registered (if non null) with the future <em>before</em> the call is invoked
      * @return A future from which the result can be fetched. If the callee threw an invocation, an ExecutionException
      *         will be thrown on calling Future.get().
      * @throws Exception Thrown if the method invocation threw an exception
      */
-    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions options) throws Exception {
+    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions options,
+                                                             FutureListener<T> listener) throws Exception {
         if(log.isTraceEnabled())
             log.trace("dest=" + dest + ", method_call=" + call + ", options=" + options);
 
@@ -282,13 +303,26 @@ public class RpcDispatcher extends MessageDispatcher {
             if(options.getScope() > 0)
                 msg.setScope(options.getScope());
         }
-        return super.sendMessageWithFuture(msg, options);
+        return super.sendMessageWithFuture(msg, options, listener);
+    }
+
+    /**
+     * Invokes a method in a cluster member and - if blocking - returns the result
+     * @param dest The target member on which to invoke the method
+     * @param call The call to be invoked, including method are arguments
+     * @param options The options (e.g. blocking, timeout etc)
+     * @return A future from which the result can be fetched. If the callee threw an invocation, an ExecutionException
+     *         will be thrown on calling Future.get().
+     * @throws Exception Thrown if the method invocation threw an exception
+     */
+    public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions options) throws Exception {
+        return callRemoteMethodWithFuture(dest, call, options, null);
     }
 
 
     protected void correlatorStarted() {
         if(corr != null)
-           corr.setMarshaller(rsp_marshaller);
+            corr.setMarshaller(rsp_marshaller);
     }
 
 
