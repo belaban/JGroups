@@ -4,7 +4,7 @@
        thread-count="5"
         >
 
-    <test name="tcp" junit="false" time-out="1200000">
+    <test name="tcp" junit="false" time-out="60000">
         <parameter name="channel.conf" value="tcp.xml"/>
         <groups>
             <run>

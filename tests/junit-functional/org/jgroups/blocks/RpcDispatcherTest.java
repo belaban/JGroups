@@ -500,11 +500,11 @@ public class RpcDispatcherTest {
 
     protected static void setProps(JChannel... channels) {
         for(JChannel ch: channels) {
-            Protocol prot=ch.getProtocolStack().findProtocol("FRAG2");
+            Protocol prot=ch.getProtocolStack().findProtocol(FRAG2.class);
             if(prot != null) {
                 ((FRAG2)prot).setFragSize(12000);
             }
-            prot=ch.getProtocolStack().findProtocol("FRAG");
+            prot=ch.getProtocolStack().findProtocol(FRAG.class);
             if(prot != null) {
                 ((FRAG)prot).setFragSize(12000);
             }

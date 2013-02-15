@@ -13,7 +13,8 @@ import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 
 /**
- * Tests unilateral closings of UNICAST connections. The test scenarios are described in doc/design/UNICAST2.txt
+ * Tests unilateral closings of UNICAST connections. The test scenarios are described in doc/design/UNICAST2.txt.
+ * Some of the tests may fail occasionally until https://issues.jboss.org/browse/JGRP-1594 is fixed
  * @author Bela Ban
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)

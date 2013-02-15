@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Bela Ban
@@ -28,14 +29,14 @@ import java.util.concurrent.Future;
  */
 @Test(groups=Global.TIME_SENSITIVE,sequential=true)
 public class RpcDispatcherAsyncInvocationTest {
-    protected JChannel      a, b;
-    protected RpcDispatcher disp1, disp2;
-    protected int           count=1;
-    protected Method        incr_method;
+    protected JChannel            a, b;
+    protected RpcDispatcher       disp1, disp2;
+    protected final AtomicInteger count=new AtomicInteger(0);
+    protected Method              incr_method;
 
     public int incr() {
         Util.sleep(500);
-        return count++;
+        return count.incrementAndGet();
     }
 
     @AfterMethod protected void destroy() {disp2.stop(); disp1.stop(); Util.close(b,a);}
@@ -50,7 +51,8 @@ public class RpcDispatcherAsyncInvocationTest {
         a.connect("RpcDispatcherAsyncInvocationTest");
         b.connect("RpcDispatcherAsyncInvocationTest");
         disp2.setRequestHandler(new MyRequestHandler());
-        count=1;
+        disp2.asyncDispatching(true);
+        count.set(0);
     }
 
 
@@ -75,7 +77,8 @@ public class RpcDispatcherAsyncInvocationTest {
         long time=System.currentTimeMillis() - start;
         System.out.println("took " + time + " ms: " + list);
         assert list.size() == num_invocations;
-        assert time >= expected_min && time <= expected_max; // extreme GC could cause this (or even worse)
+        assert time >= expected_min && time <= expected_max : // extreme GC could cause this (or even worse)
+          "time was expected to be in range [" + expected_min + " .. " + expected_max + "] but was " + time;
     }
 
 
@@ -104,8 +107,9 @@ public class RpcDispatcherAsyncInvocationTest {
             }
         };
 
+        MethodCall call=new MethodCall(incr_method);
         for(int i=0; i < num_invocations; i++) {
-            disp1.callRemoteMethodWithFuture(b.getAddress(),new MethodCall(incr_method),opts, listener);
+            disp1.callRemoteMethodWithFuture(b.getAddress(),call,opts, listener);
         }
 
         for(int i=0; i < 20; i++) {
@@ -123,6 +127,7 @@ public class RpcDispatcherAsyncInvocationTest {
         TP transport=new SHARED_LOOPBACK();
         transport.setOOBThreadPoolMinThreads(10);
         transport.setOOBThreadPoolMaxThreads(20);
+        transport.setOOBThreadPoolQueueEnabled(false);
         return new JChannel(new Protocol[]{
           transport,
           new PING().setValue("timeout", 500),

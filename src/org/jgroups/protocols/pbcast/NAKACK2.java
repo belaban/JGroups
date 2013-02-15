@@ -815,7 +815,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         int size=msgs.size();
         num_messages_received+=size;
         boolean loopback=local_addr.equals(sender);
-        boolean added=loopback || buf.add(msgs);
+        boolean added=loopback || (oob ? buf.add(msgs, true) : buf.add(msgs));
 
         if(added && log.isTraceEnabled())
             log.trace(new StringBuilder().append(local_addr).append(": received ").append(sender).append('#')

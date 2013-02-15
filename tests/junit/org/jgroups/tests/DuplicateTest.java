@@ -28,67 +28,67 @@ import java.util.concurrent.ConcurrentMap;
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DuplicateTest extends ChannelTestBase {
-    private JChannel c1, c2, c3;
-    protected Address a1, a2, a3;
+    private JChannel   a, b, c;
+    protected Address  a1, a2, a3;
     private MyReceiver r1, r2, r3;
 
 
     @BeforeMethod
     void init() throws Exception {
         createChannels(true, true, (short)5, (short)5);
-        a1=c1.getAddress();
-        a2=c2.getAddress();
-        a3=c3.getAddress();
+        a1=a.getAddress();
+        a2=b.getAddress();
+        a3=c.getAddress();
 
-        r1=new MyReceiver("C1");
-        r2=new MyReceiver("C2");
-        r3=new MyReceiver("C3");
-        c1.setReceiver(r1);
-        c2.setReceiver(r2);
-        c3.setReceiver(r3);
+        r1=new MyReceiver("A");
+        r2=new MyReceiver("B");
+        r3=new MyReceiver("C");
+        a.setReceiver(r1);
+        b.setReceiver(r2);
+        c.setReceiver(r3);
     }
 
     @AfterMethod
     void tearDown() throws Exception {
-        removeDUPL(c3, c2, c1);
-        Util.close(c3, c2, c1);
+        removeDUPL(c,b,a);
+        Util.close(c,b,a);
     }
 
 
 
     public void testRegularUnicastsToSelf() throws Exception {
-        send(c1, c1.getAddress(), false, 10);
-        sendStableMessages(c1, c2, c3);
+        send(a, a.getAddress(), false, 10);
+        sendStableMessages(a,b, c);
         check(r1, 1, false, new Tuple<Address,Integer>(a1, 10));
     }
 
     public void testOOBUnicastsToSelf() throws Exception {
-        send(c1, c1.getAddress(), true, 10);
-        sendStableMessages(c1,c2,c3);
+        send(a, a.getAddress(), true, 10);
+        sendStableMessages(a,b,c);
         check(r1, 1, true, new Tuple<Address,Integer>(a1, 10));
     }
 
     public void testRegularUnicastsToOthers() throws Exception {
-        send(c1, c2.getAddress(), false, 10);
-        send(c1, c3.getAddress(), false, 10);
-        sendStableMessages(c1,c2,c3);
+        send(a, b.getAddress(), false, 10);
+        send(a, c.getAddress(), false, 10);
+        sendStableMessages(a,b,c);
         check(r2, 1, false, new Tuple<Address,Integer>(a1, 10));
         check(r3, 1, false, new Tuple<Address,Integer>(a1, 10));
     }
 
     @Test(invocationCount=10)
     public void testOOBUnicastsToOthers() throws Exception {
-        send(c1, c2.getAddress(), true, 10);
-        send(c1, c3.getAddress(), true, 10);
-        sendStableMessages(c1,c2,c3);
+        send(a, b.getAddress(), true, 10);
+        send(a, c.getAddress(), true, 10);
+        sendStableMessages(a,b,c);
         check(r2, 1, true, new Tuple<Address,Integer>(a1, 10));
         check(r3, 1, true, new Tuple<Address,Integer>(a1, 10));
     }
 
 
     public void testRegularMulticastToAll() throws Exception {
-        send(c1, null /** multicast */, false, 10);
-        sendStableMessages(c1,c2,c3);
+        send(a, null /** multicast */, false, 10);
+        sendStableMessages(a,b,c);
         check(r1, 1, false, new Tuple<Address,Integer>(a1, 10));
         check(r2, 1, false, new Tuple<Address,Integer>(a1, 10));
         check(r3, 1, false, new Tuple<Address,Integer>(a1, 10));
@@ -96,19 +96,19 @@ public class DuplicateTest extends ChannelTestBase {
 
 
     public void testOOBMulticastToAll() throws Exception {
-        send(c1, null /** multicast */, true, 10);
-        sendStableMessages(c1,c2,c3);
-        check(r1, 1, true, new Tuple<Address,Integer>(a1, 10));
+        send(a, null /** multicast */, true, 10);
+        sendStableMessages(a,b,c);
+        check(r1,1,true,new Tuple<Address,Integer>(a1,10));
         check(r2, 1, true, new Tuple<Address,Integer>(a1, 10));
         check(r3, 1, true, new Tuple<Address,Integer>(a1, 10));
     }
 
 
     public void testRegularMulticastToAll3Senders() throws Exception {
-        send(c1, null /** multicast */, false, 10);
-        send(c2, null /** multicast */, false, 10);
-        send(c3, null /** multicast */, false, 10);
-        sendStableMessages(c1,c2,c3);
+        send(a, null /** multicast */, false, 10);
+        send(b, null /** multicast */, false, 10);
+        send(c, null /** multicast */, false, 10);
+        sendStableMessages(a,b,c);
         check(r1, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
         check(r2, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
         check(r3, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
@@ -116,20 +116,20 @@ public class DuplicateTest extends ChannelTestBase {
 
     @Test(invocationCount=5)
     public void testOOBMulticastToAll3Senders() throws Exception {
-        send(c1, null /** multicast */, true, 10);
-        send(c2, null /** multicast */, true, 10);
-        send(c3, null /** multicast */, true, 10);
-        sendStableMessages(c1,c2,c3);
+        send(a, null /** multicast */, true, 10);
+        send(b, null /** multicast */, true, 10);
+        send(c, null /** multicast */, true, 10);
+        sendStableMessages(a,b,c);
         check(r1, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
         check(r2, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
         check(r3, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
     }
 
     public void testMixedMulticastsToAll3Members() throws Exception {
-        send(c1, null /** multicast */, false, true, 10);
-        send(c2, null /** multicast */, false, true, 10);
-        send(c3, null /** multicast */, false, true, 10);
-        sendStableMessages(c1,c2,c3);
+        send(a, null /** multicast */, false, true, 10);
+        send(b, null /** multicast */, false, true, 10);
+        send(c, null /** multicast */, false, true, 10);
+        sendStableMessages(a,b,c);
         check(r1, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
         check(r2, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
         check(r3, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
@@ -186,23 +186,19 @@ public class DuplicateTest extends ChannelTestBase {
 
 
     private void createChannels(boolean copy_multicasts, boolean copy_unicasts, int num_outgoing_copies, int num_incoming_copies) throws Exception {
-        c1=createChannel(true, 3);
+        a=createChannel(true, 3, "A");
         DUPL dupl=new DUPL(copy_multicasts, copy_unicasts, num_incoming_copies, num_outgoing_copies);
-        ProtocolStack stack=c1.getProtocolStack();
-        stack.insertProtocol(dupl, ProtocolStack.BELOW, NAKACK2.class);
+        ProtocolStack stack=a.getProtocolStack();
+        stack.insertProtocol(dupl,ProtocolStack.BELOW,NAKACK2.class);
 
-        c2=createChannel(c1);
-        c3=createChannel(c1);
+        b=createChannel(a, "B");
+        c=createChannel(a, "C");
 
-        c1.setName("C1");
-        c2.setName("C2");
-        c3.setName("c3");
+        a.connect("DuplicateTest");
+        b.connect("DuplicateTest");
+        c.connect("DuplicateTest");
 
-        c1.connect("DuplicateTest");
-        c2.connect("DuplicateTest");
-        c3.connect("DuplicateTest");
-
-        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, c1, c2, c3);
+        Util.waitUntilAllChannelsHaveSameSize(20000, 1000,a,b, c);
     }
 
 
@@ -227,7 +223,7 @@ public class DuplicateTest extends ChannelTestBase {
                 if(list.size() >= expected_values)
                     break;
                 Util.sleep(1000);
-                sendStableMessages(c1,c2,c3);
+                sendStableMessages(a,b,c);
             }
 
             System.out.println("[" + receiver.getName() + "]: " + addr + ": " + list);

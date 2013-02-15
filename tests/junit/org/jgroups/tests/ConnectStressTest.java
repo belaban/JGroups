@@ -128,13 +128,13 @@ public class ConnectStressTest extends ChannelTestBase {
 
     private static void changeProperties(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        GMS gms=(GMS)stack.findProtocol("GMS");
+        GMS gms=(GMS)stack.findProtocol(GMS.class);
         if(gms != null) {
             gms.setViewBundling(true);
             gms.setMaxBundlingTime(300);
             gms.setPrintLocalAddr(false);
         }
-        MERGE2 merge=(MERGE2)stack.findProtocol("MERGE2");
+        MERGE2 merge=(MERGE2)stack.findProtocol(MERGE2.class);
         if(merge != null) {
             merge.setMinInterval(2000);
             merge.setMaxInterval(5000);

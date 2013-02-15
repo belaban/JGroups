@@ -2,6 +2,7 @@ package org.jgroups.util;
 
 import org.jgroups.annotations.GuardedBy;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -194,24 +195,41 @@ public class Table<T> {
         }
     }
 
+    /**
+     * Adds messages from list to the table
+     * @param list
+     * @return True if at least 1 message was added successfully
+     */
+    public boolean add(final List<Tuple<Long,T>> list) {
+       return add(list, false);
+    }
 
-    public boolean add(List<Tuple<Long,T>> elements) {
-        if(elements == null)
+
+    /**
+     * Adds messages from list to the table, removes messages from list that were not added to the table
+     * @param list
+     * @return True if at least 1 message was added successfully. This guarantees that the list has at least 1 message
+     */
+    public boolean add(final List<Tuple<Long,T>> list, boolean remove_added_msgs) {
+        if(list == null)
             return false;
         boolean added=false;
         lock.lock();
         try {
-            for(Tuple<Long,T> tuple: elements) {
+            for(Iterator<Tuple<Long,T>> it=list.iterator(); it.hasNext();) {
+                Tuple<Long,T> tuple=it.next();
                 long seqno=tuple.getVal1();
                 T element=tuple.getVal2();
                 if(_add(seqno, element))
                     added=true;
+                else if(remove_added_msgs)
+                    it.remove();
             }
+            return added;
         }
         finally {
             lock.unlock();
         }
-        return added;
     }
 
 

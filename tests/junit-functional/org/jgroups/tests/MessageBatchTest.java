@@ -36,7 +36,7 @@ public class MessageBatchTest {
         MessageBatch batch=new MessageBatch(msgs);
         System.out.println("batch = " + batch);
         assert batch.size() == msgs.size() : "batch: " + batch;
-        batch.remove(3).remove(6).remove(10);
+        remove(batch, 3, 6, 10);
         System.out.println("batch = " + batch);
         assert batch.size() == msgs.size() -3 : "batch: " + batch;
     }
@@ -46,21 +46,35 @@ public class MessageBatchTest {
         assert batch.isEmpty();
     }
 
+
     public void testIsEmpty() {
-        MessageBatch batch=new MessageBatch(3);
-        assert batch.isEmpty();
-        batch.set(2, new Message());
+        MessageBatch batch=new MessageBatch(3).add(new Message()).add(new Message()).add(new Message());
+        assert !batch.isEmpty();
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            it.next();
+            it.remove();
+        }
+
+        set(batch, 2, new Message());
         assert !batch.isEmpty();
     }
 
-    public void testGet() {
+    public void testIsEmpty2() {
         List<Message> msgs=createMessages();
-        Message msg=msgs.get(5);
         MessageBatch batch=new MessageBatch(msgs);
-        assert batch.get(5) == msg;
-
-        for(int index: Arrays.asList(-1, msgs.size(), msgs.size() +1))
-            assert batch.get(index) == null;
+        batch.add(new Message());
+        assert !batch.isEmpty();
+        batch.clear();
+        assert batch.isEmpty();
+        for(Message msg: msgs)
+            batch.add(msg);
+        System.out.println("batch = " + batch);
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            it.next();
+            it.remove();
+        }
+        System.out.println("batch = " + batch);
+        assert batch.isEmpty();
     }
 
 
@@ -68,9 +82,42 @@ public class MessageBatchTest {
         List<Message> msgs=createMessages();
         Message msg=msgs.get(5);
         MessageBatch batch=new MessageBatch(msgs);
-        assert batch.get(5) == msg;
-        batch.set(4, msg);
-        assert batch.get(4) == msg;
+        assert get(batch, 5) == msg;
+        set(batch, 4,msg);
+        assert get(batch, 4) == msg;
+    }
+
+
+    public void testReplace() {
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+        final Message MSG=new Message();
+
+        int index=0;
+        for(Message msg: batch) {
+            if(index % 2 == 0)
+                batch.replace(msg,MSG);
+            index++;
+        }
+
+        index=0;
+        for(Message msg: batch) {
+            if(index % 2 == 0)
+                assert msg == MSG; // every even index has MSG
+            index++;
+        }
+    }
+
+
+    public void testReplace2() {
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+        final Message MSG=new Message();
+        batch.replace(MSG, null);
+        assert batch.size() == msgs.size(); // MSG was *not* found and therefore *not* nulled
+
+        batch.replace(get(batch, 5), null);
+        assert batch.size() == msgs.size() -1;
     }
 
 
@@ -78,11 +125,11 @@ public class MessageBatchTest {
         List<Message> msgs=createMessages();
         MessageBatch batch=new MessageBatch(msgs);
         int prev_size=batch.size();
-        batch.remove(1).remove(4);
+        remove(batch, 1, 4);
         System.out.println("batch = " + batch);
         assert batch.size() == prev_size - 2;
 
-        batch.removeAll();
+        batch.clear();
         System.out.println("batch = " + batch);
         assert batch.isEmpty();
 
@@ -149,6 +196,14 @@ public class MessageBatchTest {
         assert msgs.size() == list.size();
     }
 
+    public void testSize2() {
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+        assert batch.size() == msgs.size();
+        remove(batch, 2, 3, 10);
+        assert batch.size() == msgs.size() - 3;
+    }
+
 
     public void testIterator() {
         List<Message> msgs=createMessages();
@@ -171,11 +226,10 @@ public class MessageBatchTest {
             count++;
         assert count == msgs.size();
 
-        batch.remove(3).remove(5).remove(10);
+        remove(batch, 3, 5, 10);
         count=0;
         for(Message msg: batch)
-            if(msg != null)
-                count++;
+            count++;
         assert count == msgs.size() - 3;
     }
 
@@ -184,12 +238,9 @@ public class MessageBatchTest {
         List<Message> msgs=createMessages();
         MessageBatch batch=new MessageBatch(msgs);
 
-        int index=0;
-        for(Message msg: batch) {
-            if(msg != null && msg.getHeader(UNICAST2_ID) != null)
-                batch.remove(index);
-            index++;
-        }
+        for(Message msg: batch)
+            if(msg.getHeader(UNICAST2_ID) != null)
+                batch.remove(msg);
         System.out.println("batch = " + batch);
         assert batch.size() == 3;
      }
@@ -197,13 +248,10 @@ public class MessageBatchTest {
     public void testIterator4() {
         List<Message> msgs=createMessages();
         MessageBatch batch=new MessageBatch(msgs);
-
-        for(int i=0; i < batch.capacity(); i++) {
-            Message msg=batch.get(i);
-            if(msg != null && msg.getHeader(UNICAST2_ID) != null)
-                batch.remove(i);
+        for(Message msg: batch) {
+            if(msg.getHeader(UNICAST2_ID) != null)
+                batch.remove(msg);
         }
-
         System.out.println("batch = " + batch);
         assert batch.size() == 3;
     }
@@ -225,16 +273,85 @@ public class MessageBatchTest {
         assert batch.size() == 3;
     }
 
+    public void testIterator6() {
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+        remove(batch, 1, 2, 3, 10, msgs.size()-1);
+        System.out.println("batch = " + batch);
+        int count=0;
+        for(Message msg: batch)
+            count++;
+        assert count == msgs.size() - 5;
+        count=0;
+        batch.add(new Message()).add(new Message());
+        System.out.println("batch = " + batch);
+        for(Message msg: batch)
+            count++;
+        assert count == msgs.size() - 5+2;
+    }
+
     public void testIteratorOnEmptyBatch() {
         MessageBatch batch=new MessageBatch(3);
         int count=0;
         for(Message msg: batch)
-            if(msg != null)
-                count++;
-
+            count++;
         assert count == 0;
     }
 
+
+    public void testIterator7() {
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+        int index=0;
+        final Message MSG=new Message();
+        for(Message msg: batch) {
+            if(index % 2 == 0)
+                batch.replace(msg, MSG);
+            index++;
+        }
+
+        index=0;
+        for(Message msg: batch) {
+            if(index % 2 == 0)
+                assert msg == MSG; // every even index has MSG
+            index++;
+        }
+    }
+
+    public void testIterator8() {
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+        int index=0;
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
+            if(index == 1 || index == 2 || index == 3 || index == 10 || index == msgs.size()-1)
+                it.remove();
+            index++;
+        }
+        System.out.println("batch = " + batch);
+        int count=0;
+        for(Message msg: batch)
+            count++;
+        assert count == msgs.size() - 5;
+    }
+
+
+    protected MessageBatch remove(MessageBatch batch, int ... indices) {
+        Message[] msgs=batch.array();
+        for(int index: indices)
+            msgs[index]=null;
+        return batch;
+    }
+
+    protected MessageBatch set(MessageBatch batch, int index, Message msg) {
+        Message[] msgs=batch.array();
+        msgs[index]=msg;
+        return batch;
+    }
+
+    protected Message get(MessageBatch batch, int index) {
+        return batch.array()[index];
+    }
 
 
     protected List<Message> createMessages() {

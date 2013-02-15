@@ -142,7 +142,6 @@ public class COMPRESS extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        int index=0;
         for(Message msg: batch) {
             CompressHeader hdr=(CompressHeader)msg.getHeader(this.id);
             if(hdr != null) {
@@ -150,13 +149,12 @@ public class COMPRESS extends Protocol {
                 if(uncompressed_msg != null) {
                     if(log.isTraceEnabled())
                         log.trace("up(): uncompressed " + msg.getLength() + " bytes to " + uncompressed_msg.getLength() + " bytes");
-                    batch.set(index, uncompressed_msg); // replace msg in batch with uncompressed_msg
+                    batch.replace(msg, uncompressed_msg); // replace msg in batch with uncompressed_msg
                 }
             }
-            index++;
         }
 
-        if(batch != null)
+        if(!batch.isEmpty())
             up_prot.up(batch);
     }
 

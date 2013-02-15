@@ -14,7 +14,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.net.ConnectException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,21 +57,6 @@ public class TCPConnectionMapTest extends BMNGRunner {
             conn_b.stop();
     }
 
-
-    /** Tests a connection to a non-existing dest */
-    public void testUnsuccessfulConnection() throws Exception {
-        conn_a.start();
-        conn_b.start();
-        conn_b.stop();
-        byte[] buf="hello".getBytes();
-        try {
-            conn_a.send(B, buf, 0, buf.length);
-            assert false : "send() should have failed as destination is closed";
-        }
-        catch(ConnectException conn_ex) {
-            System.out.println("got connection exception as expected");
-        }
-    }
 
 
     /**

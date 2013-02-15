@@ -44,6 +44,30 @@ public class TableTest {
         assert buf.size() == 2;
     }
 
+    public void testAddListWithRemoval() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        List<Tuple<Long,Integer>> msgs=createList(1,2,3,4,5,6,7,8,9,10);
+        int size=msgs.size();
+        boolean added=buf.add(msgs);
+        System.out.println("buf = " + buf);
+        assert added;
+        assert msgs.size() == size;
+
+        msgs=createList(1,3,5,7);
+        size=msgs.size();
+        added=buf.add(msgs, true);
+        System.out.println("buf = " + buf);
+        assert !added;
+        assert msgs.isEmpty();
+
+        msgs=createList(1,3,5,7,9,10,11,12,13,14,15);
+        size=msgs.size();
+        added=buf.add(msgs, true);
+        System.out.println("buf = " + buf);
+        assert added;
+        assert msgs.size() == 5;
+    }
+
     public static void testAddition() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
         assert !table.add(0, 0);

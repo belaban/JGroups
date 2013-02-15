@@ -276,7 +276,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         members.addAll(v.getMembers());
 
         if(v instanceof MergeView) {
-            System.out.println("** MergeView=" + v);
+            System.out.println("** " + v);
 
             // This is an example of a simple merge function, which fetches the state from the coordinator
             // on a merge and overwrites all of its own state

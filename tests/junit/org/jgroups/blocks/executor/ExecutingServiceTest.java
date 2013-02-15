@@ -1,30 +1,5 @@
 package org.jgroups.blocks.executor;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Queue;
-import java.util.Random;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
@@ -39,11 +14,21 @@ import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.NotifyingFuture;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.io.NotSerializableException;
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Queue;
+import java.util.Random;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 
 /** Tests {@link org.jgroups.blocks.executor.ExecutionService}
  * @author wburns
@@ -53,45 +38,47 @@ public class ExecutingServiceTest extends ChannelTestBase {
     protected static Log logger=null;
     protected ExposedExecutingProtocol exposedProtocol;
     
-    protected JChannel c1, c2, c3;
+    protected JChannel         a, b, c;
     protected ExecutionService e1, e2, e3;
-    protected ExecutionRunner er1, er2, er3;
+    protected ExecutionRunner  er1, er2, er3;
     
     @BeforeClass
     protected void init() throws Exception {
         logger = LogFactory.getLog(ExecutingServiceTest.class);
-        c1=createChannel(true, 3, "A");
+        a=createChannel(true, 3, "A");
         
         // Add the exposed executing protocol
-        ProtocolStack stack=c1.getProtocolStack();
+        ProtocolStack stack=a.getProtocolStack();
         exposedProtocol = new ExposedExecutingProtocol();
         exposedProtocol.setLevel("debug");
         stack.insertProtocolAtTop(exposedProtocol);
         
-        er1=new ExecutionRunner(c1);
-        c1.connect("ExecutionServiceTest");
+        er1=new ExecutionRunner(a);
+        a.connect("ExecutionServiceTest");
 
-        c2=createChannel(c1, "B");
-        er2=new ExecutionRunner(c2);
-        c2.connect("ExecutionServiceTest");
+        b=createChannel(a, "B");
+        er2=new ExecutionRunner(b);
+        b.connect("ExecutionServiceTest");
 
-        c3=createChannel(c1, "C");
-        er3=new ExecutionRunner(c3);
-        c3.connect("ExecutionServiceTest");
+        c=createChannel(a, "C");
+        er3=new ExecutionRunner(c);
+        c.connect("ExecutionServiceTest");
+
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000,a,b,c);
         
         LogFactory.getLog(ExecutionRunner.class).setLevel("debug");
     }
     
     @AfterClass
     protected void cleanup() {
-        Util.close(c3,c2,c1);
+        Util.close(c,b,a);
     }
     
     @BeforeMethod
     protected void createExecutors() {
-        e1=new ExecutionService(c1);
-        e2=new ExecutionService(c2);
-        e3=new ExecutionService(c3);
+        e1=new ExecutionService(a);
+        e2=new ExecutionService(b);
+        e3=new ExecutionService(c);
         
         // Clear out the queue, in case if test doesn't clear it
         SleepingStreamableCallable.canceledThreads.clear();
@@ -409,7 +396,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         
         // Now we make sure that callable is waiting for a consumer
         ExposedExecutingProtocol protocol = 
-            (ExposedExecutingProtocol)c1.getProtocolStack().findProtocol(
+            (ExposedExecutingProtocol)a.getProtocolStack().findProtocol(
                 ExposedExecutingProtocol.class);
         Queue<Runnable> queue = protocol.getAwaitingConsumerQueue();
         Lock lock = protocol.getLock();
@@ -575,7 +562,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         ExposedExecutingProtocol.requestBlocker.set(null);
         
         // Take down the coordinator which forces c2 or B to take over
-        Util.close(c1);
+        Util.close(a);
         
         // Let the message go and see if it wasn't lost
         barrier.await(1, TimeUnit.SECONDS);
@@ -584,16 +571,16 @@ public class ExecutingServiceTest extends ChannelTestBase {
         barrier.reset();
         
         // We need to reconnect the channel now
-        c1=createChannel(c2, "A");
-        er1=new ExecutionRunner(c1);
-        c1.connect("ExecutionServiceTest");
+        a=createChannel(b, "A");
+        er1=new ExecutionRunner(a);
+        a.connect("ExecutionServiceTest");
         
         service.shutdown();
         service.awaitTermination(2, TimeUnit.SECONDS);
         
         // Now we make sure that the new coordinator has the requests
         ExposedExecutingProtocol protocol = 
-            (ExposedExecutingProtocol)c2.getProtocolStack().findProtocol(
+            (ExposedExecutingProtocol)b.getProtocolStack().findProtocol(
                 ExposedExecutingProtocol.class);
         Queue<Runnable> runnables = protocol.getAwaitingConsumerQueue();
         
@@ -605,7 +592,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         Queue<Owner> requests = protocol.getRequestsFromCoordinator();
         assert requests.size() == 1 : "There is no request in the coordinator queue - " + requests.size();
         Owner owner = requests.iterator().next();
-        assert owner.getAddress().equals(c2.getAddress()) : "The request Address doesn't match";
+        assert owner.getAddress().equals(b.getAddress()) : "The request Address doesn't match";
         // Counter is always one higher than previously dished out id
         long expected = protocol.getCounter().get() -1;
         assert owner.getRequestId() == expected : "Request id " + 

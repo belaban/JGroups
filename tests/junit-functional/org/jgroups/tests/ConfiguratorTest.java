@@ -3,6 +3,9 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.conf.ProtocolConfiguration;
+import org.jgroups.protocols.FC;
+import org.jgroups.protocols.UDP;
+import org.jgroups.protocols.UNICAST;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -58,7 +61,7 @@ public class ConfiguratorTest {
     public void testAddingAboveTop() throws Exception{
         stack.setup(Configurator.parseConfigurations(props));
         Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
-        stack.insertProtocol(new_prot, ProtocolStack.ABOVE, "FC");
+        stack.insertProtocol(new_prot, ProtocolStack.ABOVE, FC.class);
         List<Protocol> protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());       
         assert protocols.get(0).getName().endsWith("TRACE");
@@ -72,7 +75,7 @@ public class ConfiguratorTest {
     public void testAddingBelowBottom() throws Exception{
         stack.setup(Configurator.parseConfigurations(props));           
         Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
-        stack.insertProtocol(new_prot, ProtocolStack.BELOW, "UDP");        
+        stack.insertProtocol(new_prot, ProtocolStack.BELOW, UDP.class);
     }
     
     
@@ -91,7 +94,7 @@ public class ConfiguratorTest {
 
         // insert below
         Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
-        stack.insertProtocol(new_prot, ProtocolStack.BELOW, "UNICAST");
+        stack.insertProtocol(new_prot, ProtocolStack.BELOW, UNICAST.class);
         protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());
         for(int i=0; i < below.length; i++) {
@@ -113,7 +116,7 @@ public class ConfiguratorTest {
 
         // insert above
         new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
-        stack.insertProtocol(new_prot, ProtocolStack.ABOVE, "UNICAST");
+        stack.insertProtocol(new_prot, ProtocolStack.ABOVE, UNICAST.class);
         protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());
         for(int i=0; i < above.length; i++) {

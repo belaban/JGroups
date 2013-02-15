@@ -47,9 +47,7 @@ public class EXAMPLE extends Protocol {
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            if(msg != null) {
-                // do something; perhaps check for the presence of a header
-            }
+            // do something; perhaps check for the presence of a header
         }
 
         if(!batch.isEmpty())

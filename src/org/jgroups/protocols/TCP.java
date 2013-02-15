@@ -67,7 +67,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                               external_addr,
                               external_port,
                               bind_port,
-                              bind_port+port_range);
+                              bind_port+port_range).log(log);
         ct.setReceiveBufferSize(recv_buf_size);      
         ct.setSendQueueSize(send_queue_size);
         ct.setUseSendQueues(use_send_queues);

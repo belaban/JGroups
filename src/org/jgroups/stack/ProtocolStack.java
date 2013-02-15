@@ -6,6 +6,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverter;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.protocols.TP;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
@@ -71,7 +72,7 @@ public class ProtocolStack extends Protocol {
                     int index=key.indexOf("=");
                     if(index != -1) {
                         String prot_name=key.substring(index +1);
-                        if(prot_name != null && prot_name.length() > 0) {
+                        if(prot_name != null && !prot_name.isEmpty()) {
                             try {
                                 Protocol removed=removeProtocol(prot_name);
                                 if(removed != null)
@@ -583,6 +584,10 @@ public class ProtocolStack extends Protocol {
         if(neighbor == null)
             throw new IllegalArgumentException("protocol \"" + neighbor_prot + "\" not found in " + stack.printProtocolSpec(false));
 
+        if(position == ProtocolStack.BELOW && neighbor instanceof TP)
+            throw new IllegalArgumentException("protocol \"" + prot + "\" cannot be inserted below the transport protocol (" +
+                                                 neighbor + ")");
+
         insertProtocolInStack(prot, neighbor,  position);
     }
 
@@ -1000,6 +1005,10 @@ public class ProtocolStack extends Protocol {
 
     public Object up(Event evt) {
         return channel.up(evt);
+    }
+
+    public void up(MessageBatch batch) {
+        channel.up(batch);
     }
 
     public Object down(Event evt) {

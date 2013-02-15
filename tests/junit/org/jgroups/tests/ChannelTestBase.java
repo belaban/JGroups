@@ -68,6 +68,7 @@ public class ChannelTestBase {
         bind_addr = Util.getProperty(new String[]{Global.BIND_ADDR}, null, "bind_addr",
     			ignore_systemprops, bind_addr);
         // bind_addr = Util.getBindAddress(null).getHostAddress();
+        System.setProperty(Global.BIND_ADDR, bind_addr);
     }
 
 

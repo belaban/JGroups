@@ -17,28 +17,24 @@ import java.util.List;
 public class UUIDCacheClearTest extends ChannelTestBase {
 
 
-    @Test
     public void testCacheClear() throws Exception {
-        JChannel c1=null, c2=null;
-        Address c1_addr, c2_addr;
+        JChannel   a=null, b=null;
         MyReceiver r1=new MyReceiver(), r2=new MyReceiver();
 
         try {
-            c1=createChannel(true, 2);
-            c1.setReceiver(r1);
-            c1.connect("testCacheClear");
-            c2=createChannel(c1);
-            c2.setReceiver(r2);
-            c2.connect("testCacheClear");
+            a=createChannel(true, 2, "A");
+            a.setReceiver(r1);
+            a.connect("testCacheClear");
+            b=createChannel(a, "B");
+            b.setReceiver(r2);
+            b.connect("testCacheClear");
 
-            assert c2.getView().size() == 2 : "view is " + c2.getView();
+            Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
 
-            c1_addr=c1.getAddress();
-            c2_addr=c2.getAddress();
 
-            // send one unicast message from c1 to c2 and vice versa
-            c1.send(c2_addr, "one");
-            c2.send(c1_addr, "one");
+            // send one unicast message from a to b and vice versa
+            a.send(b.getAddress(), "one");
+            b.send(a.getAddress(), "one");
 
             List<Message> c1_list=r1.getList();
             List<Message> c2_list=r2.getList();
@@ -51,11 +47,11 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             assert c1_list.size() == 1 && c2_list.size() == 1;
 
             // now clear the caches and send message "two"
-            printCaches(c1, c2);
+            printCaches(a,b);
 
             System.out.println("clearing the caches");
-            clearCache(c1,c2);
-            printCaches(c1, c2);
+            clearCache(a,b);
+            printCaches(a,b);
 
 
             r1.clear();
@@ -63,13 +59,13 @@ public class UUIDCacheClearTest extends ChannelTestBase {
 
             r1.enablePrinting(true); r2.enablePrinting(true);
 
-            // send one unicast message from c1 to c2 and vice versa
-            c1.send(c2_addr, "one");
-            c2.send(c1_addr, "two");
+            // send one unicast message from a to b and vice versa
+            a.send(b.getAddress(), "one");
+            b.send(a.getAddress(), "two");
             for(int i=0; i < 10; i++) { // poor man's way of waiting until we have 1 message in each receiver... :-)
                 if(!c1_list.isEmpty() && !c2_list.isEmpty())
                     break;
-                stable(c1, c2);
+                stable(a, b);
                 Util.sleep(1000);
             }
 
@@ -79,14 +75,14 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             Message msg_from_1=c2_list.get(0);
             Message msg_from_2=c1_list.get(0);
 
-            assert msg_from_1.getSrc().equals(c1_addr);
+            assert msg_from_1.getSrc().equals(a.getAddress());
             assert msg_from_1.getObject().equals("one");
 
-            assert msg_from_2.getSrc().equals(c2_addr);
+            assert msg_from_2.getSrc().equals(b.getAddress());
             assert msg_from_2.getObject().equals("two");
         }
         finally {
-            Util.close(c2, c1);
+            Util.close(b, a);
         }
     }
 
@@ -106,7 +102,7 @@ public class UUIDCacheClearTest extends ChannelTestBase {
     }
 
     private static void printCaches(JChannel ... channels) {
-        System.out.println("chaches:\n");
+        System.out.println("caches:\n");
         for(JChannel ch: channels) {
             System.out.println(ch.getAddress() + ":\n" + 
                     ch.getProtocolStack().getTransport().printLogicalAddressCache());
@@ -115,7 +111,7 @@ public class UUIDCacheClearTest extends ChannelTestBase {
 
     private static class MyReceiver extends ReceiverAdapter {
         private final List<Message> msgs=new ArrayList<Message>(4);
-        private boolean print_msgs=false;
+        private boolean             print_msgs=false;
 
         public void receive(Message msg) {
             msgs.add(msg);

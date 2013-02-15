@@ -35,7 +35,7 @@ public class TCPConnectionMap {
     protected final ServerSocket  srv_sock;
     protected Receiver            recvr;
     protected final long          conn_expire_time;
-    protected final Log           log=LogFactory.getLog(getClass());
+    protected Log                 log=LogFactory.getLog(getClass());
     protected int                 recv_buf_size=120000;
     protected int                 send_buf_size=60000;
     protected int                 send_queue_size=0;
@@ -136,6 +136,7 @@ public class TCPConnectionMap {
     public void             retainAll(Collection<Address> members)  {mapper.retainAll(members);}
     public long             getConnectionExpiryTimeout()            {return conn_expire_time;}
     public int              getSenderQueueSize()                    {return send_queue_size;}
+    public TCPConnectionMap log(Log new_log)                        {this.log=new_log; return this;}
 
     public void addConnectionMapListener(AbstractConnectionMap.ConnectionMapListener<TCPConnection> l) {
         mapper.addConnectionMapListener(l);
@@ -178,12 +179,21 @@ public class TCPConnectionMap {
         }
 
         // 1. Try to obtain correct Connection (or create one if not yet existent)
-        TCPConnection conn=mapper.getConnection(dest);
+        TCPConnection conn=null;
+        try {
+            conn=mapper.getConnection(dest);
+        }
+        catch(Throwable t) {
+        }
 
         // 2. Send the message using that connection
         if(conn != null && !conn.isConnected()) { // perhaps not connected because of concurrent connections (JGRP-1549)
             Util.sleepRandom(1, 50);
-            conn=mapper.getConnection(dest); // try one more time
+            try {
+                conn=mapper.getConnection(dest); // try one more time
+            }
+            catch(Throwable t) {
+            }
         }
 
         if(conn != null) {
@@ -726,7 +736,7 @@ public class TCPConnectionMap {
             super(factory,reaper_interval);            
         }
 
-        public TCPConnection getConnection(Address dest) throws Exception { // S. Simeonoff
+        public TCPConnection getConnection(Address dest) throws Exception {
             TCPConnection conn;
             getLock().lock();
             try {

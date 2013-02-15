@@ -28,10 +28,10 @@ public class FD_ALL extends Protocol {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @Property(description="Interval at which a HEARTBEAT is sent to the cluster")
-    long interval=3000;
+    long interval=8000;
 
     @Property(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P")
-    long timeout=10000;
+    long timeout=40000;
 
     @Property(description="Interval at which the HEARTBEAT timeouts are checked")
     long timeout_check_interval=2000;

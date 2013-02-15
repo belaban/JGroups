@@ -101,10 +101,9 @@ public class SHUFFLE extends Protocol {
 
         synchronized(up_msgs) {
             for(Message msg: batch)
-                if(msg != null)
-                    up_msgs.add(msg);
+                up_msgs.add(msg);
         }
-        batch.removeAll();
+        batch.clear();
 
         if(up_msgs.size() >= max_size)
             shuffleAndSendMessages();

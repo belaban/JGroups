@@ -55,8 +55,7 @@ public class HDRS extends Protocol {
 
     public void up(MessageBatch batch) {
         for(Message msg: batch)
-            if(msg !=  null)
-                printMessage(msg, "up");
+            printMessage(msg, "up");
         if(!batch.isEmpty())
             up_prot.up(batch);
     }

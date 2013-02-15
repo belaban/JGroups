@@ -68,18 +68,11 @@ public class MessageBatch implements Iterable<Message> {
     public Mode         mode()                   {return mode;}
     public int          capacity()               {return messages.length;}
 
-
-    public Message get(int index) {
-        if(index >= 0 && index < messages.length)
-            return messages[index];
-        return null;
+    /** Returns the underlying message array. This is only intended for testing ! */
+    public Message[]    array() {
+        return messages;
     }
 
-    public MessageBatch set(int index, final Message msg) {
-        if(index >= 0 && index < messages.length)
-            messages[index]=msg;
-        return this;
-    }
 
     public MessageBatch add(final Message msg) {
         if(msg == null) return this;
@@ -89,14 +82,36 @@ public class MessageBatch implements Iterable<Message> {
         return this;
     }
 
-    public MessageBatch remove(int index) {
-        if(index >= 0 && index < messages.length)
-            messages[index]=null;
+    /**
+     * Replaces a message in the batch with another one
+     * @param existing_msg The message to be replaced. The message has to be non-null and is found by identity (==)
+     *                     comparison
+     * @param new_msg The message to replace the existing message with, can be null
+     * @return
+     */
+    public MessageBatch replace(Message existing_msg, Message new_msg) {
+        if(existing_msg == null)
+            return this;
+        for(int i=0; i < index; i++) {
+            if(messages[i] != null && messages[i] == existing_msg) {
+                messages[i]=new_msg;
+                break;
+            }
+        }
         return this;
     }
 
-    public MessageBatch removeAll() {
-        for(int i=0; i < messages.length; i++)
+    /**
+     * Removes the current message (found by indentity (==)) by nulling it in the message array
+     * @param msg
+     * @return
+     */
+    public MessageBatch remove(Message msg) {
+        return replace(msg, null);
+    }
+
+    public MessageBatch clear() {
+        for(int i=0; i < index; i++)
             messages[i]=null;
         index=0;
         return this;
@@ -105,10 +120,10 @@ public class MessageBatch implements Iterable<Message> {
     /** Removes and returns all messages which have a header with ID == id */
     public Collection<Message> getMatchingMessages(final short id, final boolean remove) {
         return map(new Visitor<Message>() {
-            public Message visit(int index, Message msg, MessageBatch batch) {
+            public Message visit(Message msg, MessageBatch batch) {
                 if(msg != null && msg.getHeader(id) != null) {
                     if(remove)
-                        batch.remove(index);
+                        batch.remove(msg);
                     return msg;
                 }
                 return null;
@@ -120,8 +135,8 @@ public class MessageBatch implements Iterable<Message> {
     /** Applies a function to all messages and returns a list of the function results */
     public <T> Collection<T> map(Visitor<T> visitor) {
         Collection<T> retval=null;
-        for(int i=0; i < messages.length; i++) {
-            T result=visitor.visit(i, messages[i], this);
+        for(int i=0; i < index; i++) {
+            T result=visitor.visit(messages[i], this);
             if(result != null) {
                 if(retval == null)
                     retval=new ArrayList<T>();
@@ -132,23 +147,18 @@ public class MessageBatch implements Iterable<Message> {
     }
 
 
-
     /** Returns the number of non-null messages */
     public int size() {
         int retval=0;
-        Visitor<Integer> visitor=new Visitor<Integer>() {
-            public Integer visit(int index, Message msg, MessageBatch batch) {
-                return msg != null? 1 : 0;
-            }
-        };
-        for(int i=0; i < messages.length; i++)
-            retval+=visitor.visit(i, messages[i], this);
+        for(int i=0; i < index; i++)
+            if(messages[i] != null)
+                retval++;
         return retval;
     }
 
     public boolean isEmpty() {
-        for(Message msg: messages)
-            if(msg != null)
+        for(int i=0; i < index; i++)
+            if(messages[i] != null)
                 return false;
         return true;
     }
@@ -158,12 +168,12 @@ public class MessageBatch implements Iterable<Message> {
     public long totalSize() {
         long retval=0;
         Visitor<Long> visitor=new Visitor<Long>() {
-            public Long visit(int index, Message msg, MessageBatch batch) {
+            public Long visit(Message msg, MessageBatch batch) {
                 return msg != null? msg.size() : 0;
             }
         };
-        for(int i=0; i < messages.length; i++)
-            retval+=visitor.visit(i, messages[i], this);
+        for(int i=0; i < index; i++)
+            retval+=visitor.visit(messages[i], this);
         return retval;
     }
 
@@ -171,17 +181,17 @@ public class MessageBatch implements Iterable<Message> {
     public int length() {
         int retval=0;
         Visitor<Integer> visitor=new Visitor<Integer>() {
-            public Integer visit(int index, Message msg, MessageBatch batch) {
+            public Integer visit(Message msg, MessageBatch batch) {
                 return msg != null? msg.getLength() : 0;
             }
         };
-        for(int i=0; i < messages.length; i++)
-            retval+=visitor.visit(i, messages[i], this);
+        for(int i=0; i < index; i++)
+            retval+=visitor.visit(messages[i], this);
         return retval;
     }
 
 
-
+    /** Iterator which iterates only over non-null messages, skipping null messages */
     public Iterator<Message> iterator() {
         return new BatchIterator();
     }
@@ -202,24 +212,34 @@ public class MessageBatch implements Iterable<Message> {
 
     protected void resize() {
         Message[] tmp=new Message[messages.length + INCR];
-        System.arraycopy(messages, 0, tmp, 0, messages.length);
+        System.arraycopy(messages,0,tmp,0,messages.length);
         messages=tmp;
     }
 
 
     /** Used for iteration over the messages */
     public interface Visitor<T> {
-        T visit(int index, final Message msg, final MessageBatch batch);
+        /**
+         * Called when iterating over the message batch
+         * @param msg The message, can be null
+         * @param batch
+         * @return
+         */
+        T visit(final Message msg, final MessageBatch batch);
     }
 
     public enum Mode {OOB, REG, MIXED}
 
 
+    /** Iterates over <em>non-null</em> elements of a batch, skipping null elements */
     protected class BatchIterator implements Iterator<Message> {
         protected int current_index=-1;
 
         public boolean hasNext() {
-            return current_index +1 < messages.length;
+            // skip null elements
+            while(current_index +1 < index && messages[current_index+1] == null)
+                current_index++;
+            return current_index +1 < index;
         }
 
         public Message next() {
@@ -230,7 +250,9 @@ public class MessageBatch implements Iterable<Message> {
 
         public void remove() {
             if(current_index >= 0)
-                MessageBatch.this.remove(current_index);
+                messages[current_index]=null;
         }
     }
+
+
 }

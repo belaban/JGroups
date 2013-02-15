@@ -434,15 +434,15 @@ public class JChannel extends Channel {
 
 
     public void send(Address dst, Object obj) throws Exception {
-        send(new Message(dst, null, obj));
+        send(new Message(dst, obj));
     }
 
     public void send(Address dst, byte[] buf) throws Exception {
-        send(new Message(dst, null, buf));
+        send(new Message(dst, buf));
     }
 
     public void send(Address dst, byte[] buf, int offset, int length) throws Exception {
-        send(new Message(dst, null, buf, offset, length));
+        send(new Message(dst, buf, offset, length));
     }
 
 
@@ -722,6 +722,39 @@ public class JChannel extends Channel {
             return invokeCallback(evt.getType(), evt.getArg());
         return null;
     }
+
+
+    /** Callback invoked by the protocol stack to deliver a message batch */
+    public void up(MessageBatch batch) {
+        if(stats) {
+            received_msgs+=batch.size();
+            received_bytes+=batch.length();
+        }
+
+        // discard local messages (sent by myself to me)
+        if(discard_own_messages && local_addr != null && batch.sender() != null && local_addr.equals(batch.sender()))
+            return;
+
+        for(Message msg: batch) {
+            if(up_handler != null) {
+                try {
+                    up_handler.up(new Event(Event.MSG, msg));
+                }
+                catch(Throwable t) {
+                    log.error("failed passing message to up-handler", t);
+                }
+            }
+            else if(receiver != null) {
+                try {
+                    receiver.receive(msg);
+                }
+                catch(Throwable t) {
+                    log.error("failed passing message to receiver", t);
+                }
+            }
+        }
+    }
+
 
 
     /**

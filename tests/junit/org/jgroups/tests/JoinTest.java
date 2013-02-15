@@ -149,7 +149,7 @@ public class JoinTest extends ChannelTestBase {
         b.connect("JoinTest");
 
         ProtocolStack stack=b.getProtocolStack();
-        GMS gms=(GMS)stack.findProtocol("GMS");
+        GMS gms=(GMS)stack.findProtocol(GMS.class);
         if(gms != null) {
             gms.setJoinTimeout(join_timeout);
         }
@@ -162,7 +162,7 @@ public class JoinTest extends ChannelTestBase {
 
         stack=a.getProtocolStack();
         DELAY_JOIN_REQ delay=new DELAY_JOIN_REQ().delay(delay_join_req);
-        stack.insertProtocol(delay, ProtocolStack.BELOW, "GMS");
+        stack.insertProtocol(delay, ProtocolStack.BELOW, GMS.class);
 
         System.out.println(new Date() + ": joining c2");
         long start=System.currentTimeMillis(), stop;

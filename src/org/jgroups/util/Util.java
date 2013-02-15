@@ -228,9 +228,9 @@ public class Util {
     public static Protocol[] getTestStack() {
         return new Protocol[]{
           new SHARED_LOOPBACK(),
-          new PING().timeout(500),
-          new NAKACK2(),  // todo: replace with UNICAST3
-          new UNICAST2(),
+          new PING().timeout(1000),
+          new NAKACK2(),
+          new UNICAST3(),
           new STABLE(),
           new GMS(),
           new FRAG2().fragSize(8000)
@@ -424,7 +424,7 @@ public class Util {
         stack.insertProtocol(discard,  ProtocolStack.ABOVE, transport.getClass());
         
         //abruptly shutdown FD_SOCK just as in real life when member gets killed non gracefully
-        FD_SOCK fd = (FD_SOCK) ch.getProtocolStack().findProtocol("FD_SOCK");
+        FD_SOCK fd = (FD_SOCK) ch.getProtocolStack().findProtocol(FD_SOCK.class);
         if(fd != null)
             fd.stopServerSocket(false);
         

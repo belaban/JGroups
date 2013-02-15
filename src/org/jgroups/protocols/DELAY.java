@@ -2,7 +2,6 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
-import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
@@ -43,9 +42,7 @@ public class DELAY extends Protocol {
 
     public void up(MessageBatch batch) {
         if(in_delay > 0)
-            for(Message msg: batch)
-                if(msg != null)
-                    Util.sleep(computeDelay(in_delay));
+            Util.sleep(computeDelay(in_delay));
         if(!batch.isEmpty())
             up_prot.up(batch);
     }

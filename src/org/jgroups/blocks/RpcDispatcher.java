@@ -331,9 +331,6 @@ public class RpcDispatcher extends MessageDispatcher {
      * Use MethodCall.invoke() to do this. Return result.
      */
     public Object handle(Message req) throws Exception {
-        Object      body;
-        MethodCall  method_call;
-
         if(server_obj == null) {
             if(log.isErrorEnabled()) log.error("no method handler is registered. Discarding request.");
             return null;
@@ -344,13 +341,13 @@ public class RpcDispatcher extends MessageDispatcher {
             return null;
         }
 
-        body=req_marshaller != null?
+        Object body=req_marshaller != null?
           req_marshaller.objectFromBuffer(req.getBuffer(), req.getOffset(), req.getLength()) : req.getObject();
 
         if(!(body instanceof MethodCall))
             throw new IllegalArgumentException("message does not contain a MethodCall object") ;
 
-        method_call=(MethodCall)body;
+        MethodCall method_call=(MethodCall)body;
 
         if(log.isTraceEnabled())
             log.trace("[sender=" + req.getSrc() + "], method_call: " + method_call);
