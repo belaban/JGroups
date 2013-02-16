@@ -44,7 +44,7 @@
          oob_thread_pool.min_threads="5"
          oob_thread_pool.max_threads="100"
          oob_thread_pool.keep_alive_time="5000"
-         oob_thread_pool.rejection_policy="Run"/>
+         oob_thread_pool.rejection_policy="discard"/>
 
     <PING timeout="5000"
           num_initial_members="100"

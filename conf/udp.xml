@@ -43,7 +43,7 @@
          oob_thread_pool.keep_alive_time="5000"
          oob_thread_pool.queue_enabled="false"
          oob_thread_pool.queue_max_size="100"
-         oob_thread_pool.rejection_policy="Run"/>
+         oob_thread_pool.rejection_policy="discard"/>
 
     <PING timeout="2000"
             num_initial_members="20"/>
