@@ -1163,7 +1163,7 @@ public abstract class TP extends Protocol {
             // We can modify the message because it won't get retransmitted. The only time we have a physical address
             // as dest is when TCPPING sends the initial discovery requests to initial_hosts: this is below UNICAST,
             // so no retransmission
-            msg.setDest(null);
+            msg.dest(null).setFlag(Message.Flag.DONT_BUNDLE);
         }
 
         final boolean multicast=dest == null;
