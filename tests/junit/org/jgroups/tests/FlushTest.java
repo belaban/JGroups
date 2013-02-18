@@ -20,10 +20,9 @@ import java.util.concurrent.TimeUnit;
  * 
  * @author Bela Ban
  */
-@Test(groups = Global.FLUSH, sequential = false)
+@Test(groups = Global.FLUSH, sequential = true)
 public class FlushTest extends ChannelTestBase {
 
-    @Test
     public void testSingleChannel() throws Exception {
         Semaphore s = new Semaphore(1);
         FlushTestReceiver receivers[] ={ new FlushTestReceiver("c1", s, 0, FlushTestReceiver.CONNECT_ONLY) };
@@ -34,155 +33,129 @@ public class FlushTest extends ChannelTestBase {
         Channel[] tmp = new Channel[receivers.length];
         for (int i = 0; i < receivers.length; i++)
             tmp[i] = receivers[i].getChannel();
-        Util.waitUntilAllChannelsHaveSameSize(60000, 1000, tmp);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, tmp);
 
-        // Reacquire the semaphore tickets; when we have them all
-        // we know the threads are done
-        s.tryAcquire(1, 60, TimeUnit.SECONDS);
+        // Reacquire the semaphore tickets; when we have them all we know the threads are done
+        s.tryAcquire(1, 10, TimeUnit.SECONDS);
         receivers[0].cleanup();
         Util.sleep(1000);
 
         checkEventStateTransferSequence(receivers[0]);
     }
 
-    /**
-     * Tests issue #1 in http://jira.jboss.com/jira/browse/JGRP-335
-     * 
-     * @throws Exception
-     */
-    @Test
+    /** Tests issue #1 in http://jira.jboss.com/jira/browse/JGRP-335 */
     public void testJoinFollowedByUnicast() throws Exception {
-        JChannel c1 = null;
-        JChannel c2 = null;
+        JChannel a = null;
+        JChannel b = null;
         try {
-            c1 = createChannel(true, 2);
-            c1.setReceiver(new SimpleReplier(c1, true));
-            c1.connect("testJoinFollowedByUnicast");
+            a = createChannel(true, 2, "A");
+            a.setReceiver(new SimpleReplier(a,true));
+            a.connect("testJoinFollowedByUnicast");
 
-            Address target = c1.getAddress();
+            Address target = a.getAddress();
             Message unicast_msg = new Message(target);
 
-            c2 = createChannel(c1);
-            c2.setReceiver(new SimpleReplier(c2, false));
-            c2.connect("testJoinFollowedByUnicast");
+            b = createChannel(a, "B");
+            b.setReceiver(new SimpleReplier(b,false));
+            b.connect("testJoinFollowedByUnicast");
 
             // now send unicast, this might block as described in the case
-            c2.send(unicast_msg);
+            b.send(unicast_msg);
             // if we don't get here this means we'd time out
         } finally {
-            Util.close(c2, c1);
+            Util.close(b, a);
         }
     }
 
     /**
      * Tests issue #2 in http://jira.jboss.com/jira/browse/JGRP-335
-     * 
-     * @throws Exception
      */
-    @Test
     public void testStateTransferFollowedByUnicast() throws Exception {
-        JChannel c1 = null;
-        JChannel c2 = null;
+        JChannel a = null;
+        JChannel b = null;
         try {
-            c1 = createChannel(true, 2);
-            c1.setReceiver(new SimpleReplier(c1, true));
-            c1.connect("testStateTransferFollowedByUnicast");
+            a = createChannel(true, 2, "A");
+            a.setReceiver(new SimpleReplier(a,true));
+            a.connect("testStateTransferFollowedByUnicast");
 
-            Address target = c1.getAddress();
+            Address target = a.getAddress();
             Message unicast_msg = new Message(target);
 
-            c2 = createChannel(c1);
-            c2.setReceiver(new SimpleReplier(c2, false));
-            c2.connect("testStateTransferFollowedByUnicast");
+            b = createChannel(a, "B");
+            b.setReceiver(new SimpleReplier(b,false));
+            b.connect("testStateTransferFollowedByUnicast");
 
             System.out.println("\n** Getting the state **");
-            c2.getState(null, 10000);
+            b.getState(null,10000);
             // now send unicast, this might block as described in the case
-            c2.send(unicast_msg);
+            b.send(unicast_msg);
         } finally {
-            Util.close(c2, c1);
+            Util.close(b, a);
         }
     }
     
-    @Test
     public void testSequentialFlushInvocation() throws Exception {
-        Channel channel = null, channel2 = null, channel3 = null;
+        Channel a=null, b= null, c=null;
         try {
-            channel = createChannel(true, 3);
-            channel.setName("A");
+            a = createChannel(true, 3, "A");
+            a.connect("testSequentialFlushInvocation");
 
-            channel2 = createChannel((JChannel) channel);
-            channel2.setName("B");
+            b = createChannel((JChannel) a, "B");
+            b.connect("testSequentialFlushInvocation");
 
-            channel3 = createChannel((JChannel) channel);
-            channel3.setName("C");
+            c = createChannel((JChannel) a, "C");
+            c.connect("testSequentialFlushInvocation");
 
-            channel.connect("x");
-            channel2.connect("x");
-            channel3.connect("x");
+            Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a,b,c);
             
-            //we need to sleep here since coordinator (channel)
-            //might be unblocked before channel3.connect() returns
-            Util.sleep(500);
-
             for (int i = 0; i < 100; i++) {
                 System.out.print("flush #" + i + ": ");
-                long start = System.currentTimeMillis();
-                channel.startFlush(false);
-                channel.stopFlush();
-                long diff = System.currentTimeMillis() - start;
+                a.startFlush(false);
+                a.stopFlush();
             }
         } finally {
-            Util.close(channel, channel2, channel3);
+            Util.close(a, b, c);
         }
     }
 
-    @Test
     public void testFlushWithCrashedFlushCoordinator() throws Exception {
-        JChannel c1 = null;
-        JChannel c2 = null;
-        JChannel c3 = null;
-
+        JChannel a = null, b = null, c = null;
         try {
-            c1 = createChannel(true, 3, "C1"); changeProps(c1);
-            c1.connect("testFlushWithCrashedFlushCoordinator");
+            a = createChannel(true, 3, "A"); changeProps(a);
+            a.connect("testFlushWithCrashedFlushCoordinator");
 
-            c2 = createChannel(c1, "C2"); changeProps(c2);
-            c2.connect("testFlushWithCrashedFlushCoordinator");
+            b = createChannel(a, "B"); changeProps(b);
+            b.connect("testFlushWithCrashedFlushCoordinator");
 
-            c3 = createChannel(c1, "C3"); changeProps(c3);
-            c3.connect("testFlushWithCrashedFlushCoordinator");
-
-
+            c = createChannel(a, "C"); changeProps(c);
+            c.connect("testFlushWithCrashedFlushCoordinator");
 
 
-            System.out.println("shutting down flush coordinator C2");
-            // send out START_FLUSH and then return
-            c2.down(new Event(Event.SUSPEND_BUT_FAIL));
+            System.out.println("shutting down flush coordinator B");
+            b.down(new Event(Event.SUSPEND_BUT_FAIL)); // send out START_FLUSH and then return
 
-            // now shut down C2. This means, after failure detection kicks in and the new coordinator takes over
-            // (either C1 or C3), that the current flush started by C2 will be cancelled and a new flush (by C1 or C3)
+            // now shut down B. This means, after failure detection kicks in and the new coordinator takes over
+            // (either A or C), that the current flush started by B will be cancelled and a new flush (by A or C)
             // will be started
-            Util.shutdown(c2);
+            Util.shutdown(b);
 
-            c1.getProtocolStack().findProtocol(FLUSH.class).setLevel("debug");
-            c3.getProtocolStack().findProtocol(FLUSH.class).setLevel("debug");
+            a.getProtocolStack().findProtocol(FLUSH.class).setLevel("debug");
+            c.getProtocolStack().findProtocol(FLUSH.class).setLevel("debug");
 
-            Util.waitUntilAllChannelsHaveSameSize(10000, 500, c1, c3);
+            Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, c);
 
             // cluster should not hang and two remaining members should have a correct view
-            assertTrue("correct view size", c1.getView().size() == 2);
-            assertTrue("correct view size", c3.getView().size() == 2);
+            assertTrue("correct view size", a.getView().size() == 2);
+            assertTrue("correct view size", c.getView().size() == 2);
 
-            c1.getProtocolStack().findProtocol(FLUSH.class).setLevel("warn");
-            c3.getProtocolStack().findProtocol(FLUSH.class).setLevel("warn");
+            a.getProtocolStack().findProtocol(FLUSH.class).setLevel("warn");
+            c.getProtocolStack().findProtocol(FLUSH.class).setLevel("warn");
 
         } finally {
-            Util.close(c3, c2, c1);
+            Util.close(c, b, a);
         }
     }
 
-    @Test
     public void testFlushWithCrashedParticipant() throws Exception {
         JChannel c1 = null;
         JChannel c2 = null;
@@ -221,7 +194,6 @@ public class FlushTest extends ChannelTestBase {
         }
     }
 
-    @Test
     public void testFlushWithCrashedParticipants() throws Exception {
         JChannel c1 = null;
         JChannel c2 = null;
@@ -256,10 +228,7 @@ public class FlushTest extends ChannelTestBase {
 
     /**
      * Tests http://jira.jboss.com/jira/browse/JGRP-661
-     * 
-     * @throws Exception
      */
-    @Test
     public void testPartialFlush() throws Exception {
         JChannel c1 = null;
         JChannel c2 = null;
@@ -285,21 +254,18 @@ public class FlushTest extends ChannelTestBase {
     }
 
     /** Tests the emition of block/unblock/get|set state events */
-    @Test
     public void testBlockingNoStateTransfer() throws Exception {
         String[] names = { "A", "B", "C", "D" };
         _testChannels(names, FlushTestReceiver.CONNECT_ONLY);
     }
 
     /** Tests the emition of block/unblock/get|set state events */
-    @Test
     public void testBlockingWithStateTransfer() throws Exception {
         String[] names = { "A", "B", "C", "D" };
         _testChannels(names, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE);
     }
 
     /** Tests the emition of block/unblock/get|set state events */
-    @Test
     public void testBlockingWithConnectAndStateTransfer() throws Exception {
         String[] names = { "A", "B", "C", "D" };
         _testChannels(names, FlushTestReceiver.CONNECT_AND_GET_STATE);
@@ -379,7 +345,7 @@ public class FlushTest extends ChannelTestBase {
     }
 
     private class FlushTestReceiver extends PushChannelApplicationWithSemaphore {
-        private int connectMethod;
+        private final int connectMethod;
 
         public static final int CONNECT_ONLY = 1;
 
@@ -447,7 +413,7 @@ public class FlushTest extends ChannelTestBase {
         }
     }
 
-    private class SimpleReplier extends ReceiverAdapter {
+    private static class SimpleReplier extends ReceiverAdapter {
         Channel channel;
 
         boolean handle_requests = false;

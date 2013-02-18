@@ -348,11 +348,7 @@ public class ChannelTestBase {
         public void cleanup() {
             if (thread != null && thread.isAlive())
                 thread.interrupt();
-            try {
-                channel.close();
-            } catch (Throwable t) {
-                log.warn("Exception while closing channel " + getName(), t);
-            }
+            Util.close(channel);
         }
 
         public String getEventSequence() {
