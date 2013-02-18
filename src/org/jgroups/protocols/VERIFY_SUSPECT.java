@@ -31,23 +31,27 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     /* ------------------------------------------ Properties  ------------------------------------------ */
     
     @Property(description="Number of millisecs to wait for a response from a suspected member")
-    private long timeout=2000; 
+    protected long        timeout=2000;
     
     @Property(description="Number of verify heartbeats sent to a suspected member")
-    private int num_msgs=1; 
+    protected int         num_msgs=1;
     
     @Property(description="Use InetAddress.isReachable() to verify suspected member instead of regular messages")
-    private boolean use_icmp=false; 
+    protected boolean     use_icmp=false;
+
+    @Property(description="Send the I_AM_NOT_DEAD message back as a multicast rather than as multiple unicasts " +
+      "(default is false)")
+    protected boolean     use_mcast_rsps=false;
 
     @LocalAddress
     @Property(description="Interface for ICMP pings. Used if use_icmp is true " +
             "The following special values are also recognized: GLOBAL, SITE_LOCAL, LINK_LOCAL and NON_LOOPBACK",
               systemProperty={Global.BIND_ADDR})
-    private InetAddress bind_addr; // interface for ICMP pings
+    protected InetAddress bind_addr; // interface for ICMP pings
     
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class, 
     		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr")
-    protected String bind_interface_str=null;
+    protected String      bind_interface_str=null;
      
     /* --------------------------------------------- Fields ------------------------------------------------ */   
     
@@ -115,10 +119,10 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                         }
                         else {
                             Message rsp;
+                            Address target=use_mcast_rsps? null : hdr.from;
                             for(int i=0; i < num_msgs; i++) {
-                                rsp=new Message(hdr.from, null, null);
-                                rsp.setFlag(Message.OOB);
-                                rsp.putHeader(this.id, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
+                                rsp=new Message(target).setFlag(Message.OOB)
+                                  .putHeader(this.id, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
                                 down_prot.down(new Event(Event.MSG, rsp));
                             }
                         }
@@ -271,7 +275,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     }
 
 
-    private synchronized void startTimer() {
+    protected synchronized void startTimer() {
         if(timer == null || !timer.isAlive()) {            
             timer=getThreadFactory().newThread(this,"VERIFY_SUSPECT.TimerThread");
             timer.setDaemon(true);
