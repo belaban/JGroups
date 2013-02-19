@@ -82,6 +82,18 @@ public class SenderManager {
         sentMessages.clear();
     }
 
+    public Collection<MessageID> getPendingMessageIDs() {
+        return sentMessages.keySet();
+    }
+
+    public long removeLeavers(MessageID messageID, Collection<Address> leavers) {
+        MessageInfo messageInfo = sentMessages.get(messageID);
+        if (messageInfo != null && messageInfo.removeLeavers(leavers)) {
+            return messageInfo.getAndMarkFinalSent();
+        }
+        return NOT_READY;
+    }
+
     /**
      * The state of a message (destination, proposes missing, the highest sequence number proposed, etc...)
      */
@@ -130,6 +142,17 @@ public class SenderManager {
 
         private boolean checkAllProposesReceived() {
             return receivedPropose.isEmpty();
+        }
+
+        public synchronized boolean removeLeavers(Collection<Address> leavers) {
+            for (Address address : leavers) {
+                int idx = destinations.indexOf(address);
+                if (idx == -1) {
+                    continue;
+                }
+                receivedPropose.set(idx, false);
+            }
+            return checkAllProposesReceived();
         }
     }
 
