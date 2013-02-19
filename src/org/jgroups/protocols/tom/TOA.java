@@ -217,8 +217,8 @@ public class TOA extends Protocol implements DeliveryProtocol {
         }
 
         if (destinations.size() == 1) {
-            if (warn) {
-                log.warn("sending an AnycastAddress with 1 element");
+            if (log.isDebugEnabled()) {
+                log.debug("sending an AnycastAddress with 1 element");
             }
             message.putHeader(id, ToaHeader.createSingleDestinationHeader());
             message.setDest(destinations.iterator().next());
