@@ -6,12 +6,14 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**  
+/**
  * Total Order Anycast with three communication steps (based on Skeen's Algorithm). Establishes total order for a
  * message sent to a subset of the cluster members (an anycast). Example: send a totally ordered message to {D,E}
  * out of a membership of {A,B,C,D,E,F}.<p/>
@@ -40,6 +42,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
 
     //stats: profiling information
     private final StatsCollector statsCollector = new StatsCollector();
+    private volatile View currentView;
 
     public TOA() {
     }
@@ -134,6 +137,46 @@ public class TOA extends Protocol implements DeliveryProtocol {
     private void handleViewChange(View view) {
         if (log.isTraceEnabled()) {
             log.trace("Handle view " + view);
+        }
+        View oldView = currentView;
+        currentView = view;
+
+        //basis behavior: drop leavers message (as senders)
+        List<Address> leavers = Util.leftMembers(oldView, view);
+        deliverManager.removeLeavers(leavers);
+
+        //basis behavior: avoid waiting for the acks
+        Collection<MessageID> pendingSentMessages = senderManager.getPendingMessageIDs();
+        for (MessageID messageID : pendingSentMessages) {
+            long finalSequenceNumber = senderManager.removeLeavers(messageID, leavers);
+            if (finalSequenceNumber != SenderManager.NOT_READY) {
+                Message finalMessage = new Message();
+                finalMessage.setSrc(localAddress);
+
+                ToaHeader finalHeader = ToaHeader.createNewHeader(
+                        ToaHeader.FINAL_MESSAGE,messageID);
+
+                finalHeader.setSequencerNumber(finalSequenceNumber);
+                finalMessage.putHeader(this.id, finalHeader);
+                finalMessage.setFlag(Message.Flag.OOB);
+                finalMessage.setFlag(Message.Flag.DONT_BUNDLE);
+
+                Set<Address> destinations = senderManager.getDestination(messageID);
+                if (destinations.contains(localAddress)) {
+                    destinations.remove(localAddress);
+                }
+
+                if (log.isTraceEnabled()) {
+                    log.trace("Message " + messageID + " is ready to be deliver. Final sequencer number is " +
+                            finalSequenceNumber);
+                }
+
+                send(destinations,finalMessage, false);
+                //returns true if we are in destination set
+                if (senderManager.markSent(messageID)) {
+                    deliverManager.markReadyToDeliver(messageID, finalSequenceNumber);
+                }
+            }
         }
         // TODO: Future work: How to add fault tolerance? (simple and efficient)
     }
