@@ -1,5 +1,6 @@
 package org.jgroups.protocols.tom;
 
+import org.jgroups.Address;
 import org.jgroups.Message;
 
 import java.util.*;
@@ -98,6 +99,27 @@ public class DeliveryManagerImpl implements DeliveryManager {
             if (deliverySet.first().isReadyToDeliver()) {
                 deliverySet.notify();
             }
+        }
+    }
+
+    public final void removeLeavers(Collection<Address> leavers) {
+        if (leavers == null) {
+            return;
+        }
+        List<MessageInfo> toRemove = new LinkedList<MessageInfo>();
+        synchronized (deliverySet) {
+            for (MessageInfo messageInfo : deliverySet) {
+                if (leavers.contains(messageInfo.getMessage().getSrc()) && !messageInfo.isReadyToDeliver()) {
+                    toRemove.add(messageInfo);
+                }
+            }
+            deliverySet.removeAll(toRemove);
+            if (deliverySet.first().isReadyToDeliver()) {
+                deliverySet.notify();
+            }
+        }
+        for (MessageInfo removed : toRemove) {
+            messageCache.remove(removed.messageID);
         }
     }
 
