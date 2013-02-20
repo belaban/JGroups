@@ -2,6 +2,7 @@ package org.jgroups.protocols.rules;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
+import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -9,10 +10,7 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.BoundedList;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Tuple;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.w3c.dom.*;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -210,6 +208,24 @@ public class SUPERVISOR extends Protocol {
             }
         }
         return up_prot.up(evt);
+    }
+
+    public void up(MessageBatch batch) {
+        if(num_event_handlers > 0) {
+            for(Message msg: batch) {
+                for(EventHandler handler: event_handlers) {
+                    try {
+                        handler.up(new Event(Event.MSG, msg));
+                    }
+                    catch(Throwable t) {
+                        log.error("event handler failed handling up event", t);
+                    }
+                }
+            }
+        }
+
+        if(!batch.isEmpty())
+            up_prot.up(batch);
     }
 
     protected void handleView(View view) {

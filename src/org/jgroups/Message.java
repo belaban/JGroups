@@ -244,6 +244,13 @@ public class Message implements Streamable {
         }
     }
 
+    /**
+     * <em>
+     * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
+     * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
+     * retransmit a changed byte[] buffer !
+     * </em>
+     */
     final public Message setBuffer(byte[] b) {
         buf=b;
         if(buf != null) {
@@ -256,7 +263,12 @@ public class Message implements Streamable {
     }
 
     /**
-     * Set the internal buffer to point to a subset of a given buffer
+     * Sets the internal buffer to point to a subset of a given buffer.<p/>
+     * <em>
+     * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
+     * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
+     * retransmit a changed byte[] buffer !
+     * </em>
      *
      * @param b The reference to a given buffer. If null, we'll reset the buffer to null
      * @param offset The initial position

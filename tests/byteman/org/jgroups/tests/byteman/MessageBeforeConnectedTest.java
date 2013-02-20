@@ -8,7 +8,7 @@ import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.PING;
 import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.UNICAST2;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.util.Util;
@@ -86,7 +86,7 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
                                    .setValue("enable_unicast_bundling", false),
                                  new PING().setValue("timeout", 500).setValue("num_initial_members", 2),
                                  new NAKACK2().setValue("become_server_queue_size", 10),
-                                 new UNICAST2(),
+                                 new UNICAST3(),
                                  new GMS().setValue("print_local_addr", false));
         ch.setName(name);
         return ch;

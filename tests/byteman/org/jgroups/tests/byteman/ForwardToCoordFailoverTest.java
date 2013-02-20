@@ -7,7 +7,7 @@ import org.jgroups.*;
 import org.jgroups.protocols.FORWARD_TO_COORD;
 import org.jgroups.protocols.PING;
 import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.UNICAST2;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.util.Util;
@@ -157,7 +157,7 @@ public class ForwardToCoordFailoverTest extends BMNGRunner {
                                      // new DISCARD(),
                                      new PING().setValue("timeout", 500),
                                      new NAKACK2(),
-                                     new UNICAST2(),
+                                     new UNICAST3(),
                                      new GMS(),
                                      new FORWARD_TO_COORD());
         retval.setName(name);

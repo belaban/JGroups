@@ -20,7 +20,7 @@ public class UNICAST_ContentionTest {
     JChannel c1, c2;
     static final String unicast_props="SHARED_LOOPBACK(thread_pool.queue_max_size=5000;" +
             "thread_pool.rejection_policy=discard;thread_pool.min_threads=20;thread_pool.max_threads=20;" +
-            "oob_thread_pool.rejection_policy=discard;enable_bundling=true)"+
+            "oob_thread_pool.rejection_policy=discard)"+
             ":UNICAST(xmit_interval=500)";
     static final String unicast2_props=unicast_props.replace("UNICAST", "UNICAST2");
     static final String unicast3_props=unicast_props.replace("UNICAST", "UNICAST3");

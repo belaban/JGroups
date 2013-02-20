@@ -7,6 +7,7 @@ import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Digest;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.SeqnoList;
 import org.jgroups.util.Util;
 import org.testng.annotations.BeforeMethod;
@@ -175,6 +176,17 @@ public class NAKACK2_RetransmitTest {
                     break;
             }
             return null;
+        }
+
+        public void up(MessageBatch batch) {
+            for(Message msg: batch) {
+                NakAckHeader2 hdr=(NakAckHeader2)msg.getHeader(ID);
+                if(hdr != null && hdr.getType() == NakAckHeader2.MSG) {
+                    long seqno=hdr.getSeqno();
+                    msgs.add(seqno);
+                    System.out.println("-- received message #" + seqno + " from " + msg.getSrc());
+                }
+            }
         }
     }
 

@@ -9,47 +9,56 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 
 /**
- * Tests the flow control (FC) protocol
+ * Tests the flow control (FC and MFC) protocols
  * @author Bela Ban
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class FCTest {
-    JChannel ch;
+    JChannel         ch;
     static final int SIZE=1000; // bytes
     static final int NUM_MSGS=100000;
     static final int PRINT=NUM_MSGS / 10;
 
 
+    @DataProvider
+    static Object[][] configProvider() {
+        return new Object[][]{
+          {FC.class},
+          {MFC.class}
+        };
+    }
 
-    @BeforeMethod
-    void setUp() throws Exception {
-        ch=Util.createChannel(new SHARED_LOOPBACK().setValue("thread_pool_rejection_policy", "run").setValue("loopback", true),
-                              new PING(),
-                              new NAKACK2().setValue("use_mcast_xmit", false),
-                              new UNICAST2(),
-                              new STABLE().setValue("max_bytes", 50000),
-                              new GMS().setValue("print_local_addr", false),
-                              new FC().setValue("min_credits", 1000).setValue("max_credits", 10000).setValue("max_block_time", 1000),
-                              new FRAG2());
+    protected void setUp(Class<? extends Protocol> flow_control_class) throws Exception {
+        Protocol flow_control_prot=flow_control_class.newInstance();
+        flow_control_prot.setValue("min_credits", 1000).setValue("max_credits", 10000).setValue("max_block_time", 1000);
+
+        ch=new JChannel(new SHARED_LOOPBACK().setValue("thread_pool_rejection_policy", "run").setValue("loopback", true),
+                        new PING(),
+                        new NAKACK2().setValue("use_mcast_xmit", false),
+                        new UNICAST3(),
+                        new STABLE().setValue("max_bytes", 50000),
+                        new GMS().setValue("print_local_addr", false),
+                        flow_control_prot,
+                        new FRAG2().fragSize(800));
         ch.connect("FCTest");
     }
 
-    @AfterMethod
-    void tearDown() throws Exception {
-        Util.close(ch);
-    }
+    @AfterMethod void tearDown() throws Exception {Util.close(ch);}
 
 
-    public void testReceptionOfAllMessages() throws Exception {
+    @Test(dataProvider="configProvider")
+    public void testReceptionOfAllMessages(Class<? extends Protocol> flow_control_class) throws Exception {
         int num_received=0;
         Receiver r=new Receiver();
+        setUp(flow_control_class);
         ch.setReceiver(r);
         for(int i=1; i <= NUM_MSGS; i++) {
             Message msg=new Message(null, null, createPayload(SIZE));

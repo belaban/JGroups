@@ -24,17 +24,17 @@ import java.util.concurrent.*;
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_Delivery_Test {
-    private NAKACK2 nak;
-    private Address c1, c2;
-    static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK2.class);
-    MyReceiver receiver=new MyReceiver();
-    Executor pool;
-    final static int NUM_MSGS=50;
+    protected NAKACK2            nak;
+    protected Address            a, b;
+    protected MyReceiver         receiver=new MyReceiver();
+    protected Executor           pool;
+    protected static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK2.class);
+    protected final static int   NUM_MSGS=50;
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        c1=Util.createRandomAddress("C1");
-        c2=Util.createRandomAddress("C2");
+        a=Util.createRandomAddress("A");
+        b=Util.createRandomAddress("B");
         nak=new NAKACK2();
 
         TP transport=new TP() {
@@ -51,26 +51,26 @@ public class NAKACK_Delivery_Test {
 
         nak.setDownProtocol(transport);
 
-        receiver.init(c1, c2);
+        receiver.init(a,b);
         nak.setUpProtocol(receiver);
 
         nak.start();
 
         List<Address> members=new ArrayList<Address>(2);
-        members.add(c1); members.add(c2);
-        View view=new View(c1, 1, members);
+        members.add(a); members.add(b);
+        View view=new View(a, 1, members);
 
         // set the local address
-        nak.down(new Event(Event.SET_LOCAL_ADDRESS, c1));
+        nak.down(new Event(Event.SET_LOCAL_ADDRESS,a));
 
         // set a dummy digest
         MutableDigest digest=new MutableDigest(2);
-        digest.add(c1, 0, 0);
-        digest.add(c2, 0, 0);
-        nak.down(new Event(Event.SET_DIGEST, digest));
+        digest.add(a, 0, 0);
+        digest.add(b, 0, 0);
+        nak.down(new Event(Event.SET_DIGEST,digest));
 
         // set dummy view
-        nak.down(new Event(Event.VIEW_CHANGE, view));
+        nak.down(new Event(Event.VIEW_CHANGE,view));
 
         nak.down(new Event(Event.BECOME_SERVER));
 
@@ -105,33 +105,36 @@ public class NAKACK_Delivery_Test {
         System.out.println("sending " + seqnos.size() + " msgs (including duplicates); size excluding duplicates=" +
                 no_duplicates.size());
 
-        // we need to add our own messages (nak is for C1), or else they will get discarded by NAKACK.handleMessage()
-        Table<Message> win=nak.getWindow(c1);
+        // we need to add our own messages (nak is for A), or else they will get discarded by NAKACK.handleMessage()
+        Table<Message> win=nak.getWindow(a);
         for(int i=1; i <= NUM_MSGS; i++)
-            win.add(i, msg(c1, i, i, true));
+            win.add(i, msg(a, i, i, true));
 
         for(int i: seqnos) {
             boolean oob=Util.tossWeightedCoin(0.5);
-            pool.execute(new Sender(c2, i, i, oob));
-            pool.execute(new Sender(c1, i, i, oob));
+            pool.execute(new Sender(b, i, i, oob));
+            pool.execute(new Sender(a, i, i, oob));
         }
 
         ConcurrentMap<Address, Collection<Message>> msgs=receiver.getMsgs();
-        Collection<Message> c1_list=msgs.get(c1);
-        Collection<Message> c2_list=msgs.get(c2);
+        Collection<Message> c1_list=msgs.get(a);
+        Collection<Message> c2_list=msgs.get(b);
 
         long end_time=System.currentTimeMillis() + 10000;
         while(System.currentTimeMillis() < end_time) {
             int size_c1=c1_list.size();
             int size_c2=c2_list.size();
-            System.out.println("size C1 = " + size_c1 + ", size C2=" + size_c2);
+            System.out.println("size A = " + size_c1 + ", size B=" + size_c2);
             if(size_c1 == NUM_MSGS && size_c2 == NUM_MSGS)
                 break;
             Util.sleep(1000);
         }
 
-        assert c1_list.size() == NUM_MSGS : "[C1] expected " + NUM_MSGS + " messages, but got " + c1_list.size();
-        assert c2_list.size() == NUM_MSGS : "[C2] expected " + NUM_MSGS + " messages, but got " + c2_list.size();
+        System.out.println("A received " + c1_list.size() + " messages (expected=" + NUM_MSGS + ")");
+        System.out.println("B received " + c2_list.size() + " messages (expected=" + NUM_MSGS + ")");
+
+        assert c1_list.size() == NUM_MSGS : "[A] expected " + NUM_MSGS + " messages, but got " + c1_list.size();
+        assert c2_list.size() == NUM_MSGS : "[B] expected " + NUM_MSGS + " messages, but got " + c2_list.size();
     }
 
     private static List<Integer> generateRandomNumbers(int from, int to) {
@@ -145,7 +148,7 @@ public class NAKACK_Delivery_Test {
 
     private void send(Address sender, long seqno, int number, boolean oob) {
         assert sender != null;
-        nak.up(new Event(Event.MSG, msg(sender, seqno, number, oob)));
+        nak.up(new Event(Event.MSG,msg(sender,seqno,number,oob)));
     }
 
 
@@ -186,12 +189,26 @@ public class NAKACK_Delivery_Test {
             }
             return null;
         }
+
+        public void up(MessageBatch batch) {
+            Address sender=batch.sender();
+            for(Message msg: batch) {
+                Collection<Message> list=msgs.get(sender);
+                if(list == null) {
+                    list=new ConcurrentLinkedQueue<Message>();
+                    Collection<Message> tmp=msgs.putIfAbsent(sender, list);
+                    if(tmp != null)
+                        list=tmp;
+                }
+                list.add(msg);
+            }
+        }
     }
 
     class Sender implements Runnable {
         final Address sender;
-        final long seqno;
-        final int number;
+        final long    seqno;
+        final int     number;
         final boolean oob;
 
         public Sender(Address sender, long seqno, int number, boolean oob) {

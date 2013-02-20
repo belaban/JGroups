@@ -7,7 +7,7 @@ import org.jgroups.blocks.*;
 import org.jgroups.protocols.PING;
 import org.jgroups.protocols.SHARED_LOOPBACK;
 import org.jgroups.protocols.TP;
-import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.Protocol;
@@ -132,7 +132,7 @@ public class RpcDispatcherAsyncInvocationTest {
           transport,
           new PING().setValue("timeout", 500),
           new NAKACK2(),
-          new UNICAST(),
+          new UNICAST3(),
           new GMS()
         }).name(name);
     }

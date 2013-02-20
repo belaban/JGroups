@@ -100,7 +100,7 @@ public class ProgrammaticApiTest {
                 new VERIFY_SUSPECT(),
                 new BARRIER(),
                 new NAKACK2(),
-                new UNICAST2(),
+                new UNICAST3(),
                 new STABLE(),
                 new GMS(),
                 new UFC(),

@@ -4,10 +4,7 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Digest;
-import org.jgroups.util.MutableDigest;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -40,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @MBean(description="Computes the broadcast messages that are stable")
 public class STABLE extends Protocol {
-    private static final long MAX_SUSPEND_TIME=200000;
+    protected static final long MAX_SUSPEND_TIME=200000;
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
@@ -48,14 +45,14 @@ public class STABLE extends Protocol {
      * Sends a STABLE gossip every 20 seconds on average. 0 disables gossiping of STABLE messages
      */
     @Property(description="Average time to send a STABLE message. Default is 20000 msec")
-    private long desired_avg_gossip=20000;
+    protected long   desired_avg_gossip=20000;
 
     /**
      * delay before we send STABILITY msg (give others a change to send first).
      * This should be set to a very small number (> 0 !) if <code>max_bytes</code> is used
      */
     @Property(description="Delay before stability message is sent. Default is 6000 msec")
-    private long stability_delay=6000;
+    protected long   stability_delay=6000;
 
     /**
      * Total amount of bytes from incoming messages (default = 0 = disabled).
@@ -66,9 +63,9 @@ public class STABLE extends Protocol {
      */
     @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered ." +
       "If ergonomics is enabled, this value is computed as max(MAX_HEAP * cap, N * max_bytes) where N = number of members")
-    protected long max_bytes=2000000;
+    protected long   max_bytes=2000000;
 
-    protected long original_max_bytes=max_bytes;
+    protected long   original_max_bytes=max_bytes;
 
     @Property(description="Max percentage of the max heap (-Xmx) to be used for max_bytes. " +
       "Only used if ergonomics is enabled. 0 disables setting max_bytes dynamically.")
@@ -77,20 +74,20 @@ public class STABLE extends Protocol {
     
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
-    private int num_stable_msgs_sent=0;
-    private int num_stable_msgs_received=0;
-    private int num_stability_msgs_sent=0;
-    private int num_stability_msgs_received=0;
+    protected int    num_stable_msgs_sent;
+    protected int    num_stable_msgs_received;
+    protected int    num_stability_msgs_sent;
+    protected int    num_stability_msgs_received;
 
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     
-    private Address local_addr=null;
-    private final Set<Address> mbrs=new LinkedHashSet<Address>(); // we don't need ordering here
+    protected Address             local_addr;
+    protected final Set<Address>  mbrs=new LinkedHashSet<Address>(); // we don't need ordering here
 
     @GuardedBy("lock")
-    private final MutableDigest digest=new MutableDigest(10); // keeps track of the highest seqnos from all members
+    protected final MutableDigest digest=new MutableDigest(10); // keeps track of the highest seqnos from all members
 
     /**
      * Keeps track of who we already heard from (STABLE_GOSSIP msgs). This is
@@ -99,37 +96,37 @@ public class STABLE extends Protocol {
      * STABILITY message
      */
     @GuardedBy("lock")
-    private final Set<Address> votes=new HashSet<Address>();
+    protected final Set<Address>  votes=new HashSet<Address>();
 
-    private final Lock lock=new ReentrantLock();
+    protected final Lock          lock=new ReentrantLock();
 
     @GuardedBy("stability_lock")
-    private Future<?> stability_task_future=null;
-    private final Lock stability_lock=new ReentrantLock(); // to synchronize on stability_task
+    protected Future<?>           stability_task_future;
+    protected final Lock          stability_lock=new ReentrantLock(); // to synchronize on stability_task
 
     @GuardedBy("stable_task_lock")
-    private Future<?> stable_task_future=null; // bcasts periodic STABLE message (added to timer below)
-    private final Lock stable_task_lock=new ReentrantLock(); // to sync on stable_task
+    protected Future<?>           stable_task_future=null; // bcasts periodic STABLE message (added to timer below)
+    protected final Lock          stable_task_lock=new ReentrantLock(); // to sync on stable_task
 
-    private TimeScheduler timer=null; // to send periodic STABLE msgs (and STABILITY messages)   
+    protected TimeScheduler       timer; // to send periodic STABLE msgs (and STABILITY messages)
 
     /** The total number of bytes received from unicast and multicast messages */
     @GuardedBy("received")
     @ManagedAttribute(description="Bytes accumulated so far")
-    private long num_bytes_received=0;
+    protected long                num_bytes_received=0;
 
-    private final Lock received=new ReentrantLock();
+    protected final Lock          received=new ReentrantLock();
 
     /**
      * When true, don't take part in garbage collection: neither send STABLE messages nor handle STABILITY messages
      */
     @ManagedAttribute
-    protected volatile boolean suspended=false;
+    protected volatile boolean    suspended=false;
 
-    private boolean initialized=false;
+    protected boolean             initialized=false;
 
-    private Future<?> resume_task_future=null;
-    private final Object resume_task_mutex=new Object();
+    protected Future<?>           resume_task_future;
+    protected final Object        resume_task_mutex=new Object();
 
 
     
@@ -188,7 +185,7 @@ public class STABLE extends Protocol {
         return retval;
     }
 
-    private void suspend(long timeout) {
+    protected void suspend(long timeout) {
         if(!suspended) {
             suspended=true;
             if(log.isDebugEnabled())
@@ -197,7 +194,7 @@ public class STABLE extends Protocol {
         startResumeTask(timeout); // will not start task if already running
     }
 
-    private void resume() {
+    protected void resume() {
         lock.lock();
         try {
             resetDigest(); // start from scratch
@@ -231,44 +228,83 @@ public class STABLE extends Protocol {
 
 
     public Object up(Event evt) {
-        Message msg;
-        StableHeader hdr;
-        int type=evt.getType();
+        switch(evt.getType()) {
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                StableHeader hdr=(StableHeader)msg.getHeader(this.id);
+                if(hdr == null) {
+                    handleRegularMessage(msg);
+                    return up_prot.up(evt);
+                }
 
-        switch(type) {
+                handleUpEvent(hdr, msg.getSrc());
+                return null;  // don't pass STABLE or STABILITY messages up the stack
 
-        case Event.MSG:
-            msg=(Message)evt.getArg();
-            hdr=(StableHeader)msg.getHeader(this.id);
-            if(hdr == null) {
-                handleRegularMessage(msg);
-                return up_prot.up(evt);
-            }
-
-            switch(hdr.type) {
-            case StableHeader.STABLE_GOSSIP:
-                handleStableMessage(msg.getSrc(), hdr.stableDigest);
-                break;
-            case StableHeader.STABILITY:
-                handleStabilityMessage(hdr.stableDigest, msg.getSrc());
-                break;
-            default:
-                if(log.isErrorEnabled()) log.error("StableHeader type " + hdr.type + " not known");
-            }
-            return null;  // don't pass STABLE or STABILITY messages up the stack
-
-        case Event.VIEW_CHANGE:
-            Object retval=up_prot.up(evt);
-            View view=(View)evt.getArg();
-            handleViewChange(view);
-            return retval;
+            case Event.VIEW_CHANGE:
+                Object retval=up_prot.up(evt);
+                View view=(View)evt.getArg();
+                handleViewChange(view);
+                return retval;
         }
         return up_prot.up(evt);
     }
 
+    protected void handleUpEvent(StableHeader hdr, Address sender) {
+        switch(hdr.type) {
+            case StableHeader.STABLE_GOSSIP:
+                handleStableMessage(hdr.stableDigest, sender);
+                break;
+            case StableHeader.STABILITY:
+                handleStabilityMessage(hdr.stableDigest, sender);
+                break;
+            default:
+                if(log.isErrorEnabled()) log.error("StableHeader type " + hdr.type + " not known");
+        }
+    }
 
 
-    private void handleRegularMessage(Message msg) {
+    public void up(MessageBatch batch) {
+        StableHeader hdr;
+
+        for(Message msg: batch) { // remove and handle messages with flow control headers (STABLE_GOSSIP, STABILITY)
+            if((hdr=(StableHeader)msg.getHeader(id)) != null) {
+                batch.remove(msg);
+                handleUpEvent(hdr, batch.sender());
+            }
+        }
+
+        // only if message counting is on, and only for multicast messages (http://jira.jboss.com/jira/browse/JGRP-233)
+        if(max_bytes > 0 && batch.dest() == null && !batch.isEmpty()) {
+            boolean send_stable_msg=false;
+            received.lock();
+            try {
+                num_bytes_received+=batch.length();
+                if(num_bytes_received >= max_bytes) {
+                    if(log.isTraceEnabled())
+                        log.trace(new StringBuilder("max_bytes has been reached (").append(max_bytes).
+                          append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
+                    num_bytes_received=0;
+                    send_stable_msg=true;
+                }
+            }
+            finally {
+                received.unlock();
+            }
+
+            if(send_stable_msg) {
+                Digest my_digest=getDigest();  // asks the NAKACK protocol for the current digest,
+                if(log.isTraceEnabled())
+                    log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighestDeliveredSeqnos());
+                sendStableMessage(my_digest);
+            }
+        }
+
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
+
+
+    protected void handleRegularMessage(Message msg) {
         // only if message counting is enabled, and only for multicast messages
         // fixes http://jira.jboss.com/jira/browse/JGRP-233
         if(max_bytes <= 0)
@@ -345,7 +381,7 @@ public class STABLE extends Protocol {
     /* --------------------------------------- Private Methods ---------------------------------------- */
 
 
-    private void handleViewChange(View v) {
+    protected void handleViewChange(View v) {
         List<Address> tmp=v.getMembers();
         synchronized(mbrs) {
             mbrs.clear();
@@ -376,7 +412,7 @@ public class STABLE extends Protocol {
     /** Update my own digest from a digest received by somebody else. Returns whether the update was successful.
      *  Needs to be called with a lock on digest */
     @GuardedBy("lock")
-    private boolean updateLocalDigest(Digest d, Address sender) {
+    protected boolean updateLocalDigest(Digest d, Address sender) {
         if(d == null || d.size() == 0)
             return false;
 
@@ -425,7 +461,7 @@ public class STABLE extends Protocol {
 
 
     @GuardedBy("lock")
-    private void resetDigest() {
+    protected void resetDigest() {
         Digest tmp=getDigest();
         digest.replace(tmp);
         if(log.isTraceEnabled())
@@ -438,20 +474,20 @@ public class STABLE extends Protocol {
      * @param mbr
      */
     @GuardedBy("lock")
-    private boolean addVote(Address mbr) {
+    protected boolean addVote(Address mbr) {
         boolean added=votes.add(mbr);
         return added && allVotesReceived(votes);
     }
 
     /** Votes is already locked and guaranteed to be non-null */
-    private boolean allVotesReceived(Set<Address> votes) {
+    protected boolean allVotesReceived(Set<Address> votes) {
         synchronized(mbrs) {
             return votes.equals(mbrs); // compares identity, size and element-wise (if needed)
         }
     }
 
 
-    private void startStableTask() {
+    protected void startStableTask() {
         stable_task_lock.lock();
         try {
             if(stable_task_future == null || stable_task_future.isDone()) {
@@ -467,7 +503,7 @@ public class STABLE extends Protocol {
     }
 
 
-    private void stopStableTask() {
+    protected void stopStableTask() {
         stable_task_lock.lock();
         try {
             if(stable_task_future != null) {
@@ -481,7 +517,7 @@ public class STABLE extends Protocol {
     }
 
 
-    private void startResumeTask(long max_suspend_time) {
+    protected void startResumeTask(long max_suspend_time) {
         max_suspend_time=(long)(max_suspend_time * 1.1); // little slack
         if(max_suspend_time <= 0)
             max_suspend_time=MAX_SUSPEND_TIME;
@@ -498,7 +534,7 @@ public class STABLE extends Protocol {
     }
 
 
-    private void stopResumeTask() {
+    protected void stopResumeTask() {
         synchronized(resume_task_mutex) {
             if(resume_task_future != null) {
                 resume_task_future.cancel(false);
@@ -508,7 +544,7 @@ public class STABLE extends Protocol {
     }
 
 
-    private void startStabilityTask(Digest d, long delay) {
+    protected void startStabilityTask(Digest d, long delay) {
         stability_lock.lock();
         try {
             if(stability_task_future == null || stability_task_future.isDone()) {
@@ -522,7 +558,7 @@ public class STABLE extends Protocol {
     }
 
 
-    private void stopStabilityTask() {
+    protected void stopStabilityTask() {
         stability_lock.lock();
         try {
             if(stability_task_future != null) {
@@ -544,7 +580,7 @@ public class STABLE extends Protocol {
      maximum of all seqnos will be taken to trigger possible retransmission of last missing seqno (see DESIGN
      for details).
      */
-    private void handleStableMessage(Address sender, Digest d) {
+    protected void handleStableMessage(Digest d, Address sender) {
         if(d == null || sender == null) {
             if(log.isErrorEnabled()) log.error("digest or sender is null");
             return;
@@ -588,7 +624,7 @@ public class STABLE extends Protocol {
     }
 
 
-    private void handleStabilityMessage(Digest stable_digest, Address sender) {
+    protected void handleStabilityMessage(Digest stable_digest, Address sender) {
         if(stable_digest == null) {
             if(log.isErrorEnabled()) log.error("stability digest is null");
             return;
@@ -643,7 +679,7 @@ public class STABLE extends Protocol {
      * seen by this member. Highest seqnos are retrieved from the NAKACK layer below.
      * @param d A <em>copy</em> of this.digest
      */
-    private void sendStableMessage(Digest d) {
+    protected void sendStableMessage(Digest d) {
         if(suspended) {
             if(log.isTraceEnabled())
                 log.trace("will not send STABLE message as I'm suspended");
@@ -685,7 +721,7 @@ public class STABLE extends Protocol {
      discard S2.
      @param tmp A copy of te stability digest, so we don't need to copy it again
      */
-    private void sendStabilityMessage(Digest tmp) {
+    protected void sendStabilityMessage(Digest tmp) {
         long delay;
 
         if(suspended) {
@@ -703,7 +739,7 @@ public class STABLE extends Protocol {
     }
 
 
-    private Digest getDigest() {
+    protected Digest getDigest() {
         return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
     }
 
@@ -720,9 +756,8 @@ public class STABLE extends Protocol {
         public static final int STABLE_GOSSIP=1;
         public static final int STABILITY=2;
 
-        int type=0;
-        // Digest digest=new Digest();  // used for both STABLE_GOSSIP and STABILITY message
-        Digest stableDigest=null; // changed by Bela April 4 2004
+        protected int    type;
+        protected Digest stableDigest; // changed by Bela April 4 2004
 
         public StableHeader() {
         }
@@ -778,7 +813,7 @@ public class STABLE extends Protocol {
     /**
      Mcast periodic STABLE message. Interval between sends varies.
      */
-    private class StableTask implements TimeScheduler.Task {
+    protected class StableTask implements TimeScheduler.Task {
 
         public long nextInterval() {
             long interval=computeSleepTime();
@@ -826,7 +861,7 @@ public class STABLE extends Protocol {
     /**
      * Multicasts a STABILITY message.
      */
-    private class StabilitySendTask implements Runnable {
+    protected class StabilitySendTask implements Runnable {
         Digest stability_digest=null;
 
         StabilitySendTask(Digest d) {

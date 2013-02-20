@@ -271,7 +271,7 @@ public class UNICAST_ConnectionTests {
         Protocol unicast=unicast_class.newInstance();
         if(unicast instanceof UNICAST2)
             unicast.setValue("stable_interval", 1000);
-        return new JChannel(new Protocol[]{new SHARED_LOOPBACK(), unicast}).name(name);
+        return new JChannel(new SHARED_LOOPBACK(), unicast).name(name);
     }
 
     protected static class MyReceiver extends ReceiverAdapter {

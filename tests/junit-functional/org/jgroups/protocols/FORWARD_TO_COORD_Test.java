@@ -40,11 +40,9 @@ public class FORWARD_TO_COORD_Test {
                                              .setValue("log_discard_msgs",true).setValue("log_not_found_msgs",true)
                                              .setValue("xmit_table_num_rows",5)
                                              .setValue("xmit_table_msgs_per_row",10),
-                                           new UNICAST2().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300)
+                                           new UNICAST3().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300)
                                              .setValue("xmit_table_msgs_per_row",10)
-                                             .setValue("conn_expiry_timeout", 10000)
-                                             .setValue("stable_interval",30000)
-                                             .setValue("max_bytes",50000),
+                                             .setValue("conn_expiry_timeout", 10000),
                                            new GMS().setValue("print_local_addr",false)
                                              .setValue("leave_timeout",2000)
                                              .setValue("log_view_warnings",false)

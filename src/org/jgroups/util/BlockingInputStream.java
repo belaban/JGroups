@@ -59,7 +59,7 @@ public class BlockingInputStream extends InputStream {
             while(true) {
                 if(read_pos < write_pos) {
                     int retval=buf[read_pos++] & 0xff;
-                    not_full.signal();
+                    not_full.signalAll();
                     return retval;
                 }
                 if(closed)
@@ -91,7 +91,7 @@ public class BlockingInputStream extends InputStream {
                     int bytes_to_read=Math.min(len, size());
                     System.arraycopy(buf, read_pos, b, off, bytes_to_read);
                     read_pos+=bytes_to_read;
-                    not_full.signal();
+                    not_full.signalAll();
                     return bytes_to_read;
                 }
                 if(closed)
@@ -149,7 +149,7 @@ public class BlockingInputStream extends InputStream {
                     System.arraycopy(buf, offset+bytes_written, this.buf, write_pos, bytes_to_write);
                     write_pos+=bytes_to_write;
                     bytes_written+=bytes_to_write;
-                    not_empty.signal();
+                    not_empty.signalAll();
                 }
                 else {
                     try {
@@ -197,8 +197,8 @@ public class BlockingInputStream extends InputStream {
         try {
             if(closed) return;
             closed=true;
-            not_empty.signal();
-            not_full.signal();
+            not_empty.signalAll();
+            not_full.signalAll();
         }
         finally {
             lock.unlock();
@@ -242,7 +242,7 @@ public class BlockingInputStream extends InputStream {
         System.arraycopy(buf, read_pos, buf, 0, length);
         write_pos-=read_pos;
         read_pos=0;
-        not_full.signal();
+        not_full.signalAll();
     }
 
 

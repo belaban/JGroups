@@ -151,7 +151,7 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
                                        new FD().setValue("timeout", 2000).setValue("max_tries", 2),
                                        new VERIFY_SUSPECT(),
                                        new NAKACK2().setValue("use_mcast_xmit", false),
-                                       new UNICAST(), new STABLE(), new GMS());
+                                       new UNICAST3(), new STABLE(), new GMS());
         if(name != null)
             ch.setName(name);
         return ch;

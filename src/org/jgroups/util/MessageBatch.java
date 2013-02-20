@@ -34,7 +34,7 @@ public class MessageBatch implements Iterable<Message> {
     protected boolean          multicast;
 
     /** Whether this message batch contains only OOB messages, or only regular messages */
-    protected Mode             mode;
+    protected Mode             mode=Mode.REG;
 
     protected static final int INCR=5; // number of elements to add when resizing
 
@@ -45,8 +45,25 @@ public class MessageBatch implements Iterable<Message> {
 
     public MessageBatch(Collection<Message> msgs) {
         messages=new Message[msgs.size()];
+        int num_reg=0, num_oob=0;
+        for(Message msg: msgs) {
+            messages[index++]=msg;
+            if(msg.isFlagSet(Message.Flag.OOB))
+                num_oob++;
+            else
+                num_reg++;
+        }
+        mode=num_oob == 0? Mode.REG : num_reg == 0? Mode.OOB : Mode.MIXED;
+    }
+
+    public MessageBatch(Address dest, Address sender, String cluster_name, boolean multicast, Collection<Message> msgs) {
+        messages=new Message[msgs.size()];
         for(Message msg: msgs)
             messages[index++]=msg;
+        this.dest=dest;
+        this.sender=sender;
+        this.cluster_name=cluster_name;
+        this.multicast=multicast;
     }
 
     public MessageBatch(Address dest, Address sender, String cluster_name, boolean multicast, Mode mode, int capacity) {
@@ -68,11 +85,25 @@ public class MessageBatch implements Iterable<Message> {
     public Mode         mode()                   {return mode;}
     public int          capacity()               {return messages.length;}
 
+
     /** Returns the underlying message array. This is only intended for testing ! */
     public Message[]    array() {
         return messages;
     }
 
+    public Message first() {
+        for(int i=0; i < index; i++)
+            if(messages[i] != null)
+                return messages[i];
+        return null;
+    }
+
+    public Message last() {
+        for(int i=index -1; i >= 0; i--)
+            if(messages[i] != null)
+                return messages[i];
+        return null;
+    }
 
     public MessageBatch add(final Message msg) {
         if(msg == null) return this;
@@ -193,7 +224,7 @@ public class MessageBatch implements Iterable<Message> {
 
     /** Iterator which iterates only over non-null messages, skipping null messages */
     public Iterator<Message> iterator() {
-        return new BatchIterator();
+        return new BatchIterator(index);
     }
 
     public String toString() {
@@ -233,13 +264,18 @@ public class MessageBatch implements Iterable<Message> {
 
     /** Iterates over <em>non-null</em> elements of a batch, skipping null elements */
     protected class BatchIterator implements Iterator<Message> {
-        protected int current_index=-1;
+        protected int       current_index=-1;
+        protected final int saved_index; // index at creation time of the iterator
+
+        public BatchIterator(int saved_index) {
+            this.saved_index=saved_index;
+        }
 
         public boolean hasNext() {
             // skip null elements
-            while(current_index +1 < index && messages[current_index+1] == null)
+            while(current_index +1 < saved_index && messages[current_index+1] == null)
                 current_index++;
-            return current_index +1 < index;
+            return current_index +1 < saved_index;
         }
 
         public Message next() {

@@ -446,17 +446,21 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     public void up(MessageBatch batch) {
+        if(batch.dest() == null) { // not a unicast batch
+            up_prot.up(batch);
+            return;
+        }
+
         int                       size=batch.size();
         Map<Short,List<Message>>  msgs=new TreeMap<Short,List<Message>>(); // map of messages, keyed by conn-id
 
-        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
-            final Message msg=it.next();
+        for(Message msg: batch) {
             if(msg == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))
                 continue;
             Unicast2Header hdr=(Unicast2Header)msg.getHeader(id);
             if(hdr == null)
                 continue;
-            it.remove(); // remove the message from the batch, so it won't be passed up the stack
+            batch.remove(msg); // remove the message from the batch, so it won't be passed up the stack
 
             if(hdr.type != Unicast2Header.DATA) {
                 up(new Event(Event.MSG, msg));
@@ -791,7 +795,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             }
         }
 
-        removeAndPassUp(win);
+        removeAndPassUp(win, sender);
         return true;
     }
 
@@ -846,7 +850,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         ReceiverEntry tmp=recv_table.get(sender);
         Table<Message> win=tmp != null? tmp.received_msgs : null;
         if(win != null)
-            removeAndPassUp(win);
+            removeAndPassUp(win, sender);
     }
 
 
@@ -878,7 +882,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
      * delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
      * order in which they were sent by their senders
      */
-    protected void removeAndPassUp(Table<Message> win) {
+    protected void removeAndPassUp(Table<Message> win, Address sender) {
         final AtomicBoolean processing=win.getProcessing();
         if(!processing.compareAndSet(false, true))
             return;
@@ -889,12 +893,36 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 List<Message> msgs=win.removeMany(processing, true, max_msg_batch_size); // remove my own messages
                 if(msgs == null || msgs.isEmpty()) {
                     released_processing=true;
-                    //System.out.println(Thread.currentThread().getId() + " ======> done with batch, win: " + win);
                     return;
                 }
-                //System.out.println(Thread.currentThread().getId() + " ==> processing " + msgs.size() + " msgs");
 
-                for(Message m: msgs) {
+                MessageBatch batch=new MessageBatch(local_addr, sender, null, false, msgs);
+                for(Message msg_to_deliver: batch) {
+                    // discard OOB msg: it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
+                    if(msg_to_deliver.isFlagSet(Message.OOB))
+                        batch.remove(msg_to_deliver);
+                }
+
+                try {
+                    if(log.isTraceEnabled()) {
+                        Message first=batch.first(), last=batch.last();
+                        StringBuilder sb=new StringBuilder(local_addr + ": delivering");
+                        if(first != null && last != null) {
+                            Unicast2Header hdr1=(Unicast2Header)first.getHeader(id), hdr2=(Unicast2Header)last.getHeader(id);
+                            sb.append(" #").append(hdr1.seqno).append(" - #").append(hdr2.seqno);
+                        }
+                        sb.append(" (" + batch.size()).append(" messages)");
+                        log.trace(sb);
+                    }
+                    up_prot.up(batch);
+                }
+                catch(Throwable t) {
+                    log.error("failed to deliver batch " + batch, t);
+                }
+
+
+
+                /*for(Message m: msgs) {
                     // discard OOB msg: it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
                     if(m.isFlagSet(Message.OOB))
                         continue;
@@ -904,7 +932,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     catch(Throwable t) {
                         log.error("couldn't deliver message " + m, t);
                     }
-                }
+                }*/
             }
         }
         finally {

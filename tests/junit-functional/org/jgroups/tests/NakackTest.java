@@ -134,7 +134,7 @@ public class NakackTest {
           .addProtocol(new PING().setValue("timeout", 2000).setValue("num_initial_members", 3))
           .addProtocol(new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000))
           .addProtocol(new NAKACK2().setValue("use_mcast_xmit", false))
-          .addProtocol(new UNICAST2())
+          .addProtocol(new UNICAST3())
           .addProtocol(new STABLE().setValue("max_bytes", 50000))
           .addProtocol(new GMS().setValue("print_local_addr", false))
           .addProtocol(new UFC())

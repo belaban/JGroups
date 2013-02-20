@@ -20,20 +20,17 @@ import java.util.concurrent.ConcurrentMap;
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class SCOPE_Test extends ChannelTestBase {
-    JChannel c1, c2;
-    static final int NUM_MSGS=5;
-    static final long SLEEP_TIME=1000L;
+    protected JChannel          a, b;
+    protected static final int  NUM_MSGS=5;
+    protected static final long SLEEP_TIME=1000L;
 
     @BeforeMethod
     void setUp() throws Exception {
-        c1=createChannel(true, 2); c1.setName("A");
-        c2=createChannel(c1);      c2.setName("B");
+        a=createChannel(true, 2, "A");
+        b=createChannel(a, "B");
     }
 
-    @AfterMethod
-    void tearDown() throws Exception {
-        Util.close(c2, c1);
-    }
+    @AfterMethod void tearDown() throws Exception {Util.close(b,a);}
 
 
     public void testRegularMulticastMessages() throws Exception {
@@ -45,26 +42,26 @@ public class SCOPE_Test extends ChannelTestBase {
     }
 
     public void testRegularUnicastMessages() throws Exception {
-        sendMessages(c2.getAddress(), false);
+        sendMessages(b.getAddress(), false);
     }
 
     public void testScopedUnicastMessages() throws Exception {
-        sendMessages(c2.getAddress(), true);
+        sendMessages(b.getAddress(), true);
     }
 
     public void testOrderWithScopedMulticasts() throws Exception {
-        ProtocolStack stack=c2.getProtocolStack();
+        ProtocolStack stack=b.getProtocolStack();
         Protocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
         SCOPE scope=new SCOPE();
         stack.insertProtocolInStack(scope, neighbor, ProtocolStack.ABOVE);
         scope.init();
 
-        c1.connect("SCOPE_Test");
-        c2.connect("SCOPE_Test");
-        assert c2.getView().size() == 2 : "c2.view is " + c2.getView();
+        a.connect("SCOPE_Test");
+        b.connect("SCOPE_Test");
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a,b);
 
         MyScopedReceiver receiver=new MyScopedReceiver();
-        c2.setReceiver(receiver);
+        b.setReceiver(receiver);
         Short[] scopes={'X', 'Y', 'Z'};
 
         for(short scope_id: scopes) {
@@ -72,7 +69,7 @@ public class SCOPE_Test extends ChannelTestBase {
                 Message msg=new Message(null, null, i);
                 msg.setScope(scope_id);
                 System.out.println("-- sending message " + (char)scope_id + "#" + i);
-                c1.send(msg);
+                a.send(msg);
             }
         }
 
@@ -112,29 +109,28 @@ public class SCOPE_Test extends ChannelTestBase {
 
 
 
-    private void sendMessages(Address dest, boolean use_scopes) throws Exception {
+    protected void sendMessages(Address dest, boolean use_scopes) throws Exception {
         if(use_scopes) {
-            ProtocolStack stack=c2.getProtocolStack();
+            ProtocolStack stack=b.getProtocolStack();
             Protocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
             SCOPE scope=new SCOPE();
             stack.insertProtocolInStack(scope, neighbor, ProtocolStack.ABOVE);
             scope.init();
         }
 
-        c1.connect("SCOPE_Test");
-        c2.connect("SCOPE_Test");
-        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, c1, c2);
-        assert c2.getView().size() == 2 : "c2.view is " + c2.getView();
+        a.connect("SCOPE_Test");
+        b.connect("SCOPE_Test");
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000,a,b);
 
         MyReceiver receiver=new MyReceiver();
-        c2.setReceiver(receiver);
+        b.setReceiver(receiver);
 
-        for(long i=1; i <=5; i++) {
-            Message msg=new Message(dest, null, i);
+        for(long i=1; i <= NUM_MSGS; i++) {
+            Message msg=new Message(dest, i);
             if(use_scopes)
                 msg.setScope((short)i);
             System.out.println("-- sending message #" + i);
-            c1.send(msg);
+            a.send(msg);
         }
 
         long target_time=System.currentTimeMillis() + NUM_MSGS * SLEEP_TIME * 2, start=System.currentTimeMillis();

@@ -118,7 +118,7 @@ public class RELAY extends Protocol {
 
     public void init() throws Exception {
         super.init();
-        if(site == null || site.length() == 0)
+        if(site == null || site.isEmpty())
             throw new IllegalArgumentException("\"site\" must be set");
         timer=getTransport().getTimer();
         JChannel channel=getProtocolStack().getChannel();
@@ -183,31 +183,8 @@ public class RELAY extends Protocol {
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
                 RelayHeader hdr=(RelayHeader)msg.getHeader(getId());
-                if(hdr != null) {
-                    switch(hdr.type) {
-                        case DISSEMINATE:
-                            Message copy=msg.copy();
-                            if(hdr.original_sender != null)
-                                copy.setSrc(hdr.original_sender);
-                            return up_prot.up(new Event(Event.MSG, copy));
-
-                        case FORWARD:
-                            if(is_coord)
-                                forward(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-                            break;
-
-                        case VIEW:
-                            return installView(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-
-                        case BROADCAST_VIEW:
-                            // sendViewOnLocalCluster(msg.getSrc(), remote_view, global_view, false);
-                            break;
-
-                        default:
-                            throw new IllegalArgumentException(hdr.type + " is not a valid type");
-                    }
-                    return null;
-                }
+                if(hdr != null)
+                    return handleUpEvent(msg, hdr);
 
                 if(is_coord && relay && dest == null && !msg.isFlagSet(Message.NO_RELAY)) {
                     Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
@@ -232,7 +209,60 @@ public class RELAY extends Protocol {
     }
 
 
+    protected Object handleUpEvent(Message msg, RelayHeader hdr) {
+        switch(hdr.type) {
+            case DISSEMINATE:
+                Message copy=msg.copy();
+                if(hdr.original_sender != null)
+                    copy.setSrc(hdr.original_sender);
+                return up_prot.up(new Event(Event.MSG, copy));
 
+            case FORWARD:
+                if(is_coord)
+                    forward(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                break;
+
+            case VIEW:
+                return installView(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+
+            case BROADCAST_VIEW:
+                break;
+
+            default:
+                throw new IllegalArgumentException(hdr.type + " is not a valid type");
+        }
+        return null;
+    }
+
+
+    public void up(MessageBatch batch) {
+        for(Message msg: batch) {
+            RelayHeader hdr=(RelayHeader)msg.getHeader(getId());
+            if(hdr != null) {
+                batch.remove(msg);
+                try {
+                    handleUpEvent(msg, hdr);
+                }
+                catch(Throwable t) {
+                    log.error("failed processing message", t);
+                }
+            }
+
+            // Leave the messages in the batch: they're going to be forwarded, but we also need to deliver them locally
+            if(is_coord && relay && msg.dest() == null && !msg.isFlagSet(Message.NO_RELAY)) {
+                Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
+                try {
+                    byte[] buf=Util.streamableToByteBuffer(tmp);
+                    forward(buf, 0, buf.length);
+                }
+                catch(Exception e) {
+                    log.warn("failed relaying message", e);
+                }
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     protected void handleView(final View view) {
         List<Address> new_mbrs=null;

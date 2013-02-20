@@ -100,7 +100,7 @@ public class FragTest {
         stack.addProtocol(new SHARED_LOOPBACK())
           .addProtocol(new PING())
           .addProtocol(new NAKACK2().setValue("use_mcast_xmit", false))
-          .addProtocol(new UNICAST2())
+          .addProtocol(new UNICAST3())
           .addProtocol(new STABLE().setValue("max_bytes", 50000))
           .addProtocol(new GMS().setValue("print_local_addr", false))
           .addProtocol(new UFC())

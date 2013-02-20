@@ -7,10 +7,7 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.AgeOutCache;
-import org.jgroups.util.Table;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -375,45 +372,84 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     public Object up(Event evt) {
-        Message        msg;
-        Address        dst, src;
-        UnicastHeader  hdr;
-
         switch(evt.getType()) {
-
             case Event.MSG:
-                msg=(Message)evt.getArg();
-                dst=msg.getDest();
-
-                if(dst == null || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
+                Message msg=(Message)evt.getArg();
+                if(msg.getDest() == null || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
                     break;  // pass up
 
-                // changed from removeHeader(): we cannot remove the header because if we do loopback=true at the
-                // transport level, we will not have the header on retransmit ! (bela Aug 22 2006)
-                hdr=(UnicastHeader)msg.getHeader(this.id);
+                UnicastHeader hdr=(UnicastHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break;
-                src=msg.getSrc();
+                Address sender=msg.getSrc();
                 switch(hdr.type) {
                     case UnicastHeader.DATA:      // received regular message
-                        handleDataReceived(src, hdr.seqno, hdr.conn_id, hdr.first, msg, evt);
-                        return null; // we pass the deliverable message up in handleDataReceived()
-                    case UnicastHeader.ACK:  // received ACK for previously sent message
-                        handleAckReceived(src, hdr.seqno, hdr.conn_id);
-                        break;
-                    case UnicastHeader.SEND_FIRST_SEQNO:
-                        handleResendingOfFirstMessage(src, hdr.seqno);
+                        handleDataReceived(sender, hdr.seqno, hdr.conn_id, hdr.first, msg, evt);
                         break;
                     default:
-                        log.error("UnicastHeader type " + hdr.type + " not known !");
+                        handleUpEvent(sender,msg,hdr);
                         break;
                 }
                 return null;
         }
-
         return up_prot.up(evt);   // Pass up to the layer above us
     }
 
+
+    protected void handleUpEvent(Address sender, Message msg, UnicastHeader hdr) {
+        switch(hdr.type) {
+            case UnicastHeader.DATA:      // received regular message
+                throw new IllegalStateException("header of type DATA is not supposed to be handled by this method");
+            case UnicastHeader.ACK:  // received ACK for previously sent message
+                handleAckReceived(sender, hdr.seqno, hdr.conn_id);
+                break;
+            case UnicastHeader.SEND_FIRST_SEQNO:
+                handleResendingOfFirstMessage(sender, hdr.seqno);
+                break;
+            default:
+                log.error("UnicastHeader type " + hdr.type + " not known !");
+                break;
+        }
+    }
+
+
+    public void up(MessageBatch batch) {
+        if(batch.dest() == null) { // not a unicast batch
+            up_prot.up(batch);
+            return;
+        }
+
+        int                       size=batch.size();
+        Map<Short,List<Message>>  msgs=new TreeMap<Short,List<Message>>(); // map of messages, keyed by conn-id
+        for(Message msg: batch) {
+            if(msg == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))
+                continue;
+            UnicastHeader hdr=(UnicastHeader)msg.getHeader(id);
+            if(hdr == null)
+                continue;
+            batch.remove(msg); // remove the message from the batch, so it won't be passed up the stack
+
+            if(hdr.type != UnicastHeader.DATA) {
+                try {
+                    handleUpEvent(msg.getSrc(), msg, hdr);
+                }
+                catch(Throwable t) { // we cannot let an exception terminate the processing of this batch
+                    log.error(local_addr + ": failed handling event", t);
+                }
+                continue;
+            }
+
+            List<Message> list=msgs.get(hdr.conn_id);
+            if(list == null)
+                msgs.put(hdr.conn_id, list=new ArrayList<Message>(size));
+            list.add(msg);
+        }
+
+        if(!msgs.isEmpty())
+            handleBatchReceived(batch.sender(), msgs); // process msgs:
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
 
     public Object down(Event evt) {
@@ -612,11 +648,70 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
         // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
         // order in which they were sent by their senders
-        removeAndDeliver(processing, win);
+        removeAndDeliver(processing, win, sender);
         sendAck(sender, win.getHighestDelivered(), conn_id);
     }
 
-    protected int removeAndDeliver(final AtomicBoolean processing, Table<Message> win) {
+
+    protected void handleBatchReceived(Address sender, Map<Short,List<Message>> map) {
+        for(Map.Entry<Short,List<Message>> element: map.entrySet()) {
+            final List<Message> msg_list=element.getValue();
+            if(log.isTraceEnabled()) {
+                StringBuilder sb=new StringBuilder();
+                sb.append(local_addr).append(" <-- DATA(").append(sender).append(": " + printMessageList(msg_list)).append(')');
+                log.trace(sb);
+            }
+
+            short          conn_id=element.getKey();
+            ReceiverEntry  entry=null;
+            for(Message msg: msg_list) {
+                UnicastHeader hdr=(UnicastHeader)msg.getHeader(id);
+                entry=getReceiverEntry(sender, hdr.seqno, hdr.first, conn_id);
+                if(entry == null)
+                    continue;
+                Table<Message> win=entry.received_msgs;
+                boolean msg_added=win.add(hdr.seqno, msg); // win is guaranteed to be non-null if we get here
+                num_msgs_received++;
+
+                if(hdr.first && msg_added)
+                    sendAck(sender, hdr.seqno, conn_id); // send an ack immediately when we received the first message of a conn
+
+                // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
+                // http://jira.jboss.com/jira/browse/JGRP-377
+                if(msg.isFlagSet(Message.OOB) && msg_added) {
+                    try {
+                        up_prot.up(new Event(Event.MSG, msg));
+                    }
+                    catch(Throwable t) {
+                        log.error("couldn't deliver OOB message " + msg, t);
+                    }
+                }
+            }
+            if(entry != null && conn_expiry_timeout > 0)
+                entry.update();
+        }
+
+        ReceiverEntry entry=recv_table.get(sender);
+        Table<Message> win=entry != null? entry.received_msgs : null;
+        if(win != null) {
+            final AtomicBoolean processing=win.getProcessing();
+            if(processing.compareAndSet(false, true)) {
+                removeAndDeliver(processing, win, sender);
+                sendAck(sender, win.getHighestDeliverable(), entry.recv_conn_id);
+            }
+        }
+    }
+
+
+    /**
+     * Try to remove as many messages as possible from the table as pass them up.
+     * Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
+     * lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time.
+     * We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
+     * delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered in the
+     * order in which they were sent
+     */
+    protected int removeAndDeliver(final AtomicBoolean processing, Table<Message> win, Address sender) {
         int retval=0;
         boolean released_processing=false;
         try {
@@ -627,17 +722,28 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                     return retval;
                 }
 
-                for(Message m: list) {
-                    retval++;
+                MessageBatch batch=new MessageBatch(local_addr, sender, null, false, list);
+                for(Message msg_to_deliver: batch) {
                     // discard OOB msg: it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
-                    if(m.isFlagSet(Message.OOB))
-                        continue;
-                    try {
-                        up_prot.up(new Event(Event.MSG, m));
+                    if(msg_to_deliver.isFlagSet(Message.OOB))
+                        batch.remove(msg_to_deliver);
+                }
+
+                try {
+                    if(log.isTraceEnabled()) {
+                        Message first=batch.first(), last=batch.last();
+                        StringBuilder sb=new StringBuilder(local_addr + ": delivering");
+                        if(first != null && last != null) {
+                            UnicastHeader hdr1=(UnicastHeader)first.getHeader(id), hdr2=(UnicastHeader)last.getHeader(id);
+                            sb.append(" #").append(hdr1.seqno).append(" - #").append(hdr2.seqno);
+                        }
+                        sb.append(" (" + batch.size()).append(" messages)");
+                        log.trace(sb);
                     }
-                    catch(Throwable t) {
-                        log.error("couldn't deliver message " + m, t);
-                    }
+                    up_prot.up(batch);
+                }
+                catch(Throwable t) {
+                    log.error("failed to deliver batch " + batch, t);
                 }
             }
         }
@@ -850,6 +956,25 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                                 " (" + age + " ms old) from recv_table");
             }
         }
+    }
+
+
+    protected String printMessageList(List<Message> list) {
+        StringBuilder sb=new StringBuilder();
+        int size=list.size();
+        Message first=size > 0? list.get(0) : null, second=size > 1? list.get(size-1) : first;
+        UnicastHeader hdr;
+        if(first != null) {
+            hdr=(UnicastHeader)first.getHeader(id);
+            if(hdr != null)
+                sb.append("#" + hdr.seqno);
+        }
+        if(second != null) {
+            hdr=(UnicastHeader)second.getHeader(id);
+            if(hdr != null)
+                sb.append(" - #" + hdr.seqno);
+        }
+        return sb.toString();
     }
 
 

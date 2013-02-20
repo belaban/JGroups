@@ -7,6 +7,7 @@ import org.jgroups.View;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
 import java.util.*;
@@ -35,8 +36,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
+ * @deprecated Succeeded by MFC and UFC
  */
 @MBean(description="Simple flow control protocol based on a credit system")
+@Deprecated
 public class FC extends Protocol {
 
     private final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
@@ -449,22 +452,7 @@ public class FC extends Protocol {
                     break;
                 FcHeader hdr=(FcHeader)msg.getHeader(this.id);
                 if(hdr != null) {
-                    switch(hdr.type) {
-                        case FcHeader.REPLENISH:
-                            num_credit_responses_received++;
-                            handleCredit(msg.getSrc(), (Number)msg.getObject());
-                            break;
-                        case FcHeader.CREDIT_REQUEST:
-                            num_credit_requests_received++;
-                            Address sender=msg.getSrc();
-                            Long sent_credits=(Long)msg.getObject();
-                            if(sent_credits != null)
-                                handleCreditRequest(received, sender, sent_credits.longValue());
-                            break;
-                        default:
-                            log.error("header type " + hdr.type + " not known");
-                            break;
-                    }
+                    handleUpEvent(hdr, msg);
                     return null; // don't pass message up
                 }
 
@@ -497,6 +485,63 @@ public class FC extends Protocol {
                 break;
         }
         return up_prot.up(evt);
+    }
+
+
+    public void up(MessageBatch batch) {
+        int length=0;
+        for(Message msg: batch) {
+            if(msg.isFlagSet(Message.NO_FC))
+                continue;
+            FcHeader hdr=(FcHeader)msg.getHeader(this.id);
+            if(hdr != null) {
+                batch.remove(msg); // don't pass message up as part of the batch
+                handleUpEvent(hdr, msg);
+                continue;
+            }
+            length+=msg.getLength();
+        }
+
+        Address sender=batch.sender();
+        long new_credits=0;
+        if(length > 0)
+            new_credits=adjustCredit(received, sender, length);
+
+
+        if(!batch.isEmpty()) {
+            // JGRP-928: changed ignore_thread to a ThreadLocal: multiple threads can access it with the
+            // introduction of the concurrent stack
+            if(ignore_synchronous_response)
+                ignore_thread.set(true);
+            try {
+                up_prot.up(batch);
+            }
+            finally {
+                if(ignore_synchronous_response)
+                    ignore_thread.remove(); // need to revert because the thread is placed back into the pool
+                if(new_credits > 0)
+                    sendCredit(sender, new_credits);
+            }
+        }
+    }
+
+    protected void handleUpEvent(FcHeader hdr, Message msg) {
+        switch(hdr.type) {
+            case FcHeader.REPLENISH:
+                num_credit_responses_received++;
+                handleCredit(msg.getSrc(), (Number)msg.getObject());
+                break;
+            case FcHeader.CREDIT_REQUEST:
+                num_credit_requests_received++;
+                Address sender=msg.getSrc();
+                Long sent_credits=(Long)msg.getObject();
+                if(sent_credits != null)
+                    handleCreditRequest(received, sender,sent_credits);
+                break;
+            default:
+                log.error("header type " + hdr.type + " not known");
+                break;
+        }
     }
 
 
@@ -736,9 +781,7 @@ public class FC extends Protocol {
             number=(int)credit;
         else
             number=credit;
-        Message msg=new Message(dest, null, number);
-        msg.setFlag(Message.OOB);
-        msg.putHeader(this.id, REPLENISH_HDR);
+        Message msg=new Message(dest, number).setFlag(Message.OOB, Message.Flag.DONT_BUNDLE).putHeader(this.id,REPLENISH_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_responses_sent++;
     }
@@ -752,8 +795,7 @@ public class FC extends Protocol {
     private void sendCreditRequest(final Address dest, Long credits_left) {
         if(log.isTraceEnabled())
             log.trace("sending credit request to " + dest);
-        Message msg=new Message(dest, null, credits_left);
-        msg.putHeader(this.id, CREDIT_REQUEST_HDR);
+        Message msg=new Message(dest, credits_left).setFlag(Message.Flag.DONT_BUNDLE).putHeader(this.id,CREDIT_REQUEST_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_requests_sent++;
     }

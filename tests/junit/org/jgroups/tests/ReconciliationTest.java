@@ -311,7 +311,12 @@ public class ReconciliationTest extends ChannelTestBase {
                 cache_2.put(i, true); // odd numbers
         }
 
-        flush(c1, 5000);
+        System.out.println("Starting flush on C1");
+        flush(c1,5000);
+        System.out.println("Starting flush on C2");
+        flush(c2, 5000);
+        System.out.println("flush done");
+
         System.out.println("cache_1 (" + cache_1.size()
                              + " elements): "
                              + cache_1
@@ -319,8 +324,8 @@ public class ReconciliationTest extends ChannelTestBase {
                              + cache_2.size()
                              + " elements): "
                              + cache_2);
-        Assert.assertEquals(cache_1.size(), cache_2.size(), "cache 1: " + cache_1 + "\ncache 2: " + cache_2);
-        Assert.assertEquals(20, cache_1.size(), "cache 1: " + cache_1 + "\ncache 2: " + cache_2);
+        Assert.assertEquals(cache_1.size(), 20, "cache 1: " + cache_1);
+        Assert.assertEquals(cache_2.size(), 20, "cache 2: " + cache_2);
         Util.close(c2,c1);
     }
 

@@ -39,7 +39,8 @@ public class STATE extends StreamingStateTransfer {
     */
 
     /** If use_default_transport is true, we consume bytes off of this blocking queue. Used on the state
-     * <em>requester</em> side only */
+     * <em>requester</em> side only. Note that we cannot use a PipedInputStream as we have multiple writer threads
+     * pushing data into the input stream */
     protected volatile BlockingInputStream input_stream=null;
 
 
@@ -109,9 +110,9 @@ public class STATE extends StreamingStateTransfer {
 
 
     protected class StateOutputStream extends OutputStream {
-        protected final Address stateRequester;
-        protected final AtomicBoolean closed;
-        protected long bytesWrittenCounter=0;
+        protected final Address        stateRequester;
+        protected final AtomicBoolean  closed;
+        protected long                 bytesWrittenCounter=0;
 
         public StateOutputStream(Address stateRequester) {
             this.stateRequester=stateRequester;
@@ -148,7 +149,16 @@ public class STATE extends StreamingStateTransfer {
         protected void sendMessage(byte[] b, int off, int len) throws IOException {
             Message m=new Message(stateRequester);
             m.putHeader(id, new StateHeader(StateHeader.STATE_PART));
-            m.setBuffer(b, off, len);
+
+            // we're copying the buffer passed from the state provider here: if a BufferedOutputStream is used, the
+            // buffer (b) will always be the same and can be modified after it has been set in the message !
+
+            // Fix for https://issues.jboss.org/browse/JGRP-1598
+            byte[] data=new byte[len];
+            System.arraycopy(b, off, data, 0, len);
+            // m.setBuffer(b, off, len);
+            m.setBuffer(data);
+
             bytesWrittenCounter+=len;
             if(Thread.interrupted())
                 throw interrupted((int)bytesWrittenCounter);

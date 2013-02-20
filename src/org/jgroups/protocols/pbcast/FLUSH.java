@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Digest;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
@@ -358,7 +359,6 @@ public class FLUSH extends Protocol {
     }
 
     public Object up(Event evt) {
-
         switch (evt.getType()) {
             case Event.MSG:
                 if(bypass)
@@ -378,8 +378,7 @@ public class FLUSH extends Protocol {
                                 handleStartFlush(msg, fh);
                             } else {
                                 if (log.isDebugEnabled())
-                                    log.debug(localAddress +
-                                            ": received START_FLUSH but I am not flush participant, not responding");
+                                    log.debug(localAddress + ": received START_FLUSH but I'm not flush participant, not responding");
                             }
                             break;
                         case FlushHeader.FLUSH_RECONCILE:
@@ -395,21 +394,15 @@ public class FLUSH extends Protocol {
                             Collection<Address> flushParticipants = fh.flushParticipants;
                             boolean participant = flushParticipants != null && flushParticipants.contains(localAddress);
                             if (log.isDebugEnabled()) {
-                               log.debug(localAddress
-                                       + ": received ABORT_FLUSH from flush coordinator "
-                                       + msg.getSrc()
-                                       + ",  am I flush participant="
-                                       + participant);
+                               log.debug(localAddress + ": received ABORT_FLUSH from flush coordinator " + msg.getSrc()
+                                           + ",  am I flush participant=" + participant);
                             }
-                            if (participant) {                                
+                            if (participant)
                                resetForNextFlush();                                
-                            }                            
                             break;
                         case FlushHeader.FLUSH_NOT_COMPLETED:
                             if (log.isDebugEnabled()) {
-                                log.debug(localAddress
-                                        + ": received FLUSH_NOT_COMPLETED from "
-                                        + msg.getSrc());
+                                log.debug(localAddress + ": received FLUSH_NOT_COMPLETED from " + msg.getSrc());
                             }
                             boolean flushCollision = false;
                             synchronized (sharedLock) {
@@ -421,11 +414,9 @@ public class FLUSH extends Protocol {
                                 }
                             }
 
-                            if (log.isDebugEnabled()) {
-                                log.debug(localAddress
-                                        + ": received FLUSH_NOT_COMPLETED from "
-                                        + msg.getSrc() + " collision=" + flushCollision);
-                            }
+                            if (log.isDebugEnabled())
+                                log.debug(localAddress + ": received FLUSH_NOT_COMPLETED from " + msg.getSrc() +
+                                            " collision=" + flushCollision);
 
                             // reject flush if we have at least one OK and at least one FAIL
                             if (flushCollision) {
@@ -447,42 +438,32 @@ public class FLUSH extends Protocol {
                     }
                     return null; // do not pass FLUSH msg up
                 } else {
-                    // http://jira.jboss.com/jira/browse/JGRP-575
-                    // for processing of application messages after we join,
-                    // lets wait for STOP_FLUSH to complete
-                    // before we start allowing message up.
-                    Address dest = msg.getDest();
-                    if (dest != null) {
+                    // http://jira.jboss.com/jira/browse/JGRP-575: for processing of application messages after we join,
+                    // lets wait for STOP_FLUSH to complete before we start allowing message up
+                    if (msg.getDest() != null)
                         return up_prot.up(evt); // allow unicasts to pass, virtual synchrony only applies to multicasts
-                    }
                 }
                 break;
 
             case Event.VIEW_CHANGE:
-                /*
-                 * [JGRP-618] - FLUSH coordinator transfer reorders block/unblock/view events in
-                 * applications (TCP stack only)
-                 */
+                // JGRP-618: FLUSH coordinator transfer reorders block/unblock/view events in applications (TCP stack only)
                 up_prot.up(evt);
                 View newView = (View) evt.getArg();
                 boolean coordinatorLeft = onViewChange(newView);
-                boolean singletonMember = newView.size() == 1
-                                && newView.containsMember(localAddress);
+                boolean singletonMember = newView.size() == 1 && newView.containsMember(localAddress);
                 boolean isThisOurFirstView = viewCounter.addAndGet(1) == 1;
                 // if this is channel's first view and its the only member of the group - no flush
                 // was run but the channel application should still receive BLOCK,VIEW,UNBLOCK
 
                 // also if coordinator of flush left each member should run stopFlush individually.
-                if ((isThisOurFirstView && singletonMember) || coordinatorLeft) {
+                if ((isThisOurFirstView && singletonMember) || coordinatorLeft)
                     onStopFlush();
-                }
                 return null;
 
             case Event.TMP_VIEW:             
                 View tmpView = (View) evt.getArg();
-                if (!tmpView.containsMember(localAddress)) {
+                if (!tmpView.containsMember(localAddress))
                     onViewChange(tmpView);
-                }
                 break;
 
             case Event.SUSPECT:
@@ -504,7 +485,30 @@ public class FLUSH extends Protocol {
         return up_prot.up(evt);
     }
 
-    private void waitForUnblock() {       
+    public void up(MessageBatch batch) {
+        if(bypass) {
+            up_prot.up(batch);
+            return;
+        }
+
+        for(Message msg: batch) {
+            if(msg.getHeader(id) != null) {
+                batch.remove(msg);
+                up(new Event(Event.MSG, msg)); // let the existing code handle this
+            }
+            else {
+                if(msg.getDest() != null) { // skip unicast messages, process them right away
+                    batch.remove(msg);
+                    up_prot.up(new Event(Event.MSG, msg));
+                }
+            }
+        }
+
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
+
+    private void waitForUnblock() {
         try {
             flush_unblock_promise.getResultWithTimeout(end_flush_timeout);
         } catch (TimeoutException t) {
