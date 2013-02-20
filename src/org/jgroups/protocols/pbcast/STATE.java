@@ -148,7 +148,13 @@ public class STATE extends StreamingStateTransfer {
         protected void sendMessage(byte[] b, int off, int len) throws IOException {
             Message m=new Message(stateRequester);
             m.putHeader(id, new StateHeader(StateHeader.STATE_PART));
-            m.setBuffer(b, off, len);
+
+            // Fix for https://issues.jboss.org/browse/JGRP-1598
+            byte[] data=new byte[len];
+            System.arraycopy(b, off, data, 0, len);
+            m.setBuffer(data);
+            // m.setBuffer(b, off, len);
+
             bytesWrittenCounter+=len;
             if(Thread.interrupted())
                 throw interrupted((int)bytesWrittenCounter);
