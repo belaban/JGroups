@@ -114,7 +114,7 @@ public class DeliveryManagerImpl implements DeliveryManager {
                 }
             }
             deliverySet.removeAll(toRemove);
-            if (deliverySet.first().isReadyToDeliver()) {
+            if (!deliverySet.isEmpty() && deliverySet.first().isReadyToDeliver()) {
                 deliverySet.notify();
             }
         }
