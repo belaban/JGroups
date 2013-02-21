@@ -32,6 +32,10 @@ public class DeliveryThread extends Thread {
         start();
     }
 
+    public void setLocalAddress(String localAddress) {
+        setName("TOA-Delivery-Thread-" + localAddress);
+    }
+
     @Override
     public void start() {
         if (deliveryManager == null) {

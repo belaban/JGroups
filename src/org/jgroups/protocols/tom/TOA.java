@@ -68,6 +68,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                 return null;
             case Event.SET_LOCAL_ADDRESS:
                 this.localAddress = (Address) evt.getArg();
+                this.deliverThread.setLocalAddress(localAddress.toString());
                 break;
             case Event.VIEW_CHANGE:
                 handleViewChange((View) evt.getArg());
@@ -115,6 +116,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
                 break;
             case Event.SET_LOCAL_ADDRESS:
                 this.localAddress = (Address) evt.getArg();
+                this.deliverThread.setLocalAddress(localAddress.toString());
                 break;
             default:
                 break;
@@ -210,10 +212,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
         }
 
         if (destinations.isEmpty()) {
-            if (warn) {
-                log.warn("sending an anycast with an empty list");
-            }
-            throw new IllegalStateException("AnycastAddress must have at least one element");
+            destinations.addAll(currentView.getMembers());
         }
 
         if (destinations.size() == 1) {
