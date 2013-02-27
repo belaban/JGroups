@@ -665,7 +665,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
         // Process (new and retransmitted) messages:
         if(msgs != null)
-            handleMessages(batch.sender(), msgs, batch.mode() == MessageBatch.Mode.OOB);
+            handleMessages(batch.sender(), msgs, batch.mode() == MessageBatch.Mode.OOB, batch.clusterName());
 
         // received XMIT-RSPs:
         if(got_retransmitted_msg && rebroadcasting)
@@ -794,11 +794,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             }
         }
 
-        removeAndPassUp(buf, sender, loopback); // at most 1 thread will execute this at any given time
+        removeAndPassUp(buf, sender, loopback, null); // at most 1 thread will execute this at any given time
     }
 
 
-    protected void handleMessages(Address sender, List<Tuple<Long,Message>> msgs, boolean oob) {
+    protected void handleMessages(Address sender, List<Tuple<Long,Message>> msgs, boolean oob, String cluster_name) {
         Table<Message> buf=xmit_table.get(sender);
         if(buf == null) {  // discard message if there is no entry for sender
             if(leaving)
@@ -844,14 +844,14 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             }
         }
 
-        removeAndPassUp(buf, sender, loopback); // at most 1 thread will execute this at any given time
+        removeAndPassUp(buf, sender, loopback, cluster_name); // at most 1 thread will execute this at any given time
     }
 
 
     /** Efficient way of checking whether another thread is already processing messages from sender. If that's the case,
      *  we return immediately and let the existing thread process our message (https://jira.jboss.org/jira/browse/JGRP-829).
      *  Benefit: fewer threads blocked on the same lock, these threads an be returned to the thread pool */
-    protected void removeAndPassUp(Table<Message> buf, Address sender, boolean loopback) {
+    protected void removeAndPassUp(Table<Message> buf, Address sender, boolean loopback, String cluster_name) {
         final AtomicBoolean processing=buf.getProcessing();
         if(!processing.compareAndSet(false, true))
             return;
@@ -869,22 +869,30 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     return;
                 }
 
-                for(final Message msg_to_deliver: msgs) {
+                MessageBatch batch=new MessageBatch(null, sender, cluster_name, true, msgs);
+                for(Message msg_to_deliver: batch) {
                     // discard OOB msg if it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
                     if(msg_to_deliver.isFlagSet(Message.OOB) && !msg_to_deliver.setTransientFlagIfAbsent(Message.OOB_DELIVERED))
-                        continue;
+                        batch.remove(msg_to_deliver);
+                }
+                if(batch.isEmpty())
+                    continue;
 
-                    //msg_to_deliver.removeHeader(getName()); // Changed by bela Jan 29 2003: not needed (see above)
-                    try {
-                        if(log.isTraceEnabled()) {
-                            NakAckHeader2 header=(NakAckHeader2)msg_to_deliver.getHeader(this.id);
-                            log.trace(new StringBuilder().append(local_addr).append(": delivering ").append(sender).append('#').append(header.seqno));
+                try {
+                    if(log.isTraceEnabled()) {
+                        Message first=batch.first(), last=batch.last();
+                        StringBuilder sb=new StringBuilder(local_addr + ": delivering");
+                        if(first != null && last != null) {
+                            NakAckHeader2 hdr1=(NakAckHeader2)first.getHeader(id), hdr2=(NakAckHeader2)last.getHeader(id);
+                            sb.append(" #").append(hdr1.seqno).append(" - #").append(hdr2.seqno);
                         }
-                        up_prot.up(new Event(Event.MSG, msg_to_deliver));
+                        sb.append(" (" + batch.size()).append(" messages)");
+                        log.trace(sb);
                     }
-                    catch(Throwable t) {
-                        log.error("failed to deliver message " + msg_to_deliver, t);
-                    }
+                    up_prot.up(batch);
+                }
+                catch(Throwable t) {
+                    log.error("failed to deliver batch " + batch, t);
                 }
             }
         }

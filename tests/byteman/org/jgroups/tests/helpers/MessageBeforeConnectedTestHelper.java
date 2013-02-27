@@ -5,7 +5,7 @@ import org.jboss.byteman.rule.helper.Helper;
 import org.jgroups.Event;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.protocols.UNICAST2;
+import org.jgroups.protocols.UNICAST3;
 
 /**
  * @author Bela Ban
@@ -24,8 +24,8 @@ public class MessageBeforeConnectedTestHelper extends Helper {
         final Message msg=new Message(ch.getAddress(), ch.getAddress(), "hello-1");
 
         // Add a UNICAST2 header
-        final UNICAST2 unicast=(UNICAST2)ch.getProtocolStack().findProtocol(UNICAST2.class);
-        UNICAST2.Unicast2Header hdr=UNICAST2.Unicast2Header.createDataHeader(1, (short)1, true);
+        final UNICAST3 unicast=(UNICAST3)ch.getProtocolStack().findProtocol(UNICAST3.class);
+        UNICAST3.Header hdr=UNICAST3.Header.createDataHeader(1, (short)1, true);
         msg.putHeader(unicast.getId(), hdr);
 
         new Thread() {

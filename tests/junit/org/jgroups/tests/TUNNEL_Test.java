@@ -262,7 +262,7 @@ public class TUNNEL_Test extends ChannelTestBase{
         protocols.addAll(Arrays.asList(tunnel, new PING(), new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000)));
         if(include_failure_detection)
             protocols.addAll(Arrays.asList(new FD().setValue("timeout", 2000).setValue("max_tries", 2), new VERIFY_SUSPECT()));
-        protocols.addAll(Arrays.asList(new NAKACK2().setValue("use_mcast_xmit", false), new UNICAST(), new STABLE(), new GMS()));
+        protocols.addAll(Arrays.asList(new NAKACK2().setValue("use_mcast_xmit", false), new UNICAST3(), new STABLE(), new GMS()));
         JChannel ch=new JChannel(protocols);
         if(name != null)
             ch.setName(name);

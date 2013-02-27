@@ -422,7 +422,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
             if(state == null)
                 return;
             synchronized(state) {
-                DataOutputStream dos=new DataOutputStream(new BufferedOutputStream(outstream, 4096));
+                DataOutputStream dos=new DataOutputStream(new BufferedOutputStream(outstream));
                 // DataOutputStream dos=new DataOutputStream(outstream);
                 dos.writeInt(state.size());
                 for(Map.Entry<Point,Color> entry: state.entrySet()) {
@@ -433,13 +433,14 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
                     dos.writeInt(col.getRGB());
                 }
                 dos.flush();
+                System.out.println("wrote " + state.size() + " elements");
             }
         }
 
 
         public void readState(InputStream instream) throws IOException {
-            DataInputStream in=new DataInputStream(instream);
-            Map<Point,Color> new_state=new HashMap<Point,Color>();
+            DataInputStream in=new DataInputStream(new BufferedInputStream(instream));
+            Map<Point,Color> new_state=new LinkedHashMap<Point,Color>();
             int num=in.readInt();
             for(int i=0; i < num; i++) {
                 Point point=new Point(in.readInt(), in.readInt());
@@ -450,7 +451,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
             synchronized(state) {
                 state.clear();
                 state.putAll(new_state);
-                System.out.println("read state: " + state.size() + " entries");
+                System.out.println("read " + state.size() + " elements");
                 createOffscreenImage(true);
             }
         }
@@ -574,6 +575,27 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         }
 
     }
+
+
+   /* protected class MyPoint extends Point implements Comparable<Point> {
+        private static final long serialVersionUID=4171855995316340839L;
+
+        public MyPoint() {
+        }
+
+        public MyPoint(Point p) {
+            super(p);
+        }
+
+        public MyPoint(int x, int y) {
+            super(x,y);
+        }
+
+
+        public int compareTo(Point o) {
+            return x > o.x? 1 : x < o.x? -1 : y > o.y? 1 : y < o.y ? -1 :0;
+        }
+    }*/
 
 }
 

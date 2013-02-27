@@ -18,8 +18,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * same sender based on scopes. Similar to using OOB messages, but messages within the same scope are ordered.
  * @author Bela Ban
  * @since 2.10
+ * @deprecated Use the async invocation API instead:
+ * http://www.jgroups.org/manual-3.x/html/user-building-blocks.html#AsyncInvocation
  */
 @MBean(description="Implementation of scopes (concurrent delivery of messages from the same sender)")
+@Deprecated
 public class SCOPE extends Protocol {
 
     protected int thread_pool_min_threads=2;
@@ -244,8 +247,7 @@ public class SCOPE extends Protocol {
     }
 
     public void up(MessageBatch batch) {
-        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
-            Message msg=it.next();
+        for(Message msg: batch) {
             if(!msg.isFlagSet(Message.SCOPED) || msg.isFlagSet(Message.OOB)) // we don't handle unscoped or OOB messages
                 continue;
 
@@ -255,7 +257,7 @@ public class SCOPE extends Protocol {
                 continue;
             }
 
-            it.remove(); // we do handle the message from here on
+            batch.remove(msg); // we do handle the message from here on
 
             if(hdr.type == ScopeHeader.EXPIRE) {
                 removeScope(msg.getSrc(), hdr.scope);

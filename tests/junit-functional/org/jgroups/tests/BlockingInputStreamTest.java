@@ -30,7 +30,7 @@ public class BlockingInputStreamTest {
 
     public void testRead() throws IOException {
         final BlockingInputStream in=new BlockingInputStream(100);
-        byte[] input=new byte[]{'B', 'e', 'l', 'a'};
+        byte[] input={'B', 'e', 'l', 'a'};
         in.write(input);
         in.close();
 
@@ -59,7 +59,7 @@ public class BlockingInputStreamTest {
     public void testBlockingWriteAndClose() throws IOException {
         final BlockingInputStream in=new BlockingInputStream(3);
         final CountDownLatch latch=new CountDownLatch(1);
-        byte[] buf=new byte[]{'B', 'e', 'l', 'a'};
+        byte[] buf={'B', 'e', 'l', 'a'};
 
         new Closer(latch, in, 1000L).start(); // closes input stream after 1 sec
         latch.countDown();
@@ -153,6 +153,70 @@ public class BlockingInputStreamTest {
         System.out.println("OK");
     }
 
+    public void testWriterMultipleChunks() throws Exception {
+        final BlockingInputStream in=new BlockingInputStream(100);
+        final byte[] buffer=generateBuffer(500);
+        Writer writer=new Writer(in, buffer, 5, true);
+        writer.start();
+
+        byte[] tmp=new byte[20];
+        int num=0;
+        while(true) {
+            int read=in.read(tmp);
+            if(read == -1)
+                break;
+            num+=read;
+        }
+        System.out.println("read " + num + " bytes");
+        assert num == 5 * buffer.length;
+    }
+
+    public void testMultipleWriters() throws Exception {
+        final BlockingInputStream in=new BlockingInputStream(100);
+        final byte[] buffer=generateBuffer(500);
+
+        final Writer[] writers=new Writer[5];
+        for(int i=0; i < writers.length; i++) {
+            writers[i]=new Writer(in, buffer, 1, false);
+            writers[i].setName("writer-" + (i+1));
+            writers[i].start();
+        }
+
+        new Thread() {
+            public void run() {
+                while(true) {
+                    boolean all_done=true;
+                    for(Writer writer: writers) {
+                        if(writer.isAlive()) {
+                            all_done=false;
+                            break;
+                        }
+                    }
+                    if(all_done) {
+                        Util.close(in);
+                        return;
+                    }
+                    else
+                        Util.sleep(100);
+                }
+            }
+        }.start();
+
+        byte[] tmp=new byte[400];
+        int num=0;
+        while(true) {
+            int read=in.read(tmp, 0, tmp.length);
+            if(read == -1)
+                break;
+            num+=read;
+        }
+        System.out.println("read " + num + " bytes");
+        assert num == writers.length * buffer.length;
+
+        for(Writer writer: writers)
+            assert writer.isAlive() == false;
+    }
+
 
     public void testWriteExceedingCapacity() throws IOException {
         final BlockingInputStream in=new BlockingInputStream(10);
@@ -218,21 +282,32 @@ public class BlockingInputStreamTest {
 
     protected static final class Writer extends Thread {
         protected final BlockingInputStream in;
-        protected final byte[] buffer;
+        protected final byte[]              buffer;
+        protected final int                 num_times;
+        protected final boolean             close_input;
 
-        public Writer(BlockingInputStream in, byte[] buffer) {
+        public Writer(BlockingInputStream in, byte[] buffer, int num_times, boolean close_input) {
             this.in=in;
             this.buffer=buffer;
+            this.num_times=num_times;
+            this.close_input=close_input;
+        }
+
+        public Writer(BlockingInputStream in, byte[] buffer) {
+            this(in, buffer, 1, true);
         }
 
         public void run() {
             try {
-                in.write(buffer);
+                for(int i=0; i < num_times; i++) {
+                    in.write(buffer, 0, buffer.length);
+                    System.out.println(Thread.currentThread().getId() + ": wrote " + buffer.length + " bytes");
+                }
+                if(close_input)
+                    Util.close(in);
             }
             catch(IOException e) {
-            }
-            finally {
-                Util.close(in);
+                System.err.println(e);
             }
         }
     }

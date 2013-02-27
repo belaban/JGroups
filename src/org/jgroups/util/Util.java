@@ -2620,6 +2620,16 @@ public class Util {
     }
 
 
+    public static String print(byte[] array, int n) {
+        StringBuilder sb=new StringBuilder();
+        if(array != null) {
+            for(int i=0; i < Math.min(n, array.length); i++)
+                sb.append("'").append(array[i]).append("' ");
+        }
+        return sb.toString();
+    }
+
+
     public static <T> String print(Map<T,T> map) {
         StringBuilder sb=new StringBuilder();
         boolean first=true;

@@ -10,9 +10,9 @@ import java.io.*;
  * @author Bela Ban
  */
 public class FragHeader extends Header {
-    public long id=0;
-    public int  frag_id=0;
-    public int  num_frags=0;
+    public long id;
+    public int  frag_id;
+    public int  num_frags;
 
 
     public FragHeader() {

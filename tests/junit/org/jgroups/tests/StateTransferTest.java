@@ -67,11 +67,11 @@ public class StateTransferTest extends ChannelTestBase {
             for(int i=0; i < apps.length; i++)
                 tmp[i]=apps[i].getChannel();
 
-            Util.waitUntilAllChannelsHaveSameSize(60000, 1000, tmp);
+            Util.waitUntilAllChannelsHaveSameSize(20000, 1000, tmp);
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
-            boolean acquired=semaphore.tryAcquire(apps.length, 30, TimeUnit.SECONDS);
+            boolean acquired=semaphore.tryAcquire(apps.length, 20, TimeUnit.SECONDS);
             if(!acquired) {
                 log.warn("Most likely a bug, analyse the stack below:");
                 log.warn(Util.dumpThreads());
@@ -79,7 +79,7 @@ public class StateTransferTest extends ChannelTestBase {
 
             // Sleep to ensure async messages arrive
             System.out.println("Waiting for all channels to have received the " + MSG_SEND_COUNT * APP_COUNT + " messages:");
-            long end_time=System.currentTimeMillis() + 40000L;
+            long end_time=System.currentTimeMillis() + 30000L;
             while(System.currentTimeMillis() < end_time) {
                 boolean terminate=true;
                 for(StateTransferApplication app: apps) {

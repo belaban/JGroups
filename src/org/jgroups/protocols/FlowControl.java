@@ -9,6 +9,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
 import java.util.*;
@@ -370,22 +371,7 @@ public abstract class FlowControl extends Protocol {
                     break;
                 
                 if(hdr != null) {
-                    switch(hdr.type) {
-                        case FcHeader.REPLENISH:
-                            num_credit_responses_received++;
-                            handleCredit(msg.getSrc(), (Long)msg.getObject());
-                            break;
-                        case FcHeader.CREDIT_REQUEST:
-                            num_credit_requests_received++;
-                            Address sender=msg.getSrc();
-                            Long requested_credits=(Long)msg.getObject();
-                            if(requested_credits != null)
-                                handleCreditRequest(received, sender, requested_credits.longValue());
-                            break;
-                        default:
-                            log.error("header type " + hdr.type + " not known");
-                            break;
-                    }
+                    handleUpEvent(msg, hdr);
                     return null; // don't pass message up
                 }
 
@@ -416,6 +402,71 @@ public abstract class FlowControl extends Protocol {
                 break;
         }
         return up_prot.up(evt);
+    }
+
+
+    protected void handleUpEvent(final Message msg, FcHeader hdr) {
+        switch(hdr.type) {
+            case FcHeader.REPLENISH:
+                num_credit_responses_received++;
+                handleCredit(msg.getSrc(), (Long)msg.getObject());
+                break;
+            case FcHeader.CREDIT_REQUEST:
+                num_credit_requests_received++;
+                Address sender=msg.getSrc();
+                Long requested_credits=(Long)msg.getObject();
+                if(requested_credits != null)
+                    handleCreditRequest(received, sender,requested_credits);
+                break;
+            default:
+                log.error("header type " + hdr.type + " not known");
+                break;
+        }
+    }
+
+
+    public void up(MessageBatch batch) {
+        int length=0;
+        for(Message msg: batch) {
+            if(msg.isFlagSet(Message.NO_FC))
+                continue;
+
+            Address dest=msg.getDest();
+            boolean multicast=dest == null;
+            boolean handle_multicasts=handleMulticastMessage();
+            FcHeader hdr=(FcHeader)msg.getHeader(this.id);
+            boolean process=(handle_multicasts && multicast) || (!handle_multicasts && !multicast) || hdr != null;
+            if(!process)
+                continue;
+
+            if(hdr != null) {
+                batch.remove(msg); // remove the message with a flow control header so it won't get passed up
+                handleUpEvent(msg,hdr);
+                continue;
+            }
+            length+=msg.getLength();
+        }
+
+        Address sender=batch.sender();
+        long new_credits=0;
+        if(length > 0)
+            new_credits=adjustCredit(received, sender, length);
+
+        if(!batch.isEmpty()) {
+            // JGRP-928: changed ignore_thread to a ThreadLocal: multiple threads can access it with the
+            // introduction of the concurrent stack
+            if(ignore_synchronous_response)
+                ignore_thread.set(true);
+            try {
+                up_prot.up(batch);
+            }
+            finally {
+                if(ignore_synchronous_response)
+                    ignore_thread.remove(); // need to revert because the thread is placed back into the pool
+                if(new_credits > 0)
+                    sendCredit(sender, new_credits);
+            }
+        }
     }
 
 
@@ -477,8 +528,8 @@ public abstract class FlowControl extends Protocol {
     protected void sendCredit(Address dest, long credits) {
         if(log.isTraceEnabled())
             if(log.isTraceEnabled()) log.trace("sending " + credits + " credits to " + dest);
-        Message msg=new Message(dest, null, new Long(credits));
-        msg.setFlag(Message.OOB);
+        Message msg=new Message(dest, null,credits);
+        msg.setFlag(Message.OOB, Message.Flag.DONT_BUNDLE);
         msg.putHeader(this.id, REPLENISH_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_responses_sent++;
@@ -493,7 +544,7 @@ public abstract class FlowControl extends Protocol {
     protected void sendCreditRequest(final Address dest, Long credits_needed) {
         if(log.isTraceEnabled())
             log.trace("sending request for " + credits_needed + " credits to " + dest);
-        Message msg=new Message(dest, null, credits_needed);
+        Message msg=new Message(dest, null, credits_needed).setFlag(Message.Flag.DONT_BUNDLE);
         msg.putHeader(this.id, CREDIT_REQUEST_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_requests_sent++;

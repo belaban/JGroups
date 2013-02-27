@@ -6,6 +6,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
 
@@ -447,6 +448,74 @@ public class ENCRYPT extends Protocol {
         return passItUp(evt);
     }
 
+
+    public void up(MessageBatch batch) {
+        for(Message msg: batch) {
+            if(msg.getLength() == 0 && !encrypt_entire_message)
+                continue;
+
+            EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
+            if(hdr == null) {
+                if(log.isTraceEnabled())
+                    log.trace("dropping message as ENCRYPT header is null or has not been recognized, msg will not be passed up, " +
+                                "headers are " + msg.printHeaders());
+                batch.remove(msg);
+                continue;
+            }
+
+            switch(hdr.getType()) {
+                case EncryptHeader.ENCRYPT:
+                    // if msg buffer is empty, and we didn't encrypt the entire message, just pass up
+                    if(!hdr.encrypt_entire_msg && msg.getLength() == 0)
+                        break;
+
+                    // if queueing then pass into queue to be dealt with later
+                    if(queue_up) {
+                        if(log.isTraceEnabled())
+                            log.trace("queueing up message as no session key established: " + msg);
+                        try {
+                            upMessageQueue.put(msg);
+                        }
+                        catch(InterruptedException e) {
+                        }
+                    }
+                    else {
+                        // make sure we pass up any queued messages first
+                        // could be more optimised but this can wait we only need this if not using supplied key
+                        if(!suppliedKey) {
+                            try {
+                                drainUpQueue();
+                            }
+                            catch(Exception e) {
+                                log.error("failed draining up queue", e);
+                            }
+                        }
+
+                        // try and decrypt the message - we need to copy msg as we modify its
+                        // buffer (http://jira.jboss.com/jira/browse/JGRP-538)
+                        try {
+                            Message tmpMsg=decryptMessage(symDecodingCipher, msg.copy());
+                            if(tmpMsg != null)
+                                batch.replace(msg, tmpMsg);
+                            else
+                                log.warn("Unrecognised cipher discarding message");
+                        }
+                        catch(Exception e) {
+                            log.error("failed decrypting message", e);
+                        }
+                    }
+                    break;
+                default:
+                    batch.remove(msg); // a control message will get handled by ENCRYPT and should not be passed up
+                    handleUpEvent(msg, hdr);
+                    break;
+            }
+        }
+
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
+
     public Object passItUp(Event evt) {
         if(observer != null)
             observer.passUp(evt);
@@ -516,20 +585,10 @@ public class ENCRYPT extends Protocol {
         sendKeyRequest();
     }
 
-    /**
-     * @param evt
-     */
+
     private void handleUpMessage(Event evt) throws Exception {
         Message msg=(Message)evt.getArg();
-
-        if(msg == null) {
-            if(log.isTraceEnabled())
-                log.trace("null message - passing straight up");
-            passItUp(evt);
-            return;
-        }
-
-        if(msg.getLength() == 0 && !encrypt_entire_message) {
+        if(msg == null || (msg.getLength() == 0 && !encrypt_entire_message)) {
             passItUp(evt);
             return;
         }
@@ -537,7 +596,7 @@ public class ENCRYPT extends Protocol {
         EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
         if(hdr == null) {
             if(log.isTraceEnabled())
-                log.trace("dropping message as ENCRYPT header is null  or has not been recognized, msg will not be passed up, " +
+                log.trace("dropping message as ENCRYPT header is null or has not been recognized, msg will not be passed up, " +
                             "headers are " + msg.printHeaders());
             return;
         }
@@ -545,99 +604,103 @@ public class ENCRYPT extends Protocol {
         if(log.isTraceEnabled())
             log.trace("header received " + hdr);
 
-        // if a normal message try and decrypt it
-        if(hdr.getType() == EncryptHeader.ENCRYPT) {
-            // if msg buffer is empty, and we didn't encrypt the entire message, just pass up
-            if(!hdr.encrypt_entire_msg && msg.getLength() == 0) {
-                if(log.isTraceEnabled())
-                    log.trace("passing up message as it has an empty buffer ");
-                passItUp(evt);
-                return;
-            }
-
-            // if queueing then pass into queue to be dealt with later
-            if(queue_up) {
-                if(log.isTraceEnabled())
-                    log.trace("queueing up message as no session key established: " + msg);
-                upMessageQueue.put(msg);
-            }
-            else {
-                // make sure we pass up any queued messages first
-                // could be more optimised but this can wait we only need this if not using supplied key
-                if(!suppliedKey) {
-                    drainUpQueue();
-                }
-                // try and decrypt the message - we need to copy msg as we modify its
-                // buffer (http://jira.jboss.com/jira/browse/JGRP-538)
-                Message tmpMsg=decryptMessage(symDecodingCipher, msg.copy());
-                if(tmpMsg != null) {
-                    if(log.isTraceEnabled())
-                        log.trace("decrypted message " + tmpMsg);
-                    passItUp(new Event(Event.MSG, tmpMsg));
-                }
-                else {
-                    log.warn("Unrecognised cipher discarding message");
-                }
-            }
-        }
-        else {
-            // check if we had some sort of encrypt control header if using supplied key we should not process it
-            if(suppliedKey) {
-                if(log.isWarnEnabled())
-                    log.warn("We received an encrypt header of " + hdr.getType() + " while in configured mode");
-            }
-            else {
-                // see what sort of encrypt control message we have received
-                switch(hdr.getType()) {
-                    // if a key request
-                    case EncryptHeader.KEY_REQUEST:
-                        if(log.isDebugEnabled()) {
-                            log.debug("received a key request from peer");
-                        }
-
-                        //if a key request send response key back
-                        try {
-                            // extract peer's public key
-                            PublicKey tmpKey=generatePubKey(msg.getBuffer());
-                            // send back the secret key we have
-                            sendSecretKey(getSecretKey(), tmpKey, msg.getSrc());
-                        }
-                        catch(Exception e) {
-                            log.warn("unable to reconstitute peer's public key");
-                        }
-                        break;
-                    case EncryptHeader.SECRETKEY:
-                        if(log.isDebugEnabled()) {
-                            log.debug("received a secretkey response from keyserver");
-                        }
-
-                        try {
-                            SecretKey tmp=decodeKey(msg.getBuffer());
-                            if(tmp == null) {
-                                // unable to understand response
-                                // lets try again
-                                sendKeyRequest();
-                            }
-                            else {
-                                // otherwise lets set the reurned key
-                                // as the shared key
-                                setKeys(tmp, hdr.getVersion());
-                                if(log.isDebugEnabled()) {
-                                    log.debug("Decoded secretkey response");
-                                }
-                            }
-                        }
-                        catch(Exception e) {
-                            log.warn("unable to process received public key");
-                        }
-                        break;
-                    default:
-                        log.warn("Received ignored encrypt header of " + hdr.getType());
-                        break;
-                }
-            }
+        switch(hdr.getType()) {
+            case EncryptHeader.ENCRYPT:
+                handleEncryptedMessage(msg, evt, hdr);
+                break;
+            default:
+                handleUpEvent(msg, hdr);
+                break;
         }
     }
+
+
+
+    protected void handleEncryptedMessage(Message msg, Event evt, EncryptHeader hdr) throws Exception {
+        // if msg buffer is empty, and we didn't encrypt the entire message, just pass up
+        if(!hdr.encrypt_entire_msg && msg.getLength() == 0) {
+            if(log.isTraceEnabled())
+                log.trace("passing up message as it has an empty buffer ");
+            passItUp(evt);
+            return;
+        }
+
+        // if queueing then pass into queue to be dealt with later
+        if(queue_up) {
+            if(log.isTraceEnabled())
+                log.trace("queueing up message as no session key established: " + msg);
+            upMessageQueue.put(msg);
+        }
+        else {
+            // make sure we pass up any queued messages first
+            // could be more optimised but this can wait we only need this if not using supplied key
+            if(!suppliedKey)
+                drainUpQueue();
+
+            // try and decrypt the message - we need to copy msg as we modify its
+            // buffer (http://jira.jboss.com/jira/browse/JGRP-538)
+            Message tmpMsg=decryptMessage(symDecodingCipher, msg.copy());
+            if(tmpMsg != null) {
+                if(log.isTraceEnabled())
+                    log.trace("decrypted message " + tmpMsg);
+                passItUp(new Event(Event.MSG, tmpMsg));
+            }
+            else
+                log.warn("Unrecognised cipher discarding message");
+        }
+    }
+
+    protected void handleUpEvent(Message msg, EncryptHeader hdr) {
+        // check if we had some sort of encrypt control header if using supplied key we should not process it
+        if(suppliedKey) {
+            if(log.isWarnEnabled())
+                log.warn("We received an encrypt header of " + hdr.getType() + " while in configured mode");
+            return;
+        }
+
+        // see what sort of encrypt control message we have received
+        switch(hdr.getType()) {
+            // if a key request
+            case EncryptHeader.KEY_REQUEST:
+                if(log.isDebugEnabled())
+                    log.debug("received a key request from peer");
+
+                // if a key request send response key back
+                try {
+                    // extract peer's public key
+                    PublicKey tmpKey=generatePubKey(msg.getBuffer());
+                    // send back the secret key we have
+                    sendSecretKey(getSecretKey(), tmpKey, msg.getSrc());
+                }
+                catch(Exception e) {
+                    log.warn("unable to reconstitute peer's public key");
+                }
+                break;
+            case EncryptHeader.SECRETKEY:
+                if(log.isDebugEnabled())
+                    log.debug("received a secretkey response from keyserver");
+
+                try {
+                    SecretKey tmp=decodeKey(msg.getBuffer());
+                    if(tmp == null)
+                        sendKeyRequest(); // unable to understand response, let's try again
+                    else {
+                        // otherwise lets set the returned key as the shared key
+                        setKeys(tmp, hdr.getVersion());
+                        if(log.isDebugEnabled())
+                            log.debug("Decoded secretkey response");
+                    }
+                }
+                catch(Exception e) {
+                    log.warn("unable to process received public key");
+                }
+                break;
+            default:
+                log.warn("Received ignored encrypt header of " + hdr.getType());
+                break;
+        }
+    }
+
 
     /**
      * used to drain the up queue - synchronized so we can call it safely
@@ -799,8 +862,8 @@ public class ENCRYPT extends Protocol {
         // server's public key
         Message newMsg=new Message(keyServerAddr, local_addr, Kpair.getPublic().getEncoded());
 
-        newMsg.putHeader(this.id, new EncryptHeader(EncryptHeader.KEY_REQUEST, getSymVersion()));
-        passItDown(new Event(Event.MSG, newMsg));
+        newMsg.putHeader(this.id,new EncryptHeader(EncryptHeader.KEY_REQUEST,getSymVersion()));
+        passItDown(new Event(Event.MSG,newMsg));
         return newMsg;
     }
 
@@ -938,7 +1001,7 @@ public class ENCRYPT extends Protocol {
      * @throws Exception
      */
     private synchronized byte[] encryptMessage(Cipher cipher, byte[] plain, int offset, int length) throws Exception {
-        return cipher.doFinal(plain, offset, length);
+        return cipher.doFinal(plain,offset,length);
     }
 
     private SecretKeySpec decodeKey(byte[] encodedKey) throws Exception {
@@ -1141,11 +1204,9 @@ public class ENCRYPT extends Protocol {
 
     public static class EncryptHeader extends org.jgroups.Header {
         short type;
-        public static final short ENCRYPT=0;
-        public static final short KEY_REQUEST=1;
-        public static final short SERVER_PUBKEY=2;
-        public static final short SECRETKEY=3;
-        public static final short SECRETKEY_READY=4;
+        public static final short ENCRYPT     = 0;
+        public static final short KEY_REQUEST = 1;
+        public static final short SECRETKEY   = 2;
 
         String version;
         boolean encrypt_entire_msg=false;
@@ -1153,7 +1214,6 @@ public class ENCRYPT extends Protocol {
         public EncryptHeader() {}
 
         public EncryptHeader(short type) {
-            //this(type, 0l);
             this.type=type;
             this.version="";
         }
@@ -1177,10 +1237,7 @@ public class ENCRYPT extends Protocol {
         }
 
         public String toString() {
-            return "ENCRYPT [type=" + type
-                   + " version=\""
-                   + (version != null? version.length() + " bytes" : "n/a")
-                   + "\"]";
+            return "ENCRYPT [type=" + type + " version=\"" + (version != null? version.length() + " bytes" : "n/a") + "\"]";
         }
 
         public int size() {

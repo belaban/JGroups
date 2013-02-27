@@ -7,6 +7,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
@@ -225,19 +226,19 @@ public class SEQUENCER extends Protocol {
 
                         broadcast(msg, true, msg.getSrc(), hdr.seqno, hdr.type == SequencerHeader.FLUSH); // do copy the message
                         received_forwards++;
-                        return null;
+                        break;
 
                     case SequencerHeader.BCAST:
                         deliver(msg, evt, hdr);
                         received_bcasts++;
-                        return null;
+                        break;
 
                     case SequencerHeader.WRAPPED_BCAST:
                         unwrapAndDeliver(msg, hdr.flush_ack);  // unwrap the original message (in the payload) and deliver it
                         received_bcasts++;
-                        return null;
+                        break;
                 }
-                break;
+                return null;
 
             case Event.VIEW_CHANGE:
                 Object retval=up_prot.up(evt);
@@ -252,7 +253,24 @@ public class SEQUENCER extends Protocol {
         return up_prot.up(evt);
     }
 
+    public void up(MessageBatch batch) {
+        for(Message msg: batch) {
+            if(msg.isFlagSet(Message.NO_TOTAL_ORDER) || msg.isFlagSet(Message.OOB) || msg.getHeader(id) == null)
+                continue;
+            batch.remove(msg);
 
+            // simplistic implementation
+            try {
+                up(new Event(Event.MSG, msg));
+            }
+            catch(Throwable t) {
+                log.error("failed passing up message", t);
+            }
+        }
+
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     /* --------------------------------- Private Methods ----------------------------------- */
 
@@ -376,7 +394,7 @@ public class SEQUENCER extends Protocol {
 
     protected void forwardToCoord(final byte[] marshalled_msg, long seqno) {
         if(!running || flushing) {
-            forward_table.put(seqno,marshalled_msg);
+            forward_table.put(seqno, marshalled_msg);
             return;
         }
 

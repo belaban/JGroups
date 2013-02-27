@@ -38,11 +38,9 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        provider=createChannel(true, 2);
-        provider.setName("provider");
+        provider=createChannel(true, 2, "provider");
         modifyStack(provider);
-        requester=createChannel(provider);
-        requester.setName("requester");
+        requester=createChannel(provider, "requester");
         setOOBPoolSize(provider, requester);
     }
 
@@ -77,7 +75,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
         p.reset();
         requester.setReceiver(new Requester(p));
         requester.connect(GROUP);
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, provider, requester);
+        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, provider, requester);
 
         log("requesting state of " + Util.printBytes(size));
         long start=System.currentTimeMillis();
@@ -93,8 +91,9 @@ public class LargeStateTransferTest extends ChannelTestBase {
     private static void setOOBPoolSize(JChannel... channels) {
         for(JChannel channel: channels) {
             TP transport=channel.getProtocolStack().getTransport();
-            transport.setOOBThreadPoolMinThreads(1);
-            transport.setOOBThreadPoolMaxThreads(2);
+            transport.setOOBThreadPoolMinThreads(2);
+            transport.setOOBThreadPoolMaxThreads(8);
+            transport.setOOBThreadPoolQueueEnabled(false);
         }
     }
 

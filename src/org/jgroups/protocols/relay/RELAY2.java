@@ -10,10 +10,8 @@ import org.jgroups.protocols.FORWARD_TO_COORD;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.AddressGenerator;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.TopologyUUID;
+import org.jgroups.util.*;
 import org.jgroups.util.UUID;
-import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -434,6 +432,29 @@ public class RELAY2 extends Protocol {
         return up_prot.up(evt);
     }
 
+    public void up(MessageBatch batch) {
+        for(Message msg: batch) {
+            Relay2Header hdr=(Relay2Header)msg.getHeader(id);
+            Address dest=msg.getDest();
+
+            if(hdr == null) {
+                // forward a multicast message to all bridges except myself, then pass up
+                if(dest == null && is_coord && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
+                    Address sender=new SiteUUID((UUID)msg.getSrc(), UUID.get(msg.getSrc()), site_id);
+                    sendToBridges(sender, msg, site_id);
+                }
+            }
+            else { // header is not null
+                batch.remove(msg); // message is consumed
+                if(dest != null)
+                    handleMessage(hdr, msg);
+                else
+                    deliver(null, hdr.original_sender, msg);
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     /** Called to handle a message received by the relayer */
     protected void handleRelayMessage(Relay2Header hdr, Message msg) {
@@ -592,7 +613,7 @@ public class RELAY2 extends Protocol {
             }
         }
         catch(Exception e) {
-            log.error("failed unmarshalling message", e);
+            log.error("failed delivering message", e);
         }
     }
 

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * Tests tthe {@link RSVP} protocol
+ * Tests the {@link RSVP} protocol
  * @author Bela Ban
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
@@ -79,12 +79,9 @@ public class RSVPTest {
                                              .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false)
                                              .setValue("xmit_table_num_rows",5)
                                              .setValue("xmit_table_msgs_per_row",10),
-                                           // new UNICAST(),
-                                           new UNICAST2().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300)
+                                           new UNICAST3().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300)
                                              .setValue("xmit_table_msgs_per_row",10)
-                                             .setValue("conn_expiry_timeout", 10000)
-                                             .setValue("stable_interval", 30000)
-                                             .setValue("max_bytes", 50000),
+                                             .setValue("conn_expiry_timeout", 10000),
                                            new RSVP().setValue("timeout", 10000).setValue("throw_exception_on_timeout", false),
                                            // new STABLE().setValue("max_bytes",500000).setValue("desired_avg_gossip", 60000),
                                            new GMS().setValue("print_local_addr",false)

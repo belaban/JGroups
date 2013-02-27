@@ -257,6 +257,10 @@ public class MPerf extends ReceiverAdapter {
         MPerfHeader hdr=(MPerfHeader)msg.getHeader(ID);
         switch(hdr.type) {
             case MPerfHeader.DATA:
+                // we're checking the *application's* seqno, and multiple sender threads
+                // can screw this up, that's why we check for correct order only when we
+                // only have 1 sender thread
+                // This is *different* from NAKACK{2} order, which is correct
                 handleData(msg.getSrc(), msg.getLength(), hdr.seqno, num_threads == 1);
                 break;
 

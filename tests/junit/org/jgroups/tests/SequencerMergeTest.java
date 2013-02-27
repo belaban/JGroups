@@ -198,7 +198,7 @@ public class SequencerMergeTest {
                                  new PING().setValue("timeout",100),
                                  new NAKACK2().setValue("use_mcast_xmit",false)
                                    .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
-                                 new UNICAST2(),
+                                 new UNICAST3(),
                                  new STABLE().setValue("max_bytes",50000),
                                  new SEQUENCER(), // below GMS, to establish total order between views and messages
                                  new GMS().setValue("print_local_addr",false).setValue("leave_timeout",100)

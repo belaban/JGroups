@@ -80,7 +80,7 @@ public class MessageDispatcherRSVPTest {
                                            new NAKACK2().setValue("use_mcast_xmit",false)
                                              .setValue("discard_delivered_msgs",true)
                                              .setValue("log_discard_msgs", false).setValue("log_not_found_msgs", false),
-                                           new UNICAST2().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300),
+                                           new UNICAST3().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300),
                                            new RSVP().setValue("timeout", 10000).setValue("throw_exception_on_timeout", true),
                                            new GMS().setValue("print_local_addr",false)
                                              .setValue("leave_timeout",100)

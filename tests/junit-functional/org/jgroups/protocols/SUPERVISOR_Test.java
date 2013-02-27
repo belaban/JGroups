@@ -66,7 +66,7 @@ public class SUPERVISOR_Test {
                                  new PING().setValue("timeout", 500),
                                  new FD(),
                                  new NAKACK2().setValue("use_mcast_xmit", false),
-                                 new UNICAST2(),
+                                 new UNICAST3(),
                                  new STABLE().setValue("max_bytes", 50000),
                                  new GMS().setValue("print_local_addr", false),
                                  new SUPERVISOR());

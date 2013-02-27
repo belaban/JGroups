@@ -1083,6 +1083,15 @@ for(Future&lt;RspList&gt; future: futures) {
 
         <section id="Scopes">
             <title>Scopes: concurrent message delivery for messages from the same sender</title>
+
+            <note>
+                <title>Deprecated in 3.3</title>
+                <para>
+                    In 3.3, SCOPE is replaced with the <xref linkend="AsyncInvocation">Asynchronous Invocation API</xref>.
+                    SCOPE will probably be removed in 4.x.
+                </para>
+            </note>
+
             <para>
                 In the previous paragraph, we showed how the concurrent stack delivers messages from different senders
                 concurrently. But all (non-OOB) messages from the same sender P are delivered in the order in which

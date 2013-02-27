@@ -7,6 +7,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.AckCollector;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
 
 import java.io.DataInput;
@@ -188,6 +189,27 @@ public class RSVP extends Protocol {
         return up_prot.up(evt);
     }
 
+    public void up(MessageBatch batch) {
+        for(Message msg: batch) {
+            if(!msg.isFlagSet(Message.Flag.RSVP))
+                continue;
+            RsvpHeader hdr=(RsvpHeader)msg.getHeader(id);
+            if(hdr == null) {
+                log.error("message with RSVP flag needs to have an RsvpHeader");
+                continue;
+            }
+            try {
+                batch.remove(msg);
+                up(new Event(Event.MSG, msg));
+            }
+            catch(Throwable t) {
+                log.error("failed passing up message", t);
+            }
+        }
+
+        if(!batch.isEmpty())
+            up_prot.up(batch);
+    }
 
     protected void handleView(View view) {
         members=view.getMembers();
@@ -220,7 +242,7 @@ public class RSVP extends Protocol {
     protected void sendResponse(Address dest, short id) {
         try {
             Message msg=new Message(dest);
-            msg.setFlag(Message.Flag.RSVP, Message.Flag.OOB);
+            msg.setFlag(Message.Flag.RSVP, Message.Flag.DONT_BUNDLE);
             RsvpHeader hdr=new RsvpHeader(RsvpHeader.RSP,id);
             msg.putHeader(this.id, hdr);
             if(log.isTraceEnabled())
@@ -264,8 +286,7 @@ public class RSVP extends Protocol {
                         cancelTask();
                         return;
                     }
-                    Message msg=new Message(target);
-                    msg.setFlag(Message.Flag.RSVP);
+                    Message msg=new Message(target).setFlag(Message.Flag.RSVP);
                     RsvpHeader hdr=new RsvpHeader(RsvpHeader.REQ_ONLY, rsvp_id);
                     msg.putHeader(id, hdr);
                     if(log.isTraceEnabled())

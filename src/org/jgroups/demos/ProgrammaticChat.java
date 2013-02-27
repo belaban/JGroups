@@ -30,7 +30,7 @@ public class ProgrammaticChat {
                 .addProtocol(new VERIFY_SUSPECT())
                 .addProtocol(new BARRIER())
                 .addProtocol(new NAKACK2())
-                .addProtocol(new UNICAST2())
+                .addProtocol(new UNICAST3())
                 .addProtocol(new STABLE())
                 .addProtocol(new GMS())
                 .addProtocol(new UFC())
