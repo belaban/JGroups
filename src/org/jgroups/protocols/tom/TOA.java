@@ -152,16 +152,10 @@ public class TOA extends Protocol implements DeliveryProtocol {
         for (MessageID messageID : pendingSentMessages) {
             long finalSequenceNumber = senderManager.removeLeavers(messageID, leavers);
             if (finalSequenceNumber != SenderManager.NOT_READY) {
-                Message finalMessage = new Message();
-                finalMessage.setSrc(localAddress);
-
-                ToaHeader finalHeader = ToaHeader.createNewHeader(
-                        ToaHeader.FINAL_MESSAGE,messageID);
-
+                ToaHeader finalHeader = ToaHeader.createNewHeader(ToaHeader.FINAL_MESSAGE,messageID);
                 finalHeader.setSequencerNumber(finalSequenceNumber);
-                finalMessage.putHeader(this.id, finalHeader);
-                finalMessage.setFlag(Message.Flag.OOB);
-                finalMessage.setFlag(Message.Flag.DONT_BUNDLE);
+                Message finalMessage = new Message().src(localAddress).putHeader(this.id,finalHeader)
+                  .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
 
                 Set<Address> destinations = senderManager.getDestination(messageID);
                 if (destinations.contains(localAddress)) {
@@ -293,17 +287,11 @@ public class TOA extends Protocol implements DeliveryProtocol {
             }
 
             //create a new message and send it back
-            Message proposeMessage = new Message();
-            proposeMessage.setSrc(localAddress);
-            proposeMessage.setDest(messageID.getAddress());
-
-            ToaHeader newHeader = ToaHeader.createNewHeader(
-              ToaHeader.PROPOSE_MESSAGE,messageID);
-
+            ToaHeader newHeader = ToaHeader.createNewHeader(ToaHeader.PROPOSE_MESSAGE,messageID);
             newHeader.setSequencerNumber(myProposeSequenceNumber);
-            proposeMessage.putHeader(this.id, newHeader);
-            proposeMessage.setFlag(Message.Flag.OOB);
-            proposeMessage.setFlag(Message.Flag.DONT_BUNDLE);
+
+            Message proposeMessage = new Message().src(localAddress).dest(messageID.getAddress())
+              .putHeader(this.id, newHeader).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
 
             //multicastSenderThread.addUnicastMessage(proposeMessage);
             down_prot.down(new Event(Event.MSG, proposeMessage));
@@ -334,16 +322,12 @@ public class TOA extends Protocol implements DeliveryProtocol {
 
             if (finalSequenceNumber != SenderManager.NOT_READY) {
                 lastProposeReceived = true;
-                Message finalMessage = new Message();
-                finalMessage.setSrc(localAddress);
 
-                ToaHeader finalHeader = ToaHeader.createNewHeader(
-                  ToaHeader.FINAL_MESSAGE,messageID);
-
+                ToaHeader finalHeader = ToaHeader.createNewHeader(ToaHeader.FINAL_MESSAGE,messageID);
                 finalHeader.setSequencerNumber(finalSequenceNumber);
-                finalMessage.putHeader(this.id, finalHeader);
-                finalMessage.setFlag(Message.Flag.OOB);
-                finalMessage.setFlag(Message.Flag.DONT_BUNDLE);
+
+                Message finalMessage = new Message().src(localAddress).putHeader(this.id, finalHeader)
+                  .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE);
 
                 Set<Address> destinations = senderManager.getDestination(messageID);
                 if (destinations.contains(localAddress)) {

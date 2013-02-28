@@ -292,7 +292,7 @@ public class UUPerf extends ReceiverAdapter {
      */
     void startBenchmark() throws Throwable {
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL,0);
-        options.setFlags(Message.OOB,Message.DONT_BUNDLE);
+        options.setFlags(Message.Flag.OOB,Message.Flag.DONT_BUNDLE);
         RspList<Object> responses=disp.callRemoteMethods(null,new MethodCall(START),options);
 
         long total_reqs=0;
@@ -382,11 +382,11 @@ public class UUPerf extends ReceiverAdapter {
             RequestOptions apply_state_options=new RequestOptions(sync? ResponseMode.GET_ALL : ResponseMode.GET_NONE,400000,true,null);
 
             if(oob) {
-                apply_state_options.setFlags(Message.OOB);
+                apply_state_options.setFlags(Message.Flag.OOB);
             }
             if(sync) {
-                // apply_state_options.setFlags(Message.DONT_BUNDLE,Message.NO_FC);
-                apply_state_options.setFlags(Message.DONT_BUNDLE);
+                // apply_state_options.setFlags(Message.Flag.DONT_BUNDLE,Message.NO_FC);
+                apply_state_options.setFlags(Message.Flag.DONT_BUNDLE);
             }
 
             apply_state_options.setFlags(Message.Flag.RSVP);

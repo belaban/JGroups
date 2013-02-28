@@ -274,8 +274,7 @@ public class MERGE3 extends Protocol {
                     case VIEW_REQ:
                         View tmp_view=view != null? view.copy() : null;
                         Header tmphdr=MergeHeader.createViewResponse(tmp_view);
-                        Message view_rsp=new Message(sender);
-                        view_rsp.putHeader(getId(), tmphdr);
+                        Message view_rsp=new Message(sender).setFlag(Message.Flag.INTERNAL).putHeader(getId(),tmphdr);
                         down_prot.down(new Event(Event.MSG, view_rsp));
                         break;
                     case VIEW_RSP:
@@ -318,8 +317,7 @@ public class MERGE3 extends Protocol {
             MergeHeader hdr=MergeHeader.createInfo(view_id, logical_name, Arrays.asList(physical_addr));
 
             if(transport_supports_multicasting) {
-                Message msg=new Message();
-                msg.putHeader(getId(), hdr);
+                Message msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr);
                 down_prot.down(new Event(Event.MSG, msg));
                 return;
             }
@@ -339,8 +337,7 @@ public class MERGE3 extends Protocol {
                 log.trace("discovery protocol " + discovery_protocol.getName() + " returned " + physical_addrs.size() +
                             " physical addresses: " + Util.printListWithDelimiter(physical_addrs, ", ", 10));
             for(Address addr: physical_addrs) {
-                Message info=new Message(addr);
-                info.putHeader(getId(), hdr);
+                Message info=new Message(addr).setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr);
                 down_prot.down(new Event(Event.MSG, info));
             }
         }
@@ -428,9 +425,8 @@ public class MERGE3 extends Protocol {
                         view_rsps.add(local_addr, view.copy());
                     continue;
                 }
-                Message view_req=new Message(target);
-                Header hdr=MergeHeader.createViewRequest();
-                view_req.putHeader(getId(), hdr);
+                Message view_req=new Message(target).setFlag(Message.Flag.INTERNAL)
+                  .putHeader(getId(), MergeHeader.createViewRequest());
                 down_prot.down(new Event(Event.MSG, view_req));
             }
             view_rsps.waitForAllResponses(check_interval / 10);

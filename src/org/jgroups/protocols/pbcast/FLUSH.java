@@ -548,9 +548,8 @@ public class FLUSH extends Protocol {
             log.debug(localAddress + ": returned from FLUSH_RECONCILE, "
                     + " sending RECONCILE_OK to " + requester);
 
-        Message reconcileOk = new Message(requester);
-        reconcileOk.setFlag(Message.OOB);
-        reconcileOk.putHeader(this.id, new FlushHeader(FlushHeader.FLUSH_RECONCILE_OK));
+        Message reconcileOk = new Message(requester).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+          .putHeader(this.id,new FlushHeader(FlushHeader.FLUSH_RECONCILE_OK));
         down_prot.down(new Event(Event.MSG, reconcileOk));
     }
 
@@ -564,10 +563,8 @@ public class FLUSH extends Protocol {
             }
             onStartFlush(flushRequester, fh);
         } else {
-            FlushHeader fhr = new FlushHeader(FlushHeader.FLUSH_NOT_COMPLETED, fh.viewID,
-                            fh.flushParticipants);
-            Message response = new Message(flushRequester);
-            response.putHeader(this.id, fhr);
+            FlushHeader fhr = new FlushHeader(FlushHeader.FLUSH_NOT_COMPLETED, fh.viewID, fh.flushParticipants);
+            Message response = new Message(flushRequester).putHeader(this.id, fhr);
             down_prot.down(new Event(Event.MSG, response));
             if (log.isDebugEnabled())
                 log.debug(localAddress + ": received START_FLUSH, responded with FLUSH_NOT_COMPLETED to " + flushRequester);
@@ -580,9 +577,8 @@ public class FLUSH extends Protocol {
         for (Address flushMember : participants) {
             if(flushMember == null)
                 continue;
-            Message reject = new Message(flushMember, localAddress, null);   
-            reject.setFlag(Message.OOB);
-            reject.putHeader(this.id, new FlushHeader(FlushHeader.ABORT_FLUSH, viewId,participants));
+            Message reject = new Message(flushMember, localAddress, null).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+              .putHeader(this.id, new FlushHeader(FlushHeader.ABORT_FLUSH, viewId,participants));
             down_prot.down(new Event(Event.MSG, reject));
         }
     }
@@ -693,9 +689,8 @@ public class FLUSH extends Protocol {
          flushMembers.addAll(participantsInFlush);
          flushMembers.removeAll(suspected);
          
-         msg = new Message(null, localAddress, null);
-         msg.putHeader(this.id, new FlushHeader(FlushHeader.START_FLUSH, currentViewId(),
-                  participantsInFlush));
+         msg = new Message(null, localAddress, null)
+           .putHeader(this.id, new FlushHeader(FlushHeader.START_FLUSH, currentViewId(), participantsInFlush));
       }
         if (participantsInFlush.isEmpty()) {
             flush_promise.setResult(SUCCESS_START_FLUSH);
@@ -778,8 +773,7 @@ public class FLUSH extends Protocol {
             FlushHeader fhr = new FlushHeader(FlushHeader.FLUSH_COMPLETED, fh.viewID,fh.flushParticipants);
             fhr.addDigest(digest);
 
-            Message msg = new Message(flushStarter);
-            msg.putHeader(this.id, fhr);
+            Message msg = new Message(flushStarter).putHeader(this.id, fhr);
             down_prot.down(new Event(Event.MSG, msg));
             if (log.isDebugEnabled())
                 log.debug(localAddress + ": received START_FLUSH, responded with FLUSH_COMPLETED to " + flushStarter);
@@ -807,8 +801,7 @@ public class FLUSH extends Protocol {
             needsReconciliationPhase = enable_reconciliation && flushCompleted && hasVirtualSynchronyGaps();
             if (needsReconciliationPhase) {
                 Digest d = findHighestSequences();
-                msg = new Message();
-                msg.setFlag(Message.OOB);
+                msg = new Message().setFlag(Message.Flag.OOB);
                 FlushHeader fh = new FlushHeader(FlushHeader.FLUSH_RECONCILE, currentViewId(),flushMembers);
                 reconcileOks.clear();
                 fh.addDigest(d);

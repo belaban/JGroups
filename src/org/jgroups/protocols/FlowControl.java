@@ -528,15 +528,15 @@ public abstract class FlowControl extends Protocol {
     protected void sendCredit(Address dest, long credits) {
         if(log.isTraceEnabled())
             if(log.isTraceEnabled()) log.trace("sending " + credits + " credits to " + dest);
-        Message msg=new Message(dest, null,credits);
-        msg.setFlag(Message.OOB, Message.Flag.DONT_BUNDLE);
-        msg.putHeader(this.id, REPLENISH_HDR);
+        Message msg=new Message(dest, credits)
+          .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+          .putHeader(this.id,REPLENISH_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_responses_sent++;
     }
 
     /**
-     * We cannot send this request as OOB messages, as the credit request needs to queue up behind the regular messages;
+     * We cannot send this request as OOB message, as the credit request needs to queue up behind the regular messages;
      * if a receiver cannot process the regular messages, that is a sign that the sender should be throttled !
      * @param dest The member to which we send the credit request
      * @param credits_needed The number of bytes (of credits) left for dest
@@ -544,8 +544,8 @@ public abstract class FlowControl extends Protocol {
     protected void sendCreditRequest(final Address dest, Long credits_needed) {
         if(log.isTraceEnabled())
             log.trace("sending request for " + credits_needed + " credits to " + dest);
-        Message msg=new Message(dest, null, credits_needed).setFlag(Message.Flag.DONT_BUNDLE);
-        msg.putHeader(this.id, CREDIT_REQUEST_HDR);
+        Message msg=new Message(dest, credits_needed).setFlag(Message.Flag.INTERNAL)
+          .putHeader(this.id, CREDIT_REQUEST_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_requests_sent++;
     }

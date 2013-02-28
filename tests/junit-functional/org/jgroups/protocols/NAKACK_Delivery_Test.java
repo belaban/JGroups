@@ -155,7 +155,7 @@ public class NAKACK_Delivery_Test {
     private static Message msg(Address sender, long seqno, int number, boolean oob) {
         Message msg=new Message(null, sender, number);
         if(oob)
-            msg.setFlag(Message.OOB);
+            msg.setFlag(Message.Flag.OOB);
         if(seqno != -1)
             msg.putHeader(NAKACK_ID, NakAckHeader2.createMessageHeader(seqno));
         return msg;

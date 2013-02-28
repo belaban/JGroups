@@ -1,31 +1,6 @@
 package org.jgroups.protocols;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.LockSupport;
-
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Header;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -33,10 +8,21 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.locking.AwaitInfo;
 import org.jgroups.blocks.locking.LockInfo;
 import org.jgroups.blocks.locking.LockNotification;
-import org.jgroups.util.Owner;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Owner;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.util.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.LockSupport;
 
 
 
@@ -360,10 +346,9 @@ abstract public class Locking extends Protocol {
 
     protected void sendRequest(Address dest, Type type, String lock_name, Owner owner, long timeout, boolean is_trylock) {
         Request req=new Request(type, lock_name, owner, timeout, is_trylock);
-        Message msg=new Message(dest, null, req);
-        msg.putHeader(id, new LockingHeader());
+        Message msg=new Message(dest, req).putHeader(id, new LockingHeader());
         if(bypass_bundling)
-            msg.setFlag(Message.DONT_BUNDLE);
+            msg.setFlag(Message.Flag.DONT_BUNDLE);
         if(log.isTraceEnabled())
             log.trace("[" + local_addr + "] --> [" + (dest == null? "ALL" : dest) + "] " + req);
         try {
@@ -377,10 +362,9 @@ abstract public class Locking extends Protocol {
 
     protected void sendLockResponse(Type type, Owner dest, String lock_name) {
         Request rsp=new Request(type, lock_name, dest, 0);
-        Message lock_granted_rsp=new Message(dest.getAddress(), null, rsp);
-        lock_granted_rsp.putHeader(id, new LockingHeader());
+        Message lock_granted_rsp=new Message(dest.getAddress(),  rsp).putHeader(id, new LockingHeader());
         if(bypass_bundling)
-            lock_granted_rsp.setFlag(Message.DONT_BUNDLE);
+            lock_granted_rsp.setFlag(Message.Flag.DONT_BUNDLE);
 
         if(log.isTraceEnabled())
             log.trace("[" + local_addr + "] --> [" + dest.getAddress() + "] " + rsp);
@@ -396,10 +380,9 @@ abstract public class Locking extends Protocol {
 
     protected void sendSignalResponse(Owner dest, String lock_name) {
         Request rsp=new Request(Type.SIG_RET, lock_name, dest, 0);
-        Message lock_granted_rsp=new Message(dest.getAddress(), null, rsp);
-        lock_granted_rsp.putHeader(id, new LockingHeader());
+        Message lock_granted_rsp=new Message(dest.getAddress(), rsp).putHeader(id, new LockingHeader());
         if(bypass_bundling)
-            lock_granted_rsp.setFlag(Message.DONT_BUNDLE);
+            lock_granted_rsp.setFlag(Message.Flag.DONT_BUNDLE);
 
         if(log.isTraceEnabled())
             log.trace("[" + local_addr + "] --> [" + dest.getAddress() + "] " + rsp);

@@ -31,7 +31,7 @@ public class RequestOptions {
     protected short         scope;
 
     /** The flags set in the message in which a request is sent */
-    protected short         flags; // Message.OOB, Message.DONT_BUNDLE etc
+    protected short         flags; // Message.Flag.OOB, Message.Flag.DONT_BUNDLE etc
 
     /** A list of members which should be excluded from a call */
     protected Set<Address>  exclusion_list;

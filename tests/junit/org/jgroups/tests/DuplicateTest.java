@@ -146,10 +146,10 @@ public class DuplicateTest extends ChannelTestBase {
              Message msg=new Message(dest, null, seqno++);
              if(mixed) {
                  if(i % 2 == 0)
-                     msg.setFlag(Message.OOB);
+                     msg.setFlag(Message.Flag.OOB);
              }
              else if(oob) {
-                 msg.setFlag(Message.OOB);
+                 msg.setFlag(Message.Flag.OOB);
              }
 
              sender_channel.send(msg);

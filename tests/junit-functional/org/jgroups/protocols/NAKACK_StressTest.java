@@ -169,7 +169,7 @@ public class NAKACK_StressTest {
         NakAckHeader2 hdr=NakAckHeader2.createMessageHeader(seqno) ;
         msg.putHeader(NAKACK_ID, hdr);
         if(oob)
-            msg.setFlag(Message.OOB);
+            msg.setFlag(Message.Flag.OOB);
         return msg;
     }
 

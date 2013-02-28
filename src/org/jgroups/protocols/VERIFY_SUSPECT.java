@@ -121,7 +121,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                             Message rsp;
                             Address target=use_mcast_rsps? null : hdr.from;
                             for(int i=0; i < num_msgs; i++) {
-                                rsp=new Message(target).setFlag(Message.OOB)
+                                rsp=new Message(target).setFlag(Message.Flag.INTERNAL)
                                   .putHeader(this.id, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
                                 down_prot.down(new Event(Event.MSG, rsp));
                             }
@@ -201,9 +201,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         if(log.isTraceEnabled()) log.trace("verifying that " + mbr + " is dead");
         
         for(int i=0; i < num_msgs; i++) {
-            msg=new Message(mbr, null, null);
-            msg.setFlag(Message.OOB);
-            msg.putHeader(this.id, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
+            msg=new Message(mbr).setFlag(Message.Flag.INTERNAL)
+              .putHeader(this.id, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
             down_prot.down(new Event(Event.MSG, msg));
         }               
     }

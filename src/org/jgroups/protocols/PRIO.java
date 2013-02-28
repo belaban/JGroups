@@ -98,7 +98,7 @@ public class PRIO extends Protocol {
 		switch(evt.getType()) {
             case Event.MSG:
 				Message message = (Message)evt.getArg();
-				if ( message.isFlagSet( Message.OOB ) ) {
+				if ( message.isFlagSet( Message.Flag.OOB ) ) {
 					return up_prot.up(evt);
 				}
 				else {
@@ -146,7 +146,7 @@ public class PRIO extends Protocol {
 		switch(evt.getType()) {
             case Event.MSG:
 				Message message = (Message)evt.getArg();
-				if ( message.isFlagSet( Message.OOB ) ) {
+				if ( message.isFlagSet( Message.Flag.OOB ) ) {
 					return down_prot.down(evt);
 				}
 				else {

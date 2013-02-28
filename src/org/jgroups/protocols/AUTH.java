@@ -185,17 +185,13 @@ public class AUTH extends Protocol {
         if(dest == null)
             return;
 
-        Message msg = new Message(dest, null, null);
         JoinRsp joinRes=new JoinRsp(error_msg); // specify the error message on the JoinRsp
-
-        GMS.GmsHeader gmsHeader=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, joinRes);
-        msg.putHeader(gms_id, gmsHeader);
+        Message msg = new Message(dest).putHeader(gms_id, new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, joinRes));
         down_prot.down(new Event(Event.MSG, msg));
     }
 
     protected void sendMergeRejectionMessage(Address dest) {
-        Message msg=new Message(dest, null, null);
-        msg.setFlag(Message.OOB);
+        Message msg=new Message(dest).setFlag(Message.Flag.OOB);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
         hdr.setMergeRejected(true);
         msg.putHeader(gms_id, hdr);

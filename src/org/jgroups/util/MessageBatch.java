@@ -45,15 +45,24 @@ public class MessageBatch implements Iterable<Message> {
 
     public MessageBatch(Collection<Message> msgs) {
         messages=new Message[msgs.size()];
-        int num_reg=0, num_oob=0;
+        int num_reg=0, num_oob=0, num_internal=0;
         for(Message msg: msgs) {
             messages[index++]=msg;
             if(msg.isFlagSet(Message.Flag.OOB))
                 num_oob++;
+            else if(msg.isFlagSet(Message.Flag.INTERNAL))
+                num_internal++;
             else
                 num_reg++;
         }
-        mode=num_oob == 0? Mode.REG : num_reg == 0? Mode.OOB : Mode.MIXED;
+        if(num_internal > 0 && num_oob == 0 && num_reg == 0)
+            mode=Mode.INTERNAL;
+        else if(num_oob > 0 && num_internal == 0 && num_reg == 0)
+            mode=Mode.OOB;
+        else if(num_reg > 0 && num_oob == 0 && num_internal == 0)
+            mode=Mode.REG;
+        else
+            mode=Mode.MIXED;
     }
 
     public MessageBatch(Address dest, Address sender, String cluster_name, boolean multicast, Collection<Message> msgs) {
@@ -259,7 +268,7 @@ public class MessageBatch implements Iterable<Message> {
         T visit(final Message msg, final MessageBatch batch);
     }
 
-    public enum Mode {OOB, REG, MIXED}
+    public enum Mode {OOB, REG, INTERNAL, MIXED}
 
 
     /** Iterates over <em>non-null</em> elements of a batch, skipping null elements */

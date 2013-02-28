@@ -78,7 +78,7 @@ public class UNICAST_OOB_Test {
         for(int i=1; i <=5; i++) {
             Message msg=new Message(dest, null,(long)i);
             if(i == 4 && oob)
-                msg.setFlag(Message.OOB);
+                msg.setFlag(Message.Flag.OOB);
             System.out.println("-- sending message #" + i);
             a.send(msg);
             Util.sleep(100);

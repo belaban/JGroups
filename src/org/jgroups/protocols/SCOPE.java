@@ -217,7 +217,7 @@ public class SCOPE extends Protocol {
                 Message msg=(Message)evt.getArg();
 
                 // we don't handle unscoped or OOB messages
-                if(!msg.isFlagSet(Message.SCOPED) || msg.isFlagSet(Message.OOB))
+                if(!msg.isFlagSet(Message.SCOPED) || msg.isFlagSet(Message.Flag.OOB))
                     break;
                 
                 ScopeHeader hdr=(ScopeHeader)msg.getHeader(id);
@@ -248,7 +248,7 @@ public class SCOPE extends Protocol {
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            if(!msg.isFlagSet(Message.SCOPED) || msg.isFlagSet(Message.OOB)) // we don't handle unscoped or OOB messages
+            if(!msg.isFlagSet(Message.SCOPED) || msg.isFlagSet(Message.Flag.OOB)) // we don't handle unscoped or OOB messages
                 continue;
 
             ScopeHeader hdr=(ScopeHeader)msg.getHeader(id);

@@ -42,7 +42,7 @@ public class DemoToken extends AuthToken implements AUTH.UpHandler {
         Address sender=msg.getSrc();
 
         // 1. send a challenge to the sender
-        Message    challenge=new Message(sender).setFlag(Message.OOB);
+        Message    challenge=new Message(sender).setFlag(Message.Flag.OOB);
         byte[]     buf=generateRandomBytes();
         DemoHeader hdr=new DemoHeader(buf);
         challenge.putHeader(ID, hdr);

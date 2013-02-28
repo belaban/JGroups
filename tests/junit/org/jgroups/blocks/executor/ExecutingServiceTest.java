@@ -290,7 +290,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
     @Test
     public void testSimpleSerializableCallableSubmit() 
             throws InterruptedException, ExecutionException, TimeoutException {
-        Long value = Long.valueOf(100);
+        long value =100;
         Callable<Long> callable = new SimpleStreamableCallable<Long>(value);
         Thread consumer = new Thread(er2);
         consumer.start();
@@ -483,7 +483,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         Thread consumer = new Thread(er2);
         consumer.start();
         
-        Long value = Long.valueOf(100);
+        long value =100;
         
         @SuppressWarnings("rawtypes")
         Constructor<SimpleCallable> constructor = 

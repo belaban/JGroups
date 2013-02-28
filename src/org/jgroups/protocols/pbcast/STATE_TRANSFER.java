@@ -207,8 +207,7 @@ public class STATE_TRANSFER extends Protocol {
                     up_prot.up(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
                 }
                 else {
-                    Message state_req=new Message(target, null, null);
-                    state_req.putHeader(this.id, new StateHeader(StateHeader.STATE_REQ));
+                    Message state_req=new Message(target).putHeader(this.id, new StateHeader(StateHeader.STATE_REQ));
                     if(log.isDebugEnabled())
                         log.debug(local_addr + ": asking " + target + " for state");
 
@@ -349,8 +348,7 @@ public class STATE_TRANSFER extends Protocol {
             avg_state_size=num_bytes_sent.doubleValue() / num_state_reqs.doubleValue();
         }
 
-        Message state_rsp=new Message(requester, null, state);
-        state_rsp.putHeader(this.id, new StateHeader(StateHeader.STATE_RSP, digest));
+        Message state_rsp=new Message(requester, state).putHeader(this.id, new StateHeader(StateHeader.STATE_RSP, digest));
         if(log.isTraceEnabled()) {
             int length=state != null? state.length : 0;
             if(log.isTraceEnabled())
@@ -362,8 +360,7 @@ public class STATE_TRANSFER extends Protocol {
 
     protected void sendException(Address requester, Throwable exception) {
         try {
-            Message ex_msg=new Message(requester, null, exception);
-            ex_msg.putHeader(getId(), new StateHeader(StateHeader.STATE_EX));
+            Message ex_msg=new Message(requester, exception).putHeader(getId(), new StateHeader(StateHeader.STATE_EX));
             down(new Event(Event.MSG, ex_msg));
         }
         catch(Throwable t) {

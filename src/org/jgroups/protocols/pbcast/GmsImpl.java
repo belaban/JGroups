@@ -55,7 +55,7 @@ public abstract class GmsImpl {
 
     protected void sendMergeRejectedResponse(Address sender, MergeId merge_id) {
         Message msg=new Message(sender, null, null);
-        msg.setFlag(Message.OOB);
+        msg.setFlag(Message.Flag.OOB);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
         hdr.merge_rejected=true;
         hdr.merge_id=merge_id;

@@ -323,8 +323,7 @@ public class RELAY extends Protocol {
 
     /** Forwards the message across the TCP link to the other local cluster */
     protected void forward(byte[] buffer, int offset, int length) {
-        Message msg=new Message(null, null, buffer, offset, length);
-        msg.putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
+        Message msg=new Message(null, null, buffer, offset, length).putHeader(id, new RelayHeader(RelayHeader.Type.FORWARD));
         if(bridge != null) {
             try {
                 bridge.send(msg);
@@ -366,8 +365,7 @@ public class RELAY extends Protocol {
         try {
             if(bridge != null && bridge.isConnected()) {
                 byte[] buf=Util.streamableToByteBuffer(view_data);
-                final Message msg=new Message(null, null, buf);
-                msg.putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
+                final Message msg=new Message(null, buf).putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
                 if(use_seperate_thread) {
                     timer.execute(new Runnable() {
                         public void run() {
@@ -503,9 +501,7 @@ public class RELAY extends Protocol {
 
     protected void sendViewOnLocalCluster(final List<Address> destinations, final byte[] buffer) {
         for(Address dest: destinations) {
-            Message view_msg=new Message(dest, null, buffer);
-            RelayHeader hdr=RelayHeader.create(RelayHeader.Type.VIEW);
-            view_msg.putHeader(id, hdr);
+            Message view_msg=new Message(dest, buffer).putHeader(id, RelayHeader.create(RelayHeader.Type.VIEW));
             down_prot.down(new Event(Event.MSG, view_msg));
         }
     }
@@ -614,8 +610,7 @@ public class RELAY extends Protocol {
         public void run() {
             if(bridge == null || !bridge.isConnected() || remote_view != null)
                 return;
-            Message msg=new Message();
-            msg.putHeader(id, RelayHeader.create(RELAY.RelayHeader.Type.BROADCAST_VIEW));
+            Message msg=new Message().putHeader(id, RelayHeader.create(RELAY.RelayHeader.Type.BROADCAST_VIEW));
             try {
                 bridge.send(msg);
             }

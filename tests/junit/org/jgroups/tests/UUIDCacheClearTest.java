@@ -24,12 +24,12 @@ public class UUIDCacheClearTest extends ChannelTestBase {
         try {
             a=createChannel(true, 2, "A");
             a.setReceiver(r1);
-            a.connect("testCacheClear");
+            a.connect("UUIDCacheClearTest");
             b=createChannel(a, "B");
             b.setReceiver(r2);
-            b.connect("testCacheClear");
+            b.connect("UUIDCacheClearTest");
 
-            Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
+            Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
 
 
             // send one unicast message from a to b and vice versa
@@ -52,7 +52,6 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             System.out.println("clearing the caches");
             clearCache(a,b);
             printCaches(a,b);
-
 
             r1.clear();
             r2.clear();
@@ -103,10 +102,8 @@ public class UUIDCacheClearTest extends ChannelTestBase {
 
     private static void printCaches(JChannel ... channels) {
         System.out.println("caches:\n");
-        for(JChannel ch: channels) {
-            System.out.println(ch.getAddress() + ":\n" + 
-                    ch.getProtocolStack().getTransport().printLogicalAddressCache());
-        }
+        for(JChannel ch: channels)
+            System.out.println(ch.getAddress() + ":\n" + ch.getProtocolStack().getTransport().printLogicalAddressCache());
     }
 
     private static class MyReceiver extends ReceiverAdapter {

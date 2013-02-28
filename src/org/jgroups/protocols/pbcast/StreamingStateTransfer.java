@@ -191,8 +191,7 @@ public abstract class StreamingStateTransfer extends Protocol {
                 }
                 else {
                     state_provider=target;
-                    Message state_req=new Message(target, null, null);
-                    state_req.putHeader(this.id, new StateHeader(StateHeader.STATE_REQ));
+                    Message state_req=new Message(target).putHeader(this.id, new StateHeader(StateHeader.STATE_REQ));
                     if(log.isDebugEnabled())
                         log.debug(local_addr + ": asking " + target + " for state");
                     down_prot.down(new Event(Event.MSG, state_req));
@@ -376,8 +375,7 @@ public abstract class StreamingStateTransfer extends Protocol {
 
     protected void sendEof(Address requester) {
         try {
-            Message eof_msg=new Message(requester);
-            eof_msg.putHeader(getId(), new StateHeader(StateHeader.STATE_EOF));
+            Message eof_msg=new Message(requester).putHeader(getId(), new StateHeader(StateHeader.STATE_EOF));
             if(log.isTraceEnabled())
                 log.trace(local_addr + " --> EOF --> " + requester);
             down(new Event(Event.MSG, eof_msg));
@@ -389,8 +387,7 @@ public abstract class StreamingStateTransfer extends Protocol {
 
     protected void sendException(Address requester, Throwable exception) {
         try {
-            Message ex_msg=new Message(requester, null, exception);
-            ex_msg.putHeader(getId(), new StateHeader(StateHeader.STATE_EX));
+            Message ex_msg=new Message(requester, null, exception).putHeader(getId(), new StateHeader(StateHeader.STATE_EX));
             down(new Event(Event.MSG, ex_msg));
         }
         catch(Throwable t) {

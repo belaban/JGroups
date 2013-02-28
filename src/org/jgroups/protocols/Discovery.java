@@ -259,8 +259,10 @@ public abstract class Discovery extends Protocol {
 
         Collection<PhysicalAddress> cluster_members=fetchClusterMembers(cluster_name);
         if(cluster_members == null) {
-            // multicast msg
-            Message msg=new Message(null).setFlag(Message.OOB, Message.Flag.DONT_BUNDLE).putHeader(getId(), hdr);
+            // message needs to have DONT_BUNDLE flag: if A sends message M to B, and we need to fetch B's physical
+            // address, then the bundler thread blocks until the discovery request has returned. However, we cannot send
+            // the discovery *request* until the bundler thread has returned from sending M
+            Message msg=new Message(null).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE).putHeader(getId(), hdr);
             sendMcastDiscoveryRequest(msg);
         }
         else {
@@ -281,7 +283,9 @@ public abstract class Discovery extends Protocol {
                 for(final Address addr: cluster_members) {
                     if(addr.equals(physical_addr)) // no need to send the request to myself
                         continue;
-                    final Message msg=new Message(addr).setFlag(Message.OOB, Message.Flag.DONT_BUNDLE).putHeader(this.id, hdr);
+                    // the message needs to be DONT_BUNDLE, see explanation above
+                    final Message msg=new Message(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
+                      .putHeader(this.id, hdr);
                     if(log.isTraceEnabled())
                         log.trace(local_addr + ": sending discovery request to " + msg.getDest());
                     if(!sendDiscoveryRequestsInParallel()) {
@@ -634,9 +638,8 @@ public abstract class Discovery extends Protocol {
             data=new PingData(logical_addr, null, view_id, is_server, logical_name, physical_addrs);
         }
 
-        final Message rsp_msg=new Message(sender).setFlag(Message.OOB);
         final PingHeader rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, data);
-        rsp_msg.putHeader(this.id, rsp_hdr);
+        final Message rsp_msg=new Message(sender).setFlag(Message.Flag.INTERNAL).putHeader(this.id, rsp_hdr);
 
         if(stagger_timeout > 0) {
             int view_size=view != null? view.size() : 10;

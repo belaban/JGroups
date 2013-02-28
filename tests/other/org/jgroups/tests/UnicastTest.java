@@ -346,7 +346,7 @@ public class UnicastTest extends ReceiverAdapter {
                     buf=Util.objectToByteBuffer(val);
                     Message msg=new Message(destination, null, buf);
                     if(oob)
-                        msg.setFlag(Message.OOB);
+                        msg.setFlag(Message.Flag.OOB);
                     if(i > 0 && print > 0 && i % print == 0)
                         System.out.println("-- sent " + i);
                     channel.send(msg);

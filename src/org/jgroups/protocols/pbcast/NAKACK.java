@@ -581,7 +581,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         case Event.MSG:
             Message msg=(Message)evt.getArg();
-            if(msg.isFlagSet(Message.NO_RELIABILITY))
+            if(msg.isFlagSet(Message.Flag.NO_RELIABILITY))
                 break;
             NakAckHeader hdr=(NakAckHeader)msg.getHeader(this.id);
             if(hdr == null)
@@ -740,10 +740,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
-        if(added && msg.isFlagSet(Message.OOB)) {
+        if(added && msg.isFlagSet(Message.Flag.OOB)) {
             if(loopback)
                 msg=win.get(hdr.seqno); // we *have* to get a message, because loopback means we didn't add it to win !
-            if(msg != null && msg.isFlagSet(Message.OOB)) {
+            if(msg != null && msg.isFlagSet(Message.Flag.OOB)) {
                 if(msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED)) {
                     if(log.isTraceEnabled())
                         log.trace(new StringBuilder().append(local_addr).append(": delivering ").append(sender).append('#').append(hdr.seqno));
@@ -781,7 +781,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
                 for(final Message msg_to_deliver: msgs) {
                     // discard OOB msg if it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
-                    if(msg_to_deliver.isFlagSet(Message.OOB) && !msg_to_deliver.setTransientFlagIfAbsent(Message.OOB_DELIVERED))
+                    if(msg_to_deliver.isFlagSet(Message.Flag.OOB) && !msg_to_deliver.setTransientFlagIfAbsent(Message.OOB_DELIVERED))
                         continue;
 
                     //msg_to_deliver.removeHeader(getName()); // Changed by bela Jan 29 2003: not needed (see above)
@@ -1313,8 +1313,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     protected void retransmit(long first_seqno, long last_seqno, final Address sender, boolean multicast_xmit_request) {
-        NakAckHeader hdr;
-        Message retransmit_msg;
         Address dest=sender; // to whom do we send the XMIT request ?
 
         if(multicast_xmit_request || this.use_mcast_xmit_req) {
@@ -1331,9 +1329,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
 
-        hdr=NakAckHeader.createXmitRequestHeader(first_seqno, last_seqno, sender);
-        retransmit_msg=new Message(dest, null, null);
-        retransmit_msg.setFlag(Message.OOB);
+        NakAckHeader hdr=NakAckHeader.createXmitRequestHeader(first_seqno, last_seqno, sender);
+        Message retransmit_msg=new Message(dest).setFlag(Message.Flag.OOB);
         if(log.isTraceEnabled())
             log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + dest);
         retransmit_msg.putHeader(this.id, hdr);

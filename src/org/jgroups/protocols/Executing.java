@@ -1,43 +1,6 @@
 package org.jgroups.protocols;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.Serializable;
-import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Header;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
@@ -47,6 +10,16 @@ import org.jgroups.blocks.executor.ExecutorNotification;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.*;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This is the base protocol used for executions.
@@ -901,10 +874,9 @@ abstract public class Executing extends Protocol {
     
     protected void sendRequest(Address dest, Type type, long requestId, Object object) {
         Request req=new Request(type, object, requestId);
-        Message msg=new Message(dest, null, req);
-        msg.putHeader(id, new ExecutorHeader());
+        Message msg=new Message(dest, req).putHeader(id, new ExecutorHeader());
         if(bypass_bundling)
-            msg.setFlag(Message.DONT_BUNDLE);
+            msg.setFlag(Message.Flag.DONT_BUNDLE);
         if(log.isTraceEnabled())
             log.trace("[" + local_addr + "] --> [" + (dest == null? "ALL" : dest) + "] " + req);
         try {
@@ -918,10 +890,9 @@ abstract public class Executing extends Protocol {
     protected void sendThreadRequest(Address dest, long threadId, Type type, long requestId, 
         Object object) {
         RequestWithThread req=new RequestWithThread(type, object, requestId, threadId);
-        Message msg=new Message(dest, null, req);
-        msg.putHeader(id, new ExecutorHeader());
+        Message msg=new Message(dest, req).putHeader(id, new ExecutorHeader());
         if(bypass_bundling)
-            msg.setFlag(Message.DONT_BUNDLE);
+            msg.setFlag(Message.Flag.DONT_BUNDLE);
         if(log.isTraceEnabled())
             log.trace("[" + local_addr + "] --> [" + (dest == null? "ALL" : dest) + "] " + req);
         try {

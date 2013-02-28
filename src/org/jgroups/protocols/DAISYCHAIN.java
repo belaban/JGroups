@@ -101,7 +101,7 @@ public class DAISYCHAIN extends Protocol {
                     if(msg.getSrc() == null)
                         msg.setSrc(local_addr);
 
-                    Executor pool=msg.isFlagSet(Message.OOB)? oob_pool : default_pool;
+                    Executor pool=msg.isFlagSet(Message.Flag.OOB)? oob_pool : default_pool;
                     pool.execute(new Runnable() {
                         public void run() {
                             up_prot.up(evt);

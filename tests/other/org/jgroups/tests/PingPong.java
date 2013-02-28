@@ -41,7 +41,7 @@ public class PingPong extends ReceiverAdapter {
                 dest=(Address)Util.pickRandomElement(members);
             
             Message msg=new Message(dest, null, PING_REQ);
-            msg.setFlag(Message.DONT_BUNDLE, Message.NO_FC);
+            msg.setFlag(Message.Flag.DONT_BUNDLE, Message.NO_FC);
             start=System.nanoTime();
             ch.send(msg);
         }
@@ -58,7 +58,7 @@ public class PingPong extends ReceiverAdapter {
         switch(type) {
             case PING:
                 final Message rsp=new Message(msg.getSrc(), null, PONG_RSP);
-                rsp.setFlag(Message.DONT_BUNDLE, Message.NO_FC);
+                rsp.setFlag(Message.Flag.DONT_BUNDLE, Message.NO_FC);
                 try {
                     ch.send(rsp);
                 }

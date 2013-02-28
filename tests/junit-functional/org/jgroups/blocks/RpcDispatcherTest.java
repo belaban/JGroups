@@ -299,7 +299,12 @@ public class RpcDispatcherTest {
         assert !future.isDone();
         assert !future.isCancelled();
         assert !listener.isDone();
-        Util.sleep(2000);
+        for(int i=0; i < 10; i++) {
+            if(listener.isDone())
+                break;
+            else
+                Util.sleep(1000);
+        }
         assert listener.isDone();
         RspList<Long> result=future.get(1L, TimeUnit.MILLISECONDS);
         System.out.println("result:\n" + result);

@@ -241,10 +241,9 @@ public class RSVP extends Protocol {
 
     protected void sendResponse(Address dest, short id) {
         try {
-            Message msg=new Message(dest);
-            msg.setFlag(Message.Flag.RSVP, Message.Flag.DONT_BUNDLE);
             RsvpHeader hdr=new RsvpHeader(RsvpHeader.RSP,id);
-            msg.putHeader(this.id, hdr);
+            Message msg=new Message(dest).setFlag(Message.Flag.RSVP, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
+              .putHeader(this.id, hdr);
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": " + hdr.typeToString() + " --> " + dest);
             down_prot.down(new Event(Event.MSG, msg));
@@ -286,9 +285,8 @@ public class RSVP extends Protocol {
                         cancelTask();
                         return;
                     }
-                    Message msg=new Message(target).setFlag(Message.Flag.RSVP);
                     RsvpHeader hdr=new RsvpHeader(RsvpHeader.REQ_ONLY, rsvp_id);
-                    msg.putHeader(id, hdr);
+                    Message msg=new Message(target).setFlag(Message.Flag.RSVP).putHeader(id,hdr);
                     if(log.isTraceEnabled())
                         log.trace(local_addr + ": " + hdr.typeToString() + " --> " + target);
                     down_prot.down(new Event(Event.MSG, msg));

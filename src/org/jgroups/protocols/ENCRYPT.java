@@ -842,9 +842,8 @@ public class ENCRYPT extends Protocol {
 
         //encrypt current secret key
         byte[] encryptedKey=tmp.doFinal(secret.getEncoded());
-        newMsg=new Message(source, local_addr, encryptedKey);
-
-        newMsg.putHeader(this.id, new EncryptHeader(EncryptHeader.SECRETKEY, getSymVersion()));
+        newMsg=new Message(source, local_addr, encryptedKey)
+          .putHeader(this.id, new EncryptHeader(EncryptHeader.SECRETKEY, getSymVersion()));
 
         if(log.isDebugEnabled())
             log.debug(" Sending version " + getSymVersion() + " encoded key to client");
@@ -860,9 +859,8 @@ public class ENCRYPT extends Protocol {
 
         // send client's public key to server and request
         // server's public key
-        Message newMsg=new Message(keyServerAddr, local_addr, Kpair.getPublic().getEncoded());
-
-        newMsg.putHeader(this.id,new EncryptHeader(EncryptHeader.KEY_REQUEST,getSymVersion()));
+        Message newMsg=new Message(keyServerAddr, local_addr, Kpair.getPublic().getEncoded())
+          .putHeader(this.id,new EncryptHeader(EncryptHeader.KEY_REQUEST,getSymVersion()));
         passItDown(new Event(Event.MSG,newMsg));
         return newMsg;
     }

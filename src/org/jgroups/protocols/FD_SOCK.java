@@ -256,9 +256,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     case FdHeader.GET_CACHE:
                         Address sender=msg.getSrc(); // guaranteed to be non-null
                         hdr=new FdHeader(FdHeader.GET_CACHE_RSP,new HashMap<Address,IpAddress>(cache));
-                        msg=new Message(sender, null, null);
-                        msg.setFlag(Message.OOB);
-                        msg.putHeader(this.id, hdr);
+                        msg=new Message(sender).setFlag(Message.Flag.INTERNAL).putHeader(this.id, hdr);
                         down_prot.down(new Event(Event.MSG, msg));
                         break;
 
@@ -656,9 +654,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     return;
                 }
                 hdr=new FdHeader(FdHeader.GET_CACHE);
-                msg=new Message(coord, null, null);
-                msg.setFlag(Message.OOB);
-                msg.putHeader(this.id, hdr);
+                msg=new Message(coord).setFlag(Message.Flag.INTERNAL).putHeader(this.id, hdr);
                 down_prot.down(new Event(Event.MSG, msg));
                 result=get_cache_promise.getResult(get_cache_timeout);
                 if(result != null) {
@@ -694,9 +690,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         hdr=new FdHeader(FdHeader.SUSPECT);
         hdr.mbrs=new HashSet<Address>(1);
         hdr.mbrs.add(suspected_mbr);
-        suspect_msg=new Message();
-        suspect_msg.setFlag(Message.OOB);
-        suspect_msg.putHeader(this.id, hdr);
+        suspect_msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(this.id, hdr);
         down_prot.down(new Event(Event.MSG, suspect_msg));
 
         // 2. Add to broadcast task and start latter (if not yet running). The task will end when
@@ -716,8 +710,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      it will be unicast back to the requester
      */
     void sendIHaveSockMessage(Address dst, Address mbr, IpAddress addr) {
-        Message msg=new Message(dst, null, null);
-        msg.setFlag(Message.OOB);
+        Message msg=new Message(dst).setFlag(Message.Flag.INTERNAL);
         FdHeader hdr=new FdHeader(FdHeader.I_HAVE_SOCK);
         hdr.mbr=mbr;
         hdr.sock_addr=addr;
@@ -746,8 +739,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         // 2. Try to get the server socket address from mbr
         ping_addr_promise.reset();
-        ping_addr_req=new Message(mbr, null, null); // unicast
-        ping_addr_req.setFlag(Message.OOB);
+        ping_addr_req=new Message(mbr).setFlag(Message.Flag.INTERNAL);
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
         ping_addr_req.putHeader(this.id, hdr);
@@ -760,8 +752,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         if(!isPingerThreadRunning()) return null;
 
         // 3. Try to get the server socket address from all members
-        ping_addr_req=new Message(null); // multicast
-        ping_addr_req.setFlag(Message.OOB);
+        ping_addr_req=new Message(null).setFlag(Message.Flag.INTERNAL);
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
         ping_addr_req.putHeader(this.id, hdr);
@@ -1224,9 +1215,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 hdr=new FdHeader(FdHeader.SUSPECT);
                 hdr.mbrs=new HashSet<Address>(suspects);
             }
-            suspect_msg=new Message();       // mcast SUSPECT to all members
-            suspect_msg.setFlag(Message.OOB);
-            suspect_msg.putHeader(id, hdr);
+            suspect_msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(id, hdr); // mcast SUSPECT to all members
             down_prot.down(new Event(Event.MSG, suspect_msg));
             if(log.isTraceEnabled()) log.trace("task done");
         }

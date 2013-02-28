@@ -551,10 +551,9 @@ public class RELAY2 extends Protocol {
      * @param target_site
      */
     protected void sendSiteUnreachableTo(Address dest, short target_site) {
-        Message msg=new Message(dest).setFlag(Message.Flag.OOB);
-        msg.setSrc(new SiteUUID((UUID)local_addr, UUID.get(local_addr), site_id));
-        Relay2Header hdr=new Relay2Header(Relay2Header.SITE_UNREACHABLE, new SiteMaster(target_site), null);
-        msg.putHeader(id, hdr);
+        Message msg=new Message(dest).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+          .src(new SiteUUID((UUID)local_addr, UUID.get(local_addr), site_id))
+          .putHeader(id, new Relay2Header(Relay2Header.SITE_UNREACHABLE, new SiteMaster(target_site), null));
         down_prot.down(new Event(Event.MSG, msg));
     }
 

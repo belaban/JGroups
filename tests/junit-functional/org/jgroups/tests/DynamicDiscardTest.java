@@ -78,7 +78,7 @@ public class DynamicDiscardTest {
 
         // send a RSVP message
         Message msg = new Message(null, "message2");
-        msg.setFlag(Message.RSVP, Message.OOB);
+        msg.setFlag(Message.RSVP, Message.Flag.OOB);
         RspList<Object> rsps = dispatchers[0].castMessage(null, msg, RequestOptions.SYNC().setTimeout(5000));
 
         Rsp<Object> objectRsp = rsps.get(channels[1].getAddress());

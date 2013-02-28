@@ -565,7 +565,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /** Sends a retransmit request to the given sender */
     protected void retransmit(SeqnoList missing, Address sender) {
-        Message xmit_msg=new Message(sender, missing).setFlag(Message.OOB).putHeader(id, Header.createXmitReqHeader());
+        Message xmit_msg=new Message(sender, missing).setFlag(Message.Flag.OOB).putHeader(id, Header.createXmitReqHeader());
         if(log.isTraceEnabled())
             log.trace(local_addr + ": sending XMIT_REQ (" + missing + ") to " + sender);
         down_prot.down(new Event(Event.MSG, xmit_msg));
@@ -623,7 +623,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
-        if(msg.isFlagSet(Message.OOB) && added) {
+        if(msg.isFlagSet(Message.Flag.OOB) && added) {
             try {
                 up_prot.up(evt);
             }
@@ -666,7 +666,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
                 // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
                 // http://jira.jboss.com/jira/browse/JGRP-377
-                if(msg.isFlagSet(Message.OOB) && msg_added) {
+                if(msg.isFlagSet(Message.Flag.OOB) && msg_added) {
                     try {
                         up_prot.up(new Event(Event.MSG, msg));
                     }
@@ -719,7 +719,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 MessageBatch batch=new MessageBatch(local_addr, sender, null, false, list);
                 for(Message msg_to_deliver: batch) {
                     // discard OOB msg: it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
-                    if(msg_to_deliver.isFlagSet(Message.OOB))
+                    if(msg_to_deliver.isFlagSet(Message.Flag.OOB))
                         batch.remove(msg_to_deliver);
                 }
                 if(batch.isEmpty())
@@ -933,7 +933,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected void sendAck(Address dst, long seqno, short conn_id) {
         if(!running) // if we are disconnected, then don't send any acks which throw exceptions on shutdown
             return;
-        Message ack=new Message(dst).putHeader(this.id, Header.createAckHeader(seqno, conn_id));
+        Message ack=new Message(dst).setFlag(Message.Flag.INTERNAL).putHeader(this.id, Header.createAckHeader(seqno, conn_id));
         if(log.isTraceEnabled())
             log.trace(new StringBuilder().append(local_addr).append(" --> ACK(").append(dst).
               append(": #").append(seqno).append(')'));
@@ -967,10 +967,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     protected void sendRequestForFirstSeqno(Address dest, long seqno_received) {
-        Message msg=new Message(dest);
-        msg.setFlag(Message.OOB);
-        Header hdr=Header.createSendFirstSeqnoHeader(seqno_received);
-        msg.putHeader(this.id, hdr);
+        Message msg=new Message(dest).setFlag(Message.Flag.OOB)
+          .putHeader(this.id, Header.createSendFirstSeqnoHeader(seqno_received));
+
         if(log.isTraceEnabled())
             log.trace(local_addr + " --> SEND_FIRST_SEQNO(" + dest + "," + seqno_received + ")");
         down_prot.down(new Event(Event.MSG, msg));

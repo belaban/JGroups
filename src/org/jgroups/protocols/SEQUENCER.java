@@ -144,7 +144,7 @@ public class SEQUENCER extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                if(msg.getDest() != null || msg.isFlagSet(Message.NO_TOTAL_ORDER) || msg.isFlagSet(Message.OOB))
+                if(msg.getDest() != null || msg.isFlagSet(Message.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
                     break;
 
                 if(msg.getSrc() == null)
@@ -202,7 +202,7 @@ public class SEQUENCER extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 msg=(Message)evt.getArg();
-                if(msg.isFlagSet(Message.NO_TOTAL_ORDER) || msg.isFlagSet(Message.OOB))
+                if(msg.isFlagSet(Message.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
                     break;
                 hdr=(SequencerHeader)msg.getHeader(this.id);
                 if(hdr == null)
@@ -255,7 +255,7 @@ public class SEQUENCER extends Protocol {
 
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
-            if(msg.isFlagSet(Message.NO_TOTAL_ORDER) || msg.isFlagSet(Message.OOB) || msg.getHeader(id) == null)
+            if(msg.isFlagSet(Message.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB) || msg.getHeader(id) == null)
                 continue;
             batch.remove(msg);
 
@@ -349,9 +349,8 @@ public class SEQUENCER extends Protocol {
                 Long key=entry.getKey();
                 byte[] val=entry.getValue();
 
-                Message forward_msg=new Message(null, val);
                 SequencerHeader hdr=new SequencerHeader(SequencerHeader.WRAPPED_BCAST, key);
-                forward_msg.putHeader(this.id,hdr);
+                Message forward_msg=new Message(null, val).putHeader(this.id, hdr);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": flushing (broadcasting) " + local_addr + "::" + key);
                 down_prot.down(new Event(Event.MSG, forward_msg));
@@ -376,10 +375,8 @@ public class SEQUENCER extends Protocol {
             byte[] val=entry.getValue();
 
             while(flushing && running && !forward_table.isEmpty()) {
-                Message forward_msg=new Message(coord, val);
                 SequencerHeader hdr=new SequencerHeader(SequencerHeader.FLUSH, key);
-                forward_msg.putHeader(this.id,hdr);
-                forward_msg.setFlag(Message.Flag.DONT_BUNDLE);
+                Message forward_msg=new Message(coord, val).putHeader(this.id,hdr).setFlag(Message.Flag.DONT_BUNDLE);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": flushing (forwarding) " + local_addr + "::" + key + " to coord " + coord);
                 ack_promise.reset();
@@ -426,10 +423,9 @@ public class SEQUENCER extends Protocol {
         Address target=coord;
         if(target == null)
             return;
-        Message forward_msg=new Message(target, marshalled_msg);
         byte type=flush? SequencerHeader.FLUSH : SequencerHeader.FORWARD;
         SequencerHeader hdr=new SequencerHeader(type, seqno);
-        forward_msg.putHeader(this.id,hdr);
+        Message forward_msg=new Message(target, marshalled_msg).putHeader(this.id,hdr);
         down_prot.down(new Event(Event.MSG, forward_msg));
         forwarded_msgs++;
     }
@@ -441,9 +437,8 @@ public class SEQUENCER extends Protocol {
             bcast_msg=msg; // no need to add a header, message already has one
         }
         else {
-            bcast_msg=new Message(null, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             SequencerHeader new_hdr=new SequencerHeader(SequencerHeader.WRAPPED_BCAST, seqno);
-            bcast_msg.putHeader(this.id, new_hdr);
+            bcast_msg=new Message(null, msg.getRawBuffer(), msg.getOffset(), msg.getLength()).putHeader(this.id, new_hdr);
             if(resend) {
                 new_hdr.flush_ack=true;
                 bcast_msg.setFlag(Message.Flag.DONT_BUNDLE);

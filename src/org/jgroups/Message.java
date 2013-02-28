@@ -62,8 +62,9 @@ public class Message implements Streamable {
         SCOPED(        (short)(1 << 3)),    // when a message has a scope
         NO_RELIABILITY((short)(1 << 4)),    // bypass UNICAST(2) and NAKACK
         NO_TOTAL_ORDER((short)(1 << 5)),    // bypass total order (e.g. SEQUENCER)
-        NO_RELAY((short)      (1 << 6)),    // bypass relaying (RELAY)
-        RSVP((short)          (1 << 7));    // ack of a multicast (https://issues.jboss.org/browse/JGRP-1389)
+        NO_RELAY(      (short)(1 << 6)),    // bypass relaying (RELAY)
+        RSVP(          (short)(1 << 7)),    // ack of a multicast (https://issues.jboss.org/browse/JGRP-1389)
+        INTERNAL(      (short)(1 << 8));    // for internal use by JGroups only, don't use !
 
         final short value;
         Flag(short value) {this.value=value;}
@@ -71,14 +72,14 @@ public class Message implements Streamable {
         public short value() {return value;}
     }
 
-    public static final Flag OOB=Flag.OOB;
-    public static final Flag DONT_BUNDLE=Flag.DONT_BUNDLE;
-    public static final Flag NO_FC=Flag.NO_FC;
-    public static final Flag SCOPED=Flag.SCOPED;
-    public static final Flag NO_RELIABILITY=Flag.NO_RELIABILITY;
-    public static final Flag NO_TOTAL_ORDER=Flag.NO_TOTAL_ORDER;
-    public static final Flag NO_RELAY=Flag.NO_RELAY;
-    public static final Flag RSVP=Flag.RSVP;
+    @Deprecated public static final Flag OOB=Flag.OOB;
+    @Deprecated public static final Flag DONT_BUNDLE=Flag.DONT_BUNDLE;
+    @Deprecated public static final Flag NO_FC=Flag.NO_FC;
+    @Deprecated public static final Flag SCOPED=Flag.SCOPED;
+    @Deprecated public static final Flag NO_RELIABILITY=Flag.NO_RELIABILITY;
+    @Deprecated public static final Flag NO_TOTAL_ORDER=Flag.NO_TOTAL_ORDER;
+    @Deprecated public static final Flag NO_RELAY=Flag.NO_RELAY;
+    @Deprecated public static final Flag RSVP=Flag.RSVP;
 
 
 
@@ -91,7 +92,8 @@ public class Message implements Streamable {
 
         public short value() {return value;}
     }
-    
+
+    @Deprecated
     public static final TransientFlag OOB_DELIVERED=TransientFlag.OOB_DELIVERED; // OOB which has already been delivered up the stack
 
 
@@ -837,58 +839,16 @@ public class Message implements Streamable {
     public static String flagsToString(short flags) {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        if(isFlagSet(flags, Flag.OOB)) {
-            first=false;
-            sb.append("OOB");
-        }
-        if(isFlagSet(flags, Flag.DONT_BUNDLE)) {
-            if(!first)
-                sb.append("|");
-            else
-                first=false;
-            sb.append("DONT_BUNDLE");
-        }
-        if(isFlagSet(flags, Flag.NO_FC)) {
-            if(!first)
-                sb.append("|");
-            else
-                first=false;
-            sb.append("NO_FC");
-        }
-        if(isFlagSet(flags, Flag.SCOPED)) {
-            if(!first)
-                sb.append("|");
-            else
-                first=false;
-            sb.append("SCOPED");
-        }
-        if(isFlagSet(flags, Flag.NO_RELIABILITY)) {
-            if(!first)
-                sb.append("|");
-            else
-                first=false;
-            sb.append("NO_RELIABILITY");
-        }
-        if(isFlagSet(flags, Flag.NO_TOTAL_ORDER)) {
-            if(!first)
-                sb.append("|");
-            else
-                first=false;
-            sb.append("NO_TOTAL_ORDER");
-        }
-        if(isFlagSet(flags, Flag.NO_RELAY)) {
-            if(!first)
-                sb.append("|");
-            else
-                first=false;
-            sb.append("NO_RELAY");
-        }
-        if(isFlagSet(flags, Flag.RSVP)) {
-            if(!first)
-                sb.append("|");
-            else
-                first=false;
-            sb.append("RSVP");
+
+        Flag[] all_flags=Flag.values();
+        for(Flag flag: all_flags) {
+            if(isFlagSet(flags, flag)) {
+                if(first)
+                    first=false;
+                else
+                    sb.append("|");
+                sb.append(flag);
+            }
         }
         return sb.toString();
     }
@@ -896,8 +856,18 @@ public class Message implements Streamable {
 
     public String transientFlagsToString() {
         StringBuilder sb=new StringBuilder();
-        if(isTransientFlagSet(TransientFlag.OOB_DELIVERED))
-            sb.append("OOB_DELIVERED");
+        boolean first=true;
+
+        TransientFlag[] all_flags=TransientFlag.values();
+        for(TransientFlag flag: all_flags) {
+            if(isTransientFlagSet(flag)) {
+                if(first)
+                    first=false;
+                else
+                    sb.append("|");
+                sb.append(flag);
+            }
+        }
         return sb.toString();
     }
 

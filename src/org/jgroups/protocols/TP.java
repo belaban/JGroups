@@ -53,7 +53,6 @@ public abstract class TP extends Protocol {
 
     protected static final byte LIST=1; // we have a list of messages rather than a single message when set
     protected static final byte MULTICAST=2; // message is a multicast (versus a unicast) message when set
-    protected static final byte OOB=4; // message has OOB flag set (Message.OOB)
 
     protected static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
 
@@ -158,12 +157,12 @@ public abstract class TP extends Protocol {
     @Property(name="oob_thread_pool.queue_enabled", description="Use queue to enqueue incoming OOB messages")
     protected boolean oob_thread_pool_queue_enabled=true;
 
-    @Property(name="oob_thread_pool.queue_max_size",description="Maximum queue size for incoming OOB messages. Default is 500")
+    @Property(name="oob_thread_pool.queue_max_size",description="Maximum queue size for incoming OOB messages")
     protected int oob_thread_pool_queue_max_size=500;
 
     @Property(name="oob_thread_pool.rejection_policy",
-              description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run. Default is Discard")
-    String oob_thread_pool_rejection_policy="discard";
+              description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
+    protected String oob_thread_pool_rejection_policy="discard";
 
     protected int thread_pool_min_threads=2;
 
@@ -171,19 +170,45 @@ public abstract class TP extends Protocol {
 
     protected long thread_pool_keep_alive_time=30000;
 
-    @Property(name="thread_pool.enabled",description="Switch for enabling thread pool for regular messages. Default true")
+    @Property(name="thread_pool.enabled",description="Switch for enabling thread pool for regular messages")
     protected boolean thread_pool_enabled=true;
 
-    @Property(name="thread_pool.queue_enabled", description="Use queue to enqueue incoming regular messages. Default is true")
+    @Property(name="thread_pool.queue_enabled", description="Queue to enqueue incoming regular messages")
     protected boolean thread_pool_queue_enabled=true;
 
 
-    @Property(name="thread_pool.queue_max_size", description="Maximum queue size for incoming OOB messages. Default is 500")
+    @Property(name="thread_pool.queue_max_size", description="Maximum queue size for incoming OOB messages")
     protected int thread_pool_queue_max_size=500;
 
     @Property(name="thread_pool.rejection_policy",
               description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
     protected String thread_pool_rejection_policy="Discard";
+
+
+    @Property(name="internal_thread_pool.enabled",description="Switch for enabling thread pool for internal messages",
+              writable=false)
+    protected boolean internal_thread_pool_enabled=true;
+
+    @Property(name="internal_thread_pool.min_threads",description="Minimum thread pool size for the internal thread pool")
+    protected int internal_thread_pool_min_threads=2;
+
+    @Property(name="internal_thread_pool.max_threads",description="Maximum thread pool size for the internal thread pool")
+    protected int internal_thread_pool_max_threads=4;
+
+    @Property(name="internal_thread_pool.keep_alive_time", description="Timeout in ms to remove idle threads from the internal pool")
+    protected long internal_thread_pool_keep_alive_time=30000;
+
+    @Property(name="internal_thread_pool.queue_enabled", description="Queue to enqueue incoming internal messages")
+    protected boolean internal_thread_pool_queue_enabled=true;
+
+    @Property(name="internal_thread_pool.queue_max_size",description="Maximum queue size for incoming internal messages")
+    protected int internal_thread_pool_queue_max_size=500;
+
+    @Property(name="internal_thread_pool.rejection_policy",
+              description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
+    protected String internal_thread_pool_rejection_policy="discard";
+
+
 
     @Property(description="Type of timer to be used. Valid values are \"old\" (DefaultTimeScheduler, used up to 2.10), " +
       "\"new\" or \"new2\" (TimeScheduler2), \"new3\" (TimeScheduler3) and \"wheel\". Note that this property " +
@@ -443,10 +468,13 @@ public abstract class TP extends Protocol {
     protected String channel_name=null;
 
     @ManagedAttribute(description="Number of OOB messages received")
-    protected long num_oob_msgs_received=0;
+    protected long num_oob_msgs_received;
 
     @ManagedAttribute(description="Number of regular messages received")
-    protected long num_incoming_msgs_received=0;
+    protected long num_incoming_msgs_received;
+
+    @ManagedAttribute(description="Number of internal messages received")
+    protected long num_internal_msgs_received;
 
     @ManagedAttribute(description="Class of the timer implementation")
     public String getTimerClass() {
@@ -498,10 +526,10 @@ public abstract class TP extends Protocol {
     protected Executor oob_thread_pool;
 
     /** Factory which is used by oob_thread_pool */
-    protected ThreadFactory oob_thread_factory=null;
+    protected ThreadFactory oob_thread_factory;
 
     /** Used if oob_thread_pool is a ThreadPoolExecutor and oob_thread_pool_queue_enabled is true */
-    protected BlockingQueue<Runnable> oob_thread_pool_queue=null;
+    protected BlockingQueue<Runnable> oob_thread_pool_queue;
 
 
     // ================================== Regular thread pool ======================
@@ -510,10 +538,18 @@ public abstract class TP extends Protocol {
     protected Executor thread_pool;
 
     /** Factory which is used by oob_thread_pool */
-    protected ThreadFactory default_thread_factory=null;
+    protected ThreadFactory default_thread_factory;
 
     /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
-    protected BlockingQueue<Runnable> thread_pool_queue=null;
+    protected BlockingQueue<Runnable> thread_pool_queue;
+
+    // ================================== Internal thread pool ======================
+
+    /** The thread pool which handles JGroups internal messages (Flag.INTERNAL)*/
+    protected Executor                internal_thread_pool;
+
+    /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
+    protected BlockingQueue<Runnable> internal_thread_pool_queue;
 
     // ================================== Timer thread pool  =========================
     protected TimeScheduler timer;
@@ -608,7 +644,7 @@ public abstract class TP extends Protocol {
 
     public void resetStats() {
         num_msgs_sent=num_msgs_received=num_bytes_sent=num_bytes_received=0;
-        num_oob_msgs_received=num_incoming_msgs_received=0;
+        num_oob_msgs_received=num_incoming_msgs_received=num_internal_msgs_received=0;
     }
 
     public void registerProbeHandler(DiagnosticsHandler.ProbeHandler handler) {
@@ -800,6 +836,26 @@ public abstract class TP extends Protocol {
         return thread_pool_queue_max_size;
     }
 
+
+    @ManagedAttribute(description="Current number of threads in the internal thread pool")
+    public int getInternalPoolSize() {
+        return internal_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)internal_thread_pool).getPoolSize() : 0;
+    }
+
+    public long getInternalMessages() {
+        return num_internal_msgs_received;
+    }
+
+    @ManagedAttribute(description="Number of messages in the internal thread pool's queue")
+    public int getInternalQueueSize() {
+        return internal_thread_pool_queue != null? internal_thread_pool_queue.size() : 0;
+    }
+
+    public int getInternalMaxQueueSize() {
+        return internal_thread_pool_queue_max_size;
+    }
+
+
     @ManagedAttribute(name="timer_tasks",description="Number of timer tasks queued up for execution")
     public int getNumTimerTasks() {
         return timer != null? timer.size() : -1;
@@ -939,6 +995,7 @@ public abstract class TP extends Protocol {
 
         Util.verifyRejectionPolicy(oob_thread_pool_rejection_policy);
         Util.verifyRejectionPolicy(thread_pool_rejection_policy);
+        Util.verifyRejectionPolicy(internal_thread_pool_rejection_policy);
 
         // ========================================== OOB thread pool ==============================
 
@@ -973,6 +1030,23 @@ public abstract class TP extends Protocol {
                 thread_pool=new DirectExecutor();
             }
         }
+
+
+        // ========================================== Internal thread pool ==============================
+
+        if(internal_thread_pool == null
+          || (internal_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)internal_thread_pool).isShutdown())) {
+            if(internal_thread_pool_enabled) {
+                if(internal_thread_pool_queue_enabled)
+                    internal_thread_pool_queue=new LinkedBlockingQueue<Runnable>(internal_thread_pool_queue_max_size);
+                else
+                    internal_thread_pool_queue=new SynchronousQueue<Runnable>();
+                internal_thread_pool=createThreadPool(internal_thread_pool_min_threads, internal_thread_pool_max_threads, internal_thread_pool_keep_alive_time,
+                                                 internal_thread_pool_rejection_policy, internal_thread_pool_queue, oob_thread_factory);
+            }
+            // if the internal thread pool is disabled, we won't create it (not even a DirectExecutor)
+        }
+
 
         Map<String, Object> m=new HashMap<String, Object>(2);
         if(bind_addr != null)
@@ -1019,6 +1093,9 @@ public abstract class TP extends Protocol {
 
         if(thread_pool instanceof ThreadPoolExecutor)
             shutdownThreadPool(thread_pool);
+
+        if(internal_thread_pool instanceof ThreadPoolExecutor)
+            shutdownThreadPool(internal_thread_pool);
     }
 
     /**
@@ -1187,7 +1264,9 @@ public abstract class TP extends Protocol {
             final String cluster_name=hdr.channel_name;
 
             // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
-            Executor pool=msg.isFlagSet(Message.OOB)? oob_thread_pool : thread_pool;
+            boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
+            Executor pool=internal && internal_thread_pool != null? internal_thread_pool
+              : internal || msg.isFlagSet(Message.Flag.OOB)? oob_thread_pool : thread_pool;
             pool.execute(new Runnable() {
                 public void run() {
                     passMessageUp(copy, cluster_name, false, multicast, false);
@@ -1336,24 +1415,34 @@ public abstract class TP extends Protocol {
 
             if(is_message_list) { // used if message bundling is enabled
                 final MessageBatch[] batches=readMessageBatch(dis, multicast);
-                final MessageBatch batch=batches[0], oob_batch=batches[1];
+                final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch=batches[2];
 
                 if(oob_batch != null) {
                     num_oob_msgs_received+=oob_batch.size();
                     oob_thread_pool.execute(new BatchHandler(oob_batch));
                 }
-
                 if(batch != null) {
                     num_incoming_msgs_received+=batch.size();
                     thread_pool.execute(new BatchHandler(batch));
                 }
+                if(internal_batch != null) {
+                    num_internal_msgs_received+=internal_batch.size();
+                    Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
+                    pool.execute(new BatchHandler(internal_batch));
+                }
             }
             else {
                 Message msg=readMessage(dis);
-                boolean is_oob=msg.isFlagSet(Message.Flag.OOB);
-                if(is_oob) num_oob_msgs_received++;
-                else       num_incoming_msgs_received++;
-                Executor pool=is_oob? oob_thread_pool : thread_pool;
+                if(msg.isFlagSet(Message.Flag.INTERNAL))
+                    num_internal_msgs_received++;
+                else if(msg.isFlagSet(Message.Flag.OOB))
+                    num_oob_msgs_received++;
+                else
+                    num_incoming_msgs_received++;
+
+                boolean internal=msg.isFlagSet(Message.Flag.INTERNAL); // use internal pool or OOB (if intrenal pool is null)
+                Executor pool=internal && internal_thread_pool != null? internal_thread_pool
+                  : internal || msg.isFlagSet(Message.Flag.OOB)? oob_thread_pool : thread_pool;
                 TpHeader hdr=(TpHeader)msg.getHeader(id);
                 String cluster_name=hdr.channel_name;
                 pool.execute(new MyHandler(msg, cluster_name, multicast));
@@ -1442,7 +1531,7 @@ public abstract class TP extends Protocol {
     /** Serializes and sends a message. This method is not reentrant */
     protected void send(Message msg, Address dest, boolean multicast) throws Exception {
         // bundle all messages except when tagged with DONT_BUNDLE
-        if(!msg.isFlagSet(Message.DONT_BUNDLE)) {
+        if(!msg.isFlagSet(Message.Flag.DONT_BUNDLE)) {
             bundler.send(msg);
             return;
         }
@@ -1535,8 +1624,6 @@ public abstract class TP extends Protocol {
         dos.writeShort(Version.version); // write the version
         if(multicast)
             flags+=MULTICAST;
-        if(msg.isFlagSet(Message.OOB))
-            flags+=OOB;
         dos.writeByte(flags);
         msg.writeTo(dos);
     }
@@ -1617,13 +1704,14 @@ public abstract class TP extends Protocol {
     }
 
     /**
-     * Reads a list of messages into 2 MessageBatches: a regular one and an OOB one
+     * Reads a list of messages into 3 MessageBatches: a regular, an OOB and an internal one
      * @param in
-     * @return an array of 2 MessageBatches, the regular is at index 0 and the OOB at index 1 (either can be null)
+     * @return an array of 2 MessageBatches, the regular is at index 0 and the OOB at index 1
+     * and the internal at index 2 (either can be null)
      * @throws Exception
      */
     public static MessageBatch[] readMessageBatch(DataInputStream in, boolean multicast) throws Exception {
-        MessageBatch[] mbs=new MessageBatch[2];
+        MessageBatch[] batches=new MessageBatch[3]; // [0]: reg, [1]: OOB, [2]: internal
         Address dest=Util.readAddress(in);
         Address src=Util.readAddress(in);
         String cluster_name=Util.readString(in);
@@ -1635,18 +1723,23 @@ public abstract class TP extends Protocol {
             msg.setDest(dest);
             if(msg.getSrc() == null)
                 msg.setSrc(src);
-            if(msg.isFlagSet(Message.Flag.OOB)) {
-                if(mbs[1] == null)
-                    mbs[1]=new MessageBatch(dest, src, cluster_name, multicast, MessageBatch.Mode.OOB, len);
-                mbs[1].add(msg);
+            if(msg.isFlagSet(Message.Flag.INTERNAL)) {
+                if(batches[2] == null)
+                    batches[2]=new MessageBatch(dest, src, cluster_name, multicast, MessageBatch.Mode.INTERNAL, len);
+                batches[2].add(msg);
+            }
+            else if(msg.isFlagSet(Message.Flag.OOB)) {
+                if(batches[1] == null)
+                    batches[1]=new MessageBatch(dest, src, cluster_name, multicast, MessageBatch.Mode.OOB, len);
+                batches[1].add(msg);
             }
             else {
-                if(mbs[0] == null)
-                    mbs[0]=new MessageBatch(dest, src, cluster_name, multicast, MessageBatch.Mode.REG, len);
-                mbs[0].add(msg);
+                if(batches[0] == null)
+                    batches[0]=new MessageBatch(dest, src, cluster_name, multicast, MessageBatch.Mode.REG, len);
+                batches[0].add(msg);
             }
         }
-        return mbs;
+        return batches;
     }
 
 

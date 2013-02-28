@@ -342,8 +342,7 @@ public class STOMP extends Protocol implements Runnable {
 
     protected void broadcastEndpoint() {
         if(endpoint != null) {
-            Message msg=new Message();
-            msg.putHeader(id, StompHeader.createHeader(StompHeader.Type.ENDPOINT, "endpoint", endpoint));
+            Message msg=new Message().putHeader(id, StompHeader.createHeader(StompHeader.Type.ENDPOINT, "endpoint", endpoint));
             down_prot.down(new Event(Event.MSG, msg));
         }
     }
@@ -479,7 +478,7 @@ public class STOMP extends Protocol implements Runnable {
                         headers.put("sender", session_id.toString());
                     }
 
-                    Message msg=new Message(null, null, frame.getBody());
+                    Message msg=new Message(null, frame.getBody());
                     Header hdr=StompHeader.createHeader(StompHeader.Type.MESSAGE, headers);
                     msg.putHeader(id, hdr);
                     down_prot.down(new Event(Event.MSG, msg));

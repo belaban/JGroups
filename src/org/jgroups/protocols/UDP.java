@@ -603,12 +603,12 @@ public class UDP extends TP {
         if(map == null) return;
 
         if(map.containsKey("send_buf_size")) {
-            mcast_send_buf_size=((Integer)map.get("send_buf_size")).intValue();
+            mcast_send_buf_size=(Integer)map.get("send_buf_size");
             ucast_send_buf_size=mcast_send_buf_size;
             set_buffers=true;
         }
         if(map.containsKey("recv_buf_size")) {
-            mcast_recv_buf_size=((Integer)map.get("recv_buf_size")).intValue();
+            mcast_recv_buf_size=(Integer)map.get("recv_buf_size");
             ucast_recv_buf_size=mcast_recv_buf_size;
             set_buffers=true;
         }

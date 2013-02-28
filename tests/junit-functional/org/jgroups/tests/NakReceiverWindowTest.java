@@ -756,7 +756,7 @@ public class NakReceiverWindowTest {
 
     private static Message oob() {
         Message retval=new Message();
-        retval.setFlag(Message.OOB);
+        retval.setFlag(Message.Flag.OOB);
         return retval;
     }
 

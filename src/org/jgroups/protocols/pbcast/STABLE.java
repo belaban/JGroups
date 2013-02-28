@@ -690,10 +690,8 @@ public class STABLE extends Protocol {
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": sending stable msg " + d.printHighestDeliveredSeqnos());
             num_stable_msgs_sent++;
-            final Message msg=new Message(); // mcast message
-            msg.setFlag(Message.OOB, Message.Flag.NO_RELIABILITY);
-            StableHeader hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
-            msg.putHeader(this.id, hdr);
+            final Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
+              .putHeader(this.id,new StableHeader(StableHeader.STABLE_GOSSIP,d));
 
             Runnable r=new Runnable() {
                 public void run() {
@@ -877,8 +875,7 @@ public class STABLE extends Protocol {
             }
 
             if(stability_digest != null) {
-                Message msg=new Message();
-                msg.setFlag(Message.OOB, Message.Flag.NO_RELIABILITY);
+                Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY);
                 StableHeader hdr=new StableHeader(StableHeader.STABILITY, stability_digest);
                 msg.putHeader(id, hdr);
                 if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg " + stability_digest.printHighestDeliveredSeqnos());

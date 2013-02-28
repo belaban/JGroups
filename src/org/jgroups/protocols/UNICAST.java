@@ -626,7 +626,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
-        if(msg.isFlagSet(Message.OOB) && added) {
+        if(msg.isFlagSet(Message.Flag.OOB) && added) {
             try {
                 up_prot.up(evt);
             }
@@ -678,7 +678,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
                 // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
                 // http://jira.jboss.com/jira/browse/JGRP-377
-                if(msg.isFlagSet(Message.OOB) && msg_added) {
+                if(msg.isFlagSet(Message.Flag.OOB) && msg_added) {
                     try {
                         up_prot.up(new Event(Event.MSG, msg));
                     }
@@ -725,7 +725,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                 MessageBatch batch=new MessageBatch(local_addr, sender, null, false, list);
                 for(Message msg_to_deliver: batch) {
                     // discard OOB msg: it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
-                    if(msg_to_deliver.isFlagSet(Message.OOB))
+                    if(msg_to_deliver.isFlagSet(Message.Flag.OOB))
                         batch.remove(msg_to_deliver);
                 }
 
@@ -887,8 +887,8 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
     protected void sendAck(Address dst, long seqno, short conn_id) {
         if(!running) // if we are disconnected, then don't send any acks which throw exceptions on shutdown
             return;
-        Message ack=new Message(dst);
-        ack.putHeader(this.id, UnicastHeader.createAckHeader(seqno, conn_id));
+        Message ack=new Message(dst).setFlag(Message.Flag.INTERNAL)
+          .putHeader(this.id, UnicastHeader.createAckHeader(seqno, conn_id));
         if(log.isTraceEnabled())
             log.trace(new StringBuilder().append(local_addr).append(" --> ACK(").append(dst).
               append(": #").append(seqno).append(')'));
@@ -922,8 +922,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     protected void sendRequestForFirstSeqno(Address dest, long seqno_received) {
-        Message msg=new Message(dest);
-        msg.setFlag(Message.OOB);
+        Message msg=new Message(dest).setFlag(Message.Flag.OOB);
         UnicastHeader hdr=UnicastHeader.createSendFirstSeqnoHeader(seqno_received);
         msg.putHeader(this.id, hdr);
         if(log.isTraceEnabled())

@@ -66,7 +66,7 @@ public class NAKACK_Test extends ChannelTestBase {
         for(int i=1; i <=5; i++) {
             Message msg=new Message(null, null,(long)i);
             if(i == 4)
-                msg.setFlag(Message.OOB);
+                msg.setFlag(Message.Flag.OOB);
             System.out.println("-- sending message #" + i);
             c1.send(msg);
             Util.sleep(100);

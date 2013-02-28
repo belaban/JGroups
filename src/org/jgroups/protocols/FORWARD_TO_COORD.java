@@ -180,10 +180,7 @@ public class FORWARD_TO_COORD extends Protocol {
     }
 
     protected void send(Address target, long ack_id, byte type) {
-        Message msg=new Message(target);
-        ForwardHeader hdr=new ForwardHeader(type, ack_id);
-        msg.putHeader(id, hdr);
-        down_prot.down(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG, new Message(target).putHeader(id, new ForwardHeader(type, ack_id))));
     }
 
 
