@@ -30,25 +30,17 @@ public class OOBTest extends ChannelTestBase {
 
     @BeforeMethod
     void init() throws Exception {
-        a=createChannel(true, 2);
-        a.setName("A");
-        b=createChannel(a);
-        b.setName("B");
+        a=createChannel(true, 2, "A");
+        b=createChannel(a, "B");
         setOOBPoolSize(a,b);
         setStableGossip(a,b);
         a.connect("OOBTest");
         b.connect("OOBTest");
-        View view=b.getView();
-        System.out.println("view = " + view);
-        Util.waitUntilAllChannelsHaveSameSize(20000, 1000,a,b);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
     }
 
 
-    @AfterMethod
-    void cleanup() {
-        Util.sleep(1000);
-        Util.close(b,a);
-    }
+    @AfterMethod void cleanup() {Util.close(b, a);}
 
 
     /**
@@ -56,8 +48,7 @@ public class OOBTest extends ChannelTestBase {
      * received by B.
      */
     public void testNonBlockingUnicastOOBMessage() throws Exception {
-        Address dest=b.getAddress();
-        send(dest);
+        send(b.getAddress());
     }
 
     public void testNonBlockingMulticastOOBMessage() throws Exception {
@@ -312,7 +303,7 @@ public class OOBTest extends ChannelTestBase {
         final int NUM=10;
         b.setReceiver(receiver);
 
-        a.send(new Message(dest, 1));
+        a.send(dest, 1); // the only regular message
         for(int i=2; i <= NUM; i++)
             a.send(new Message(dest, i).setFlag(Message.OOB));
 
@@ -322,7 +313,7 @@ public class OOBTest extends ChannelTestBase {
             if(list.size() == NUM-1)
                 break;
             sendStableMessages(a,b);
-            Util.sleep(1000); // give the asynchronous msgs some time to be received
+            Util.sleep(500); // give the asynchronous msgs some time to be received
         }
 
         System.out.println("list = " + list);
@@ -369,8 +360,8 @@ public class OOBTest extends ChannelTestBase {
     private static void setOOBPoolSize(JChannel... channels) {
         for(Channel channel: channels) {
             TP transport=channel.getProtocolStack().getTransport();
-            transport.setOOBThreadPoolMinThreads(1);
-            transport.setOOBThreadPoolMaxThreads(2);
+            transport.setOOBThreadPoolMinThreads(4);
+            transport.setOOBThreadPoolMaxThreads(8);
         }
     }
 
