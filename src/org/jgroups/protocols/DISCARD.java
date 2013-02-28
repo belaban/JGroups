@@ -62,7 +62,12 @@ public class DISCARD extends Protocol {
 
 
     public DISCARD                      localAddress(Address addr) {setLocalAddress(addr); return this;}
-    public Address                      localAddress()             {return localAddress;}
+
+    public Address                      localAddress() {
+        if(localAddress == null)
+            localAddress=(Address)up_prot.up(new Event(Event.GET_LOCAL_ADDRESS));
+        return localAddress;
+    }
 
     public boolean isDiscardAll() {
         return discard_all;
@@ -135,7 +140,7 @@ public class DISCARD extends Protocol {
         if(discard_dialog == null) {
             discard_dialog=new DiscardDialog();
             discard_dialog.init();
-            discard_dialog.setTitle(localAddress != null? localAddress.toString() : "n/a");
+            discard_dialog.setTitle(localAddress() != null? localAddress().toString() : "n/a");
             discard_dialog.handleView(members);
         }
     }
@@ -200,10 +205,10 @@ public class DISCARD extends Protocol {
                 boolean multicast=dest == null;
 
                 if(msg.getSrc() == null)
-                    msg.setSrc(localAddress);
+                    msg.setSrc(localAddress());
 
                 if(discard_all) {
-                    if(dest == null || dest.equals(localAddress))
+                    if(dest == null || dest.equals(localAddress()))
                         loopback(msg);
                     return null;
                 }
@@ -221,7 +226,7 @@ public class DISCARD extends Protocol {
                 if(down > 0) {
                     r=Math.random();
                     if(r < down) {
-                        if(excludeItself && dest != null && dest.equals(localAddress)) {
+                        if(excludeItself && dest != null && dest.equals(localAddress())) {
                             if(log.isTraceEnabled()) log.trace("excluding itself");
                         }
                         else {
@@ -256,7 +261,7 @@ public class DISCARD extends Protocol {
 
     /** Checks if a message should be passed up, or not */
     protected boolean shouldDropUpMessage(Message msg, Address sender) {
-        if(discard_all && !sender.equals(localAddress))
+        if(discard_all && !sender.equals(localAddress()))
             return true;
 
         if(ignoredMembers.contains(sender)) {
@@ -269,7 +274,7 @@ public class DISCARD extends Protocol {
         if(up > 0) {
             double r=Math.random();
             if(r < up) {
-                if(excludeItself && sender.equals(localAddress)) {
+                if(excludeItself && sender.equals(localAddress())) {
                     if(log.isTraceEnabled())
                         log.trace("excluding myself");
                 }
@@ -289,7 +294,7 @@ public class DISCARD extends Protocol {
     private void loopback(Message msg) {
         final Message rsp=msg.copy(true);
         if(rsp.getSrc() == null)
-            rsp.setSrc(localAddress);
+            rsp.setSrc(localAddress());
 
         // pretty inefficient: creates one thread per message, okay for testing only
         Thread thread=new Thread(new Runnable() {
@@ -328,7 +333,7 @@ public class DISCARD extends Protocol {
             getContentPane().add(checkboxes);
             pack();
             setVisible(true);
-            setTitle(localAddress != null? localAddress.toString() : "n/a");
+            setTitle(localAddress() != null? localAddress().toString() : "n/a");
         }
 
 
