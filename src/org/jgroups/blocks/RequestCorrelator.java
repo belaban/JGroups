@@ -501,13 +501,16 @@ public class RequestCorrelator {
         }
 
         Message rsp=req.makeReply().setFlag(req.getFlags()).clearFlag(Message.Flag.RSVP, Message.Flag.SCOPED);
-        prepareResponse(rsp);
-
         if(rsp_buf instanceof Buffer)
             rsp.setBuffer((Buffer)rsp_buf);
         else if(rsp_buf instanceof byte[])
             rsp.setBuffer((byte[])rsp_buf);
 
+       sendResponse(rsp, req_id, is_exception);
+    }
+
+    protected void sendResponse(Message rsp, long req_id, boolean is_exception) {
+        prepareResponse(rsp);
         Header rsp_hdr=new Header(is_exception? Header.EXC_RSP : Header.RSP, req_id, false, id);
         rsp.putHeader(id, rsp_hdr);
         if(log.isTraceEnabled())
@@ -515,6 +518,7 @@ public class RequestCorrelator {
 
         transport.down(new Event(Event.MSG, rsp));
     }
+
 
     protected void prepareResponse(Message rsp) {
         ;
@@ -534,6 +538,10 @@ public class RequestCorrelator {
 
         public void send(Object reply, boolean is_exception) {
             sendReply(req, req_id, reply, is_exception);
+        }
+
+        public void send(Message reply, boolean is_exception) {
+            sendResponse(reply, req_id, is_exception);
         }
     }
 

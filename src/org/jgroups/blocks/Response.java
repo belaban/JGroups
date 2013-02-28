@@ -1,5 +1,7 @@
 package org.jgroups.blocks;
 
+import org.jgroups.Message;
+
 /**
  * A handback object shipped as a parameter to {@link AsyncRequestHandler#handle(org.jgroups.Message,Response)}.
  * Encapsulates information needed to send a response, e.g. the request ID, the sender etc.
@@ -18,4 +20,15 @@ public interface Response {
      *                     object, is_exception is false
      */
     void send(Object reply, boolean is_exception);
+
+
+    /**
+     * Similar to {@link #send(Object,boolean)}, but passes a message instead of an object. The message needs to contain
+     * the marshalled response, so message creation, setting of flags and marshalling is the responsibility of the caller.
+     * <p/>The reason for this additional method is to give the caller more control over the response message.<p/>
+     * This method may be removed, should we find that it's not really needed
+     * @param reply The reply message
+     * @param is_exception Whether the payload of this message is an exception or a real reply object
+     */
+    void send(Message reply, boolean is_exception);
 }
