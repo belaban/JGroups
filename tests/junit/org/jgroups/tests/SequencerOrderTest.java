@@ -28,52 +28,49 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerOrderTest {
-    private JChannel    c1, c2, c3;
-    private MyReceiver  r1, r2, r3;
-    static final String GROUP="SequencerOrderTest";
-    static final int    NUM_MSGS=50; // messages per thread
-    static final int    NUM_THREADS=10;
-    static final int    EXPECTED_MSGS=NUM_MSGS * NUM_THREADS;
-    static final String props="sequencer.xml";
-    private Sender[]    senders=new Sender[NUM_THREADS];
+    private JChannel              a, b, c;
+    private MyReceiver            r1, r2, r3;
+    static final String           GROUP="SequencerOrderTest";
+    static final int              NUM_MSGS=50; // messages per thread
+    static final int              NUM_THREADS=10;
+    static final int              EXPECTED_MSGS=NUM_MSGS * NUM_THREADS;
+    static final String           props="sequencer.xml";
+    private final Sender[]        senders=new Sender[NUM_THREADS];
     protected final AtomicInteger num=new AtomicInteger(0);
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        c1=new JChannel(props);
-        c1.setName("A");
-        c1.connect(GROUP);
+        a=new JChannel(props).name("A");
+        a.connect(GROUP);
         r1=new MyReceiver("A");
-        c1.setReceiver(r1);
+        a.setReceiver(r1);
 
-        c2=new JChannel(props);
-        c2.setName("B");
-        c2.connect(GROUP);
+        b=new JChannel(props).name("B");
+        b.connect(GROUP);
         r2=new MyReceiver("B");
-        c2.setReceiver(r2);
+        b.setReceiver(r2);
 
-        c3=new JChannel(props);
-        c3.setName("C");
-        c3.connect(GROUP);
+        c=new JChannel(props).name("C");
+        c.connect(GROUP);
         r3=new MyReceiver("C");
-        c3.setReceiver(r3);
+        c.setReceiver(r3);
 
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, c1,c2,c3);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000,a,b,c);
 
         for(int i=0; i < senders.length; i++)
-            senders[i]=new Sender(NUM_MSGS, num, c1, c2, c3);
+            senders[i]=new Sender(NUM_MSGS, num,a,b,c);
     }
 
     @AfterMethod
     void tearDown() throws Exception {
-        removeSHUFFLE(c3,c2,c1);
-        Util.close(c3, c2, c1);
+        removeSHUFFLE(c,b,a);
+        Util.close(c,b,a);
     }
 
     @Test @SuppressWarnings("unchecked")
     public void testBroadcastSequence() throws Exception {
-        insertShuffle(c1, c2, c3);
+        insertShuffle(a,b,c);
         
         // use concurrent senders to send messages to the group
         System.out.println("Starting " + senders.length + " sender threads (each sends " + NUM_MSGS + " messages)");

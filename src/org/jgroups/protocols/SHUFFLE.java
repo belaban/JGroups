@@ -76,6 +76,16 @@ public class SHUFFLE extends Protocol {
         timer=getTransport().getTimer();
     }
 
+    public void stop() {
+        super.stop();
+        stopTask();
+    }
+
+    public void destroy() {
+        super.destroy();
+        stopTask();
+    }
+
     public Object up(Event evt) {
         if(!up)
             return up_prot.up(evt);
@@ -149,7 +159,8 @@ public class SHUFFLE extends Protocol {
             if(!up_msgs.isEmpty()) {
                 Collections.shuffle(up_msgs);
                 for(Message msg: up_msgs)
-                    up_prot.up(new Event(Event.MSG, msg));
+                    if(up_prot != null)
+                        up_prot.up(new Event(Event.MSG, msg));
                 up_msgs.clear();
             }
         }

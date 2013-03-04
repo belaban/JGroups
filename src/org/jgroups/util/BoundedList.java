@@ -5,7 +5,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * A bounded subclass of LinkedList, oldest elements are removed once max capacity is exceeded. Note that this
- * class is not synchronized (like LinkedList).
+ * class is not synchronized (like LinkedList). Don't use this for high performance, as size() has a linear cost. But
+ * in most scenarios, this class is used for maintaining a history, e.g. of digests or views, so perf is not critical.
  * @author Bela Ban Nov 20, 2003
  */
 public class BoundedList<T> extends ConcurrentLinkedQueue<T> {
