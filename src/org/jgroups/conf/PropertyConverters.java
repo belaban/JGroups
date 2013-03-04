@@ -253,8 +253,12 @@ public class PropertyConverters {
 
                 if(addr_scope != null)
                     retval=Util.getAddress(addr_scope);
-                else
-                    retval=InetAddress.getByName(propertyValue);
+                else {
+                    if(propertyValue.startsWith("match"))
+                        retval=Util.getAddressByPatternMatch(propertyValue);
+                    else
+                        retval=InetAddress.getByName(propertyValue);
+                }
 
                 if(retval instanceof Inet4Address && retval.isMulticastAddress() && Util.getIpStackType() == StackType.IPv6) {
                     String tmp=prefix + propertyValue;

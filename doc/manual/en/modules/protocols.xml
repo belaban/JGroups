@@ -127,12 +127,39 @@
                     </para>
                 </listitem>
             </varlistentry>
+            <varlistentry>
+                <term>match-interface</term>
+                <listitem>
+                    <para>
+                        Pick an address which matches a pattern against the interface name,
+                        e.g. <literal>match-interface:eth.*</literal>
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>match-address</term>
+                <listitem>
+                    <para>
+                        Pick an address which matches a pattern against the host address,
+                        e.g. <literal>match-address:192.168.*</literal>
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>match-host</term>
+                <listitem>
+                    <para>
+                        Pick an address which matches a pattern against the host name,
+                        e.g. <literal>match-host:linux.*</literal>
+                    </para>
+                </listitem>
+            </varlistentry>
         </variablelist>
         <para>
             An example of setting the bind address in UDP to use a site local address is:
         </para>
         <programlisting language="Java">
-&lt;UDP bind_addr="SITE_LOCAL" /&gt;
+            &lt;UDP bind_addr="SITE_LOCAL" /&gt;
         </programlisting>
         <para>
             This will pick any address of any interface that's site-local, e.g. a <literal>192.168.x.x</literal> or

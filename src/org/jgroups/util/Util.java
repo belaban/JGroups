@@ -3836,6 +3836,67 @@ public class Util {
         return null ;
     }
 
+    /**
+     * Returns a valid interface address based on a pattern. Iterates over all interfaces that are up and
+     * returns the first match, based on the address or interface name
+     * @param pattern Can be "match-addr:<pattern></pattern>" or "match-interface:<pattern></pattern>". Example:<p/>
+     *                match-addr:192.168.*
+     * @return InetAddress or null if not found
+     */
+    public static InetAddress getAddressByPatternMatch(String pattern) throws Exception {
+        if(pattern == null) return null;
+        String  real_pattern=null;
+        byte type=0; // 1=match-interface, 2: match-addr, 3: match-host,
+
+        if(pattern.startsWith(Global.MATCH_INTF)) {
+            type=1;
+            real_pattern=pattern.substring(Global.MATCH_INTF.length() +1);
+        }
+        else if(pattern.startsWith(Global.MATCH_ADDR)) {
+            type=2;
+            real_pattern=pattern.substring(Global.MATCH_ADDR.length() +1);
+        }
+        else if(pattern.startsWith(Global.MATCH_HOST)) {
+            type=3;
+            real_pattern=pattern.substring(Global.MATCH_HOST.length() +1);
+        }
+
+        if(real_pattern == null)
+            throw new IllegalArgumentException("expected " + Global.MATCH_ADDR + ":<pattern>, " +
+                                                 Global.MATCH_HOST + ":<pattern> or " + Global.MATCH_INTF + ":<pattern>");
+
+        Pattern pat=Pattern.compile(real_pattern);
+        Enumeration intfs=NetworkInterface.getNetworkInterfaces();
+        while(intfs.hasMoreElements()) {
+            NetworkInterface intf=(NetworkInterface)intfs.nextElement();
+            try {
+                if(!intf.isUp())
+                    continue;
+                switch(type) {
+                    case 1: // match by interface name
+                        String interface_name=intf.getName();
+                        Matcher matcher=pat.matcher(interface_name);
+                        if(matcher.matches())
+                            return getAddress(intf, null);
+                        break;
+                    case 2: // match by host address
+                    case 3: // match by host name
+                        for(Enumeration<InetAddress> en=intf.getInetAddresses(); en.hasMoreElements();) {
+                            InetAddress addr=en.nextElement();
+                            String name=type == 3? addr.getHostName() : addr.getHostAddress();
+                            matcher=pat.matcher(name);
+                            if(matcher.matches())
+                                return addr;
+                        }
+                        break;
+                }
+            }
+            catch (SocketException e) {
+            }
+        }
+        return null;
+    }
+
 
     /**
      * Returns the first address on the given interface on the current host, which satisfies scope
@@ -3846,30 +3907,32 @@ public class Util {
         StackType ip_version=Util.getIpStackType();
         for(Enumeration addresses=intf.getInetAddresses(); addresses.hasMoreElements();) {
             InetAddress addr=(InetAddress)addresses.nextElement();
-            boolean match;
-            switch(scope) {
-                case GLOBAL:
-                    match=!addr.isLoopbackAddress() && !addr.isLinkLocalAddress() && !addr.isSiteLocalAddress();
-                    break;
-                case SITE_LOCAL:
-                    match=addr.isSiteLocalAddress();
-                    break;
-                case LINK_LOCAL:
-                    match=addr.isLinkLocalAddress();
-                    break;
-                case LOOPBACK:
-                    match=addr.isLoopbackAddress();
-                    break;
-                case NON_LOOPBACK:
-                    match=!addr.isLoopbackAddress();
-                    break;
-                default:
-                    throw new IllegalArgumentException("scope " + scope + " is unknown");
+            boolean match=scope == null;
+            if(scope != null) {
+                switch(scope) {
+                    case GLOBAL:
+                        match=!addr.isLoopbackAddress() && !addr.isLinkLocalAddress() && !addr.isSiteLocalAddress();
+                        break;
+                    case SITE_LOCAL:
+                        match=addr.isSiteLocalAddress();
+                        break;
+                    case LINK_LOCAL:
+                        match=addr.isLinkLocalAddress();
+                        break;
+                    case LOOPBACK:
+                        match=addr.isLoopbackAddress();
+                        break;
+                    case NON_LOOPBACK:
+                        match=!addr.isLoopbackAddress();
+                        break;
+                    default:
+                        throw new IllegalArgumentException("scope " + scope + " is unknown");
+                }
             }
 
             if(match) {
                 if((addr instanceof Inet4Address && ip_version == StackType.IPv4) ||
-                        (addr instanceof Inet6Address && ip_version == StackType.IPv6))
+                  (addr instanceof Inet6Address && ip_version == StackType.IPv6))
                     return addr;
             }
         }

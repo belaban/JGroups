@@ -75,6 +75,10 @@ public class Global {
     public static final long   THREAD_SHUTDOWN_WAIT_TIME=300;
     public static final String DUMMY="dummy-";
 
+    public static final String MATCH_ADDR="match-address";
+    public static final String MATCH_HOST="match-host";
+    public static final String MATCH_INTF="match-interface";
+
     public static final String PREFIX="org.jgroups.protocols.";
     
     public static final String XML_VALIDATION="jgroups.xml.validation";
