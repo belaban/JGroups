@@ -16,22 +16,19 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- * Computes the broadcast messages that are stable; i.e., have been received by
- * all members. Sends STABLE events up the stack when this is the case. This
- * allows NAKACK to garbage collect messages that have been seen by all members.
+ * Computes the broadcast messages that are stable; i.e., have been delivered by all members. Sends STABLE events down
+ * the stack when this is the case. This allows NAKACK{2,3} to garbage collect messages that have been seen by all members.
  * <p>
- * Works as follows: periodically we mcast our highest seqnos (seen for each
- * member) to the group. A stability vector, which maintains the highest seqno
- * for each member and initially contains no data, is updated when such a
- * message is received. The entry for a member P is computed set to
- * min(entry[P], digest[P]). When messages from all members have been received,
- * a stability message is mcast, which causes all members to send a STABLE event
- * up the stack (triggering garbage collection in the NAKACK layer).
+ * Works as follows: periodically (desired_avg_gossip) or when having received a number of bytes (max_bytes), every
+ * member sends its digest (highest seqno delivered, received) to the cluster (send_stable_msgs_to_coord_only=false)
+ * or the current coordinator (send_stable_msgs_to_coord_only=true).<p/>
+ * The recipient updates a stability vector, which maintains the highest seqno delivered/receive for each member
+ * and initially contains no data, when such a message is received. <p/>
+ * When messages from all members have been received, a stability message is mcast, which causes all
+ * members to send a STABLE event down the stack (triggering garbage collection in the NAKACK{2,3} layer).
  * <p>
- * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it
- * to 0), a STABLE task will be started (unless it is already running). Design
- * in docs/design/STABLE.txt
- * 
+ * When send_stable_msgs_to_coord_only is true, far fewer messages are exchanged, as members don't multicast
+ * STABLE messages, but instead send them only to the coordinator.
  * @author Bela Ban
  */
 @MBean(description="Computes the broadcast messages that are stable")
@@ -43,14 +40,14 @@ public class STABLE extends Protocol {
     /**
      * Sends a STABLE gossip every 20 seconds on average. 0 disables gossiping of STABLE messages
      */
-    @Property(description="Average time to send a STABLE message. Default is 20000 msec")
+    @Property(description="Average time to send a STABLE message")
     protected long   desired_avg_gossip=20000;
 
     /**
      * delay before we send STABILITY msg (give others a change to send first).
      * This should be set to a very small number (> 0 !) if <code>max_bytes</code> is used
      */
-    @Property(description="Delay before stability message is sent. Default is 6000 msec")
+    @Property(description="Delay before stability message is sent")
     protected long   stability_delay=6000;
 
     /**
@@ -60,14 +57,19 @@ public class STABLE extends Protocol {
      * ideally <code>stability_delay</code> should be set to a low number as
      * well
      */
-    @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered ." +
-      "If ergonomics is enabled, this value is computed as max(MAX_HEAP * cap, N * max_bytes) where N = number of members")
+    @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered")
     protected long   max_bytes=2000000;
 
     @Property(description="Max percentage of the max heap (-Xmx) to be used for max_bytes. " +
       "Only used if ergonomics is enabled. 0 disables setting max_bytes dynamically.",deprecatedMessage="will be ignored")
     @Deprecated
     protected double cap=0.10; // 10% of the max heap by default
+
+
+    @Property(description="Wether or not to send the STABLE messages to all members of the cluster, or to the " +
+      "current coordinator only. The latter reduces the number of STABLE messages, but also generates more work " +
+      "on the coordinator")
+    protected boolean send_stable_msgs_to_coord_only=true;
 
     
     /* --------------------------------------------- JMX  ---------------------------------------------- */
@@ -88,10 +90,8 @@ public class STABLE extends Protocol {
     protected final MutableDigest digest=new MutableDigest(10); // keeps track of the highest seqnos from all members
 
     /**
-     * Keeps track of who we already heard from (STABLE_GOSSIP msgs). This is
-     * cleared initially, and we add the sender when a STABLE message is
-     * received. When the list is full (responses from all members), we send a
-     * STABILITY message
+     * Keeps track of who we already heard from (STABLE_GOSSIP msgs). This is cleared initially, and we add the sender
+     * when a STABLE message is received. When the list is full (responses from all members), we send a STABILITY message
      */
     @GuardedBy("lock")
     protected final Set<Address>  votes=new HashSet<Address>();
@@ -126,6 +126,7 @@ public class STABLE extends Protocol {
     protected Future<?>           resume_task_future;
     protected final Object        resume_task_mutex=new Object();
 
+    protected volatile Address    coordinator;
 
     
     
@@ -301,8 +302,7 @@ public class STABLE extends Protocol {
 
 
     protected void handleRegularMessage(Message msg) {
-        // only if message counting is enabled, and only for multicast messages
-        // fixes http://jira.jboss.com/jira/browse/JGRP-233
+        // only if bytes counting is enabled, and only for multicast messages (http://jira.jboss.com/jira/browse/JGRP-233)
         if(max_bytes <= 0)
             return;
         Address dest=msg.getDest();
@@ -368,8 +368,8 @@ public class STABLE extends Protocol {
         sendStableMessage(copy);
     }
 
-    @ManagedOperation(description="Sends a STABLE message; when every member has received a STABLE message from everybody else, " +
-      "a STABILITY message will be sent")
+    @ManagedOperation(description="Sends a STABLE message; when every member has received a STABLE message " +
+      "from everybody else, a STABILITY message will be sent")
     public void gc() {runMessageGarbageCollection();}
 
 
@@ -385,6 +385,7 @@ public class STABLE extends Protocol {
         }
         lock.lock();
         try {
+            coordinator=tmp.get(0);
             resetDigest();
             if(!initialized)
                 initialized=true;
@@ -675,10 +676,12 @@ public class STABLE extends Protocol {
         }
 
         if(d != null && d.size() > 0) {
+            Address dest=send_stable_msgs_to_coord_only? coordinator : null;
             if(log.isTraceEnabled())
-                log.trace(local_addr + ": sending stable msg " + d.printHighestDeliveredSeqnos());
+                log.trace(local_addr + ": sending stable msg to " + (send_stable_msgs_to_coord_only? coordinator : "cluster") +
+                            ": " + d.printHighestDeliveredSeqnos());
             num_stable_msgs_sent++;
-            final Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
+            final Message msg=new Message(dest).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
               .putHeader(this.id,new StableHeader(StableHeader.STABLE_GOSSIP,d));
 
             Runnable r=new Runnable() {
@@ -802,7 +805,7 @@ public class STABLE extends Protocol {
         public long nextInterval() {
             long interval=computeSleepTime();
             if(interval <= 0)
-                return 10000;
+                return desired_avg_gossip / 2;
             else
                 return interval;
         }
@@ -815,8 +818,7 @@ public class STABLE extends Protocol {
                 return;
             }
 
-            // asks the NAKACK protocol for the current digest
-            Digest my_digest=getDigest();
+            Digest my_digest=getDigest(); // asks the NAKACK protocol for the current digest
             if(my_digest == null) {
                 if(log.isWarnEnabled())
                     log.warn("received null digest, skipped sending of stable message");
@@ -861,7 +863,7 @@ public class STABLE extends Protocol {
             }
 
             if(stability_digest != null) {
-                Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY);
+                Message msg=new Message().setFlag(Message.Flag.OOB,Message.Flag.INTERNAL,Message.Flag.NO_RELIABILITY);
                 StableHeader hdr=new StableHeader(StableHeader.STABILITY, stability_digest);
                 msg.putHeader(id, hdr);
                 if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg " + stability_digest.printHighestDeliveredSeqnos());
