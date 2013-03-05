@@ -8,7 +8,6 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.lang.management.ManagementFactory;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -65,10 +64,9 @@ public class STABLE extends Protocol {
       "If ergonomics is enabled, this value is computed as max(MAX_HEAP * cap, N * max_bytes) where N = number of members")
     protected long   max_bytes=2000000;
 
-    protected long   original_max_bytes=max_bytes;
-
     @Property(description="Max percentage of the max heap (-Xmx) to be used for max_bytes. " +
-      "Only used if ergonomics is enabled. 0 disables setting max_bytes dynamically.")
+      "Only used if ergonomics is enabled. 0 disables setting max_bytes dynamically.",deprecatedMessage="will be ignored")
+    @Deprecated
     protected double cap=0.10; // 10% of the max heap by default
 
     
@@ -148,7 +146,6 @@ public class STABLE extends Protocol {
 
     public void setMaxBytes(long max_bytes) {
         this.max_bytes=max_bytes;
-        this.original_max_bytes=max_bytes;
     }
 
     @ManagedAttribute(name="bytes_received")
@@ -211,7 +208,6 @@ public class STABLE extends Protocol {
     
     public void init() throws Exception {
         super.init();
-        original_max_bytes=max_bytes;
     }
 
     public void start() throws Exception {
@@ -392,14 +388,6 @@ public class STABLE extends Protocol {
             resetDigest();
             if(!initialized)
                 initialized=true;
-
-            if(ergonomics && cap > 0) {
-                long max_heap=(long)(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax() * cap);
-                long new_size=tmp.size() * original_max_bytes;
-                max_bytes=Math.min(max_heap, new_size);
-                if(log.isDebugEnabled())
-                    log.debug("[ergonomics] setting max_bytes to " + Util.printBytes(max_bytes) + " (" + tmp.size() + " members)");
-            }
         }
         finally {
             lock.unlock();
@@ -703,7 +691,6 @@ public class STABLE extends Protocol {
 
             // Run in a separate thread so we don't potentially block (http://jira.jboss.com/jira/browse/JGRP-532)
             timer.execute(r);
-            // down_prot.down(new Event(Event.MSG, msg));
         }
     }
 
@@ -728,9 +715,8 @@ public class STABLE extends Protocol {
             return;
         }
 
-        // give other members a chance to mcast STABILITY message. if we receive STABILITY by the end of
-        // our random sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a
-        // STABILITY msg at the same time
+        // give other members a chance to mcast STABILITY message. if we receive STABILITY by the end of our random
+        // sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a STABILITY msg at the same time
         delay=Util.random(stability_delay);
         if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg (in " + delay + " ms) " + tmp.printHighestDeliveredSeqnos());
         startStabilityTask(tmp, delay);
@@ -844,7 +830,7 @@ public class STABLE extends Protocol {
         public String toString() {return STABLE.class.getSimpleName() + ": StableTask";}
 
         long computeSleepTime() {
-            return getRandom((mbrs.size() * desired_avg_gossip * 2));
+            return getRandom((desired_avg_gossip * 2));
         }
 
         long getRandom(long range) {
