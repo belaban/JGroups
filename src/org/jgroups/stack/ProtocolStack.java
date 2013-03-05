@@ -137,7 +137,8 @@ public class ProtocolStack extends Protocol {
         }
 
         public String[] supportedKeys() {
-            return new String[]{"props", "print-protocols", "\nremove-protocol=<name>", "\ninsert-protocol=<name>;above | below=<name>"};
+            return new String[]{"props", "print-protocols", "\nremove-protocol=<name>",
+              "\ninsert-protocol=<name>=above | below=<name>"};
         }
     };
 
