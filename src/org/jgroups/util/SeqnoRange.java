@@ -18,6 +18,8 @@ public class SeqnoRange extends Seqno {
         this.high=high;
         if(low > high)
             throw new IllegalArgumentException("low (" + low + ") must be <= high (" + high + ")");
+        if((high - low) >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("range (" + low + "-" + high + ") size is too big ");
         int size=(int)((high - low) + 1);
         bits=new FixedSizeBitSet(size);  // starts out with all bits set to 0 (false)
     }
@@ -32,11 +34,11 @@ public class SeqnoRange extends Seqno {
     }
 
     public boolean get(long num) {
-        return bits.get(getIndex((int)num));
+        return bits.get(getIndex(num));
     }
 
     public void set(long num) {
-        bits.set(getIndex((int)num));
+        bits.set(getIndex(num));
     }
 
     public void set(long ... nums) {
@@ -80,7 +82,7 @@ public class SeqnoRange extends Seqno {
         return low + "-" + high + ", set=" + printBits(true) + ", cleared=" + printBits(false);
     }
 
-    protected int getIndex(int num) {
+    protected int getIndex(long num) {
         if(num < low || num > high)
             throw new IllegalArgumentException(num + " is outside the range " + toString());
         return (int)(num - low);
