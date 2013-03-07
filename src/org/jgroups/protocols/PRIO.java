@@ -8,7 +8,6 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.concurrent.PriorityBlockingQueue;
 
 /**
@@ -118,15 +117,14 @@ public class PRIO extends Protocol {
 
 
     public void up(MessageBatch batch) {
-        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
-            Message message=it.next();
-            if(message.isFlagSet(Message.Flag.OOB))
+        for(Message msg: batch) {
+            if(msg.isFlagSet(Message.Flag.OOB))
                 continue;
-            PrioHeader hdr=(PrioHeader)message.getHeader(id);
+            PrioHeader hdr=(PrioHeader)msg.getHeader(id);
             if(hdr != null) {
                 log.trace( "Adding priority message " + hdr.getPriority() + " to UP queue" );
-                upMessageQueue.add( new PriorityMessage( new Event(Event.MSG, message), hdr.getPriority() ) );
-                it.remove(); // sent up by UpMessageThread; we don't need to send it up, too
+                upMessageQueue.add( new PriorityMessage( new Event(Event.MSG, msg), hdr.getPriority() ) );
+                batch.remove(msg); // sent up by UpMessageThread; we don't need to send it up, too
             }
         }
 

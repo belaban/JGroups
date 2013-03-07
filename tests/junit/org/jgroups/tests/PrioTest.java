@@ -57,7 +57,10 @@ public class PrioTest extends ChannelTestBase {
         barrier.await(); // starts the senders
 
         for(PrioSender sender: senders)
-            sender.join();
+            sender.join(10000);
+        for(PrioSender sender: senders)
+            if(sender.isAlive())
+                System.err.println("sender " + sender + " is still alive");
 
         List<Integer> list1=r1.getMsgs(), list2=r2.getMsgs();
         for(int i=0; i < 20; i++) {
@@ -132,7 +135,7 @@ public class PrioTest extends ChannelTestBase {
         }
 
         public void run() {
-            Message msg=new Message(null, null, new Integer(prio));
+            Message msg=new Message(null, null,(int)prio);
             PrioHeader hdr=new PrioHeader(prio);
             msg.putHeader(PRIO_ID, hdr);
             try {

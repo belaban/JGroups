@@ -232,8 +232,8 @@ public class JChannel extends Channel {
 
     public void enableStats(boolean stats) {this.stats=stats;}
 
-    @Deprecated @ManagedAttribute public boolean isOpen() {return !(state == State.CLOSED);}
-    @Deprecated @ManagedAttribute public boolean isConnected() {return state == State.CONNECTED;}
+    @ManagedAttribute public boolean isOpen() {return !(state == State.CLOSED);}
+    @ManagedAttribute public boolean isConnected() {return state == State.CONNECTED;}
 
     @ManagedOperation
     public void resetStats()          {sent_msgs=received_msgs=sent_bytes=received_bytes=0;}
