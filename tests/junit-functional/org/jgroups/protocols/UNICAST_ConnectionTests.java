@@ -255,7 +255,7 @@ public class UNICAST_ConnectionTests {
         }
         else if(prot instanceof UNICAST3) {
             UNICAST3 unicast=(UNICAST3)prot;
-            unicast.removeConnection(target);
+            unicast.closeConnection(target);
         }
         else
             throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST, UNICAST2 or UNICAST3");

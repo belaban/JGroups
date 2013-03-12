@@ -81,6 +81,60 @@ time until a message is resent by the sender.
 Connection establishment
 ------------------------
 
+Instead of adding explicit connection establishment and teardown, we'll add states OPEN, CLOSING and CLOSED to a
+connection entry (SenderEntry, ReceiverEntry).
+
+When a connection is closed, it won't get removed immediately, but its state will be set to CLOSING.
+The retransmitter will flush unacked messages in the sender entry in this state.
+After a few minutes and no activity, the state will be set to CLOSED and the entry removed. This is also done by the
+retransmission task.
+
+The advantage of a time lag between CLOSING and setting a connection to CLOSED (and removing it) is that when a message
+is sent on a CLOSING connection, it will be reverted to OPEN again. When there wasn't a message sent during the time
+lag, then chances are the connection is not used any longer and can safely be removed. The time lag is configurable
+(conn_expiry_timeout).
+
+The design is below:
+
+
+SENDER:
+Closing a sender connection entry:
+- The state is set to CLOSING
+- The retransmission task will keep retransmitting if HA < HS
+
+Sending a message:
+- If the state is CLOSING: set it to OPEN, reset timestamp
+- If the state is CLOSED (should almost never happen, and the entry should be removed a few ms (max) later):
+  - Go to the top of the loop and fetch the sender entry again (or create a new connection entry)
+  - Actually, this is not implemented, as it's an edge case and having to use locking would increase complexity
+
+
+RECEIVER:
+Reception of a CLOSE message (conn-id must be the same)
+- Set the state of the receiver entry (if found) to CLOSED
+- Remove the receiver entry
+
+Reception of a message:
+- In addition to a null receiver entry, we also check for a CLOSED connection entry (counts the same as a null entry)
+- If we have a message batch, we check if there is a message with first==true. If so, we add that message first,
+  then the rest as a mass-insertion into Table. Else, we insert all messages via mass-insertion.
+
+Sending of SEND_FIRST_SEQNO message
+- We don't send this message immediately, but set a flag in the receiver entry
+- When the retransmission task kicks in, it clears the flag and sends a SEND_FIRST_SEQNO message
+- On reception of this message, the sender only sends the first message; the rest will get retransmitted by the sender
+  anyway, or the receiver will ask for retransmission
+
+
+
+SENDER and RECEIVER:
+Retransmission task (reaping)
+- If the state is OPEN and the entry has expired and connection reaping is enabled (conn-expiry-timeout > 0):
+  - Update the timestamp
+  - Set the state to CLOSING
+- If the state of an entry is CLOSING and conn-close-timeout has expired:
+  - Set the state to CLOSED and remove the entry from the send-table
+  - [if SENDER] Send a CLOSE message to the target destination
 
 
 

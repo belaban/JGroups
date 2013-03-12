@@ -459,7 +459,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                if(dest != null || msg.isFlagSet(Message.NO_RELIABILITY))
+                if(dest != null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))
                     break; // unicast address: not null and not mcast, pass down unchanged
 
                 send(evt, msg);
@@ -550,7 +550,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                if(msg.isFlagSet(Message.NO_RELIABILITY))
+                if(msg.isFlagSet(Message.Flag.NO_RELIABILITY))
                     break;
                 NakAckHeader2 hdr=(NakAckHeader2)msg.getHeader(this.id);
                 if(hdr == null)
@@ -781,7 +781,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             if(loopback)
                 msg=buf.get(hdr.seqno); // we *have* to get a message, because loopback means we didn't add it to win !
             if(msg != null && msg.isFlagSet(Message.Flag.OOB)) {
-                if(msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED)) {
+                if(msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED)) {
                     if(log.isTraceEnabled())
                         log.trace(new StringBuilder().append(local_addr).append(": delivering ").append(sender).append('#').append(hdr.seqno));
                     try {
@@ -829,7 +829,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 long    seq=tuple.getVal1();
                 Message msg=loopback? buf.get(seq) : tuple.getVal2(); // we *have* to get the message, because loopback means we didn't add it to win !
                 if(msg != null && msg.isFlagSet(Message.Flag.OOB)) {
-                    if(msg.setTransientFlagIfAbsent(Message.OOB_DELIVERED)) {
+                    if(msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED)) {
                         if(log.isTraceEnabled())
                             log.trace(new StringBuilder().append(local_addr).append(": delivering ")
                                         .append(sender).append('#').append(seq));

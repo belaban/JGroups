@@ -168,7 +168,7 @@ public class OOBTest extends ChannelTestBase {
         send(null, NUM_MSGS, NUM_THREADS, 0.5); // send on random channel (a or b)
         
         Collection<Integer> one=r1.getMsgs(), two=r2.getMsgs();
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 20; i++) {
             if(one.size() == NUM_MSGS && two.size() == NUM_MSGS)
                 break;
             System.out.println("A size " + one.size() + ", B size " + two.size());

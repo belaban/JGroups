@@ -85,7 +85,7 @@ public class LargeMergeTest {
                                            //new MERGE2().setValue("min_interval",8000)
                                              //.setValue("max_interval",15000).setValue("merge_fast",false),
                                            new MERGE3().setValue("min_interval",1000)
-                                             .setValue("max_interval",10000)
+                                             .setValue("max_interval",5000)
                                              .setValue("max_participants_in_merge", MAX_PARTICIPANTS_IN_MERGE),
                                            new NAKACK2().setValue("use_mcast_xmit",false)
                                              .setValue("discard_delivered_msgs",true)
