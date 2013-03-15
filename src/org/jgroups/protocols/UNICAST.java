@@ -375,7 +375,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                if(msg.getDest() == null || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
+                if(msg.getDest() == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))  // only handle unicast messages
                     break;  // pass up
 
                 UnicastHeader hdr=(UnicastHeader)msg.getHeader(this.id);
@@ -387,7 +387,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                         handleDataReceived(sender, hdr.seqno, hdr.conn_id, hdr.first, msg, evt);
                         break;
                     default:
-                        handleUpEvent(sender,msg,hdr);
+                        handleUpEvent(sender, hdr);
                         break;
                 }
                 return null;
@@ -396,7 +396,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
-    protected void handleUpEvent(Address sender, Message msg, UnicastHeader hdr) {
+    protected void handleUpEvent(Address sender, UnicastHeader hdr) {
         switch(hdr.type) {
             case UnicastHeader.DATA:      // received regular message
                 throw new IllegalStateException("header of type DATA is not supposed to be handled by this method");
@@ -431,7 +431,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
             if(hdr.type != UnicastHeader.DATA) {
                 try {
-                    handleUpEvent(msg.getSrc(), msg, hdr);
+                    handleUpEvent(msg.getSrc(), hdr);
                 }
                 catch(Throwable t) { // we cannot let an exception terminate the processing of this batch
                     log.error(local_addr + ": failed handling event", t);
@@ -460,7 +460,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                 Address dst=msg.getDest();
 
                 /* only handle unicast messages */
-                if (dst == null || msg.isFlagSet(Message.NO_RELIABILITY))
+                if (dst == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))
                     break;
 
                 if(!running) {

@@ -349,11 +349,11 @@ public class ResourceDMBean implements DynamicMBean {
                 return new Attribute(name, entry.getter.invoke(null));
             }
             catch(Exception e) {
-                log.warn(Util.getMessage("AttrReadFailure", name, e));
+                log.warn(Util.getMessage("AttrReadFailure"), name, e);
             }
         }
         else {
-            log.warn(Util.getMessage("MissingAttribute", name));
+            log.warn(Util.getMessage("MissingAttribute"), name);
         }
         return null;
     }
@@ -367,11 +367,11 @@ public class ResourceDMBean implements DynamicMBean {
                 return true;
             }
             catch(Throwable e) {
-                log.warn(Util.getMessage("AttrWriteFailure", attribute.getName(), e));
+                log.warn(Util.getMessage("AttrWriteFailure"), attribute.getName(), e);
             }            
         }
         else {
-            log.warn(Util.getMessage("MissingAttribute", attribute.getName()));
+            log.warn(Util.getMessage("MissingAttribute"), attribute.getName());
         }
         return false;
     }

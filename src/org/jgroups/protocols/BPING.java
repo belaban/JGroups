@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.ExposedByteArrayInputStream;
@@ -24,7 +23,6 @@ import java.net.SocketException;
  * @author Bela Ban
  * @since 2.12
  */
-@Experimental
 public class BPING extends PING implements Runnable {
 
 

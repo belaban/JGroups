@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class LargeMergeTest {
-    static final int NUM=100; // number of members
-    static final int MAX_PARTICIPANTS_IN_MERGE=Math.max(100, NUM / 3);
+    static final int NUM=50; // number of members
+    static final int MAX_PARTICIPANTS_IN_MERGE=NUM / 3;
 
     protected final JChannel[] channels=new JChannel[NUM];
 
@@ -82,8 +82,6 @@ public class LargeMergeTest {
                                            new DISCARD().setValue("discard_all",true),
                                            new PING().setValue("timeout",1).setValue("num_initial_members",50)
                                              .setValue("force_sending_discovery_rsps", true),
-                                           //new MERGE2().setValue("min_interval",8000)
-                                             //.setValue("max_interval",15000).setValue("merge_fast",false),
                                            new MERGE3().setValue("min_interval",1000)
                                              .setValue("max_interval",5000)
                                              .setValue("max_participants_in_merge", MAX_PARTICIPANTS_IN_MERGE),
@@ -98,7 +96,6 @@ public class LargeMergeTest {
                                            new STABLE().setValue("max_bytes",500000),
                                            new GMS().setValue("print_local_addr",false)
                                              .setValue("leave_timeout",100)
-                                               // .setValue("merge_timeout", 10000)
                                              .setValue("log_view_warnings",false)
                                              .setValue("view_ack_collection_timeout",2000)
                                              .setValue("log_collect_msgs",false));
@@ -135,8 +132,6 @@ public class LargeMergeTest {
 
         boolean merge_completed=true;
         for(int i=0; i < NUM; i++) {
-        //int i=0;
-        //for(;;) {
             merge_completed=true;
             System.out.println();
 

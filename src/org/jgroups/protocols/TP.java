@@ -5,6 +5,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.blocks.LazyRemovalCache;
 import org.jgroups.conf.PropertyConverters;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -503,6 +504,9 @@ public abstract class TP extends Protocol {
             suppress_log_different_version.getCache().clear();
     }
 
+
+    @ManagedAttribute(description="Type of logger used")
+    public static String loggerType() {return LogFactory.loggerType();}
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
 
@@ -1333,7 +1337,7 @@ public abstract class TP extends Protocol {
                                                        suppress_time_different_cluster_warnings,
                                                        cluster_name, channel_name, sender);
                 else
-                    log.warn(Util.getMessage("MsgDroppedDiffCluster", cluster_name, channel_name, sender));
+                    log.warn(Util.getMessage("MsgDroppedDiffCluster"), cluster_name, channel_name, sender);
             }
             return;
         }
@@ -1366,7 +1370,7 @@ public abstract class TP extends Protocol {
                                                        suppress_time_different_cluster_warnings,
                                                        ch_name, channel_name, sender);
                 else
-                    log.warn(Util.getMessage("BatchDroppedDiffCluster", ch_name, channel_name, sender));
+                    log.warn(Util.getMessage("BatchDroppedDiffCluster"), ch_name, channel_name, sender);
             }
             return;
         }
@@ -1404,7 +1408,7 @@ public abstract class TP extends Protocol {
                                                            suppress_time_different_version_warnings,
                                                            sender, Version.print(version), Version.printVersion());
                     else
-                        log.warn(Util.getMessage("VersionMismatch", sender, Version.print(version), Version.printVersion()));
+                        log.warn(Util.getMessage("VersionMismatch"), sender, Version.print(version), Version.printVersion());
                 }
                 return;
             }

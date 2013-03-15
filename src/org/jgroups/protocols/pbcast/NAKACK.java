@@ -726,7 +726,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                                                 local_addr, hdr.seqno, sender, view);
                 }
                 else
-                    log.warn(Util.getMessage("MsgDroppedNak", local_addr, hdr.seqno, sender, view));
+                    log.warn(Util.getMessage("MsgDroppedNak"), local_addr, hdr.seqno, sender, view);
             }
             return;
         }

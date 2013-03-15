@@ -209,7 +209,7 @@ public class ConfiguratorFactory {
         XmlConfigurator returnValue=null;
         InputStream configStream=getConfigStream(properties);
         if(configStream == null && properties.endsWith(".xml"))
-            throw new FileNotFoundException(Util.getMessage("FileNotFound", properties));
+            throw new FileNotFoundException(String.format(Util.getMessage("FileNotFound"), properties));
 
         if (configStream != null) {
             checkJAXPAvailability();

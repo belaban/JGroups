@@ -9,6 +9,7 @@ import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
 
@@ -388,7 +389,8 @@ public class UDP extends TP {
         }
 
         setBufferSizes();
-        if(log.isDebugEnabled()) log.debug("socket information:\n" + dumpSocketInfo());
+        if(log.isDebugEnabled())
+            log.debug("socket information:\n" + dumpSocketInfo());
     }
 
 
@@ -498,23 +500,18 @@ public class UDP extends TP {
 
     protected String dumpSocketInfo() throws Exception {
         StringBuilder sb=new StringBuilder(128);
-        sb.append(", mcast_addr=").append(mcast_addr);
-        sb.append(", bind_addr=").append(bind_addr);
-        sb.append(", ttl=").append(ip_ttl);
+        Formatter formatter=new Formatter(sb);
+        formatter.format("mcast_addr=%s, bind_addr=%s, ttl=%d", mcast_addr, bind_addr, ip_ttl);
 
-        if(sock != null) {
-            sb.append("\nsock: bound to ");
-            sb.append(sock.getLocalAddress().getHostAddress()).append(':').append(sock.getLocalPort());
-            sb.append(", receive buffer size=").append(sock.getReceiveBufferSize());
-            sb.append(", send buffer size=").append(sock.getSendBufferSize());
-        }
+        if(sock != null)
+            formatter.format("\nsock: bound to %s:%d, receive buffer size=%d, send buffer size=%d",
+                             sock.getLocalAddress().getHostAddress(), sock.getLocalPort(),
+                             sock.getReceiveBufferSize(), sock.getSendBufferSize());
 
-        if(mcast_sock != null) {
-            sb.append("\nmcast_sock: bound to ");
-            sb.append(mcast_sock.getInterface().getHostAddress()).append(':').append(mcast_sock.getLocalPort());
-            sb.append(", send buffer size=").append(mcast_sock.getSendBufferSize());
-            sb.append(", receive buffer size=").append(mcast_sock.getReceiveBufferSize());
-        }
+        if(mcast_sock != null)
+            formatter.format("\nmcast_sock: bound to %s:%d, send buffer size=%d, receive buffer size=%d",
+                             mcast_sock.getInterface().getHostAddress(), mcast_sock.getLocalPort(),
+                             mcast_sock.getSendBufferSize(), mcast_sock.getReceiveBufferSize());
         return sb.toString();
     }
 
@@ -532,8 +529,8 @@ public class UDP extends TP {
             sock.setSendBufferSize(send_buf_size);
             int actual_size=sock.getSendBufferSize();
             if(actual_size < send_buf_size && log.isWarnEnabled()) {
-                log.warn(Util.getMessage("IncorrectBufferSize", "send", sock.getClass().getSimpleName(),
-                                         Util.printBytes(send_buf_size), Util.printBytes(actual_size), "send", "net.core.wmem_max"));
+                log.warn(Util.getMessage("IncorrectBufferSize"), "send", sock.getClass().getSimpleName(),
+                                         Util.printBytes(send_buf_size), Util.printBytes(actual_size), "send", "net.core.wmem_max");
             }
         }
         catch(Throwable ex) {
@@ -544,8 +541,8 @@ public class UDP extends TP {
             sock.setReceiveBufferSize(recv_buf_size);
             int actual_size=sock.getReceiveBufferSize();
             if(actual_size < recv_buf_size && log.isWarnEnabled()) {
-                log.warn(Util.getMessage("IncorrectBufferSize", "receive", sock.getClass().getSimpleName(),
-                                         Util.printBytes(recv_buf_size), Util.printBytes(actual_size), "receive", "net.core.rmem_max"));
+                log.warn(Util.getMessage("IncorrectBufferSize"), "receive", sock.getClass().getSimpleName(),
+                                         Util.printBytes(recv_buf_size), Util.printBytes(actual_size), "receive", "net.core.rmem_max");
             }
         }
         catch(Throwable ex) {
@@ -594,7 +591,8 @@ public class UDP extends TP {
     void stopThreads() {
         if(mcast_receiver != null)
             mcast_receiver.stop();
-        ucast_receiver.stop();
+        if(ucast_receiver != null)
+            ucast_receiver.stop();
     }
 
 

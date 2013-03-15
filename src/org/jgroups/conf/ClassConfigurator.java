@@ -3,8 +3,6 @@ package org.jgroups.conf;
 
 
 import org.jgroups.Global;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 import org.w3c.dom.Document;
@@ -52,8 +50,6 @@ public class ClassConfigurator {
     private static final Map<Class,Short> protocol_ids=new HashMap<Class,Short>(MAX_MAGIC_VALUE);
     private static final Map<Short,Class> protocol_names=new HashMap<Short,Class>(MAX_MAGIC_VALUE);
 
-    protected static final Log log=LogFactory.getLog(ClassConfigurator.class);
-
 
     static {
         try {
@@ -77,8 +73,6 @@ public class ClassConfigurator {
                                                null, null, false, MAGIC_NUMBER_FILE);
             protocol_id_file=Util.getProperty(new String[]{Global.PROTOCOL_ID_FILE, "org.jgroups.conf.protocolIDFile"},
                                               null, null, false, PROTOCOL_ID_FILE);
-            if(log.isDebugEnabled()) log.debug("Using " + magic_number_file + " as magic number file and " +
-                                                 protocol_id_file + " for protocol IDs");
         }
         catch (SecurityException ex){
         }
@@ -158,15 +152,8 @@ public class ClassConfigurator {
      * @param clazzname a fully classified class name to be loaded
      * @return a Class object that represents a class that implements java.io.Externalizable
      */
-    public static Class get(String clazzname) {
-        try {
-            // return ClassConfigurator.class.getClassLoader().loadClass(clazzname);
-            return Util.loadClass(clazzname, ClassConfigurator.class);
-        }
-        catch(Exception x) {
-            if(log.isErrorEnabled()) log.error("failed loading class " + clazzname, x);
-        }
-        return null;
+    public static Class get(String clazzname) throws ClassNotFoundException {
+        return Util.loadClass(clazzname, ClassConfigurator.class);
     }
 
     /**
@@ -237,11 +224,8 @@ public class ClassConfigurator {
         InputStream stream;
         stream=Util.getResourceAsStream(name, ClassConfigurator.class);
         // try to load the map from file even if it is not a Resource in the class path
-        if(stream == null) {
-            if(log.isTraceEnabled())
-                log.trace("Could not read " + name + " from the CLASSPATH, will try to read it from file");
+        if(stream == null)
             stream=new FileInputStream(name);
-        }
         return parse(stream);
     }
 

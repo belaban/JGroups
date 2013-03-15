@@ -33,6 +33,11 @@
                 unittests, then xalan.jar needs to be in the CLASSPATH (also
                 available in the lib directory)
             </listitem>
+            <listitem>
+                Logging: by default, JGroups tries to use log4j2. If the classes are not found on the classpath, it
+                resorts to log4j, and if still not found, it falls back to the java.util.logging logger.
+                See <xref linkend="Logging"/> for details on log configuration.
+            </listitem>
         </itemizedlist>
 
     </section>
@@ -167,6 +172,67 @@
                 </para>
             </listitem>
         </orderedlist>
+    </section>
+
+    <section id="Logging">
+        <title>Logging</title>
+        <para>
+            JGroups has no runtime dependencies; all that's needed to use it is to have jgroups.jar on the classpath.
+            For logging, this means the JVM's logging (java.util.logging) is used.
+        </para>
+        <para>
+            However, JGroups can use any other logging framework. By default, log4j and log4j2 are supported if the
+            corresponding JARs are found on the classpath.
+        </para>
+
+        <section id="log4j2">
+            <title>log4j2</title>
+            <para>
+                To use (<ulink url="http://logging.apache.org/log4j/2.x/manual/index.html">log4j2</ulink>), the
+                API and CORE JARs have to be found on the classpath. There's an XML configuration for log4j2 in the
+                conf dir, which can be used e.g. via -Dlog4j.configurationFile=$JGROUPS/conf/log4j2.xml.
+            </para>
+            <para>
+                log4j2 is currently the preferred logging library used by JGroups, and will be used even if the log4j
+                JAR is also present on the classpath.
+            </para>
+        </section>
+        <section id="log4j">
+            <title>log4j</title>
+            <para>
+                To use (<ulink url="http://logging.apache.org/log4j/1.2">log4j</ulink>), the log4j JAR has to be found
+                on the classpath. Note though that if the log4j2 API and CORE JARs are found, then log4j2 will be used,
+                so those JARs will have to be removed if log4j is to be used. There's an XML configuration for log4j in
+                the conf dir, which can be used e.g. via -Dlog4j.configuration=file:$JGROUPS/conf/log4j.properties.
+            </para>
+        </section>
+        <section id="JUL">
+            <title>JDK logging (JUL)</title>
+            <para>
+                To force use of JDK logging, even if the log4j(2) JARs are present, -Djgroups.use.jdk_logger=true
+                can be used.
+            </para>
+        </section>
+        <section id="CustomLoggers">
+            <title>Support for custom logging frameworks</title>
+            <para>
+                JGroups allows custom loggers to be used instead of the ones supported by default. To do this, interface
+                CustomLogFactory has to be implemented:
+            </para>
+            <programlisting language="Java">
+public interface CustomLogFactory {
+    Log getLog(Class clazz);
+    Log getLog(String category);
+}
+            </programlisting>
+            <para>
+                The implementation needs to return an implementation of org.jgroups.logging.Log.
+            </para>
+            <para>
+                To force using the custom log implementation, the fully qualified classname of the custom log
+                factory has to be provided via -Djgroups.logging.log_factory_class=com.foo.MyCustomLogger.
+            </para>
+        </section>
     </section>
 
     <section id="TestingTheSetup">

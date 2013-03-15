@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  * @since 3.0.0
  */
-@Experimental
 @MBean(description="Protocol to maintain distributed atomic counters")
 public class COUNTER extends Protocol {
 

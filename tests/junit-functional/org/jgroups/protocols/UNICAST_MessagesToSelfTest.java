@@ -8,12 +8,13 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -43,8 +44,10 @@ public class UNICAST_MessagesToSelfTest {
     @Test(dataProvider="configProvider")
     public void testReceptionOfAllMessages(Protocol prot) throws Throwable {
         System.out.println("prot=" + prot.getClass().getSimpleName());
-        ch=createChannel(prot, null);
+        ch=createChannel(prot, null).name("A");
         ch.connect("UNICAST_Test.testReceptionOfAllMessages");
+        a1=ch.getAddress();
+        assert a1 != null;
         _testReceptionOfAllMessages();
     }
 
@@ -54,8 +57,10 @@ public class UNICAST_MessagesToSelfTest {
         System.out.println("prot=" + prot.getClass().getSimpleName());
         DISCARD discard=new DISCARD();
         discard.setDownDiscardRate(0.1); // discard all down message with 10% probability
-        ch=createChannel(prot, discard);
+        ch=createChannel(prot, discard).name("A");
         ch.connect("UNICAST_Test.testReceptionOfAllMessagesWithDISCARD");
+        a1=ch.getAddress();
+        assert a1 != null;
         _testReceptionOfAllMessages();
     }
 
@@ -73,6 +78,9 @@ public class UNICAST_MessagesToSelfTest {
 
         if(discard != null)
             stack.addProtocol(discard);
+
+        if(unicast instanceof UNICAST2)
+            unicast.setValue("stable_interval", 3000);
         
         stack.addProtocol(new PING().setValue("timeout", 100))
           .addProtocol(new NAKACK2().setValue("use_mcast_xmit", false))
@@ -97,7 +105,7 @@ public class UNICAST_MessagesToSelfTest {
                 System.out.println("==> " + i);
         }
 
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 20; i++) {
             if(r.getException() != null)
                 throw r.getException();
             if(r.getNumberOfReceivedMessages() >= NUM_MSGS)
@@ -106,7 +114,22 @@ public class UNICAST_MessagesToSelfTest {
         }
         int num_received=r.getNumberOfReceivedMessages();
         printStats(num_received);
-        Assert.assertEquals(num_received, NUM_MSGS);
+
+        assert num_received == NUM_MSGS : "list is " + printList(r.getList()) ;
+    }
+
+
+    protected String printList(List<Integer> list) {
+        StringBuilder sb=new StringBuilder();
+        for(int i=0; i < 10; i++)
+            sb.append(list.get(i) + " ");
+
+        sb.append(" ... ");
+
+        for(int i=list.size() - 10; i < list.size(); i++)
+            sb.append(list.get(i) + " ");
+
+        return sb.toString();
     }
 
 
@@ -115,9 +138,10 @@ public class UNICAST_MessagesToSelfTest {
     }
 
     /** Checks that messages 1 - NUM_MSGS are received in order */
-    static class Receiver extends ReceiverAdapter {
+    protected static class Receiver extends ReceiverAdapter {
         int num_mgs_received=0, next=1;
         Throwable exception=null;
+        protected final List<Integer> list=new ArrayList<Integer>(NUM_MSGS);
 
         public void receive(Message msg) {
             if(exception != null)
@@ -128,6 +152,7 @@ public class UNICAST_MessagesToSelfTest {
                 exception=new Exception("expected seqno was " + next + ", but received " + seqno);
                 return;
             }
+            list.add(seqno);
             next++;
             num_mgs_received++;
             if(num_mgs_received % 1000 == 0)
@@ -136,6 +161,7 @@ public class UNICAST_MessagesToSelfTest {
 
         public int       getNumberOfReceivedMessages() {return num_mgs_received;}
         public Throwable getException()                {return exception;}
+        public List<Integer> getList() {return list;}
     }
 
 

@@ -763,7 +763,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     suppress_log_non_member.log(SuppressLog.Level.warn, sender, suppress_time_non_member_warnings,
                                                 local_addr, hdr.seqno, sender, view);
                 else
-                    log.warn(Util.getMessage("MsgDroppedNak", local_addr, hdr.seqno, sender, view));
+                    log.warn(Util.getMessage("MsgDroppedNak"), local_addr, hdr.seqno, sender, view);
             }
             return;
         }
@@ -808,7 +808,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     suppress_log_non_member.log(SuppressLog.Level.warn, sender, suppress_time_non_member_warnings,
                                                 local_addr, "batch", sender, view);
                 else
-                    log.warn(Util.getMessage("MsgDroppedNak", local_addr, "batch", sender, view));
+                    log.warn(Util.getMessage("MsgDroppedNak"), local_addr, "batch", sender, view);
             }
             return;
         }

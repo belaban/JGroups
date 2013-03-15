@@ -13,17 +13,22 @@ if [ ! -d $LIB ]; then
     LIB=$JG
 fi;
 
-for i in $LIB/*.jar
-do
-    CP=$CP:$i
-done
+CP=$CP:$LIB/*
 
 if [ -f $HOME/log4j.properties ]; then
     LOG="-Dlog4j.configuration=file:$HOME/log4j.properties"
 fi;
 
-JG_FLAGS="-Dresolve.dns=false -Djgroups.bind_addr=$IP_ADDR -Djboss.tcpping.initial_hosts=$IP_ADDR[7800]"
-JG_FLAGS="$JG_FLAGS -Djava.net.preferIPv4Stack=true -Djgroups.timer.num_threads=4"
+if [ -f $HOME/log4j2.xml ]; then
+    LOG="$LOG -Dlog4j.configurationFile=$HOME/log4j2.xml"
+fi;
+
+if [ -f $HOME/logging.properties ]; then
+    LOG="$LOG -Djava.util.logging.config.file=$HOME/logging.properties"
+fi;
+
+JG_FLAGS="-Djgroups.bind_addr=$IP_ADDR -Djboss.tcpping.initial_hosts=$IP_ADDR[7800]"
+JG_FLAGS="$JG_FLAGS -Djava.net.preferIPv4Stack=true"
 FLAGS="-server -Xmx600M -Xms600M"
 FLAGS="$FLAGS -XX:CompileThreshold=10000 -XX:+AggressiveHeap -XX:ThreadStackSize=64K -XX:SurvivorRatio=8"
 FLAGS="$FLAGS -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=31"
@@ -42,5 +47,5 @@ EXPERIMENTAL="$EXPERIMENTAL -XX:+EliminateLocks -XX:+UseBiasedLocking"
 
 #DEBUG="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5000"
 
-java -classpath $CP $DEBUG $LOG $JG_FLAGS $FLAGS $EXPERIMENTAL $JMX  $*
+java -cp $CP $DEBUG $LOG $JG_FLAGS $FLAGS $EXPERIMENTAL $JMX  $*
 

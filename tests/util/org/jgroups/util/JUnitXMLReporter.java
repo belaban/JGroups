@@ -31,8 +31,8 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
 
     protected final ConcurrentMap<Class<?>, DataOutputStream> tests=new ConcurrentHashMap<Class<?>,DataOutputStream>(100);
 
-    public static final InheritableThreadLocal<PrintStream>      stdout=new InheritableThreadLocal<PrintStream>();
-    public static final InheritableThreadLocal<PrintStream>      stderr=new InheritableThreadLocal<PrintStream>();
+    public static final InheritableThreadLocal<PrintStream>   stdout=new InheritableThreadLocal<PrintStream>();
+    public static final InheritableThreadLocal<PrintStream>   stderr=new InheritableThreadLocal<PrintStream>();
 
 
 
@@ -40,9 +40,9 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
     public void onStart(ITestContext context) {
         output_dir=context.getOutputDirectory();
         // Uncomment to delete dir created by previous run of this testsuite
-        //        File dir=new File(output_dir);
-        //        if(dir.exists())
-        //            deleteContents(dir);
+        File dir=new File(output_dir);
+        if(dir.exists())
+            deleteContents(dir);
 
         try {
             System.setOut(new MyOutput(1));
@@ -270,7 +270,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         Writer out=new FileWriter(xml_file);
         String classname=dir.getName();
         String suffix=parent.getName();
-        if(suffix != null && suffix.length() > 0)
+        if(suffix != null && !suffix.isEmpty())
             classname=classname + "-" + suffix;
         try {
             generateReport(out, classname, test_cases, stdout_reader, stderr_reader);
@@ -517,8 +517,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         }
 
         public void write(final int b) {
-            Integer i = new Integer(b) ;
-            append(i.toString(), false) ;
+            append(String.valueOf(b), false) ;
         }
 
         public void println(String s) {

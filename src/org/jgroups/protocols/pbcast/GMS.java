@@ -592,7 +592,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 setDigest(digest);
         }
 
-        if(log.isDebugEnabled()) log.debug(local_addr + ": installing view " + new_view);
+        if(log.isDebugEnabled()) log.debug(local_addr + ": installing " + new_view);
 
         Event view_event;
         synchronized(members) {

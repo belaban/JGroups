@@ -427,7 +427,7 @@ public class Configurator {
             catch(ClassNotFoundException e) {
             }
             if(clazz == null)
-                throw new Exception(Util.getMessage("ProtocolLoadError", protocol_name, defaultProtocolName));
+                throw new Exception(String.format(Util.getMessage("ProtocolLoadError"), protocol_name, defaultProtocolName));
         }
 
         try {
@@ -456,10 +456,10 @@ public class Configurator {
             }
 
             if(!properties.isEmpty())
-                throw new IllegalArgumentException(Util.getMessage("ConfigurationError", protocol_name, properties));
+                throw new IllegalArgumentException(String.format(Util.getMessage("ConfigurationError"), protocol_name, properties));
         }
         catch(InstantiationException inst_ex) {
-            throw new InstantiationException(Util.getMessage("ProtocolCreateError",protocol_name, inst_ex.getLocalizedMessage()));
+            throw new InstantiationException(String.format(Util.getMessage("ProtocolCreateError"), protocol_name, inst_ex.getLocalizedMessage()));
         }
         return retval;
     }
@@ -1084,8 +1084,8 @@ public class Configurator {
             if(propertyName != null && propertyValue != null) {
                 String deprecated_msg=annotation.deprecatedMessage();
                 if(deprecated_msg != null && !deprecated_msg.isEmpty()) {
-                    log.warn(Util.getMessage("Deprecated", method.getDeclaringClass().getSimpleName() + "." + methodName,
-                                             deprecated_msg));
+                    log.warn(Util.getMessage("Deprecated"), method.getDeclaringClass().getSimpleName() + "." + methodName,
+                                             deprecated_msg);
                 }
             }
 
@@ -1131,8 +1131,8 @@ public class Configurator {
                 String deprecated_msg=annotation.deprecatedMessage();
                 if(deprecated_msg != null && !deprecated_msg.isEmpty()) {
 
-                    log.warn(Util.getMessage("Deprecated", field.getDeclaringClass().getSimpleName() + "." + field.getName(),
-                                             deprecated_msg));
+                    log.warn(Util.getMessage("Deprecated"), field.getDeclaringClass().getSimpleName() + "." + field.getName(),
+                                             deprecated_msg);
                 }
             }
             

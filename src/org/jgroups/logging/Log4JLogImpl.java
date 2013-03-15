@@ -3,6 +3,9 @@ package org.jgroups.logging;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import java.util.Arrays;
+import java.util.IllegalFormatException;
+
 /**
  * Logger that delivers messages to a Log4J logger
  * 
@@ -49,51 +52,81 @@ public class Log4JLogImpl implements Log {
     }
 
     public void debug(String msg) {
-        logger.log(FQCN, Level.DEBUG, msg, null);
+        logger.log(FQCN,Level.DEBUG,msg,null);
+    }
+
+    public void debug(String msg, Object... args) {
+        if(isDebugEnabled())
+            debug(format(msg, args));
     }
 
     public void debug(String msg, Throwable throwable) {
-        logger.log(FQCN, Level.DEBUG, msg, throwable);
+        logger.log(FQCN,Level.DEBUG,msg,throwable);
     }
 
     public void error(String msg) {
-        logger.log(FQCN, Level.ERROR, msg, null);
+        logger.log(FQCN,Level.ERROR,msg,null);
+    }
+
+    public void error(String format, Object... args) {
+        if(isErrorEnabled())
+            error(format(format,args));
     }
 
     public void error(String msg, Throwable throwable) {
-        logger.log(FQCN, Level.ERROR, msg, throwable);
+        logger.log(FQCN,Level.ERROR,msg,throwable);
     }
 
     public void fatal(String msg) {
-        logger.log(FQCN, Level.FATAL, msg, null);
+        logger.log(FQCN,Level.FATAL,msg,null);
+    }
+
+    public void fatal(String msg, Object... args) {
+        if(isFatalEnabled())
+            fatal(format(msg, args));
     }
 
     public void fatal(String msg, Throwable throwable) {
-        logger.log(FQCN, Level.FATAL, msg, throwable);
+        logger.log(FQCN,Level.FATAL,msg,throwable);
     }
 
     public void info(String msg) {
-        logger.log(FQCN, Level.INFO, msg, null);
+        logger.log(FQCN,Level.INFO,msg,null);
+    }
+
+    public void info(String msg, Object... args) {
+        if(isInfoEnabled())
+            info(format(msg, args));
     }
 
     public void trace(Object msg) {
-        logger.log(FQCN, Level.TRACE, msg, null);
+        logger.log(FQCN,Level.TRACE,msg,null);
     }
 
     public void trace(String msg) {
-        logger.log(FQCN, Level.TRACE, msg, null);
+        logger.log(FQCN,Level.TRACE,msg,null);
+    }
+
+    public void trace(String msg, Object... args) {
+        if(isTraceEnabled())
+            trace(format(msg, args));
     }
 
     public void trace(String msg, Throwable throwable) {
-        logger.log(FQCN, Level.TRACE, msg, throwable);
+        logger.log(FQCN,Level.TRACE,msg,throwable);
     }
 
     public void warn(String msg) {
-        logger.log(FQCN, Level.WARN, msg, null);
+        logger.log(FQCN,Level.WARN,msg,null);
+    }
+
+    public void warn(String msg, Object... args) {
+        if(isWarnEnabled())
+            warn(format(msg, args));
     }
 
     public void warn(String msg, Throwable throwable) {
-        logger.log(FQCN, Level.WARN, msg, throwable);
+        logger.log(FQCN,Level.WARN,msg,throwable);
     }
 
     public String getLevel() {
@@ -107,7 +140,20 @@ public class Log4JLogImpl implements Log {
             logger.setLevel(new_level);
     }
 
-    private static Level strToLevel(String level) {
+    protected String format(String format, Object... args) {
+        try {
+            return String.format(format, args);
+        }
+        catch(IllegalFormatException ex) {
+            error("Illegal format string \"" + format + "\", args=" + Arrays.toString(args));
+        }
+        catch(Throwable t) {
+            error("Failure formatting string: format string=" + format + ", args=" + Arrays.toString(args));
+        }
+        return format;
+    }
+
+    protected static Level strToLevel(String level) {
         if (level == null)
             return null;
         level = level.toLowerCase().trim();

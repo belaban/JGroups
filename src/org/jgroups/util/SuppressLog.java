@@ -2,8 +2,6 @@ package org.jgroups.util;
 
 import org.jgroups.logging.Log;
 
-import java.text.MessageFormat;
-
 /**
  * Log (using {@link SuppressCache}) which suppresses (certain) messages from the same member for a given time
  * @author Bela Ban
@@ -38,8 +36,8 @@ public class SuppressLog<T> {
         if(val == null) // key is present and hasn't expired
             return;
 
-        String message=val.count() == 1? MessageFormat.format(message_format, args) :
-          MessageFormat.format(message_format, args) + " " + MessageFormat.format(suppress_format, val.count(), key, val.age());
+        String message=val.count() == 1? String.format(message_format, args) :
+          String.format(message_format, args) + " " + String.format(suppress_format, val.count(), key, val.age());
 
         if(level == Level.error)
             log.error(message);

@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentMap;
  * @since 2.11
  */
 @MBean(description="Server side STOPM protocol, STOMP clients can connect to it")
-@Experimental
 public class STOMP extends Protocol implements Runnable {
 
     /* -----------------------------------------    Properties     ----------------------------------------------- */

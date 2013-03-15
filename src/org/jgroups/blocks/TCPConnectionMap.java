@@ -285,7 +285,7 @@ public class TCPConnectionMap {
                     if(ex instanceof SocketException && srv_sock.isClosed() || Thread.currentThread().isInterrupted())
                         break;
                     if(log.isWarnEnabled())
-                        log.warn(Util.getMessage("AcceptError", ex));
+                        log.warn(Util.getMessage("AcceptError"), ex);
                     Util.close(client_sock);
                 }
             }

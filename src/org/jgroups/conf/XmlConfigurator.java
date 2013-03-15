@@ -170,7 +170,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             Element configElement = document.getDocumentElement();
             return parse(configElement);
         } catch (Exception x) {
-            throw new IOException(Util.getMessage("ParseError", x.getLocalizedMessage()));
+            throw new IOException(String.format(Util.getMessage("ParseError"), x.getLocalizedMessage()));
         }
     }
 

@@ -108,7 +108,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected AgeOutCache<Address>     cache;
 
-    protected Future<?>                connection_reaper; // closes idle connections
 
 
 
@@ -121,9 +120,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     @ManagedAttribute
     public String getMembers() {return members.toString();}
-
-    @ManagedAttribute(description="Whether the ConnectionReaper task is running")
-    public boolean isConnectionReaperRunning() {return connection_reaper != null && !connection_reaper.isDone();}
 
     @ManagedAttribute(description="Returns the number of outgoing (send) connections")
     public int getNumSendConnections() {
@@ -399,7 +395,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                     log.trace(local_addr + " <-- CLOSE(" + sender + ": conn-id=" + hdr.conn_id + ")");
                 ReceiverEntry entry=recv_table.get(sender);
                 if(entry != null && entry.connId() == hdr.conn_id) {
-                    recv_table.remove(sender);
+                    recv_table.remove(sender, entry);
                     if(log.isTraceEnabled())
                         log.trace(local_addr + ": removed receive connection for " + sender);
                 }
@@ -486,7 +482,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 SenderEntry entry=send_table.get(dst);
                 if(entry == null || entry.state() == State.CLOSED) {
                     if(entry != null)
-                        send_table.remove(dst);
+                        send_table.remove(dst, entry);
                     entry=new SenderEntry(getNewConnectionId());
                     SenderEntry existing=send_table.putIfAbsent(dst, entry);
                     if(existing != null)

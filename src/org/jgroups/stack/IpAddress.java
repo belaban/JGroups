@@ -33,7 +33,7 @@ public class IpAddress implements PhysicalAddress {
         * running in an untrusted environment  with JNLP */
         try {
             String tmp=Util.getProperty(new String[]{Global.RESOLVE_DNS, "resolve.dns"}, null, null, false, "false"); 
-            resolve_dns=Boolean.valueOf(tmp).booleanValue();
+            resolve_dns=Boolean.valueOf(tmp);
         }
         catch (SecurityException ex){
             resolve_dns=false;

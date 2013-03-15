@@ -1,7 +1,6 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
@@ -23,7 +22,6 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  * @since 3.1
  */
-@Experimental
 @MBean(description="Implements synchronous acks for messages which have their RSVP flag set)")
 public class RSVP extends Protocol {
 

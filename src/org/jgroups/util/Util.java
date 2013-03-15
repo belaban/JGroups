@@ -33,7 +33,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
@@ -219,11 +218,6 @@ public class Util {
         return key != null? resource_bundle.getString(key) : null;
     }
 
-    public static String getMessage(String key, Object ... args) {
-        String msg=getMessage(key);
-        return msg != null? MessageFormat.format(msg, args) : null;
-    }
-
 
     public static Protocol[] getTestStack() {
         return new Protocol[]{
@@ -308,7 +302,7 @@ public class Util {
     public static void setScope(Message msg, short scope) {
         SCOPE.ScopeHeader hdr=SCOPE.ScopeHeader.createMessageHeader(scope);
         msg.putHeader(Global.SCOPE_ID, hdr);
-        msg.setFlag(Message.SCOPED);
+        msg.setFlag(Message.Flag.SCOPED);
     }
 
     public static short getScope(Message msg) {
@@ -1087,8 +1081,6 @@ public class Util {
         else {
             classname=in.readUTF();
             clazz=ClassConfigurator.get(classname);
-            if (clazz==null)
-                throw new ClassNotFoundException(classname);
         }
 
         retval=(Streamable)clazz.newInstance();
@@ -1121,8 +1113,6 @@ public class Util {
         else {
             String classname=in.readUTF();
             clazz=ClassConfigurator.get(classname);
-            if(clazz == null)
-                throw new ClassNotFoundException(classname);
         }
 
         return clazz;

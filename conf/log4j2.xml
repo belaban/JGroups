@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appenders>
+        <Console name="STDOUT" target="SYSTEM_OUT" follow="true">
+            <!--PatternLayout pattern="%-7d{HH:mm:ss,SSS} [%p] %c: %m%n"/-->
+            <PatternLayout pattern="%r [%p] %c{1}: %m%n"/> 
+        </Console>
+    </appenders>
+    <loggers>
+        <root level="warn">
+            <appender-ref ref="STDOUT"/>
+        </root>
+        <logger name="org.jgroups" level="warn"/>
+    </loggers>
+</configuration>

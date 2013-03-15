@@ -388,48 +388,29 @@
 
     <target name="functional" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
-        <testng classpathref="jg.classpath"
-                usedefaultlisteners="false"
-                outputdir="${tmp.dir}/test-results/xml"
-                listeners="org.jgroups.util.JUnitXMLReporter"
-                threadcount="10"
-                parallel="methods"
-                >
-        	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
-        	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
-            <xmlfileset dir="${testng.conf.dir}" includes="functional.xml"/>
-        </testng>
+        <runtest testname.ext="functional"
+                 threadcount="10"
+                 parallel="methods"
+                 testng.xmlfile="functional.xml"/>
     </target>
+
 
     <target name="byteman" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/byteman"/>
-        <testng classpathref="jg.classpath.byteman"
-                usedefaultlisteners="false"
-                outputdir="${tmp.dir}/test-results/xml"
-                listeners="org.jgroups.util.JUnitXMLReporter"
-                threadcount="1"
-                parallel="false" 
-                >
-        	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
-        	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
-            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
-            <xmlfileset dir="${testng.conf.dir}" includes="byteman.xml"/>
-        </testng>
+        <runtest classpath="jg.classpath.byteman"
+                 testname.ext="byteman"
+                 threadcount="1"
+                 parallel="false"
+                 testng.xmlfile="byteman.xml"/>
     </target>
+
 
     <target name="time-sensitive" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/time-sensitive"/>
-        <testng classpathref="jg.classpath"
-                usedefaultlisteners="false"
-                outputdir="${tmp.dir}/test-results/xml"
-                listeners="org.jgroups.util.JUnitXMLReporter"
-                threadcount="1"
-                parallel="methods"
-                >
-        	<jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
-        	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
-            <xmlfileset dir="${testng.conf.dir}" includes="time-sensitive.xml"/>
-        </testng>
+        <runtest testname.ext="sensitive"
+                 threadcount="1"
+                 parallel="methods"
+                 testng.xmlfile="time-sensitive.xml"/>
     </target>
 
     <target name="stack-independent" depends="postcompile">
@@ -538,6 +519,7 @@
 
 
     <macrodef name="runtest" description="Runs a configuration-dependent test suite">
+        <attribute name="classpath" default="jg.classpath"/>
         <attribute name="outputdir" default="${tmp.dir}/test-results/xml"/>
         <attribute name="parallel" default="methods"/>
         <attribute name="testname.ext" default="udp"/>
@@ -549,7 +531,7 @@
         <attribute name="tcp.recv.buf.size" default="200000"/>
         <attribute name="tcp.send.buf.size" default="64000"/>
         <sequential>
-            <testng classpathref="jg.classpath"
+            <testng classpathref="@{classpath}"
                     usedefaultlisteners="false"
                     outputdir="@{outputdir}"
                     listeners="org.jgroups.util.JUnitXMLReporter"
@@ -568,6 +550,7 @@
                 <jvmarg value="-Djgroups.tunnel.gossip_router_hosts=${jgroups.tunnel.gossip_router_hosts}"/>
                 <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
                 <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
+                <jvmarg value="-Dlog4j.configurationFile=${conf.dir}/log4j2.xml"/>
                 <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
     		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
                 <jvmarg value="-Xms400M"/>
