@@ -6,10 +6,11 @@ import org.jgroups.Message;
 import org.jgroups.logging.Log;
 import org.jgroups.stack.Protocol;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -25,9 +26,6 @@ public class ForwardQueue {
     protected Protocol                          up_prot, down_prot;
 
     protected Address                           local_addr;
-
-    /** The address to send messages to (e.g. the coordinator in {@link org.jgroups.protocols.FORWARD_TO_COORD}) */
-    // protected volatile Address                  target;
 
     /** Maintains messages forwarded to the target which which no ack has been received yet.
      *  Needs to be sorted so we can resend them in the right order */
@@ -46,7 +44,7 @@ public class ForwardQueue {
     protected final AtomicInteger               in_flight_sends=new AtomicInteger(0);
 
     // Maintains received seqnos, so we can weed out dupes
-    protected final ConcurrentMap<Address,NavigableSet<Long>> delivery_table=Util.createConcurrentMap();
+    protected final ConcurrentMap<Address,BoundedHashMap<Long,Long>> delivery_table=Util.createConcurrentMap();
 
     protected volatile Flusher                  flusher;
 
@@ -82,7 +80,7 @@ public class ForwardQueue {
     /** Total size of all queues of the delivery table */
     public int deliveryTableSize() {
         int retval=0;
-        for(Set<Long> val: delivery_table.values())
+        for(BoundedHashMap<Long,Long> val: delivery_table.values())
             retval+=val.size();
         return retval;
     }
@@ -236,26 +234,14 @@ public class ForwardQueue {
      * Note that this method is never called concurrently for the same sender.
      */
     protected boolean canDeliver(Address sender, long seqno) {
-        NavigableSet<Long> seqno_set=delivery_table.get(sender);
+        BoundedHashMap<Long,Long> seqno_set=delivery_table.get(sender);
         if(seqno_set == null) {
-            seqno_set=new ConcurrentSkipListSet<Long>();
-            NavigableSet<Long> existing=delivery_table.put(sender,seqno_set);
+            seqno_set=new BoundedHashMap<Long,Long>(delivery_table_max_size);
+            BoundedHashMap<Long,Long> existing=delivery_table.put(sender,seqno_set);
             if(existing != null)
                 seqno_set=existing;
         }
-
-        boolean added=seqno_set.add(seqno);
-        int size=seqno_set.size();
-        if(size > delivery_table_max_size) {
-            // trim the seqno_set to delivery_table_max_size elements by removing the first N seqnos
-
-            // iteration: very bad !!!
-            for(int i=0; i < size - delivery_table_max_size; i++) {
-                if(seqno_set.pollFirst() == null)
-                    break;
-            }
-        }
-        return added;
+        return seqno_set.add(seqno, seqno);
     }
 
     protected void block() {
