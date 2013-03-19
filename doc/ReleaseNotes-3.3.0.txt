@@ -21,11 +21,143 @@ New features
 ============
 
 
+Message batching
+----------------
+[https://issues.jboss.org/browse/JGRP-1564]
+[https://issues.jboss.org/browse/JGRP-1581]
+
+On the receiver, message bundles received are passed up together, in the form of message batches. The advantage is
+that the costs for passing up messages is amortized, as (e.g.) locks are acquired only once per batch instead of
+once per message.
+
+
+Async Invocation API
+--------------------
+[https://issues.jboss.org/browse/JGRP-1587]
+
+This allows the recipient of a message in MessageDispatcher or RpcDispatcher to make the delivering thread return
+immediately (making it available for other requests) and to send the response later. The advantage is that it is the
+application which now decides how to deliver messages (e.g. sequentially or in parallel), and not JGroups.
+Documentation is here: http://www.jgroups.org/manual-3.x/html/user-building-blocks.html#AsyncInvocation.
+
+
+UNICAST3
+--------
+[https://issues.jboss.org/browse/JGRP-1589]
+
+New unicast protocol which combines the advantages of UNICAST and UNICAST2. UNICAST3 has the immediately delivery
+characteristics of UNICAST and the speed of UNICAST2. It is the default unicast protocol in 3.3.
+For details: https://github.com/belaban/JGroups/blob/master/doc/design/UNICAST3.txt
+
+
+New thread pool for JGroups-internal messages only
+--------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1599]
+
+Added a new thread pool to be used by JGroups only (internal_thread_pool.enabled=true|false). This prevents OOB
+messages sent by applications to clog the pool and slow internal messages such as heartbeats or flow control credits down.
+
+
+RELAY2 fixes and enhancements
+-----------------------------
+[https://issues.jboss.org/browse/JGRP-1517]
+[https://issues.jboss.org/browse/JGRP-1528]
+[https://issues.jboss.org/browse/JGRP-1542]
+[https://issues.jboss.org/browse/JGRP-1543]
+[https://issues.jboss.org/browse/JGRP-1547]
+
+When a coordinator crashes, messages are buffered until the new coordinator takes over. JGRP-1517 ensures that
+resending the buffered messages occurs before new messages are sent.
+
+JGRP-1528 rorwards messages in batches rather than individually, not blocking senders
+
+JGRP-1542 copies flags of relayed messages, so flags such as OOB are preserved.
+
+JGRP-1543 provides site-unreachable notifications, so callers know that a site is unreachable.
+
+JGRP-1547 provides timing stats for forwarding of messages
+
+
+PDC
+---
+[https://issues.jboss.org/browse/JGRP-1541]
+
+A new protocol to cache discovery responses on disk, suitable for use with (e.g.) TCPPING.
+
+SUPERVISOR
+----------
+[https://issues.jboss.org/browse/JGRP-1557]
+
+New protocol which can auto-correct (or log) things at runtime, based on rules
+
+
+Log4j2 is now the default logging framework used
+------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1585]
+
+Log4j is still supported, but log4j2 is preferred (more efficient and less blocking). See the documentation for details.
+
+
+Pick NIC based on pattern matching
+----------------------------------
+[https://issues.jboss.org/browse/JGRP-1606]
+
+E.g. UDP.match_interface="eth*"
+
 
 
 
 Optimizations
 =============
+
+NAKACK2: unneeded retransmissions
+---------------------------------
+[https://issues.jboss.org/browse/JGRP-1539]
+
+The retransmit algorithm in NAKACK2 would sometimes ask the sender to retransmit messages which were received a few ms
+later. This created unnecessary traffic. The adopted fix reduces the number of retransmits.
+
+
+TP: simplified message bundler
+------------------------------
+[https://issues.jboss.org/browse/JGRP-1540]
+
+The new bundler (enabled by default) is simpler and more efficient than the previous ones. It queues messages until
+a max size has been reached, or until no more messages are available in the queue, and then sends the queued messages
+as a message bundle.
+The advantage is that we now don't need the DONT_BUNDLE message flag anymore, as either the bundle will fill quickly,
+or no more message is available and so we send the message(s) quickly. This is important for sync RPCs.
+Note that OOB messages are now bundled, too, so if bundling is to be avoided, the DONT_BUNDLE flag has to be used.
+
+
+Speed improvements in FORWARD_TO_COORD and SEQUENCER
+----------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1544]
+[https://issues.jboss.org/browse/JGRP-1604]
+
+
+TCP: better handling of concurrent connections
+----------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1549]
+
+
+New Timer implementation
+------------------------
+[https://issues.jboss.org/browse/JGRP-1553]
+
+Efficient, faster and simpler than the previous implementations. This is the default now.
+
+
+STABLE: reduction of time until stability
+-----------------------------------------
+[https://issues.jboss.org/browse/JGRP-1570]
+[https://issues.jboss.org/browse/JGRP-1595]
+
+With increasing cluster size, it took much longer to achieve stability, as the time to send out a STABLE message was
+scaled with the cluster size. This is not done anymore, and we have now by default enabled
+send_stable_msgs_to_coord_only, which has members send their STABLE messages to the current coordinator only instead
+of multicasting them to all members (cuts down on traffic).
+
 
 
 
@@ -34,7 +166,14 @@ Bug fixes
 =========
 
 
+TCP: OOME when connecting to local port
+---------------------------------------
+[https://issues.jboss.org/browse/JGRP-1530]
 
+
+ENCRYPT: headers are not encrypted
+----------------------------------
+[https://issues.jboss.org/browse/JGRP-1531]
 
 
 
@@ -43,15 +182,9 @@ Manual
 
 The manual is at http://www.jgroups.org/manual-3.x/html/index.html.
 
-
-
 The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
 
 
 Bela Ban, Kreuzlingen, Switzerland
-Vladimir Blagojevic, Toronto, Canada
-Richard Achmatowicz, Toronto, Canada
-Sanne Grinovero, Newcastle, Great Britain
-
-DATE
+April 2013
 
