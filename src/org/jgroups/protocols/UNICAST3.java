@@ -56,6 +56,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
       "is compacted (only for experts)",writable=false)
     protected long    xmit_table_max_compaction_time=10 * 60 * 1000;
 
+    @Property(description="Max time (in ms) after which a connection to a non-member is closed")
+    protected long                   max_retransmit_time=60 * 1000L;
+
     @Property(description="Interval (in milliseconds) at which messages in the send windows are resent")
     protected long    xmit_interval=500;
 
@@ -103,8 +106,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected volatile boolean         running=false;
 
     protected short                    last_conn_id;
-
-    protected long                     max_retransmit_time=60 * 1000L;
 
     protected AgeOutCache<Address>     cache;
 
@@ -196,6 +197,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     public AgeOutCache<Address> getAgeOutCache() {
         return cache;
+    }
+
+    /** Used for testing only */
+    public boolean hasSendConnectionTo(Address dest) {
+        SenderEntry entry=send_table.get(dest);
+        return entry != null && entry.state() == State.OPEN;
     }
 
     /** The number of messages in all Entry.sent_msgs tables (haven't received an ACK yet) */

@@ -8,8 +8,11 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CyclicBarrier;
 
 /**
@@ -36,14 +39,28 @@ public class UNICAST_ConnectionTests {
     }
 
     protected void setup(Class<? extends Protocol> unicast_class) throws Exception {
+        setup(unicast_class, null);
+    }
+
+    protected void setup(Class<? extends Protocol> unicast_class, Map<String,Object> props) throws Exception {
         r1=new MyReceiver("A");
         r2=new MyReceiver("B");
         a=createChannel(unicast_class, "A");
+        if(props != null) {
+            Protocol prot=a.getProtocolStack().findProtocol(unicast_class);
+            for(Map.Entry<String,Object> entry: props.entrySet())
+                prot.setValue(entry.getKey(), entry.getValue());
+        }
         a.connect(CLUSTER);
         a_addr=a.getAddress();
         a.setReceiver(r1);
         u1=a.getProtocolStack().findProtocol(unicast_class);
         b=createChannel(unicast_class, "B");
+        if(props != null) {
+            Protocol prot=b.getProtocolStack().findProtocol(unicast_class);
+            for(Map.Entry<String,Object> entry: props.entrySet())
+                prot.setValue(entry.getKey(), entry.getValue());
+        }
         b.connect(CLUSTER);
         b_addr=b.getAddress();
         b.setReceiver(r2);
@@ -191,6 +208,24 @@ public class UNICAST_ConnectionTests {
         System.out.println("list = " + print(list));
 
         assert list.size() == 1 : "list must have 1 element but has " + list.size() + ": " + print(list);
+    }
+
+    @Test(dataProvider="configProvider")
+    public void testMessageToNonExistingMember(Class<? extends Protocol> unicast) throws Exception {
+        Map<String,Object> props=new HashMap<String,Object>(1);
+        props.put("max_retransmit_time",5000);
+        setup(unicast,props);
+        Address target=Util.createRandomAddress("FakeAddress");
+        a.send(target, "hello");
+        Protocol prot=a.getProtocolStack().findProtocol(unicast);
+        Method hasSendConnectionTo=unicast.getMethod("hasSendConnectionTo", Address.class);
+        for(int i=0; i < 10; i++) {
+            boolean result=(Boolean)hasSendConnectionTo.invoke(prot, target);
+            if(!result)
+                break;
+            Util.sleep(1000);
+        }
+        assert !(Boolean)hasSendConnectionTo.invoke(prot, target);
     }
 
 
