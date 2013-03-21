@@ -136,7 +136,7 @@ public class DiagnosticsHandler implements Runnable {
 
         while(tok.hasMoreTokens()) {
             String req=tok.nextToken().trim();
-            if(req.length() > 0)
+            if(!req.isEmpty())
                 list.add(req);
         }
 
