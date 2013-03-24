@@ -21,5 +21,4 @@
     <MFC/>
     <FRAG2/>
     <pbcast.STATE_TRANSFER/>
-    <pbcast.FLUSH timeout="2000"/>
 </config>
