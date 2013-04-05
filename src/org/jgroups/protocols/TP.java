@@ -1632,7 +1632,7 @@ public abstract class TP extends Protocol {
         msg.writeTo(dos);
     }
 
-    protected static Message readMessage(DataInputStream instream) throws Exception {
+    public static Message readMessage(DataInputStream instream) throws Exception {
         Message msg=new Message(false); // don't create headers, readFrom() will do this
         msg.readFrom(instream);
         return msg;
