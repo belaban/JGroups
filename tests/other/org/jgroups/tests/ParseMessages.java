@@ -1,6 +1,5 @@
 package org.jgroups.tests;
 
-import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.Version;
 import org.jgroups.protocols.TP;
@@ -9,8 +8,6 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Parses messages out of a captured file and writes them to stdout
@@ -95,21 +92,6 @@ public class ParseMessages {
         System.out.println(msg + ", hdrs: " + msg.printHeaders() + ", mcast: " + multicast);
     }
 
-    private static List<Message> readMessageList(DataInputStream in) throws Exception {
-        List<Message> list=new LinkedList<Message>();
-        Address dest=Util.readAddress(in);
-        Address src=Util.readAddress(in);
-
-        while(in.readBoolean()) {
-            Message msg=new Message(false);
-            msg.readFrom(in);
-            msg.setDest(dest);
-            if(msg.getSrc() == null)
-                msg.setSrc(src);
-            list.add(msg);
-        }
-        return list;
-    }
 
 
 
