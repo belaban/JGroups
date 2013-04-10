@@ -403,7 +403,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                if(msg.getDest() == null || msg.isFlagSet(Message.NO_RELIABILITY))  // only handle unicast messages
+                if(msg.getDest() == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))  // only handle unicast messages
                     break;  // pass up
                 Unicast2Header hdr=(Unicast2Header)msg.getHeader(this.id);
                 if(hdr == null)
@@ -492,7 +492,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 Address dst=msg.getDest();
 
                 /* only handle unicast messages */
-                if (dst == null || msg.isFlagSet(Message.NO_RELIABILITY))
+                if (dst == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))
                     break;
 
                 if(!running) {
