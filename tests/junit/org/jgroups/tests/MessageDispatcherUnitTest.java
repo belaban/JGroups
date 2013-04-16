@@ -3,10 +3,11 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.blocks.*;
-import org.jgroups.protocols.TP;
+import org.jgroups.blocks.MessageDispatcher;
+import org.jgroups.blocks.RequestHandler;
+import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -24,32 +25,30 @@ import org.testng.annotations.Test;
 @Test(groups=Global.STACK_DEPENDENT, sequential=true)
 public class MessageDispatcherUnitTest extends ChannelTestBase {
     MessageDispatcher d1, d2;
-    JChannel          c1, c2;
+    JChannel          a, b;
 
     @BeforeClass
     protected void setUp() throws Exception {
-        c1=createChannel(true);
-        c1.setName("A");
-        GMS gms=(GMS)c1.getProtocolStack().findProtocol(GMS.class);
+        a=createChannel(true, 2, "A");
+        GMS gms=(GMS)a.getProtocolStack().findProtocol(GMS.class);
         if(gms != null)
             gms.setPrintLocalAddress(false);
-        disableBundling(c1);
-        d1=new MessageDispatcher(c1, null, null, null);
-        c1.connect("MessageDispatcherUnitTest");
+        d1=new MessageDispatcher(a, null, null, null);
+        a.connect("MessageDispatcherUnitTest");
     }
 
     @AfterClass
     protected void tearDown() throws Exception {
         d1.stop();
-        c1.close();
+        a.close();
         Util.sleep(500);
     }
 
     @AfterMethod
     protected void closeSecondChannel() {
-        if(c2 != null) {
+        if(b != null) {
             d2.stop();
-            c2.close();
+            b.close();
             Util.sleep(500);
         }
     }
@@ -79,16 +78,13 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
     public void testNullMessageToAll() throws Exception {
         d1.setRequestHandler(new MyHandler(null));
-
-        c2=createChannel(c1);
-        c2.setName("B");
-        disableBundling(c2);
+        b=createChannel(a, "B");
         long stop, start=System.currentTimeMillis();
-        d2=new MessageDispatcher(c2, null, null, new MyHandler(null));
+        d2=new MessageDispatcher(b, null, null, new MyHandler(null));
         stop=System.currentTimeMillis();
-        c2.connect("MessageDispatcherUnitTest");
-        Assert.assertEquals(2, c2.getView().size());
-        System.out.println("view: " + c2.getView());
+        b.connect("MessageDispatcherUnitTest");
+        Assert.assertEquals(2,b.getView().size());
+        System.out.println("view: " + b.getView());
 
         System.out.println("casting message");
         start=System.currentTimeMillis();
@@ -97,18 +93,41 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop - start) + " ms");
         assertNotNull(rsps);
-        Assert.assertEquals(2, rsps.size());
-        Rsp rsp=rsps.get(c1.getAddress());
+        Assert.assertEquals(2,rsps.size());
+        Rsp rsp=rsps.get(a.getAddress());
         assertNotNull(rsp);
         Object ret=rsp.getValue();
         assert ret == null;
 
-        rsp=rsps.get(c2.getAddress());
+        rsp=rsps.get(b.getAddress());
         assertNotNull(rsp);
         ret=rsp.getValue();
         assert ret == null;
 
-        Util.close(c2);
+        Util.close(b);
+    }
+
+    /**
+     * Tests MessageDispatcher.castMessageXX() with a message whose destination is not null:
+     * https://issues.jboss.org/browse/JGRP-1617
+     */
+    public void testCastMessageWithNonNullDest() throws Exception {
+        b=createChannel(a, "B");
+        d2=new MessageDispatcher(b, null, null, null);
+        b.connect("MessageDispatcherUnitTest");
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
+
+        d1.setRequestHandler(new MyHandler(new byte[]{'d', '1'}));
+        d2.setRequestHandler(new MyHandler(new byte[]{'d', '2'}));
+
+        Message msg=new Message(a.getAddress()); // non-null message
+        try {
+            d1.castMessage(null,msg,RequestOptions.SYNC().setTimeout(3000));
+            assert false : " multicast RPC with a non-null dest for message";
+        }
+        catch(IllegalArgumentException ex) {
+            System.out.println("received exception as expected: " + ex);
+        }
     }
 
     public void test200ByteMessageToAll() throws Exception {
@@ -143,12 +162,11 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         long start, stop;
         d1.setRequestHandler(new MyHandler(new byte[size]));
 
-        c2=createChannel(c1);
-        c2.setName("B");
-        disableBundling(c2);
-        d2=new MessageDispatcher(c2, null, null, new MyHandler(new byte[size]));
-        c2.connect("MessageDispatcherUnitTest");
-        Assert.assertEquals(2, c2.getView().size());
+        b=createChannel(a);
+        b.setName("B");
+        d2=new MessageDispatcher(b, null, null, new MyHandler(new byte[size]));
+        b.connect("MessageDispatcherUnitTest");
+        Assert.assertEquals(2,b.getView().size());
 
         System.out.println("casting message");
         start=System.currentTimeMillis();
@@ -157,27 +175,20 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop - start) + " ms");
         assertNotNull(rsps);
-        Assert.assertEquals(2, rsps.size());
-        Rsp rsp=rsps.get(c1.getAddress());
+        Assert.assertEquals(2,rsps.size());
+        Rsp rsp=rsps.get(a.getAddress());
         assertNotNull(rsp);
         byte[] ret=(byte[])rsp.getValue();
         Assert.assertEquals(size, ret.length);
 
-        rsp=rsps.get(c2.getAddress());
+        rsp=rsps.get(b.getAddress());
         assertNotNull(rsp);
         ret=(byte[])rsp.getValue();
         Assert.assertEquals(size, ret.length);
 
-        Util.close(c2);
+        Util.close(b);
     }
 
-    private static void disableBundling(JChannel ch) {
-        ProtocolStack stack=ch.getProtocolStack();
-        TP transport=stack.getTransport();
-        if(transport != null) {
-            transport.setEnableBundling(false);
-        }
-    }
 
     private static class MyHandler implements RequestHandler {
         byte[] retval=null;
