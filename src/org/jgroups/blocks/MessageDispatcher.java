@@ -292,8 +292,9 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
 
     protected <T> GroupRequest<T> cast(final Collection<Address> dests, Message msg, RequestOptions options,
                                        boolean block_for_results, FutureListener<T> listener) throws Exception {
+        if(msg.getDest() != null)
+            throw new IllegalArgumentException("message destination is non-null, cannot send message");
         List<Address> real_dests;
-
         // we need to clone because we don't want to modify the original
         if(dests != null) {
             real_dests=new ArrayList<Address>();

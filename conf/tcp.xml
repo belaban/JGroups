@@ -10,7 +10,7 @@
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.3.xsd">
     <TCP bind_port="7800"
          loopback="false"
-         recv_buf_size="${tcp.recv_buf_size:20M}"
+         recv_buf_size="${tcp.recv_buf_size:5M}"
          send_buf_size="${tcp.send_buf_size:640K}"
          max_bundle_size="64K"
          max_bundle_timeout="30"

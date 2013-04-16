@@ -13,9 +13,9 @@
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          tos="8"
-         ucast_recv_buf_size="20M"
+         ucast_recv_buf_size="5M"
          ucast_send_buf_size="640K"
-         mcast_recv_buf_size="25M"
+         mcast_recv_buf_size="5M"
          mcast_send_buf_size="640K"
          loopback="false"
          max_bundle_size="64K"
