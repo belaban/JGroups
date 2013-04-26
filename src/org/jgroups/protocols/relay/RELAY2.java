@@ -462,8 +462,7 @@ public class RELAY2 extends Protocol {
         if(final_dest != null)
             handleMessage(hdr, msg);
         else {
-            // byte[] buf=msg.getBuffer();
-            Message copy=msg.copy(true, false);
+            Message copy=copy(msg);
             copy.setDest(null); // final_dest is null !
             copy.setSrc(null);  // we'll use our own address
             copy.putHeader(id, hdr);
