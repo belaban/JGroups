@@ -210,7 +210,7 @@ public class Relay2Test {
             Util.sleep(500);
         }
         System.out.println("list = " + list);
-        assert list.size() == 5;
+        assert list.size() == 5 : "list should be 5 but is: " + list;
         for(int i=1; i <= 5; i++)
             assert list.contains(i);
     }
