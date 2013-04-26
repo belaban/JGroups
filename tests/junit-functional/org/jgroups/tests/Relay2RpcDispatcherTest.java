@@ -8,7 +8,7 @@ import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.protocols.FORWARD_TO_COORD;
 import org.jgroups.protocols.PING;
 import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.UNICAST3;
+import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.relay.RELAY2;
@@ -160,7 +160,7 @@ public class Relay2RpcDispatcherTest {
     	JChannel ch=new JChannel(new SHARED_LOOPBACK(),
     			new PING().setValue("timeout", 300).setValue("num_initial_members", 2),
     			new NAKACK2(),
-    			new UNICAST3(),
+    			new UNICAST(),
     			new GMS().setValue("print_local_addr", false),
     			new FORWARD_TO_COORD(),
     			createRELAY2(site_name));
@@ -206,7 +206,7 @@ public class Relay2RpcDispatcherTest {
           new SHARED_LOOPBACK(),
           new PING().setValue("timeout", 500).setValue("num_initial_members", 2),
           new NAKACK2(),
-          new UNICAST3(),
+          new UNICAST(),
           new GMS().setValue("print_local_addr", false)
         };
     }
