@@ -369,9 +369,10 @@ public class LockServiceTest extends ChannelTestBase {
         System.out.println("[" + Thread.currentThread().getId() + "] signalled " + name);
     }
 
-    protected void addLockingProtocol(JChannel ch) {
+    protected void addLockingProtocol(JChannel ch) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         Protocol lockprot = new CENTRAL_LOCK();
+        lockprot.init();
         lockprot.setLevel("trace");
         stack.insertProtocolAtTop(lockprot);
     }

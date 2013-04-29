@@ -103,7 +103,7 @@ public class LockService {
             if (retval == Boolean.TRUE) {
                 holder.set(Thread.currentThread());
             }
-            return retval.booleanValue();
+            return retval;
         }
 
         public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
@@ -113,7 +113,7 @@ public class LockService {
             if (retval == Boolean.TRUE) {
                 holder.set(Thread.currentThread());
             }
-            return retval.booleanValue();
+            return retval;
         }
 
         public void unlock() {
@@ -128,6 +128,10 @@ public class LockService {
          */
         public Condition newCondition() {
             return new ConditionImpl(name, holder);
+        }
+
+        public String toString() {
+            return name + (holder.get() == null? " [unlocked]" : " [held by " + holder.get() + "]");
         }
     }
     

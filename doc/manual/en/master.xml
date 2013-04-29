@@ -8,12 +8,8 @@
     <bookinfo>
         <title>Reliable group communication with JGroups 3.x</title>
         <pubdate>August 2011</pubdate>
-        <copyright>
-            <year>1998-2006</year>
-            <holder>Bela Ban</holder>
-        </copyright>
          <copyright>
-            <year>2006-2013</year>
+            <year>2002-2013</year>
             <holder>Red Hat Inc</holder>
         </copyright>
 
