@@ -271,7 +271,7 @@ public class MessageDispatcher implements RequestHandler, ChannelListener {
     protected <T> GroupRequest<T> cast(final Collection<Address> dests, Message msg,
                                        RequestOptions options,
                                        boolean block_for_results) throws Exception {
-        if(msg.getDest() != null)
+        if(msg.getDest() != null && !(msg.getDest() instanceof AnycastAddress))
             throw new IllegalArgumentException("message destination is non-null, cannot send message");
 
         List<Address> real_dests;
