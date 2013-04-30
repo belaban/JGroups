@@ -897,7 +897,7 @@ public class GossipRouter {
         int backlog=0;
         long soLinger=-1;
         long soTimeout=-1;
-        long expiry_time=0;
+        long expiry_time=60000;
 
         GossipRouter router=null;
         String bind_addr=null;
