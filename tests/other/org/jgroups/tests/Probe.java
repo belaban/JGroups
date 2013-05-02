@@ -72,7 +72,8 @@ public class Probe {
                 mcast_sock.receive(rsp);
             }
             catch(Throwable t) {
-                System.out.println("failed receiving response: " + t);
+                // System.out.println("failed receiving response: " + t);
+                System.out.println("\n");
                 break;
             }
 
