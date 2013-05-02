@@ -65,7 +65,7 @@ public class Probe {
         int matched=0, not_matched=0, count=0;
         String response;
         while(running) {
-            byte[] buf=new byte[65000];
+            byte[] buf=new byte[70000];
             DatagramPacket rsp=new DatagramPacket(buf, 0, buf.length);
             try {
                 mcast_sock.receive(rsp);
