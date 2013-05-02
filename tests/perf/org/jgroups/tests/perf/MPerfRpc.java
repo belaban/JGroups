@@ -201,7 +201,6 @@ public class MPerfRpc extends ReceiverAdapter {
         }
 
         long total_msgs=0, total_time=0, num=0;
-
         for(Result result: tmp_results.values()) {
             if(result != null) {
                 total_time+=result.time;
@@ -242,33 +241,6 @@ public class MPerfRpc extends ReceiverAdapter {
     }
 
 
-    protected static String printProperties() {
-        StringBuilder sb=new StringBuilder();
-        Properties p=System.getProperties();
-        for(Iterator it=p.entrySet().iterator(); it.hasNext();) {
-            Map.Entry entry=(Map.Entry)it.next();
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
-        }
-        return sb.toString();
-    }
-
-   protected static InputStream findFile(String filename) {
-        try {return new FileInputStream(filename);} catch(FileNotFoundException e) {}
-
-        File file=new File(filename);
-        String name=file.getName();
-        try {return new FileInputStream(name);} catch(FileNotFoundException e) {}
-
-        try {
-            String home_dir=System.getProperty("user.home");
-            filename=home_dir + File.separator + name;
-            try {return new FileInputStream(filename);} catch(FileNotFoundException e) {}
-        }
-        catch(Throwable t) {
-        }
-
-        return Util.getResourceAsStream(name, MPerfRpc.class);
-    }
 
     public void stop() {
         looping=false;
@@ -442,34 +414,6 @@ public class MPerfRpc extends ReceiverAdapter {
         for(int i=0; i < num_senders; i++)
             retval.add(members.get(i));
         return retval;
-    }
-
-    protected void applyNewConfig(byte[] buffer) {
-        final InputStream in=new ByteArrayInputStream(buffer);
-        Thread thread=new Thread() {
-            public void run() {
-                try {
-                    JChannel ch=new JChannel(in);
-                    Util.sleepRandom(1000, 5000);
-                    channel.disconnect();
-                    JChannel tmp=channel;
-                    channel=ch;
-                    channel.setName(name);
-                    channel.setReceiver(MPerfRpc.this);
-                    channel.connect("mperf");
-                    local_addr=channel.getAddress();
-                    JmxConfigurator.unregisterChannel(tmp, Util.getMBeanServer(), "jgroups", "mperf");
-                    Util.close(tmp);
-                    JmxConfigurator.registerChannel(channel, Util.getMBeanServer(), "jgroups", "mperf", true);
-                }
-                catch(Exception e) {
-                    System.err.println("failed creating new channel");
-                }
-            }
-        };
-
-        System.out.println("<< restarting channel");
-        thread.start();
     }
 
 
