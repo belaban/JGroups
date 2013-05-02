@@ -1,17 +1,12 @@
 package org.jgroups.tests;
 
+import org.jgroups.util.StackType;
+import org.jgroups.util.Util;
+
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.StringTokenizer;
-
-import org.jgroups.util.StackType;
-import org.jgroups.util.Util;
+import java.util.*;
 
 /**
  * Discovers all UDP-based members running on a certain mcast address
@@ -71,13 +66,13 @@ public class Probe {
         int matched=0, not_matched=0, count=0;
         String response;
         while(running) {
-            byte[] buf=new byte[65000];
+            byte[] buf=new byte[70000];
             DatagramPacket rsp=new DatagramPacket(buf, 0, buf.length);
             try {
                 mcast_sock.receive(rsp);
             }
             catch(Throwable t) {
-                System.out.println("\n");
+                System.out.println("failed receiving response: " + t);
                 break;
             }
 
