@@ -37,7 +37,38 @@ public class Relay2Test {
 
     @AfterMethod protected void destroy() {Util.close(z,y,x,c,b,a);}
 
+    /**
+     * Test that RELAY2 can be added to an already connected channel.
+     */
+    public void testAddRelay2ToAnAlreadyConnectedChannel() throws Exception {
+    	// 1- Create and connect a channel.
+		a = new JChannel();
+		a.connect(SFO_CLUSTER);
+		
+		System.out.println("Channel " + a.getName() + " is connected. View: " + a.getView());
+		
+		// 3- Add RELAY2 protocol to the already connected channel.
+		RELAY2 relayToInject = createRELAY2(SFO);
+        // Util.setField(Util.getField(relayToInject.getClass(), "local_addr"), relayToInject, a.getAddress());
 
+		a.getProtocolStack().insertProtocolAtTop(relayToInject);
+        relayToInject.down(new Event(Event.SET_LOCAL_ADDRESS, a.getAddress()));
+		relayToInject.configure();
+        relayToInject.handleView(a.getView());
+		
+		// 4- Check RELAY2 presence.
+		RELAY2 ar=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class);
+		assert ar != null;
+		
+		waitUntilStatus(SFO, RELAY2.RouteStatus.UP, 2000, 500, a);
+		
+		assert !ar.printRoutes().equals("n/a (not site master)") : "This member should be site master";
+		
+		Relayer.Route route=getRoute(a, SFO);
+		System.out.println("Route at sfo to sfo: " + route);
+		assert route != null;
+    }
+    
     /**
      * Tests that routes are correctly registered after a partition and a subsequent merge
      * (https://issues.jboss.org/browse/JGRP-1524)

@@ -626,7 +626,7 @@ public class RELAY2 extends Protocol {
 
 
 
-    protected void handleView(View view) {
+    public void handleView(View view) {
         Address old_coord=coord, new_coord=determineSiteMaster(view);
         boolean become_coord=new_coord.equals(local_addr) && (old_coord == null || !old_coord.equals(local_addr));
         boolean cease_coord=old_coord != null && old_coord.equals(local_addr) && !new_coord.equals(local_addr);
