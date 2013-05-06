@@ -229,6 +229,10 @@ public class RELAY2 extends Protocol {
     
     public void init() throws Exception {
         super.init();
+        configure();
+    }
+
+    public void configure() throws Exception {
         timer=getTransport().getTimer();
         if(site == null)
             throw new IllegalArgumentException("site cannot be null");
