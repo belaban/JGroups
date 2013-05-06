@@ -88,12 +88,6 @@ public class ReplicatedHashMap<K, V> extends
     private final Set<Notification> notifs=new CopyOnWriteArraySet<Notification>();
     private final List<Address> members=new ArrayList<Address>(); // keeps track of all DHTs
 
-    /**
-     * Determines when the updates have to be sent across the network, avoids
-     * sending unnecessary messages when there are no member in the group
-     */
-    private volatile boolean send_message=false;
-
     protected final RequestOptions call_options=new RequestOptions(ResponseMode.GET_NONE, 5000);
 
     protected final Log log=LogFactory.getLog(this.getClass());
@@ -173,7 +167,6 @@ public class ReplicatedHashMap<K, V> extends
      * @param state_timeout
      */
     public final void start(long state_timeout) throws Exception {
-        send_message=channel.getView().size() > 1;
         channel.getState(null, state_timeout);
     }
 
@@ -227,18 +220,12 @@ public class ReplicatedHashMap<K, V> extends
      */
     public V put(K key, V value) {
         V prev_val=get(key);
-
-        if(send_message) {
-            try {
-                MethodCall call=new MethodCall(PUT, key, value);
-                disp.callRemoteMethods(null, call, call_options);
-            }
-            catch(Exception e) {
-                throw new RuntimeException("put(" + key + ", " + value + ") failed", e);
-            }
+        try {
+            MethodCall call=new MethodCall(PUT, key, value);
+            disp.callRemoteMethods(null, call, call_options);
         }
-        else {
-            return _put(key, value);
+        catch(Exception e) {
+            throw new RuntimeException("put(" + key + ", " + value + ") failed", e);
         }
         return prev_val;
     }
@@ -254,17 +241,12 @@ public class ReplicatedHashMap<K, V> extends
     public V putIfAbsent(K key, V value) {
         V prev_val=get(key);
 
-        if(send_message) {
-            try {
-                MethodCall call=new MethodCall(PUT_IF_ABSENT, key, value);
-                disp.callRemoteMethods(null, call, call_options);
-            }
-            catch(Exception e) {
-                throw new RuntimeException("putIfAbsent(" + key + ", " + value + ") failed", e);
-            }
+        try {
+            MethodCall call=new MethodCall(PUT_IF_ABSENT, key, value);
+            disp.callRemoteMethods(null, call, call_options);
         }
-        else {
-            return _putIfAbsent(key, value);
+        catch(Exception e) {
+            throw new RuntimeException("putIfAbsent(" + key + ", " + value + ") failed", e);
         }
         return prev_val;
     }
@@ -278,17 +260,12 @@ public class ReplicatedHashMap<K, V> extends
      *                mappings to be stored in this map
      */
     public void putAll(Map<? extends K,? extends V> m) {
-        if(send_message) {
-            try {
-                MethodCall call=new MethodCall(PUT_ALL, m);
-                disp.callRemoteMethods(null, call, call_options);
-            }
-            catch(Throwable t) {
-                throw new RuntimeException("putAll() failed", t);
-            }
+        try {
+            MethodCall call=new MethodCall(PUT_ALL, m);
+            disp.callRemoteMethods(null, call, call_options);
         }
-        else {
-            _putAll(m);
+        catch(Throwable t) {
+            throw new RuntimeException("putAll() failed", t);
         }
     }
 
@@ -296,19 +273,12 @@ public class ReplicatedHashMap<K, V> extends
      * Removes all of the mappings from this map.
      */
     public void clear() {
-        //Changes done by <aos>
-        //if true, propagate action to the group
-        if(send_message) {
-            try {
-                MethodCall call=new MethodCall(CLEAR);
-                disp.callRemoteMethods(null, call, call_options);
-            }
-            catch(Exception e) {
-                throw new RuntimeException("clear() failed", e);
-            }
+        try {
+            MethodCall call=new MethodCall(CLEAR);
+            disp.callRemoteMethods(null, call, call_options);
         }
-        else {
-            _clear();
+        catch(Exception e) {
+            throw new RuntimeException("clear() failed", e);
         }
     }
 
@@ -325,18 +295,12 @@ public class ReplicatedHashMap<K, V> extends
      */
     public V remove(Object key) {
         V retval=get(key);
-
-        if(send_message) {
-            try {
-                MethodCall call=new MethodCall(REMOVE, key);
-                disp.callRemoteMethods(null, call, call_options);
-            }
-            catch(Exception e) {
-                throw new RuntimeException("remove(" + key + ") failed", e);
-            }
+        try {
+            MethodCall call=new MethodCall(REMOVE, key);
+            disp.callRemoteMethods(null, call, call_options);
         }
-        else {
-            return _remove(key);
+        catch(Exception e) {
+            throw new RuntimeException("remove(" + key + ") failed", e);
         }
         return retval;
     }
@@ -351,17 +315,12 @@ public class ReplicatedHashMap<K, V> extends
         Object val=get(key);
         boolean removed=val != null && value != null && val.equals(value);
 
-        if(send_message) {
-            try {
-                MethodCall call=new MethodCall(REMOVE_IF_EQUALS, key, value);
-                disp.callRemoteMethods(null, call, call_options);
-            }
-            catch(Exception e) {
-                throw new RuntimeException("remove(" + key + ", " + value + ") failed", e);
-            }
+        try {
+            MethodCall call=new MethodCall(REMOVE_IF_EQUALS, key, value);
+            disp.callRemoteMethods(null, call, call_options);
         }
-        else {
-            return _remove(key, value);
+        catch(Exception e) {
+            throw new RuntimeException("remove(" + key + ", " + value + ") failed", e);
         }
         return removed;
     }
@@ -376,22 +335,17 @@ public class ReplicatedHashMap<K, V> extends
         Object val=get(key);
         boolean replaced=val != null && oldValue != null && val.equals(oldValue);
 
-        if(send_message) {
-            try {
-                MethodCall call=new MethodCall(REPLACE_IF_EQUALS, key, oldValue, newValue);
-                disp.callRemoteMethods(null, call, call_options);
-            }
-            catch(Exception e) {
-                throw new RuntimeException("replace(" + key
-                                           + ", "
-                                           + oldValue
-                                           + ", "
-                                           + newValue
-                                           + ") failed", e);
-            }
+        try {
+            MethodCall call=new MethodCall(REPLACE_IF_EQUALS, key, oldValue, newValue);
+            disp.callRemoteMethods(null, call, call_options);
         }
-        else {
-            return _replace(key, oldValue, newValue);
+        catch(Exception e) {
+            throw new RuntimeException("replace(" + key
+                                         + ", "
+                                         + oldValue
+                                         + ", "
+                                         + newValue
+                                         + ") failed", e);
         }
         return replaced;
     }
@@ -407,17 +361,12 @@ public class ReplicatedHashMap<K, V> extends
     public V replace(K key, V value) {
         V retval=get(key);
 
-        if(send_message) {
-            try {
-                MethodCall call=new MethodCall(REPLACE_IF_EXISTS, key, value);
-                disp.callRemoteMethods(null, call, call_options);
-            }
-            catch(Exception e) {
-                throw new RuntimeException("replace(" + key + ", " + value + ") failed", e);
-            }
+        try {
+            MethodCall call=new MethodCall(REPLACE_IF_EXISTS, key, value);
+            disp.callRemoteMethods(null, call, call_options);
         }
-        else {
-            return _replace(key, value);
+        catch(Exception e) {
+            throw new RuntimeException("replace(" + key + ", " + value + ") failed", e);
         }
         return retval;
     }
@@ -558,9 +507,6 @@ public class ReplicatedHashMap<K, V> extends
             members.clear();
             members.addAll(new_mbrs);
         }
-        //if size is bigger than one, there are more peers in the group
-        //otherwise there is only one server.
-        send_message=members.size() > 1;
     }
 
     /**
