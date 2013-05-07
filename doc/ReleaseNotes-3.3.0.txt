@@ -65,6 +65,8 @@ RELAY2 fixes and enhancements
 [https://issues.jboss.org/browse/JGRP-1542]
 [https://issues.jboss.org/browse/JGRP-1543]
 [https://issues.jboss.org/browse/JGRP-1547]
+[https://issues.jboss.org/browse/JGRP-1629]
+[https://issues.jboss.org/browse/JGRP-1623]
 
 When a coordinator crashes, messages are buffered until the new coordinator takes over. JGRP-1517 ensures that
 resending the buffered messages occurs before new messages are sent.
@@ -77,12 +79,16 @@ JGRP-1543 provides site-unreachable notifications, so callers know that a site i
 
 JGRP-1547 provides timing stats for forwarding of messages
 
+JGRP-1629 adds the ability to insert a RELAY2 protocol to an already connected stack
+
+
 
 PDC
 ---
 [https://issues.jboss.org/browse/JGRP-1541]
 
 A new protocol to cache discovery responses on disk, suitable for use with (e.g.) TCPPING.
+
 
 SUPERVISOR
 ----------
@@ -104,6 +110,12 @@ Pick NIC based on pattern matching
 
 E.g. UDP.match_interface="eth*"
 
+
+MPerfRpc:
+---------
+[https://issues.jboss.org/browse/JGRP-1625]
+
+New performance test for RPCs
 
 
 
@@ -174,6 +186,16 @@ TCP: OOME when connecting to local port
 ENCRYPT: headers are not encrypted
 ----------------------------------
 [https://issues.jboss.org/browse/JGRP-1531]
+
+
+LockService: issues concurrent access and lock removal
+------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1610]
+
+
+MERGE3 and TUNNEL issues
+------------------------
+[https://issues.jboss.org/browse/JGRP-1608]
 
 
 
