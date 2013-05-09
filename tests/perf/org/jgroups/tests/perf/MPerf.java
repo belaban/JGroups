@@ -44,6 +44,7 @@ public class MPerf extends ReceiverAdapter {
     protected int                   log_interval=num_msgs / 10; // log every 10%
     protected int                   receive_log_interval=num_msgs / 10;
     protected int                   num_senders=-1; // <= 0: all
+    protected boolean               oob=false;
 
     protected boolean cancelled=false;
 
@@ -103,14 +104,14 @@ public class MPerf extends ReceiverAdapter {
 
         final String INPUT="[1] Send [2] View\n" +
           "[3] Set num msgs (%d) [4] Set msg size (%s) [5] Set threads (%d) [6] New config (%s)\n" +
-          "[7] Number of senders (%s)\n" +
+          "[7] Number of senders (%s) [o] Toggle OOB (%s)\n" +
           "[x] Exit this [X] Exit all [c] Cancel sending";
 
         while(looping) {
             try {
                 c=Util.keyPress(String.format(INPUT, num_msgs, Util.printBytes(msg_size), num_threads,
                                               props == null? "<default>" : props,
-                                              num_senders <= 0? "all" : String.valueOf(num_senders)));
+                                              num_senders <= 0? "all" : String.valueOf(num_senders), oob));
                 switch(c) {
                     case '1':
                         cancelled=false;
@@ -140,6 +141,10 @@ public class MPerf extends ReceiverAdapter {
                         break;
                     case '7':
                         configChange("num_senders");
+                        break;
+                    case 'o':
+                        ConfigChange change=new ConfigChange("oob", !oob);
+                        send(null,change,MPerfHeader.CONFIG_CHANGE,Message.Flag.RSVP);
                         break;
                     case 'x':
                         looping=false;
@@ -267,7 +272,7 @@ public class MPerf extends ReceiverAdapter {
                 // can screw this up, that's why we check for correct order only when we
                 // only have 1 sender thread
                 // This is *different* from NAKACK{2} order, which is correct
-                handleData(msg.getSrc(), msg.getLength(), hdr.seqno, num_threads == 1);
+                handleData(msg.getSrc(),msg.getLength(),hdr.seqno, num_threads == 1 && !oob);
                 break;
 
             case MPerfHeader.START_SENDING:
@@ -459,7 +464,7 @@ public class MPerf extends ReceiverAdapter {
         try {
             Object attr_value=config_change.getValue();
             Field field=Util.getField(this.getClass(), attr_name);
-            Util.setField(field, this, attr_value);
+            Util.setField(field,this,attr_value);
             System.out.println(config_change.attr_name + "=" + attr_value);
             log_interval=num_msgs / 10;
             receive_log_interval=num_msgs * Math.max(1, members.size()) / 10;
@@ -475,6 +480,7 @@ public class MPerf extends ReceiverAdapter {
         cfg.addChange("msg_size",    msg_size);
         cfg.addChange("num_threads", num_threads);
         cfg.addChange("num_senders", num_senders);
+        cfg.addChange("oob",         oob);
         send(sender,cfg,MPerfHeader.CONFIG_RSP);
     }
 
@@ -518,7 +524,7 @@ public class MPerf extends ReceiverAdapter {
             senders[i].start();
         }
         try {
-            System.out.println("-- sending " + num_msgs + " msgs");
+            System.out.println("-- sending " + num_msgs + (oob? " OOB msgs" : " msgs"));
             barrier.await();
         }
         catch(Exception e) {
@@ -568,9 +574,9 @@ public class MPerf extends ReceiverAdapter {
                     if(tmp > num_msgs || cancelled)
                         break;
                     long new_seqno=seqno.getAndIncrement();
-                    Message msg=new Message(null, null, payload);
-                    MPerfHeader hdr=new MPerfHeader(MPerfHeader.DATA,new_seqno);
-                    msg.putHeader(ID, hdr);
+                    Message msg=new Message(null, payload).putHeader(ID, new MPerfHeader(MPerfHeader.DATA, new_seqno));
+                    if(oob)
+                        msg.setFlag(Message.Flag.OOB);
                     channel.send(msg);
                     if(tmp % log_interval == 0)
                         System.out.println("++ sent " + tmp);
