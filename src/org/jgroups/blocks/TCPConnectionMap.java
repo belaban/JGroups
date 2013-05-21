@@ -403,7 +403,7 @@ public class TCPConnectionMap {
             try {
                 if(!defer_client_binding)
                     this.sock.bind(new InetSocketAddress(client_bind_addr, client_bind_port));
-                if(this.sock.getLocalSocketAddress().equals(destAddr))
+                if(this.sock.getLocalSocketAddress() != null && this.sock.getLocalSocketAddress().equals(destAddr))
                     throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
                 Util.connect(this.sock, destAddr, sock_conn_timeout);
                 this.out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
