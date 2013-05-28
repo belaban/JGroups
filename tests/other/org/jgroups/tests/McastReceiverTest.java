@@ -76,7 +76,7 @@ public class McastReceiverTest {
 
 
     static void help() {
-        System.out.println("McastSenderTest [-bind_addr <bind address>] [-help] [-mcast_addr <multicast address>] " +
+        System.out.println("McastReceiverTest [-bind_addr <bind address>] [-help] [-mcast_addr <multicast address>] " +
                 "[-port <port for multicast socket>]");
     }
 
