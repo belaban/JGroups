@@ -1147,12 +1147,17 @@ public abstract class TP extends Protocol {
                                 retval.put("singleton_name", singleton_name);
 
                         }
+                        if(key.equals("addrs")) {
+                            Set<PhysicalAddress> physical_addrs=logical_addr_cache.nonRemovedValues();
+                            String list=Util.print(physical_addrs);
+                            retval.put("addrs", list);
+                        }
                     }
                     return retval;
                 }
 
                 public String[] supportedKeys() {
-                    return new String[]{"dump", "keys", "uuids", "info"};
+                    return new String[]{"dump", "keys", "uuids", "info", "addrs"};
                 }
             });
             if(diag_handler_created)
