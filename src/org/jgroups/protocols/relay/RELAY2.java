@@ -90,11 +90,16 @@ public class RELAY2 extends Protocol {
     protected TimeScheduler                            timer;
 
     protected volatile Address                         local_addr;
+    
+    protected volatile List<Address>                   members=new ArrayList<Address>(11);
 
     /** Whether or not FORWARD_TO_COORD is on the stack */
     @ManagedAttribute(description="FORWARD_TO_COORD protocol is present below the current protocol")
     protected boolean                                  forwarding_protocol_present;
 
+    @Property(description="If true, a received message can be forwarded to other members of the local cluster")
+    protected boolean                                  can_forward_local_cluster=false;    
+    
     // protocol IDs above RELAY2
     protected short[]                                  prots_above;
 
@@ -336,9 +341,32 @@ public class RELAY2 extends Protocol {
 
     /** Called to handle a message received by the relayer */
     protected void handleRelayMessage(Relay2Header hdr, Message msg) {
-        Address final_dest=hdr.final_dest;
-        if(final_dest != null)
-            handleMessage(hdr, msg);
+        
+        if(hdr.final_dest != null) {
+           
+           Message message = msg;
+           Relay2Header header = hdr;
+           
+           if( header.type == Relay2Header.DATA && can_forward_local_cluster ) {
+              
+              SiteUUID site_uuid = (SiteUUID)hdr.final_dest;
+              
+              //  If configured to do so, we want to load-balance these messages,                                         
+              int index = (int)Util.random( members.size() ) - 1; 
+              UUID tmp = (UUID)members.get(index);              
+              SiteAddress final_dest = new SiteUUID( tmp, site_uuid.getName(), site_uuid.getSite() );                                          
+              
+              // If we select a different address to handle this messages, we handle it here.
+              if( final_dest != hdr.final_dest ) {                 
+                 message=copy(msg);                 
+                 header=new Relay2Header(Relay2Header.DATA, final_dest, hdr.original_sender );
+                 message.putHeader(id, header);
+              }                                             
+           }
+           
+           handleMessage(header, message);
+        }
+           
         else {
             Message copy=copy(msg);
             copy.setDest(null); // final_dest is null !
@@ -484,6 +512,12 @@ public class RELAY2 extends Protocol {
 
 
     protected void handleView(View view) {
+       
+        // First, save the members for routing received messages to local members.        
+        List<Address> new_members=view.getMembers();
+        members = new_members; 
+       
+        // Are we the new coordinator?
         Address old_coord=coord, new_coord=determineSiteMaster(view);
         boolean become_coord=new_coord.equals(local_addr) && (old_coord == null || !old_coord.equals(local_addr));
         boolean cease_coord=old_coord != null && old_coord.equals(local_addr) && !new_coord.equals(local_addr);
