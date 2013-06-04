@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @since 3.1
  */
 public class MPerf extends ReceiverAdapter {
-    protected String                props=null;
+    protected String                props;
     protected JChannel              channel;
     final protected AckCollector    ack_collector=new AckCollector(); // for synchronous sends
     protected Address               local_addr=null;
@@ -44,6 +44,8 @@ public class MPerf extends ReceiverAdapter {
     protected int                   log_interval=num_msgs / 10; // log every 10%
     protected int                   receive_log_interval=num_msgs / 10;
     protected int                   num_senders=-1; // <= 0: all
+
+    protected boolean cancelled=false;
 
 
     /** Maintains stats per sender, will be sent to perf originator when all messages have been received */
@@ -102,7 +104,7 @@ public class MPerf extends ReceiverAdapter {
         final String INPUT="[1] Send [2] View\n" +
           "[3] Set num msgs (%d) [4] Set msg size (%s) [5] Set threads (%d) [6] New config (%s)\n" +
           "[7] Number of senders (%s)\n" +
-          "[x] Exit this [X] Exit all";
+          "[x] Exit this [X] Exit all [c] Cancel sending";
 
         while(looping) {
             try {
@@ -111,6 +113,7 @@ public class MPerf extends ReceiverAdapter {
                                               num_senders <= 0? "all" : String.valueOf(num_senders)));
                 switch(c) {
                     case '1':
+                        cancelled=false;
                         initiator=true;
                         results.reset(getSenders());
 
@@ -143,6 +146,9 @@ public class MPerf extends ReceiverAdapter {
                         break;
                     case 'X':
                         send(null,null,MPerfHeader.EXIT);
+                        break;
+                    case 'c':
+                        cancelled=true;
                         break;
                 }
             }
@@ -559,7 +565,7 @@ public class MPerf extends ReceiverAdapter {
             for(;;) {
                 try {
                     int tmp=num_msgs_sent.incrementAndGet();
-                    if(tmp > num_msgs)
+                    if(tmp > num_msgs || cancelled)
                         break;
                     long new_seqno=seqno.getAndIncrement();
                     Message msg=new Message(null, null, payload);

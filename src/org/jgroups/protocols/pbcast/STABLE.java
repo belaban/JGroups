@@ -217,6 +217,10 @@ public class STABLE extends Protocol {
             throw new Exception("timer cannot be retrieved");
         if(desired_avg_gossip > 0)
             startStableTask();
+
+        // we're the only one who sends out STABILITY messages; no need to wait for others to send it (as they won't)
+        if(send_stable_msgs_to_coord_only)
+            stability_delay=0;
     }
 
     public void stop() {
@@ -619,22 +623,22 @@ public class STABLE extends Protocol {
             return;
         }
 
-         if(!initialized) {
-             if(log.isTraceEnabled())
-                 log.trace("STABLE message will not be handled as I'm not yet initialized");
-             return;
-         }
+        if(!initialized) {
+            if(log.isTraceEnabled())
+                log.trace("STABLE message will not be handled as I'm not yet initialized");
+            return;
+        }
 
-         if(suspended) {
-             if(log.isDebugEnabled()) {
-                 log.debug("stability message will not be handled as I'm suspended");
-             }
-             return;
-         }
+        if(suspended) {
+            if(log.isDebugEnabled()) {
+                log.debug("stability message will not be handled as I'm suspended");
+            }
+            return;
+        }
 
-         if(log.isTraceEnabled())
-             log.trace(new StringBuilder(local_addr + ": received stability msg from ").append(sender).append(": ").append(stable_digest.printHighestDeliveredSeqnos()));
-         stopStabilityTask();
+        if(log.isTraceEnabled())
+            log.trace(new StringBuilder(local_addr + ": received stability msg from ").append(sender).append(": ").append(stable_digest.printHighestDeliveredSeqnos()));
+        stopStabilityTask();
 
         lock.lock();
         try {
@@ -643,7 +647,7 @@ public class STABLE extends Protocol {
             if(!this.digest.sameSenders(stable_digest)) {
                 if(log.isDebugEnabled()) {
                     log.debug(local_addr + ": received digest from " + sender + " (digest=" + stable_digest + ") which does not match my own digest ("+
-                            this.digest + "): ignoring digest and re-initializing own digest");
+                                this.digest + "): ignoring digest and re-initializing own digest");
                 }
                 resetDigest();
                 return;
@@ -863,7 +867,8 @@ public class STABLE extends Protocol {
             }
 
             if(stability_digest != null) {
-                Message msg=new Message().setFlag(Message.Flag.OOB,Message.Flag.INTERNAL,Message.Flag.NO_RELIABILITY);
+                // the STABILITY message has to be sent reliably to prevent an OOME (https://issues.jboss.org/browse/JGRP-1638)
+                Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
                 StableHeader hdr=new StableHeader(StableHeader.STABILITY, stability_digest);
                 msg.putHeader(id, hdr);
                 if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg " + stability_digest.printHighestDeliveredSeqnos());
