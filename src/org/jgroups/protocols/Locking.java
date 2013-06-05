@@ -351,7 +351,7 @@ abstract public class Locking extends Protocol {
 
     /** Gets a lock from locks based on the hash of the lock name */
     protected Lock _getLock(String lock_name) {
-        int index=lock_name != null? lock_name.hashCode() % locks.length : 0;
+        int index=lock_name != null? Math.abs(lock_name.hashCode() % locks.length) : 0;
         return locks[index];
     }
 
