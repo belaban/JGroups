@@ -354,7 +354,7 @@ public class RELAY2 extends Protocol {
                 SiteAddress final_dest = new SiteUUID(tmp, site_uuid.getName(), site_uuid.getSite());
 
                 // If we select a different address to handle this message, we handle it here.
-                if( final_dest != hdr.final_dest ) {
+                if(!final_dest.equals(hdr.final_dest)) {
                     message=copy(msg);
                     header=new Relay2Header(Relay2Header.DATA, final_dest, hdr.original_sender );
                     message.putHeader(id, header);
