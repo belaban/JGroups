@@ -631,9 +631,37 @@ public class ProtocolStack extends Protocol {
      *                  (otherwise the stack won't be created), the name refers to just 1 protocol.
      * @exception Exception Thrown if the protocol cannot be stopped correctly.
      */
-    public Protocol removeProtocol(String prot_name) throws Exception {
+    public Protocol removeProtocol(String prot_name) {
         if(prot_name == null) return null;
-        Protocol prot=findProtocol(prot_name);
+        return removeProtocol(findProtocol(prot_name));
+    }
+
+    public void removeProtocols(String ... protocols) {
+        for(String protocol: protocols)
+            removeProtocol(protocol);
+    }
+
+
+    public Protocol removeProtocol(Class ... protocols) {
+        Protocol retval=null;
+        if(protocols != null)
+            for(Class cl: protocols) {
+                Protocol tmp=removeProtocol(cl);
+                if(tmp != null)
+                    retval=tmp;
+            }
+
+        return retval;
+    }
+
+
+    public Protocol removeProtocol(Class prot) {
+        if(prot == null)
+            return null;
+        return removeProtocol(findProtocol(prot));
+    }
+
+    public Protocol removeProtocol(Protocol prot) {
         if(prot == null) return null;
         Protocol above=prot.getUpProtocol(), below=prot.getDownProtocol();
         checkAndSwitchTop(prot, below);
@@ -656,46 +684,6 @@ public class ProtocolStack extends Protocol {
             log.error("failed destroying " + prot.getName() + ": " + t);
         }
         return prot;
-    }
-
-    public void removeProtocols(String ... protocols) throws Exception {
-        for(String protocol: protocols)
-            removeProtocol(protocol);
-    }
-
-
-    public Protocol removeProtocol(Class ... protocols) {
-        Protocol retval=null;
-        if(protocols != null)
-            for(Class cl: protocols) {
-                Protocol tmp=removeProtocol(cl);
-                if(tmp != null) {
-                    tmp.stop();
-                    tmp.destroy();
-                    retval=tmp;
-                }
-            }
-
-        return retval;
-    }
-
-
-    public Protocol removeProtocol(Class prot) {
-        if(prot == null)
-            return null;
-        Protocol retval=findProtocol(prot);
-        if(retval == null)
-            return null;
-
-        Protocol above=retval.getUpProtocol(), below=retval.getDownProtocol();
-        checkAndSwitchTop(retval, below);
-        if(above != null)
-            above.setDownProtocol(below);
-        if(below != null)
-            below.setUpProtocol(above);
-        retval.setUpProtocol(null);
-        retval.setDownProtocol(null);
-        return retval;
     }
 
 
@@ -766,6 +754,7 @@ public class ProtocolStack extends Protocol {
 
         existing_prot.setDownProtocol(null);
         existing_prot.setUpProtocol(null);
+        existing_prot.stop();
         existing_prot.destroy();
 
         if(new_prot.getUpProtocol() == this)
