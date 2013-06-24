@@ -602,8 +602,10 @@ public class STABLE extends Protocol {
                 return;
 
             boolean all_votes_received=addVote(sender);
-            if(all_votes_received)
+            if(all_votes_received) {
                 copy=digest.copy();
+                resetDigest();
+            }
         }
         finally {
             lock.unlock();
@@ -612,7 +614,21 @@ public class STABLE extends Protocol {
         // we don't yet reset digest: new STABLE messages will be discarded anyway as we have already
         // received votes from their senders
         if(copy != null) {
+            resetNumBytes();
             sendStabilityMessage(copy);
+            // we discard our own STABILITY message, so pass it down now
+            // pass STABLE event down the stack, so NAKACK can garbage collect old messages
+            down_prot.down(new Event(Event.STABLE, copy));
+        }
+    }
+
+    protected void resetNumBytes() {
+        received.lock();
+        try {
+            num_bytes_received=0; // reset, so all members have more or less the same value
+        }
+        finally {
+            received.unlock();
         }
     }
 
@@ -633,6 +649,12 @@ public class STABLE extends Protocol {
             if(log.isDebugEnabled()) {
                 log.debug("stability message will not be handled as I'm suspended");
             }
+            return;
+        }
+
+        // received my own STABILITY message - no need to handle it as I already reset my digest before I sent the msg
+        if(local_addr != null && local_addr.equals(sender)) {
+            num_stability_msgs_received++;
             return;
         }
 
@@ -659,9 +681,9 @@ public class STABLE extends Protocol {
             lock.unlock();
         }
 
+        resetNumBytes();
         // pass STABLE event down the stack, so NAKACK can garbage collect old messages
         down_prot.down(new Event(Event.STABLE, stable_digest));
-        num_bytes_received=0; // reset, so all members have more or less the same value
     }
 
 
@@ -714,8 +736,6 @@ public class STABLE extends Protocol {
      @param tmp A copy of te stability digest, so we don't need to copy it again
      */
     protected void sendStabilityMessage(Digest tmp) {
-        long delay;
-
         if(suspended) {
             if(log.isTraceEnabled())
                 log.trace("STABILITY message will not be sent as I'm suspended");
@@ -724,7 +744,7 @@ public class STABLE extends Protocol {
 
         // give other members a chance to mcast STABILITY message. if we receive STABILITY by the end of our random
         // sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a STABILITY msg at the same time
-        delay=Util.random(stability_delay);
+        long delay=Util.random(stability_delay);
         if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg (in " + delay + " ms) " + tmp.printHighestDeliveredSeqnos());
         startStabilityTask(tmp, delay);
     }
@@ -867,8 +887,9 @@ public class STABLE extends Protocol {
             }
 
             if(stability_digest != null) {
-                // the STABILITY message has to be sent reliably to prevent an OOME (https://issues.jboss.org/browse/JGRP-1638)
-                Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
+                // https://issues.jboss.org/browse/JGRP-1638: we reverted to sending the STABILITY message *unreliably*,
+                // but clear votes *before* sending it
+                Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY);
                 StableHeader hdr=new StableHeader(StableHeader.STABILITY, stability_digest);
                 msg.putHeader(id, hdr);
                 if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg " + stability_digest.printHighestDeliveredSeqnos());
