@@ -3760,6 +3760,10 @@ public class Util {
         return checkForPresence("os.name", "mac");
     }
 
+    public static boolean checkForAndroid() {
+        return contains("java.vm.vendor", "android");
+    }
+
     private static boolean checkForPresence(String key, String value) {
         try {
             String tmp=System.getProperty(key);
@@ -3769,6 +3773,18 @@ public class Util {
             return false;
         }
     }
+
+    private static boolean contains(String key, String value) {
+        try {
+            String tmp=System.getProperty(key);
+            return tmp != null && tmp.trim().toLowerCase().contains(value.trim().toLowerCase());
+        }
+        catch(Throwable t) {
+            return false;
+        }
+    }
+
+
 
     public static void prompt(String s) {
         System.out.println(s);

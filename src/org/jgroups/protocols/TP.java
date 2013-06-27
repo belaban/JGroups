@@ -60,7 +60,9 @@ public abstract class TP extends Protocol {
     protected static NumberFormat f;
 
     static {
-        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForHp();
+        can_bind_to_mcast_addr=(Util.checkForLinux() && !Util.checkForAndroid())
+          || Util.checkForSolaris()
+          || Util.checkForHp();
         f=NumberFormat.getNumberInstance();
         f.setGroupingUsed(false);
         f.setMaximumFractionDigits(2);
