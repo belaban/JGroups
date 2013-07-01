@@ -3966,6 +3966,14 @@ public class Util {
        return ip_stack_type;
     }
 
+    /** Returns true if the 2 addresses are of the same type (IPv4 or IPv6) */
+    public static boolean sameAddresses(InetAddress one, InetAddress two) {
+        return one == null
+          || two == null
+          || (one instanceof Inet6Address && two instanceof Inet6Address)
+          || (one instanceof Inet4Address && two instanceof Inet4Address);
+    }
+
     /**
      * Tries to determine the type of IP stack from the available interfaces and their addresses and from the
      * system properties (java.net.preferIPv4Stack and java.net.preferIPv6Addresses)
