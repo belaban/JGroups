@@ -60,7 +60,9 @@ public abstract class TP extends Protocol {
     protected static NumberFormat f;
 
     static {
-        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForHp();
+        can_bind_to_mcast_addr=(Util.checkForLinux() && !Util.checkForAndroid())
+          || Util.checkForSolaris()
+          || Util.checkForHp();
         f=NumberFormat.getNumberInstance();
         f.setGroupingUsed(false);
         f.setMaximumFractionDigits(2);
@@ -462,6 +464,29 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute(description="Number of bytes received")
     protected long num_bytes_received=0;
+
+
+    /** Average time (in us) until a message is started to get processed by the thread pool */
+    protected final Average avg_dead_time=new Average(50);
+
+    /** Average time (in us) for the thread pool to process a message */
+    protected final Average avg_processing_time=new Average(50);
+
+
+    @ManagedAttribute(description="Average (us) time for the thread pool to process a message")
+    public double getAverageProcessingTime() {
+        return avg_processing_time.getAverage() / 1000.0;
+    }
+
+    @ManagedAttribute(description="Average time (in us) from message (or batch) reception " +
+      "until it is started to get processed by the thread pool")
+    public double getAverageDeadTime() {
+        return avg_dead_time.getAverage() / 1000.0;
+    }
+
+
+    @ManagedAttribute(description="Number of messages rejected by the thread pool")
+    protected int num_rejected_msgs=0;
 
     /** The name of the group to which this member is connected. With a shared transport, the channel name is
      * in TP.ProtocolAdapter (cluster_name), and this field is not used */
@@ -1457,6 +1482,9 @@ public abstract class TP extends Protocol {
                 pool.execute(new MyHandler(msg, cluster_name, multicast));
             }
         }
+        catch(RejectedExecutionException rejected) {
+            num_rejected_msgs++;
+        }
         catch(Throwable t) {
             if(log.isErrorEnabled())
                 log.error(local_addr + ": failed handling incoming message", t);
@@ -1472,15 +1500,18 @@ public abstract class TP extends Protocol {
         protected final Message msg;
         protected final String  cluster_name;
         protected final boolean multicast;
+        protected final long    created; // timestamp (ns) when created
 
         public MyHandler(Message msg, String cluster_name, boolean multicast) {
             this.msg=msg;
             this.cluster_name=cluster_name;
             this.multicast=multicast;
+            this.created=stats? System.nanoTime() : 0;
         }
 
         public void run() {
             if(stats) {
+                avg_dead_time.add(System.nanoTime() - created);
                 num_msgs_received++;
                 num_bytes_received+=msg.getLength();
             }
@@ -1493,20 +1524,26 @@ public abstract class TP extends Protocol {
                     return;
                 }
             }
+            long processing_started=stats? System.nanoTime() : 0;
             passMessageUp(msg, cluster_name, true, multicast, true);
+            if(stats)
+                avg_processing_time.add(System.nanoTime() - processing_started);
         }
     }
 
 
     protected class BatchHandler implements Runnable {
         protected final MessageBatch batch;
+        protected final long         created; // timestamp (ns) when created
 
         public BatchHandler(final MessageBatch batch) {
             this.batch=batch;
+            this.created=stats? System.nanoTime() : 0;
         }
 
         public void run() {
             if(stats) {
+                avg_dead_time.add(System.nanoTime() - created);
                 num_msgs_received+=batch.size();
                 num_bytes_received+=batch.length();
             }
@@ -1520,8 +1557,12 @@ public abstract class TP extends Protocol {
                 }
             }
 
+            int batch_size=batch.size();
+            long processing_started=stats? System.nanoTime() : 0;
             if(enable_batching) {
                 passBatchUp(batch, true, true);
+                if(stats)
+                    avg_processing_time.add((System.nanoTime() - processing_started) / batch_size);
                 return;
             }
 
@@ -1533,6 +1574,8 @@ public abstract class TP extends Protocol {
                     log.error(local_addr + ": failed passing up message: " + t);
                 }
             }
+            if(stats)
+                avg_processing_time.add((System.nanoTime() - processing_started) / batch_size);
         }
     }
 

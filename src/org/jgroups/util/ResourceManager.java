@@ -3,7 +3,6 @@ package org.jgroups.util;
 import org.jgroups.Global;
 
 import java.net.*;
-import java.rmi.server.UID;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -97,9 +96,9 @@ public class ResourceManager {
         }
 	}
 
-	public static String getUniqueClusterName(String base_name) {
-		return base_name != null ? base_name + "-" + new UID().toString()
-				: new UID().toString();
+    public static String getUniqueClusterName(String base_name) {
+        return base_name != null ? base_name + "-" + UUID.randomUUID().toString()
+          : UUID.randomUUID().toString();
 	}
 
 	public static String getUniqueClusterName() {

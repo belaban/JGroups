@@ -33,7 +33,9 @@ public class MPING extends PING implements Runnable {
 
 
     static {
-        can_bind_to_mcast_addr=Util.checkForLinux() || Util.checkForSolaris() || Util.checkForHp();
+        can_bind_to_mcast_addr=(Util.checkForLinux() && !Util.checkForAndroid())
+          || Util.checkForSolaris()
+          || Util.checkForHp();
     }
 
 

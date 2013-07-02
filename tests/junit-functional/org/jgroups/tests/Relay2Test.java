@@ -53,6 +53,7 @@ public class Relay2Test {
 
 		a.getProtocolStack().insertProtocolAtTop(relayToInject);
         relayToInject.down(new Event(Event.SET_LOCAL_ADDRESS, a.getAddress()));
+        relayToInject.setProtocolStack(a.getProtocolStack());
 		relayToInject.configure();
         relayToInject.handleView(a.getView());
 		

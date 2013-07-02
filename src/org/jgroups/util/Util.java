@@ -3760,6 +3760,10 @@ public class Util {
         return checkForPresence("os.name", "mac");
     }
 
+    public static boolean checkForAndroid() {
+        return contains("java.vm.vendor", "android");
+    }
+
     private static boolean checkForPresence(String key, String value) {
         try {
             String tmp=System.getProperty(key);
@@ -3769,6 +3773,18 @@ public class Util {
             return false;
         }
     }
+
+    private static boolean contains(String key, String value) {
+        try {
+            String tmp=System.getProperty(key);
+            return tmp != null && tmp.trim().toLowerCase().contains(value.trim().toLowerCase());
+        }
+        catch(Throwable t) {
+            return false;
+        }
+    }
+
+
 
     public static void prompt(String s) {
         System.out.println(s);
@@ -3964,6 +3980,14 @@ public class Util {
         
     public static StackType getIpStackType() {
        return ip_stack_type;
+    }
+
+    /** Returns true if the 2 addresses are of the same type (IPv4 or IPv6) */
+    public static boolean sameAddresses(InetAddress one, InetAddress two) {
+        return one == null
+          || two == null
+          || (one instanceof Inet6Address && two instanceof Inet6Address)
+          || (one instanceof Inet4Address && two instanceof Inet4Address);
     }
 
     /**
