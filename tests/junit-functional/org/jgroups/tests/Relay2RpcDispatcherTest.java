@@ -65,9 +65,19 @@ public class Relay2RpcDispatcherTest {
     @AfterMethod protected void destroy() {Util.close(y,x,b,a);}
 
 
+    public void testRpcToUnknownSite() throws Exception {
+        a.connect(LON_CLUSTER);
+        try {
+            rpca.callRemoteMethod(new SiteMaster("nyc"),"foo",null,null,RequestOptions.SYNC());
+            assert false : "The RPC should have thrown an UnreachableException";
+        }
+        catch(UnreachableException unreachable) {
+            System.out.println("caught " + unreachable.getClass().getSimpleName() + " - as expected");
+        }
+    }
+
     /**
      * Tests that notifications are routed to all sites.
-     * 
      */
     public void testNotificationAndRpcRelay2Transit() throws Exception {
     	a.connect(LON_CLUSTER);
