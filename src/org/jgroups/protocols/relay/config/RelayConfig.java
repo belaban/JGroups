@@ -72,27 +72,13 @@ public class RelayConfig {
             if(attrs == null || attrs.getLength() == 0)
                 continue;
             Attr name_attr=(Attr)attrs.getNamedItem("name");
-            Attr id_attr=(Attr)attrs.getNamedItem("id");
-
             String name=name_attr.getValue();
-            short id=Short.parseShort(id_attr.getValue());
-            if(id < 0)
-                throw new Exception("Site ID must be >= 0");
-
             if(map.containsKey(name))
                 throw new Exception("Site \"" + name + "\" already defined");
-            SiteConfig site_config=new SiteConfig(name, id);
+            SiteConfig site_config=new SiteConfig(name);
             map.put(name, site_config);
 
             parseBridgesAndForwards(site_config, node);
-        }
-
-        // Verify that all sites have unique IDs
-        Set<Short> ids=new HashSet<Short>();
-        for(SiteConfig site_config: map.values()) {
-            if(ids.contains(site_config.getId()))
-                throw new Exception("Site ID \"" + site_config.getId() + "\" is defined multiple times (must be unique)");
-            ids.add(site_config.getId());
         }
     }
 
@@ -169,16 +155,13 @@ public class RelayConfig {
 
     public static class SiteConfig {
         protected final String              name;
-        protected final short               id;
         protected final List<BridgeConfig>  bridges=new ArrayList<BridgeConfig>();
         protected final List<ForwardConfig> forwards=new ArrayList<ForwardConfig>();
 
-        public SiteConfig(String name, short id) {
+        public SiteConfig(String name) {
             this.name=name;
-            this.id=id;
         }
 
-        public short  getId()   {return id;}
         public String getName() {return name;}
 
         public List<BridgeConfig>  getBridges()   {return bridges;}
@@ -188,7 +171,7 @@ public class RelayConfig {
         public SiteConfig addForward(ForwardConfig forward_config) {forwards.add(forward_config); return this;}
 
         public String toString() {
-            StringBuilder sb=new StringBuilder("name=" + name + " (id=" + id + ")\n");
+            StringBuilder sb=new StringBuilder("name=" + name + "\n");
             if(!bridges.isEmpty())
                 for(BridgeConfig bridge_config: bridges)
                     sb.append(bridge_config).append("\n");

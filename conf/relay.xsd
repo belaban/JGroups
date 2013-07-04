@@ -24,7 +24,6 @@
             <xs:element name="forwards" type="urn:forwardsType" xmlns:urn="urn:jgroups:relay:1.0" minOccurs="0"/>
         </xs:sequence>
 		<xs:attribute name="name" type="xs:string" use="required"/>
-        <xs:attribute name="id"   type="xs:short" use="required"/>
     </xs:complexType>
 
     <xs:complexType name="bridgesType">

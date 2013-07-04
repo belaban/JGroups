@@ -2476,12 +2476,13 @@ public class Util {
         return -1;
     }
 
-    public static Object pickRandomElement(List list) {
-        if(list == null) return null;
-        int size=list.size();
-        int index=(int)((Math.random() * size * 10) % size);
-        return list.get(index);
-    }
+
+    public static <T> T pickRandomElement(List<T> list) {
+            if(list == null) return null;
+            int size=list.size();
+            int index=(int)((Math.random() * size * 10) % size);
+            return list.get(index);
+        }
 
     public static Object pickRandomElement(Object[] array) {
         if(array == null) return null;

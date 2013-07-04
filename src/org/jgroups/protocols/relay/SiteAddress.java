@@ -9,5 +9,5 @@ import org.jgroups.Address;
  */
 public interface SiteAddress extends Address {
     /** Returns the ID of the site (all sites need to have a unique site ID) */
-    short getSite();
+    String getSite();
 }

@@ -4,8 +4,8 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.blocks.*;
 import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.SiteMaster;
-import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
@@ -264,16 +264,14 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private Address getReceiver() {
         try {
             List<Address> mbrs=new ArrayList<Address>(channel.getView().getMembers());
-
-            if(SiteUUID.hasCacheValues()) {
-                for(String site_master: SiteUUID.cacheValues()) {
-                    try {
-                        SiteMaster sm=new SiteMaster(site_master);
-                        mbrs.add(sm);
-                    }
-                    catch(Throwable t) {
-                        System.err.println("failed creating site master: " + t);
-                    }
+            List<String> site_names=getSites(channel);
+            for(String site_name: site_names) {
+                try {
+                    SiteMaster sm=new SiteMaster(site_name);
+                    mbrs.add(sm);
+                }
+                catch(Throwable t) {
+                    System.err.println("failed creating site master: " + t);
                 }
             }
 
@@ -298,6 +296,13 @@ public class UnicastTestRpc extends ReceiverAdapter {
             return null;
         }
     }
+
+
+    protected static List<String> getSites(JChannel channel) {
+        RELAY2 relay=(RELAY2)channel.getProtocolStack().findProtocol(RELAY2.class);
+        return relay.siteNames();
+    }
+
 
     private class Invoker extends Thread {
         private final Address             dest;

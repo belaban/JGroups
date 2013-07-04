@@ -113,11 +113,11 @@ public class UnicastRequest<T> extends Request {
         checkCompletion(this);
     }
 
-    public void siteUnreachable(short site) {
+    public void siteUnreachable(String site) {
         if(!(target instanceof SiteAddress))
             return;
 
-        if(((SiteAddress)target).getSite() != site)
+        if(!((SiteAddress)target).getSite().equals(site))
             return;
 
         lock.lock();

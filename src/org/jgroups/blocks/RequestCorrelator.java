@@ -249,7 +249,7 @@ public class RequestCorrelator {
                 break;
             case Event.SITE_UNREACHABLE:
                 SiteMaster site_master=(SiteMaster)evt.getArg();
-                short site=site_master.getSite();
+                String site=site_master.getSite();
                 setSiteUnreachable(site);
                 break; // let others have a stab at this event, too
         }
@@ -303,7 +303,7 @@ public class RequestCorrelator {
 
 
     /** An entire site is down; mark all requests that point to that site as unreachable (used by RELAY2) */
-    public void setSiteUnreachable(short site) {
+    public void setSiteUnreachable(String site) {
         for(RspCollector coll: requests.values()) {
             if(coll != null)
                 coll.siteUnreachable(site);

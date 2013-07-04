@@ -228,25 +228,22 @@ public class GroupRequestTest {
     }
 
     public void testResponsesComplete3() {
-        SiteUUID.addToCache((short)0, "lon");
-        SiteUUID.addToCache((short)1, "sfo");
-        SiteUUID.addToCache((short)2, "nyc");
-        Address one=new SiteUUID((UUID)Util.createRandomAddress("lon1"), "lon1", (short)0);
-        Address two=new SiteUUID((UUID)Util.createRandomAddress("sfo1"), "sfo1", (short)1);
-        Address three=new SiteUUID((UUID)Util.createRandomAddress("nyc1"), "nyc1", (short)2);
+        Address one=new SiteUUID((UUID)Util.createRandomAddress("lon1"), "lon1", "LON");
+        Address two=new SiteUUID((UUID)Util.createRandomAddress("sfo1"), "sfo1", "SFO");
+        Address three=new SiteUUID((UUID)Util.createRandomAddress("nyc1"), "nyc1", "NYC");
 
         GroupRequest<Integer> req=new GroupRequest<Integer>(null, null, Arrays.asList(one, two, three), RequestOptions.SYNC());
         req.suspect(one);
         req.receiveResponse(1, one, false);
-        req.siteUnreachable((short)0);
+        req.siteUnreachable("LON");
         checkComplete(req, false);
 
-        req.siteUnreachable((short)1);
+        req.siteUnreachable("SFO");
         req.receiveResponse(2, two, false);
         req.suspect(two);
         checkComplete(req, false);
 
-        req.siteUnreachable((short)2);
+        req.siteUnreachable("NYC");
         checkComplete(req, true);
         req.suspect(three);
         checkComplete(req, true);

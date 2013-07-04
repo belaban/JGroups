@@ -11,21 +11,21 @@
 <RelayConfiguration xmlns="urn:jgroups:relay:1.0">
 
     <sites>
-        <site name="lon" id="0">
+        <site name="lon">
             <bridges>
                 <bridge config="/home/bela/global.xml" name="global"/>
             </bridges>
         </site>
 
-        <site name="nyc" id="1">
+        <site name="nyc">
             <bridges>
                 <bridge config="/home/bela/global.xml" name="global"/>
             </bridges>
         </site>
 
-        <site name="sfo" id="2">
+        <site name="sfo">
             <bridges>
-                <bridge name="global" config="/home/bela/global.xml"/>
+                <bridge config="/home/bela/global.xml" name="global" />
             </bridges>
         </site>
     </sites>

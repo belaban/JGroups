@@ -620,10 +620,10 @@ public class SizeTest {
 
 
     public static void testRelay2Header() throws Exception {
-        Address dest=new SiteMaster((short)0);
+        Address dest=new SiteMaster("sfo");
         RELAY2.Relay2Header hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, dest, null);
         _testSize(hdr);
-        Address sender=new SiteUUID(UUID.randomUUID(), "dummy", (short)1);
+        Address sender=new SiteUUID(UUID.randomUUID(), "dummy", "sfo");
         hdr=new RELAY2.Relay2Header(RELAY2.Relay2Header.DATA, dest, sender);
         _testSize(hdr);
     }

@@ -9,7 +9,6 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.Relayer;
-import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
@@ -61,7 +60,7 @@ public class Relay2Test {
 		RELAY2 ar=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class);
 		assert ar != null;
 		
-		waitUntilStatus(SFO, RELAY2.RouteStatus.UP, 2000, 500, a);
+		waitUntilRoute(SFO, true, 2000, 500, a);
 		
 		assert !ar.printRoutes().equals("n/a (not site master)") : "This member should be site master";
 		
@@ -203,13 +202,13 @@ public class Relay2Test {
      * </ul>
      * https://issues.jboss.org/browse/JGRP-1528
      */
-    public void testQueueingAndForwarding() throws Exception {
+    /*public void testQueueingAndForwarding() throws Exception {
         MyReceiver rx=new MyReceiver();
         a=createNode(LON, "A", LON_CLUSTER, null);
         x=createNode(SFO, "X", SFO_CLUSTER, rx);
 
         System.out.println("A: waiting for site SFO to be UP");
-        waitUntilStatus(SFO, RELAY2.RouteStatus.UP, 20000, 500, a);
+        waitUntilRoute(SFO, true, 20000, 500, a);
 
         Address sm_sfo=new SiteMaster(SFO);
         System.out.println("A: sending message 0 to the site master of SFO");
@@ -227,7 +226,7 @@ public class Relay2Test {
 
         x.disconnect();
         System.out.println("Waiting for site SFO to be UNKNOWN");
-        waitUntilStatus(SFO, RELAY2.RouteStatus.UNKNOWN, 20000, 500, a);
+        waitUntilRoute(SFO, false, 20000, 500, a);
 
         System.out.println("A: sending 5 messages to site SFO - they should all get queued");
         for(int i=1; i <= 5; i++)
@@ -245,7 +244,7 @@ public class Relay2Test {
         assert list.size() == 5 : "list should be 5 but is: " + list;
         for(int i=1; i <= 5; i++)
             assert list.contains(i);
-    }
+    }*/
 
 
     /**
@@ -266,22 +265,19 @@ public class Relay2Test {
         x=createNode(SFO, "X", SFO_CLUSTER, null);
         waitForBridgeView(2, 20000, 500, a, x);
 
-        RELAY2 ra=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class);
-        ra.siteDownTimeout(3000);
-
         System.out.println("Disconnecting X");
         x.disconnect();
         System.out.println("A: waiting for site SFO to be UNKNOWN");
-        waitUntilStatus(SFO, RELAY2.RouteStatus.UNKNOWN, 20000, 500, a);
+        waitUntilRoute(SFO, false, 20000, 500, a);
 
         System.out.println("Reconnecting X, waiting for 5 seconds to see if the route is marked as DOWN");
         x.connect(SFO_CLUSTER);
         Util.sleep(5000);
         Relayer.Route route=getRoute(a, SFO);
-        assert route != null && route.status() == RELAY2.RouteStatus.UP : "route is " + route + " (expected to be UP)";
+        assert route != null : "route is " + route + " (expected to be UP)";
 
         route=getRoute(x, LON);
-        assert route != null && route.status() == RELAY2.RouteStatus.UP : "route is " + route + " (expected to be UP)";
+        assert route != null : "route is " + route + " (expected to be UP)";
     }
 
 
@@ -294,8 +290,7 @@ public class Relay2Test {
                                  new UNICAST3(),
                                  new GMS().setValue("print_local_addr", false),
                                  new FORWARD_TO_COORD(),
-                                 createRELAY2(site_name));
-        ch.setName(node_name);
+                                 createRELAY2(site_name)).name(node_name);
         if(receiver != null)
             ch.setReceiver(receiver);
         if(cluster_name != null)
@@ -308,8 +303,8 @@ public class Relay2Test {
     protected RELAY2 createRELAY2(String site_name) {
         RELAY2 relay=new RELAY2().site(site_name).enableAddressTagging(false).asyncRelayCreation(true);
 
-        RelayConfig.SiteConfig lon_cfg=new RelayConfig.SiteConfig(LON, (short)0),
-          sfo_cfg=new RelayConfig.SiteConfig(SFO, (short)1);
+        RelayConfig.SiteConfig lon_cfg=new RelayConfig.SiteConfig(LON),
+          sfo_cfg=new RelayConfig.SiteConfig(SFO);
 
         lon_cfg.addBridge(new RelayConfig.ProgrammaticBridgeConfig(BRIDGE_CLUSTER, createBridgeStack()));
         sfo_cfg.addBridge(new RelayConfig.ProgrammaticBridgeConfig(BRIDGE_CLUSTER, createBridgeStack()));
@@ -371,8 +366,8 @@ public class Relay2Test {
     }
 
 
-    protected void waitUntilStatus(String site_name, RELAY2.RouteStatus expected_status,
-                                   long timeout, long interval, JChannel ch) throws Exception {
+    protected void waitUntilRoute(String site_name, boolean present,
+                                  long timeout, long interval, JChannel ch) throws Exception {
         RELAY2 relay=(RELAY2)ch.getProtocolStack().findProtocol(RELAY2.class);
         if(relay == null)
             throw new IllegalArgumentException("Protocol RELAY2 not found");
@@ -380,12 +375,11 @@ public class Relay2Test {
         long deadline=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() < deadline) {
             route=relay.getRoute(site_name);
-            if(route != null && route.status() == expected_status)
+            if((route != null && present) || (route == null && !present))
                 break;
             Util.sleep(interval);
         }
-        assert route.status() == expected_status : "status=" + (route != null? route.status() : "n/a")
-          + ", expected status=" + expected_status;
+        assert (route != null && present) || (route == null && !present);
     }
 
     protected Relayer.Route getRoute(JChannel ch, String site_name) {

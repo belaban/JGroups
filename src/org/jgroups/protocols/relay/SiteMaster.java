@@ -16,18 +16,14 @@ public class SiteMaster extends SiteUUID {
     public SiteMaster() {
     }
 
-    public SiteMaster(short site) {
-        super(0, 0, null, site);
-    }
-
     public SiteMaster(String site) {
-        this(getSite(site));
+        super(0, 0, null, site);
     }
 
     public int compareTo(Address other) {
         if(other instanceof SiteMaster) {
             SiteMaster tmp=(SiteMaster)other;
-            return site == tmp.site? 0 : site < tmp.site? -1 : 1;
+            return site.compareTo(tmp.site);
         }
         return super.compareTo(other);
     }
@@ -37,7 +33,7 @@ public class SiteMaster extends SiteUUID {
     }
 
     public int hashCode() {
-        return site;
+        return site.hashCode();
     }
 
     public UUID copy() {
@@ -45,7 +41,6 @@ public class SiteMaster extends SiteUUID {
     }
 
     public String toString() {
-        String site_name=site_cache.get(site);
-        return "SiteMaster(" + (site_name != null? site_name : site) + ")";
+        return "SiteMaster(" + site + ")";
     }
 }

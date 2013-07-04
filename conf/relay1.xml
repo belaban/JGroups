@@ -11,7 +11,7 @@
 <RelayConfiguration xmlns="urn:jgroups:relay:1.0">
 
     <sites>
-        <site name="lon" id="0">
+        <site name="lon">
             <bridges>
                 <bridge config="lon-nyc.xml" name="lon-nyc"/>
                 <bridge config="lon-sfo.xml" name="lon-sfo"/>
@@ -21,13 +21,13 @@
             </forwards>
         </site>
 
-        <site name="nyc" id="1">
+        <site name="nyc">
             <bridges>
                 <bridge name="lon-nyc" config="lon-nyc.xml"/>
                 <bridge name="nyc-sfo" config="nyc-sfo.xml"/>
             </bridges>
         </site>
-        <site name="sfo" id="2">
+        <site name="sfo">
             <bridges>
                 <bridge name="lon-sfo" config="lon-sfo.xml"/>
             </bridges>

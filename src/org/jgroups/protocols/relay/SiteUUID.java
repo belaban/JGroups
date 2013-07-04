@@ -1,14 +1,9 @@
 package org.jgroups.protocols.relay;
 
-import org.jgroups.Global;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Implementation of SiteAddress
@@ -16,26 +11,22 @@ import java.util.concurrent.ConcurrentMap;
  * @since 3.2
  */
 public class SiteUUID extends UUID implements SiteAddress {
-    private static final long serialVersionUID=3748908939644729773L;
+    private static final long serialVersionUID=-8602137120498053578L;
     protected String name; // logical name, can be null
-
-    protected short site;
-
-    // Maps between site-IDs (shorts) and site names
-    protected static final ConcurrentMap<Short,String> site_cache=new ConcurrentHashMap<Short,String>(10);
+    protected String site; // site name
 
 
     public SiteUUID() {
     }
 
 
-    public SiteUUID(long mostSigBits, long leastSigBits, String name, short site) {
+    public SiteUUID(long mostSigBits, long leastSigBits, String name, String site) {
         super(mostSigBits,leastSigBits);
         this.name=name;
         this.site=site;
     }
 
-    public SiteUUID(UUID uuid, String name, short site) {
+    public SiteUUID(UUID uuid, String name, String site) {
         super(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
         this.name=name;
         this.site=site;
@@ -45,27 +36,7 @@ public class SiteUUID extends UUID implements SiteAddress {
         return name;
     }
 
-    public static void addToCache(short site, String name) {
-        site_cache.putIfAbsent(site, name);
-    }
-
-    public static void replaceInCache(short site, String name) {
-        site_cache.put(site, name);
-    }
-
-    public static Collection<String> cacheValues() {return site_cache.values();}
-
-    public static boolean hasCacheValues() {return !site_cache.isEmpty();}
-
-    public static String getSiteName(short site) {
-        return site_cache.get(site);
-    }
-
-    public static void clearCache() {
-        site_cache.clear();
-    }
-
-    public short getSite() {
+    public String getSite() {
         return site;
     }
 
@@ -77,43 +48,35 @@ public class SiteUUID extends UUID implements SiteAddress {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
         name=in.readUTF();
-        site=in.readShort();
+        site=in.readUTF();
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
         out.writeUTF(name);
-        out.writeShort(site);
+        out.writeUTF(site);
     }
 
     public void readFrom(DataInput in) throws Exception {
         super.readFrom(in);
         name=Util.readString(in);
-        site=in.readShort();
+        site=Util.readString(in);
     }
 
     public void writeTo(DataOutput out) throws Exception {
         super.writeTo(out);
         Util.writeString(name, out);
-        out.writeShort(site);
+        Util.writeString(site, out);
     }
 
     public int size() {
-        return super.size() + Util.size(name) + Global.SHORT_SIZE;
+        return super.size() + Util.size(name) + Util.size(site);
     }
 
 
     public String toString() {
         String retval=name != null? name : super.toString();
-        String suffix=site_cache.get(site);
-        return retval + ":" + (suffix != null? suffix : String.valueOf(site));
+        return retval + ":" + site;
     }
 
-    protected static short getSite(String site_name) {
-        for(Map.Entry<Short,String> entry: site_cache.entrySet()) {
-            if(entry.getValue().equals(site_name))
-                return entry.getKey();
-        }
-        throw new IllegalArgumentException("site \"" + site_name + "\" does not have a corresponding ID");
-    }
 }

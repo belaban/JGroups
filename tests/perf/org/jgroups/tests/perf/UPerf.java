@@ -6,8 +6,8 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
+import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.SiteMaster;
-import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -110,15 +110,16 @@ public class UPerf extends ReceiverAdapter {
         local_addr=channel.getAddress();
 
         if(xsite) {
-            if(SiteUUID.hasCacheValues())
-                for(String site_master: SiteUUID.cacheValues()) {
-                    try {
-                        site_masters.add(new SiteMaster(site_master));
-                    }
-                    catch(Throwable t) {
-                        System.err.println("failed creating SiteMaster(" + site_master + "): " + t);
-                    }
+            List<String> site_names=getSites(channel);
+            for(String site_name: site_names) {
+                try {
+                    SiteMaster sm=new SiteMaster(site_name);
+                    site_masters.add(sm);
                 }
+                catch(Throwable t) {
+                    System.err.println("failed creating site master: " + t);
+                }
+            }
         }
 
         try {
@@ -436,6 +437,10 @@ public class UPerf extends ReceiverAdapter {
         }
     }
 
+    protected static List<String> getSites(JChannel channel) {
+        RELAY2 relay=(RELAY2)channel.getProtocolStack().findProtocol(RELAY2.class);
+        return relay.siteNames();
+    }
 
     /** Picks the next member in the view */
     private Address getReceiver() {

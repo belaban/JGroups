@@ -179,7 +179,7 @@ public class GroupRequest<T> extends Request {
             checkCompletion(this);
     }
 
-    public void siteUnreachable(short site) {
+    public void siteUnreachable(String site) {
         boolean changed=false;
 
         for(Map.Entry<Address, Rsp<T>> entry: requests.entrySet()) {
@@ -187,7 +187,7 @@ public class GroupRequest<T> extends Request {
             if(!(member instanceof SiteAddress))
                 continue;
             SiteAddress addr=(SiteAddress)member;
-            if(addr.getSite() == site) {
+            if(addr.getSite().equals(site)) {
                 Rsp<T> rsp=entry.getValue();
                 if(rsp !=  null) {
                     if(rsp.setUnreachable()) {
