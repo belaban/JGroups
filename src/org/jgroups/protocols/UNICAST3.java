@@ -56,7 +56,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
       "is compacted (only for experts)",writable=false)
     protected long    xmit_table_max_compaction_time=10 * 60 * 1000;
 
-    @Property(description="Max time (in ms) after which a connection to a non-member is closed")
+    // @Property(description="Max time (in ms) after which a connection to a non-member is closed")
     protected long                   max_retransmit_time=60 * 1000L;
 
     @Property(description="Interval (in milliseconds) at which messages in the send windows are resent")
@@ -175,7 +175,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     public long getMaxRetransmitTime() {return max_retransmit_time;}
 
     @Property(description="Max number of milliseconds we try to retransmit a message to any given member. After that, " +
-            "the connection is removed. Any new connection to that member will start with seqno #1 again. 0 disables this")
+      "the connection is removed. Any new connection to that member will start with seqno #1 again. 0 disables this")
     public void setMaxRetransmitTime(long max_retransmit_time) {
         this.max_retransmit_time=max_retransmit_time;
         if(cache != null && max_retransmit_time > 0)
