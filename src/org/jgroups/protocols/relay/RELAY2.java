@@ -94,6 +94,8 @@ public class RELAY2 extends Protocol {
     // protocol IDs above RELAY2
     protected short[]                                  prots_above;
 
+    protected volatile RouteStatusListener             route_status_listener;
+
     /** Number of messages forwarded to the local SiteMaster */
     protected final AtomicLong                         forward_to_site_master=new AtomicLong(0);
 
@@ -133,10 +135,14 @@ public class RELAY2 extends Protocol {
     public boolean enableAddressTagging()            {return enable_address_tagging;}
     public boolean relayMulticasts()                 {return relay_multicasts;}
     public boolean asyncRelayCreation()              {return async_relay_creation;}
-    public Address       getLocalAddress()           {return local_addr;}
+    public Address getLocalAddress()                 {return local_addr;}
     public TimeScheduler getTimer()                  {return timer;}
     public void incrementRelayed()                   {relayed.incrementAndGet();}
     public void addToRelayedTime(long delta)         {relayed_time.addAndGet(delta);}
+
+
+    public RouteStatusListener getRouteStatusListener()       {return route_status_listener;}
+    public void setRouteStatusListener(RouteStatusListener l) {this.route_status_listener=l;}
 
     @ManagedAttribute(description="Number of messages forwarded to the local SiteMaster")
     public long getNumForwardedToSiteMaster() {return forward_to_site_master.get();}
@@ -184,6 +190,9 @@ public class RELAY2 extends Protocol {
     @ManagedAttribute(description="The average number of messages / s for delivering received messages locally")
     public long getAvgMsgsDeliveringLocally() {return getTimeDeliveringLocally() > 0?
                                                (long)(getNumLocalDeliveries() / (getTimeDeliveringLocally()/1000.0)) : 0;}
+
+    @ManagedAttribute(description="Whether or not this instance is a site master")
+    public boolean isSiteMaster() {return relayer != null;}
 
 
     public void resetStats() {

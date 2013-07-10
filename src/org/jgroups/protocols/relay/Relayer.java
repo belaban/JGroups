@@ -270,14 +270,23 @@ public class Relayer {
             if(log.isTraceEnabled())
                 log.trace("[Relayer " + channel.getAddress() + "] view: " + new_view);
 
+            RouteStatusListener       listener=relay.getRouteStatusListener();
             Map<String,List<Address>> tmp=extract(new_view);
+            Set<String>               down=listener != null? new HashSet<String>(routes.keySet()) : null;
+            Set<String>               up=listener != null? new HashSet<String>() : null;
+
+            if(listener != null)
+                down.removeAll(tmp.keySet());
+
             routes.keySet().retainAll(tmp.keySet()); // remove all sites which are not in the view
 
             for(Map.Entry<String,List<Address>> entry: tmp.entrySet()) {
                 String key=entry.getKey();
                 List<Address> val=entry.getValue();
-                if(!routes.containsKey(key))
+                if(!routes.containsKey(key)) {
                     routes.put(key, new ArrayList<Route>());
+                    up.add(key);
+                }
 
                 List<Route> list=routes.get(key);
 
@@ -294,10 +303,19 @@ public class Relayer {
                         list.add(new Route(addr, channel));
                 }
 
-                if(list.isEmpty())
+                if(list.isEmpty()) {
                     routes.remove(key);
+                    down.add(key);
+                    up.remove(key);
+                }
             }
 
+            if(listener != null) {
+                if(!down.isEmpty())
+                    listener.sitesDown(down.toArray(new String[down.size()]));
+                if(!up.isEmpty())
+                    listener.sitesUp(up.toArray(new String[up.size()]));
+            }
         }
 
         protected boolean contains(List<Route> routes, Address addr) {
