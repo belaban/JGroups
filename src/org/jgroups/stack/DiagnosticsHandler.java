@@ -108,9 +108,10 @@ public class DiagnosticsHandler implements Runnable {
     }
 
     public void run() {
-        byte[] buf=new byte[1500]; // requests are small (responses might be bigger)
+        byte[] buf;
         DatagramPacket packet;
         while(!diag_sock.isClosed() && Thread.currentThread().equals(thread)) {
+            buf=new byte[1500]; // requests are small (responses might be bigger)
             packet=new DatagramPacket(buf, 0, buf.length);
             try {
                 diag_sock.receive(packet);
