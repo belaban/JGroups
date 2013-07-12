@@ -285,7 +285,8 @@ public class Relayer {
                 List<Address> val=entry.getValue();
                 if(!routes.containsKey(key)) {
                     routes.put(key, new ArrayList<Route>());
-                    up.add(key);
+                    if(up != null)
+                        up.add(key);
                 }
 
                 List<Route> list=routes.get(key);
@@ -305,8 +306,10 @@ public class Relayer {
 
                 if(list.isEmpty()) {
                     routes.remove(key);
-                    down.add(key);
-                    up.remove(key);
+                    if(listener != null) {
+                        down.add(key);
+                        up.remove(key);
+                    }
                 }
             }
 
