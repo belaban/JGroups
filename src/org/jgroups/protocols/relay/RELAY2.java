@@ -362,7 +362,7 @@ public class RELAY2 extends Protocol {
                     Address site_master=pickSiteMaster();
                     if(site_master == null)
                         throw new IllegalStateException("site master is null");
-                    forwardTo(site_master, target, sender, msg, true);
+                    forwardTo(site_master, target, sender, msg, max_site_masters == 1);
                     if(stats) {
                         forward_sm_time.addAndGet(System.nanoTime() - start);
                         forward_to_site_master.incrementAndGet();
