@@ -101,7 +101,7 @@ public class UNICAST2_Test {
                             new PING().setValue("timeout", 500),
                             new NAKACK2().setValue("use_mcast_xmit", false),
                             new DISCARD(),
-                            new UNICAST2().setValue("xmit_interval", 500),
+                            new UNICAST2().setValue("xmit_interval", 500).setValue("stable_interval", 1000),
                             new GMS().setValue("print_local_addr", false))
           .name(name);
     }
