@@ -100,8 +100,8 @@ public class FC extends Protocol {
      * to true if the concurrent stack is used
      */
     @Property(description="Does not block a down message if it is a result of handling an up message in the" +
-            "same thread. Fixes JGRP-928")
-    private boolean ignore_synchronous_response=true;
+            "same thread. Fixes JGRP-928", deprecatedMessage="not used any longer")
+    private boolean ignore_synchronous_response=false;
     
     
     
@@ -169,15 +169,6 @@ public class FC extends Protocol {
     private final Condition credits_available=lock.newCondition();
    
 
-    /**
-     * Thread that carries messages through up() and shouldn't be blocked
-     * in down() if ignore_synchronous_response==true. JGRP-465.
-     */
-    private final ThreadLocal<Boolean> ignore_thread=new ThreadLocal<Boolean>() {
-        protected Boolean initialValue() {
-            return false;
-        }
-    };   
 
     /** Last time a credit request was sent. Used to prevent credit request storms */
     @GuardedBy("lock")
@@ -408,7 +399,6 @@ public class FC extends Protocol {
         lock.lock();
         try {
             running=false;
-            ignore_thread.set(false);
             credits_available.signalAll(); // notify all threads waiting on the mutex that we are done
         }
         finally {
@@ -422,7 +412,7 @@ public class FC extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                if(msg.isFlagSet(Message.NO_FC))
+                if(msg.isFlagSet(Message.Flag.NO_FC))
                     break;
                 int length=msg.getLength();
                 if(length == 0)
@@ -448,7 +438,7 @@ public class FC extends Protocol {
                 // JGRP-465. We only deal with msgs to avoid having to use a concurrent collection; ignore views,
                 // suspicions, etc which can come up on unusual threads.
                 Message msg=(Message)evt.getArg();
-                if(msg.isFlagSet(Message.NO_FC))
+                if(msg.isFlagSet(Message.Flag.NO_FC))
                     break;
                 FcHeader hdr=(FcHeader)msg.getHeader(this.id);
                 if(hdr != null) {
@@ -459,16 +449,10 @@ public class FC extends Protocol {
                 Address sender=msg.getSrc();
                 long new_credits=adjustCredit(received, sender, msg.getLength());
                 
-                // JGRP-928: changed ignore_thread to a ThreadLocal: multiple threads can access it with the
-                // introduction of the concurrent stack
-                if(ignore_synchronous_response)
-                    ignore_thread.set(true);
                 try {
                     return up_prot.up(evt);
                 }
                 finally {
-                    if(ignore_synchronous_response)
-                        ignore_thread.set(false); // need to revert because the thread is placed back into the pool
                     if(new_credits > 0) {
                         if(log.isTraceEnabled()) log.trace("sending " + new_credits + " credits to " + sender);
                         sendCredit(sender, new_credits);
@@ -491,7 +475,7 @@ public class FC extends Protocol {
     public void up(MessageBatch batch) {
         int length=0;
         for(Message msg: batch) {
-            if(msg.isFlagSet(Message.NO_FC))
+            if(msg.isFlagSet(Message.Flag.NO_FC))
                 continue;
             FcHeader hdr=(FcHeader)msg.getHeader(this.id);
             if(hdr != null) {
@@ -509,16 +493,10 @@ public class FC extends Protocol {
 
 
         if(!batch.isEmpty()) {
-            // JGRP-928: changed ignore_thread to a ThreadLocal: multiple threads can access it with the
-            // introduction of the concurrent stack
-            if(ignore_synchronous_response)
-                ignore_thread.set(true);
             try {
                 up_prot.up(batch);
             }
             finally {
-                if(ignore_synchronous_response)
-                    ignore_thread.remove(); // need to revert because the thread is placed back into the pool
                 if(new_credits > 0)
                     sendCredit(sender, new_credits);
             }
@@ -572,73 +550,67 @@ public class FC extends Protocol {
         lock.lock();
         try {
             if(length > lowest_credit) { // then block and loop asking for credits until enough credits are available
-                if(ignore_synchronous_response && ignore_thread.get()) { // JGRP-465
-                    if(log.isTraceEnabled())
-                        log.trace("bypassing blocking to avoid deadlocking " + Thread.currentThread());
-                }
-                else {
-                    determineCreditors(dest, length);
-                    long start_blocking=System.currentTimeMillis();
-                    num_blockings++; // we count overall blockings, not blockings for *all* threads
-                    if(log.isTraceEnabled())
-                        log.trace("Blocking (lowest_credit=" + lowest_credit + "; length=" + length + ")");
+                determineCreditors(dest, length);
+                long start_blocking=System.currentTimeMillis();
+                num_blockings++; // we count overall blockings, not blockings for *all* threads
+                if(log.isTraceEnabled())
+                    log.trace("Blocking (lowest_credit=" + lowest_credit + "; length=" + length + ")");
 
-                    while(length > lowest_credit && running) {
-                        try {
-                            long block_time=max_block_time;
-                            if(max_block_times != null) {
-                                Long tmp=end_time.get();
-                                if(tmp != null) {
-                                    // A negative block_time means we don't wait at all ! If the end_time already elapsed
-                                    // (because we waited for other threads to get processed), the message will not
-                                    // block at all and get sent immediately
-                                    block_time=tmp - start_blocking;
-                                }
-                            }
-
-                            boolean rc=credits_available.await(block_time, TimeUnit.MILLISECONDS);
-                            if(length <= lowest_credit || rc || !running)
-                                break;
-
-                            // if we use max_block_times, then we do *not* send credit requests, even if we run
-                            // into timeouts: in this case, it is up to the receivers to send new credits
-                            if(!rc && max_block_times != null)
-                                break;
-
-                            long wait_time=System.currentTimeMillis() - last_credit_request;
-                            if(wait_time >= max_block_time) {
-
-                                // we have to set this var now, because we release the lock below (for sending a
-                                // credit request), so all blocked threads would send a credit request, leading to
-                                // a credit request storm
-                                last_credit_request=System.currentTimeMillis();
-
-                                // we need to send the credit requests down *without* holding the lock, otherwise we might
-                                // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
-                                Map<Address,Credit> sent_copy=new HashMap<Address,Credit>(sent);
-                                sent_copy.keySet().retainAll(creditors);
-                                lock.unlock();
-                                try {
-                                    for(Map.Entry<Address,Credit> entry: sent_copy.entrySet())
-                                        sendCreditRequest(entry.getKey(), entry.getValue().get());
-                                }
-                                finally {
-                                    lock.lock();
-                                }
+                while(length > lowest_credit && running) {
+                    try {
+                        long block_time=max_block_time;
+                        if(max_block_times != null) {
+                            Long tmp=end_time.get();
+                            if(tmp != null) {
+                                // A negative block_time means we don't wait at all ! If the end_time already elapsed
+                                // (because we waited for other threads to get processed), the message will not
+                                // block at all and get sent immediately
+                                block_time=tmp - start_blocking;
                             }
                         }
-                        catch(InterruptedException e) {
-                            // bela June 15 2007: don't interrupt the thread again, as this will trigger an infinite loop !!
-                            // (http://jira.jboss.com/jira/browse/JGRP-536)
-                            // Thread.currentThread().interrupt();
+
+                        boolean rc=credits_available.await(block_time, TimeUnit.MILLISECONDS);
+                        if(length <= lowest_credit || rc || !running)
+                            break;
+
+                        // if we use max_block_times, then we do *not* send credit requests, even if we run
+                        // into timeouts: in this case, it is up to the receivers to send new credits
+                        if(!rc && max_block_times != null)
+                            break;
+
+                        long wait_time=System.currentTimeMillis() - last_credit_request;
+                        if(wait_time >= max_block_time) {
+
+                            // we have to set this var now, because we release the lock below (for sending a
+                            // credit request), so all blocked threads would send a credit request, leading to
+                            // a credit request storm
+                            last_credit_request=System.currentTimeMillis();
+
+                            // we need to send the credit requests down *without* holding the lock, otherwise we might
+                            // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
+                            Map<Address,Credit> sent_copy=new HashMap<Address,Credit>(sent);
+                            sent_copy.keySet().retainAll(creditors);
+                            lock.unlock();
+                            try {
+                                for(Map.Entry<Address,Credit> entry: sent_copy.entrySet())
+                                    sendCreditRequest(entry.getKey(), entry.getValue().get());
+                            }
+                            finally {
+                                lock.lock();
+                            }
                         }
                     }
-                    long block_time=System.currentTimeMillis() - start_blocking;
-                    if(log.isTraceEnabled())
-                        log.trace("total time blocked: " + block_time + " ms");
-                    total_time_blocking+=block_time;
-                    last_blockings.add(block_time);
+                    catch(InterruptedException e) {
+                        // bela June 15 2007: don't interrupt the thread again, as this will trigger an infinite loop !!
+                        // (http://jira.jboss.com/jira/browse/JGRP-536)
+                        // Thread.currentThread().interrupt();
+                    }
                 }
+                long block_time=System.currentTimeMillis() - start_blocking;
+                if(log.isTraceEnabled())
+                    log.trace("total time blocked: " + block_time + " ms");
+                total_time_blocking+=block_time;
+                last_blockings.add(block_time);
             }
 
             long tmp=decrementCredit(sent, dest, length);

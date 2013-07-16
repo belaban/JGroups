@@ -80,8 +80,8 @@ public abstract class FlowControl extends Protocol {
      * this flag should not be set to true if the concurrent stack is used
      */
     @Property(description="Does not block a down message if it is a result of handling an up message in the" +
-            "same thread. Fixes JGRP-928")
-    protected boolean ignore_synchronous_response=true;
+            "same thread. Fixes JGRP-928",deprecatedMessage="not used any longer")
+    protected boolean ignore_synchronous_response=false;
     
     
     
@@ -110,17 +110,6 @@ public abstract class FlowControl extends Protocol {
 
    
 
-
-
-    /**
-     * Thread that carries messages through up() and shouldn't be blocked
-     * in down() if ignore_synchronous_response==true. JGRP-465.
-     */
-    protected final ThreadLocal<Boolean> ignore_thread=new ThreadLocal<Boolean>() {
-        protected Boolean initialValue() {
-            return false;
-        }
-    };   
 
 
     public void resetStats() {
@@ -311,7 +300,6 @@ public abstract class FlowControl extends Protocol {
     public void stop() {
         super.stop();
         running=false;
-        ignore_thread.remove();
     }
 
 
@@ -320,7 +308,7 @@ public abstract class FlowControl extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                if(msg.isFlagSet(Message.NO_FC))
+                if(msg.isFlagSet(Message.Flag.NO_FC))
                     break;
 
                 Address dest=msg.getDest();
@@ -334,11 +322,6 @@ public abstract class FlowControl extends Protocol {
                 if(length == 0)
                     break;
 
-                if(ignore_synchronous_response && ignore_thread.get()) { // JGRP-465
-                    if(log.isTraceEnabled())
-                        log.trace("bypassing flow control because of synchronous response " + Thread.currentThread());
-                    break;
-                }
                 return handleDownMessage(evt, msg, dest, length);
 
             case Event.CONFIG:
@@ -359,7 +342,7 @@ public abstract class FlowControl extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                if(msg.isFlagSet(Message.NO_FC))
+                if(msg.isFlagSet(Message.Flag.NO_FC))
                     break;
 
                 Address dest=msg.getDest();
@@ -378,16 +361,10 @@ public abstract class FlowControl extends Protocol {
                 Address sender=msg.getSrc();
                 long new_credits=adjustCredit(received, sender, msg.getLength());
                 
-                // JGRP-928: changed ignore_thread to a ThreadLocal: multiple threads can access it with the
-                // introduction of the concurrent stack
-                if(ignore_synchronous_response)
-                    ignore_thread.set(true);
                 try {
                     return up_prot.up(evt);
                 }
                 finally {
-                    if(ignore_synchronous_response)
-                        ignore_thread.remove(); // need to revert because the thread is placed back into the pool
                     if(new_credits > 0)
                         sendCredit(sender, new_credits);
                 }
@@ -428,7 +405,7 @@ public abstract class FlowControl extends Protocol {
     public void up(MessageBatch batch) {
         int length=0;
         for(Message msg: batch) {
-            if(msg.isFlagSet(Message.NO_FC))
+            if(msg.isFlagSet(Message.Flag.NO_FC))
                 continue;
 
             Address dest=msg.getDest();
@@ -453,16 +430,10 @@ public abstract class FlowControl extends Protocol {
             new_credits=adjustCredit(received, sender, length);
 
         if(!batch.isEmpty()) {
-            // JGRP-928: changed ignore_thread to a ThreadLocal: multiple threads can access it with the
-            // introduction of the concurrent stack
-            if(ignore_synchronous_response)
-                ignore_thread.set(true);
             try {
                 up_prot.up(batch);
             }
             finally {
-                if(ignore_synchronous_response)
-                    ignore_thread.remove(); // need to revert because the thread is placed back into the pool
                 if(new_credits > 0)
                     sendCredit(sender, new_credits);
             }
