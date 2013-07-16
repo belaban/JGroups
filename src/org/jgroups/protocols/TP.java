@@ -1753,8 +1753,10 @@ public abstract class TP extends Protocol {
 
             case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
+                Collection<Address> old_members;
                 synchronized(members) {
                     View view=(View)evt.getArg();
+                    old_members=new ArrayList<Address>(members);
                     members.clear();
 
                     if(!isSingleton()) {
@@ -1775,7 +1777,10 @@ public abstract class TP extends Protocol {
                     // fix for https://jira.jboss.org/jira/browse/JGRP-918
                     logical_addr_cache.retainAll(members);
                     fetchLocalAddresses();
-                    UUID.retainAll(members);
+
+                    List<Address> left_mbrs=Util.leftMembers(old_members,members);
+                    if(left_mbrs != null && !left_mbrs.isEmpty())
+                        UUID.removeAll(left_mbrs);
 
                     if(suppress_log_different_version != null)
                         suppress_log_different_version.removeExpired(suppress_time_different_version_warnings);
