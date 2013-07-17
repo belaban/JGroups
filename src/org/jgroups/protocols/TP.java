@@ -997,10 +997,6 @@ public abstract class TP extends Protocol {
         if(suppress_time_different_cluster_warnings > 0)
             suppress_log_different_cluster=new SuppressLog<Address>(log, "MsgDroppedDiffCluster", "SuppressMsg");
 
-        Util.verifyRejectionPolicy(oob_thread_pool_rejection_policy);
-        Util.verifyRejectionPolicy(thread_pool_rejection_policy);
-        Util.verifyRejectionPolicy(internal_thread_pool_rejection_policy);
-
         // ========================================== OOB thread pool ==============================
 
         if(oob_thread_pool == null
