@@ -106,7 +106,7 @@ public abstract class FlowControl extends Protocol {
     protected volatile boolean running=true;
 
     
-    protected boolean frag_size_received=false;
+    protected int frag_size;
 
    
 
@@ -290,9 +290,14 @@ public abstract class FlowControl extends Protocol {
 
     public void start() throws Exception {
         super.start();
-        if(!frag_size_received) {
+        boolean is_udp_transport=getTransport().isMulticastCapable();
+        if(is_udp_transport && frag_size <= 0)
             log.warn("No fragmentation protocol was found. When flow control is used, we recommend " +
-                    "a fragmentation protocol, due to http://jira.jboss.com/jira/browse/JGRP-590");
+                       "a fragmentation protocol, due to http://jira.jboss.com/jira/browse/JGRP-590");
+        if(frag_size > 0 && frag_size >= min_credits) {
+            log.warn("The fragmentation size of the fragmentation protocol is " + frag_size +
+                       ", which is greater than min_credits (" + min_credits +  "). This can lead to blockings " +
+                       "(https://issues.jboss.org/browse/JGRP-1659)");
         }
         running=true;
     }
@@ -443,16 +448,9 @@ public abstract class FlowControl extends Protocol {
 
     protected void handleConfigEvent(Map<String,Object> info) {
         if(info != null) {
-            Integer frag_size=(Integer)info.get("frag_size");
-            if(frag_size != null) {
-                if(frag_size > max_credits) {
-                    log.warn("The fragmentation size of the fragmentation protocol is " + frag_size +
-                            ", which is greater than the max credits. While this is not incorrect, " +
-                            "it may cause blockings. Frag size should be less than max_credits " +
-                            "(http://jira.jboss.com/jira/browse/JGRP-590)");
-                }
-                frag_size_received=true;
-            }
+            Integer tmp=(Integer)info.get("frag_size");
+            if(tmp != null)
+                this.frag_size=tmp;
         }
     }
 
