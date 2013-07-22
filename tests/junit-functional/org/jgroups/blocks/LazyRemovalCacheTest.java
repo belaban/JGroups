@@ -1,9 +1,9 @@
 package org.jgroups.blocks;
 
-import org.testng.annotations.Test;
 import org.jgroups.Global;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
+import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -140,7 +140,22 @@ public class LazyRemovalCacheTest {
         cache.remove(u4);
         System.out.println("cache = " + cache);
         assert cache.size() == 1;
+    }
 
+    public void testValuesIterator() {
+        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<UUID, String>(10, 10000);
+        UUID u1=UUID.randomUUID(), u2=UUID.randomUUID(), u3=UUID.randomUUID(), u4=UUID.randomUUID();
+        cache.add(u1, "u1"); cache.add(u2, "u2");
+        cache.add(u3, "u3"); cache.add(u4, "u4");
+        System.out.println("cache = " + cache);
+        assert cache.size() == 4;
+
+        int count=0;
+        for(LazyRemovalCache.Entry<String> entry: cache.valuesIterator()) {
+            System.out.println(entry);
+            count++;
+        }
+        assert count == 4;
     }
 
 

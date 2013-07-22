@@ -159,6 +159,14 @@ public class LazyRemovalCache<K,V> {
         return retval;
     }
 
+    public Iterable<Entry<V>> valuesIterator() {
+        return new Iterable<Entry<V>>() {
+            public Iterator<Entry<V>> iterator() {
+                return map.values().iterator();
+            }
+        };
+    }
+
     /**
      * Adds all value which have not been marked as removable to the returned set
      * @return
@@ -237,13 +245,25 @@ public class LazyRemovalCache<K,V> {
     }
 
 
-    private static class Entry<V> {
-        private final V val;
-        private final long timestamp=System.currentTimeMillis();
-        private boolean removable=false;
+    public static class Entry<V> {
+        protected final V    val;
+        protected final long timestamp=System.currentTimeMillis();
+        protected boolean    removable=false;
 
         public Entry(V val) {
             this.val=val;
+        }
+
+        public boolean isRemovable() {
+            return removable;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
+        }
+
+        public V getVal() {
+            return val;
         }
 
         public String toString() {

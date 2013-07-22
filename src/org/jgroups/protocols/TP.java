@@ -1637,7 +1637,6 @@ public abstract class TP extends Protocol {
 
 
     protected void sendToAllPhysicalAddresses(byte[] buf, int offset, int length) throws Exception {
-        Set<PhysicalAddress> dests=new HashSet<PhysicalAddress>(logical_addr_cache.nonRemovedValues());
         if(!logical_addr_cache.containsKeys(members)) {
             long current_time=0;
             synchronized(this) {
@@ -1650,13 +1649,14 @@ public abstract class TP extends Protocol {
             }
         }
 
-        for(PhysicalAddress dest: dests) {
+        for(LazyRemovalCache.Entry<PhysicalAddress> entry: logical_addr_cache.valuesIterator()) {
             try {
-                sendUnicast(dest, buf, offset, length);
+                if(!entry.isRemovable())
+                    sendUnicast(entry.getVal(), buf, offset, length);
             }
             catch(Throwable t) {
                 if(log.isErrorEnabled())
-                    log.error(local_addr + ": failure sending message to " + dest + ": " + t);
+                    log.error(local_addr + ": failure sending message to " + entry.getVal() + ": " + t);
             }
         }
     }
