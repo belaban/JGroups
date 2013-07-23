@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
- * Tests the UNICAST by sending unicast messages between a sender and a receiver
+ * Perf tests the UNICAST protocol by sending unicast messages between a sender and a receiver
  *
  * @author Bela Ban
  */

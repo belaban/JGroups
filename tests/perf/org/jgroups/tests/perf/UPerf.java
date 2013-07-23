@@ -439,7 +439,7 @@ public class UPerf extends ReceiverAdapter {
 
     protected static List<String> getSites(JChannel channel) {
         RELAY2 relay=(RELAY2)channel.getProtocolStack().findProtocol(RELAY2.class);
-        return relay.siteNames();
+        return relay != null? relay.siteNames() : new ArrayList<String>(0);
     }
 
     /** Picks the next member in the view */
