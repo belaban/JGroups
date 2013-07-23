@@ -1445,7 +1445,7 @@ public abstract class TP extends Protocol {
 
             if(is_message_list) { // used if message bundling is enabled
                 final MessageBatch[] batches=readMessageBatch(dis, multicast);
-                final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch=batches[2];
+                final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch_oob=batches[2], internal_batch=batches[3];
 
                 if(oob_batch != null) {
                     num_oob_msgs_received+=oob_batch.size();
@@ -1455,6 +1455,11 @@ public abstract class TP extends Protocol {
                     num_incoming_msgs_received+=batch.size();
                     thread_pool.execute(new BatchHandler(batch));
                 }
+                if(internal_batch_oob != null) {
+                    num_oob_msgs_received+=internal_batch_oob.size();
+                    Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
+                    pool.execute(new BatchHandler(internal_batch_oob));
+                }
                 if(internal_batch != null) {
                     num_internal_msgs_received+=internal_batch.size();
                     Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
@@ -1463,14 +1468,14 @@ public abstract class TP extends Protocol {
             }
             else {
                 Message msg=readMessage(dis);
-                if(msg.isFlagSet(Message.Flag.INTERNAL))
-                    num_internal_msgs_received++;
-                else if(msg.isFlagSet(Message.Flag.OOB))
+                if(msg.isFlagSet(Message.Flag.OOB))
                     num_oob_msgs_received++;
+                else if(msg.isFlagSet(Message.Flag.INTERNAL))
+                    num_internal_msgs_received++;
                 else
                     num_incoming_msgs_received++;
 
-                boolean internal=msg.isFlagSet(Message.Flag.INTERNAL); // use internal pool or OOB (if intrenal pool is null)
+                boolean internal=msg.isFlagSet(Message.Flag.INTERNAL); // use internal pool or OOB (if internal pool is null)
                 Executor pool=internal && internal_thread_pool != null? internal_thread_pool
                   : internal || msg.isFlagSet(Message.Flag.OOB)? oob_thread_pool : thread_pool;
                 TpHeader hdr=(TpHeader)msg.getHeader(id);
@@ -1752,17 +1757,22 @@ public abstract class TP extends Protocol {
     }
 
     /**
-     * Reads a list of messages into 3 MessageBatches: a regular, an OOB and an internal one
+     * Reads a list of messages into 4 MessageBatches:
+     * <ol>
+     *     <li>regular</li>
+     *     <li>OOB</li>
+     *     <li>INTERNAL-OOB (INTERNAL and OOB)</li>
+     *     <li>INTERNAL (INTERNAL)</li>
+     * </ol>
      * @param in
-     * @return an array of 2 MessageBatches, the regular is at index 0 and the OOB at index 1
-     * and the internal at index 2 (either can be null)
+     * @return an array of 4 MessageBatches in the order above, the first batch is at index 0
      * @throws Exception
      */
     public static MessageBatch[] readMessageBatch(DataInputStream in, boolean multicast) throws Exception {
-        MessageBatch[] batches=new MessageBatch[3]; // [0]: reg, [1]: OOB, [2]: internal
+        MessageBatch[] batches=new MessageBatch[4]; // [0]: reg, [1]: OOB, [2]: internal-oob, [3]: internal
         Address dest=Util.readAddress(in);
         Address src=Util.readAddress(in);
-        String cluster_name=Util.readString(in);
+        String  cluster_name=Util.readString(in);
 
         int len=in.readInt();
         for(int i=0; i < len; i++) {
@@ -1771,21 +1781,24 @@ public abstract class TP extends Protocol {
             msg.setDest(dest);
             if(msg.getSrc() == null)
                 msg.setSrc(src);
-            if(msg.isFlagSet(Message.Flag.INTERNAL)) {
-                if(batches[2] == null)
-                    batches[2]=new MessageBatch(dest, src, cluster_name, multicast, MessageBatch.Mode.INTERNAL, len);
-                batches[2].add(msg);
+            boolean oob=msg.isFlagSet(Message.Flag.OOB);
+            boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
+            int index=0;
+            MessageBatch.Mode mode=MessageBatch.Mode.REG;
+
+            if(oob && !internal) {
+                index=1; mode=MessageBatch.Mode.OOB;
             }
-            else if(msg.isFlagSet(Message.Flag.OOB)) {
-                if(batches[1] == null)
-                    batches[1]=new MessageBatch(dest, src, cluster_name, multicast, MessageBatch.Mode.OOB, len);
-                batches[1].add(msg);
+            else if(oob && internal) {
+                index=2; mode=MessageBatch.Mode.OOB;
             }
-            else {
-                if(batches[0] == null)
-                    batches[0]=new MessageBatch(dest, src, cluster_name, multicast, MessageBatch.Mode.REG, len);
-                batches[0].add(msg);
+            else if(!oob && internal) {
+                index=3; mode=MessageBatch.Mode.INTERNAL;
             }
+
+            if(batches[index] == null)
+                batches[index]=new MessageBatch(dest, src, cluster_name, multicast, mode, len);
+            batches[index].add(msg);
         }
         return batches;
     }
