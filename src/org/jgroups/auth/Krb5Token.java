@@ -7,6 +7,7 @@ package org.jgroups.auth;
 
 import org.ietf.jgss.GSSException;
 import org.jgroups.Message;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Util;
 
@@ -17,6 +18,10 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Properties;
 
+/**
+ * Uses Kerberos V5 for authentication
+ */
+@Experimental
 public class Krb5Token extends AuthToken {
     private static final String JASS_SECURITY_CONFIG   = "JGoupsKrb5TokenSecurityConf";
     public  static final String CLIENT_PRINCIPAL_NAME  = "client_principal_name";
