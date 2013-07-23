@@ -1,0 +1,71 @@
+# OU for kerberos config
+dn: ou=users,dc=kerbtest,dc=com
+objectclass: organizationalUnit
+objectclass: top
+ou: users
+
+# Web server identity/service principal.
+dn: uid=webserver,ou=users,dc=kerbtest,dc=com
+objectclass: top
+objectclass: person
+objectclass: inetOrgPerson
+objectclass: krb5Principal
+objectclass: krb5KDCEntry
+cn: Web Server
+sn: Web Server
+uid: webserver
+userpassword: Password123
+krb5PrincipalName: webserver/ms-t420s@KERBTEST.COM
+
+# Cluster/service principal.
+dn: uid=cluster1,ou=users,dc=kerbtest,dc=com
+objectclass: top
+objectclass: person
+objectclass: inetOrgPerson
+objectclass: krb5Principal
+objectclass: krb5KDCEntry
+cn: cluster1
+sn: cluster1
+uid: cluster1
+userpassword: ServicePassword123
+krb5PrincipalName: cluster1/ms-t420s@KERBTEST.COM
+
+# User / client principal.
+dn: uid=martin,ou=users,dc=kerbtest,dc=com
+objectclass: top
+objectclass: person
+objectclass: inetOrgPerson
+objectclass: krb5Principal
+objectclass: krb5KDCEntry
+cn: Martin
+sn: Martin
+uid: martin
+userpassword: Password99
+krb5PrincipalName: martin@KERBTEST.COM
+
+# User / client principal.
+dn: uid=fred,ou=users,dc=kerbtest,dc=com
+objectclass: top
+objectclass: person
+objectclass: inetOrgPerson
+objectclass: krb5Principal
+objectclass: krb5KDCEntry
+cn: Fred
+sn: Fred
+uid: fred
+userpassword: Password99
+krb5PrincipalName: fred@KERBTEST.COM
+
+# Ticket Granting Service.
+dn: uid=krbtgt,ou=users,dc=kerbtest,dc=com
+objectclass: top
+objectclass: person
+objectclass: inetOrgPerson
+objectclass: krb5Principal
+objectclass: krb5KDCEntry
+cn: KDC Service
+sn: KDC Service
+uid: krbtgt
+userpassword: randomKey
+krb5PrincipalName: krbtgt/KERBTEST.COM@KERBTEST.COM
+

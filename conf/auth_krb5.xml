@@ -1,0 +1,24 @@
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.4.xsd">
+    <UDP/>
+    <PING />
+    <MERGE2 />
+    <FD_SOCK/>
+    <FD_ALL/>
+    <VERIFY_SUSPECT />
+    <BARRIER />
+    <pbcast.NAKACK2 />
+    <UNICAST3 />
+    <pbcast.STABLE />
+    <AUTH auth_class="org.jgroups.auth.Krb5Token"
+          client_principal_name="martin"
+          client_password="Password99"
+          service_principal_name="cluster1" />
+    <pbcast.GMS />
+    <UFC />
+    <MFC />
+    <FRAG2  />
+    <RSVP />
+    <pbcast.STATE_TRANSFER />
+</config>
