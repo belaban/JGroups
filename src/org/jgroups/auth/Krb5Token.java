@@ -1,10 +1,5 @@
 package org.jgroups.auth;
 
-/*
- * JGroups AuthToken Class to for Kerberos v5 authentication.  
- * 
- */
-
 import org.ietf.jgss.GSSException;
 import org.jgroups.Message;
 import org.jgroups.annotations.Experimental;
@@ -19,7 +14,9 @@ import java.io.IOException;
 import java.util.Properties;
 
 /**
- * Uses Kerberos V5 for authentication
+ * JGroups AuthToken Class to for Kerberos v5 authentication.
+ * @author Martin Swales
+ * @author Claudio Corsi
  */
 @Experimental
 public class Krb5Token extends AuthToken {

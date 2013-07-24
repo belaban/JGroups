@@ -1,10 +1,5 @@
 package org.jgroups.auth;
 
-/*******************************************
- * 
- * Support class that implements all the low level Kerberos security calls
- */
-
 import org.ietf.jgss.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -20,6 +15,11 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.security.PrivilegedAction;
 
+/**
+ * Support class that implements all the low level Kerberos security calls
+ * @author Martin Swales
+ * @author Claudio Corsi
+ */
 public class Krb5TokenUtils {
 	
     private static final Log log = LogFactory.getLog(Krb5TokenUtils.class);
