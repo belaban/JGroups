@@ -17,6 +17,7 @@ import java.util.Properties;
  * JGroups AuthToken Class to for Kerberos v5 authentication.
  * @author Martin Swales
  * @author Claudio Corsi
+ * @since 3.4
  */
 @Experimental
 public class Krb5Token extends AuthToken {
