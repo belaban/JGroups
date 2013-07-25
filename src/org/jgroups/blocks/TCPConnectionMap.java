@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -605,7 +606,8 @@ public class TCPConnectionMap {
             
             public void addToQueue(byte[] data) throws Exception{
                 if(canRun())
-                    send_queue.put(data);
+                    if (!send_queue.offer(data, sock_conn_timeout, TimeUnit.MILLISECONDS))
+                        log.warn("Discarding message because TCP send_queue is full and hasn't been releasing for " + sock_conn_timeout + " ms");
             }
 
             public Sender start() {
