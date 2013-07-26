@@ -4,13 +4,13 @@ package org.jgroups.protocols;
  * @author Bela Ban
  */
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.jgroups.Address;
 import org.jgroups.View;
 import org.jgroups.util.Owner;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Implementation of a locking protocol which acquires locks by contacting <em>all</em> of the nodes of a cluster.</p>
@@ -70,7 +70,7 @@ public class PEER_LOCK extends Locking {
     public void handleView(View view) {
         super.handleView(view);
         List<Address> members=view.getMembers();
-        for(Map<Owner,ClientLock> map: client_locks.values()) {
+        for(Map<Owner,ClientLock> map: client_lock_table.values()) {
             for(ClientLock lock: map.values())
                 ((PeerLock)lock).retainAll(members);
         }
