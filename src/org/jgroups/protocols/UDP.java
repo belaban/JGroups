@@ -686,8 +686,11 @@ public class UDP extends TP {
                             len);
                 }
                 catch(SocketException sock_ex) {
-                    if(log.isDebugEnabled()) log.debug("receiver socket is closed, exception=" + sock_ex);
-                    break;
+                    if(receiver_socket.isClosed()) {
+                        if(log.isDebugEnabled()) log.debug("receiver socket is closed, exception=" + sock_ex);
+                        break;
+                    }
+                    log.error("failed receiving packet", sock_ex);
                 }
                 catch(Throwable ex) {
                     if(log.isErrorEnabled())
