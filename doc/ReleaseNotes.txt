@@ -1,0 +1,130 @@
+
+
+Release Notes JGroups 3.4.0
+===========================
+
+
+Author: Bela Ban
+
+********************************************************************************
+!! JGroups 3.4.0 is *not* API-backwards compatible with 2.x.x releases !!
+!! JGroups 3.4.0 is       API-backwards compatible with previous 3.x releases !!
+********************************************************************************
+
+
+Below is a summary (with links to the detailed description) of the major new features, optimizations and bug fixes.
+
+****************************************************************************************************
+Note that the license was changed from LGPL 2.1 to AL 2.0: https://issues.jboss.org/browse/JGRP-1643
+****************************************************************************************************
+
+
+New features
+============
+
+
+RELAY2: allow for more than one site master
+-------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1649]
+
+If we have a lot of traffic between sites, having more than 1 site master increases performance and reduces stress
+on the single site master
+
+
+Kerberos based authentication
+-----------------------------
+[https://issues.jboss.org/browse/JGRP-1657]
+
+New AUTH plugin contributed by Martin Swales. Experimental, needs more work
+
+
+Probe now works with TCP too
+----------------------------
+[https://issues.jboss.org/browse/JGRP-1568]
+
+If multicasting is not enabled, probe.sh can be started as follows:
+probe.sh -addr 192.168.1.5 -port 12345
+, where 192.168.1.5:12345 is the physical address:port of a node.
+Probe will ask that node for the addresses of all other members and then send the request to all members.
+
+
+
+Optimizations
+=============
+
+UNICAST3: ack messages sooner
+-----------------------------
+[https://issues.jboss.org/browse/JGRP-1664]
+
+A message would get acked after delivery, not reception. This was changed, so that long running app code would not
+delay acking the message, which could lead to unneeded retransmission by the sender.
+
+
+Bug fixes
+=========
+
+FRAG/FRAG2: incorrect ordering with message batches
+[https://issues.jboss.org/browse/JGRP-1648]
+
+Reassembled messages would get reinserted into the batch at the end instead of at their original position
+
+
+RSVP: incorrect ordering with message batches
+---------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1641]
+
+RSVP-tagged messages in a batch would get delivered immediately, instead of waiting for their turn
+
+
+Memory leak in STABLE
+---------------------
+[https://issues.jboss.org/browse/JGRP-1638]
+
+Occurred when send_stable_msg_to_coord_only was enabled.
+
+
+NAKACK2/UNICAST3: problems with flow control
+--------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1665]
+
+If an incoming message sent out other messages before returning, it could block forever as new credits would not be
+processed. Caused by a regression (removal of ignore_sync_thread) in FlowControl.
+
+
+
+AUTH: nodes without AUTH protocol can join cluster
+--------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1661]
+
+If a member didn't ship an AuthHeader, the message would get passed up instead of rejected.
+
+
+LockService issues
+------------------
+[https://issues.jboss.org/browse/JGRP-1634]
+[https://issues.jboss.org/browse/JGRP-1639]
+[https://issues.jboss.org/browse/JGRP-1660]
+
+Bug fix for concurrent tryLock() blocks and various optimizations.
+
+
+Logical name cache is cleared, affecting other channels
+-------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1654]
+
+If we have multiple channels in the same JVM, the a new view in one channel triggers removal of the entries
+of all other caches
+
+
+
+Manual
+======
+
+The manual is at http://www.jgroups.org/manual-3.x/html/index.html.
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Aug 2013
+
