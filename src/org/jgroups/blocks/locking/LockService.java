@@ -28,6 +28,9 @@ import java.util.concurrent.locks.Lock;
       lock.unlock();
    }
  * </pre>
+ * <p/>
+ * The exact semantics of this lock implemantation are defined in {@link LockImpl}.
+ * <p/>
  * Note that, contrary to the semantics of {@link java.util.concurrent.locks.Lock}, unlock() can be called multiple
  * times; after a lock has been released, future calls to unlock() have no effect.
  * @author Bela Ban
@@ -35,7 +38,7 @@ import java.util.concurrent.locks.Lock;
  */
 public class LockService {
     protected JChannel ch;
-    protected Locking lock_prot;
+    protected Locking  lock_prot;
 
 
     public LockService() {
@@ -75,7 +78,14 @@ public class LockService {
     }
 
 
-
+    /**
+     * Implementation of {@link Lock}. This is a client stub communicates with a server equivalent. The semantics are
+     * more or less those of {@link Lock}, but may differ slightly.<p/>
+     * There is no reference counting of lock owners, so acquisition of a lock already held by a thread is a no-op.
+     * Also, releasing the lock after it was already released is a no-op as well.
+     * <p/>
+     * An exact description is provided below.
+     */
     protected class LockImpl implements Lock {
         protected final String name;
         protected final AtomicReference<Thread> holder = new AtomicReference<Thread>();
@@ -84,38 +94,69 @@ public class LockService {
             this.name=name;
         }
 
+        /**
+         * {@inheritDoc}
+         * Blocks until the lock has been acquired. Masks interrupts; if an interrupt was received on entry or while
+         * waiting for the lock acquisition, it won't cause the call to return. However, the thread's status will be
+         * set to interrupted when the call returns.
+         */
+        @Override
         public void lock() {
             ch.down(new Event(Event.LOCK, new LockInfo(name, false, false, false, 0, TimeUnit.MILLISECONDS)));
             holder.set(Thread.currentThread());
         }
 
+        /**
+         * {@inheritDoc}
+         * If the thread is interrupted at entry, the call will throw an InterruptedException immediately and the lock
+         * won't be acquired. If the thread is interrupted while waiting for the lock acquition, an InterruptedException
+         * will also be thrown immediately. The thread's interrupt status will not be set after the call returns.
+         * @throws InterruptedException
+         */
         public void lockInterruptibly() throws InterruptedException {
             ch.down(new Event(Event.LOCK, new LockInfo(name, false, true, false, 0, TimeUnit.MILLISECONDS)));
             Thread currentThread = Thread.currentThread();
             if(currentThread.isInterrupted())
                 throw new InterruptedException();
             else
-                holder.set(Thread.currentThread());
+                holder.set(currentThread);
         }
 
+        /**
+         * {@inheritDoc}
+         * If the thread is interrupted at entry or during the call, no InterruptedException will be thrown, but the
+         * thread's status will be set to interrupted upon return. An interrupt has therefore no impact on the
+         * return value (success or failure).
+         */
         public boolean tryLock() {
             Boolean retval=(Boolean)ch.down(new Event(Event.LOCK, new LockInfo(name, true, false, false, 0, TimeUnit.MILLISECONDS)));
-            if (retval == Boolean.TRUE) {
-                holder.set(Thread.currentThread());
-            }
+            holder.set(retval? Thread.currentThread() : null);
             return retval;
         }
 
+        /**
+         * {@inheritDoc}
+         * * If the thread is interrupted at entry, the call will throw an InterruptedException immediately and the lock
+         * won't be acquired. If the thread is interrupted while waiting for the lock acquition, an InterruptedException
+         * will also be thrown immediately. The thread's interrupt status will not be set after the call returns.
+         * @param time
+         * @param unit
+         * @return
+         * @throws InterruptedException
+         */
         public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
             Boolean retval=(Boolean)ch.down(new Event(Event.LOCK, new LockInfo(name, true, true, true, time, unit)));
             if(Thread.currentThread().isInterrupted())
                 throw new InterruptedException();
-            if (retval == Boolean.TRUE) {
-                holder.set(Thread.currentThread());
-            }
+            holder.set(retval? Thread.currentThread() : null);
             return retval;
         }
 
+        /**
+         * {@inheritDoc}
+         * Releases a lock. Contrary to the parent's implementation, this method can be called more than once:
+         * the release of a lock that has already been released, or is not owned by this thread is a no-op.
+         */
         public void unlock() {
             ch.down(new Event(Event.UNLOCK, new LockInfo(name, false, false, false, 0, TimeUnit.MILLISECONDS)));
             holder.set(null);
@@ -165,7 +206,7 @@ public class LockService {
                     TimeUnit.NANOSECONDS)));
             if(Thread.currentThread().isInterrupted())
                 throw new InterruptedException();
-            return waitLeft.longValue();
+            return waitLeft;
         }
 
         @Override
