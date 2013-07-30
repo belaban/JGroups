@@ -293,7 +293,7 @@ public abstract class TP extends Protocol {
     protected long who_has_cache_timeout=2000;
 
     @Property(description="Max number of attempts to fetch a physical address (when not in the cache) before giving up")
-    protected int physical_addr_max_fetch_attempts=10;
+    protected int physical_addr_max_fetch_attempts=3;
 
     @Property(description="Time during which identical warnings about messages from a member with a different version " +
       "will be suppressed. 0 disables this (every warning will be logged). Setting the log level to ERROR also " +
