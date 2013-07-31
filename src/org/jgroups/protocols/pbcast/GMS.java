@@ -8,6 +8,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GmsImpl.Request;
 import org.jgroups.stack.DiagnosticsHandler;
+import org.jgroups.stack.MembershipChangePolicy;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
@@ -29,79 +30,77 @@ import java.util.concurrent.TimeUnit;
  */
 @MBean(description="Group membership protocol")
 public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
-    private static final String CLIENT="Client";
-    private static final String COORD="Coordinator";
-    private static final String PART="Participant";
+    protected static final String CLIENT="Client";
+    protected static final String COORD="Coordinator";
+    protected static final String PART="Participant";
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
     @Property(description="Join timeout")
-    long join_timeout=5000;
+    protected long join_timeout=5000;
 
     @Property(description="Leave timeout")
-    long leave_timeout=1000;
+    protected long leave_timeout=1000;
 
     @Property(description="Timeout (in ms) to complete merge")
-    long merge_timeout=5000; // time to wait for all MERGE_RSPS
+    protected long merge_timeout=5000; // time to wait for all MERGE_RSPS
 
     @Property(description="Number of join attempts before we give up and become a singleton. Zero means 'never give up'.")
-    long max_join_attempts=0;
+    protected long max_join_attempts=0;
 
     @Property(description="Print local address of this member after connect. Default is true")
-    private boolean print_local_addr=true;
+    protected boolean print_local_addr=true;
 
     @Property(description="Print physical address(es) on startup")
-    private boolean print_physical_addrs=true;
+    protected boolean print_physical_addrs=true;
 
     /**
-     * Setting this to false disables concurrent startups. This is only used by
-     * unit testing code for testing merging. To everybody else: don't change it
-     * to false !
+     * Setting this to false disables concurrent startups. This is only used by unit testing code for testing merging.
+     * To everybody else: don't change it to false !
      */
     @Property(description="Temporary switch. Default is true and should not be changed")
-    boolean handle_concurrent_startup=true;
+    protected boolean handle_concurrent_startup=true;
 
     /**
-     * Whether view bundling (http://jira.jboss.com/jira/browse/JGRP-144) should
-     * be enabled or not. Setting this to false forces each JOIN/LEAVE/SUPSECT
-     * request to be handled separately. By default these requests are processed
+     * Whether view bundling (http://jira.jboss.com/jira/browse/JGRP-144) should be enabled or not. Setting this to
+     * false forces each JOIN/LEAVE/SUPSECT request to be handled separately. By default these requests are processed
      * together if they are queued at approximately the same time
      */
     @Property(description="View bundling toggle")
-    private boolean view_bundling=true;
+    protected boolean view_bundling=true;
 
     @Property(description="Max view bundling timeout if view bundling is turned on. Default is 50 msec")
-    private long max_bundling_time=50; // 50ms max to wait for other JOIN, LEAVE or SUSPECT requests
+    protected long max_bundling_time=50; // 50ms max to wait for other JOIN, LEAVE or SUSPECT requests
 
     @Property(description="Max number of old members to keep in history. Default is 50")
     protected int num_prev_mbrs=50;
 
-     @Property(description="Number of views to store in history")
-    int num_prev_views=20;
+    @Property(description="Number of views to store in history")
+    protected int num_prev_views=20;
 
     @Property(description="Time in ms to wait for all VIEW acks (0 == wait forever. Default is 2000 msec" )
-    long view_ack_collection_timeout=2000;
+    protected long view_ack_collection_timeout=2000;
 
     @Property(description="Timeout to resume ViewHandler")
-    long resume_task_timeout=20000;
+    protected long resume_task_timeout=20000;
 
     @Property(description="Use flush for view changes. Default is true")
-    boolean use_flush_if_present=true;
+    protected boolean use_flush_if_present=true;
 
     @Property(description="Logs failures for collecting all view acks if true")
-    boolean log_collect_msgs=true;
+    protected boolean log_collect_msgs=true;
 
     @Property(description="Logs warnings for reception of views less than the current, and for views which don't include self")
-    boolean log_view_warnings=true;
+    protected boolean log_view_warnings=true;
 
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
-    private int num_views=0;
+    protected int num_views;
 
     /** Stores the last 20 views */
-    private BoundedList<Tuple<View,Long>> prev_views;
+    protected BoundedList<Tuple<View,Long>> prev_views;
 
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
@@ -109,35 +108,38 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Property(converter=PropertyConverters.FlushInvoker.class,name="flush_invoker_class")
     protected Class<Callable<Boolean>> flushInvokerClass;
 
-    private GmsImpl impl=null;
-    private final Object impl_mutex=new Object(); // synchronizes event entry into impl
-    private final Map<String,GmsImpl> impls=new HashMap<String,GmsImpl>(3);
+    protected GmsImpl impl;
+    protected final Object impl_mutex=new Object(); // synchronizes event entry into impl
+    protected final Map<String,GmsImpl> impls=new HashMap<String,GmsImpl>(3);
 
     // Handles merge related tasks
-    final Merger merger=new Merger(this);
+    protected final Merger merger=new Merger(this);
 
-    protected Address local_addr=null;
+    protected Address local_addr;
     protected final Membership members=new Membership(); // real membership
 
-    private final Membership tmp_members=new Membership(); // base for computing next view
+    protected final Membership tmp_members=new Membership(); // base for computing next view
+
+    // computes new views and merge views
+    protected MembershipChangePolicy membership_change_policy=new DefaultMembershipPolicy();
 
     /** Members joined but for which no view has been received yet */
-    private final List<Address> joining=new ArrayList<Address>(7);
+    protected final List<Address> joining=new ArrayList<Address>(7);
 
     /** Members excluded from group, but for which no view has been received yet */
-    private final List<Address> leaving=new ArrayList<Address>(7);
+    protected final List<Address> leaving=new ArrayList<Address>(7);
 
     /** Keeps track of old members (up to num_prev_mbrs) */
-    private BoundedList<Address> prev_members=null;
+    protected BoundedList<Address> prev_members;
 
-    protected View view=null;
+    protected View view;
 
-    protected long ltime=0;
+    protected long ltime;
 
-    protected TimeScheduler timer=null;
+    protected TimeScheduler timer;
 
     /** Class to process JOIN, LEAVE and MERGE requests */
-    private final ViewHandler view_handler=new ViewHandler();
+    protected final ViewHandler view_handler=new ViewHandler();
 
     /** To collect VIEW_ACKs from all members */
     protected final AckCollector ack_collector=new AckCollector();
@@ -145,7 +147,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     //[JGRP-700] - FLUSH: flushing should span merge
     protected final AckCollector merge_ack_collector=new AckCollector();
 
-    boolean flushProtocolInStack=false;
+    protected boolean flushProtocolInStack=false;
 
 
 
@@ -179,6 +181,25 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public long getMaxJoinAttempts() {return max_join_attempts;}
     public void setMaxJoinAttempts(long t) {max_join_attempts=t;}
 
+    @ManagedAttribute(description="impl")
+    public String getImplementation() {
+        return impl == null? "n/a" : impl.getClass().getSimpleName();
+    }
+
+    @ManagedAttribute(description="Whether or not the current instance is the coordinator")
+    public boolean isCoord() {
+        return impl instanceof CoordGmsImpl;
+    }
+
+    public MembershipChangePolicy getMembershipChangePolicy() {
+        return membership_change_policy;
+    }
+
+    public void setMembershipChangePolicy(MembershipChangePolicy membership_change_policy) {
+        if(membership_change_policy != null)
+            this.membership_change_policy=membership_change_policy;
+    }
+
     @ManagedAttribute(description="Stringified version of merge_id")
     public String getMergeId() {return merger.getMergeIdAsString();}
 
@@ -187,6 +208,16 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     /** Only used for internal testing, don't use this method ! */
     public Merger getMerger() {return merger;}
+
+    @Property(description="The fully qualified name of a class implementing MembershipChangePolicy.")
+    public void setMembershipChangePolicy(String classname) {
+        try {
+            membership_change_policy=(MembershipChangePolicy)Util.loadClass(classname, getClass()).newInstance();
+        }
+        catch(Throwable e) {
+            throw new IllegalArgumentException("membership_change_policy could not be created", e);
+        }
+    }
 
     @ManagedOperation(description="Prints the last (max 20) MergeIds")
     public String printMergeIdHistory() {return merger.getMergeIdHistory();}
@@ -423,10 +454,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public boolean isMergeKillerRunning() {return merger.isMergeKillerTaskRunning();}
 
     /**
-     * Computes the next view. Returns a copy that has <code>old_mbrs</code> and
-     * <code>suspected_mbrs</code> removed and <code>new_mbrs</code> added.
+     * Computes the next view. Returns a copy that has <code>leavers</code> and
+     * <code>suspected_mbrs</code> removed and <code>joiners</code> added.
      */
-    public View getNextView(Collection<Address> new_mbrs, Collection<Address> old_mbrs, Collection<Address> suspected_mbrs) {
+    public View getNextView(Collection<Address> joiners, Collection<Address> leavers, Collection<Address> suspected_mbrs) {
         synchronized(members) {
             ViewId view_id=view != null? view.getViewId() : null;
             if(view_id == null) {
@@ -435,11 +466,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             }
             long vid=Math.max(view_id.getId(), ltime) + 1;
             ltime=vid;
-            Membership tmp_mbrs=tmp_members.copy();  // always operate on the temporary membership
-            tmp_mbrs.remove(suspected_mbrs);
-            tmp_mbrs.remove(old_mbrs);
-            tmp_mbrs.add(new_mbrs);
-            List<Address> mbrs=tmp_mbrs.getMembers();
+
+            List<Address> mbrs=computeNewMembership(tmp_members.getMembers(), joiners, leavers, suspected_mbrs);
             Address new_coord=local_addr;
             if(!mbrs.isEmpty())
                 new_coord=mbrs.get(0);
@@ -449,16 +477,16 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             tmp_members.set(mbrs);
 
             // Update joining list (see DESIGN for explanation)
-            if(new_mbrs != null) {
-                for(Address tmp_mbr: new_mbrs) {
+            if(joiners != null) {
+                for(Address tmp_mbr: joiners) {
                     if(!joining.contains(tmp_mbr))
                         joining.add(tmp_mbr);
                 }
             }
 
             // Update leaving list (see DESIGN for explanations)
-            if(old_mbrs != null) {
-                for(Address addr: old_mbrs) {
+            if(leavers != null) {
+                for(Address addr: leavers) {
                     if(!leaving.contains(addr))
                         leaving.add(addr);
                 }
@@ -470,6 +498,56 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 }
             }
             return v;
+        }
+    }
+
+    /** Computes the regular membership */
+    protected List<Address> computeNewMembership(final List<Address> current_members, final Collection<Address> joiners,
+                                                 final Collection<Address> leavers, final Collection<Address> suspects) {
+        List<Address> joiners_copy, leavers_copy, suspects_copy;
+        joiners_copy=joiners == null? Collections.<Address>emptyList() : new ArrayList<Address>(joiners);
+        leavers_copy=leavers == null? Collections.<Address>emptyList() : new ArrayList<Address>(leavers);
+        suspects_copy=suspects == null? Collections.<Address>emptyList() : new ArrayList<Address>(suspects);
+
+        try {
+            List<Address> retval=membership_change_policy.getNewMembership(current_members,joiners_copy,leavers_copy,suspects_copy);
+            if(retval == null)
+                throw new IllegalStateException("null membership list");
+            return retval;
+        }
+        catch(Throwable t) {
+            log.error("membership change policy " + membership_change_policy.getClass().getSimpleName() +
+                        " failed, falling back to default policy to compute new membership", t);
+        }
+
+        try {
+            return new DefaultMembershipPolicy().getNewMembership(current_members,joiners_copy,leavers_copy,suspects_copy);
+        }
+        catch(Throwable t) {
+            log.error("default membership change policy failed", t);
+            return null;
+        }
+    }
+
+    /** Computes a merge membership */
+    protected List<Address> computeNewMembership(final Collection<Collection<Address>> subviews) {
+        try {
+            List<Address> retval=membership_change_policy.getNewMembership(subviews);
+            if(retval == null)
+                throw new IllegalStateException("null membership list");
+            return retval;
+        }
+        catch(Throwable t) {
+            log.error("membership change policy " + membership_change_policy.getClass().getSimpleName() +
+                        " failed, falling back to default policy to compute new membership", t);
+        }
+
+        try {
+            return new DefaultMembershipPolicy().getNewMembership(subviews);
+        }
+        catch(Throwable t) {
+            log.error("default membership change policy failed", t);
+            return null;
         }
     }
 
@@ -546,12 +624,12 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new Message(dest).putHeader(this.id, new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, rsp));
-        getDownProtocol().down(new Event(Event.MSG, m));
+        getDownProtocol().down(new Event(Event.MSG,m));
     }
 
 
     public void installView(View new_view) {
-        installView(new_view, null);
+        installView(new_view,null);
     }
 
 
@@ -675,7 +753,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     /** Send down a MERGE_DIGEST event */
     public void mergeDigest(Digest d) {
-        down_prot.down(new Event(Event.MERGE_DIGEST, d));
+        down_prot.down(new Event(Event.MERGE_DIGEST,d));
     }
 
 
@@ -988,6 +1066,71 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     /* --------------------------- End of Private Methods ------------------------------- */
 
+    public static class DefaultMembershipPolicy implements MembershipChangePolicy {
+
+        /**
+         * Takes the existing membership list and removes suspected and left members, then adds new
+         * members to the end of the list
+         * @param current_members The list of current members. Guaranteed to be non-null (but may be empty)
+         * @param joiners The joining members. Guaranteed to be non-null (but may be empty)
+         * @param leavers Members that are leaving. Guaranteed to be non-null (but may be empty)
+         * @param suspects Members which are suspected. Guaranteed to be non-null (but may be empty)
+         * @return The new membership. Needs to be non-null and cannot contain duplicates
+         */
+        public List<Address> getNewMembership(final Collection<Address> current_members, final Collection<Address> joiners,
+                                              final Collection<Address> leavers, final Collection<Address> suspects) {
+            Membership mbrs=new Membership(current_members);
+            mbrs.remove(leavers);
+            mbrs.remove(suspects);
+            mbrs.add(joiners);
+            return mbrs.getMembers();
+        }
+
+
+        /**
+         * Old default implementation for a merge. Adds all members into a list, sorts the list and returns it
+         * @param subviews A list of membership lists, e.g. [{A,B,C}, {M,N,O,P}, {X,Y,Z}]. This is a merge between
+         *                 3 subviews. Guaranteed to be non-null (but may be empty)
+         * @return The new membership. Needs to be non-null and cannot contain duplicates
+         */
+        public List<Address> getNewMembershipOld(final Collection<Collection<Address>> subviews) {
+            Membership mbrs=new Membership();
+            for(Collection<Address> subview: subviews)
+                mbrs.add(subview);
+            mbrs.sort();
+            return mbrs.getMembers();
+        }
+
+        /**
+         * Default implementation for a merge. Picks the new coordinator among the coordinators of the old subviews
+         * by getting all coords, sorting them and picking the first. Then the coord is adde to the new list, and
+         * all subviews are subsequently added.<p/>
+         * Tries to minimize coordinatorship moving around between different members
+         * @param subviews A list of membership lists, e.g. [{A,B,C}, {M,N,O,P}, {X,Y,Z}]. This is a merge between
+         *                 3 subviews. Guaranteed to be non-null (but may be empty)
+         * @return The new membership. Needs to be non-null and cannot contain duplicates
+         */
+        public List<Address> getNewMembership(final Collection<Collection<Address>> subviews) {
+            Membership coords=new Membership();
+            Membership new_mbrs=new Membership();
+
+            // add the coord of each subview
+            for(Collection<Address> subview: subviews)
+                if(!subview.isEmpty())
+                    coords.add(subview.iterator().next());
+
+            coords.sort();
+
+            // pick the first coord of the sorted list as the new coord
+            new_mbrs.add(coords.elementAt(0));
+
+            // add all other members in the order in which they occurred in their subviews - dupes are not added
+            for(Collection<Address> subview: subviews)
+                new_mbrs.add(subview);
+
+            return new_mbrs.getMembers();
+        }
+    }
 
 
     public static class GmsHeader extends Header {
@@ -1009,12 +1152,12 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
         byte type=0;
-        View view=null;            // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
+        View view=null;               // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
         Address mbr=null;             // used when type=JOIN_REQ or LEAVE_REQ
         Collection<? extends Address> mbrs=null; // used with MERGE_REQ
-        boolean useFlushIfPresent; // used when type=JOIN_REQ
+        boolean useFlushIfPresent;    // used when type=JOIN_REQ
         JoinRsp join_rsp=null;        // used when type=JOIN_RSP
-        Digest my_digest=null;          // used when type=MERGE_RSP or INSTALL_MERGE_VIEW
+        Digest my_digest=null;        // used when type=MERGE_RSP or INSTALL_MERGE_VIEW
         MergeId merge_id=null;        // used when type=MERGE_REQ or MERGE_RSP or INSTALL_MERGE_VIEW or CANCEL_MERGE
         boolean merge_rejected=false; // used when type=MERGE_RSP
 

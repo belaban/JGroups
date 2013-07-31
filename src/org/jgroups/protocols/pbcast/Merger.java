@@ -726,9 +726,9 @@ public class Merger {
          *          not to be null and to contain at least 1 member.
          */
         private MergeData consolidateMergeData(List<MergeData> merge_rsps) {
-            long logical_time=0; // for new_vid
-            Membership new_mbrs=new Membership();
-            List<View> subgroups=new ArrayList<View>(11); // contains a list of Views, each View is a subgroup
+            long                            logical_time=0; // for new_vid
+            List<View>                      subgroups=new ArrayList<View>(11); // contains a list of Views, each View is a subgroup
+            Collection<Collection<Address>> sub_mbrships=new ArrayList<Collection<Address>>();
 
             for(MergeData tmp_data: merge_rsps) {
                 View tmp_view=tmp_data.getView();
@@ -739,7 +739,7 @@ public class Merger {
                         logical_time=Math.max(logical_time, tmp_vid.getId());
                     }
                     // merge all membership lists into one (prevent duplicates)
-                    new_mbrs.add(tmp_view.getMembers());
+                    sub_mbrships.add(new ArrayList<Address>(tmp_view.getMembers()));
                     subgroups.add(tmp_view.copy());
                 }
             }
@@ -750,11 +750,14 @@ public class Merger {
                 return null;
 
             // remove all members from the new member list that are not in the digest
-            new_mbrs.retainAll(new_digest.getMembers());
+            Collection<Address> digest_mbrs=new_digest.getMembers();
+            for(Collection<Address> coll: sub_mbrships)
+                coll.retainAll(digest_mbrs);
+
+            List<Address> merged_mbrs=gms.computeNewMembership(sub_mbrships);
 
             // the new coordinator is the first member of the consolidated & sorted membership list
-            new_mbrs.sort();
-            Address new_coord = new_mbrs.size() > 0 ? new_mbrs.elementAt(0) : null;
+            Address new_coord=merged_mbrs.isEmpty()? null : merged_mbrs.get(0);
             if(new_coord == null)
                 return null;
             
@@ -762,7 +765,7 @@ public class Merger {
             ViewId new_vid=new ViewId(new_coord, logical_time + 1);
 
             // determine the new view
-            MergeView new_view=new MergeView(new_vid, new_mbrs.getMembers(), subgroups);
+            MergeView new_view=new MergeView(new_vid, merged_mbrs, subgroups);
 
             if(log.isTraceEnabled())
                 log.trace(gms.local_addr + ": consolidated view=" + new_view + "\nconsolidated digest=" + new_digest);

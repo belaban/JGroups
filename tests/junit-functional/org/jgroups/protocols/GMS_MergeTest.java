@@ -2,13 +2,14 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.conf.ProtocolStackConfigurator;
+import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MergeId;
 import org.jgroups.util.Util;
@@ -24,64 +25,86 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
  */
-@Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
-public class GMS_MergeTest extends ChannelTestBase {
-    static final String simple_props="SHARED_LOOPBACK:PING(timeout=1000):" +
-            "pbcast.NAKACK2(use_mcast_xmit=false;log_discard_msgs=false;log_not_found_msgs=false)" +
-            ":UNICAST:pbcast.STABLE(stability_delay=200):pbcast.GMS:FC:FRAG2";
-
-    static final String flush_props=simple_props + ":pbcast.FLUSH";
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class GMS_MergeTest {
 
     static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
+
+    protected static Protocol[] getProps() {
+        Protocol[] retval=Util.getTestStack();
+        return modify(retval);
+    }
+
+    protected static Protocol[] getFlushProps() {
+        Protocol[] tmp=Util.getTestStack();
+        Protocol[] retval=new Protocol[tmp.length +1];
+        System.arraycopy(tmp, 0, retval, 0, tmp.length);
+        retval[retval.length-1]=new FLUSH();
+        return modify(retval);
+    }
+
+    protected static Protocol[] modify(Protocol[] retval) {
+        for(Protocol prot: retval) {
+            if(prot instanceof Discovery)
+                ((Discovery)prot).setTimeout(1000);
+            if(prot instanceof STABLE)
+                prot.setValue("stability_delay", 200);
+            if(prot instanceof NAKACK2) {
+                ((NAKACK2)prot).setLogDiscardMessages(false);
+                ((NAKACK2)prot).setLogNotFoundMessages(false);
+            }
+        }
+        return retval;
+    }
 
 
 
     public static void testMergeRequestTimeout() throws Exception {
-        _testMergeRequestTimeout(simple_props, "testMergeRequestTimeout");
+        _testMergeRequestTimeout(false, "testMergeRequestTimeout");
     }
 
     public static void testMergeRequestTimeoutWithFlush() throws Exception {
-        _testMergeRequestTimeout(flush_props, "testMergeRequestTimeoutWithFlush");
+        _testMergeRequestTimeout(true, "testMergeRequestTimeoutWithFlush");
     }
 
     public static void testSimpleMerge() throws Exception {
-        _testSimpleMerge(simple_props, "testSimpleMerge");
+        _testSimpleMerge(false, "testSimpleMerge");
     }
 
     public static void testSimpleMergeWithFlush() throws Exception {
-        _testSimpleMerge(flush_props, "testSimpleMergeWithFlush");
+        _testSimpleMerge(true, "testSimpleMergeWithFlush");
     }
 
     public static void testConcurrentMergeTwoPartitions() throws Exception {
-        _testConcurrentMergeTwoPartitions(simple_props, "testConcurrentMergeTwoPartitions");
+        _testConcurrentMergeTwoPartitions(false, "testConcurrentMergeTwoPartitions");
     }
 
     public static void testConcurrentMergeTwoPartitionsWithFlush() throws Exception {
-        _testConcurrentMergeTwoPartitions(flush_props, "testConcurrentMergeTwoPartitionsWithFlush");
+        _testConcurrentMergeTwoPartitions(true, "testConcurrentMergeTwoPartitionsWithFlush");
     }
 
     public static void testConcurrentMergeMultiplePartitions() throws Exception {
-        _testConcurrentMergeMultiplePartitions(simple_props, "testConcurrentMergeMultiplePartitions");
+        _testConcurrentMergeMultiplePartitions(false, "testConcurrentMergeMultiplePartitions");
     }
 
     public static void testConcurrentMergeMultiplePartitionsWithFlush() throws Exception {
-        _testConcurrentMergeMultiplePartitions(flush_props, "testConcurrentMergeMultiplePartitionsWithFlush");
+        _testConcurrentMergeMultiplePartitions(true, "testConcurrentMergeMultiplePartitionsWithFlush");
     }
 
     public static void testMergeAsymmetricPartitions() throws Exception {
-        _testMergeAsymmetricPartitions(simple_props, "testMergeAsymmetricPartitions");
+        _testMergeAsymmetricPartitions(false, "testMergeAsymmetricPartitions");
     }
 
     public static void testMergeAsymmetricPartitionsWithFlush() throws Exception {
-        _testMergeAsymmetricPartitions(flush_props, "testMergeAsymmetricPartitionsWithFlush");
+        _testMergeAsymmetricPartitions(true, "testMergeAsymmetricPartitionsWithFlush");
     }
 
     public static void testMergeAsymmetricPartitions2() throws Exception {
-        _testMergeAsymmetricPartitions2(simple_props, "testMergeAsymmetricPartitions2");
+        _testMergeAsymmetricPartitions2(false, "testMergeAsymmetricPartitions2");
     }
 
     public static void testMergeAsymmetricPartitionsWithFlush2() throws Exception {
-        _testMergeAsymmetricPartitions2(flush_props, "testMergeAsymmetricPartitionsWithFlush2");
+        _testMergeAsymmetricPartitions2(true, "testMergeAsymmetricPartitionsWithFlush2");
     }
     
     
@@ -89,8 +112,8 @@ public class GMS_MergeTest extends ChannelTestBase {
      * Simulates the death of a merge leader after having sent a MERGE_REQ. Because there is no MergeView or CANCEL_MERGE
      * message, the MergeCanceller has to null merge_id after a timeout
      */
-    static void _testMergeRequestTimeout(String props, String cluster_name) throws Exception {
-        JChannel c1=new JChannel(props);
+    static void _testMergeRequestTimeout(boolean use_flush_props, String cluster_name) throws Exception {
+        JChannel c1=new JChannel(use_flush_props? getFlushProps() : getProps());
         try {
             c1.connect(cluster_name);
             Message merge_request=new Message();
@@ -125,10 +148,10 @@ public class GMS_MergeTest extends ChannelTestBase {
     }
 
 
-    static void _testSimpleMerge(String props, String cluster_name) throws Exception {
+    static void _testSimpleMerge(boolean use_flush_props, String cluster_name) throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create(props, true, cluster_name, "A", "B", "C", "D");
+            channels=create(use_flush_props, true, cluster_name, "A", "B", "C", "D");
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
@@ -171,10 +194,10 @@ public class GMS_MergeTest extends ChannelTestBase {
     }
 
 
-    static void _testConcurrentMergeTwoPartitions(String props, String cluster_name) throws Exception {
+    static void _testConcurrentMergeTwoPartitions(boolean use_flush_props, String cluster_name) throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create(props, true, cluster_name, "A", "B", "C", "D");
+            channels=create(use_flush_props, true, cluster_name, "A", "B", "C", "D");
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
@@ -210,10 +233,10 @@ public class GMS_MergeTest extends ChannelTestBase {
     }
 
 
-    static void _testConcurrentMergeMultiplePartitions(String props, String cluster_name) throws Exception {
+    static void _testConcurrentMergeMultiplePartitions(boolean use_flush_props, String cluster_name) throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create(props, true, cluster_name, "A", "B", "C", "D", "E", "F", "G", "H");
+            channels=create(use_flush_props, true, cluster_name, "A", "B", "C", "D", "E", "F", "G", "H");
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
@@ -267,13 +290,13 @@ public class GMS_MergeTest extends ChannelTestBase {
      * JIRA: https://jira.jboss.org/jira/browse/JGRP-1031
      * @throws Exception
      */
-    static void _testMergeAsymmetricPartitions(String props, String cluster_name) throws Exception {
+    static void _testMergeAsymmetricPartitions(boolean use_flush_props, String cluster_name) throws Exception {
         JChannel[] channels=null;
         MyReceiver[] receivers;
         final int NUM=10;
          try {
              // use simple IDs for UUIDs, so sorting on merge will NOT change the view order
-             channels=create(props, true, cluster_name, "B", "A", "C");
+             channels=create(use_flush_props, true, cluster_name, "B", "A", "C");
              receivers=new MyReceiver[channels.length];
              for(int i=0; i < channels.length; i++) {
                  receivers[i]=new MyReceiver(channels[i].getName());
@@ -379,13 +402,13 @@ public class GMS_MergeTest extends ChannelTestBase {
      * JIRA: https://jira.jboss.org/jira/browse/JGRP-1031
      * @throws Exception
      */
-    static void _testMergeAsymmetricPartitions2(String props, String cluster_name) throws Exception {
+    static void _testMergeAsymmetricPartitions2(boolean use_flush_props, String cluster_name) throws Exception {
         JChannel[] channels=null;
         MyReceiver[] receivers;
         final int NUM=10;
          try {
              // use simple IDs for UUIDs, so sorting on merge will NOT change the view order
-             channels=create(props, true, cluster_name, "A", "B");
+             channels=create(use_flush_props, true, cluster_name, "A", "B");
              receivers=new MyReceiver[channels.length];
              for(int i=0; i < channels.length; i++) {
                  receivers[i]=new MyReceiver(channels[i].getName());
@@ -492,14 +515,13 @@ public class GMS_MergeTest extends ChannelTestBase {
     }
 
 
-    /*private static JChannel[] create(String cluster_name, String ... names) throws Exception {
-        return create(false, cluster_name, names);
-    }*/
 
-    private static JChannel[] create(String props, boolean simple_ids, String cluster_name, String ... names) throws Exception {
+    private static JChannel[] create(boolean use_flush_props, boolean simple_ids, String cluster_name, String ... names) throws Exception {
         JChannel[] retval=new JChannel[names.length];
+
         for(int i=0; i < retval.length; i++) {
             JChannel ch;
+            Protocol[] props=use_flush_props? getFlushProps() : getProps();
             if(simple_ids) {
                 ch=new MyChannel(props);
                 ((MyChannel)ch).setId(i+1);
@@ -707,6 +729,14 @@ public class GMS_MergeTest extends ChannelTestBase {
             super(configurator);
         }
 
+        public MyChannel(Collection<Protocol> protocols) throws Exception {
+            super(protocols);
+        }
+
+        public MyChannel(Protocol... protocols) throws Exception {
+            super(protocols);
+        }
+
         private MyChannel(JChannel ch) throws Exception {
             super(ch);
         }
@@ -722,9 +752,9 @@ public class GMS_MergeTest extends ChannelTestBase {
 
             if(old_addr != null)
                 down(new Event(Event.REMOVE_ADDRESS, old_addr));
-            if(name == null || name.length() == 0) // generate a logical name if not set
+            if(name == null || name.isEmpty()) // generate a logical name if not set
                 name=Util.generateLocalName();
-            if(name != null && name.length() > 0)
+            if(name != null && !name.isEmpty())
                 org.jgroups.util.UUID.add(local_addr, name);
 
             Event evt=new Event(Event.SET_LOCAL_ADDRESS, local_addr);
@@ -735,8 +765,8 @@ public class GMS_MergeTest extends ChannelTestBase {
     }
 
     private static class MyReceiver extends ReceiverAdapter {
-        private final String name;
-        private AtomicInteger num_msgs=new AtomicInteger(0);
+        private final String        name;
+        private final AtomicInteger num_msgs=new AtomicInteger(0);
 
         private MyReceiver(String name) {
             this.name=name;

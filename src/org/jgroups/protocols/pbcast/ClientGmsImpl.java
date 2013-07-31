@@ -170,10 +170,9 @@ public class ClientGmsImpl extends GmsImpl {
                 rsp=null;
             }
             else {
-                if(!tmp_digest.contains(gms.local_addr)) {
+                if(!tmp_digest.contains(gms.local_addr))
                     throw new IllegalStateException("digest returned from " + coord + " with JOIN_RSP does not contain myself (" +
                                                       gms.local_addr + "): join response: " + rsp);
-                }
 
                 if(log.isTraceEnabled())
                     log.trace(gms.local_addr + ": JOIN-RSP=" + tmp_view + " [size=" + tmp_view.size() + "]\n\n");
@@ -232,7 +231,8 @@ public class ClientGmsImpl extends GmsImpl {
             return false;
         }
         gms.installView(new_view, digest);
-        gms.becomeParticipant();
+        if(gms.impl == null || gms.impl instanceof ClientGmsImpl) // installView() should have set the role (impl)
+            gms.becomeParticipant();
         gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
         gms.getDownProtocol().down(new Event(Event.BECOME_SERVER));
         return true;

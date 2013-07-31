@@ -11,9 +11,9 @@ import javax.management.MBeanServer;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.*;
 import java.util.*;
 import java.util.List;
-import java.io.*;
 
 
 /**
@@ -23,7 +23,7 @@ import java.io.*;
  */
 public class Draw extends ReceiverAdapter implements ActionListener, ChannelListener {
     String                         groupname="draw-cluster";
-    private Channel                channel=null;
+    private JChannel               channel=null;
     private int                    member_size=1;
     private JFrame                 mainFrame=null;
     private JPanel                 sub_panel=null;
@@ -58,14 +58,14 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         channel.addChannelListener(this);
     }
 
-    public Draw(Channel channel) throws Exception {
+    public Draw(JChannel channel) throws Exception {
         this.channel=channel;
         channel.setReceiver(this);
         channel.addChannelListener(this);
     }
 
 
-    public Draw(Channel channel, boolean use_state, long state_timeout) throws Exception {
+    public Draw(JChannel channel, boolean use_state, long state_timeout) throws Exception {
         this.channel=channel;
         channel.setReceiver(this);
         channel.addChannelListener(this);
@@ -84,16 +84,16 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
     }
 
 
-   public static void main(String[] args) {
-       Draw             draw=null;
-       String           props=null;
-       boolean          no_channel=false;
-       boolean          jmx=true;
-       boolean          use_state=false;
-       String           group_name=null;
-       long             state_timeout=5000;
-       boolean          use_unicasts=false;
-       String           name=null;
+    public static void main(String[] args) {
+        Draw             draw=null;
+        String           props=null;
+        boolean          no_channel=false;
+        boolean          jmx=true;
+        boolean          use_state=false;
+        String           group_name=null;
+        long             state_timeout=5000;
+        boolean          use_unicasts=false;
+        String           name=null;
 
         for(int i=0; i < args.length; i++) {
             if("-help".equals(args[i])) {

@@ -211,6 +211,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public void    setUseMcastXmit(boolean use_mcast_xmit) {this.use_mcast_xmit=use_mcast_xmit;}
     public void    setUseMcastXmitReq(boolean flag) {this.use_mcast_xmit_req=flag;}
     public void    setLogDiscardMessages(boolean flag) {log_discard_msgs=flag;}
+    public void    setLogNotFoundMessages(boolean flag) {log_not_found_msgs=flag;}
     public void    setXmitFromRandomMember(boolean xmit_from_random_member) {
         this.xmit_from_random_member=xmit_from_random_member;
     }

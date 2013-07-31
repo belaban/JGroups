@@ -91,11 +91,15 @@ public class ProtocolStack extends Protocol {
 
                     // 1. name of the protocol to be inserted
                     String prot_name=key.substring(0, index).trim();
+                    if(findProtocol(prot_name) != null) {
+                        log.error("Protocol %s cannot be inserted as it is already present", prot_name);
+                        break;
+                    }
                     Protocol prot=null;
                     try {
                         prot=createProtocol(prot_name);
-                        prot.init();
-                        prot.start();
+                        //prot.init();
+                        //prot.start();
                     }
                     catch(Exception e) {
                         log.error("failed creating an instance of " + prot_name, e);
@@ -130,6 +134,14 @@ public class ProtocolStack extends Protocol {
                     }
                     catch(Exception e) {
                         log.error("failed inserting protocol " + prot_name + " " + tmp + " " + neighbor_prot, e);
+                    }
+
+                    try {
+                        prot.init();
+                        prot.start();
+                    }
+                    catch(Exception e) {
+                        log.error("failed creating an instance of " + prot_name, e);
                     }
                 }
             }

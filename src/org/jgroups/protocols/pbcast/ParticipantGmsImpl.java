@@ -162,11 +162,9 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
      * local_addr. Therefore, true is returned.
      */
     boolean wouldIBeCoordinator() {
-        Address new_coord;
-        List<Address> mbrs=gms.members.getMembers(); // getMembers() returns a *copy* of the membership vector
-        mbrs.removeAll(suspected_mbrs);
+        List<Address> mbrs=gms.computeNewMembership(gms.members.getMembers(), null, null, suspected_mbrs);
         if(mbrs.size() < 1) return false;
-        new_coord=mbrs.get(0);
+        Address new_coord=mbrs.get(0);
         return gms.local_addr.equals(new_coord);
     }
 
