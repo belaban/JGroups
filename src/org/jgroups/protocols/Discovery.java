@@ -248,12 +248,8 @@ public abstract class Discovery extends Protocol {
     }
 
     public void sendDiscoveryRequest(String cluster_name, Promise promise, ViewId view_id) throws Exception {
-        PingData data=null;
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-
-        if(view_id == null)
-            data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
-
+        PingData data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
         hdr.view_id=view_id;
 
