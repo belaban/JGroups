@@ -63,6 +63,9 @@ public abstract class Discovery extends Protocol {
       "contents of the disk cache before returning the results")
     protected boolean use_disk_cache=false;
 
+    @Property(description="When sending a discovery request, always send the physical address and logical name too")
+    protected boolean always_send_physical_addr_with_discovery_request=false;
+
 
     @ManagedOperation(description="Sets force_sending_discovery_rsps")
     public void setForceSendingDiscoveryRsps(boolean flag) {
@@ -251,7 +254,8 @@ public abstract class Discovery extends Protocol {
         PingData data=null;
         PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
 
-        if(view_id == null)
+        // https://issues.jboss.org/browse/JGRP-1670
+        if(view_id == null || always_send_physical_addr_with_discovery_request)
             data=new PingData(local_addr, null, false, UUID.get(local_addr), Arrays.asList(physical_addr));
 
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, data, cluster_name);
