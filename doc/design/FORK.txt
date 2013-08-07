@@ -60,7 +60,8 @@ of messages to the correct fork-channel.
 Lifecycle of fork-channel
 -------------------------
 
-There are a few ways a fork-channel can be created.
+There are a few ways a fork-channel can be created. All of these can be invoked programmatically, or FORK can be
+configured declaratively, via XML (see next section).
 
 (1) If the fork-stack (e.g. with id=2) already exists, a new fork-channel is created and inserted into the map of the
 fork-channel's protocol stack. If a fork-channel with the given id already exists, we can either throw an exception or
@@ -73,10 +74,56 @@ to the map in FORK keyed by fork-stack-id. The we create or get the fork-channel
 the location in the stack where the newly created FORK should be inserted, and possibly some configuration
 fragment (ie. XML) needs to be passed to the create call. The rest is done as in (2).
 
+When a fork-channel is created, it is passed the main-channel as a reference. The lifetime of a fork-channel is always
+less than or equal to the lifetime of the main-channel on which it piggybacks. When the main-channel is closed or
+disconnected, invoking an operation on the fork-channel (e.g. sending a message or connecting) will throw an exception.
+
+The fork-channel will have the same address and view as the main-channel.
+
+When a fork-channel is closed, it is removed from the map in the fork-channel's associated protocol stack.
 
 
-Configuration of fork-stack
----------------------------
 
+Configuration of fork-stack via XML
+-----------------------------------
+
+If we create the fork-stacks programmatically, not all cluster nodes may have the fork-stacks. For example, if we
+have a cluster {A,B,C} and only B and C create the fork-stack with id=2, then COUNTER will not work: all requests
+go to the coordinator (A), however, A doesn't have COUNTER.
+
+To overcome this, we can use *declarative configuration* which includes FORK in the main-channel's protocol stack, and
+creates fork-stacks with ids=1 and 2. This means that fork-stack with id=2 is available on A, B and C, and therefore
+requests sent to A will be processed. Note that A's fork-channel with id=2 does not need to have a fork-channel created
+on top; as long as the fork-stack is created, COUNTER will work fine.
+
+Declarative configuration can be conceptually something like this:
+
+<MFC/>
+<UFC/>
+<FORK>
+   <fork id="1">
+      <CENTRAL_LOCK num_backups="2" ... />
+   </fork>
+   <fork id="2">
+      <COUNTER bypass_bundling="true" timeout="5000" ... />
+   </fork>
+</FORK>
+<FRAG2/>
+<TOA/>
+
+Here we create a main-stack with protocols MFC, UFC, FORK, FRAG2 and TOA. Then we create 2 fork-stacks: one with
+CENTRAL_LOCK and id=1 and another one with COUNTER under id=2. The application could now create fork-channel over an
+existing fork-stack, or create new fork-stacks and new fork-channels over them as well.
+
+The problem here is that we would make a big schema change to accommodate such a syntax, so we'll probably just do
+something like this (TBD):
+<MFC/>
+<UFC/>
+<FORK config="fork-config.xml".../>
+<FRAG2/>
+<TOA/>
+
+FORK would be configured through an external XML file, which can then define its own schema (similar to what we did in
+RELAY2).
 
 
