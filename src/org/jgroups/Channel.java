@@ -5,6 +5,7 @@ package org.jgroups;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.DefaultSocketFactory;
@@ -67,6 +68,7 @@ public abstract class Channel /* implements Transport */ {
     protected Set<ChannelListener> channel_listeners=null;
     protected Receiver             receiver=null;
     protected SocketFactory        socket_factory=new DefaultSocketFactory();
+    protected final Log            log=LogFactory.getLog(getClass());
 
     @ManagedAttribute(description="Whether or not to discard messages sent by this channel",writable=true)
     protected boolean              discard_own_messages=false;
@@ -74,10 +76,6 @@ public abstract class Channel /* implements Transport */ {
 
     @ManagedAttribute(description="The current state")
     public String getState() {return state.toString();}
-
-
-    protected abstract Log getLog();
-
 
     public abstract ProtocolStack getProtocolStack();
 
@@ -262,7 +260,7 @@ public abstract class Channel /* implements Transport */ {
    /**
     * Enables access to event mechanism of a channel and is normally not used by clients directly.
     * 
-    * @param sends an Event to a specific protocol layer and receive a response. 
+    * @param evt sends an Event to a specific protocol layer and receives a response.
     * @return a response from a particular protocol layer targeted by Event parameter
     */
     public Object down(Event evt) {
@@ -300,7 +298,7 @@ public abstract class Channel /* implements Transport */ {
    /**
     * Returns the logical name of a given member. The lookup is from the local cache of logical
     * address / logical name mappings and no remote communication is performed.
-    * 
+    *
     * @param member
     * @return The logical name for <code>member</code>
     */
@@ -341,8 +339,7 @@ public abstract class Channel /* implements Transport */ {
     * the building blocks take over some of the channel's tasks. However, tasks such as connection
     * management and state transfer is still handled by the channel.
     * 
-    * @param the
-    *           handler to handle channel events
+    * @param up_handler handler to handle channel events
     */
     public void setUpHandler(UpHandler up_handler) {
         this.up_handler=up_handler;
@@ -353,7 +350,7 @@ public abstract class Channel /* implements Transport */ {
     * 
     * @return the installed UpHandler implementation
     */
-   public UpHandler getUpHandler() {
+    public UpHandler getUpHandler() {
         return up_handler;
     }
 
@@ -361,8 +358,7 @@ public abstract class Channel /* implements Transport */ {
     * Adds a ChannelListener instance that will be notified when a channel event such as connect,
     * disconnect or close occurs.
     * 
-    * @param listener
-    *           to be notified
+    * @param listener to be notified
     */
     public synchronized void addChannelListener(ChannelListener listener) {
         if(listener == null)
@@ -382,11 +378,8 @@ public abstract class Channel /* implements Transport */ {
             channel_listeners.remove(listener);
     }
 
-    /**
-    * Clears all installed ChannelListener instances
-    * 
-    */
-   public synchronized void clearChannelListeners() {
+    /** Clears all installed ChannelListener instances */
+    public synchronized void clearChannelListeners() {
         if(channel_listeners != null)
             channel_listeners.clear();
     }
@@ -498,7 +491,7 @@ public abstract class Channel /* implements Transport */ {
                 channelListener.channelConnected(c);
             }
             catch(Throwable t) {
-                getLog().error("exception in channelConnected() callback", t);
+                log.error("exception in channelConnected() callback", t);
             }
         }
     }
@@ -510,7 +503,7 @@ public abstract class Channel /* implements Transport */ {
                 channelListener.channelDisconnected(c);
             }
             catch(Throwable t) {
-                getLog().error("exception in channelDisonnected() callback", t);
+                log.error("exception in channelDisonnected() callback", t);
             }
         }
     }
@@ -522,7 +515,7 @@ public abstract class Channel /* implements Transport */ {
                 channelListener.channelClosed(c);
             }
             catch(Throwable t) {
-                getLog().error("exception in channelClosed() callback", t);
+                log.error("exception in channelClosed() callback", t);
             }
         }
     }

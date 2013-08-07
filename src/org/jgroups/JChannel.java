@@ -7,8 +7,6 @@ import org.jgroups.blocks.MethodCall;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.conf.ProtocolStackConfigurator;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.*;
 import org.jgroups.util.*;
@@ -66,8 +64,6 @@ public class JChannel extends Channel {
 
 
     protected final ConcurrentMap<String,Object>    config=Util.createConcurrentMap(16);
-
-    protected final Log                             log=LogFactory.getLog(JChannel.class);
 
     /** Collect statistics */
     @ManagedAttribute(description="Collect channel statistics",writable=true)
@@ -220,7 +216,6 @@ public class JChannel extends Channel {
             prot_stack.setChannel(this);
     }
 
-    protected Log getLog() {return log;}
 
     /**
      * Returns the protocol stack configuration in string format. An example of this property is<br/>
@@ -764,6 +759,10 @@ public class JChannel extends Channel {
      */
     public Object down(Event evt) {
         if(evt == null) return null;
+        if(stats && evt.getType() == Event.MSG) {
+            sent_msgs++;
+            sent_bytes+=((Message)evt.getArg()).getLength();
+        }
         return prot_stack.down(evt);
     }
 

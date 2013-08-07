@@ -47,7 +47,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         return getInstance(stream, null);
     }
 
-    public static XmlConfigurator getInstance(Element el) throws java.io.IOException {
+    public static XmlConfigurator getInstance(Element el) throws Exception {
         return parse(el);
     }
 
@@ -114,9 +114,9 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             boolean validation = false;
             String tmp = Util.getProperty(new String[] { Global.XML_VALIDATION }, null, null, false, null);
             if (tmp != null) {
-                validation = Boolean.valueOf(tmp).booleanValue();
+                validation =Boolean.valueOf(tmp);
             } else if (validate != null) {
-                validation = validate.booleanValue();
+                validation =validate;
             }
             factory.setValidating(validation);
             factory.setNamespaceAware(validation);
@@ -184,55 +184,46 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         return is;
     }
     
-    protected static XmlConfigurator parse(Element root_element) throws java.io.IOException {
-        XmlConfigurator configurator=null;
-        final LinkedList<ProtocolConfiguration> prot_data=new LinkedList<ProtocolConfiguration>();
+    protected static XmlConfigurator parse(Element root_element) throws Exception {
+        return new XmlConfigurator(parseProtocols(root_element));
+    }
 
+
+    public static List<ProtocolConfiguration> parseProtocols(Element root_element) throws Exception {
         /**
          * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
          * But it seems to work, and it is executed only on startup, so no perf loss on the critical path. If
          * somebody wants to improve this, please be my guest.
          */
-        try {
-            String root_name=root_element.getNodeName();
-            if(!"config".equals(root_name.trim().toLowerCase()))
-                throw new IOException("the configuration does not start with a <config> element");
+        String root_name=root_element.getNodeName().trim().toLowerCase();
+        if(!"config".equals(root_name))
+            throw new IOException("the configuration does not start with a <config> element: " + root_name);
 
-            NodeList prots=root_element.getChildNodes();
-            for(int i=0;i < prots.getLength();i++) {
-                Node node=prots.item(i);
-                if(node.getNodeType() != Node.ELEMENT_NODE)
-                    continue;
+        final List<ProtocolConfiguration> prot_data=new ArrayList<ProtocolConfiguration>();
+        NodeList prots=root_element.getChildNodes();
+        for(int i=0;i < prots.getLength();i++) {
+            Node node=prots.item(i);
+            if(node.getNodeType() != Node.ELEMENT_NODE)
+                continue;
 
-                Element tag=(Element)node;
-                String  protocol=tag.getTagName();
-                Map<String,String> params=new HashMap<String,String>();
+            Element tag=(Element)node;
+            String  protocol=tag.getTagName();
+            Map<String,String> params=new HashMap<String,String>();
 
-                NamedNodeMap attrs=tag.getAttributes();
-                int attrLength=attrs.getLength();
-                for(int a=0;a < attrLength;a++) {
-                    Attr attr=(Attr)attrs.item(a);
-                    String name=attr.getName();
-                    String value=attr.getValue();
-                    params.put(name, value);
-                }
-                ProtocolConfiguration cfg=new ProtocolConfiguration(protocol, params);
-                prot_data.add(cfg);
+            NamedNodeMap attrs=tag.getAttributes();
+            int attrLength=attrs.getLength();
+            for(int a=0;a < attrLength;a++) {
+                Attr attr=(Attr)attrs.item(a);
+                String name=attr.getName();
+                String value=attr.getValue();
+                params.put(name, value);
             }
-            configurator=new XmlConfigurator(prot_data);
+            ProtocolConfiguration cfg=new ProtocolConfiguration(protocol, params);
+            prot_data.add(cfg);
         }
-        catch(Exception x) {
-            if(x instanceof java.io.IOException)
-                throw (java.io.IOException)x;
-            else {
-                IOException tmp=new IOException();
-                tmp.initCause(x);
-                throw tmp;
-            }
-        }
-        return configurator;
+
+        return prot_data;
     }
-
 
 
     public static void main(String[] args) throws Exception {

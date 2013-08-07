@@ -67,4 +67,5 @@
     <class id="105" name="org.jgroups.auth.MD5Token"/>
     <class id="106" name="org.jgroups.auth.X509Token"/>
     <class id="107" name="org.jgroups.protocols.UNICAST3$Header"/>
+    <class id="108" name="org.jgroups.protocols.FORK$ForkHeader"/>
 </magic-number-class-mapping>

@@ -38,16 +38,18 @@ public class ProtocolStack extends Protocol {
      * Holds the shared transports, keyed by 'TP.singleton_name'. The values are the transport and the use count for
      * init() (decremented by destroy()) and start() (decremented by stop()
      */
-    private static final ConcurrentMap<String,Tuple<TP,RefCounter>> singleton_transports=new ConcurrentHashMap<String,Tuple<TP,RefCounter>>();
+    protected static final ConcurrentMap<String,Tuple<TP,RefCounter>> singleton_transports=new ConcurrentHashMap<String,Tuple<TP,RefCounter>>();
 
-    private Protocol                      top_prot;
-    private Protocol                      bottom_prot;
-    // protected List<ProtocolConfiguration> configs;
-    private JChannel                      channel;
-    private volatile boolean              stopped=true;
+    protected Protocol                      top_prot;
+    protected Protocol                      bottom_prot;
+    protected JChannel                      channel;
+    protected volatile boolean              stopped=true;
 
 
-    private final DiagnosticsHandler.ProbeHandler props_handler=new DiagnosticsHandler.ProbeHandler() {
+    public ProtocolStack topProtocol(Protocol top)       {this.top_prot=top; return this;}
+    public ProtocolStack bottomProtocol(Protocol bottom) {this.bottom_prot=bottom; return this;}
+
+    protected final DiagnosticsHandler.ProbeHandler props_handler=new DiagnosticsHandler.ProbeHandler() {
 
         public Map<String, String> handleProbe(String... keys) {
             for(String key: keys) {

@@ -1,0 +1,158 @@
+
+Design of FORK
+==============
+
+Author: Bela Ban, Sanne Grinovero
+JIRA: https://issues.jboss.org/browse/JGRP-1613
+
+The purpose of FORK is (1) to enable multiple light-weight channels (fork-channels) to piggyback messages on an existing
+channel and (2) to add protocols to an existing channel that are to be used exclusively by the light-weight channel.
+
+One might want to add such a protocol to its dedicated light-weight channel to not interfere with the configuration
+of other light-weight channel users, or to isolate them from other instances of the same protocol.
+
+This allows an application to reuse an existing channel (main-channel), e.g. the channel created for Infinispan inside
+the WildFly application server, without having to configure and create an entirely new channel, which would be overkill
+(duplicate resources, new ports to maintain).
+Yet the new fork-channel will be shielded from messages passing up and down the main-channel.
+
+This is all done without modifying the configuration of the main channel.
+
+So if we have a main-channel, an application might want to require locking (using protocol CENTRAL_LOCK), which is not
+defined in the main-channel's configuration. This is done by creating a fork-stack in FORK, identified by a fork-id.
+All messages with a header containing the fork-id will be sent up the stack with the same fork-id.
+Messages without a header will be sent up the main stack by FORK. An overview is shown below:
+
+   (main-ch)  (fork-ch7) (fork-ch8) (fork-ch10)
+      ^           ^      (fork-ch9)     ^
+      |           |          ^          |
+      |           |          |          |
+      |    -------------  --------- --------------
+      |    |CENTRAL_LOCK| |COUNTER| |CENTRAL_LOCK|
+   -----------------------------------------------
+   |FORK     |  id=1   | |  id=2 | |  id=3   |
+   -------------------------------------------
+   |FRAG2|
+   -------
+   | GMS |
+   -------
+     ...
+
+
+The main-channel is shown to the left. Messages sent down it will *not* have a header. We have 3 fork-stacks: the first
+with id=1 has a CENTRAL_LOCK protocol and a fork-channel (fork-ch7). The second (with id=2) has the COUNTER protocol on top
+and 2 fork-channels: fork-ch8 and fork-ch9. The third (with id=3) could be yet another application needing to use
+CENTRAL_LOCK for its own purposes, but needing to have locking instances strictly isolated from the application using
+for-ch7 (on id=1): the two instances of CENTRAL_LOCK will be independent, and they will thus not block on acquiring the
+same locks.
+
+
+Multiplexing of messages
+------------------------
+
+When a message is sent down fork-ch9, the fork-channel will add a header with fork-ch-id=9 and fork-stack-id=2. On
+the receiver's side, FORK looks at the header. If there is no header, it passes the message up the main-stack. If
+there is a header, it grabs the fork-stack-id and finds the matching fork-stack. If there is no match, an exception will
+be thrown. Otherwise the message is passed up.
+
+In the example fork-stack-id is 2, so the message is passed up to the COUNTER protocol. At the top of the fork-stack
+(which can btw have more than one protocol), the fork protocol stack finds the fork-channel matching the fork-channel-id.
+If not found, an exception will be thrown, else the message is passed to the corresponding fork-channel (fork-ch9).
+
+There is a map between fork-channel-ids and fork-channels in the fork protocol stack which is used for the dispatching
+of messages to the correct fork-channel.
+
+
+
+Lifecycle of fork-channel
+-------------------------
+
+There are a few ways a fork-channel can be created. All of these can be invoked programmatically, or FORK can be
+configured declaratively, via XML (see the next section).
+
+(1) If the fork-stack (e.g. with id=2) already exists, a new fork-channel is created and inserted into the map of the
+fork-channel's protocol stack. If a fork-channel with the given id already exists, we can either throw an exception or
+return the existing channel (TBD).
+
+(2) If the fork-stack with the given id doesn't exist, but FORK is present, then we can create the fork-stack and add it
+to the map in FORK, keyed by fork-stack-id. Then we create or get the fork-channel as described in (1).
+
+(3) If FORK doesn't exist, we can create it and insert it into the main protocol stack. To do this, we need to know
+the location in the stack where the newly created FORK should be inserted, and possibly some configuration
+fragment (ie. XML) needs to be passed to the create call. The rest is done as in (2).
+
+When a fork-channel is created, it is passed the main-channel as a reference. The lifetime of a fork-channel is always
+less than or equal to the lifetime of the main-channel on which it piggybacks. When the main-channel is closed or
+disconnected, invoking an operation on the fork-channel (e.g. sending a message or connecting) will throw an exception.
+
+The fork-channel will have the same address, logical name and view as the main-channel.
+
+When a fork-stack is initialized (init(), start()), we need to make sure it is disconnected from the main stack, or
+else the init() and/or start() method will propagate all the way into the main stack, which might cause havoc in some
+protocols (re-initializing themselves again). So we'll probably create a dummy stub for initialization and starting, or
+FORK catches these events and handles them. Note that some protocols grab the timer from the transport protocol at
+init() time, so this needs to be provided by FORK itself.
+
+When a fork-channel is disconnected or closed, the corresponding events (DISCONNECT, stop(), destroy()) cannot be
+propagated down the main-stack, as this would close the main-stack as well, so they need to be caught (by FORK?),
+similarly to what's done with initialization (see above).
+
+When a fork-channel is closed, it is removed from the map in the fork-channel's associated protocol stack.
+
+Whether a fork-stack is removed when no more fork-channels reference it is TDB: possibly remove it when it was created
+programmatically, else leave it when configured declaratively.
+
+
+
+Configuration of a fork-stack via XML
+-------------------------------------
+
+If we create fork-stacks programmatically, not all cluster nodes may have the same fork-stacks. For example, if we
+have a cluster {A,B,C} and only B and C create the fork-stack with id=2, then COUNTER will not work: all requests
+go to the coordinator (A), however, A doesn't have COUNTER.
+
+To overcome this, we can use *declarative configuration* which includes FORK in the main-channel's protocol stack, and
+creates fork-stacks with id=1 and id=2. This means that fork-stack with id=2 is available on A, B and C, and therefore
+requests sent to A will be processed. Note that A's fork-stack with id=2 does not need to have a fork-channel created
+on top; as long as the fork-stack is created, COUNTER will work fine.
+
+Declarative configuration would look like this:
+
+     ...
+    <MFC/>
+    <UFC/>
+    <FORK>
+       <fork-stack id="1">
+          <CENTRAL_LOCK num_backups="2" ... />
+       </fork-stack>
+       <fork-stack id="2">
+          <COUNTER bypass_bundling="true" timeout="5000" ... />
+       </fork-stack>
+    </FORK>
+    <FRAG2/>
+    <TOA/>
+
+Here we create a main-stack with protocols MFC, UFC, FORK, FRAG2 and TOA. Then we create 2 fork-stacks: one with
+CENTRAL_LOCK and id=1 and another one with COUNTER under id=2. Note that these 2 fork-stacks do *not* include protocols
+FRAG2 and TOA. A message with fork-stack-id=2 *ends* in COUNTER (or the corresponding fork-channel if fork-channel-id
+is set) and does *not* pass through FRAG2 and TOA.
+
+The application could now create fork-channels over an existing fork-stack, or create new fork-stacks and
+fork-channels over them as well.
+
+The problem here is that we would make a big schema change to accommodate such a syntax, so we'll probably just do
+something like this (TBD):
+    <MFC/>
+    <UFC/>
+    <FORK config="fork-config.xml".../>
+    <FRAG2/>
+    <TOA/>
+
+FORK would be configured through an external XML file, which can then define its own schema (similar to what we did in
+RELAY2).
+
+
+Misc
+----
+- CREATE_FORK_STACK: install a given fork-stack config in all cluster nodes. Possibly also add a corresponding
+DELETE_FORK_STACK

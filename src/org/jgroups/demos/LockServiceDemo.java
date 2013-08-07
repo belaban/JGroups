@@ -1,17 +1,17 @@
 package org.jgroups.demos;
 
+import org.jgroups.JChannel;
+import org.jgroups.blocks.locking.LockNotification;
+import org.jgroups.blocks.locking.LockService;
+import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.util.Owner;
+import org.jgroups.util.Util;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
-
-import org.jgroups.JChannel;
-import org.jgroups.blocks.locking.LockNotification;
-import org.jgroups.blocks.locking.LockService;
-import org.jgroups.util.Owner;
-import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.util.Util;
 
 /**
  * Demos the LockService
@@ -31,6 +31,24 @@ public class LockServiceDemo implements LockNotification {
         ch=new JChannel(props);
         if(name != null)
             ch.setName(name);
+        lock_service=new LockService(ch);
+        lock_service.addLockListener(this);
+        ch.connect("lock-cluster");
+        JmxConfigurator.registerChannel(ch, Util.getMBeanServer(), "lock-service", ch.getClusterName(), true);
+
+        try {
+            loop();
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            Util.close(ch);
+        }
+    }
+
+    public void start(JChannel ch) throws Exception {
+        this.ch=ch;
         lock_service=new LockService(ch);
         lock_service.addLockListener(this);
         ch.connect("lock-cluster");

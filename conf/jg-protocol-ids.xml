@@ -58,6 +58,7 @@
     <class id="62" name="org.jgroups.protocols.PDC"/>
     <class id="63" name="org.jgroups.protocols.rules.SUPERVISOR"/>
     <class id="64" name="org.jgroups.protocols.UNICAST3"/>
+    <class id="65" name="org.jgroups.protocols.FORK"/>
 
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->

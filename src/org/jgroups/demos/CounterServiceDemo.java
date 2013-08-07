@@ -8,18 +8,14 @@ import org.jgroups.blocks.atomic.CounterService;
 import org.jgroups.util.Util;
 
 public class CounterServiceDemo {
-
     static final String props="SHARED_LOOPBACK:PING(timeout=1000):" +
       "pbcast.NAKACK(use_mcast_xmit=false;log_discard_msgs=false;log_not_found_msgs=false)" +
       ":UNICAST:pbcast.STABLE(stability_delay=200):pbcast.GMS:FC:FRAG2:COUNTER";
     
 
-    JChannel ch;
+    protected JChannel ch;
 
     void start(String props, String channel_name) throws Exception {
-
-
-
         ch=new JChannel(props);
         ch.setName(channel_name);
         ch.setReceiver(new ReceiverAdapter() {
@@ -27,6 +23,21 @@ public class CounterServiceDemo {
                 System.out.println("-- view: " + view);
             }
         });
+        loop();
+    }
+
+    public void start(JChannel ch) throws Exception {
+        this.ch=ch;
+        ch.setReceiver(new ReceiverAdapter() {
+            public void viewAccepted(View view) {
+                System.out.println("-- view: " + view);
+            }
+        });
+        loop();
+    }
+
+
+    void loop() throws Exception {
         CounterService counter_service=new CounterService(ch);
         ch.connect("counter-cluster");
         Counter counter=counter_service.getOrCreateCounter("mycounter", 1);
@@ -55,7 +66,7 @@ public class CounterServiceDemo {
                         }
                         else {
                             System.err.println("failed setting counter \"" + counter.getName() + "\" from " + expect +
-                              " to " + update + ", current value is " + counter.get() + "\n");
+                                                 " to " + update + ", current value is " + counter.get() + "\n");
                         }
                         break;
                     case '4':

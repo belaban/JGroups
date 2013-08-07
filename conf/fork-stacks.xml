@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+
+<fork-stacks xmlns="fork-stacks">
+
+    <fork-stack id="counter">
+        <config>
+            <COUNTER bypass_bundling="true"/>
+            <COMPRESS/>
+        </config>
+    </fork-stack>
+
+   <fork-stack id="locking">
+       <config>
+           <CENTRAL_LOCK num_backups="2"/>
+       </config>
+   </fork-stack>
+
+
+</fork-stacks>

@@ -5,7 +5,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>bundle</packaging>
     <name>JGroups</name>
-    <version>3.4.0.Alpha1</version>
+    <version>3.4.0.Alpha2</version>
     <url>http://www.jgroups.org</url>
     <description>
         Reliable cluster communication toolkit

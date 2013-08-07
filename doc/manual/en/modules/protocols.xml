@@ -1676,6 +1676,15 @@ keytool -genseckey -alias myKey -keypass changeit -storepass changeit  -keyalg B
             ${SUPERVISOR}
         </section>
 
+        <section id="FORK">
+            <title>FORK</title>
+            <para>
+                FORK allows ForkChannels to piggy-back messages on a regular channel. Needs to be placed towards the
+                top of the stack. See <xref linkend="ForkChannel">ForkChannel</xref> for details.
+            </para>
+            ${FORK}
+        </section>
+
     </section>
 
    

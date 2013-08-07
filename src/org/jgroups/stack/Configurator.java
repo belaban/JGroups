@@ -84,7 +84,7 @@ public class Configurator {
      *   -----------------------
      * </pre>
      */
-    private static Protocol setupProtocolStack(List<ProtocolConfiguration> protocol_configs, ProtocolStack st) throws Exception {
+    public static Protocol setupProtocolStack(List<ProtocolConfiguration> protocol_configs, ProtocolStack st) throws Exception {
         List<Protocol> protocols=createProtocols(protocol_configs, st);
         if(protocols == null)
             return null;
@@ -358,12 +358,12 @@ public class Configurator {
 
     /**
      * Takes vector of ProtocolConfigurations, iterates through it, creates Protocol for
-     * each ProtocolConfiguration and returns all Protocols in a vector.
-     * @param protocol_configs Vector of ProtocolConfigurations
+     * each ProtocolConfiguration and returns all Protocols in a list.
+     * @param protocol_configs List of ProtocolConfigurations
      * @param stack The protocol stack
      * @return List of Protocols
      */
-    private static List<Protocol> createProtocols(List<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
+    public static List<Protocol> createProtocols(List<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
         List<Protocol> retval=new LinkedList<Protocol>();
         ProtocolConfiguration protocol_config;
         Protocol layer;
