@@ -80,6 +80,12 @@ disconnected, invoking an operation on the fork-channel (e.g. sending a message 
 
 The fork-channel will have the same address and view as the main-channel.
 
+When a fork-stack is initialized (init(), start()), we need to make sure it is disconnected from the main stack, or
+else the init() and/or start() method will propagate all the way into the main stack, which might cause havoc in some
+protocols (re-initializing themselves again). So we'll probably create a dummy stub for initialization and starting, or
+FORK catches these events and handles them. Note that some protocols grab the timer from the transport protocol at
+init() time, so this needs to be provided by FORK itself.
+
 When a fork-channel is closed, it is removed from the map in the fork-channel's associated protocol stack.
 
 
@@ -98,30 +104,33 @@ on top; as long as the fork-stack is created, COUNTER will work fine.
 
 Declarative configuration can be conceptually something like this:
 
-<MFC/>
-<UFC/>
-<FORK>
-   <fork id="1">
-      <CENTRAL_LOCK num_backups="2" ... />
-   </fork>
-   <fork id="2">
-      <COUNTER bypass_bundling="true" timeout="5000" ... />
-   </fork>
-</FORK>
-<FRAG2/>
-<TOA/>
+    <MFC/>
+    <UFC/>
+    <FORK>
+       <fork-stack id="1">
+          <CENTRAL_LOCK num_backups="2" ... />
+       </fork-stack>
+       <fork-stack id="2">
+          <COUNTER bypass_bundling="true" timeout="5000" ... />
+       </fork-stack>
+    </FORK>
+    <FRAG2/>
+    <TOA/>
 
 Here we create a main-stack with protocols MFC, UFC, FORK, FRAG2 and TOA. Then we create 2 fork-stacks: one with
-CENTRAL_LOCK and id=1 and another one with COUNTER under id=2. The application could now create fork-channel over an
-existing fork-stack, or create new fork-stacks and new fork-channels over them as well.
+CENTRAL_LOCK and id=1 and another one with COUNTER under id=2. Note that these 2 fork-stacks do *not* include protocols
+FRAG2 and TOA.
+
+The application could now create fork-channel over an existing fork-stack, or create new fork-stacks and
+new fork-channels over them as well.
 
 The problem here is that we would make a big schema change to accommodate such a syntax, so we'll probably just do
 something like this (TBD):
-<MFC/>
-<UFC/>
-<FORK config="fork-config.xml".../>
-<FRAG2/>
-<TOA/>
+    <MFC/>
+    <UFC/>
+    <FORK config="fork-config.xml".../>
+    <FRAG2/>
+    <TOA/>
 
 FORK would be configured through an external XML file, which can then define its own schema (similar to what we did in
 RELAY2).
