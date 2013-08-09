@@ -2,33 +2,35 @@
 Design of FORK
 ==============
 
-Author: Bela Ban
+Author: Bela Ban, Sanne Grinovero
 JIRA: https://issues.jboss.org/browse/JGRP-1613
 
 The purpose of FORK is (1) to enable multiple light-weight channels (fork-channels) to piggyback messages on an existing
-channel and (2) to add protocols to an existing channel that are only used by the light-weight channel.
+channel and (2) to add protocols to an existing channel that are to be used exclusively by the light-weight channel.
+One might want to add such a protocol on its dedicated light-weight channel to not interfere with the expected configuration
+of other light-weight channel users, or to isolate them from other instances of the same protocol.
 
-This allows an application to reuse an existing channel (main-channel), e.g. the Infinispan channel inside the wildfly
-application server, without having to configure and create an entirely new channel, which would be overkill
-(duplicate resources) if only a few messages need to be sent every now and then. Yet the new fork channel will be
-shielded from messages passing up and down the main channel.
+This allows an application to reuse an existing channel (main-channel), e.g. the Channel created for Infinispan inside the
+WildFly application server, without having to configure and create an entirely new channel, which would be overkill
+(duplicate resources, new ports to maintain).
+Yet the new fork channel will be shielded from messages passing up and down the main channel.
 
 This is all done without modifying the configuration of the main channel.
 
-So if we have a main-channel, an application might want to require locking (PEER_LOCK), which is not defined in
-the main-channel's configuration. This is done by creating a fork-stack in FORK, identified by a fork-id. All messages
-with a header containing the fork-id will be sent up the stack with the same fork-id. Messages without a header will
-be sent up the main stack by FORK. An overview is shown below:
+So if we have a main-channel, an application might want to require locking (using protocol PEER_LOCK), which is not
+defined in the main-channel's configuration. This is done by creating a fork-stack in FORK, identified by a fork-id.
+All messages with a header containing the fork-id will be sent up the stack with the same fork-id.
+Messages without a header will be sent up the main stack by FORK. An overview is shown below:
 
-   (main-ch)  (fork-ch7) (fork-ch8)
-      ^           ^      (fork-ch9)
-      |           |          ^
-      |           |          |
-      |      ----------- ---------
-      |      |PEER_LOCK| |COUNTER|
-   -------------------------------
-   |FORK     |  id=1   | |  id=2 |
-   -------------------------------
+   (main-ch)  (fork-ch7) (fork-ch8) (fork-ch10)
+      ^           ^      (fork-ch9)     ^
+      |           |          ^          |
+      |           |          |          |
+      |      ----------- --------- -----------
+      |      |PEER_LOCK| |COUNTER| |PEER_LOCK|
+   -------------------------------------------
+   |FORK     |  id=1   | |  id=2 | |  id=3   |
+   -------------------------------------------
    |FRAG2|
    -------
    | GMS |
@@ -36,9 +38,11 @@ be sent up the main stack by FORK. An overview is shown below:
      ...
 
 
-The main-channel is shown to the left. Messages sent down it will *not* have a header. We have 2 fork-stacks, one with
-id=1 has a PEER_LOCK protocol and a fork-channel (fork-ch7). The other one (with id=2) has the COUNTER protocol on top
-and 2 fork-channels: fork-ch8 and fork-ch9.
+The main-channel is shown to the left. Messages sent down it will *not* have a header. We have 3 fork-stacks, one with
+id=1 has a PEER_LOCK protocol and a fork-channel (fork-ch7). The second one (with id=2) has the COUNTER protocol on top
+and 2 fork-channels: fork-ch8 and fork-ch9. The last one (having id=3) could be yet another application needing to use
+PEER_LOCK for its own purposes, but needing to have locking instances strictly isolated from the application using
+for-ch7 (on id=1): the two instances of PEER_LOCK will be independent.
 
 
 Multiplexing of messages
@@ -98,7 +102,7 @@ have a cluster {A,B,C} and only B and C create the fork-stack with id=2, then CO
 go to the coordinator (A), however, A doesn't have COUNTER.
 
 To overcome this, we can use *declarative configuration* which includes FORK in the main-channel's protocol stack, and
-creates fork-stacks with ids=1 and 2. This means that fork-stack with id=2 is available on A, B and C, and therefore
+creates fork-stacks with id=1 and id=2. This means that fork-stack with id=2 is available on A, B and C, and therefore
 requests sent to A will be processed. Note that A's fork-channel with id=2 does not need to have a fork-channel created
 on top; as long as the fork-stack is created, COUNTER will work fine.
 
