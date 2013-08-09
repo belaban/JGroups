@@ -1,6 +1,6 @@
 Bundle-Description: ${bnd.project.description}
 Bundle-DocURL: http://www.jboss.org
-Bundle-License: http://www.opensource.org/licenses/lgpl-2.1.php
+Bundle-License: http://www.apache.org/licenses/LICENSE-2.0
 Bundle-ManifestVersion: 2
 Bundle-Name: ${ant.project.name}
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
