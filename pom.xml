@@ -206,18 +206,6 @@
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies> <!--  Not really needed in Java 5 -->
-                    <dependency>
-                        <groupId>xalan</groupId>
-                        <artifactId>xalan</artifactId>
-                        <version>2.7.1</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>xalan</groupId>
-                        <artifactId>serializer</artifactId>
-                        <version>2.7.1</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <!-- Make sure we generate src jars too -->
             <plugin>
