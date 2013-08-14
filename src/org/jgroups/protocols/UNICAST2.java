@@ -844,7 +844,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             }
             if(entry != null && conn_expiry_timeout > 0)
                 entry.update();
-            if(added && total_len > 0 && entry.incrementStable(total_len) && win != null) {
+            if(added && total_len > 0 && entry != null && entry.incrementStable(total_len) && win != null) {
                 long[] digest=win.getDigest();
                 sendStableMessage(sender, entry.recv_conn_id, digest[0], digest[1]);
             }
