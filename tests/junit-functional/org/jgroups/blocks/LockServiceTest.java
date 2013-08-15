@@ -1,5 +1,14 @@
 package org.jgroups.blocks;
 
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.LockService;
@@ -10,12 +19,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 
 /** Tests {@link org.jgroups.blocks.locking.LockService}
  * @author Bela Ban
@@ -239,6 +242,56 @@ public class LockServiceTest {
         assert num_acquired == 1 : "expected 1 but got " + num_acquired;
     }
 
+    public void testSuccessfulSignalOneTimeout() throws InterruptedException, BrokenBarrierException {
+        Lock lock2 = s2.getLock(LOCK);
+        Thread locker = new Signaller(false);
+        boolean rc = tryLock(lock2, 5000, LOCK);
+        assert rc;
+        locker.start();
+        assert awaitNanos(lock2.newCondition(), TimeUnit.SECONDS.toNanos(5), LOCK) > 0 : "Condition was not signalled";
+        unlock(lock2, LOCK);
+    }
+
+    public void testInterruptWhileWaitingForCondition() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        Thread awaiter = new Thread(new InterruptAwaiter(latch));
+        awaiter.start();
+        Lock lock2 = s2.getLock(LOCK);
+        assert tryLock(lock2, 5000, LOCK);
+        awaiter.interrupt();
+        // This should not hit, since we have the lock and the condition can't
+        // come out yet then
+        assert !latch.await(1, TimeUnit.SECONDS);
+        assert awaiter.isAlive();
+        lock2.unlock();
+        assert latch.await(100, TimeUnit.MILLISECONDS);
+    }
+    
+    public void testSignalAllAwakesAllForCondition() throws InterruptedException {
+        final int threadCount = 5;
+        CountDownLatch latch = new CountDownLatch(threadCount);
+        
+        ExecutorService service = Executors.newFixedThreadPool(threadCount);
+        try {
+            
+            for (int i = 0; i < threadCount; ++i) {
+                service.submit(new SyncAwaiter(latch));
+            
+            }
+            // Wait for all the threads to be waiting on condition
+            latch.await(2, TimeUnit.SECONDS);
+            
+            Lock lock2 = s2.getLock(LOCK);
+            assert tryLock(lock2, 5000, LOCK);
+            lock2.newCondition().signalAll();
+            lock2.unlock();
+            service.shutdown();
+            service.awaitTermination(2, TimeUnit.SECONDS);
+        }
+        finally {
+            service.shutdownNow();
+        }
+    }
 
     protected JChannel createChannel(String name) throws Exception {
         Protocol[] tmp=Util.getTestStack();
@@ -302,6 +355,57 @@ public class LockServiceTest {
         }
     }
 
+    protected abstract class AbstractAwaiter implements Runnable {
+        public void afterLock() { }
+        
+        public void onInterrupt() { }
+        
+        public void run() {
+            lock(lock, LOCK);
+            try {
+                afterLock();
+                try {
+                    lock.newCondition().await(2, TimeUnit.SECONDS);
+                }
+                catch (InterruptedException e) {
+                    onInterrupt();
+                }
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+            finally {
+                unlock(lock, LOCK);
+            }
+        }
+    }
+    
+    protected class InterruptAwaiter extends AbstractAwaiter {
+        final CountDownLatch latch;
+        
+        public InterruptAwaiter(CountDownLatch latch) {
+            this.latch = latch;
+        }
+        
+        @Override
+        public void onInterrupt() {
+            latch.countDown();
+        }
+    }
+    
+    protected class SyncAwaiter extends AbstractAwaiter {
+        final CountDownLatch latch;
+        
+        public SyncAwaiter(CountDownLatch latch) {
+            this.latch = latch;
+        }
+        
+        @Override
+        public void afterLock() {
+            latch.countDown();
+        }
+    }
+
 
     protected static class TryLocker extends Thread {
         protected final Lock          mylock;
@@ -337,6 +441,32 @@ public class LockServiceTest {
                 if(acquired)
                     unlock(mylock, LOCK);
             }
+        }
+    }
+
+    protected static class AcquireLockAndAwaitCondition extends Thread {
+        private final Lock lock;
+        
+        public AcquireLockAndAwaitCondition(Lock lock) {
+           this.lock = lock;
+        }
+        
+        @Override
+        public void run() {
+            if (tryLock(lock, LOCK)) {
+               try {
+                  Condition condition = lock.newCondition();
+                  try {
+                     condition.await();
+                  } catch (InterruptedException e) {
+                     System.out.println("");
+                  }
+               }
+               finally {
+                  unlock(lock, LOCK);
+               }
+            }
+            
         }
     }
 

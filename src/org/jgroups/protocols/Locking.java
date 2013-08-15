@@ -446,9 +446,7 @@ abstract public class Locking extends Protocol {
     protected void handleSignalResponse(String lock_name, Owner owner) {
         ClientLock lock=client_lock_table.getLock(lock_name,owner,false);
         if(lock != null) {
-            synchronized (lock.condition) {
-                lock.condition.signaled();
-            }
+            lock.condition.signaled();
         }
         else {
             log.error("Condition response was client lock was not present.  Ignored signal.");
@@ -494,12 +492,10 @@ abstract public class Locking extends Protocol {
             ServerLock server_lock = server_locks.get(lock_name);
             if(server_lock == null)
                 return;
-            synchronized (server_lock.condition) {
-                if (server_lock.condition.queue.isEmpty())
-                    server_locks.remove(lock_name);
-                else
-                    server_lock.current_owner = null;
-            }
+            if (server_lock.condition.queue.isEmpty())
+                server_locks.remove(lock_name);
+            else
+                server_lock.current_owner = null;
         }
         finally {
             lock.unlock();
@@ -532,11 +528,9 @@ abstract public class Locking extends Protocol {
         try {
             ServerLock server_lock = server_locks.get(lock_name);
             if (server_lock != null) {
-                synchronized (server_lock.condition) {
-                    server_lock.condition.queue.remove(owner);
-                    if (server_lock.condition.queue.isEmpty() && server_lock.current_owner == null) {
-                        server_locks.remove(lock_name);
-                    }
+                server_lock.condition.queue.remove(owner);
+                if (server_lock.condition.queue.isEmpty() && server_lock.current_owner == null) {
+                    server_locks.remove(lock_name);
                 }
             }
         }
@@ -787,7 +781,7 @@ abstract public class Locking extends Protocol {
             this.lock = lock;
         }
 
-        public synchronized void addWaiter(Owner waiter) {
+        public void addWaiter(Owner waiter) {
             notifyAwaiting(lock.lock_name, waiter);
             if (log.isTraceEnabled()) {
                 log.trace("Waiter [" + waiter + "] was added for " + lock.lock_name);
@@ -795,7 +789,7 @@ abstract public class Locking extends Protocol {
             queue.add(waiter);
         }
         
-        public synchronized void removeWaiter(Owner waiter) {
+        public void removeWaiter(Owner waiter) {
             notifyAwaited(lock.lock_name, waiter);
             if (log.isTraceEnabled()) {
                 log.trace("Waiter [" + waiter + "] was removed for " + lock.lock_name);
@@ -803,7 +797,7 @@ abstract public class Locking extends Protocol {
             queue.remove(waiter);
         }
         
-        public synchronized void signal(boolean all) {
+        public void signal(boolean all) {
             if (queue.isEmpty()) {
                 if (log.isTraceEnabled()) {
                     log.trace("Signal for [" + lock.lock_name + 
