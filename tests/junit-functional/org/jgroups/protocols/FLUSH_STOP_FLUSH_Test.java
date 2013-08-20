@@ -1,22 +1,21 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.util.*;
-import org.jgroups.stack.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.stack.Protocol;
-import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.FLUSH.FlushHeader;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.DefaultTimeScheduler;
+import org.jgroups.util.TimeScheduler;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.ArrayList;
 
 /**
  * Tests the FLUSH STOP_FLUSH behavior
@@ -105,24 +104,9 @@ public class FLUSH_STOP_FLUSH_Test {
 
     static class StopFlushInterceptor extends Protocol {
         private Collection<Address> flushParticipants;
-        private Address address;
-        private static Field typeField;
-        private static Field flushParticipantsField;
+        private final Address       address;
 
-        static {
-            try {
-                typeField = FlushHeader.class.getDeclaredField("type");
-                typeField.setAccessible(true);
 
-                flushParticipantsField = FlushHeader.class.getDeclaredField("flushParticipants");
-                flushParticipantsField.setAccessible(true);
-            }
-            catch ( NoSuchFieldException e )
-            {
-                Assert.fail("FlushHeader is missing fields checked by test case", e);
-            }
-        }
-        
         public StopFlushInterceptor ( Address address ) {
             this.address = address;
         }
@@ -135,18 +119,8 @@ public class FLUSH_STOP_FLUSH_Test {
             if(evt.getType() == Event.MSG) {
                 Message msg=(Message)evt.getArg();
                 FlushHeader hdr=(FlushHeader)msg.getHeader(FLUSH_ID);
-                if(hdr != null) {
-                    try {
-                        byte type = typeField.getByte(hdr);
-                        if(type == FlushHeader.STOP_FLUSH) {
-                            this.flushParticipants = (Collection<Address>)flushParticipantsField.get(hdr);
-                        }
-                    }
-                    catch ( IllegalAccessException e )
-                    {
-                        Assert.fail("Could not make FlushHeader fields used by test accessible");
-                    }
-                }
+                if(hdr != null &&  hdr.getType() == FlushHeader.STOP_FLUSH)
+                    this.flushParticipants = hdr.getFlushParticipants();
 
                 // loopback
                 if(msg.getDest() == null || msg.getDest().equals(this.address))

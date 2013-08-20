@@ -390,7 +390,7 @@ public class FLUSH extends Protocol {
                         case FlushHeader.STOP_FLUSH:
                             Collection<Address> stopFlushParticipants = fh.flushParticipants;
                             boolean amIStopFlushParticipant = stopFlushParticipants == null 
-                                            || stopFlushParticipants.size() == 0
+                                            || stopFlushParticipants.isEmpty()
                                             || stopFlushParticipants.contains(localAddress)
                                             || msg.getSrc().equals(localAddress);
                             if (amIStopFlushParticipant) {
@@ -950,29 +950,20 @@ public class FLUSH extends Protocol {
     }
 
     public static class FlushHeader extends Header {
-        public static final byte START_FLUSH = 0;
-
-        public static final byte STOP_FLUSH = 2;
-
-        public static final byte FLUSH_COMPLETED = 3;
-
-        public static final byte ABORT_FLUSH = 5;
-
-        public static final byte FLUSH_BYPASS = 6;
-
-        public static final byte FLUSH_RECONCILE = 7;
-
-        public static final byte FLUSH_RECONCILE_OK = 8;
-
+        public static final byte START_FLUSH         = 0;
+        public static final byte STOP_FLUSH          = 2;
+        public static final byte FLUSH_COMPLETED     = 3;
+        public static final byte ABORT_FLUSH         = 5;
+        public static final byte FLUSH_BYPASS        = 6;
+        public static final byte FLUSH_RECONCILE     = 7;
+        public static final byte FLUSH_RECONCILE_OK  = 8;
         public static final byte FLUSH_NOT_COMPLETED = 9;
 
-        byte type;
+        protected byte                type;
+        protected long                viewID;
+        protected Collection<Address> flushParticipants;
+        protected Digest              digest;
 
-        long viewID;
-
-        Collection<Address> flushParticipants;
-
-        Digest digest = null;
 
         public FlushHeader() {
             this(START_FLUSH, 0);
@@ -993,6 +984,11 @@ public class FLUSH extends Protocol {
                 this.flushParticipants = new ArrayList<Address>(flushView);
             }
         }
+
+        public byte getType()                             {return type;}
+        public long getViewID()                           {return viewID;}
+        public Collection<Address> getFlushParticipants() {return flushParticipants;}
+        public Digest getDigest()                         {return digest;}
 
         @Override
         public int size() {
