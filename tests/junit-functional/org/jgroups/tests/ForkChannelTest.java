@@ -86,8 +86,8 @@ public class ForkChannelTest {
 
     /** Tests the case where we don't add any fork-stack specific protocols */
     public void testNullForkStack() throws Exception {
-        fc1=new ForkChannel(ch, "stack", "fc1", null);
-        fc2=new ForkChannel(ch, "stack", "fc2", null);
+        fc1=new ForkChannel(ch, "stack", "fc1");
+        fc2=new ForkChannel(ch, "stack", "fc2");
         MyReceiver<Integer> r1=new MyReceiver<Integer>(), r2=new MyReceiver<Integer>();
         fc1.setReceiver(r1); fc2.setReceiver(r2);
         ch.connect(CLUSTER);

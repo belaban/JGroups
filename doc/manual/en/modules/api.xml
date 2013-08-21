@@ -276,7 +276,7 @@ public interface Address extends Externalizable, Comparable, Cloneable {
 
         <figure id="MessageFig">
             <title>Structure of a message</title>
-            <graphic align="center" fileref="images/Message.png" format="PNG" scale="75"/>
+            <imagedata align="left" valign="top" fileref="images/Message.png" format="PNG" scale="60"/>
         </figure>
 
         <para>A message has 5 fields:</para>
@@ -482,7 +482,7 @@ channel.send(msg);
 
         <figure id="ChannelStatesFig">
             <title>Channel states</title>
-            <graphic align="center" fileref="images/ChannelStates.png" format="PNG" scale="75"/>
+            <imagedata align="left" valign="top" fileref="images/ChannelStates.png" format="PNG" scale="60"/>
         </figure>
 
         <para>
