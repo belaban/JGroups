@@ -80,7 +80,7 @@
         </para>
 
         <figure id="SharedTransportFig"><title>A shared transport</title>
-            <graphic fileref="images/SharedTransport.png" format="PNG" align="center" scale="75" />
+            <imagedata fileref="images/SharedTransport.png" format="PNG" align="left" valign="top" scale="95" />
         </figure>
 
         <para>
@@ -379,6 +379,14 @@
                 exceeding 64'000 bytes (after ca. 64 messages) - we'll send the large message, and this might have taken
                 only 3 ms.
             </para>
+
+            <note>
+                <title>Message bundling in 3.x</title>
+                <para>
+                    In 3.x, message bundling is the default, so it cannot be enabled or disabled anymore (the config
+                    is ignored). However, a message can set the DONT_BUNDLE flag to skip bundling.
+                </para>
+            </note>
 
             <section id="MessageBundlingAndPerf">
                 <title>Message bundling and performance</title>
@@ -823,7 +831,7 @@ for(Future&lt;RspList&gt; future: futures) {
 
                 <mediaobject>
                     <imageobject>
-                        <imagedata align="center" fileref="images/Tunneling.png"/>
+                        <imagedata align="left" fileref="images/Tunneling.png" valign="top"/>
                     </imageobject>
 
                     <textobject>
@@ -900,7 +908,7 @@ for(Future&lt;RspList&gt; future: futures) {
 
             <para>
                 <figure id="ConcurrentStackFig"><title>The concurrent stack</title>
-                    <graphic fileref="images/ConcurrentStack.png" format="PNG" align="left" scale="75"/>
+                    <imagedata fileref="images/ConcurrentStack.png" format="PNG" align="left" valign="top" scale="95"/>
                 </figure>
             </para>
             <para>
@@ -1712,8 +1720,7 @@ On view change V:
         <para>
             <figure id="StompProtocol">
                 <title>STOMP in a protocol stack</title>
-                <!--<graphic fileref="images/StompProtocol.png" format="PNG" align="left" scalefit="1" contentwidth="4in"/>-->
-                <graphic fileref="images/StompProtocol.png" format="PNG" align="center" scale="75"/>
+                <imagedata fileref="images/StompProtocol.png" format="PNG" align="left" valign="top" scale="60"/>
             </figure>
         </para>
 
@@ -1761,8 +1768,7 @@ On view change V:
         <para>
             <figure id="StompArchitecture">
                 <title>STOMP architecture</title>
-                <!--<graphic fileref="images/StompArchitecture.png" format="PNG" align="left" scalefit="1" contentwidth="5in"/>-->
-                <graphic fileref="images/StompArchitecture.png" format="PNG" align="center" scale="75"/>
+                <imagedata fileref="images/StompArchitecture.png" format="PNG" align="left" valign="top" scale="70"/>
             </figure>
         </para>
 
@@ -1809,7 +1815,7 @@ On view change V:
         </para>
         <para>
             <figure id="RelayFig"><title>Relaying between different clusters</title>
-                <graphic fileref="images/RELAY.png" format="PNG" align="left" width="15cm"/>
+                <imagedata fileref="images/RELAY.png" format="PNG" align="left" valign="top" scale="80"/>
             </figure>
         </para>
         <para>
@@ -3135,11 +3141,9 @@ public List&lt;Address&gt; getNewMembership(final Collection&lt;Address&gt; curr
 
 
         <para>
-            <figure id="ForkFig"><title>Architecture of a ForkChannel</title>
-                <!--graphic fileref="images/ForkArchitecture.png" format="PNG" align="left" width="15cm"/-->
-                <!--<graphic fileref="images/ForkArchitecture.png" format="PNG" align="left" scale="50"/>-->
-                <!--<imagedata fileref="images/ForkArchitecture.png" contentwidth="5cm" contentdepth="3cm" />-->
-                <graphic fileref="images/ForkArchitecture.png" format="PNG" align="left" scale="50"/>
+            <figure id="ForkFig">
+                <title>Architecture of a ForkChannel</title>
+                <imagedata fileref="images/ForkArchitecture.png" format="PNG" align="left" valign="top" scale="80" />
             </figure>
         </para>
 
