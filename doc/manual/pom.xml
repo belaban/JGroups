@@ -59,7 +59,7 @@
                 <plugin>
                     <groupId>org.jboss.maven.plugins</groupId>
                     <artifactId>maven-jdocbook-plugin</artifactId>
-                    <version>2.2.1</version>
+                    <version>2.3.8</version>
                     <extensions>true</extensions>
                     <dependencies>
                         <dependency>
@@ -72,7 +72,7 @@
                             <groupId>org.jboss.pressgang</groupId>
                             <artifactId>pressgang-jdocbook-style</artifactId>
                             <type>jdocbook-style</type>
-                            <version>2.0.0</version>
+                            <version>3.0.0</version>
                         </dependency>
                     </dependencies>
                     <configuration>
@@ -117,6 +117,10 @@
                                 <property>
                                     <name>javax.xml.parsers.SAXParserFactory</name>
                                     <value>org.apache.xerces.jaxp.SAXParserFactoryImpl</value>
+                                </property>
+                                <property>
+                                    <name>ignoreImageScaling</name>
+                                    <value>0</value>
                                 </property>
                             </transformerParameters>
                         </options>
