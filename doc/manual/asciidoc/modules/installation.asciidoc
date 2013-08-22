@@ -238,7 +238,7 @@ java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw
 
 2 whiteboard windows should appear as shown in <<DrawScreenshotFig>>. [[DrawScreenshotFig]]
 .Screenshot of 2 Draw instances
-image::[]
+image::../images/DrawScreenshot.png["Screenshot of 2 Draw instances",scaledwidth="50%",link="../images/DrawScreenshot.png"]
 
  If you started them simultaneously, they could initially show a membership of 1 in their title bars. After some time, both windows should show 2. This means that the two instances found each other and formed a cluster.
 

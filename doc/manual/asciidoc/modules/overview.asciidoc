@@ -11,7 +11,7 @@ JGroups is toolkit for reliable group communication. Processes can join a group,
 
 [[ArchitectureFig]]
 .The architecture of JGroups
-image::[]
+image::../images/Architecture.png["The architecture of JGroups",scaledwidth="50%",link="../images/Architecture.png"]
 
  It consists of 3 parts: (1) the Channel used by application programmers to build reliable group communication applications, (2) the building blocks, which are layered on top of the channel and provide a higher abstraction level and (3) the protocol stack, which implements the properties specified for a given channel. 
 

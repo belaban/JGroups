@@ -33,7 +33,7 @@
 
 [[SharedTransportFig]]
 .A shared transport
-image::[]
+image::../images/SharedTransport.png["A shared transport",scaledwidth="50%",link="../images/SharedTransport.png"]
 
  Here we see 4 channels which share 2 transports. Note that first 3 channels which share transport "tp_one" have the same protocols on top of the shared transport. This is _not_ required; the protocols above "tp_one" could be different for each of the 3 channels as long as all applications residing on the same shared transport have the same requirements for the transport's configuration. 
 
@@ -500,7 +500,7 @@ java org.jgroups.stack.GossipRouter -port 12001
 
 [[TunnelingFig]]
 .Tunneling a firewall
-image::[]
+image::../images/Tunneling.png["Tunneling a firewall",scaledwidth="50%",link="../images/Tunneling.png"]
 
  First, the GossipRouter process is created on host B. Note that host B should be outside the firewall, and all channels in the same group should use the same GossipRouter process. When a channel on host A is created, its TCPGOSSIP protocol will register its address with the GossipRouter and retrieve the initial membership (assume this is C). Now, a TCP connection with the GossipRouter is established by A; this will persist until A crashes or voluntarily leaves the group. When A multicasts a message to the cluster, GossipRouter looks up all cluster members (in this case, A and C) and forwards the message to all members, using their TCP connections. In the example, A would receive its own copy of the multicast message it sent, and another copy would be sent to C. 
 
@@ -538,7 +538,7 @@ However, there are several drawbacks: first, having to maintain a TCP connection
 
  [[ConcurrentStackFig]]
 .The concurrent stack
-image::[]
+image::../images/ConcurrentStack.png["The concurrent stack",scaledwidth="50%",link="../images/ConcurrentStack.png"]
 
  
 
@@ -1072,7 +1072,7 @@ On view change V:
 
  [[StompProtocol]]
 .STOMP in a protocol stack
-image::[]
+image::../images/StompProtocol.png["STOMP in a protocol stack",scaledwidth="50%",link="../images/StompProtocol.png"]
 
  
 
@@ -1092,7 +1092,7 @@ image::[]
 
  [[StompArchitecture]]
 .STOMP architecture
-image::[]
+image::../images/Architecture.png["STOMP architecture",scaledwidth="50%",link="../images/Architecture.png"]
 
  
 
@@ -1117,7 +1117,7 @@ image::[]
 
  [[RelayFig]]
 .Relaying between different clusters
-image::[]
+image::../images/RELAY.png["Relaying between different clusters",scaledwidth="50%",link="../images/RELAY.png"]
 
  
 
@@ -2122,7 +2122,7 @@ public List<Address> getNewMembership(final Collection<Address> current_members,
 
  [[ForkFig]]
 .Architecture of a ForkChannel
-image::[]
+image::../images/ForkArchitecture.png["Architecture of a ForkChannel",scaledwidth="50%",link="../images/ForkArchitecture.png"]
 
  
 

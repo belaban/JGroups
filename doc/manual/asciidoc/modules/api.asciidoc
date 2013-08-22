@@ -216,7 +216,7 @@ public interface Address extends Externalizable, Comparable, Cloneable {
 
 [[MessageFig]]
 .Structure of a message
-image::[]
+image::../images/Message.png["Structure of a message",scaledwidth="50%",link="../images/Message.png"]
 
 A message has 5 fields:
 
@@ -334,7 +334,7 @@ The ViewId is used to uniquely number views. It consists of the address of the v
 
 [[ChannelStatesFig]]
 .Channel states
-image::[]
+image::../images/ChannelStates.png["Channel states",scaledwidth="50%",link="../images/ChannelStates.png"]
 
  When a channel is first created, it is in the unconnected state. An attempt to perform certain operations which are only valid in the connected state (e.g. send/receive messages) will result in an exception. After a successful connection by a client, it moves to the connected state. Now the channel will receive messages from other members and may send messages to other members or to the group, and it will get notified when new members join or leave. Getting the local address of a channel is guaranteed to be a valid operation in this state (see below). When the channel is disconnected, it moves back to the unconnected state. Both a connected and unconnected channel may be closed, which makes the channel unusable for further operations. Any attempt to do so will result in an exception. When a channel is closed directly from a connected state, it will first be disconnected, and then closed. 
 
