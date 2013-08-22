@@ -1,0 +1,5 @@
+= Reliable group communication with JGroups 3.x
+
+
+
+include::pr01.asciidoc[]
