@@ -1,5 +1,0 @@
-<title>Reliable group communication with JGroups 3.x</title><pubdate>August 2011</pubdate><copyright><year>2002-2013</year><holder>Red Hat Inc</holder></copyright><authorgroup><author><firstname>Bela</firstname><surname> Ban</surname><affiliation><shortaffil>Red Hat, Inc.</shortaffil><jobtitle>Project Lead</jobtitle><orgdiv>JBoss</orgdiv></affiliation><email>belaban@yahoo.com</email></author><author><firstname>Vladimir</firstname><surname>Blagojevic</surname><affiliation><shortaffil>Red Hat, Inc.</shortaffil><orgdiv>JBoss</orgdiv></affiliation><email>vblagoje@redhat.com</email></author></authorgroup><legalnotice><para>This document is licensed under the
-                <ulink url="http://creativecommons.org/licenses/by-sa/3.0/us/legalcode">
-                    Creative Commons Attribution-ShareAlike (CC-BY-SA) 3.0
-                </ulink>
-            </para></legalnotice>
