@@ -521,8 +521,7 @@ public class RpcDispatcherTest {
     }
 
     protected JChannel createChannel(String name) throws Exception {
-        return new JChannel(Util.getTestStack())
-          .name(name);
+        return new JChannel(Util.getTestStack()).name(name);
     }
 
 

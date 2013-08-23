@@ -39,8 +39,8 @@ public class PEER_LOCK extends Locking {
     }
 
 
-    protected void sendGrantLockRequest(String lock_name, Owner owner, long timeout, boolean is_trylock) {
-        sendRequest(null, Type.GRANT_LOCK, lock_name, owner, timeout, is_trylock);
+    protected void sendGrantLockRequest(String lock_name, int lock_id, Owner owner, long timeout, boolean is_trylock) {
+        sendRequest(null, Type.GRANT_LOCK, lock_name, lock_id, owner, timeout, is_trylock);
     }
 
     protected void sendReleaseLockRequest(String lock_name, Owner owner) {
@@ -95,7 +95,7 @@ public class PEER_LOCK extends Locking {
                 return;
             grants.retainAll(members);
             if(grants.isEmpty())
-                lockGranted();
+                lockGranted(0);
         }
 
         protected synchronized void handleLockGrantedResponse(Owner owner, Address sender) {
@@ -103,7 +103,7 @@ public class PEER_LOCK extends Locking {
                 return;
             grants.remove(sender);
             if(grants.isEmpty())
-                lockGranted();
+                lockGranted(0);
         }
     }
 }

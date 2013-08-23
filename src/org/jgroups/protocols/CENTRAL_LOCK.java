@@ -74,9 +74,9 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         return backups != null? backups.toString() : null;
     }
 
-    protected void sendGrantLockRequest(String lock_name, Owner owner, long timeout, boolean is_trylock) {
+    protected void sendGrantLockRequest(String lock_name, int lock_id, Owner owner, long timeout, boolean is_trylock) {
         if(coord != null)
-            sendRequest(coord, Type.GRANT_LOCK, lock_name, owner, timeout, is_trylock);
+            sendRequest(coord, Type.GRANT_LOCK, lock_name, lock_id, owner, timeout, is_trylock);
     }
 
     protected void sendReleaseLockRequest(String lock_name, Owner owner) {

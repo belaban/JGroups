@@ -15,7 +15,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -31,9 +30,7 @@ public class ForkChannelTest {
     protected static final String     CLUSTER="ForkChannelTest";
 
     static {
-        Protocol[] prots=Util.getTestStack();
-        protocols=Arrays.copyOf(prots, prots.length + 1);
-        protocols[protocols.length-1]=new FORK();
+        protocols=Util.getTestStack(new FORK());
     }
 
     @BeforeMethod protected void setup() throws Exception {

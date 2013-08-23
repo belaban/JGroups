@@ -31,16 +31,11 @@ public class GMS_MergeTest {
     static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
     protected static Protocol[] getProps() {
-        Protocol[] retval=Util.getTestStack();
-        return modify(retval);
+        return modify(Util.getTestStack());
     }
 
     protected static Protocol[] getFlushProps() {
-        Protocol[] tmp=Util.getTestStack();
-        Protocol[] retval=new Protocol[tmp.length +1];
-        System.arraycopy(tmp, 0, retval, 0, tmp.length);
-        retval[retval.length-1]=new FLUSH();
-        return modify(retval);
+        return modify(Util.getTestStack(new FLUSH()));
     }
 
     protected static Protocol[] modify(Protocol[] retval) {

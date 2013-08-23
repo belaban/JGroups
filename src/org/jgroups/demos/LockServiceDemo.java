@@ -105,7 +105,7 @@ public class LockServiceDemo implements LockNotification {
                 lock_names=parseLockNames(line.substring("trylock".length()).trim());
 
                 String tmp=lock_names.get(lock_names.size() -1);
-                Long timeout=new Long(-1);
+                Long timeout=(long)-1;
                 try {
                     timeout=Long.parseLong(tmp);
                     lock_names.remove(lock_names.size() -1);
@@ -116,10 +116,10 @@ public class LockServiceDemo implements LockNotification {
                 for(String lock_name: lock_names) {
                     Lock lock=lock_service.getLock(lock_name);
                     boolean rc;
-                    if(timeout.longValue() < 0)
+                    if(timeout < 0)
                         rc=lock.tryLock();
                     else
-                        rc=lock.tryLock(timeout.longValue(), TimeUnit.MILLISECONDS);
+                        rc=lock.tryLock(timeout, TimeUnit.MILLISECONDS);
                     if(!rc)
                         System.err.println("Failed locking \"" + lock_name + "\"");
                 }
@@ -148,7 +148,7 @@ public class LockServiceDemo implements LockNotification {
 
     protected static List<String> parseLockNames(String line) {
         List<String> lock_names=new ArrayList<String>();
-        if(line == null || line.length() == 0)
+        if(line == null || line.isEmpty())
             return lock_names;
         StringTokenizer tokenizer=new StringTokenizer(line);
         while(tokenizer.hasMoreTokens())
