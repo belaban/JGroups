@@ -46,6 +46,10 @@
     <property name="threadcount" value="false"/>
     <property name="test.verbose" value="0"/>
 
+    <!-- Parallelization controls (disable with "-Dparallel.tests=false -Dparallel.methods=false") -->
+    <property name="parallel.tests" value="tests"/>
+    <property name="parallel.methods" value="methods"/>
+
     <path id="jg.classpath">
         <pathelement location="${compile.dir}"/>
         <pathelement location="${conf.dir}"/>
@@ -390,7 +394,7 @@
         <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
         <runtest testname.ext="functional"
                  threadcount="10"
-                 parallel="methods"
+                 parallel="${parallel.methods}"
                  testng.xmlfile="functional.xml"/>
     </target>
 
@@ -409,7 +413,7 @@
         <mkdir dir="${tmp.dir}/test-results/xml/time-sensitive"/>
         <runtest testname.ext="sensitive"
                  threadcount="1"
-                 parallel="methods"
+                 parallel="${parallel.methods}"
                  testng.xmlfile="time-sensitive.xml"/>
     </target>
 
@@ -417,7 +421,7 @@
         <mkdir dir="${tmp.dir}/test-results/xml/stack-independent"/>
         <runtest testname.ext="ind"
                  threadcount="1"
-                 parallel="tests"
+                 parallel="${parallel.tests}"
                  testng.xmlfile="stack-independent.xml"
                 />
     </target>
@@ -427,7 +431,7 @@
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest testname.ext="udp"
                  threadcount="5"
-                 parallel="tests"
+                 parallel="${parallel.tests}"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="25000"
                  initial.tcp.port="25000"
@@ -439,7 +443,7 @@
         <mkdir dir="${tmp.dir}/test-results/xml/udp-flush"/>
         <runtest testname.ext="udp-flush"
                  threadcount="5"
-                 parallel="tests"
+                 parallel="${parallel.tests}"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="26000"
                  initial.tcp.port="26000"
@@ -455,7 +459,7 @@
     	<mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
         <runtest testname.ext="tcp"
                  threadcount="5"
-                 parallel="tests"
+                 parallel="${parallel.tests}"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="27000"
                  initial.tcp.port="27000"
@@ -473,7 +477,7 @@
     	<mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
         <runtest testname.ext="tcp"
                  threadcount="1"
-                 parallel="tests"
+                 parallel="${parallel.tests}"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="28000"
                  initial.tcp.port="28000"
@@ -490,7 +494,7 @@
     	<mkdir dir="${tmp.dir}/test-results/xml/tcp-flush"/>
         <runtest testname.ext="tcp-flush"
                  threadcount="10"
-                 parallel="tests"
+                 parallel="${parallel.tests}"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="29000"
                  initial.tcp.port="29000"
@@ -521,7 +525,7 @@
     <macrodef name="runtest" description="Runs a configuration-dependent test suite">
         <attribute name="classpath" default="jg.classpath"/>
         <attribute name="outputdir" default="${tmp.dir}/test-results/xml"/>
-        <attribute name="parallel" default="methods"/>
+        <attribute name="parallel" default="${parallel.methods}"/>
         <attribute name="testname.ext" default="udp"/>
         <attribute name="threadcount" default="1"/>
         <attribute name="testng.xmlfile" default="stack-dependent.xml"/>
