@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since 3.1
  */
 public class RingBuffer<T> implements Iterable<T> {
-    /** Atomic ref array so that elements can be checked for null and set atomically */
+    /** Atomic ref array so that elements can be checked for null and set atomically.  Should always be sized to a power of 2. */
     protected final T[]            buf;
 
     /** The lowest seqno. Moved forward by stable() */
@@ -62,7 +62,7 @@ public class RingBuffer<T> implements Iterable<T> {
 
     /**
      * Creates a RingBuffer
-     * @param capacity The number of elements the ring buffer's array should hold
+     * @param capacity The number of elements the ring buffer's array should hold.
      * @param offset The offset. The first element to be added has to be offset +1.
      */
     public RingBuffer(int capacity, long offset) {
@@ -70,7 +70,13 @@ public class RingBuffer<T> implements Iterable<T> {
             throw new IllegalArgumentException("incorrect capacity of " + capacity);
         if(offset < 0)
             throw new IllegalArgumentException("invalid offset of " + offset);
-        this.buf=(T[])new Object[capacity];
+
+        // Find a power of 2 >= buffer capacity
+        int cap = 1;
+        while (capacity < cap)
+           cap <<= 1;
+
+        this.buf=(T[])new Object[cap];
         this.low=this.hd=this.hr=this.offset=offset;
     }
 
@@ -149,7 +155,7 @@ public class RingBuffer<T> implements Iterable<T> {
                 else {
                     int from=index(low+1), length=(int)(tmp - low), capacity=capacity();
                     for(int i=from; i < from+length; i++) {
-                        index=i % capacity;
+                        index=i & (capacity - 1);
                         buf[index]=null;
                     }
                 }
@@ -200,7 +206,7 @@ public class RingBuffer<T> implements Iterable<T> {
                 if(nullify) {
                     int from=index(low+1), length=(int)(start - low), capacity=capacity();
                     for(int i=from; i < from+length; i++) {
-                        int index=i % capacity;
+                        int index=i & (capacity - 1);
                         buf[index]=null;
                     }
                     // Releases some of the blocked adders
@@ -279,7 +285,7 @@ public class RingBuffer<T> implements Iterable<T> {
 
             int from=index(low+1), length=(int)(seqno - low), capacity=capacity();
             for(int i=from; i < from+length; i++) {
-                int index=i % capacity;
+                int index=i & (capacity - 1);
                 buf[index]=null;
             }
 
@@ -354,7 +360,7 @@ public class RingBuffer<T> implements Iterable<T> {
 
     
     protected int index(long seqno) {
-        return (int)((seqno - offset -1) % capacity());
+        return (int)((seqno - offset -1) & (capacity() - 1));
     }
 
     @GuardedBy("lock")

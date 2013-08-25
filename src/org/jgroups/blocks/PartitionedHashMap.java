@@ -432,10 +432,10 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
     public static class ConsistentHashFunction<K> implements MembershipListener, HashFunction<K> {
         private SortedMap<Short,Address> nodes=new TreeMap<Short,Address>();
-        private final static int HASH_SPACE=2000; // must be > max number of nodes in a cluster
+        private final static int HASH_SPACE=2048; // must be > max number of nodes in a cluster, and a power of 2
 
         public Address hash(K key, List<Address> members) {
-            int index=Math.abs(key.hashCode() % HASH_SPACE);
+            int index=Math.abs(key.hashCode() & (HASH_SPACE - 1));
             if(members != null && !members.isEmpty()) {
                 SortedMap<Short,Address> tmp=new TreeMap<Short,Address>(nodes);
                 for(Iterator<Map.Entry<Short,Address>> it=tmp.entrySet().iterator(); it.hasNext();) {
@@ -452,9 +452,9 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         public void viewAccepted(View new_view) {
             nodes.clear();
             for(Address node: new_view.getMembers()) {
-                int hash=Math.abs(node.hashCode() % HASH_SPACE);
+                int hash=Math.abs(node.hashCode() & (HASH_SPACE - 1));
                 for(int i=hash; i < hash + HASH_SPACE; i++) {
-                    short new_index=(short)(i % HASH_SPACE);
+                    short new_index=(short)(i & (HASH_SPACE - 1));
                     if(!nodes.containsKey(new_index)) {
                         nodes.put(new_index, node);
                         break;
@@ -483,7 +483,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         private static Address findFirst(Map<Short,Address> map, int index) {
             Address retval;
             for(int i=index; i < index + HASH_SPACE; i++) {
-                short new_index=(short)(i % HASH_SPACE);
+                short new_index=(short)(i & (HASH_SPACE - 1));
                 retval=map.get(new_index);
                 if(retval != null)
                     return retval;
