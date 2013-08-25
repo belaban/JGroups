@@ -1,19 +1,21 @@
 package org.jgroups.client;
 
 import org.jgroups.annotations.Experimental;
-import org.jgroups.annotations.Unsupported;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.STOMP;
 import org.jgroups.util.Util;
 
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.*;
-import javax.net.SocketFactory;
-import javax.net.ssl.SSLSocketFactory;
-import java.util.*;
+import java.net.Socket;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * STOMP client to access the STOMP [1] protocol. Note that the full STOMP protocol is not implemented, e.g. transactions
@@ -190,7 +192,7 @@ public class StompConnection implements Runnable {
             sb.append("destination: ").append(destination).append("\n");
         if(buf != null)
             sb.append("content-length: ").append(length).append("\n");
-        if(headers != null && headers.length % 2 == 0) { // must be even
+        if(headers != null && (headers.length & 1) == 0) { // must be even
             for(int i=0; i < headers.length; i++)
                 sb.append(headers[i]).append(": ").append(headers[++i]).append("\n");
         }

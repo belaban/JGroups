@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since 3.1
  */
 public class RingBufferLockless<T> implements Iterable<T> {
-    /** Atomic ref array so that elements can be checked for null and set atomically */
+    /** Atomic ref array so that elements can be checked for null and set atomically.  Should always be sized to a power of 2. */
     protected final AtomicReferenceArray<T> buf;
 
     /** The lowest seqno. Moved forward by stable() */
@@ -70,6 +70,12 @@ public class RingBufferLockless<T> implements Iterable<T> {
             throw new IllegalArgumentException("incorrect capacity of " + capacity);
         if(offset < 0)
             throw new IllegalArgumentException("invalid offset of " + offset);
+
+        // Find a power of 2 >= buffer capacity
+        int cap = 1;
+        while (capacity < cap)
+           cap <<= 1;
+
         this.buf=new AtomicReferenceArray<T>(capacity);
         this.low=this.hd=this.offset=offset;
         this.hr.set(offset);
@@ -153,7 +159,7 @@ public class RingBufferLockless<T> implements Iterable<T> {
             else {
                 int from=index(tmp_low+1), length=(int)(tmp - tmp_low), capacity=capacity();
                 for(int i=from; i < from+length; i++) {
-                    index=i % capacity;
+                    index=i & (capacity - 1);
                     buf.set(index, null);
                 }
             }
@@ -204,7 +210,7 @@ public class RingBufferLockless<T> implements Iterable<T> {
                 long tmp_low=low;
                 int from=index(tmp_low+1), length=(int)(start - tmp_low), capacity=capacity();
                 for(int i=from; i < from+length; i++) {
-                    int index=i % capacity;
+                    int index=i & (capacity - 1);
                     buf.set(index, null);
                 }
                 // Releases some of the blocked adders
@@ -274,7 +280,7 @@ public class RingBufferLockless<T> implements Iterable<T> {
 
         int from=index(low+1), length=(int)(seqno - low), capacity=capacity();
         for(int i=from; i < from+length; i++) {
-            int index=i % capacity;
+            int index=i & (capacity - 1);
             buf.set(index, null);
         }
 
@@ -356,7 +362,7 @@ public class RingBufferLockless<T> implements Iterable<T> {
     }
 
     protected int index(long seqno) {
-        return (int)((seqno - offset -1) % capacity());
+        return (int)((seqno - offset -1) & (capacity() - 1));
     }
 
     protected boolean block(long seqno) {
