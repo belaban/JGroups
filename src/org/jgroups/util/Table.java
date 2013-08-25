@@ -30,6 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class Table<T> {
     protected final int            num_rows;
+    /** Must be a power of 2 for efficient modular arithmetic **/
     protected final int            elements_per_row;
     protected final double         resize_factor;
     protected T[][]                matrix;
@@ -86,7 +87,7 @@ public class Table<T> {
 
 
     public Table() {
-        this(5, 10000, 0, DEFAULT_RESIZE_FACTOR);
+        this(5, 8192, 0, DEFAULT_RESIZE_FACTOR);
     }
 
     public Table(long offset) {
@@ -105,7 +106,7 @@ public class Table<T> {
     /**
      * Creates a new table
      * @param num_rows the number of rows in the matrix
-     * @param elements_per_row the number of messages per row.
+     * @param elements_per_row the number of messages per row
      * @param offset the seqno before the first seqno to be inserted. E.g. if 0 then the first seqno will be 1
      * @param resize_factor teh factor with which to increase the number of rows
      * @param max_compaction_time the max time in milliseconds after we attempt a compaction
@@ -113,7 +114,13 @@ public class Table<T> {
     @SuppressWarnings("unchecked")
     public Table(int num_rows, int elements_per_row, long offset, double resize_factor, long max_compaction_time) {
         this.num_rows=num_rows;
-        this.elements_per_row=elements_per_row;
+
+        // Find a power of 2 >= elements_per_row; needed by computeIndex(long seqno) to use bit ANDing instead of mod
+        int epr = 1;
+        while(elements_per_row > epr)
+            epr <<= 1;
+
+        this.elements_per_row=epr;
         this.resize_factor=resize_factor;
         this.max_compaction_time=TimeUnit.NANOSECONDS.convert(max_compaction_time, TimeUnit.MILLISECONDS);
         this.offset=this.low=this.hr=this.hd=offset;
@@ -126,6 +133,7 @@ public class Table<T> {
     public AtomicBoolean getProcessing() {return processing;}
 
     public long getOffset()              {return offset;}
+    public int  getElementsPerRow()      {return elements_per_row;}
 
     /** Returns the total capacity in the matrix */
     public int capacity()                {return matrix.length * elements_per_row;}
@@ -642,7 +650,11 @@ public class Table<T> {
         int diff=(int)(seqno - offset);
         if(diff < 0)
             return diff;
-        return diff % elements_per_row;
+
+        // return diff % elements_per_row
+
+        // same as mod, but (apparently, I'm told) more efficient
+        return diff & (elements_per_row - 1);
     }
 
     protected class Counter implements Visitor<T> {

@@ -36,7 +36,7 @@ public class TableStressTest {
             }
         }
 
-        Table<Integer> buf=new Table<Integer>(10000, 10000, 0);
+        Table<Integer> buf=new Table<Integer>(10000, 10240, 0);
 
         final CountDownLatch latch=new CountDownLatch(1);
 
@@ -64,7 +64,7 @@ public class TableStressTest {
 
     protected static class Adder extends Thread {
         protected final Table<Integer> buf;
-        protected final AtomicInteger num;
+        protected final AtomicInteger  num;
         protected final CountDownLatch latch;
 
         public Adder(Table<Integer> buf, CountDownLatch latch, AtomicInteger num) {

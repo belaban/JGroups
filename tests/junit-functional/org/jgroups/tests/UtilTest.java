@@ -116,6 +116,25 @@ public class UtilTest {
         assert Util.isFlagSet(flags, SEVEN);
     }
 
+    public void testGetNextHigher() {
+        int[][] numbers={
+          {0, 1},
+          {1,1},
+          {2,2},
+          {3,4},
+          {4,4},
+          {5,8},
+          {10,16}
+        };
+
+        for(int[] pair: numbers) {
+            int input=pair[0];
+            int expected=pair[1];
+            int actual=Util.getNextHigherPowerOfTwo(input);
+            assert expected == actual : "expected " + expected + " but got " + actual + " (input=" + input + ")";
+        }
+    }
+
 
     public static void testIgnoreBindAddress() {
         boolean retval;

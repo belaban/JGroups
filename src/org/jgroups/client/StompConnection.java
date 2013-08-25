@@ -190,7 +190,7 @@ public class StompConnection implements Runnable {
             sb.append("destination: ").append(destination).append("\n");
         if(buf != null)
             sb.append("content-length: ").append(length).append("\n");
-        if(headers != null && headers.length % 2 == 0) { // must be even
+        if(headers != null && (headers.length & 1) == 0) { // must be even
             for(int i=0; i < headers.length; i++)
                 sb.append(headers[i]).append(": ").append(headers[++i]).append("\n");
         }
