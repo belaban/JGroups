@@ -21,7 +21,7 @@ public class RingBufferTest {
     public void testConstructor() {
         RingBuffer buf=new RingBuffer(100, 1);
         System.out.println("buf = " + buf);
-        assert buf.capacity() == 100;
+        assert buf.capacity() == Util.getNextHigherPowerOfTwo(100);
         assert buf.size() == 0;
     }
 
@@ -71,14 +71,14 @@ public class RingBufferTest {
 
     public void testSaturation() {
         RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
-        for(int i: Arrays.asList(1,2,3,4,5))
+        for(int i: Arrays.asList(1,2,3,4,5,6,7,8))
             buf.add(i, i);
         System.out.println("buf = " + buf);
         int size=buf.size(), space_used=buf.spaceUsed();
         double saturation=buf.saturation();
         System.out.println("size=" + size + ", space used=" + space_used + ", saturation=" + saturation);
-        assert buf.size() == 5;
-        assert buf.spaceUsed() == 5;
+        assert buf.size() == 8;
+        assert buf.spaceUsed() == 8;
         assert buf.saturation() == 0.5;
 
         buf.remove(); buf.remove(); buf.remove();
@@ -86,8 +86,8 @@ public class RingBufferTest {
         space_used=buf.spaceUsed();
         saturation=buf.saturation();
         System.out.println("size=" + size + ", space used=" + space_used + ", saturation=" + saturation);
-        assert buf.size() == 2;
-        assert buf.spaceUsed() == 5;
+        assert buf.size() == 5;
+        assert buf.spaceUsed() == 8;
         assert buf.saturation() == 0.5;
 
         long low=buf.getLow();
@@ -99,9 +99,9 @@ public class RingBufferTest {
         space_used=buf.spaceUsed();
         saturation=buf.saturation();
         System.out.println("size=" + size + ", space used=" + space_used + ", saturation=" + saturation);
-        assert buf.size() == 2;
-        assert buf.spaceUsed() == 2;
-        assert buf.saturation() == 0.2;
+        assert buf.size() == 5;
+        assert buf.spaceUsed() == 5;
+        assert buf.saturation() == 0.3125;
     }
 
     public void testAddWithWrapAround() {
@@ -252,29 +252,32 @@ public class RingBufferTest {
                 buf.destroy();
             }
         }.start();
-        boolean success=buf.add(11, 11, true);
+        int seqno=buf.capacity() +1;
+        boolean success=buf.add(seqno, seqno, true);
         System.out.println("buf=" + buf);
         assert !success;
         assert buf.size() == 10;
         assert buf.missing() == 0;
     }
 
-    public void testBlockingAddAndStable() {
+    public void testBlockingAddAndStable() throws InterruptedException {
         final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
         for(int i=0; i <= 10; i++)
             buf.add(i, i, true);
         System.out.println("buf = " + buf);
-        new Thread() {
+        Thread thread=new Thread() {
             public void run() {
                 Util.sleep(1000);
                 for(int i=0; i < 3; i++)
                     buf.remove();
                 buf.stable(3);
             }
-        }.start();
+        };
+        thread.start();
         boolean success=buf.add(11, 11, true);
         System.out.println("buf=" + buf);
         assert success;
+        thread.join(10000);
         assert buf.size() == 8;
         assert buf.missing() == 0;
     }
@@ -331,8 +334,9 @@ public class RingBufferTest {
 
     public void testRemovedPastHighestReceived() {
         RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
-        for(int i=1; i <= 15; i++) {
-            if(i > 10) {
+        int highest=buf.capacity();
+        for(int i=1; i <= 20; i++) {
+            if(i > highest) {
                 assert  !buf.add(i,i);
                 Integer num=buf.remove();
                 assert num == null;
@@ -433,7 +437,7 @@ public class RingBufferTest {
      * seqno, blocking until there is more space. Each adder will block until the remover removes elements, so the
      * adder threads get unblocked and can then add their elements to the buffer.
      */
-    public void testConcurrentAddAndRemove() {
+    public void testConcurrentAddAndRemove() throws InterruptedException {
         final int NUM=5;
         final RingBuffer<Integer> buf=new RingBuffer<Integer>(10, 0);
         for(int i=1; i <= 10; i++)
@@ -451,13 +455,14 @@ public class RingBufferTest {
         latch.countDown();
         System.out.print("waiting for threads to be done: ");
 
-        new Thread("Remover") {
+        Thread remover=new Thread("Remover") {
             public void run() {
                 Util.sleep(2000);
                 List<Integer> list=buf.removeMany(true, 5);
                 System.out.println("\nremover: removed = " + list);
             }
-        }.start();
+        };
+        remover.start();
 
         for(Adder adder: adders) {
             try {
@@ -467,6 +472,9 @@ public class RingBufferTest {
                 e.printStackTrace();
             }
         }
+
+        remover.join(10000);
+
         System.out.println("OK");
         System.out.println("buf = " + buf);
         assert buf.size() == 10;
