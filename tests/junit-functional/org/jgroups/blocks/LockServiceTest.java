@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
+
 /** Tests {@link org.jgroups.blocks.locking.LockService}
  * @author Bela Ban
  */
@@ -241,14 +242,7 @@ public class LockServiceTest {
 
 
     protected JChannel createChannel(String name) throws Exception {
-        Protocol[] tmp=Util.getTestStack();
-        Protocol[] stack=new Protocol[tmp.length +1];
-        System.arraycopy(tmp, 0, stack, 0, tmp.length);
-
-        // add CENTRAL_LOCK to the top of the stack
-        Protocol central_lock = new CENTRAL_LOCK();
-        central_lock.setLevel("trace");
-        stack[stack.length-1]=central_lock;
+        Protocol[] stack=Util.getTestStack(new CENTRAL_LOCK().level("trace"));
         return new JChannel(stack).name(name);
     }
 
