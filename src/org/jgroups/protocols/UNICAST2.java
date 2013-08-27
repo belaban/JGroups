@@ -429,6 +429,9 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     case Unicast2Header.ACK:
                         if(log.isTraceEnabled())
                             log.trace(local_addr + " <-- ACK(" + src + "," + hdr.seqno + " [conn_id=" + hdr.conn_id + "])");
+                        // JGRP-1684 NPE
+                        if (src == null)
+                            break;
                         SenderEntry entry=send_table.get(msg.getSrc());
                         if(entry != null) {
                             if(entry.send_conn_id != hdr.conn_id) {
