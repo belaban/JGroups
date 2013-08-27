@@ -13,9 +13,10 @@ import org.testng.annotations.Test;
  */
 @Test(groups=Global.FUNCTIONAL)
 public class NAKACK_SET_DIGEST_Test {
-    private NAKACK2 nak;
-    private MutableDigest d1, d2;
-    private Address a, b, c;
+    private NAKACK2   nak;
+    private Digest    d1, d2;
+    private Address   a, b, c;
+    private View      v1, v2;
 
     private static final short TP_ID=101;
 
@@ -24,15 +25,12 @@ public class NAKACK_SET_DIGEST_Test {
         a=Util.createRandomAddress("A");
         b=Util.createRandomAddress("B");
         c=Util.createRandomAddress("C");
-        nak=new NAKACK2();
-        d1=new MutableDigest(2);
-        d1.add(a, 11, 11);
-        d1.add(b, 30, 35);
+        v1=View.create(a, 1, a, b);
+        v2=View.create(a, 2, a, b, c);
 
-        d2=new MutableDigest(3);
-        d2.add(a, 10, 10);
-        d2.add(b, 30, 30);
-        d2.add(c, 50, 50);
+        nak=new NAKACK2();
+        d1=new Digest(v1.getMembersRaw(), new long[]{11,11, 30,35});
+        d2=new Digest(v2.getMembersRaw(), new long[]{10,10, 30,30, 50,50});
 
         TP transport=new TP() {
             public boolean supportsMulticasting() {return false;}
@@ -44,9 +42,7 @@ public class NAKACK_SET_DIGEST_Test {
             public TimeScheduler getTimer() {return new DefaultTimeScheduler(1);}
         };
         transport.setId(TP_ID);
-
         nak.setDownProtocol(transport);
-
         nak.start();
     }
 
@@ -63,19 +59,15 @@ public class NAKACK_SET_DIGEST_Test {
         nak.down(new Event(Event.SET_DIGEST, d2));
         Digest digest=(Digest)nak.down(new Event(Event.GET_DIGEST));
         System.out.println("digest = " + digest);
-        assert digest.size() == 3;
-        assert digest.contains(a);
-        assert digest.contains(b);
-        assert digest.contains(c);
+        assert digest.capacity() == 3;
+        assert digest.containsAll(a, b, c);
 
         System.out.println("setting d1:");
         nak.down(new Event(Event.SET_DIGEST, d1));
         digest=(Digest)nak.down(new Event(Event.GET_DIGEST));
         System.out.println("digest = " + digest);
-        assert digest.size() == 3; // https://jira.jboss.org/jira/browse/JGRP-1060
-        assert digest.contains(a);
-        assert digest.contains(b);
-        assert digest.contains(c);
+        assert digest.capacity() == 3; // https://jira.jboss.org/jira/browse/JGRP-1060
+        assert digest.containsAll(a, b, c);
     }
 
 

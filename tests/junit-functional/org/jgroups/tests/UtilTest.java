@@ -649,7 +649,7 @@ public class UtilTest {
 
         View one=new View(new ViewId(a, 1), v1),
                 two=new View(new ViewId(b,2), v2);
-        List<Address> left=Util.leftMembers(one, two);
+        List<Address> left=View.leftMembers(one, two);
         System.out.println("left = " + left);
         assert left != null;
         assert left.size() == 2;
@@ -674,7 +674,7 @@ public class UtilTest {
 
         View one=new View(new ViewId(a, 1), v1),
                 two=new View(new ViewId(b,2), v2);
-        List<Address> left=Util.leftMembers(one, two);
+        List<Address> left=View.leftMembers(one, two);
         System.out.println("left = " + left);
         assert left != null;
         assert left.isEmpty();
@@ -707,13 +707,13 @@ public class UtilTest {
     public static void testPickRandomElement() {
         List<Integer> v=new ArrayList<Integer>();
         for(int i=0; i < 10; i++) {
-            v.add(new Integer(i));
+            v.add(i);
         }
 
         Integer el;
         for(int i=0; i < 10000; i++) {
-            el=(Integer)Util.pickRandomElement(v);
-            assert el.intValue() >= 0 && el.intValue() < 10;
+            el=Util.pickRandomElement(v);
+            assert el >= 0 && el < 10;
         }
     }
 
@@ -858,9 +858,9 @@ public class UtilTest {
         org.jgroups.util.UUID.add(b, "B");
         org.jgroups.util.UUID.add(c, "C");
 
-        View v1=Util.createView(b, 1, b, a, c);
-        View v2=Util.createView(b, 2, b, c);
-        View v3=Util.createView(b, 2, b, c);
+        View v1=View.create(b, 1, b, a, c);
+        View v2=View.create(b, 2, b, c);
+        View v3=View.create(b, 2, b, c);
 
         Map<Address,View> map=new HashMap<Address,View>();
         map.put(a, v1); map.put(b, v2); map.put(c, v3);
@@ -888,10 +888,10 @@ public class UtilTest {
         org.jgroups.util.UUID.add(c, "C");
         org.jgroups.util.UUID.add(d, "D");
 
-        View v1=Util.createView(a, 1, a, b);
-        View v2=Util.createView(a, 1, a, b);
-        View v3=Util.createView(c, 2, c, d);
-        View v4=Util.createView(c, 2, c, d);
+        View v1=View.create(a, 1, a, b);
+        View v2=View.create(a, 1, a, b);
+        View v3=View.create(c, 2, c, d);
+        View v4=View.create(c, 2, c, d);
 
         Map<Address,View> map=new HashMap<Address,View>();
         map.put(a, v1); map.put(b, v2); map.put(c, v3); map.put(d, v4);
@@ -920,10 +920,10 @@ public class UtilTest {
         org.jgroups.util.UUID.add(c, "C");
         org.jgroups.util.UUID.add(d, "D");
 
-        View v1=Util.createView(a, 1, a, b, c, d);
-        View v2=Util.createView(a, 1, a, b, c, d);
-        View v3=Util.createView(a, 2, a, b, c, d);
-        View v4=Util.createView(a, 3, a, b, c, d);
+        View v1=View.create(a, 1, a, b, c, d);
+        View v2=View.create(a, 1, a, b, c, d);
+        View v3=View.create(a, 2, a, b, c, d);
+        View v4=View.create(a, 3, a, b, c, d);
 
         Map<Address,View> map=new HashMap<Address,View>();
         map.put(a, v1); map.put(b, v2); map.put(c, v3); map.put(d, v4);
@@ -951,8 +951,8 @@ public class UtilTest {
         org.jgroups.util.UUID.add(c, "C");
         org.jgroups.util.UUID.add(d, "D");
 
-        View v1=Util.createView(a, 1, a, b);
-        View v2=Util.createView(c, 1, c, d);
+        View v1=View.create(a, 1, a, b);
+        View v2=View.create(c, 1, c, d);
 
         Map<Address,View> map=new HashMap<Address,View>();
         map.put(a, v1); map.put(b, v1); map.put(d, v2);

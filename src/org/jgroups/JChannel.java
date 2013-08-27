@@ -615,7 +615,7 @@ public class JChannel extends Channel {
             case Event.VIEW_CHANGE:
                 View tmp=(View)evt.getArg();
                 if(tmp instanceof MergeView)
-                    my_view=new View(tmp.getVid(), tmp.getMembers());
+                    my_view=new View(tmp.getViewId(), tmp.getMembers());
                 else
                     my_view=tmp;
 

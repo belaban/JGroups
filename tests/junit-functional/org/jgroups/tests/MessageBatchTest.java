@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
 import org.jgroups.util.MessageBatch;
@@ -417,7 +418,7 @@ public class MessageBatchTest {
 
         retval.add(new Message(b).putHeader(PING_ID, new PingHeader(PingHeader.GET_MBRS_RSP, "demo-cluster")));
         retval.add(new Message(b).putHeader(FD_ID, new FD.FdHeader(org.jgroups.protocols.FD.FdHeader.HEARTBEAT)));
-        retval.add(new Message(b).putHeader(MERGE_ID, MERGE3.MergeHeader.createViewResponse(Util.createView(a, 22, a,b))));
+        retval.add(new Message(b).putHeader(MERGE_ID, MERGE3.MergeHeader.createViewResponse(View.create(a,22,a,b))));
 
         for(long seqno=6; seqno <= 10; seqno++)
             retval.add(new Message(b).putHeader(UNICAST2_ID, UNICAST2.Unicast2Header.createDataHeader(seqno, (short)22, false)));

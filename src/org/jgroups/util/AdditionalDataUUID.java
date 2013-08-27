@@ -47,7 +47,7 @@ public class AdditionalDataUUID extends UUID {
     public int size() {
         int retval=super.size() + Global.BYTE_SIZE;
         if(payload != null)
-            retval+=payload.length;
+            retval+=payload.length + Global.INT_SIZE;
         return retval;
     }
 

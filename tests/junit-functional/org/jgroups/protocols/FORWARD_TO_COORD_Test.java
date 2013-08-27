@@ -144,7 +144,7 @@ public class FORWARD_TO_COORD_Test {
         System.out.println("***** crashing A ******");
         Util.shutdown(channels[0]);
 
-        View view=Util.createView(channels[1].getAddress(), 5, channels[1].getAddress(), channels[2].getAddress());
+        View view=View.create(channels[1].getAddress(), 5, channels[1].getAddress(), channels[2].getAddress());
 
         System.out.println("Injecting view " + view + " into B and C");
         for(JChannel ch: Arrays.asList(channels[1], channels[2])) {
@@ -174,7 +174,7 @@ public class FORWARD_TO_COORD_Test {
      * get accepted.
      */
     public void testNotCoord() {
-        View new_view=Util.createView(channels[1].getAddress(), 3, channels[1].getAddress(),
+        View new_view=View.create(channels[1].getAddress(), 3, channels[1].getAddress(),
                                       channels[0].getAddress(), channels[2].getAddress());
         System.out.println("Installing view " + new_view + " members A and C (not B !)");
         for(JChannel ch: new JChannel[]{channels[0], channels[2]}) {

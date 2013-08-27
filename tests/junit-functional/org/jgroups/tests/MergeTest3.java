@@ -3,7 +3,6 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
@@ -18,10 +17,6 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -32,63 +27,20 @@ import java.util.concurrent.TimeUnit;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class MergeTest3 {
-    protected MyDiagnosticsHandler handler;
     protected JChannel a,b,c,d,e,f;
 
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        handler=new MyDiagnosticsHandler(InetAddress.getByName("224.0.75.75"), 7500,
-                                         LogFactory.getLog(DiagnosticsHandler.class),
-                                         new DefaultSocketFactory(),
-                                         new DefaultThreadFactory("", false));
-        handler.start();
-        
-        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory("Timer", true, true),
-                                               5,10,
-                                               3000, 1000, "abort");
-
-        ThreadPoolExecutor oob_thread_pool=new ThreadPoolExecutor(5, 20, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(1000));
-        oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-
-        ThreadPoolExecutor thread_pool=new ThreadPoolExecutor(5, 10, 3000, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(1000));
-        thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
-
-        a=createChannel("A", timer, thread_pool, oob_thread_pool);
-        b=createChannel("B", timer, thread_pool, oob_thread_pool);
-        c=createChannel("C", timer, thread_pool, oob_thread_pool);
-        d=createChannel("D", timer, thread_pool, oob_thread_pool);
-        e=createChannel("E", timer, thread_pool, oob_thread_pool);
-        f=createChannel("F", timer, thread_pool, oob_thread_pool);
+        a=createChannel("A");
+        b=createChannel("B");
+        c=createChannel("C");
+        d=createChannel("D");
+        e=createChannel("E");
+        f=createChannel("F");
     }
 
-
-    protected JChannel createChannel(String name, TimeScheduler timer, Executor thread_pool, Executor oob_thread_pool) throws Exception {
-        SHARED_LOOPBACK shared_loopback=(SHARED_LOOPBACK)new SHARED_LOOPBACK().setValue("enable_bundling", false);
-        shared_loopback.setTimer(timer);
-        shared_loopback.setOOBThreadPool(oob_thread_pool);
-        shared_loopback.setDefaultThreadPool(thread_pool);
-        shared_loopback.setDiagnosticsHandler(handler);
-
-        JChannel retval=Util.createChannel(shared_loopback,
-                                           new DISCARD().setValue("discard_all",true),
-                                           new PING().setValue("timeout",100),
-                                           new NAKACK2().setValue("use_mcast_xmit",false)
-                                             .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
-                                           new UNICAST3(),
-                                           new STABLE().setValue("max_bytes",50000),
-                                           new GMS().setValue("print_local_addr",false)
-                                             .setValue("leave_timeout",100)
-                                             .setValue("merge_timeout",5000)
-                                             .setValue("log_view_warnings",false)
-                                             .setValue("view_ack_collection_timeout",50)
-                                             .setValue("log_collect_msgs",false));
-        retval.setName(name);
-        retval.connect("MergeTest3");
-        JmxConfigurator.registerChannel(retval, Util.getMBeanServer(), name, retval.getClusterName(), true);
-        return retval;
-    }
 
 
     @AfterMethod
@@ -99,7 +51,6 @@ public class MergeTest3 {
             stack.stopStack(cluster_name);
             stack.destroy();
         }
-        handler.destroy();
     }
 
 
@@ -142,7 +93,6 @@ public class MergeTest3 {
         merge_views.put(second_coord, findChannel(second_coord).getView());
 
         GMS gms=(GMS)merge_leader.getProtocolStack().findProtocol(GMS.class);
-        // gms.setLevel("trace");
         gms.up(new Event(Event.MERGE, merge_views));
 
         for(int i=0; i < 20; i++) {
@@ -163,7 +113,7 @@ public class MergeTest3 {
             
             if(done)
                 break;
-            Util.sleep(3000);
+            Util.sleep(1000);
         }
         for(JChannel ch: new JChannel[]{a,b,c,d,e,f}) {
             if(ch.getAddress().equals(busy_first) || ch.getAddress().equals(busy_second))
@@ -174,7 +124,6 @@ public class MergeTest3 {
 
 
 
-        Util.sleep(1000);
         System.out.println("\n************************ Now merging the entire cluster ****************");
         cancelMerge(busy_first);
         cancelMerge(busy_second);
@@ -188,7 +137,6 @@ public class MergeTest3 {
         System.out.println("merge event is " + merge_views);
 
         gms=(GMS)merge_leader.getProtocolStack().findProtocol(GMS.class);
-        // gms.setLevel("trace");
         gms.up(new Event(Event.MERGE, merge_views));
 
         for(int i=0; i < 20; i++) {
@@ -202,12 +150,32 @@ public class MergeTest3 {
 
             if(done)
                 break;
-            Util.sleep(3000);
+            Util.sleep(1000);
         }
         for(JChannel ch: new JChannel[]{a,b,c,d,e,f}) {
             if(ch.getAddress().equals(busy_first) || ch.getAddress().equals(busy_second))
                 assert ch.getView().size() == 6 : ch.getAddress() + "'s view: " + ch.getView();
         }
+    }
+
+    protected JChannel createChannel(String name) throws Exception {
+        JChannel retval=new JChannel(new SHARED_LOOPBACK(),
+                                     new DISCARD().setValue("discard_all",true),
+                                     new PING().setValue("timeout",100),
+                                     new NAKACK2().setValue("use_mcast_xmit",false)
+                                       .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
+                                     new UNICAST3(),
+                                     new STABLE().setValue("max_bytes",50000),
+                                     new GMS().setValue("print_local_addr",false)
+                                       .setValue("leave_timeout",100)
+                                       .setValue("merge_timeout",5000)
+                                       .setValue("log_view_warnings",false)
+                                       .setValue("view_ack_collection_timeout",50)
+                                       .setValue("log_collect_msgs",false))
+          .name(name);
+        retval.connect("MergeTest3");
+        JmxConfigurator.registerChannel(retval, Util.getMBeanServer(), name, retval.getClusterName(), true);
+        return retval;
     }
 
     protected void setMergeIdIn(Address mbr, MergeId busy_merge_id) {
@@ -233,7 +201,7 @@ public class MergeTest3 {
         Collections.sort(members);
         Address coord=members.get(0);
         View view=new View(coord, 2, members);
-        MutableDigest digest=new MutableDigest(3);
+        MutableDigest digest=new MutableDigest(view.getMembersRaw());
         for(JChannel ch: channels) {
             NAKACK2 nakack=(NAKACK2)ch.getProtocolStack().findProtocol(NAKACK2.class);
             digest.merge(nakack.getDigest(ch.getAddress()));

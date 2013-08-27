@@ -67,7 +67,7 @@ public class PingData implements SizeStreamable {
     public Address getCoordAddress() {
         if(view_id != null)
             return view_id.getCreator();
-        return view != null? view.getVid().getCreator() : null;
+        return view != null? view.getViewId().getCreator() : null;
     }
 
     public Collection<Address> getMembers() {

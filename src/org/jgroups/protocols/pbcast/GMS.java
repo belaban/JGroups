@@ -2,7 +2,10 @@ package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
@@ -14,7 +17,8 @@ import org.jgroups.util.*;
 import org.jgroups.util.Queue;
 import org.jgroups.util.UUID;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -116,38 +120,38 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected final Merger merger=new Merger(this);
 
     protected Address local_addr;
-    protected final Membership members=new Membership(); // real membership
+    protected final Membership     members=new Membership(); // real membership
 
-    protected final Membership tmp_members=new Membership(); // base for computing next view
+    protected final Membership     tmp_members=new Membership(); // base for computing next view
 
     // computes new views and merge views
     protected MembershipChangePolicy membership_change_policy=new DefaultMembershipPolicy();
 
     /** Members joined but for which no view has been received yet */
-    protected final List<Address> joining=new ArrayList<Address>(7);
+    protected final List<Address>  joining=new ArrayList<Address>(7);
 
     /** Members excluded from group, but for which no view has been received yet */
-    protected final List<Address> leaving=new ArrayList<Address>(7);
+    protected final List<Address>  leaving=new ArrayList<Address>(7);
 
     /** Keeps track of old members (up to num_prev_mbrs) */
     protected BoundedList<Address> prev_members;
 
-    protected View view;
+    protected volatile View        view;
 
-    protected long ltime;
+    protected long                 ltime;
 
-    protected TimeScheduler timer;
+    protected TimeScheduler        timer;
 
     /** Class to process JOIN, LEAVE and MERGE requests */
-    protected final ViewHandler view_handler=new ViewHandler();
+    protected final ViewHandler    view_handler=new ViewHandler();
 
     /** To collect VIEW_ACKs from all members */
-    protected final AckCollector ack_collector=new AckCollector();
+    protected final AckCollector   ack_collector=new AckCollector();
 
     //[JGRP-700] - FLUSH: flushing should span merge
-    protected final AckCollector merge_ack_collector=new AckCollector();
+    protected final AckCollector   merge_ack_collector=new AckCollector();
 
-    protected boolean flushProtocolInStack=false;
+    protected boolean              flushProtocolInStack=false;
 
 
 
@@ -157,11 +161,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public ViewId getViewId() {return view != null? view.getViewId() : null;}
 
-    /** Returns the current view and digest */
+    /** Returns the current view and digest. Try to find a matching digest twice (if not found on the first try) */
     public Tuple<View,Digest> getViewAndDigest() {
-        Digest digest=getDigest();
-        View tmp_view=view != null? view.copy() : null;
-        return tmp_view != null? new Tuple<View,Digest>(tmp_view, digest) : null;
+        MutableDigest digest=new MutableDigest(view.getMembersRaw()).set(getDigest());
+        return digest.allSet() || digest.set(getDigest()).allSet()? new Tuple<View,Digest>(view, digest) : null;
     }
 
     @ManagedAttribute
@@ -468,35 +471,28 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             ltime=vid;
 
             List<Address> mbrs=computeNewMembership(tmp_members.getMembers(), joiners, leavers, suspected_mbrs);
-            Address new_coord=local_addr;
-            if(!mbrs.isEmpty())
-                new_coord=mbrs.get(0);
+            Address new_coord=!mbrs.isEmpty()? mbrs.get(0) : local_addr;
             View v=new View(new_coord, vid, mbrs);
 
             // Update membership (see DESIGN for explanation):
             tmp_members.set(mbrs);
 
             // Update joining list (see DESIGN for explanation)
-            if(joiners != null) {
-                for(Address tmp_mbr: joiners) {
+            if(joiners != null)
+                for(Address tmp_mbr: joiners)
                     if(!joining.contains(tmp_mbr))
                         joining.add(tmp_mbr);
-                }
-            }
 
             // Update leaving list (see DESIGN for explanations)
-            if(leavers != null) {
-                for(Address addr: leavers) {
+            if(leavers != null)
+                for(Address addr: leavers)
                     if(!leaving.contains(addr))
                         leaving.add(addr);
-                }
-            }
-            if(suspected_mbrs != null) {
-                for(Address addr:suspected_mbrs) {
+
+            if(suspected_mbrs != null)
+                for(Address addr:suspected_mbrs)
                     if(!leaving.contains(addr))
                         leaving.add(addr);
-                }
-            }
             return v;
         }
     }
@@ -557,8 +553,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
      * If the list is null, we take the members who are part of new_view
      */
     public void castViewChange(View new_view, Digest digest, JoinRsp jr, Collection<Address> newMembers) {
-        if(log.isTraceEnabled())
-            log.trace(local_addr + ": mcasting view " + new_view + " (" + new_view.size() + " mbrs)\n");
+        log.trace("%s: mcasting view %s (%d mbrs)\n", local_addr, new_view, new_view.size());
 
         // Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
         // in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
@@ -570,16 +565,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         if(newMembers != null && !newMembers.isEmpty())
             ackMembers.removeAll(newMembers);
 
-        Message view_change_msg=new Message(); // bcast to all members
+        // bcast to all members
+        Message view_change_msg=new Message().putHeader(this.id, new GmsHeader(GmsHeader.VIEW, new_view, digest));
 
         // Bypasses SEQUENCER, prevents having to forward a merge view to a remote coordinator
         // (https://issues.jboss.org/browse/JGRP-1484)
         if(new_view instanceof MergeView)
             view_change_msg.setFlag(Message.Flag.NO_TOTAL_ORDER);
-
-        GmsHeader hdr=new GmsHeader(GmsHeader.VIEW, new_view);
-        hdr.my_digest=digest;
-        view_change_msg.putHeader(this.id,hdr);
 
         if(!ackMembers.isEmpty())
             ack_collector.reset(ackMembers);
@@ -588,43 +580,36 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         try {
             if(!ackMembers.isEmpty()) {
                 ack_collector.waitForAllAcks(view_ack_collection_timeout);
-                if(log.isTraceEnabled())
-                    log.trace(local_addr + ": received all " + ack_collector.expectedAcks() +
-                                " ACKs from members for view " + new_view.getVid());
+                log.trace("%s: got all ACKs (%d) from members for view %s", local_addr, ack_collector.expectedAcks(), new_view.getViewId());
             }
         }
         catch(TimeoutException e) {
-            if(log_collect_msgs && log.isWarnEnabled()) {
-                log.warn(local_addr + ": failed to collect all ACKs (expected=" + ack_collector.expectedAcks()
-                           + ") for view " + new_view.getViewId() + " after " + view_ack_collection_timeout +
-                           "ms, missing ACKs from " + ack_collector.printMissing());
-            }
+            if(log_collect_msgs)
+                log.warn("%s: failed to collect all ACKs (expected=%d) for view %s after %dms, missing ACKs from %s",
+                         local_addr, ack_collector.expectedAcks(), new_view.getViewId(), view_ack_collection_timeout,
+                         ack_collector.printMissing());
         }
 
-        if(jr != null && (newMembers != null && !newMembers.isEmpty())) {
+        if(jr != null && newMembers != null && !newMembers.isEmpty()) {
             ack_collector.reset(new ArrayList<Address>(newMembers));
-            for(Address joiner: newMembers) {
+            for(Address joiner: newMembers)
                 sendJoinResponse(jr, joiner);
-            }
             try {
                 ack_collector.waitForAllAcks(view_ack_collection_timeout);
-                if(log.isTraceEnabled())
-                    log.trace(local_addr + ": received all ACKs (" + ack_collector.expectedAcks() +
-                            ") from joiners for view " + new_view.getVid());
+                log.trace("%s: got all ACKs (%d) from joiners for view %s",
+                          local_addr, ack_collector.expectedAcks(), new_view.getViewId());
             }
             catch(TimeoutException e) {
-                if(log_collect_msgs && log.isWarnEnabled()) {
-                    log.warn(local_addr + ": failed to collect all ACKs (expected=" + ack_collector.expectedAcks()
-                            + ") for unicast view " + new_view + " after " + view_ack_collection_timeout + "ms, missing ACKs from "
-                            + ack_collector.printMissing());
-                }
+                if(log_collect_msgs)
+                    log.warn("%s: failed to collect all ACKs (expected=%d) for unicast view %s after %dms, missing ACKs from %s",
+                             local_addr, ack_collector.expectedAcks(), new_view, view_ack_collection_timeout,  ack_collector.printMissing());
             }
         }
     }
 
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new Message(dest).putHeader(this.id, new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, rsp));
-        getDownProtocol().down(new Event(Event.MSG,m));
+        getDownProtocol().down(new Event(Event.MSG, m));
     }
 
 
@@ -638,28 +623,19 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
      * of View), then digest will be non-null and has to be set before installing the view.
      */
     public synchronized void installView(View new_view, Digest digest) {
-        ViewId vid=new_view.getVid();
+        ViewId vid=new_view.getViewId();
         List<Address> mbrs=new_view.getMembers();
         ltime=Math.max(vid.getId(), ltime);  // compute the logical time, regardless of whether the view is accepted
 
         // Discards view with id lower than or equal to our own. Will be installed without check if it is the first view
-        if(view != null) {
-            ViewId view_id=view.getViewId();
-            int rc=vid.compareToIDs(view_id);
-            if(rc <= 0) {
-                //if(log.isTraceEnabled() && rc < 0 && log_view_warnings) { // only scream if view is smaller, silently discard same views
-                  //  log.trace(local_addr + ": received view < current view;" +
-                    //            " discarding it (current vid: " + view_id + ", new vid: " + vid + ')');
-                //}
-                return;
-            }
-        }
+        if(view != null && vid.compareToIDs(view.getViewId()) <= 0)
+            return;
 
         /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
            This ensures that messages sent in view V1 are only received by members of V1 */
         if(!mbrs.contains(local_addr)) {
-            if(log.isWarnEnabled() && log_view_warnings)
-                log.warn(local_addr + ": not member of view " + new_view.getViewId() + "; discarding it");
+            if(log_view_warnings)
+                log.warn("%s: not member of view %s; discarding it", local_addr, new_view.getViewId());
             return;
         }
 
@@ -670,11 +646,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 setDigest(digest);
         }
 
-        if(log.isDebugEnabled()) log.debug(local_addr + ": installing " + new_view);
+        log.debug("%s: installing view %s", local_addr, new_view);
 
         Event view_event;
         synchronized(members) {
-            view=new View(new_view.getVid(), new_view.getMembers());
+            view=new_view; // new View(new_view.getVid(), new_view.getMembers());
             view_event=new Event(Event.VIEW_CHANGE, new_view);
 
             // Set the membership. Take into account joining members
@@ -689,10 +665,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 tmp_members.remove(leaving); // remove members that haven't yet been removed from the membership
 
                 // add to prev_members
-                for(Address addr: mbrs) {
+                for(Address addr: mbrs)
                     if(!prev_members.contains(addr))
                         prev_members.add(addr);
-                }
             }
 
             Address coord=determineCoordinator();
@@ -757,8 +732,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
 
-    /** Sends down a GET_DIGEST event and waits for the GET_DIGEST_OK response, or
-     timeout, whichever occurs first */
+    /** Grabs the current digest from NAKACK{2} */
     public Digest getDigest() {
         return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
     }
@@ -843,6 +817,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 GmsHeader hdr=(GmsHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break;
+
                 switch(hdr.type) {
                     case GmsHeader.JOIN_REQ:
                         view_handler.add(new Request(Request.JOIN, hdr.mbr, false, null, hdr.useFlushIfPresent));
@@ -869,10 +844,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         Address coord=msg.getSrc();
                         if(!new_view.containsMember(coord)) {
                             sendViewAck(coord); // we need to send the ack first, otherwise the connection is removed
-                            impl.handleViewChange(new_view, hdr.my_digest);
+                            impl.handleViewChange(new_view, hdr.digest);
                         }
                         else {
-                            impl.handleViewChange(new_view, hdr.my_digest);
+                            impl.handleViewChange(new_view, hdr.digest);
                             sendViewAck(coord); // send VIEW_ACK to sender of view
                         }
                         break;
@@ -887,7 +862,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         break;
 
                     case GmsHeader.MERGE_RSP:
-                        MergeData merge_data=new MergeData(msg.getSrc(), hdr.view, hdr.my_digest, hdr.merge_rejected);
+                        MergeData merge_data=new MergeData(msg.getSrc(), hdr.view, hdr.digest, hdr.merge_rejected);
                         if(log.isTraceEnabled()) {
                             log.trace(local_addr + ": got merge response from " + msg.getSrc() +
                                         ", merge_id=" + hdr.merge_id + ", merge data is "+ merge_data);
@@ -896,11 +871,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         break;
 
                     case GmsHeader.INSTALL_MERGE_VIEW:
-                        impl.handleMergeView(new MergeData(msg.getSrc(), hdr.view, hdr.my_digest), hdr.merge_id);
+                        impl.handleMergeView(new MergeData(msg.getSrc(), hdr.view, hdr.digest), hdr.merge_id);
                         break;
 
                     case GmsHeader.INSTALL_DIGEST:
-                        Digest tmp=hdr.my_digest;
+                        Digest tmp=hdr.digest;
                         down_prot.down(new Event(Event.MERGE_DIGEST, tmp));
                         break;
 
@@ -916,10 +891,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
                     case GmsHeader.GET_DIGEST_REQ:
                         // only handle this request if it was sent by the coordinator (or at least a member) of the current cluster
-                        synchronized(members) {
-                            if(!members.contains(msg.getSrc()))
-                                break;
-                        }
+                        if(!members.contains(msg.getSrc()))
+                            break;
 
                         // discard my own request:
                         if(msg.getSrc().equals(local_addr))
@@ -931,16 +904,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         // fetch only my own digest
                         Digest digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST, local_addr));
                         if(digest != null) {
-                            GmsHeader rsp_hdr=new GmsHeader(GmsHeader.GET_DIGEST_RSP);
-                            rsp_hdr.my_digest=digest;
                             Message get_digest_rsp=new Message(msg.getSrc()).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
-                              .putHeader(this.id,rsp_hdr);
+                              .putHeader(this.id, new GmsHeader(GmsHeader.GET_DIGEST_RSP, null, digest));
                             down_prot.down(new Event(Event.MSG, get_digest_rsp));
                         }
                         break;
 
                     case GmsHeader.GET_DIGEST_RSP:
-                        Digest digest_rsp=hdr.my_digest;
+                        Digest digest_rsp=hdr.digest;
                         impl.handleDigestResponse(msg.getSrc(), digest_rsp);
                         break;
 
@@ -1093,7 +1064,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
          *                 3 subviews. Guaranteed to be non-null (but may be empty)
          * @return The new membership. Needs to be non-null and cannot contain duplicates
          */
-        public List<Address> getNewMembershipOld(final Collection<Collection<Address>> subviews) {
+        public static List<Address> getNewMembershipOld(final Collection<Collection<Address>> subviews) {
             Membership mbrs=new Membership();
             for(Collection<Address> subview: subviews)
                 mbrs.add(subview);
@@ -1150,35 +1121,42 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         public static final byte GET_DIGEST_RSP=14;
         public static final byte INSTALL_DIGEST=15;
 
-
-        byte type=0;
-        View view=null;               // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
-        Address mbr=null;             // used when type=JOIN_REQ or LEAVE_REQ
-        Collection<? extends Address> mbrs=null; // used with MERGE_REQ
-        boolean useFlushIfPresent;    // used when type=JOIN_REQ
-        JoinRsp join_rsp=null;        // used when type=JOIN_RSP
-        Digest my_digest=null;        // used when type=MERGE_RSP or INSTALL_MERGE_VIEW
-        MergeId merge_id=null;        // used when type=MERGE_REQ or MERGE_RSP or INSTALL_MERGE_VIEW or CANCEL_MERGE
-        boolean merge_rejected=false; // used when type=MERGE_RSP
+        public static final short VIEW_PRESENT     = 1 << 0;
+        public static final short JOIN_RSP_PRESENT = 1 << 1;
+        public static final short DIGEST_PRESENT   = 1 << 2;
+        public static final short MERGE_ID_PRESENT = 1 << 3;
+        public static final short USE_FLUSH        = 1 << 4;
+        public static final short MERGE_REJECTED   = 1 << 5;
+        public static final short MERGE_VIEW       = 1 << 6; // if a view is present, is it a View or a MergeView ?
+        public static final short READ_ADDRS       = 1 << 7; // if my_digest needs to read its own addresses (rather than that of view)
 
 
-        public GmsHeader() {
-        } // used for Externalization
+        protected byte    type;
+        protected View    view;                 // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
+        protected Address mbr;                  // used when type=JOIN_REQ or LEAVE_REQ
+        protected Collection<? extends Address> mbrs; // used with MERGE_REQ
+        protected JoinRsp join_rsp;             // used when type=JOIN_RSP
+        protected Digest  digest;               // used when type=MERGE_RSP or INSTALL_MERGE_VIEW
+        protected MergeId merge_id;             // used when type=MERGE_REQ or MERGE_RSP or INSTALL_MERGE_VIEW or CANCEL_MERGE
+        protected boolean useFlushIfPresent;    // used when type=JOIN_REQ
+        protected boolean merge_rejected=false; // used when type=MERGE_RSP
+
+
+        public GmsHeader() { // used for Externalization
+        }
 
         public GmsHeader(byte type) {
             this.type=type;
         }
 
-
-        /** Used for VIEW header */
-        public GmsHeader(byte type, View view) {
+        public GmsHeader(byte type, View view, Digest digest) {
             this.type=type;
             this.view=view;
+            this.digest=digest;
         }
 
-
         /** Used for JOIN_REQ or LEAVE_REQ header */
-        public GmsHeader(byte type, Address mbr,boolean useFlushIfPresent) {
+        public GmsHeader(byte type, Address mbr, boolean useFlushIfPresent) {
             this.type=type;
             this.mbr=mbr;
             this.useFlushIfPresent = useFlushIfPresent;
@@ -1203,24 +1181,111 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             return type;
         }
 
-        public Address getMember() {
-            return mbr;
+        public GmsHeader mbr(Address mbr)                         {this.mbr=mbr; return this;}
+        public GmsHeader mergeId(MergeId merge_id)                {this.merge_id=merge_id; return this;}
+        public GmsHeader mergeRejected(boolean flag)              {this.merge_rejected=flag; return this;}
+        public Address   getMember()                              {return mbr;}
+        public MergeId   getMergeId()                             {return merge_id;}
+        public void      setMergeId(MergeId merge_id)             {this.merge_id=merge_id;}
+        public boolean   isMergeRejected()                        {return merge_rejected;}
+        public void      setMergeRejected(boolean merge_rejected) {this.merge_rejected=merge_rejected;}
+
+
+
+        public void writeTo(DataOutput out) throws Exception {
+            out.writeByte(type);
+            short flags=determineFlags();
+            out.writeShort(flags);
+
+            if(view != null)
+                view.writeTo(out);
+
+            Util.writeAddress(mbr, out);
+            Util.writeAddresses(mbrs, out);
+
+            if(join_rsp != null)
+                join_rsp.writeTo(out);
+
+            if(digest != null)
+                digest.writeTo(out, writeAddresses());
+
+            if(merge_id != null)
+                merge_id.writeTo(out);
         }
 
-        public MergeId getMergeId() {
-            return merge_id;
+        public void readFrom(DataInput in) throws Exception {
+            type=in.readByte();
+            short flags=in.readShort();
+
+            if((flags & VIEW_PRESENT) == VIEW_PRESENT) {
+                view=(flags & MERGE_VIEW) == MERGE_VIEW? new MergeView() : new View();
+                view.readFrom(in);
+            }
+
+            mbr=Util.readAddress(in);
+            mbrs=Util.readAddresses(in, ArrayList.class);
+
+            if((flags & JOIN_RSP_PRESENT) == JOIN_RSP_PRESENT) {
+                join_rsp=new JoinRsp();
+                join_rsp.readFrom(in);
+            }
+
+            if((flags & DIGEST_PRESENT) == DIGEST_PRESENT) {
+                if((flags & READ_ADDRS) == READ_ADDRS) {
+                    digest=new Digest();
+                    digest.readFrom(in);
+                }
+                else {
+                    digest=new Digest(view.getMembersRaw());
+                    digest.readFrom(in,false);
+                }
+            }
+
+            if((flags & MERGE_ID_PRESENT) == MERGE_ID_PRESENT) {
+                merge_id=new MergeId();
+                merge_id.readFrom(in);
+            }
+
+            merge_rejected=(flags & MERGE_REJECTED) == MERGE_REJECTED;
+            useFlushIfPresent=(flags & USE_FLUSH) == USE_FLUSH;
         }
 
-        public void setMergeId(MergeId merge_id) {
-            this.merge_id=merge_id;
+        public int size() {
+            int retval=Global.BYTE_SIZE  // type
+              + Global.SHORT_SIZE;       // flags
+
+            if(view != null)
+                retval+=view.serializedSize();
+
+            retval+=Util.size(mbr);
+
+            retval+=Util.size(mbrs);
+
+            if(join_rsp != null)
+                retval+=join_rsp.serializedSize();
+
+            if(digest != null)
+                retval+=digest.serializedSize(writeAddresses());
+
+            if(merge_id != null)
+                retval+=merge_id.size();
+            return retval;
         }
 
-        public boolean isMergeRejected() {
-            return merge_rejected;
-        }
-
-        public void setMergeRejected(boolean merge_rejected) {
-            this.merge_rejected=merge_rejected;
+        protected short determineFlags() {
+            short retval=0;
+            if(view != null) {
+                retval|=VIEW_PRESENT;
+                if(view instanceof MergeView)
+                    retval|=MERGE_VIEW;
+            }
+            if(join_rsp != null)  retval|=JOIN_RSP_PRESENT;
+            if(digest != null) retval|=DIGEST_PRESENT;
+            if(merge_id != null)  retval|=MERGE_ID_PRESENT;
+            if(useFlushIfPresent) retval|=USE_FLUSH;
+            if(merge_rejected)    retval|=MERGE_REJECTED;
+            if(writeAddresses())  retval|=READ_ADDRS;
+            return retval;
         }
 
         public String toString() {
@@ -1247,14 +1312,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                     break;
 
                 case MERGE_RSP:
-                    sb.append(": view=" + view + ", digest=" + my_digest + ", merge_id=" + merge_id);
+                    sb.append(": view=" + view + ", digest=" + digest + ", merge_id=" + merge_id);
                     if(merge_rejected) sb.append(", merge_rejected=" + merge_rejected);
                     break;
 
                 case INSTALL_MERGE_VIEW:
                 case GET_DIGEST_RSP:
                 case INSTALL_DIGEST:
-                    sb.append(": view=" + view + ", digest=" + my_digest);
+                    sb.append(": view=" + view + ", digest=" + digest);
                     break;
 
                 case CANCEL_MERGE:
@@ -1267,82 +1332,28 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         public static String type2String(int type) {
             switch(type) {
-                case JOIN_REQ: return "JOIN_REQ";
-                case JOIN_RSP: return "JOIN_RSP";
-                case LEAVE_REQ: return "LEAVE_REQ";
-                case LEAVE_RSP: return "LEAVE_RSP";
-                case VIEW: return "VIEW";
-                case MERGE_REQ: return "MERGE_REQ";
-                case MERGE_RSP: return "MERGE_RSP";
-                case INSTALL_MERGE_VIEW: return "INSTALL_MERGE_VIEW";
-                case CANCEL_MERGE: return "CANCEL_MERGE";
-                case VIEW_ACK: return "VIEW_ACK";
+                case JOIN_REQ:                     return "JOIN_REQ";
+                case JOIN_RSP:                     return "JOIN_RSP";
+                case LEAVE_REQ:                    return "LEAVE_REQ";
+                case LEAVE_RSP:                    return "LEAVE_RSP";
+                case VIEW:                         return "VIEW";
+                case MERGE_REQ:                    return "MERGE_REQ";
+                case MERGE_RSP:                    return "MERGE_RSP";
+                case INSTALL_MERGE_VIEW:           return "INSTALL_MERGE_VIEW";
+                case CANCEL_MERGE:                 return "CANCEL_MERGE";
+                case VIEW_ACK:                     return "VIEW_ACK";
                 case JOIN_REQ_WITH_STATE_TRANSFER: return "JOIN_REQ_WITH_STATE_TRANSFER";
-                case INSTALL_MERGE_VIEW_OK: return "INSTALL_MERGE_VIEW_OK";
-                case GET_DIGEST_REQ: return "GET_DIGEST_REQ";
-                case GET_DIGEST_RSP: return "GET_DIGEST_RSP";
-                case INSTALL_DIGEST: return "INSTALL_DIGEST";
-                default: return "<unknown>";
+                case INSTALL_MERGE_VIEW_OK:        return "INSTALL_MERGE_VIEW_OK";
+                case GET_DIGEST_REQ:               return "GET_DIGEST_REQ";
+                case GET_DIGEST_RSP:               return "GET_DIGEST_RSP";
+                case INSTALL_DIGEST:               return "INSTALL_DIGEST";
+                default:                           return "<unknown>";
             }
         }
 
 
-        public void writeTo(DataOutput out) throws Exception {
-            out.writeByte(type);
-            boolean isMergeView=view != null && view instanceof MergeView;
-            out.writeBoolean(isMergeView);
-            Util.writeStreamable(view, out);
-            Util.writeAddress(mbr, out);
-            Util.writeAddresses(mbrs, out);
-            Util.writeStreamable(join_rsp, out);
-            Util.writeStreamable(my_digest, out);
-            Util.writeStreamable(merge_id, out);
-            out.writeBoolean(merge_rejected);
-            out.writeBoolean(useFlushIfPresent);
-        }
-
-        public void readFrom(DataInput in) throws Exception {
-            type=in.readByte();
-            boolean isMergeView=in.readBoolean();
-            if(isMergeView)
-                view=(View)Util.readStreamable(MergeView.class, in);
-            else
-                view=(View)Util.readStreamable(View.class, in);
-            mbr=Util.readAddress(in);
-            mbrs=Util.readAddresses(in, ArrayList.class);
-            join_rsp=(JoinRsp)Util.readStreamable(JoinRsp.class, in);
-            my_digest=(Digest)Util.readStreamable(Digest.class, in);
-            merge_id=(MergeId)Util.readStreamable(MergeId.class, in);
-            merge_rejected=in.readBoolean();
-            useFlushIfPresent=in.readBoolean();
-        }
-
-        public int size() {
-            int retval=Global.BYTE_SIZE *2; // type + merge_rejected
-
-            retval+=Global.BYTE_SIZE; // presence view
-            retval+=Global.BYTE_SIZE; // MergeView or View
-            if(view != null)
-                retval+=view.serializedSize();
-
-            retval+=Util.size(mbr);
-
-            retval+=Util.size(mbrs);
-
-            retval+=Global.BYTE_SIZE; // presence of join_rsp
-            if(join_rsp != null)
-                retval+=join_rsp.serializedSize();
-
-            retval+=Global.BYTE_SIZE; // presence for my_digest
-            if(my_digest != null)
-                retval+=my_digest.serializedSize();
-
-            retval+=Global.BYTE_SIZE; // presence for merge_id
-            if(merge_id != null)
-                retval+=merge_id.size();
-
-            retval+=Global.BYTE_SIZE; // boolean useFlushIfPresent
-            return retval;
+        protected boolean writeAddresses() {
+            return digest == null || view == null || !Arrays.equals(view.getMembersRaw(),digest.getMembersRaw());
         }
 
     }

@@ -75,7 +75,7 @@ public class ForwardToCoordFailoverTest extends BMNGRunner {
         }
 
         // now inject view B={B,C} into B and C
-        View view=Util.createView(b.getAddress(), 5, b.getAddress(), c.getAddress());
+        View view=View.create(b.getAddress(), 5, b.getAddress(), c.getAddress());
         System.out.println("Injecting view " + view + " into B and C");
         for(JChannel ch: Arrays.asList(c,b)) {
             GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);

@@ -58,7 +58,7 @@ public class MERGE3 extends Protocol {
 
     protected Address        local_addr=null;
 
-    protected View           view;
+    protected volatile View  view;
 
     protected TimeScheduler  timer;
 
@@ -272,9 +272,8 @@ public class MERGE3 extends Protocol {
                             log.trace(local_addr + " <-- " + sender + ": " + hdr + ", cached views: " + views.size());
                         break;
                     case VIEW_REQ:
-                        View tmp_view=view != null? view.copy() : null;
-                        Header tmphdr=MergeHeader.createViewResponse(tmp_view);
-                        Message view_rsp=new Message(sender).setFlag(Message.Flag.INTERNAL).putHeader(getId(),tmphdr);
+                        Message view_rsp=new Message(sender).setFlag(Message.Flag.INTERNAL)
+                          .putHeader(getId(), MergeHeader.createViewResponse(view));
                         down_prot.down(new Event(Event.MSG, view_rsp));
                         break;
                     case VIEW_RSP:
@@ -295,7 +294,7 @@ public class MERGE3 extends Protocol {
         for(View view: map.values()) {
             if(view == null)
                 continue;
-            ViewId vid=view.getVid();
+            ViewId vid=view.getViewId();
             if(!Util.containsViewId(ret, vid))
                 ret.add(view);
         }
@@ -422,7 +421,7 @@ public class MERGE3 extends Protocol {
             for(Address target: coords) {
                 if(target.equals(local_addr)) {
                     if(view != null)
-                        view_rsps.add(local_addr, view.copy());
+                        view_rsps.add(local_addr, view);
                     continue;
                 }
                 Message view_req=new Message(target).setFlag(Message.Flag.INTERNAL)

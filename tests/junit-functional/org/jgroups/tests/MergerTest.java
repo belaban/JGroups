@@ -193,7 +193,7 @@ public class MergerTest {
     }
 
     private static View makeView(Address coord, Address ... members) {
-        return Util.createView(coord, 1, members);
+        return View.create(coord, 1, members);
     }
 
     static String print(Map<Address,View> map) {

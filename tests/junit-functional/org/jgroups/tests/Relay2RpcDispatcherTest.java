@@ -224,7 +224,7 @@ public class Relay2RpcDispatcherTest {
     /** Creates a singleton view for each channel listed and injects it */
     protected static void createPartition(JChannel ... channels) {
         for(JChannel ch: channels) {
-            View view=Util.createView(ch.getAddress(), 5, ch.getAddress());
+            View view=View.create(ch.getAddress(), 5, ch.getAddress());
             GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
         }

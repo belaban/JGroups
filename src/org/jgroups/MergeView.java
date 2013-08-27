@@ -2,10 +2,13 @@
 
 package org.jgroups;
 
+import org.jgroups.annotations.Immutable;
 import org.jgroups.util.Util;
 
-import java.io.*;
-import java.util.ArrayList;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -20,68 +23,60 @@ import java.util.List;
  * @since 2.0
  * @author Bela Ban
  */
+@Immutable
 public class MergeView extends View {
-    protected List<View> subgroups=null; // subgroups that merged into this single view (a list of Views)
+    protected View[] subgroups; // subgroups that merged into this single view (a list of Views)
 
-
-    /**
-     * Used by externalization
-     */
-    public MergeView() {
+    public MergeView() { // Used by externalization
     }
 
 
    /**
-    * Creates a new view
+    * Creates a new merge view
     * 
-    * @param vid
-    *           The view id of this view (can not be null)
-    * @param members
-    *           Contains a list of all the members in the view, can be empty but not null.
-    * @param subgroups
-    *           A list of Views representing the former subgroups
+    * @param view_id The view id of this view (can not be null)
+    * @param members Contains a list of all the members in the view, can be empty but not null.
+    * @param subgroups A list of Views representing the former subgroups
     */
-    public MergeView(ViewId vid, List<Address> members, List<View> subgroups) {
-        super(vid, members);
-        this.subgroups=subgroups;
+    public MergeView(ViewId view_id, List<Address> members, List<View> subgroups) {
+        super(view_id, members);
+        this.subgroups=listToArray(subgroups);
+    }
+
+    public MergeView(ViewId view_id, Address[] members, List<View> subgroups) {
+        super(view_id, members);
+        this.subgroups=listToArray(subgroups);
     }
 
 
    /**
     * Creates a new view
     * 
-    * @param creator
-    *           The creator of this view (can not be null)
-    * @param id
-    *           The lamport timestamp of this view
-    * @param members
-    *           Contains a list of all the members in the view, can be empty but not null.
-    * @param subgroups
-    *           A list of Views representing the former subgroups
+    * @param creator The creator of this view (can not be null)
+    * @param id The lamport timestamp of this view
+    * @param members Contains a list of all the members in the view, can be empty but not null.
+    * @param subgroups A list of Views representing the former subgroups
     */
     public MergeView(Address creator, long id, List<Address> members, List<View> subgroups) {
         super(creator, id, members);
-        this.subgroups=subgroups;
+        this.subgroups=listToArray(subgroups);
     }
 
 
     public List<View> getSubgroups() {
-        return subgroups;
+        return Collections.unmodifiableList(Arrays.asList(subgroups));
     }
 
 
-    public View copy() {
-        ViewId vid2=vid.copy();
-        List<Address> members2=members != null ? new ArrayList<Address>(members) : null;
-        List<View> subgroups2=subgroups != null ? new ArrayList<View>(subgroups) : null;
-        return new MergeView(vid2, members2, subgroups2);
+    public MergeView copy() {
+        return this;
     }
 
     
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append("MergeView::").append(super.toString());
-        if(subgroups != null && !subgroups.isEmpty()) {
+        if(subgroups != null && subgroups.length > 0) {
             sb.append(", subgroups=");
             sb.append(Util.printListWithDelimiter(subgroups, ", ", Util.MAX_LIST_PRINT_SIZE));
         }
@@ -93,7 +88,7 @@ public class MergeView extends View {
         super.writeTo(out);
 
         // write subgroups
-        int len=subgroups != null? subgroups.size() : 0;
+        int len=subgroups != null? subgroups.length : 0;
         out.writeShort(len);
         if(len == 0)
             return;
@@ -110,13 +105,12 @@ public class MergeView extends View {
         super.readFrom(in);
         short len=in.readShort();
         if(len > 0) {
-            View v;
-            subgroups=new ArrayList<View>(len);
+            subgroups=new View[len];
             for(int i=0; i < len; i++) {
                 boolean is_merge_view=in.readBoolean();
-                v=is_merge_view? new MergeView() : new View();
+                View v=is_merge_view? new MergeView() : new View();
                 v.readFrom(in);
-                subgroups.add(v);
+                subgroups[i]=v;
             }
         }
     }
@@ -131,6 +125,16 @@ public class MergeView extends View {
             retval+=Global.BYTE_SIZE; // boolean for View or MergeView
             retval+=v.serializedSize();
         }
+        return retval;
+    }
+
+    protected static View[] listToArray(List<View> list) {
+        if(list == null)
+            return null;
+        View[] retval=new View[list.size()];
+        int index=0;
+        for(View view: list)
+            retval[index++]=view;
         return retval;
     }
 

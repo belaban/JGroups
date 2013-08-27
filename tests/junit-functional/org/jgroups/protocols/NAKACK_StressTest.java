@@ -11,7 +11,6 @@ import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -101,12 +100,12 @@ public class NAKACK_StressTest {
         nak.setDiscardDeliveredMsgs(true);
         nak.down(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
         nak.down(new Event(Event.BECOME_SERVER));
-        View view=new View(local_addr, 1, Arrays.asList(local_addr, sender));
+        View view=View.create(local_addr, 1, local_addr, sender);
         nak.down(new Event(Event.VIEW_CHANGE, view));
 
-        MutableDigest digest=new MutableDigest(10);
-        digest.add(local_addr, 0, 0);
-        digest.add(sender, 0, 0);
+        MutableDigest digest=new MutableDigest(view.getMembersRaw());
+        digest.set(local_addr,0,0);
+        digest.set(sender,0,0);
         nak.down(new Event(Event.SET_DIGEST, digest));
 
         final CountDownLatch latch=new CountDownLatch(1);

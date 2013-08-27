@@ -5,7 +5,6 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
 
 import java.util.Collection;
 import java.util.List;
@@ -142,7 +141,7 @@ public class TOA extends Protocol implements DeliveryProtocol {
         currentView = view;
 
         //basis behavior: drop leavers message (as senders)
-        List<Address> leavers = Util.leftMembers(oldView, view);
+        List<Address> leavers = View.leftMembers(oldView, view);
         deliverManager.removeLeavers(leavers);
 
         //basis behavior: avoid waiting for the acks

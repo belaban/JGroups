@@ -3,10 +3,7 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Digest;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Promise;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.util.*;
@@ -607,7 +604,7 @@ public class FLUSH extends Protocol {
     private long currentViewId() {
         long viewId = -1;
         synchronized (sharedLock) {
-            ViewId view = currentView.getVid();
+            ViewId view = currentView.getViewId();
             if (view != null) {
                 viewId = view.getId();
             }
@@ -800,7 +797,7 @@ public class FLUSH extends Protocol {
 
             needsReconciliationPhase = enable_reconciliation && flushCompleted && hasVirtualSynchronyGaps();
             if (needsReconciliationPhase) {
-                Digest d = findHighestSequences();
+                Digest d = findHighestSequences(currentView);
                 msg = new Message().setFlag(Message.Flag.OOB);
                 FlushHeader fh = new FlushHeader(FlushHeader.FLUSH_RECONCILE, currentViewId(),flushMembers);
                 reconcileOks.clear();
@@ -840,28 +837,39 @@ public class FLUSH extends Protocol {
     private boolean hasVirtualSynchronyGaps() {
         ArrayList<Digest> digests = new ArrayList<Digest>();
         digests.addAll(flushCompletedMap.values());
-        Digest firstDigest = digests.get(0);
-        List<Digest> remainingDigests = digests.subList(1, digests.size());
-        for (Digest digest : remainingDigests) {
-            Digest diff = firstDigest.difference(digest);
-            if (diff != null)
-                return true;
-        }
-        return false;
+        return !same(digests);
     }
 
-    private Digest findHighestSequences() {
-        Digest result = null;
+    protected static boolean same(final List<Digest> digests) {
+        if(digests == null) return false;
+        Digest first=digests.get(0);
+        for(int i=1; i < digests.size(); i++) {
+            Digest current=digests.get(i);
+            if(!first.equals(current))
+                return false;
+        }
+        return true;
+    }
+
+    private Digest findHighestSequences(View view) {
         List<Digest> digests = new ArrayList<Digest>(flushCompletedMap.values());
-
-        result = digests.get(0);
-        List<Digest> remainingDigests = digests.subList(1, digests.size());
-
-        for (Digest digestG : remainingDigests) {
-            result = result.highestSequence(digestG);
-        }
-        return result;
+        return maxSeqnos(view,digests);
     }
+
+
+    /** Returns a digest which contains, for all members of view, the highest delivered and received
+     * seqno of all digests */
+    protected static Digest maxSeqnos(final View view, List<Digest> digests) {
+        if(view == null || digests == null)
+            return null;
+
+        MutableDigest digest=new MutableDigest(view.getMembersRaw());
+        for(Digest dig: digests)
+            digest.merge(dig);
+        return digest;
+    }
+
+
 
     private void onSuspect(Address address) {
 
@@ -987,7 +995,7 @@ public class FLUSH extends Protocol {
             retval += Util.size(flushParticipants);
             retval += Global.BYTE_SIZE; // presence for digest
             if (digest != null) {
-                retval += digest.serializedSize();
+                retval += digest.serializedSize(true);
             }
             return retval;
         }

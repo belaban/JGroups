@@ -569,7 +569,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                             e.state(State.OPEN);
                     }
                 }
-                xmit_task_map.keySet().retainAll(view.getMembers());
+                xmit_task_map.keySet().retainAll(new_members);
                 break;
 
             case Event.SET_LOCAL_ADDRESS:

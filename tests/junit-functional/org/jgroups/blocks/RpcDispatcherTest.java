@@ -56,10 +56,12 @@ public class RpcDispatcherTest {
 
         b=createChannel("B");
         disp2=new RpcDispatcher(b, new ServerObject(2));
-        b.connect(GROUP);
 
         c=createChannel("C");
         disp3=new RpcDispatcher(c, new ServerObject(3));
+
+        Util.sleep(2000);
+        b.connect(GROUP);
         c.connect(GROUP);
 
         Util.waitUntilAllChannelsHaveSameSize(30000, 1000,a,b,c);

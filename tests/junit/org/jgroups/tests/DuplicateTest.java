@@ -161,7 +161,7 @@ public class DuplicateTest extends ChannelTestBase {
         for(JChannel ch: channels) {
             STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
             if(stable != null)
-                stable.runMessageGarbageCollection();
+                stable.gc();
         }
     }
 

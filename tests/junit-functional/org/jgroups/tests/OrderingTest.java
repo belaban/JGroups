@@ -115,7 +115,7 @@ public class OrderingTest {
                 int received=receiver.getReceived();
                 System.out.println(ch.getAddress() + ": " + received);
                 STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
-                stable.runMessageGarbageCollection(); 
+                stable.gc();
                 if(received != TOTAL_NUM_MSGS) {
                     done=false;
                     break;

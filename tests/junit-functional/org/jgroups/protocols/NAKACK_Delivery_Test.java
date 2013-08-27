@@ -64,9 +64,10 @@ public class NAKACK_Delivery_Test {
         nak.down(new Event(Event.SET_LOCAL_ADDRESS,a));
 
         // set a dummy digest
-        MutableDigest digest=new MutableDigest(2);
-        digest.add(a, 0, 0);
-        digest.add(b, 0, 0);
+        View tmp_view=View.create(a, 1, a,b);
+        MutableDigest digest=new MutableDigest(tmp_view.getMembersRaw());
+        digest.set(a,0,0);
+        digest.set(b,0,0);
         nak.down(new Event(Event.SET_DIGEST,digest));
 
         // set dummy view

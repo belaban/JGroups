@@ -202,7 +202,7 @@ public class OOBTest extends ChannelTestBase {
 
         STABLE stable=(STABLE)a.getProtocolStack().findProtocol(STABLE.class);
         if(stable != null)
-            stable.runMessageGarbageCollection();
+            stable.gc();
         Collection<Integer> msgs=receiver.getMsgs();
 
         for(int i=0; i < 20; i++) {
@@ -377,7 +377,7 @@ public class OOBTest extends ChannelTestBase {
         for(JChannel ch: channels) {
             STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
             if(stable != null)
-                stable.runMessageGarbageCollection();
+                stable.gc();
             UNICAST2 uni=(UNICAST2)ch.getProtocolStack().findProtocol(UNICAST2.class);
             if(uni != null)
                 uni.sendStableMessages();

@@ -26,7 +26,7 @@ import java.util.List;
 public class NAKACK2_RetransmitTest {
     protected static final short ID=ClassConfigurator.getProtocolId(NAKACK2.class);
     protected static final Address A=Util.createRandomAddress("A"), B=Util.createRandomAddress("B");
-
+    protected static final View    view=View.create(A, 1, A, B);
     protected NAKACK2       nak;
     protected MockTransport transport;
     protected MockProtocol  receiver;
@@ -42,7 +42,7 @@ public class NAKACK2_RetransmitTest {
 
         nak.down(new Event(Event.BECOME_SERVER));
         nak.down(new Event(Event.SET_LOCAL_ADDRESS, A));
-        Digest digest=new Digest(B, 0, 0);
+        Digest digest=new Digest(view.getMembersRaw(), new long[]{0, 0, 0, 0});
         nak.down(new Event(Event.SET_DIGEST, digest));
     }
 

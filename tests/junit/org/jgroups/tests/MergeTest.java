@@ -115,7 +115,7 @@ public class MergeTest extends ChannelTestBase {
         }
 
         for(JChannel ch: channels) {
-            View view=Util.createView(ch.getAddress(), 10, ch.getAddress());
+            View view=View.create(ch.getAddress(), 10, ch.getAddress());
             GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
         }

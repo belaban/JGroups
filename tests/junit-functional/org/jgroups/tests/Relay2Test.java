@@ -122,8 +122,8 @@ public class Relay2Test {
 
         // Now make A and B form a cluster again:
         View merge_view=new MergeView(a.getAddress(), 10, Arrays.asList(a.getAddress(), b.getAddress()),
-                                      Arrays.asList(Util.createView(a.getAddress(), 5, a.getAddress()),
-                                                    Util.createView(b.getAddress(), 5, b.getAddress())));
+                                      Arrays.asList(View.create(a.getAddress(), 5, a.getAddress()),
+                                                    View.create(b.getAddress(), 5, b.getAddress())));
         GMS gms=(GMS)a.getProtocolStack().findProtocol(GMS.class);
         gms.installView(merge_view, null);
         gms=(GMS)b.getProtocolStack().findProtocol(GMS.class);
@@ -325,7 +325,7 @@ public class Relay2Test {
     /** Creates a singleton view for each channel listed and injects it */
     protected static void createPartition(JChannel ... channels) {
         for(JChannel ch: channels) {
-            View view=Util.createView(ch.getAddress(), 5, ch.getAddress());
+            View view=View.create(ch.getAddress(), 5, ch.getAddress());
             GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
         }

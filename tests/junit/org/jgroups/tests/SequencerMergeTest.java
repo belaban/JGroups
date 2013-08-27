@@ -72,8 +72,8 @@ public class SequencerMergeTest {
         c.setReceiver(rc);
         d.setReceiver(rd);
 
-        final View new_view=Util.createView(a.getAddress(), 5, a.getAddress(),b.getAddress(),c.getAddress(),d.getAddress());
-        final Digest digest=getDigest(a,b,c,d);
+        final View new_view=View.create(a.getAddress(), 5, a.getAddress(),b.getAddress(),c.getAddress(),d.getAddress());
+        final Digest digest=getDigest(new_view, a,b,c,d);
 
         System.out.println("Installing " + new_view + " in B,C and D");
         injectViewAndDigest(new_view,digest,b,c,d);
@@ -89,7 +89,7 @@ public class SequencerMergeTest {
 
                 // Finally installing the new view at A; this simulates a delayed view installation
                 System.out.println("Installing " + new_view + " in A");
-                injectViewAndDigest(new_view, getDigest(), a);
+                injectViewAndDigest(new_view, getDigest(new_view), a);
             }
         };
         thread.start();
@@ -160,15 +160,15 @@ public class SequencerMergeTest {
             a_coord = c;
 
         // Inject either {C,A} or {D,A} at A
-        final View a_view=Util.createView(a_coord.getAddress(), 10, a_coord.getAddress(),a.getAddress());
-        final Digest a_digest=getDigest(a_coord,a);
+        final View a_view=View.create(a_coord.getAddress(), 10, a_coord.getAddress(),a.getAddress());
+        final Digest a_digest=getDigest(a_view, a_coord,a);
         System.out.println("\nInstalling " + a_view + " in A");
         injectViewAndDigest(a_view, a_digest, a);
         assert !Util.isCoordinator(a);
 
         // Inject {B,C,D} at B,C,D
-        final View bcd_view=Util.createView(b.getAddress(), 20, b.getAddress(),c.getAddress(),d.getAddress());
-        final Digest bcd_digest=getDigest(b,c,d);
+        final View bcd_view=View.create(b.getAddress(), 20, b.getAddress(),c.getAddress(),d.getAddress());
+        final Digest bcd_digest=getDigest(bcd_view, b,c,d);
         System.out.println("\nInstalling " + bcd_view + " in B,C and D");
         injectViewAndDigest(bcd_view,bcd_digest,b,c,d);
         assert Util.isCoordinator(b);
@@ -226,13 +226,13 @@ public class SequencerMergeTest {
         }
     }
 
-    protected static Digest getDigest(JChannel ... channels) {
-        MutableDigest digest=new MutableDigest(channels.length);
+    protected static Digest getDigest(final View view, JChannel ... channels) {
+        MutableDigest digest=new MutableDigest(view.getMembersRaw());
         for(JChannel ch: channels) {
             Protocol nak=ch.getProtocolStack().findProtocol(NAKACK.class, NAKACK2.class);
             Digest tmp=(Digest)nak.down(new Event(Event.GET_DIGEST, ch.getAddress()));
             if(tmp != null)
-                digest.add(tmp);
+                digest.set(tmp);
         }
         return digest;
     }

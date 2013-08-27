@@ -92,7 +92,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         checkReceivedMessages(make(ra, 15), make(rb,15), make(rc,15));
 
         // Inject view {B,C} into B and C:
-        View new_view=Util.createView(b.getAddress(), 10, b.getAddress(), c.getAddress());
+        View new_view=View.create(b.getAddress(), 10, b.getAddress(), c.getAddress());
         System.out.println("\n ==== Injecting view " + new_view + " into B and C ====");
         injectView(new_view, b, c);
         makeCoordinator(b);
@@ -173,7 +173,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         checkReceivedMessages(make(ra, 15), make(rb,15), make(rc,15));
 
         // Inject view {A,C} into A:
-        View new_view=Util.createView(a.getAddress(), 4, a.getAddress(), c.getAddress());
+        View new_view=View.create(a.getAddress(), 4, a.getAddress(), c.getAddress());
         System.out.println("\n ==== Injecting view " + new_view + " into A ====");
         injectView(new_view, a);
         assertTrue(Util.isCoordinator(a));
@@ -253,14 +253,14 @@ public class OverlappingMergeTest extends ChannelTestBase {
         d.connect("OverlappingMergeTest");
 
         // Inject view {A,C,B} into A, B and C:
-        View new_view=Util.createView(a.getAddress(), 4, a.getAddress(), c.getAddress(), b.getAddress());
+        View new_view=View.create(a.getAddress(), 4, a.getAddress(), c.getAddress(), b.getAddress());
         System.out.println("\n ==== Injecting view " + new_view + " into A, B and C ====");
         injectView(new_view,false,a,b,c);
         assert Util.isCoordinator(a);
         assert !Util.isCoordinator(b);
         assert !Util.isCoordinator(c);
 
-        View view_d=Util.createView(b.getAddress(), 4, b.getAddress(), a.getAddress(), c.getAddress(), d.getAddress());
+        View view_d=View.create(b.getAddress(), 4, b.getAddress(), a.getAddress(), c.getAddress(), d.getAddress());
         System.out.println("\n ==== Injecting view " + view_d + " into D ====\n");
         injectView(view_d, false, d);
         assert !Util.isCoordinator(d);
@@ -315,13 +315,13 @@ public class OverlappingMergeTest extends ChannelTestBase {
             merge.init();
             merge.down(new Event(Event.SET_LOCAL_ADDRESS, a.getAddress()));
         }
-        View view=Util.createView(a.getAddress(), 5, a.getAddress());
+        View view=View.create(a.getAddress(), 5, a.getAddress());
         injectView(view, a);
 
-        view=Util.createView(a.getAddress(), 6, a.getAddress(), b.getAddress());
+        view=View.create(a.getAddress(), 6, a.getAddress(), b.getAddress());
         injectView(view, b);
 
-        view=Util.createView(a.getAddress(), 7, a.getAddress(), b.getAddress(), c.getAddress());
+        view=View.create(a.getAddress(), 7, a.getAddress(), b.getAddress(), c.getAddress());
         injectView(view, c);
 
         System.out.println("\nA's view: " + a.getView());
@@ -433,7 +433,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
     private static void runStableProtocol(JChannel ch) {
         STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
         if(stable != null)
-            stable.runMessageGarbageCollection();
+            stable.gc();
     }
 
     protected boolean isMulticastTransport(JChannel ch) {

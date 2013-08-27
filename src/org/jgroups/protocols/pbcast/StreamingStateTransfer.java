@@ -572,7 +572,7 @@ public abstract class StreamingStateTransfer extends Protocol {
             int retval=Global.BYTE_SIZE; // type
             retval+=Global.BYTE_SIZE;    // presence byte for my_digest
             if(my_digest != null)
-                retval+=my_digest.serializedSize();
+                retval+=my_digest.serializedSize(true);
             retval+=Util.size(bind_addr);
             return retval;
         }
