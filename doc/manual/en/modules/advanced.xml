@@ -3153,7 +3153,7 @@ public List&lt;Address&gt; getNewMembership(final Collection&lt;Address&gt; curr
 
         <para>
             The brown stack to the left is the main stack and it has the main channel connected to it. Not all protocols
-            are shown, but we're listed the GMS, MFC, FORK and FRAG2 protocols. The FORK protocol needs to be
+            are shown, but we've listed the GMS, MFC, FORK and FRAG2 protocols. The FORK protocol needs to be
             present in the main stack, or else fork stacks can not be created.
         </para>
 
