@@ -574,8 +574,11 @@ public abstract class TP extends Protocol {
 
     // ================================== Internal thread pool ======================
 
-    /** The thread pool which handles JGroups internal messages (Flag.INTERNAL)*/
+    /** The thread pool which handles JGroups internal messages (Flag.INTERNAL) */
     protected Executor                internal_thread_pool;
+
+    /** Factory which is used by internal_thread_pool */
+    protected ThreadFactory           internal_thread_factory;
 
     /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
     protected BlockingQueue<Runnable> internal_thread_pool_queue;
@@ -741,6 +744,16 @@ public abstract class TP extends Protocol {
         oob_thread_factory=factory;
         if(oob_thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)oob_thread_pool).setThreadFactory(factory);
+    }
+
+    public ThreadFactory getInternalThreadPoolThreadFactory() {
+        return internal_thread_factory;
+    }
+
+    public void setInternalThreadPoolThreadFactory(ThreadFactory factory) {
+        internal_thread_factory=factory;
+        if(internal_thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)internal_thread_pool).setThreadFactory(factory);
     }
 
     public ThreadFactory getTimerThreadFactory() {
@@ -986,6 +999,9 @@ public abstract class TP extends Protocol {
         if(oob_thread_factory == null)
             oob_thread_factory=new DefaultThreadFactory("OOB", false, true);
 
+        if(internal_thread_factory == null)
+            internal_thread_factory=new DefaultThreadFactory("INT", false, true);
+
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
 
@@ -1067,7 +1083,7 @@ public abstract class TP extends Protocol {
                 else
                     internal_thread_pool_queue=new SynchronousQueue<Runnable>();
                 internal_thread_pool=createThreadPool(internal_thread_pool_min_threads, internal_thread_pool_max_threads, internal_thread_pool_keep_alive_time,
-                                                 internal_thread_pool_rejection_policy, internal_thread_pool_queue, oob_thread_factory);
+                                                 internal_thread_pool_rejection_policy, internal_thread_pool_queue, internal_thread_factory);
             }
             // if the internal thread pool is disabled, we won't create it (not even a DirectExecutor)
         }
@@ -1972,10 +1988,8 @@ public abstract class TP extends Protocol {
     }
 
     protected void setInAllThreadFactories(String cluster_name, Address local_address, String pattern) {
-        ThreadFactory[] factories= {timer_thread_factory,
-                                    default_thread_factory,
-                                    oob_thread_factory,
-                                    global_thread_factory };
+        ThreadFactory[] factories= {timer_thread_factory, default_thread_factory, oob_thread_factory,
+          internal_thread_factory, global_thread_factory };
 
         boolean is_shared_transport=isSingleton();
 
