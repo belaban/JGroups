@@ -114,13 +114,7 @@ public class Table<T> {
     @SuppressWarnings("unchecked")
     public Table(int num_rows, int elements_per_row, long offset, double resize_factor, long max_compaction_time) {
         this.num_rows=num_rows;
-
-        // Find a power of 2 >= elements_per_row; needed by computeIndex(long seqno) to use bit ANDing instead of mod
-        int epr = 1;
-        while(elements_per_row > epr)
-            epr <<= 1;
-
-        this.elements_per_row=epr;
+        this.elements_per_row = Util.getNextHigherPowerOfTwo(elements_per_row);
         this.resize_factor=resize_factor;
         this.max_compaction_time=TimeUnit.NANOSECONDS.convert(max_compaction_time, TimeUnit.MILLISECONDS);
         this.offset=this.low=this.hr=this.hd=offset;

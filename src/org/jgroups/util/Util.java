@@ -209,10 +209,9 @@ public class Util {
 
 
     public static int getNextHigherPowerOfTwo(int num) {
-        int cat=1;
-        while(num > cat)
-            cat <<= 1;
-        return cat;
+       if (num <= 0) return 1;
+       int highestBit = Integer.highestOneBit(num);
+       return num <= highestBit ? highestBit : highestBit << 1;
     }
 
 

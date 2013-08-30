@@ -124,7 +124,8 @@ public class UtilTest {
           {3,4},
           {4,4},
           {5,8},
-          {10,16}
+          {10,16},
+          {8000, 8192}
         };
 
         for(int[] pair: numbers) {
