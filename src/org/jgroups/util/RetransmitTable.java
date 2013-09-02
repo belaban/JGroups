@@ -21,6 +21,7 @@ import java.util.List;
  */
 public class RetransmitTable {
     protected final int    num_rows;
+    /** Must be a power of 2 for efficient modular arithmetic **/
     protected final int    msgs_per_row;
     protected final double resize_factor;
     protected Message[][]  matrix;
@@ -55,11 +56,8 @@ public class RetransmitTable {
     protected static final Log log=LogFactory.getLog(RetransmitTable.class);
 
 
-
-
-
     public RetransmitTable() {
-        this(5, 10000, 0, DEFAULT_RESIZE_FACTOR);
+        this(5, 8192, 0, DEFAULT_RESIZE_FACTOR);
     }
 
     public RetransmitTable(int num_rows, int msgs_per_row, long offset) {
@@ -73,7 +71,7 @@ public class RetransmitTable {
     public RetransmitTable(int num_rows, int msgs_per_row, long offset, double resize_factor, long max_compaction_time,
                            boolean automatic_purging) {
         this.num_rows=num_rows;
-        this.msgs_per_row=msgs_per_row;
+        this.msgs_per_row=Util.getNextHigherPowerOfTwo(msgs_per_row);
         this.resize_factor=resize_factor;
         this.max_compaction_time=max_compaction_time;
         this.automatic_purging=automatic_purging;
@@ -460,7 +458,9 @@ public class RetransmitTable {
         int diff=(int)(seqno - offset);
         if(diff < 0)
             return diff;
-        return diff % msgs_per_row;
+
+        // Same as diff % msgs_per_row
+        return diff & (msgs_per_row - 1);
     }
 
     
