@@ -2175,7 +2175,7 @@ public abstract class TP extends Protocol {
                 double percentage=100.0 / max_bundle_size * count;
                 StringBuilder sb=new StringBuilder(local_addr + ": sending ").append(num_msgs).append(" msgs (");
                 num_msgs=0;
-                sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size)");
+                sb.append(count).append(" bytes (").append(f.format(percentage)).append("% of max_bundle_size)");
                 if(last_bundle_time > 0) {
                     long diff=(System.nanoTime() - last_bundle_time) / 1000000;
                     sb.append(", collected in ").append(diff).append("ms) ");
