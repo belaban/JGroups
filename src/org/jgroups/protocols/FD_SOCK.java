@@ -141,6 +141,8 @@ public class FD_SOCK extends Protocol implements Runnable {
     public String getPingDest() {return ping_dest != null? ping_dest.toString() : "null";}
     @ManagedAttribute(description="Number of suspect event generated")
     public int getNumSuspectEventsGenerated() {return num_suspect_events;}
+    @ManagedAttribute(description="Whether the node crash detection monitor is running",writable=false)
+    public boolean isNodeCrashMonitorRunning() {return isPingerThreadRunning(); }
 
     public boolean isLogSuspectedMessages() {
         return log_suspected_msgs;
@@ -166,6 +168,23 @@ public class FD_SOCK extends Protocol implements Runnable {
             sb.append(entry.getKey()).append(" has server socket at ").append(entry.getValue()).append("\n");
         }
         return sb.toString();
+    }
+
+    @ManagedOperation(description="Starts node crash monitor if member count > 1 and monitor is not running")
+    public boolean startNodeCrashMonitor() {
+        boolean started = false;
+        if( members.size() > 1  ) {
+            if( startPingerThread() ) {
+                log.warn("Node crash detection manually started, was not running for some reason.");
+                started = true;
+            }
+            else
+                log.warn("Node crash detection is already running.");
+        }
+        else {
+            log.info("Single node cluster, no need for node crash detection.");
+        }
+        return started;
     }
 
     public void init() throws Exception {
@@ -488,13 +507,16 @@ public class FD_SOCK extends Protocol implements Runnable {
     /**
      * Does *not* need to be synchronized on pinger_mutex because the caller (down()) already has the mutex acquired
      */
-    private synchronized void startPingerThread() {
+    private synchronized boolean startPingerThread() {
+        boolean started = false;
         if(!isPingerThreadRunning()) {
             ThreadFactory factory=getThreadFactory();
             pinger_thread=factory.newThread(this, "FD_SOCK pinger");
             pinger_thread.setDaemon(true);
             pinger_thread.start();
+            started = true;
         }
+        return started;
     }
 
     /**
