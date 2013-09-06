@@ -170,7 +170,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         return sb.toString();
     }
 
-    @ManagedOperation(description="Starts node crashed monitor if members count > 1 and monitor is not running")
+    @ManagedOperation(description="Starts node crash monitor if member count > 1 and monitor is not running")
     public boolean startNodeCrashMonitor() {
         boolean started = false;
         if( members.size() > 1  ) {
@@ -178,12 +178,11 @@ public class FD_SOCK extends Protocol implements Runnable {
                 log.warn("Node crash detection manually started, was not running for some reason.");
                 started = true;
             }
-            else {
+            else
                 log.warn("Node crash detection is already running.");
-            }
         }
         else {
-            log.info("Single clutser node, no need for node crash detection.");
+            log.info("Single node cluster, no need for node crash detection.");
         }
         return started;
     }
