@@ -81,6 +81,9 @@ public class RetransmitTable {
             throw new IllegalArgumentException("resize_factor needs to be > 1");
     }
 
+    public int getLength() {
+        return matrix.length;
+    }
 
     public long getOffset() {
         return offset;

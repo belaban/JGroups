@@ -4,6 +4,7 @@ import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.util.RetransmitTable;
 import org.jgroups.util.Util;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ public class RetransmitTableTest {
         System.out.println("table: " + table.dump());
         assert table.size() == 9;
         assert table.size() == table.computeSize();
-        assert table.capacity() == 30;
+        assertCapacity(table.capacity(), 3, 10);
     }
 
 
@@ -55,7 +56,7 @@ public class RetransmitTableTest {
         addAndGet(table, 129, "129");
         System.out.println("table: " + table.dump());
         assert table.size() == 9;
-        assert table.capacity() == 30;
+        assertCapacity(table.capacity(), 3, 10);
     }
 
     public static void testAdditionWithOffset2() {
@@ -137,20 +138,20 @@ public class RetransmitTableTest {
             table.put(i, MSG);
         System.out.println("table = " + table);
         assert table.size() == NUM_MSGS;
-        assert table.capacity() == 10010;
+        assertCapacity(table.capacity(), table.getLength(), 10);
     }
 
     public static void testResize() {
         RetransmitTable table=new RetransmitTable(3, 10, 0);
-        assert table.capacity() == 30;
+        assertCapacity(table.capacity(), table.getLength(), 10);
         addAndGet(table, 30, "30");
         addAndGet(table, 35, "35");
-        assert table.capacity() == 40;
+        assertCapacity(table.capacity(), table.getLength(), 10);
         addAndGet(table, 500, "500");
-        assert table.capacity() == 510;
+        assertCapacity(table.capacity(), table.getLength(), 10);
 
         addAndGet(table, 515, "515");
-        assert table.capacity() == 520;
+        assertCapacity(table.capacity(), table.getLength(), 10);
     }
 
     public void testResizeWithPurge() {
@@ -216,7 +217,7 @@ public class RetransmitTableTest {
             addAndGet(table, i, "hello-" + i);
         System.out.println("table = " + table);
         assert table.size() == 50;
-        assert table.capacity() == 50;
+        assertCapacity(table.capacity(), table.getLength(), 10);
         assert table.getHighestPurged() == 0;
         assert table.getHighest() == 49;
 
@@ -245,7 +246,7 @@ public class RetransmitTableTest {
         assert table.isEmpty();
         addAndGet(table, 50, "50");
         assert table.size() == 1;
-        assert table.capacity() == 50;
+        assertCapacity(table.capacity(), table.getLength(), 10);
     }
 
 
@@ -278,7 +279,7 @@ public class RetransmitTableTest {
         assert table.size() == 20;
         table.compact();
         assert table.size() == 20;
-        assert table.capacity() == 40;
+        assertCapacity(table.capacity(), table.getLength(), 10);
     }
 
 
@@ -294,7 +295,7 @@ public class RetransmitTableTest {
         assert table.size() == 20;
         table.compact();
         assert table.size() == 20;
-        assert table.capacity() == 40;
+        assertCapacity(table.capacity(), table.getLength(), 10);
     }
 
     public void testSizeOfAllMessages() {
@@ -318,6 +319,13 @@ public class RetransmitTableTest {
         size=table.sizeOfAllMessages(false);
         System.out.println("Size(): " + table.sizeOfAllMessages(true) + ", getLength(): " + size);
         assert size == 6 * 100;
+    }
+
+    protected static void assertCapacity(int actual_capacity, int num_rows, int elements_per_row) {
+        int actual_elements_per_row=Util.getNextHigherPowerOfTwo(elements_per_row);
+        int expected_capacity=num_rows * actual_elements_per_row;
+        assert actual_capacity == expected_capacity
+          : "expected capacity of " + expected_capacity + " but got " + actual_capacity;
     }
 
 
