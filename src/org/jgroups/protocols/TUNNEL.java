@@ -227,11 +227,9 @@ public class TUNNEL extends TP {
                             break;
                     }
                 }catch (Exception ioe) {     
-                    if(stub.isConnected())
-                        continue mainloop;
-                    else 
+                    if(!stub.isConnected())
                         break;
-                } 
+                }
             }
         }
 
