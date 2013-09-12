@@ -1,4 +1,3 @@
-
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
@@ -17,6 +16,7 @@ import java.io.DataInputStream;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -226,6 +226,8 @@ public class TUNNEL extends TP {
                             }
                             break;
                     }
+                }catch (SocketException ioe) {
+                    break;
                 }catch (Exception ioe) {     
                     if(stub.isConnected())
                         continue mainloop;
