@@ -60,6 +60,32 @@ A message would get acked after delivery, not reception. This was changed, so th
 delay acking the message, which could lead to unneeded retransmission by the sender.
 
 
+Compress Digest and MutableDigest
+---------------------------------
+[https://issues.jboss.org/browse/JGRP-1317]
+[https://issues.jboss.org/browse/JGRP-1690]
+
+- In some cases, when a digest and a view are the same, the members
+  field of the digest points to the members field of the view,
+  resulting in reduced memory use.
+- When a view and digest are the same, we marshal the members only
+  once (in JOIN-RSP, MERGE-RSP and INSTALL-MERGE-VIEW).
+- We don't send the digest with a VIEW to *existing members*; the full
+  view and digest is only sent to the joiner. This means that new
+  views are smaller, which is useful in large clusters.
+- JIRA:  https://issues.jboss.org/browse/JGRP-1317
+- View and MergeView now use arrays rather than lists to store
+  membership and subgroups
+- Make sure digest matches view when returning JOIN-RSP or installing
+  MergeView (https://issues.jboss.org/browse/JGRP-1690)
+- More efficient marshalling of GMS$GmsHeader: when view and digest
+  are present, we only marshal the members once
+- JoinRsp: marshalling members in view and digest only once
+- Digest: marshalling members in view and digest only once
+
+
+
+
 Bug fixes
 =========
 
