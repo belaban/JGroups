@@ -58,6 +58,7 @@ public class XMLSchemaGenerator {
             Document xmldoc = impl.createDocument("http://www.w3.org/2001/XMLSchema", "xs:schema",
                                                   null);
             xmldoc.getDocumentElement().setAttribute("targetNamespace", "urn:org:jgroups");
+            xmldoc.getDocumentElement().setAttribute("xmlns:tns", "urn:org:jgroups");
             xmldoc.getDocumentElement().setAttribute("elementFormDefault", "qualified");
 
             Element complexType = xmldoc.createElement("xs:complexType");
@@ -95,7 +96,7 @@ public class XMLSchemaGenerator {
 
             Element xsElement = xmldoc.createElement("xs:element");
             xsElement.setAttribute("name", "config");
-            xsElement.setAttribute("type", "ConfigType");
+            xsElement.setAttribute("type", "tns:ConfigType");
             xmldoc.getDocumentElement().appendChild(xsElement);
 
             DOMSource domSource = new DOMSource(xmldoc);
