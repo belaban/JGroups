@@ -45,7 +45,7 @@ public class TCPPING extends Discovery {
      */
 
     /** https://jira.jboss.org/jira/browse/JGRP-989 */
-    protected final BoundedList<PhysicalAddress> dynamic_hosts=new BoundedList<PhysicalAddress>(max_dynamic_hosts);
+    protected BoundedList<PhysicalAddress> dynamic_hosts;
 
 
 
@@ -93,6 +93,10 @@ public class TCPPING extends Discovery {
         return initial_hosts.toString();
     }
 
+    public void init() throws Exception {
+        super.init();
+        dynamic_hosts=new BoundedList<PhysicalAddress>(max_dynamic_hosts);
+    }
 
     public Collection<PhysicalAddress> fetchClusterMembers(String cluster_name) {
         Set<PhysicalAddress> combined_target_members=new HashSet<PhysicalAddress>(initial_hosts);
