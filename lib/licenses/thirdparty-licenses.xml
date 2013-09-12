@@ -75,17 +75,17 @@
     </module>
     <module name='log4j2-api'
          licenseType='apache-2.0'
-         version='2.0.0.Beta4'
+         version='2.0.0.Beta8'
          projectHome='http://logging.apache.org/log4j/2.x/'
          description='Java logging framework (runtime)'>
-         <jar name='log4j-api-2.0-beta4.jar' />
+         <jar name='log4j-api-2.0-beta8.jar' />
      </module>
     <module name='log4j2-core'
          licenseType='apache-2.0'
-         version='2.0.0.Beta4'
+         version='2.0.0.Beta8'
          projectHome='http://logging.apache.org/log4j/2.x/'
          description='Java logging framework (runtime)'>
-         <jar name='log4j-core-2.0-beta4.jar' />
+         <jar name='log4j-core-2.0-beta8.jar' />
      </module>
     <module name='serializer'
             licenseType='apache-2.0'
