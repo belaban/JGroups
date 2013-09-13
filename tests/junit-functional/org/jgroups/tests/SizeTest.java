@@ -396,6 +396,37 @@ public class SizeTest {
         _testSize(v);
     }
 
+    public void testDeltaView() throws Exception {
+        Address[] prev_mbrs=Util.createRandomAddresses(4); // A,B,C,D
+        Address[] new_mbrs=Arrays.copyOf(prev_mbrs, prev_mbrs.length); // A,B,E,F (-CD +EF)
+        new_mbrs[2]=Util.createRandomAddress("E");
+        new_mbrs[3]=Util.createRandomAddress("F");
+
+        View v1=View.create(prev_mbrs[0], 1, prev_mbrs);
+        View v2=View.create(new_mbrs[0], 2, new_mbrs);
+
+        Address[][] diff=View.diff(v1,v2);
+
+        Address[] joined=diff[0], left=diff[1];
+        DeltaView dv=new DeltaView(v2.getViewId(), v1.getViewId(), left, joined);
+        System.out.println("dv = " + dv);
+        _testSize(dv, DeltaView.class);
+    }
+
+
+    public static void testLargeView() throws Exception {
+        Address[] members=Util.createRandomAddresses(1000);
+        View view=View.create(members[0], 1, members);
+        _testSize(view);
+
+
+        ViewId new_view_id=new ViewId(members[0], 2);
+        view=new DeltaView(new_view_id, view.getViewId(),
+                           new Address[]{members[4],members[5]},
+                           new Address[]{Util.createRandomAddress("new-1"), Util.createRandomAddress("new-2")});
+        _testSize(view, DeltaView.class);
+    }
+
 
     public static void testMergeView() throws Exception {
         ViewId vid=new ViewId(UUID.randomUUID(), 322649);
@@ -887,10 +918,18 @@ public class SizeTest {
     }
 
     private static void _testSize(View v) throws Exception {
+        _testSize(v, View.class);
+    }
+
+    private static void _testSize(View v, Class<? extends Streamable> view_class) throws Exception {
         long size=v.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(v);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
+
+        View view=(View)Util.streamableFromByteBuffer(view_class,serialized_form);
+        System.out.println("old view: " + v + "\nnew view: " + view);
+        Assert.assertEquals(view, v);
     }
 
     private static void _testSize(Collection<Address> coll) throws Exception {

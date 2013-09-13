@@ -22,7 +22,7 @@ import java.util.List;
  * @author Bela Ban, Oct 17 2001
  */
 public class Draw extends ReceiverAdapter implements ActionListener, ChannelListener {
-    String                         groupname="draw-cluster";
+    protected String               cluster_name="draw-cluster";
     private JChannel               channel=null;
     private int                    member_size=1;
     private JFrame                 mainFrame=null;
@@ -38,11 +38,12 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
     private boolean                use_state=false;
     private long                   state_timeout=5000;
     private boolean                use_unicasts=false;
+    protected boolean              send_own_state_on_merge=true;
     private final                  List<Address> members=new ArrayList<Address>();
 
 
     public Draw(String props, boolean no_channel, boolean jmx, boolean use_state, long state_timeout,
-                boolean use_unicasts, String name) throws Exception {
+                boolean use_unicasts, String name, boolean send_own_state_on_merge) throws Exception {
         this.no_channel=no_channel;
         this.jmx=jmx;
         this.use_state=use_state;
@@ -56,6 +57,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
             channel.setName(name);
         channel.setReceiver(this);
         channel.addChannelListener(this);
+        this.send_own_state_on_merge=send_own_state_on_merge;
     }
 
     public Draw(JChannel channel) throws Exception {
@@ -74,13 +76,13 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
     }
 
 
-    public String getGroupName() {
-        return groupname;
+    public String getClusterName() {
+        return cluster_name;
     }
 
-    public void setGroupName(String groupname) {
-        if(groupname != null)
-            this.groupname=groupname;
+    public void setClusterName(String clustername) {
+        if(clustername != null)
+            this.cluster_name=clustername;
     }
 
 
@@ -94,6 +96,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         long             state_timeout=5000;
         boolean          use_unicasts=false;
         String           name=null;
+        boolean          send_own_state_on_merge=true;
 
         for(int i=0; i < args.length; i++) {
             if("-help".equals(args[i])) {
@@ -112,7 +115,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
                 jmx=Boolean.parseBoolean(args[++i]);
                 continue;
             }
-            if("-groupname".equals(args[i])) {
+            if("-clustername".equals(args[i])) {
                 group_name=args[++i];
                 continue;
             }
@@ -136,15 +139,19 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
                 name=args[++i];
                 continue;
             }
+            if("-send_own_state_on_merge".equals(args[i])) {
+                send_own_state_on_merge=Boolean.getBoolean(args[++i]);
+                continue;
+            }
 
             help();
             return;
         }
 
         try {
-            draw=new Draw(props, no_channel, jmx, use_state, state_timeout, use_unicasts, name);
+            draw=new Draw(props, no_channel, jmx, use_state, state_timeout, use_unicasts, name, send_own_state_on_merge);
             if(group_name != null)
-                draw.setGroupName(group_name);
+                draw.setClusterName(group_name);
             draw.go();
         }
         catch(Throwable e) {
@@ -156,8 +163,8 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
     static void help() {
         System.out.println("\nDraw [-help] [-no_channel] [-props <protocol stack definition>]" +
-                " [-groupname <name>] [-state] [-timeout <state timeout>] [-use_unicasts] " +
-                "[-bind_addr <addr>] [-jmx <true | false>] [-name <logical name>]");
+                " [-clustername <name>] [-state] [-timeout <state timeout>] [-use_unicasts] " +
+                "[-bind_addr <addr>] [-jmx <true | false>] [-name <logical name>] [-send_own_state_on_merge true|false]");
         System.out.println("-no_channel: doesn't use JGroups at all, any drawing will be relected on the " +
                 "whiteboard directly");
         System.out.println("-props: argument can be an old-style protocol stack specification, or it can be " +
@@ -174,17 +181,14 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
 
     private void sendToAll(byte[] buf) throws Exception {
-        for(Address mbr: members) {
-            Message msg=new Message(mbr, null, buf);
-            channel.send(msg);
-        }
+        for(Address mbr: members)
+            channel.send(new Message(mbr, buf));
     }
 
 
     public void go() throws Exception {
-        if(!no_channel && !use_state) {
-            channel.connect(groupname);            
-        }
+        if(!no_channel && !use_state)
+            channel.connect(cluster_name);
         mainFrame=new JFrame();
         mainFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         panel=new DrawPanel(use_state);
@@ -208,7 +212,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         mainFrame.setBounds(new Rectangle(250, 250));
 
         if(!no_channel && use_state) {
-            channel.connect(groupname, null, state_timeout);
+            channel.connect(cluster_name, null, state_timeout);
         }
         mainFrame.setVisible(true);
         setTitle();
@@ -285,8 +289,18 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
                 Address local_addr=channel.getAddress();
                 if(local_addr != null && !local_addr.equals(coord)) {
                     try {
+
+                        // make a copy of our state first
+                        Map<Point,Color> copy=null;
+                        if(send_own_state_on_merge) {
+                            synchronized(panel.state) {
+                                copy=new LinkedHashMap<Point,Color>(panel.state);
+                            }
+                        }
                         System.out.println("fetching state from " + coord);
                         channel.getState(coord, 5000);
+                        if(copy != null)
+                            sendOwnState(copy); // multicast my own state so everybody else has it too
                     }
                     catch(Exception e) {
                         e.printStackTrace();
@@ -318,7 +332,6 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
     public void sendClearPanelMsg() {
         DrawCommand comm=new DrawCommand(DrawCommand.CLEAR);
-
         try {
             byte[] buf=Util.streamableToByteBuffer(comm);
             if(use_unicasts)
@@ -362,6 +375,25 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         mainFrame.dispose();
     }
 
+    protected void sendOwnState(final Map<Point,Color> copy) {
+        if(copy == null)
+            return;
+        for(Point point: copy.keySet()) {
+            // we don't need the color: it is our draw_color anyway
+            DrawCommand comm=new DrawCommand(DrawCommand.DRAW, point.x, point.y, draw_color.getRGB());
+            try {
+                byte[] buf=Util.streamableToByteBuffer(comm);
+                if(use_unicasts)
+                    sendToAll(buf);
+                else
+                    channel.send(new Message(null, buf));
+            }
+            catch(Exception ex) {
+                System.err.println(ex);
+            }
+        }
+    }
+
 
     /* ------------------------------ ChannelListener interface -------------------------- */
 
@@ -376,7 +408,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
             MBeanServer server=Util.getMBeanServer();
             if(server != null) {
                 try {
-                    JmxConfigurator.unregisterChannel((JChannel)channel,server, groupname);
+                    JmxConfigurator.unregisterChannel((JChannel)channel,server,cluster_name);
                 }
                 catch(Exception e) {
                     e.printStackTrace();
@@ -394,12 +426,12 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
 
 
-    private class DrawPanel extends JPanel implements MouseMotionListener {
-        final Dimension         preferred_size=new Dimension(235, 170);
-        Image                   img=null; // for drawing pixels
-        Dimension               d, imgsize=null;
-        Graphics                gr=null;
-        final Map<Point,Color>  state;
+    protected class DrawPanel extends JPanel implements MouseMotionListener {
+        protected final Dimension         preferred_size=new Dimension(235, 170);
+        protected Image                   img; // for drawing pixels
+        protected Dimension               d, imgsize;
+        protected Graphics                gr;
+        protected final Map<Point,Color>  state;
 
 
         public DrawPanel(boolean use_state) {
@@ -483,8 +515,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
         public void mouseDragged(MouseEvent e) {
             int                 x=e.getX(), y=e.getY();
-            DrawCommand         comm=new DrawCommand(DrawCommand.DRAW, x, y,
-                                                     draw_color.getRed(), draw_color.getGreen(), draw_color.getBlue());
+            DrawCommand         comm=new DrawCommand(DrawCommand.DRAW, x, y, draw_color.getRGB());
 
             if(no_channel) {
                 drawPoint(comm);
@@ -514,7 +545,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
          */
         public void drawPoint(DrawCommand c) {
             if(c == null || gr == null) return;
-            Color col=new Color(c.r, c.g, c.b);
+            Color col=new Color(c.rgb);
             gr.setColor(col);
             gr.fillOval(c.x, c.y, 10, 10);
             repaint();
@@ -537,9 +568,6 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
                 }
             }
         }
-
-
-
 
 
         /** Draw the entire panel from the state */
@@ -575,27 +603,6 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         }
 
     }
-
-
-   /* protected class MyPoint extends Point implements Comparable<Point> {
-        private static final long serialVersionUID=4171855995316340839L;
-
-        public MyPoint() {
-        }
-
-        public MyPoint(Point p) {
-            super(p);
-        }
-
-        public MyPoint(int x, int y) {
-            super(x,y);
-        }
-
-
-        public int compareTo(Point o) {
-            return x > o.x? 1 : x < o.x? -1 : y > o.y? 1 : y < o.y ? -1 :0;
-        }
-    }*/
 
 }
 

@@ -15,11 +15,9 @@ public class DrawCommand implements Streamable {
     static final byte DRAW=1;
     static final byte CLEAR=2;
     byte mode;
-    int x=0;
-    int y=0;
-    int r=0;
-    int g=0;
-    int b=0;
+    int x;
+    int y;
+    int rgb;
 
     public DrawCommand() { // needed for streamable
     }
@@ -28,13 +26,11 @@ public class DrawCommand implements Streamable {
         this.mode=mode;
     }
 
-    DrawCommand(byte mode, int x, int y, int r, int g, int b) {
+    DrawCommand(byte mode, int x, int y, int rgb) {
         this.mode=mode;
         this.x=x;
         this.y=y;
-        this.r=r;
-        this.g=g;
-        this.b=b;
+        this.rgb=rgb;
     }
 
 
@@ -42,25 +38,21 @@ public class DrawCommand implements Streamable {
         out.writeByte(mode);
         out.writeInt(x);
         out.writeInt(y);
-        out.writeInt(r);
-        out.writeInt(g);
-        out.writeInt(b);
+        out.writeInt(rgb);
     }
 
     public void readFrom(DataInput in) throws Exception {
         mode=in.readByte();
         x=in.readInt();
         y=in.readInt();
-        r=in.readInt();
-        g=in.readInt();
-        b=in.readInt();
+        rgb=in.readInt();
     }
 
 
     public String toString() {
         StringBuilder ret=new StringBuilder();
         switch(mode) {
-            case DRAW: ret.append("DRAW(" + x + ", " + y + ") [" + r + '|' + g + '|' + b + ']');
+            case DRAW: ret.append("DRAW(" + x + ", " + y + ") [" + rgb + "]");
                 break;
             case CLEAR: ret.append("CLEAR");
                 break;

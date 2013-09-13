@@ -118,8 +118,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
                 suspected_mbrs.add(mbr);
 
         if(wouldIBeCoordinator()) {
-            if(log.isDebugEnabled())
-                log.debug(gms.local_addr + ": members are " + gms.members + ", coord=" + gms.local_addr + ": I'm the new coord !");
+            log.debug("%s: members are %s, coord=%s: I'm the new coord !", gms.local_addr, gms.members, gms.local_addr);
 
             gms.becomeCoordinator();
             for(Address mbr: suspected_mbrs) {

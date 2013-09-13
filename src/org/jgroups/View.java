@@ -171,9 +171,9 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
 
     public String toString() {
         StringBuilder sb=new StringBuilder(64);
-        sb.append(view_id).append(" ");
+        sb.append(view_id);
         if(members != null)
-            sb.append("[").append(Util.printListWithDelimiter(members, ", ", Util.MAX_LIST_PRINT_SIZE)).append("]");
+            sb.append(" [").append(Util.printListWithDelimiter(members, ", ", Util.MAX_LIST_PRINT_SIZE)).append("]");
         return sb.toString();
     }
 
@@ -228,7 +228,7 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
         Address[] joined=null, left=null;
         int num_joiners=0, num_left=0;
 
-        // determin joiners
+        // determine joiners
         for(Address addr: to)
             if(!from.containsMember(addr))
                 num_joiners++;
@@ -240,7 +240,7 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
                     joined[index++]=addr;
         }
 
-        // determin leavers
+        // determine leavers
         for(Address addr: from)
             if(!to.containsMember(addr))
                 num_left++;
@@ -258,4 +258,5 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
     public Iterator<Address> iterator() {
         return new ArrayIterator(this.members);
     }
+
 }

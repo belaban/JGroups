@@ -170,7 +170,7 @@ public class Merger {
         newViewMembers.removeAll(gms.members.getMembers());
 
         try {
-            gms.castViewChange(data.view,data.digest,null,newViewMembers);
+            gms.castViewChange(data.view, data.digest, newViewMembers);
             // if we have flush in stack send ack back to merge coordinator
             if(gms.flushProtocolInStack) { //[JGRP-700] - FLUSH: flushing should span merge
                 Message ack=new Message(data.getSender()).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)

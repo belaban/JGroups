@@ -20,7 +20,7 @@ import java.util.*;
  * @author Bela Ban
  */
 public class CoordGmsImpl extends ServerGmsImpl {
-    private static final Long  MAX_SUSPEND_TIMEOUT=30000L;
+    protected static final Long  MAX_SUSPEND_TIMEOUT=30000L;
 
     public CoordGmsImpl(GMS g) {
         super(g);
@@ -113,12 +113,14 @@ public class CoordGmsImpl extends ServerGmsImpl {
             switch(req.type) {
                 case Request.JOIN:
                     new_mbrs.add(req.mbr);
-                    useFlushIfPresent=req.useFlushIfPresent;
+                    if(req.useFlushIfPresent)
+                        useFlushIfPresent=true;
                     break;
                 case Request.JOIN_WITH_STATE_TRANSFER:
                     new_mbrs.add(req.mbr);
                     joinAndStateTransferInitiated=true;
-                    useFlushIfPresent=req.useFlushIfPresent;
+                    if(req.useFlushIfPresent)
+                        useFlushIfPresent=true;
                     break;
                 case Request.LEAVE:
                     if(req.suspected)
@@ -137,24 +139,23 @@ public class CoordGmsImpl extends ServerGmsImpl {
         if(gms.getViewId() == null) {
             // we're probably not the coord anymore (we just left ourselves), let someone else do it
             // (client will retry when it doesn't get a response)
-            if(log.isDebugEnabled())
-                log.debug("gms.view_id is null, I'm not the coordinator anymore (leaving=" + String.valueOf(leaving) +
-                        "); the new coordinator will handle the leave request");
+            log.debug("gms.view_id is null, I'm not the coordinator anymore (leaving=%b); " +
+                        "the new coordinator will handle the leave request", leaving);
             return;
         }
 
         List<Address> current_members=gms.members.getMembers();
         leaving_mbrs.retainAll(current_members); // remove all elements of leaving_mbrs which are not current members
-        if(suspected_mbrs.remove(gms.local_addr)) {
-            if(log.isWarnEnabled()) log.warn("I am the coord and I'm being suspected -- will probably leave shortly");
-        }
+        if(suspected_mbrs.remove(gms.local_addr))
+            log.warn("I am the coord and I'm being suspected -- will probably leave shortly");
+
         suspected_mbrs.retainAll(current_members); // remove all elements of suspected_mbrs which are not current members
 
         // for the members that have already joined, return the current digest and membership
         for(Iterator<Address> it=new_mbrs.iterator(); it.hasNext();) {
             Address mbr=it.next();
             if(gms.members.contains(mbr)) { // already joined: return current digest and membership
-                log.warn("%s: %s already present; returning existing view %s", gms.local_addr, mbr, gms.view);
+                log.trace("%s: %s already present; returning existing view %s", gms.local_addr, mbr, gms.view);
                 Tuple<View,Digest> tuple=gms.getViewAndDigest();
                 if(tuple != null)
                     gms.sendJoinResponse(new JoinRsp(tuple.getVal1(), tuple.getVal2()), mbr);
@@ -209,13 +210,14 @@ public class CoordGmsImpl extends ServerGmsImpl {
                     join_rsp=new JoinRsp(new_view, join_digest);
                 else
                     log.warn("%s: digest does not match view (missing seqnos for %s); dropping JOIN-RSP",
-                             gms.local_addr, join_digest.getNonSetMembers());
+                             gms.local_addr, Arrays.toString(join_digest.getNonSetMembers()));
             }
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
 
             // we don't need to send the digest to existing members: https://issues.jboss.org/browse/JGRP-1317
-            gms.castViewChange(new_view, null, join_rsp, new_mbrs);
+            gms.castViewChange(new_view, null, new_mbrs);
+            gms.sendJoinResponses(join_rsp, new_mbrs);
         }
         finally {
             if(hasJoiningMembers)

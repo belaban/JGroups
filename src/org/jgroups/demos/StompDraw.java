@@ -401,8 +401,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
 
         public void mouseDragged(MouseEvent e) {
             int                 x=e.getX(), y=e.getY();
-            DrawCommand         comm=new DrawCommand(DrawCommand.DRAW, x, y,
-                                                     draw_color.getRed(), draw_color.getGreen(), draw_color.getBlue());
+            DrawCommand         comm=new DrawCommand(DrawCommand.DRAW, x, y, draw_color.getRGB());
 
             try {
                 byte[] buf=Util.streamableToByteBuffer(comm);
@@ -424,7 +423,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
          */
         public void drawPoint(DrawCommand c) {
             if(c == null || gr == null) return;
-            Color col=new Color(c.r, c.g, c.b);
+            Color col=new Color(c.rgb);
             gr.setColor(col);
             gr.fillOval(c.x, c.y, 10, 10);
             repaint();
