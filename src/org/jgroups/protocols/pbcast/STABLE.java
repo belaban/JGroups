@@ -288,7 +288,7 @@ public class STABLE extends Protocol {
             }
 
             if(send_stable_msg)
-                sendStableMessage();
+                sendStableMessage(true);
         }
 
         if(!batch.isEmpty())
@@ -317,7 +317,7 @@ public class STABLE extends Protocol {
             }
 
             if(send_stable_msg)
-                sendStableMessage();
+                sendStableMessage(true);
         }
     }
 
@@ -352,7 +352,7 @@ public class STABLE extends Protocol {
     @ManagedOperation(description="Sends a STABLE message; when every member has received a STABLE message " +
       "from everybody else, a STABILITY message will be sent")
     public void gc() {
-        sendStableMessage();
+        sendStableMessage(false);
     }
 
 
@@ -629,14 +629,11 @@ public class STABLE extends Protocol {
         down_prot.down(new Event(Event.STABLE, stable_digest)); // pass STABLE down, so NAKACK{2} can purge stable messages
     }
 
-
-
-
     /**
      * Broadcasts a STABLE message of the current digest to all members (or the coordinator only). The message contains
      * the highest seqno delivered and received for all members. The seqnos are retrieved from the NAKACK layer below.
      */
-    protected void sendStableMessage() {
+    protected void sendStableMessage(boolean send_in_background) {
         if(suspended || view == null)
             return;
 
@@ -652,10 +649,14 @@ public class STABLE extends Protocol {
             return;
         }
 
+        final Message msg=new Message(dest)
+          .setFlag(Message.Flag.OOB,Message.Flag.INTERNAL,Message.Flag.NO_RELIABILITY)
+          .putHeader(this.id,new StableHeader(StableHeader.STABLE_GOSSIP,d,current_view.getViewId()));
         try {
-            final Message msg=new Message(dest)
-              .setFlag(Message.Flag.OOB,Message.Flag.INTERNAL,Message.Flag.NO_RELIABILITY)
-              .putHeader(this.id, new StableHeader(StableHeader.STABLE_GOSSIP, d, current_view.getViewId()));
+            if(!send_in_background) {
+                down_prot.down(new Event(Event.MSG, msg));
+                return;
+            }
             Runnable r=new Runnable() {
                 public void run() {
                     down_prot.down(new Event(Event.MSG, msg));
@@ -777,7 +778,7 @@ public class STABLE extends Protocol {
                 log.trace("%s: stable task will not run as suspended=true", local_addr);
                 return;
             }
-            sendStableMessage();
+            sendStableMessage(false);
         }
 
         public String toString() {return STABLE.class.getSimpleName() + ": StableTask";}
