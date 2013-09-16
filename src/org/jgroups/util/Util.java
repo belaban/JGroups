@@ -2607,10 +2607,15 @@ public class Util {
 
     /** Returns an array of num random addresses, named A, B, C etc */
     public static Address[] createRandomAddresses(int num) {
+       return createRandomAddresses(num, false);
+    }
+
+    public static Address[] createRandomAddresses(int num, boolean use_numbers) {
         Address[] addresses=new Address[num];
+        int number=1;
         char c='A';
         for(int i=0; i < addresses.length; i++)
-            addresses[i]=Util.createRandomAddress(String.valueOf(c++));
+            addresses[i]=Util.createRandomAddress(use_numbers? String.valueOf(number++) : String.valueOf(c++));
         return addresses;
     }
 

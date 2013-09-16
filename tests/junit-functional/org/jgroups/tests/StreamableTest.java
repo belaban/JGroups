@@ -3,7 +3,9 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.protocols.*;
+import org.jgroups.protocols.PingData;
+import org.jgroups.protocols.PingHeader;
+import org.jgroups.protocols.TpHeader;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -13,8 +15,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Vector;
 
 
 @Test(groups=Global.FUNCTIONAL)
@@ -123,37 +126,20 @@ public class StreamableTest {
 
 
     public static void testMergeView() throws Exception {
-        Vector tmp_m1, tmp_m2 , m3, all, subgroups;
-        Address a,b,c,d,e,f;
-        View v1, v2, v3, v4, v5, view_all;
+        Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B"), c=Util.createRandomAddress("C"),
+          d=Util.createRandomAddress("D"), e=Util.createRandomAddress("E"), f=Util.createRandomAddress("F");
 
-        a=UUID.randomUUID();
-        b=UUID.randomUUID();
-        c=UUID.randomUUID();
-        d=UUID.randomUUID();
-        e=UUID.randomUUID();
-        f=UUID.randomUUID();
+        View v1=View.create(a,1,a,b,c);
+        View v2=new MergeView(d, 2, Arrays.asList(d), new ArrayList<View>());
+        View v3=View.create(e, 3, e,f);
+        View v4=new MergeView(e, 4, Arrays.asList(d), null);
+        View v5=new View(e, 5, Arrays.asList(d));
+        List<View> subgroups=Arrays.asList(v1,v2,v3,v4,v5);
 
-        tmp_m1=new Vector(); tmp_m2=new Vector(); m3=new Vector(); all=new Vector(); subgroups=new Vector();
-        tmp_m1.add(a); tmp_m1.add(b); tmp_m1.add(c);
-        tmp_m2.add(d);
-        m3.add(e); m3.add(f);
-        all.add(a); all.add(b); all.add(c); all.add(d); all.add(e); all.add(f);
 
-        v1=new View(a, 1, tmp_m1);
-        v2=new MergeView(d, 2, tmp_m2, new Vector());
-        v3=new View(e, 3, m3);
-        v4=new MergeView(e, 4, m3, null);
-        v5=new View(e, 5, m3);
-        subgroups.add(v1);
-        subgroups.add(v2);
-        subgroups.add(v3);
-        subgroups.add(v4);
-        subgroups.add(v5);
-
-        view_all=new MergeView(a, 5, all, subgroups);
+        MergeView view_all=new MergeView(a,5,Arrays.asList(a,b,c,d,e,f),subgroups);
         System.out.println("MergeView: " + view_all);
-        List<View> sub=((MergeView)view_all).getSubgroups();
+        List<View> sub=view_all.getSubgroups();
         assert sub.get(0) instanceof View;
         assert sub.get(1) instanceof MergeView;
         assert sub.get(2) instanceof View;
@@ -167,12 +153,9 @@ public class StreamableTest {
         MergeView merge_view=(MergeView)Util.streamableFromByteBuffer(MergeView.class, buf);
         assert merge_view != null;
         System.out.println("MergeView: " + merge_view);
-        sub=merge_view.getSubgroups();
-        assert sub.get(0) instanceof View;
-        assert sub.get(1) instanceof MergeView;
-        assert sub.get(2) instanceof View;
-        assert sub.get(3) instanceof MergeView;
-        assert sub.get(4) instanceof View;
+        for(View v: merge_view.getSubgroups()) {
+            assert !(v instanceof MergeView);
+        }
     }
 
     private static void stream(Message msg) throws Exception {

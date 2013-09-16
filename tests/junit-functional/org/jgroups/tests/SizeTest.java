@@ -429,51 +429,38 @@ public class SizeTest {
 
 
     public static void testMergeView() throws Exception {
-        ViewId vid=new ViewId(UUID.randomUUID(), 322649);
+        ViewId vid=new ViewId(Util.createRandomAddress("A"), 322649);
         List<Address> mbrs=new ArrayList<Address>();
         View v=new MergeView(vid, mbrs, null);
-        _testSize(v);
-        mbrs.add(UUID.randomUUID());
-        v=new MergeView(vid, mbrs, null);
-        _testSize(v);
+        _testSize(v, MergeView.class);
 
-        mbrs.add(UUID.randomUUID());
+        mbrs.add(Util.createRandomAddress("A"));
         v=new MergeView(vid, mbrs, null);
-        _testSize(v);
+        _testSize(v, MergeView.class);
+
+        mbrs.add(Util.createRandomAddress("B"));
+        v=new MergeView(vid, mbrs, null);
+        _testSize(v, MergeView.class);
     }
 
 
 
     public static void testMergeView2() throws Exception {
-        List<Address> m1, m2 , m3, all;
-        List<View> subgroups;
-        Address a,b,c,d,e,f;
-        View v1, v2, v3, view_all;
+        Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B"), c=Util.createRandomAddress("C"),
+          d=Util.createRandomAddress("D"), e=Util.createRandomAddress("E"), f=Util.createRandomAddress("F");
+        List<Address> all=Arrays.asList(a,b,c,d,e,f);
+        View v1=View.create(a, 1, a,b,c);
+        View v2=View.create(d, 2, d);
+        View v3=View.create(e, 3, e,f);
 
-        a=Util.createRandomAddress();
-        b=Util.createRandomAddress();
-        c=Util.createRandomAddress();
-        d=Util.createRandomAddress();
-        e=Util.createRandomAddress();
-        f=Util.createRandomAddress();
-
-        m1=new ArrayList<Address>(); m2=new ArrayList<Address>(); m3=new ArrayList<Address>(); all=new ArrayList<Address>();
-        subgroups=new ArrayList<View>();
-        m1.add(a); m1.add(b); m1.add(c);
-        m2.add(d);
-        m3.add(e); m3.add(f);
-        all.add(a); all.add(b); all.add(c); all.add(d); all.add(e); all.add(f);
-
-        v1=new View(a, 1, m1);
-        v2=new View(d, 2, m2);
-        v3=new View(e, 3, m3);
+        ArrayList<View> subgroups=new ArrayList<View>();
         subgroups.add(v1);
         subgroups.add(v2);
         subgroups.add(v3);
 
-        view_all=new MergeView(a, 5, all, subgroups);
+        MergeView view_all=new MergeView(a, 5, all, subgroups);
         System.out.println("MergeView: " + view_all);
-        _testSize(view_all);
+        _testSize(view_all, MergeView.class);
     }
 
 
@@ -509,7 +496,20 @@ public class SizeTest {
 
         view_all=new MergeView(a, 5, all, subgroups);
         System.out.println("MergeView: " + view_all);
-        _testSize(view_all);
+        _testSize(view_all, MergeView.class);
+    }
+
+
+    public static void testLargeMergeView() throws Exception {
+        int NUM=100;
+        Address[] members=Util.createRandomAddresses(NUM, true);
+        Address[] first=Arrays.copyOf(members,NUM / 2);
+        Address[] second=new Address[NUM/2];
+        System.arraycopy(members, NUM/2, second, 0, second.length);
+
+        View v1=View.create(first[0], 5, first), v2=View.create(second[0], 5, second);
+        MergeView mv=new MergeView(new ViewId(first[0], 6), members, Arrays.asList(v1, v2));
+        _testSize(mv, MergeView.class);
     }
 
 

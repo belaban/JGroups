@@ -93,11 +93,14 @@ public class MergeView extends View {
         if(len == 0)
             return;
         for(View v: subgroups) {
-            if(v instanceof MergeView)
-                out.writeBoolean(true);
-            else
-                out.writeBoolean(false);
-            v.writeTo(out);
+            int index=get(v.getCreator());
+            out.writeShort(index);
+            out.writeLong(v.getViewId().getId());
+
+            int num_mbrs=v.size();
+            out.writeShort(num_mbrs);
+            for(Address mbr: v)
+                out.writeShort(get(mbr));
         }
     }
 
@@ -107,10 +110,14 @@ public class MergeView extends View {
         if(len > 0) {
             subgroups=new View[len];
             for(int i=0; i < len; i++) {
-                boolean is_merge_view=in.readBoolean();
-                View v=is_merge_view? new MergeView() : new View();
-                v.readFrom(in);
-                subgroups[i]=v;
+                int index=in.readShort();
+                long id=in.readLong();
+                Address creator=get(index);
+                Address[] mbrs=new Address[in.readShort()];
+                for(int j=0; j < mbrs.length; j++)
+                    mbrs[j]=get(in.readShort());
+                View view=View.create(creator, id, mbrs);
+                subgroups[i]=view;
             }
         }
     }
@@ -118,12 +125,12 @@ public class MergeView extends View {
     public int serializedSize() {
         int retval=super.serializedSize();
         retval+=Global.SHORT_SIZE; // for size of subgroups vector
-
         if(subgroups == null)
             return retval;
         for(View v: subgroups) {
-            retval+=Global.BYTE_SIZE; // boolean for View or MergeView
-            retval+=v.serializedSize();
+            retval+=Global.SHORT_SIZE + Global.LONG_SIZE // creator and ID (ViewId)
+              + Global.SHORT_SIZE; // number of members in the subview
+            retval+=v.size() * Global.SHORT_SIZE; // a short (index) for each member
         }
         return retval;
     }
@@ -138,5 +145,17 @@ public class MergeView extends View {
         return retval;
     }
 
+    protected int get(Address member) {
+        if(member == null)
+            return -1;
+        for(int i=0; i < members.length; i++)
+            if(member.equals(members[i]))
+                return i;
+        return -1;
+    }
+
+    protected Address get(int index) {
+        return members != null && index >= 0 && index < members.length? members[index] : null;
+    }
 
 }

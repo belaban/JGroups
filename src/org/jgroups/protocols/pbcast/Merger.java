@@ -692,7 +692,7 @@ public class Merger {
          * @param merge_rsps A list of MergeData items. Elements with merge_rejected=true were removed before. Is guaranteed
          *          not to be null and to contain at least 1 member.
          */
-        private MergeData consolidateMergeData(List<MergeData> merge_rsps) {
+        protected MergeData consolidateMergeData(List<MergeData> merge_rsps) {
             long                            logical_time=0; // for new_vid
             List<View>                      subgroups=new ArrayList<View>(11); // contains a list of Views, each View is a subgroup
             Collection<Collection<Address>> sub_mbrships=new ArrayList<Collection<Address>>();
@@ -717,8 +717,9 @@ public class Merger {
 
             // remove all members from the new view for which we didn't get a digest, e.g. new view={A,B,C,D,E,F},
             // digest={A,C,D,F} --> new view={A,C,D,F}, digest={A,C,D,F}
-            for(Collection<Address> coll: sub_mbrships)
-                coll.retainAll(digest_membership);
+            if(!digest_membership.isEmpty())
+                for(Collection<Address> coll: sub_mbrships)
+                    coll.retainAll(digest_membership);
 
             List<Address> merged_mbrs=gms.computeNewMembership(sub_mbrships);
 
