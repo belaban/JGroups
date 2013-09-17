@@ -75,7 +75,8 @@ public class Merger {
         if(merge_leader.equals(gms.local_addr)) {
             if(log.isDebugEnabled()) {
                 Collection<Address> merge_participants=Util.determineMergeParticipants(views);
-                log.debug("%s: I will be the leader. Starting the merge task for %d coords", gms.local_addr, merge_participants.size());
+                log.debug("%s: I will be the leader. Starting the merge task for %d coords",
+                          gms.local_addr, merge_participants.size());
             }
             merge_task.start(views);
         }
@@ -98,7 +99,7 @@ public class Merger {
             _handleMergeRequest(sender, merge_id, mbrs);
         }
         catch(Throwable t) {
-            log.error("%s: failure handling the merge request: %s", gms.local_addr, t);
+            log.error("%s: failure handling the merge request: %s", gms.local_addr, t.getMessage());
             cancelMerge(merge_id);
             sendMergeRejectedResponse(sender, merge_id);
         }
@@ -188,10 +189,9 @@ public class Merger {
             gms.stopFlush();
         }
         catch(Throwable t) {
-            log.error("stop flush failed", t);
+            log.error("stop flush failed", t.getMessage());
         }
-        if(log.isTraceEnabled())
-            log.trace("%s: merge %s is cancelled", gms.local_addr, merge_id);
+        log.trace("%s: merge %s is cancelled", gms.local_addr, merge_id);
         cancelMerge(merge_id);
     }
 
@@ -569,7 +569,7 @@ public class Merger {
                 if(ex instanceof Error || ex instanceof RuntimeException)
                     log.warn(gms.local_addr + ": merge is cancelled", ex);
                 else
-                    log.warn("%s: merge is cancelled: %s", gms.local_addr, ex);
+                    log.warn("%s: merge is cancelled: %s", gms.local_addr, ex.getMessage());
                 sendMergeCancelledMessage(coordsCopy, new_merge_id);
                 cancelMerge(new_merge_id); // the message above cancels the merge, too, but this is a 2nd line of defense
             }
