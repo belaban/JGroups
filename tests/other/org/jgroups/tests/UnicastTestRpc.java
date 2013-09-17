@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -300,7 +301,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
     protected static List<String> getSites(JChannel channel) {
         RELAY2 relay=(RELAY2)channel.getProtocolStack().findProtocol(RELAY2.class);
-        return relay.siteNames();
+        return relay != null? relay.siteNames() : Collections.<String>emptyList();
     }
 
 
