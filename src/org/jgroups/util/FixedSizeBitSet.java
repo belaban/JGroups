@@ -43,14 +43,17 @@ public class FixedSizeBitSet {
     /**
      * Sets the bit at the specified index to <code>true</code>.
      * @param index a bit index.
+     * @return true if the bit was 0 before, false otherwise
      * @throws IndexOutOfBoundsException if the specified index is negative.
      */
-    public void set(int index) {
+    public boolean set(int index) {
         if(index < 0 || index >= size)
             throw new IndexOutOfBoundsException("index: " + index);
 
         int wordIndex=wordIndex(index);
+        boolean already_set=(words[wordIndex] & (1L << index)) != 0;
         words[wordIndex]|=(1L << index); // Restores invariants
+        return !already_set;
     }
 
    

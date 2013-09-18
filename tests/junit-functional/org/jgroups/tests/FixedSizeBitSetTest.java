@@ -27,6 +27,15 @@ public class FixedSizeBitSetTest {
         set.set(10);
     }
 
+    public static void testSet() {
+        FixedSizeBitSet set=new FixedSizeBitSet(10);
+        assert set.set(4) && set.cardinality() == 1;
+        assert !set.set(4);
+        set.clear(4);
+        assert set.cardinality() == 0;
+        assert set.set(4) && set.cardinality() == 1;
+    }
+
     @Test(expectedExceptions=IndexOutOfBoundsException.class)
     public static void testClearWithIndexOutOfBounds() {
         FixedSizeBitSet set=new FixedSizeBitSet(10);
@@ -76,7 +85,13 @@ public class FixedSizeBitSetTest {
         assert index == 0 : "expected 0 but got " + index;
     }
 
-
+    public static void testCardinality() {
+        FixedSizeBitSet set=new FixedSizeBitSet(20);
+        for(int i=0; i < 20; i++)
+            set.set(i);
+        System.out.println("set = " + set);
+        assert set.cardinality() == 20;
+    }
 
     public static void testNextClearBit() {
         FixedSizeBitSet set=new FixedSizeBitSet(64);

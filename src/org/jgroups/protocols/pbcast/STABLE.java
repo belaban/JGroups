@@ -85,17 +85,16 @@ public class STABLE extends Protocol {
     
     protected Address             local_addr;
     protected volatile View       view;
-    protected final Set<Address>  mbrs=new LinkedHashSet<Address>(); // we don't need ordering here
 
     @GuardedBy("lock")
     protected volatile MutableDigest digest; // keeps track of the highest seqnos from all members
 
     /**
-     * Keeps track of who we already heard from (STABLE_GOSSIP msgs). This is cleared initially, and we add the sender
-     * when a STABLE message is received. When the list is full (responses from all members), we send a STABILITY message
+     * Keeps track of who we already heard from (STABLE_GOSSIP msgs). This is all 0's, and we set the sender
+     * when a STABLE message is received. When the bitset is all 1's (responses from all members), we send a STABILITY message
      */
     @GuardedBy("lock")
-    protected final Set<Address>  votes=new HashSet<Address>();
+    protected FixedSizeBitSet     votes;
 
     protected final Lock          lock=new ReentrantLock();
 
@@ -255,7 +254,7 @@ public class STABLE extends Protocol {
                 handleStabilityMessage(hdr.digest, sender, hdr.view_id);
                 break;
             default:
-                if(log.isErrorEnabled()) log.error("StableHeader type " + hdr.type + " not known");
+                log.error("%s: StableHeader type %s not known", local_addr, hdr.type);
         }
     }
 
@@ -360,15 +359,10 @@ public class STABLE extends Protocol {
 
 
     protected void handleViewChange(View v) {
-        this.view=v;
-        List<Address> tmp=v.getMembers();
-        synchronized(mbrs) {
-            mbrs.clear();
-            mbrs.addAll(tmp);
-        }
         lock.lock();
         try {
-            coordinator=tmp.get(0);
+            this.view=v;
+            coordinator=v.getMembers().get(0);
             resetDigest();
             if(!initialized)
                 initialized=true;
@@ -392,20 +386,21 @@ public class STABLE extends Protocol {
 
         for(Digest.Entry entry: d) {
             Address mbr=entry.getMember();
-            long highest_delivered=entry.getHighestDeliveredSeqno();
-            long highest_received=entry.getHighestReceivedSeqno();
+            long hd=entry.getHighestDeliveredSeqno(), hr=entry.getHighestReceivedSeqno();
 
             // compute the minimum of the highest seqnos deliverable (for garbage collection)
             long[] seqnos=digest.get(mbr);
             if(seqnos == null)
                 continue;
-            long my_highest_delivered=seqnos[0];
-            // compute the maximum of the highest seqnos seen (for retransmission of last missing message)
-            long my_highest_received=seqnos[1];
+            long my_hd=seqnos[0];
+            long my_hr=seqnos[1]; // (for retransmission of last missing message)
 
-            long new_highest_delivered=Math.min(my_highest_delivered, highest_delivered);
-            long new_highest_received=Math.max(my_highest_received, highest_received);
-            digest.set(mbr, new_highest_delivered, new_highest_received);
+            if(my_hd == -1) // -1 means the seqno hasn't been set yet
+                my_hd=hd;
+
+            long new_hd=Math.min(my_hd, hd);
+            long new_hr=Math.max(my_hr, hr);
+            digest.set(mbr, new_hd, new_hr);
         }
         if(sb != null) // implies log.isTraceEnabled() == true
             log.trace(sb.append("\nresult: ").append(printDigest(digest)).append("\n"));
@@ -416,27 +411,40 @@ public class STABLE extends Protocol {
     protected void resetDigest() {
         if(view == null)
             return;
-        digest=new MutableDigest(view.getMembersRaw()).set(getDigest());
+        digest=new MutableDigest(view.getMembersRaw()); // .set(getDigest());
         log.trace("%s: reset digest to %s", local_addr, printDigest(digest));
-        votes.clear();
+        votes=new FixedSizeBitSet(view.size()); // all 0's initially
     }
 
     /**
      * Adds mbr to votes and returns true if we have all the votes, otherwise false.
-     * @param mbr
+     * @param rank
      */
     @GuardedBy("lock")
-    protected boolean addVote(Address mbr) {
-        return votes.add(mbr) && allVotesReceived(votes);
-    }
-
-    /** Votes is already locked and guaranteed to be non-null */
-    protected boolean allVotesReceived(Set<Address> votes) {
-        synchronized(mbrs) {
-            return votes.equals(mbrs); // compares identity, size and element-wise (if needed)
+    protected boolean addVote(int rank) {
+        try {
+            return votes.set(rank) && allVotesReceived(votes);
+        }
+        catch(Throwable t) {
+            return false;
         }
     }
 
+    /** Votes is already locked and guaranteed to be non-null */
+    @GuardedBy("lock")
+    protected static boolean allVotesReceived(FixedSizeBitSet votes) {
+        return votes.cardinality() == votes.size();
+    }
+
+    protected static int getRank(Address member, View v) {
+        if(v == null || member == null)
+            return -1;
+        Address[] members=v.getMembersRaw();
+        for(int i=0; i < members.length; i++)
+            if(member.equals(members[i]))
+                return i;
+        return -1;
+    }
 
     protected void startStableTask() {
         stable_task_lock.lock();
@@ -444,8 +452,7 @@ public class STABLE extends Protocol {
             if(stable_task_future == null || stable_task_future.isDone()) {
                 StableTask stable_task=new StableTask();
                 stable_task_future=timer.scheduleWithDynamicInterval(stable_task);
-                if(log.isTraceEnabled())
-                    log.trace("stable task started");
+                log.trace("%s: stable task started", local_addr);
             }
         }
         finally {
@@ -477,8 +484,7 @@ public class STABLE extends Protocol {
             if(resume_task_future == null || resume_task_future.isDone()) {
                 ResumeTask resume_task=new ResumeTask();
                 resume_task_future=timer.schedule(resume_task, max_suspend_time, TimeUnit.MILLISECONDS);
-                if(log.isDebugEnabled())
-                    log.debug("resume task started, max_suspend_time=" + max_suspend_time);
+                log.debug("%s: resume task started, max_suspend_time=%d", local_addr, max_suspend_time);
             }
         }
 
@@ -495,11 +501,11 @@ public class STABLE extends Protocol {
     }
 
 
-    protected void startStabilityTask(Digest d, long delay) {
+    protected void startStabilityTask(Digest d, ViewId view_id, long delay) {
         stability_lock.lock();
         try {
             if(stability_task_future == null || stability_task_future.isDone()) {
-                StabilitySendTask stability_task=new StabilitySendTask(d); // runs only once
+                StabilitySendTask stability_task=new StabilitySendTask(d, view_id); // runs only once
                 stability_task_future=timer.schedule(stability_task, delay, TimeUnit.MILLISECONDS);
             }
         }
@@ -550,16 +556,22 @@ public class STABLE extends Protocol {
         }
 
         Digest stable_digest=null;
+        ViewId stable_view_id=null;
         lock.lock();
         try {
-            if(votes.contains(sender))  // already received gossip from sender; discard it
+            int rank=getRank(sender, view);
+            if(rank < 0 || votes.get(rank))  // already received gossip from sender; discard it
                 return;
             num_stable_msgs_received++;
             updateLocalDigest(d, sender);
-            if(addVote(sender)) {     // votes from all members have been received
+            if(addVote(rank)) {       // votes from all members have been received
                 stable_digest=digest; // no need to copy, as digest (although mutable) is reassigned below
-                resetDigest();        // sets 'digest'
+                stable_view_id=view.getViewId();
+                resetDigest();        // sets digest
             }
+        }
+        catch(Throwable t) {
+            return;
         }
         finally {
             lock.unlock();
@@ -569,9 +581,8 @@ public class STABLE extends Protocol {
         // received votes from their senders
         if(stable_digest != null) {
             resetNumBytes();
-            sendStabilityMessage(stable_digest);
-            // we discard our own STABILITY message, so pass it down now
-            // pass STABLE event down the stack, so NAKACK can garbage collect old messages
+            sendStabilityMessage(stable_digest, stable_view_id);
+            // we discard our own STABILITY message: pass it down now, so NAKACK can purge old messages
             down_prot.down(new Event(Event.STABLE, stable_digest));
         }
     }
@@ -613,7 +624,7 @@ public class STABLE extends Protocol {
             if(!view_id.equals(this.view.getViewId())) {
                 log.trace("%s: discarded STABILITY message with different view-id %s (my view-id=%s)",
                           local_addr, view_id, view);
-                resetDigest();
+                // resetDigest();
                 return;
             }
             log.trace("%s: received stability msg from %s: %s", local_addr, sender, printDigest(stable_digest));
@@ -685,10 +696,10 @@ public class STABLE extends Protocol {
      discard S2.
      @param tmp A copy of te stability digest, so we don't need to copy it again
      */
-    protected void sendStabilityMessage(Digest tmp) {
+    protected void sendStabilityMessage(Digest tmp, final ViewId view_id) {
         // give other members a chance to mcast STABILITY message. if we receive STABILITY by the end of our random
         // sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a STABILITY msg at the same time
-        startStabilityTask(tmp, Util.random(stability_delay));
+        startStabilityTask(tmp, view_id, Util.random(stability_delay));
     }
 
 
@@ -799,10 +810,12 @@ public class STABLE extends Protocol {
     /** Multicasts a STABILITY message */
     protected class StabilitySendTask implements Runnable {
         protected final Digest stability_digest;
+        protected final ViewId view_id; // ViewId at the time the STABILITY message was created
 
 
-        protected StabilitySendTask(Digest d) {
+        protected StabilitySendTask(Digest d, ViewId view_id) {
             this.stability_digest=d;
+            this.view_id=view_id;
         }
 
         public void run() {
@@ -815,7 +828,7 @@ public class STABLE extends Protocol {
             // but clear votes *before* sending it
             try {
                 Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
-                  .putHeader(id, new StableHeader(StableHeader.STABILITY, stability_digest, view.getViewId()));
+                  .putHeader(id, new StableHeader(StableHeader.STABILITY, stability_digest, view_id));
                 log.trace("%s: sending stability msg %s", local_addr, printDigest(stability_digest));
                 num_stability_msgs_sent++;
                 down_prot.down(new Event(Event.MSG, msg));
