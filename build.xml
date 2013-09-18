@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 
-<project name="JGroups" default="compile" basedir=".">
+<project name="JGroups" default="compile" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
     <description>
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>
@@ -22,7 +22,6 @@
     <property name="util.dir" value="${tests.dir}/util"/>
     <property name="compile.dir" value="${root.dir}/classes"/>
     <property name="lib.dir" value="${root.dir}/lib"/>
-    <property name="license.dir" value="${lib.dir}/licenses"/>
     <property name="dist.dir" value="${root.dir}/dist"/>
     <property name="tmp.dir" value="${root.dir}/tmp"/>
     <property name="doc.dir" value="${root.dir}/doc"/>
@@ -37,6 +36,7 @@
     <property name="timestamp"        value=".timestamp"/>
     <property name="protocols.xml"    value="${manual.dir}/en/modules/protocols.xml"/>
     <property name="maven.executable" value="mvn"/>
+    <property name="ivy.version" value="2.3.0" />
 
 	<!-- 5 minutes per test suite timeout -->
     <property name="unittest.timeout" value="1800000"/>
@@ -65,7 +65,6 @@
         <pathelement location="${java.home}/../lib/tools.jar"/>
     </path>
 
-    <taskdef resource="testngtasks" classpathref="jg.classpath"/>
 
     <!-- properties to determine IP version used -->
     <condition property="java.net.preferIPv4Stack" value="true" else="false">
@@ -76,34 +75,67 @@
       <istrue value="${jgroups.useIPv6}"/>
     </condition>
 
-    <!-- patternsets used to define test sets -->
-    <patternset id="flush.tests">
-        <include name="org/jgroups/tests/FlushTest*"/>
-    	<include name="org/jgroups/tests/ConcurrentStateTransferTest*"/>
-        <include name="org/jgroups/tests/ConcurrentStartupTest*"/>
-    </patternset>
+
+    <target name="check-lib-exists">
+        <available file="${lib.dir}" type="dir" property="lib.dir.exists"/>
+    </target>
 
 
-    <patternset id="all.tests">
-        <include name="org/jgroups/tests/**Test**"/>
-        <include name="org/jgroups/blocks/**Test**"/>
-    </patternset>
+    <target name="check-ivy-exists">
+        <mkdir dir="${lib.dir}"/>
+        <pathconvert property="ivy.exists" pathsep=" " setonempty="false">
+            <path>
+                <fileset dir="${lib.dir}" includes="ivy*.jar" />
+            </path>
+        </pathconvert>
+    </target>
 
-    <patternset id="junit.excludes">
-        <exclude name="**/DistributedQueueTest*"/>
-        <exclude name="**/ChannelTestBase*"/>
-    </patternset>
+    <target name="check-jars-exist">
+        <mkdir dir="${lib.dir}"/>
+        <pathconvert property="jars.exist" pathsep=" " setonempty="false">
+            <path>
+                <fileset dir="${lib.dir}" excludes="ivy*.jar" />
+            </path>
+        </pathconvert>
+    </target>
 
 
-    <target name="prepare">
+    <target name="get-ivy" depends="check-ivy-exists" unless="ivy.exists">
+        <get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.version}/ivy-${ivy.version}.jar"
+             dest="${lib.dir}" usetimestamp="true"/>
+    </target>
+
+
+    <target name="retrieve" depends="check-jars-exist,get-ivy,define-ivy-task" unless="jars.exist"
+            description="Retrieves all dependent libs defined in ivy.xml unless already present">
+        <ivy:retrieve type="jar" transitive="false"/>
+    </target>
+
+
+    <target name="define-testng-task">
+        <taskdef resource="testngtasks" classpathref="jg.classpath"/>
+    </target>
+
+    <target name="define-ivy-task">
+        <taskdef resource="org/apache/ivy/ant/antlib.xml"
+                 uri="antlib:org.apache.ivy.ant" classpathref="jg.classpath"/>
+    </target>
+
+
+    <target name="retrieve-sources" depends="get-ivy,define-ivy-task">
+        <mkdir dir="${lib.dir}"/>
+        <ivy:retrieve transitive="false"/>
+    </target>
+
+
+    <target name="prepare" depends="retrieve">
         <property environment="env"/>
         <mkdir dir="${compile.dir}"/>
     	<copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
     </target>
 
-    <target name="compile"
-            depends="prepare"
-            description="Compiles all Java files">
+
+    <target name="compile" depends="prepare" description="Compiles all Java files">
         <javac destdir="${compile.dir}"
                source="1.6"
                target="1.6"
@@ -127,9 +159,7 @@
     </target>
 
 
-    <target name="compile-no-unittests"
-            depends="prepare"
-            description="Compiles all Java files">
+    <target name="compile-no-unittests" depends="prepare" description="Compiles all Java files">
         <javac srcdir="${src.dir}"
                destdir="${compile.dir}"
                source="1.6"
@@ -288,8 +318,7 @@
 
     <target name="check-manual">
         <uptodate property="manual.up-to-date" targetfile="${manual.dir}/target/timestamp">
-            <srcfiles dir="${manual.dir}/en" includes="**/*">
-            </srcfiles>
+            <srcfiles dir="${manual.dir}/en" includes="**/*"/>
         </uptodate>
         <echo message="manual.up-to-data=${manual.up-to-date}"/>
     </target>
@@ -312,7 +341,6 @@
         <delete dir="${root.dir}/test-output" failonerror="false"/>
         <delete dir="${root.dir}/target" failonerror="false"/>
         <delete dir="${keystore.dir}" failonerror="false"/>
-        <delete file="${lib.dir}/jboss-test.jar" failonerror="false"/>
         <delete file="${root.dir}/velocity.log*" failonerror="false"/>
         <delete file="${conf.dir}/MANIFEST.MF" failonerror="false"/>
         <delete>
@@ -324,6 +352,10 @@
         <delete dir="${manual.dir}/target"/>
         <delete dir="${tutorial.dir}/target"/>
         <delete dir="${root.dir}/schema" failonerror="false"/>
+    </target>
+
+    <target name="clean-all" depends="clean" description="Also removes lib">
+        <delete dir="${lib.dir}" failonerror="false"/>
     </target>
 
 
@@ -368,13 +400,6 @@
     <!--
 =============================== TestNG ======================================== -->
 
-    <target name="all-tests-cc">
-        <antcall target="all-tests"/>
-    </target>
-
-    <target name="all-new-tests">
-        <antcall target="all-tests"/>
-    </target>
 
     <target name="all-tests">
         <sequential>
@@ -390,7 +415,7 @@
         </sequential>
     </target>
 
-    <target name="functional" depends="postcompile">
+    <target name="functional" depends="postcompile,define-testng-task">
         <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
         <runtest testname.ext="functional"
                  threadcount="10"
@@ -399,7 +424,7 @@
     </target>
 
 
-    <target name="byteman" depends="postcompile">
+    <target name="byteman" depends="postcompile,define-testng-task">
         <mkdir dir="${tmp.dir}/test-results/xml/byteman"/>
         <runtest classpath="jg.classpath.byteman"
                  testname.ext="byteman"
@@ -409,7 +434,7 @@
     </target>
 
 
-    <target name="time-sensitive" depends="postcompile">
+    <target name="time-sensitive" depends="postcompile,define-testng-task">
         <mkdir dir="${tmp.dir}/test-results/xml/time-sensitive"/>
         <runtest testname.ext="sensitive"
                  threadcount="1"
@@ -417,7 +442,7 @@
                  testng.xmlfile="time-sensitive.xml"/>
     </target>
 
-    <target name="stack-independent" depends="postcompile">
+    <target name="stack-independent" depends="postcompile,define-testng-task">
         <mkdir dir="${tmp.dir}/test-results/xml/stack-independent"/>
         <runtest testname.ext="ind"
                  threadcount="1"
@@ -427,7 +452,7 @@
     </target>
 
 
-    <target name="udp" depends="postcompile">
+    <target name="udp" depends="postcompile,define-testng-task">
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest testname.ext="udp"
                  threadcount="5"
@@ -439,7 +464,7 @@
                 />
     </target>
 
-    <target name="udp-flush" depends="postcompile">
+    <target name="udp-flush" depends="postcompile,define-testng-task">
         <mkdir dir="${tmp.dir}/test-results/xml/udp-flush"/>
         <runtest testname.ext="udp-flush"
                  threadcount="5"
@@ -451,7 +476,7 @@
                 />
     </target>
 
-    <target name="tcp" depends="postcompile">
+    <target name="tcp" depends="postcompile,define-testng-task">
     	<!-- Needed to force reading of properties. Otherwise tcp tests will fail -->
     	<property name="build.properties.file" value="build.properties"/>
     	<property file="${build.properties.file}"/>
@@ -469,7 +494,7 @@
                 />
     </target>
 
-    <target name="tcp-stress" depends="postcompile">
+    <target name="tcp-stress" depends="postcompile,define-testng-task">
     	<!-- Needed to force reading of properties. Otherwise tcp tests will fail -->
     	<property name="build.properties.file" value="build.properties"/>
     	<property file="${build.properties.file}"/>
@@ -487,7 +512,7 @@
                 />
     </target>
 
-    <target name="tcp-flush" depends="postcompile">
+    <target name="tcp-flush" depends="postcompile,define-testng-task">
     	<!-- Needed to force reading of properties. Otherwise tcp-flush tests will fail -->
     	<property name="build.properties.file" value="build.properties"/>
     	<property file="${build.properties.file}"/>

@@ -3,11 +3,13 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.Address;
 import org.jgroups.View;
 import org.jgroups.ViewId;
+import org.jgroups.util.ArrayIterator;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  * Subclass of {@link org.jgroups.View} with a null members field. Adds an array for left members and one for joined
@@ -74,6 +76,14 @@ public class DeltaView extends View {
         ref_view_id.readFrom(in);
         left_members=Util.readAddresses(in);
         new_members=Util.readAddresses(in);
+    }
+
+    public Iterator<Address> iterator() {
+        Address[] combined=new Address[left_members.length + new_members.length];
+        int left_len=left_members.length;
+        System.arraycopy(left_members, 0, combined, 0, left_len);
+        System.arraycopy(new_members, 0, combined, left_len, new_members.length);
+        return new ArrayIterator<Address>(combined);
     }
 
     public String toString() {

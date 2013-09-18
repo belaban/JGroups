@@ -30,11 +30,6 @@
                 There is no JNI code present so JGroups should run on all platforms.
             </listitem>
             <listitem>
-                If you want to generate HTML-based test reports from the
-                unittests, then xalan.jar needs to be in the CLASSPATH (also
-                available in the lib directory)
-            </listitem>
-            <listitem>
                 Logging: by default, JGroups tries to use log4j2. If the classes are not found on the classpath, it
                 resorts to log4j, and if still not found, it falls back to the java.util.logging logger.
                 See <xref linkend="Logging"/> for details on log configuration.
@@ -59,6 +54,7 @@
             <listitem>
                 <para>lib: JARs needed to either run the unit tests, or build the manual etc. No JARs from here are
                     required at runtime !
+                    Note that these JARs are downloaded automatically via ivy.
                 </para>
             </listitem>
             <listitem>
@@ -84,22 +80,28 @@
                 </para>
             </listitem>
             <listitem>
+                <para>
+                    Download ant (preferably 1.8.x or higher)
+                </para>
+            </listitem>
+            <listitem>
                 <para>Change to the JGroups directory</para>
             </listitem>
             <listitem>
-                <para>On UNIX systems use <filename>build.sh</filename>, on Windows
-                    <filename>build.bat</filename>:
-                    <userinput>$&gt;
-                        ./build.sh</userinput>
+                <para>Run <filename>ant</filename>:
+                    <userinput>$&gt; ant</userinput>
                 </para>
             </listitem>
             <listitem>
-                <para>This will compile all Java files (into the <filename>classes</filename> directory).
+                <para>This will compile all Java files (into the <filename>classes</filename> directory). Note that
+                    if the <filename>lib</filename> directory doesn't exist, ant will (1) download ivy into
+                    <filename>lib</filename> and then use ivy to download the dependent libraries defined in
+                    <filename>ivy.xml</filename>.
                 </para>
             </listitem>
             <listitem>
-                <para>To generate the JARs:
-                    <userinput>$&gt; ./build.sh jar</userinput>
+                <para>To generate the JGroups JAR:
+                    <userinput>$&gt; ant jar</userinput>
                 </para>
             </listitem>
             <listitem>
@@ -109,14 +111,12 @@
                 <itemizedlist>
                     <listitem>
                         <para>
-                            <filename>jgroups-3.x.y.jar</filename>
-                            - the JGroups JAR
+                            <filename>jgroups-3.x.y.jar</filename> - the JGroups JAR
                         </para>
                     </listitem>
                     <listitem>
                         <para>
-                            <filename>jgroups-sources.jar</filename>
-                            - the source code for the core classes and demos.
+                            <filename>jgroups-sources.jar</filename> - the source code for the core classes and demos.
                         </para>
                     </listitem>
                 </itemizedlist>
@@ -137,34 +137,22 @@
                         </para>
                     </listitem>
                     <listitem>
-                        <para>All needed JAR files in
-                            <filename>JGroups/lib</filename>
-                            . To build from sources, the two
-                            Ant JARs are required. To run unit tests, the JUnit (and
-                            possibly Xalan) JARs are needed.
+                        <para>All needed JAR files in <filename>JGroups/lib</filename>. Note that most JARs in
+                            <filename>lib</filename> are only required for running unit tests and generating
+                            test reports.
                         </para>
                     </listitem>
                 </orderedlist>
             </listitem>
             <listitem>
                 <para>To generate JavaDocs simple run
-                    <userinput>$&gt;
-                        ./build.sh javadoc</userinput>
+                    <userinput>$&gt; ant javadoc</userinput>
                     and the Javadoc documentation will be generated in the <filename>dist/javadoc</filename>
                     directory
                 </para>
             </listitem>
             <listitem>
-                <para>Note that - if you already have Ant installed on your
-                    system - you do not need to use build.sh or build.bat, simply
-                    invoke ant on the build.xml file. To be able to invoked ant
-                    from any directory below the root directory, place
-                    <userinput>ANT_ARGS="-find build.xml -emacs"</userinput>
-                    into
-                    the
-                    <filename>.antrc</filename>
-                    file in your home
-                    directory.
+                <para>Note that you need to have ant installed in order to build JGroups from source.
                 </para>
             </listitem>
             <listitem>

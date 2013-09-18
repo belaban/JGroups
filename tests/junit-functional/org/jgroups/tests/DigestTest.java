@@ -258,7 +258,7 @@ public class DigestTest {
 
 
     public void testCopy2() {
-        Assert.assertEquals(d, d.copy());
+        assert d.equals(d.copy());
     }
 
 

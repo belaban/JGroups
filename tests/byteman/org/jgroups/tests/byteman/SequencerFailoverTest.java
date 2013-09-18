@@ -228,7 +228,7 @@ public class SequencerFailoverTest extends BMNGRunner {
         final Address sender=channel.getAddress();
         for(int i=1; i <= NUM_MSGS; i++) {
             Util.sleep(300);
-            channel.send(new Message(null, null, new Integer(i)));
+            channel.send(new Message(null, null,i));
             System.out.print("[" + sender + "] -- messages sent: " + i + "/" + NUM_MSGS + "\r");
         }
         System.out.println("");

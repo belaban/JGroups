@@ -929,7 +929,7 @@ public class SizeTest {
 
         View view=(View)Util.streamableFromByteBuffer(view_class,serialized_form);
         System.out.println("old view: " + v + "\nnew view: " + view);
-        Assert.assertEquals(view, v);
+        assert view.equals(v);
     }
 
     private static void _testSize(Collection<Address> coll) throws Exception {

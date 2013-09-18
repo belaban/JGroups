@@ -107,7 +107,12 @@ public class Digest implements Streamable, Iterable<Digest.Entry> {
         if(this == obj)
             return true;
         Digest other=(Digest)obj;
-        return Arrays.equals(members, other.members) && Arrays.equals(seqnos,other.seqnos);
+         // return Arrays.equals(members, other.members) && Arrays.equals(seqnos,other.seqnos);
+
+        boolean same_mbrs=Arrays.equals(members, other.members);
+        boolean same_seqnos=Arrays.equals(seqnos, other.seqnos);
+
+        return same_mbrs && same_seqnos;
     }
 
     /**
@@ -268,22 +273,27 @@ public class Digest implements Streamable, Iterable<Digest.Entry> {
     @Immutable
     public static class Entry {
         protected final Address member;
-        protected final long    highest_delivered;
-        protected final long    highest_received;
+        protected final long    hd;
+        protected final long    hr;
 
         public Entry(Address member, long highest_delivered, long highest_received) {
             this.member=member;
-            this.highest_delivered=highest_delivered;
-            this.highest_received=highest_received;
+            this.hd=highest_delivered;
+            this.hr=highest_received;
         }
 
         public Address getMember()                {return member;}
-        public long    getHighestDeliveredSeqno() {return highest_delivered;}
-        public long    getHighestReceivedSeqno()  {return highest_received;}
-        public long    getHighest()               {return max(highest_delivered, highest_received);}
+        public long    getHighestDeliveredSeqno() {return hd;}
+        public long    getHighestReceivedSeqno()  {return hr;}
+        public long    getHighest()               {return max(hd,hr);}
+
+        public boolean equals(Object obj) {
+            Entry other=(Entry)obj;
+            return member.equals(other.member) && hd == other.hd && hr == other.hr;
+        }
 
         public String toString() {
-            return member + ": [" + highest_delivered + " (" + highest_received + ")]";
+            return member + ": [" + hd + " (" + hr + ")]";
         }
     }
 
