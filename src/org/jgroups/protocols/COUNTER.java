@@ -133,6 +133,8 @@ public class COUNTER extends Protocol {
 
 
     public Counter getOrCreateCounter(String name, long initial_value) {
+        if(local_addr == null)
+            throw new IllegalArgumentException("the channel needs to be connected before creating or getting a counter");
         Owner owner=getOwner();
         GetOrCreateRequest req=new GetOrCreateRequest(owner, name, initial_value);
         Promise<long[]> promise=new Promise<long[]>();

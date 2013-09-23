@@ -10,7 +10,7 @@ import org.jgroups.protocols.COUNTER;
  */
 public class CounterService {
     protected JChannel ch;
-    protected COUNTER counter_prot;
+    protected COUNTER  counter_prot;
 
     public CounterService(JChannel ch) {
         setChannel(ch);
@@ -20,7 +20,7 @@ public class CounterService {
         this.ch=ch;
         counter_prot=(COUNTER)ch.getProtocolStack().findProtocol(COUNTER.class);
         if(counter_prot == null)
-            throw new IllegalStateException("Channel configuration must include the COUNTER protocol");
+            throw new IllegalStateException("channel configuration must include the COUNTER protocol");
     }
 
     /**
