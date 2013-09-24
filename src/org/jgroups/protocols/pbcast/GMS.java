@@ -1078,7 +1078,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected View createViewFromDeltaView(View current_view, DeltaView delta_view) {
         if(current_view == null || delta_view == null)
-            return null;
+            throw new IllegalStateException("current view (" + current_view + ") or delta view (" + delta_view + ") is null");
         ViewId current_view_id=current_view.getViewId(),
           delta_ref_view_id=delta_view.getRefViewId(),
           delta_view_id=delta_view.getViewId();

@@ -100,7 +100,8 @@ public class MERGE3 extends Protocol {
     public String dumpViews() {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<ViewId,SortedSet<Address>> entry: views.entrySet())
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+            sb.append(entry.getKey()).append(": [")
+              .append(Util.printListWithDelimiter(entry.getValue(), ", ", Util.MAX_LIST_PRINT_SIZE)).append("]\n");
         return sb.toString();
     }
 

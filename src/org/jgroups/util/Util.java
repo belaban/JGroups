@@ -2225,12 +2225,10 @@ public class Util {
         StringBuilder sb=new StringBuilder();
         int count=0, size=list.size();
         for(T el: list) {
-            if(first) {
+            if(first)
                 first=false;
-            }
-            else {
+            else
                 sb.append(delimiter);
-            }
             sb.append(el);
             if(limit > 0 && ++count >= limit) {
                 if(size > count)
@@ -2246,12 +2244,10 @@ public class Util {
         StringBuilder sb=new StringBuilder();
         int count=0, size=list.length;
         for(T el: list) {
-            if(first) {
+            if(first)
                 first=false;
-            }
-            else {
+            else
                 sb.append(delimiter);
-            }
             sb.append(el);
             if(limit > 0 && ++count >= limit) {
                 if(size > count)
