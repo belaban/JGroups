@@ -935,8 +935,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         }
 
-        Message xmit_msg=msg.copy(true, true); // copy payload and headers
-        xmit_msg.setDest(dest);
+        Message xmit_msg=msg.copy(true, true).dest(dest).setFlag(Message.Flag.INTERNAL); // copy payload and headers
         NakAckHeader hdr=(NakAckHeader)xmit_msg.getHeader(id);
         NakAckHeader newhdr=hdr.copy();    // create a copy of the header: https://issues.jboss.org/browse/JGRP-1502
         newhdr.type=NakAckHeader.XMIT_RSP; // change the type in the copy from MSG --> XMIT_RSP
@@ -1346,7 +1345,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         NakAckHeader hdr=NakAckHeader.createXmitRequestHeader(first_seqno, last_seqno, sender);
-        Message retransmit_msg=new Message(dest).setFlag(Message.Flag.OOB);
+        Message retransmit_msg=new Message(dest).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
         if(log.isTraceEnabled())
             log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + dest);
         retransmit_msg.putHeader(this.id, hdr);

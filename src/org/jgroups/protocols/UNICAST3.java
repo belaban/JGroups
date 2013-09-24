@@ -626,7 +626,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /** Sends a retransmit request to the given sender */
     protected void retransmit(SeqnoList missing, Address sender) {
-        Message xmit_msg=new Message(sender, missing).setFlag(Message.Flag.OOB).putHeader(id, Header.createXmitReqHeader());
+        Message xmit_msg=new Message(sender, missing).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+          .putHeader(id, Header.createXmitReqHeader());
         log.trace("%s: sending XMIT_REQ (%s) to %s", local_addr, missing, sender);
         down_prot.down(new Event(Event.MSG, xmit_msg));
         xmit_reqs_sent.addAndGet(missing.size());

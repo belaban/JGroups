@@ -927,7 +927,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     protected void sendRequestForFirstSeqno(Address dest, long seqno_received) {
-        Message msg=new Message(dest).setFlag(Message.Flag.OOB);
+        Message msg=new Message(dest).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
         UnicastHeader hdr=UnicastHeader.createSendFirstSeqnoHeader(seqno_received);
         msg.putHeader(this.id, hdr);
         if(log.isTraceEnabled())

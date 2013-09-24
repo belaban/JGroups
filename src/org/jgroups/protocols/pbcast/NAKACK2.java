@@ -914,12 +914,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                 sb.append(") ").append(original_sender).append(" not found in retransmission table");
                 // don't print the table unless we are in trace mode because it can be LARGE
-                if(log.isTraceEnabled()) {
+                if(log.isTraceEnabled())
                     sb.append(":\n").append(printMessages());
-                } 
-                if(print_stability_history_on_failed_xmit) {
+                if(print_stability_history_on_failed_xmit)
                     sb.append(" (stability history:\n").append(printStabilityHistory());
-                }
                 log.error(sb.toString());
             }
             return;
@@ -933,9 +931,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                     sb.append(") message ").append(original_sender).append("::").append(i);
                     sb.append(" not found in retransmission table of ").append(original_sender).append(":\n").append(buf);
-                    if(print_stability_history_on_failed_xmit) {
+                    if(print_stability_history_on_failed_xmit)
                         sb.append(" (stability history:\n").append(printStabilityHistory());
-                    }
                     log.warn(sb.toString());
                 }
                 continue;
@@ -1010,8 +1007,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return;
         }
 
-        Message xmit_msg=msg.copy(true, true); // copy payload and headers
-        xmit_msg.setDest(dest);
+        Message xmit_msg=msg.copy(true, true).dest(dest).setFlag(Message.Flag.INTERNAL); // copy payload and headers
         NakAckHeader2 hdr=(NakAckHeader2)xmit_msg.getHeader(id);
         NakAckHeader2 newhdr=hdr.copy();
         newhdr.type=NakAckHeader2.XMIT_RSP; // change the type in the copy from MSG --> XMIT_RSP
@@ -1387,7 +1383,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 dest=random_member;
         }
 
-        Message retransmit_msg=new Message(dest, missing_msgs).setFlag(Message.Flag.OOB)
+        Message retransmit_msg=new Message(dest, missing_msgs).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(this.id, NakAckHeader2.createXmitRequestHeader(sender));
 
         log.trace("%s: sending XMIT_REQ (%s) to %s", local_addr, missing_msgs, dest);

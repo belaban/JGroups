@@ -731,8 +731,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
     public void retransmit(SeqnoList missing, Address sender) {
         Unicast2Header hdr=Unicast2Header.createXmitReqHeader();
-        Message retransmit_msg=new Message(sender, missing);
-        retransmit_msg.setFlag(Message.Flag.OOB);
+        Message retransmit_msg=new Message(sender, missing).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
         if(log.isTraceEnabled())
             log.trace(local_addr + ": sending XMIT_REQ (" + missing + ") to " + sender);
         retransmit_msg.putHeader(this.id, hdr);
@@ -1079,8 +1078,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     protected void sendRequestForFirstSeqno(Address dest, long seqno_received) {
-        Message msg=new Message(dest);
-        msg.setFlag(Message.Flag.OOB);
+        Message msg=new Message(dest).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
         Unicast2Header hdr=Unicast2Header.createSendFirstSeqnoHeader(seqno_received);
         msg.putHeader(this.id, hdr);
         if(log.isTraceEnabled())
