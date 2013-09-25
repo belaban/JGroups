@@ -45,10 +45,10 @@ public class MERGE3 extends Protocol {
     protected long max_interval=10000;
 
     @Property(description="The max number of merge participants to be involved in a merge. 0 sets this to unlimited.")
-    protected int max_participants_in_merge=100;
+    protected int  max_participants_in_merge=100;
 
     /* ---------------------------------------------- JMX -------------------------------------------------------- */
-    @ManagedAttribute(description="Interval (in ms) after which we check for view inconsistencies",writable=true)
+    @Property(description="Interval (in ms) after which we check for view inconsistencies")
     protected long check_interval=0;
 
     @ManagedAttribute(description="Number of cached ViewIds")
@@ -67,7 +67,7 @@ public class MERGE3 extends Protocol {
     protected Future<?>      view_consistency_checker;
 
     // hashmap to keep track of view-id sent in INFO messages
-    protected final ConcurrentMap<ViewId,SortedSet<Address>> views=new ConcurrentHashMap<ViewId,SortedSet<Address>>(view != null? view.size() : 16);
+    protected final ConcurrentMap<ViewId,Set<Address>> views=new ConcurrentHashMap<ViewId,Set<Address>>(view != null? view.size() : 16);
 
     protected final ResponseCollector<View> view_rsps=new ResponseCollector<View>();
 
@@ -99,7 +99,7 @@ public class MERGE3 extends Protocol {
     @ManagedOperation(description="Lists the contents of the cached views")
     public String dumpViews() {
         StringBuilder sb=new StringBuilder();
-        for(Map.Entry<ViewId,SortedSet<Address>> entry: views.entrySet())
+        for(Map.Entry<ViewId,Set<Address>> entry: views.entrySet())
             sb.append(entry.getKey()).append(": [")
               .append(Util.printListWithDelimiter(entry.getValue(), ", ", Util.MAX_LIST_PRINT_SIZE)).append("]\n");
         return sb.toString();
@@ -108,6 +108,11 @@ public class MERGE3 extends Protocol {
     @ManagedOperation(description="Clears the views cache")
     public void clearViews() {views.clear();}
 
+
+    @ManagedOperation(description="Send INFO")
+    public void sendInfo() {
+        new InfoSender().run();
+    }
 
 
     public void init() throws Exception {
@@ -210,10 +215,15 @@ public class MERGE3 extends Protocol {
                 stopViewConsistencyChecker();
                 stopInfoSender();
                 break;
-        
-            case Event.VIEW_CHANGE:
+
+            case Event.TMP_VIEW:
                 stopViewConsistencyChecker();
                 stopInfoSender();
+                break;
+        
+            case Event.VIEW_CHANGE:
+                stopViewConsistencyChecker(); // should already be stopped
+                stopInfoSender();             // should already be stopped
                 Object ret=down_prot.down(evt);
                 view=(View)evt.getArg();
                 clearViews();
@@ -256,21 +266,24 @@ public class MERGE3 extends Protocol {
                     case INFO:
                         if(hdr.logical_name != null && sender instanceof UUID)
                             UUID.add(sender, hdr.logical_name);
-                        if(hdr.physical_addrs != null) {
+                        if(hdr.physical_addrs != null)
                             for(PhysicalAddress physical_addr: hdr.physical_addrs)
-                                down(new Event(Event.SET_PHYSICAL_ADDRESS,
-                                               new Tuple<Address,PhysicalAddress>(sender, physical_addr)));
-                        }
-                        SortedSet<Address> existing=views.get(hdr.view_id);
+                                down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(sender, physical_addr)));
+                        Set<Address> existing=views.get(hdr.view_id);
                         if(existing == null) {
                             existing=new ConcurrentSkipListSet<Address>();
-                            SortedSet<Address> tmp=views.putIfAbsent(hdr.view_id, existing);
+                            Set<Address> tmp=views.putIfAbsent(hdr.view_id, existing);
                             if(tmp != null)
                                 existing=tmp;
                         }
                         existing.add(sender);
-                        if(log.isTraceEnabled())
-                            log.trace(local_addr + " <-- " + sender + ": " + hdr + ", cached views: " + views.size());
+
+                        // remove sender from all other sets (old info)
+                        for(Set<Address> set: views.values())
+                            if(set != existing)
+                                set.remove(sender);
+
+                        log.trace(local_addr + "%s <-- %s: %s, cached views: %d", local_addr, sender, hdr, views.size());
                         break;
                     case VIEW_REQ:
                         Message view_rsp=new Message(sender).setFlag(Message.Flag.INTERNAL)
@@ -357,8 +370,7 @@ public class MERGE3 extends Protocol {
         public void run() {
             try {
                 if(views.size() <= 1) {
-                    if(log.isTraceEnabled())
-                        log.trace("found no inconsistent views: " + dumpViews());
+                    log.trace("%s: found no inconsistent views: %s", local_addr, dumpViews());
                     return;
                 }
                 _run();
@@ -374,9 +386,9 @@ public class MERGE3 extends Protocol {
             // Only add view creators which *are* actually in the set as well, e.g.
             // A|4: {A,B,C} and
             // B|4: {D} would only add A to the coords list. A is a real coordinator
-            for(Map.Entry<ViewId,SortedSet<Address>> entry: views.entrySet()) {
+            for(Map.Entry<ViewId,Set<Address>> entry: views.entrySet()) {
                 Address coord=entry.getKey().getCreator();
-                SortedSet<Address> members=entry.getValue();
+                Set<Address> members=entry.getValue();
                 if(members != null && members.contains(coord))
                     coords.add(coord);
             }
@@ -392,9 +404,9 @@ public class MERGE3 extends Protocol {
                 log.debug("I (" + local_addr + ") will be the merge leader");
 
             // add merge participants
-            for(SortedSet<Address> set: views.values()) {
+            for(Set<Address> set: views.values()) {
                 if(!set.isEmpty())
-                    coords.add(set.first());
+                    coords.add(set.iterator().next());
             }
 
             if(coords.size() <= 1) {
@@ -436,8 +448,16 @@ public class MERGE3 extends Protocol {
             for(Map.Entry<Address,View> entry: results.entrySet())
                 if(entry.getValue() != null)
                     merge_views.put(entry.getKey(), entry.getValue());
+            view_rsps.reset();
 
             if(merge_views.size() >= 2) {
+                Collection<View> tmp_views=merge_views.values();
+                if(Util.allEqual(tmp_views)) {
+                    log.trace("%s: all views are the same, suppressing sending MERGE up. Views: %s",
+                              local_addr, tmp_views);
+                    return;
+                }
+
                 up_prot.up(new Event(Event.MERGE, merge_views));
                 num_merge_events++;
             }

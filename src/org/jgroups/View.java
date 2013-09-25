@@ -38,6 +38,7 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
     */
     protected Address[] members;
 
+    protected static final boolean suppress_view_size=Boolean.getBoolean(Global.SUPPRESS_VIEW_SIZE);
 
 
     /**
@@ -176,8 +177,11 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
     public String toString() {
         StringBuilder sb=new StringBuilder(64);
         sb.append(view_id);
-        if(members != null)
-            sb.append(" [").append(Util.printListWithDelimiter(members, ", ", Util.MAX_LIST_PRINT_SIZE)).append("]");
+        if(members != null) {
+            if(!suppress_view_size)
+                sb.append(" (").append(members.length).append(")");
+            sb.append(" [").append(Util.printListWithDelimiter(members,", ",Util.MAX_LIST_PRINT_SIZE)).append("]");
+        }
         return sb.toString();
     }
 

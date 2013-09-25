@@ -634,6 +634,26 @@ public class UtilTest {
     }
 
 
+    public static void testAllEqual() {
+        Address[] mbrs=Util.createRandomAddresses(5);
+        View[] views={View.create(mbrs[0], 1, mbrs), View.create(mbrs[0], 1, mbrs), View.create(mbrs[0], 1, mbrs)};
+
+        boolean same=Util.allEqual(Arrays.asList(views));
+        System.out.println("views=" + Arrays.toString(views) + ", same = " + same);
+        assert same;
+
+        views=new View[]{View.create(mbrs[0], 1, mbrs), View.create(mbrs[0], 2, mbrs), View.create(mbrs[0], 1, mbrs)};
+        same=Util.allEqual(Arrays.asList(views));
+        System.out.println("views=" + Arrays.toString(views) + ", same = " + same);
+        assert !same;
+
+        views=new View[]{View.create(mbrs[1], 1, mbrs), View.create(mbrs[0], 1, mbrs), View.create(mbrs[0], 1, mbrs)};
+        same=Util.allEqual(Arrays.asList(views));
+        System.out.println("views=" + Arrays.toString(views) + ", same = " + same);
+        assert !same;
+    }
+
+
     public static void testLeftMembers() {
         final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
 

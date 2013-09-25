@@ -873,7 +873,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                                 new_view=createViewFromDeltaView(view,(DeltaView)new_view);
                             }
                             catch(Throwable t) {
-                                log.warn("%s: failed to create view from delta-view; dropping view: %s", local_addr, t);
+                                log.warn("%s: failed to create view from delta-view; dropping view: %s",
+                                         local_addr, t.toString());
                                 return null;
                             }
                         }

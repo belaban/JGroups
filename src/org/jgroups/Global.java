@@ -100,6 +100,7 @@ public class Global {
     public static final String CCHM_LOAD_FACTOR="cchm.load_factor";
     public static final String CCHM_CONCURRENCY_LEVEL="cchm.concurrency_level";
     public static final String MAX_LIST_PRINT_SIZE="max.list.print_size";
+    public static final String SUPPRESS_VIEW_SIZE="suppress.view_size";
 
     public static final int IPV4_SIZE=4;
     public static final int IPV6_SIZE=16;
