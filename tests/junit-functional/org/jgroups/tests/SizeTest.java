@@ -499,6 +499,24 @@ public class SizeTest {
         _testSize(view_all, MergeView.class);
     }
 
+    /** Tests a MergeView whose subgroups are *not* a subset of the members (https://issues.jboss.org/browse/JGRP-1707) */
+    public static void testMergeViewWithNonMatchingSubgroups() throws Exception {
+        Address[] members=Util.createRandomAddresses(6);
+        List<Address> first_subgroup=Arrays.asList(members[0],members[1],members[2]);     // A,B,C
+        List<Address> second_subgroup=Arrays.asList(members[3], members[4], members[5]);  // D,E,F
+        List<Address> full=Arrays.asList(members[0], members[1], members[2], members[3], members[5]); // E is missing
+        List<View> subviews=Arrays.asList(new View(members[0], 4, first_subgroup), new View(members[3], 4, second_subgroup));
+        MergeView mv=new MergeView(members[0], 5, full, subviews);
+        MergeView tmp_view=(MergeView)_testSize(mv,MergeView.class);
+        assert mv.deepEquals(tmp_view) : "views don't match: original=" + mv + ", new=" + tmp_view;
+
+        full=Arrays.asList(members[0], members[1], members[2], members[4], members[5]); // D (creator!) is missing
+        subviews=Arrays.asList(new View(members[0], 4, first_subgroup), new View(members[3], 4, second_subgroup));
+        mv=new MergeView(members[0], 5, full, subviews);
+        tmp_view=(MergeView)_testSize(mv, MergeView.class);
+        assert mv.deepEquals(tmp_view) : "views don't match: original=" + mv + ", new=" + tmp_view;
+    }
+
 
     public static void testLargeMergeView() throws Exception {
         int NUM=100;
@@ -921,7 +939,7 @@ public class SizeTest {
         _testSize(v, View.class);
     }
 
-    private static void _testSize(View v, Class<? extends Streamable> view_class) throws Exception {
+    private static View _testSize(View v, Class<? extends Streamable> view_class) throws Exception {
         long size=v.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(v);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
@@ -930,6 +948,7 @@ public class SizeTest {
         View view=(View)Util.streamableFromByteBuffer(view_class,serialized_form);
         System.out.println("old view: " + v + "\nnew view: " + view);
         assert view.equals(v);
+        return view;
     }
 
     private static void _testSize(Collection<Address> coll) throws Exception {

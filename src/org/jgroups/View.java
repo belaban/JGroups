@@ -146,6 +146,10 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
         return obj instanceof View && (this == obj || compareTo((View)obj) == 0);
     }
 
+    public boolean deepEquals(View other) {
+        return this == other || equals(other) && Arrays.equals(members, other.members);
+    }
+
 
     public int hashCode() {
         return view_id.hashCode();

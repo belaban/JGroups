@@ -72,13 +72,28 @@ public class MergeView extends View {
         return this;
     }
 
+    public boolean deepEquals(View other) {
+        if(!super.deepEquals(other)) return false;
+        if(!(other instanceof MergeView))
+            return true;
+        MergeView other_view=(MergeView)other;
+        if(subgroups == null && other_view.subgroups == null) return true;
+        if(subgroups.length != other_view.subgroups.length)   return false;
+        for(int i=0; i < subgroups.length; i++) {
+            View my_view=subgroups[i], oth_view=other_view.subgroups[i];
+            if(!my_view.deepEquals(oth_view))
+                return false;
+        }
+        return true;
+    }
+
     
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append("MergeView::").append(super.toString());
         if(subgroups != null && subgroups.length > 0) {
             sb.append(", subgroups=");
-            sb.append(Util.printListWithDelimiter(subgroups, ", ", Util.MAX_LIST_PRINT_SIZE));
+            sb.append(Util.printListWithDelimiter(subgroups,", ",Util.MAX_LIST_PRINT_SIZE));
         }
         return sb.toString();
     }
@@ -95,12 +110,20 @@ public class MergeView extends View {
         for(View v: subgroups) {
             int index=get(v.getCreator());
             out.writeShort(index);
+            // if we don't find the member, write the addres (https://issues.jboss.org/browse/JGRP-1707)
+            if(index < 0)
+                Util.writeAddress(v.getCreator(), out);
+
             out.writeLong(v.getViewId().getId());
 
             int num_mbrs=v.size();
             out.writeShort(num_mbrs);
-            for(Address mbr: v)
-                out.writeShort(get(mbr));
+            for(Address mbr: v) {
+                index=get(mbr);
+                out.writeShort(index);
+                if(index < 0)
+                    Util.writeAddress(mbr, out);
+            }
         }
     }
 
@@ -111,13 +134,19 @@ public class MergeView extends View {
             subgroups=new View[len];
             for(int i=0; i < len; i++) {
                 int index=in.readShort();
+                Address creator=index >= 0 ? get(index) : Util.readAddress(in);
                 long id=in.readLong();
-                Address creator=get(index);
                 Address[] mbrs=new Address[in.readShort()];
-                for(int j=0; j < mbrs.length; j++)
-                    mbrs[j]=get(in.readShort());
-                View view=View.create(creator, id, mbrs);
-                subgroups[i]=view;
+                for(int j=0; j < mbrs.length; j++) {
+                    index=in.readShort();
+                    mbrs[j]=index >= 0? get(index) : Util.readAddress(in);
+                }
+                try {
+                    View view=View.create(creator, id, mbrs);
+                    subgroups[i]=view;
+                }
+                catch(Throwable t) {
+                }
             }
         }
     }
@@ -130,7 +159,17 @@ public class MergeView extends View {
         for(View v: subgroups) {
             retval+=Global.SHORT_SIZE + Global.LONG_SIZE // creator and ID (ViewId)
               + Global.SHORT_SIZE; // number of members in the subview
+
+            Address creator=v.getCreator();
+            if(get(creator) < 0)
+                retval+=Util.size(creator);
+
             retval+=v.size() * Global.SHORT_SIZE; // a short (index) for each member
+            for(Address sub_mbr: v) {
+                int index=get(sub_mbr);
+                if(index < 0)
+                    retval+=Util.size(sub_mbr);
+            }
         }
         return retval;
     }
