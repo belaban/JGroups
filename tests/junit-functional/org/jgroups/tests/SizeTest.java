@@ -410,7 +410,7 @@ public class SizeTest {
         Address[] joined=diff[0], left=diff[1];
         DeltaView dv=new DeltaView(v2.getViewId(), v1.getViewId(), left, joined);
         System.out.println("dv = " + dv);
-        _testSize(dv, DeltaView.class);
+        _testSize(dv);
     }
 
 
@@ -424,7 +424,7 @@ public class SizeTest {
         view=new DeltaView(new_view_id, view.getViewId(),
                            new Address[]{members[4],members[5]},
                            new Address[]{Util.createRandomAddress("new-1"), Util.createRandomAddress("new-2")});
-        _testSize(view, DeltaView.class);
+        _testSize(view);
     }
 
 
@@ -432,17 +432,16 @@ public class SizeTest {
         ViewId vid=new ViewId(Util.createRandomAddress("A"), 322649);
         List<Address> mbrs=new ArrayList<Address>();
         View v=new MergeView(vid, mbrs, null);
-        _testSize(v, MergeView.class);
+        _testSize(v);
 
         mbrs.add(Util.createRandomAddress("A"));
         v=new MergeView(vid, mbrs, null);
-        _testSize(v, MergeView.class);
+        _testSize(v);
 
         mbrs.add(Util.createRandomAddress("B"));
         v=new MergeView(vid, mbrs, null);
-        _testSize(v, MergeView.class);
+        _testSize(v);
     }
-
 
 
     public static void testMergeView2() throws Exception {
@@ -460,9 +459,8 @@ public class SizeTest {
 
         MergeView view_all=new MergeView(a, 5, all, subgroups);
         System.out.println("MergeView: " + view_all);
-        _testSize(view_all, MergeView.class);
+        _testSize(view_all);
     }
-
 
 
     public static void testMergeView3() throws Exception {
@@ -496,26 +494,52 @@ public class SizeTest {
 
         view_all=new MergeView(a, 5, all, subgroups);
         System.out.println("MergeView: " + view_all);
-        _testSize(view_all, MergeView.class);
+        _testSize(view_all);
     }
+
+
+
+    public static void testMergeViewWithMergeViewsAsSubgroups() throws Exception {
+        Address[] mbrs=Util.createRandomAddresses(4);
+        Address a=mbrs[0], b=mbrs[1], c=mbrs[2], d=mbrs[3];
+        View ab=new MergeView(a, 2, Arrays.asList(a,b), Arrays.asList(View.create(a, 1, a), View.create(b, 1, b)));
+        View cd=new MergeView(c, 2, Arrays.asList(c,d), Arrays.asList(View.create(c, 1, c), View.create(d, 1, d)));
+        MergeView abcd=new MergeView(a, 3, Arrays.asList(mbrs), Arrays.asList(ab, cd));
+        _testSize(abcd);
+    }
+
 
     /** Tests a MergeView whose subgroups are *not* a subset of the members (https://issues.jboss.org/browse/JGRP-1707) */
     public static void testMergeViewWithNonMatchingSubgroups() throws Exception {
-        Address[] members=Util.createRandomAddresses(6);
-        List<Address> first_subgroup=Arrays.asList(members[0],members[1],members[2]);     // A,B,C
-        List<Address> second_subgroup=Arrays.asList(members[3], members[4], members[5]);  // D,E,F
-        List<Address> full=Arrays.asList(members[0], members[1], members[2], members[3], members[5]); // E is missing
-        List<View> subviews=Arrays.asList(new View(members[0], 4, first_subgroup), new View(members[3], 4, second_subgroup));
-        MergeView mv=new MergeView(members[0], 5, full, subviews);
-        MergeView tmp_view=(MergeView)_testSize(mv,MergeView.class);
+        Address[] mbrs=Util.createRandomAddresses(6);
+
+        /*Address[] mbrs=new Address[6];
+        mbrs[0]=Util.createRandomAddress("A");
+        mbrs[1]=Util.createRandomAddress("B");
+        mbrs[2]=Util.createRandomAddress("C");
+        mbrs[3]=PayloadUUID.randomUUID("D", "**");
+        mbrs[4]=Util.createRandomAddress("E");
+        mbrs[5]=Util.createRandomAddress("F");*/
+
+
+        Address a=mbrs[0],b=mbrs[1],c=mbrs[2],d=mbrs[3],e=mbrs[4],f=mbrs[5];
+        List<Address> abc=Arrays.asList(a,b,c);     // A,B,C
+        List<Address> def=Arrays.asList(d,e,f);  // D,E,F
+        List<Address> full=Arrays.asList(a,b,c,d,f); // E is missing
+        List<View> subviews=Arrays.asList(new View(a, 4, abc), new View(d, 4, def));
+        MergeView mv=new MergeView(a, 5, full, subviews);
+        MergeView tmp_view=(MergeView)_testSize(mv);
         assert mv.deepEquals(tmp_view) : "views don't match: original=" + mv + ", new=" + tmp_view;
 
-        full=Arrays.asList(members[0], members[1], members[2], members[4], members[5]); // D (creator!) is missing
-        subviews=Arrays.asList(new View(members[0], 4, first_subgroup), new View(members[3], 4, second_subgroup));
-        mv=new MergeView(members[0], 5, full, subviews);
-        tmp_view=(MergeView)_testSize(mv, MergeView.class);
+        full=Arrays.asList(a,b,c,e,f); // D (creator!) is missing
+        subviews=Arrays.asList(new View(a, 4, abc), new View(d, 4, def));
+        mv=new MergeView(a, 5, full, subviews);
+        tmp_view=(MergeView)_testSize(mv);
         assert mv.deepEquals(tmp_view) : "views don't match: original=" + mv + ", new=" + tmp_view;
+
     }
+
+
 
 
     public static void testLargeMergeView() throws Exception {
@@ -527,7 +551,7 @@ public class SizeTest {
 
         View v1=View.create(first[0], 5, first), v2=View.create(second[0], 5, second);
         MergeView mv=new MergeView(new ViewId(first[0], 6), members, Arrays.asList(v1, v2));
-        _testSize(mv, MergeView.class);
+        _testSize(mv);
     }
 
 
@@ -935,17 +959,14 @@ public class SizeTest {
         assert serialized_form.length == size;
     }
 
-    private static void _testSize(View v) throws Exception {
-        _testSize(v, View.class);
-    }
 
-    private static View _testSize(View v, Class<? extends Streamable> view_class) throws Exception {
+    private static View _testSize(View v) throws Exception {
         long size=v.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(v);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
 
-        View view=(View)Util.streamableFromByteBuffer(view_class,serialized_form);
+        View view=(View)Util.streamableFromByteBuffer(v.getClass(),serialized_form);
         System.out.println("old view: " + v + "\nnew view: " + view);
         assert view.equals(v);
         return view;
