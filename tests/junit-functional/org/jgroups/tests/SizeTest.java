@@ -764,6 +764,15 @@ public class SizeTest {
 
         addr=new IpAddress("127.0.0.1", 5678);
         _testWriteAddress(addr);
+
+        addr=AdditionalDataUUID.randomUUID("A", new byte[]{'b', 'e', 'l', 'a'});
+        _testWriteAddress(addr);
+
+        addr=PayloadUUID.randomUUID("A", "hello");
+        _testWriteAddress(addr);
+
+        addr=new SiteMaster("sfo");
+        _testWriteAddress(addr);
     }
 
     private static void _testWriteAddress(Address addr) throws Exception {
