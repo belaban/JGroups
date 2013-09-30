@@ -84,14 +84,14 @@ public class AckCollector {
         if(missing_acks.isEmpty())
             return true;
         Boolean result=all_acks_received.getResult();
-        return result != null && result.booleanValue();
+        return result != null && result;
     }
 
     public boolean waitForAllAcks(long timeout) throws TimeoutException {
         if(missing_acks.isEmpty())
             return true;
         Boolean result=all_acks_received.getResultWithTimeout(timeout);
-        return result != null && result.booleanValue();
+        return result != null && result;
     }
 
     public String toString() {
@@ -99,11 +99,11 @@ public class AckCollector {
     }
 
     public synchronized String printMissing() {
-        return missing_acks.toString();
+        return Util.printListWithDelimiter(missing_acks, ", ");
     }
 
     public synchronized String printSuspected() {
-        return suspected_mbrs.toString();
+        return Util.printListWithDelimiter(suspected_mbrs, ", ");
     }
 
     protected synchronized void addAll(Address ... members) {
