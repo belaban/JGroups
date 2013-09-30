@@ -10,6 +10,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.DefaultSocketFactory;
 import org.jgroups.util.SocketFactory;
+import org.jgroups.util.Util;
 
 import java.util.List;
 import java.util.Map;
@@ -491,7 +492,7 @@ public abstract class Channel /* implements Transport */ {
                 channelListener.channelConnected(c);
             }
             catch(Throwable t) {
-                log.error("exception in channelConnected() callback", t);
+                log.error(Util.getMessage("CallbackException"), "channelConnected()", t);
             }
         }
     }
@@ -503,7 +504,7 @@ public abstract class Channel /* implements Transport */ {
                 channelListener.channelDisconnected(c);
             }
             catch(Throwable t) {
-                log.error("exception in channelDisonnected() callback", t);
+                log.error(Util.getMessage("CallbackException"), "channelDisconnected()", t);
             }
         }
     }
@@ -515,7 +516,7 @@ public abstract class Channel /* implements Transport */ {
                 channelListener.channelClosed(c);
             }
             catch(Throwable t) {
-                log.error("exception in channelClosed() callback", t);
+                log.error(Util.getMessage("CallbackException"), "channelClosed()", t);
             }
         }
     }

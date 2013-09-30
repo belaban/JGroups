@@ -87,9 +87,8 @@ public class ProtocolConfiguration {
             }
             else {
                 if(tmp.contains("${")) {
-                    if(log.isWarnEnabled())
-                        log.warn("variable \"" + val + "\" in " + protocol_name + " could not be substituted; " +
-                                key + " is removed from properties");
+                    log.warn("variable \"" + val + "\" in " + protocol_name + " could not be substituted; " +
+                               key + " is removed from properties");
                     it.remove();
                 }
             }

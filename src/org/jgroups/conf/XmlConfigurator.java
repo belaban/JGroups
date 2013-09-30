@@ -148,7 +148,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             builder.setErrorHandler(new ErrorHandler() {
 
                 public void warning(SAXParseException exception) throws SAXException {
-                    log.warn("Warning during parse", exception);
+                    log.warn(Util.getMessage("ParseFailure"), exception);
                 }
 
                 public void fatalError(SAXParseException exception) throws SAXException {
@@ -275,7 +275,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             }
         }
         else {
-            log.error("no input file given");
+            throw new Exception("no input file given");
         }
     }
 

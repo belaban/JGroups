@@ -54,19 +54,19 @@ public class X509Token extends AuthToken {
     private boolean valueSet = false;
 
     @Property
-    private String keystore_type = "JKS";
+    protected String keystore_type = "JKS";
 
     @Property
-    private String cert_alias = null;
+    protected String cert_alias = null;
 
     @Property
-    private String keystore_path = null;
+    protected String keystore_path = null;
 
     @Property
-    private String auth_value = null;
+    protected String auth_value = null;
 
     @Property
-    private String cipher_type = "RSA";
+    protected String cipher_type = "RSA";
 
     private byte[] encryptedToken = null;
 
@@ -116,7 +116,7 @@ public class X509Token extends AuthToken {
             X509Token serverToken = (X509Token) token;
             if (!serverToken.valueSet) {
                 if (log.isErrorEnabled()) {
-                    log.error("X509Token - recieved token not valid");
+                    log.error("X509Token - received token not valid");
                 }
                 return false;
             }

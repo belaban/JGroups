@@ -218,8 +218,7 @@ abstract public class Locking extends Protocol {
                     break;
 
                 Request req=(Request)msg.getObject();
-                if(log.isTraceEnabled())
-                    log.trace("[" + local_addr + "] <-- [" + msg.getSrc() + "] " + req);
+                log.trace("[%s] <-- [%s] %s", local_addr, msg.getSrc(), req);
                 switch(req.type) {
                     case GRANT_LOCK:
                     case RELEASE_LOCK:
@@ -258,7 +257,7 @@ abstract public class Locking extends Protocol {
                         handleDeleteAwaitingRequest(req.lock_name, req.owner);
                         break;
                     default:
-                        log.error("Request of type " + req.type + " not known");
+                        log.error("Request of type %s not known", req.type);
                         break;
                 }
                 return null;
@@ -297,8 +296,7 @@ abstract public class Locking extends Protocol {
 
     protected void handleView(View view) {
         this.view=view;
-        if(log.isDebugEnabled())
-            log.debug("view=" + view);
+        log.debug("view=%s", view);
         List<Address> members=view.getMembers();
         List<Response> responses=new ArrayList<Response>();
         for(Map.Entry<String,ServerLock> entry: server_locks.entrySet()) {
@@ -367,13 +365,12 @@ abstract public class Locking extends Protocol {
         Message msg=new Message(dest, req).putHeader(id, new LockingHeader());
         if(bypass_bundling)
             msg.setFlag(Message.Flag.DONT_BUNDLE);
-        if(log.isTraceEnabled())
-            log.trace("[" + local_addr + "] --> [" + (dest == null? "ALL" : dest) + "] " + req);
+        log.trace("[%s] --> %s] %s", local_addr, dest == null? "ALL" : dest, req);
         try {
             down_prot.down(new Event(Event.MSG, msg));
         }
         catch(Exception ex) {
-            log.error("failed sending " + req.type + " request: " + ex);
+            log.error("failed sending %s request: %s", req.type, ex);
         }
     }
 
@@ -426,7 +423,7 @@ abstract public class Locking extends Protocol {
             if (server_lock != null)
                 server_lock.condition.addWaiter(owner);
             else
-                log.error("Condition await was received but lock was not created.  Waiter may block forever");
+                log.error("Condition await was received but lock was not created. Waiter may block forever");
         }
         finally {
             lock.unlock();
@@ -454,7 +451,7 @@ abstract public class Locking extends Protocol {
             lock.condition.signaled();
         }
         else {
-            log.error("Condition response was client lock was not present.  Ignored signal.");
+            log.error("Condition response was client lock was not present. Ignored signal.");
         }
     }
     
@@ -467,7 +464,7 @@ abstract public class Locking extends Protocol {
             if (server_lock != null)
                 rsp=server_lock.handleRequest(req);
             else
-                log.error("Condition signal was received but lock was not created.  Couldn't notify anyone.");
+                log.error("Condition signal was received but lock was not created. Couldn't notify anyone.");
         }
         finally {
             lock.unlock();
@@ -552,7 +549,7 @@ abstract public class Locking extends Protocol {
                 listener.lockCreated(lock_name);
             }
             catch(Throwable t) {
-                log.error("failed notifying " + listener, t);
+                log.error("failed notifying %s: %s", listener, t.toString());
             }
         }
     }
@@ -563,7 +560,7 @@ abstract public class Locking extends Protocol {
                 listener.lockDeleted(lock_name);
             }
             catch(Throwable t) {
-                log.error("failed notifying " + listener, t);
+                log.error("failed notifying %s: %s", listener, t.toString());
             }
         }
     }
@@ -574,7 +571,7 @@ abstract public class Locking extends Protocol {
                 listener.locked(lock_name,owner);
             }
             catch(Throwable t) {
-                log.error("failed notifying " + listener, t);
+                log.error("failed notifying %s: %s", listener, t.toString());
             }
         }
     }
@@ -585,7 +582,7 @@ abstract public class Locking extends Protocol {
                 listener.unlocked(lock_name,owner);
             }
             catch(Throwable t) {
-                log.error("failed notifying " + listener, t);
+                log.error("failed notifying %s: %s", listener, t.toString());
             }
         }
     }
@@ -596,7 +593,7 @@ abstract public class Locking extends Protocol {
                 listener.awaiting(lock_name,owner);
             }
             catch(Throwable t) {
-                log.error("failed notifying " + listener, t);
+                log.error("failed notifying %s: %s", listener, t.toString());
             }
         }
     }
@@ -607,7 +604,7 @@ abstract public class Locking extends Protocol {
                 listener.awaited(lock_name,owner);
             }
             catch(Throwable t) {
-                log.error("failed notifying " + listener, t);
+                log.error("failed notifying %s: %s", listener, t.toString());
             }
         }
     }
@@ -675,8 +672,7 @@ abstract public class Locking extends Protocol {
             if(current_owner != null && !members.contains(current_owner.getAddress())) {
                 Owner tmp=current_owner;
                 setOwner(null);
-                if(log.isDebugEnabled())
-                    log.debug("unlocked \"" + lock_name + "\" because owner " + tmp + " left");
+                log.debug("unlocked \"%s\" because owner %s left", lock_name, tmp);
             }
 
             for(Iterator<Request> it=queue.iterator(); it.hasNext();) {
@@ -788,35 +784,25 @@ abstract public class Locking extends Protocol {
 
         public void addWaiter(Owner waiter) {
             notifyAwaiting(lock.lock_name, waiter);
-            if (log.isTraceEnabled()) {
-                log.trace("Waiter [" + waiter + "] was added for " + lock.lock_name);
-            }
+            log.trace("Waiter [%s] was added for %s", waiter, lock.lock_name);
             queue.add(waiter);
         }
         
         public void removeWaiter(Owner waiter) {
             notifyAwaited(lock.lock_name, waiter);
-            if (log.isTraceEnabled()) {
-                log.trace("Waiter [" + waiter + "] was removed for " + lock.lock_name);
-            }
+            log.trace("Waiter [%s] was removed for %s", waiter, lock.lock_name);
             queue.remove(waiter);
         }
         
         public void signal(boolean all) {
-            if (queue.isEmpty()) {
-                if (log.isTraceEnabled()) {
-                    log.trace("Signal for [" + lock.lock_name + 
-                        "] ignored since, no one is waiting in queue.");
-                }
-            }
-            
+            if (queue.isEmpty())
+                log.trace("Signal for [%s] ignored since, no one is waiting in queue", lock.lock_name);
+
             Owner entry;
             if (all) {
                 while ((entry = queue.poll()) != null) {
                     notifyAwaited(lock.lock_name, entry);
-                    if (log.isTraceEnabled()) {
-                        log.trace("Signalled " + entry + " for " + lock.lock_name);
-                    }
+                    log.trace("Signalled %s for %s", entry, lock.lock_name);
                     sendSignalResponse(entry, lock.lock_name);
                 }
             }
@@ -824,9 +810,7 @@ abstract public class Locking extends Protocol {
                 entry = queue.poll();
                 if (entry != null) {
                     notifyAwaited(lock.lock_name, entry);
-                    if (log.isTraceEnabled()) {
-                        log.trace("Signalled " + entry + " for " + lock.lock_name);
-                    }
+                    log.trace("Signalled %s for %s", entry, lock.lock_name);
                     sendSignalResponse(entry, lock.lock_name);
                 }
             }

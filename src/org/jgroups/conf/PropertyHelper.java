@@ -34,9 +34,8 @@ import java.util.Map;
     		if(props.containsKey(annotation.name())) {
     			propertyName=annotation.name();
     			boolean isDeprecated=!annotation.deprecatedMessage().isEmpty();
-    			if(isDeprecated && log.isWarnEnabled()) {
-    				log.warn(propertyName + " has been deprecated: " + annotation.deprecatedMessage());
-    			}
+    			if(isDeprecated)
+                    log.warn(Util.getMessage("Deprecated"), propertyName, annotation.deprecatedMessage());
     		}
     		return propertyName ;
     	}

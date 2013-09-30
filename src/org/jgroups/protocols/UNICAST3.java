@@ -412,7 +412,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 }
                 break;
             default:
-                log.error("UnicastHeader type %s not known", hdr.type);
+                log.error(Util.getMessage("TypeNotKnown"), local_addr, hdr.type);
                 break;
         }
     }
@@ -441,7 +441,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                     handleUpEvent(msg.getSrc(), msg, hdr);
                 }
                 catch(Throwable t) { // we cannot let an exception terminate the processing of this batch
-                    log.error("%s: failed handling event: %s", local_addr, t);
+                    log.error(Util.getMessage("FailedHandlingEvent"), local_addr, t);
                 }
                 continue;
             }
@@ -698,7 +698,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                     up_prot.up(evt);
                 }
                 catch(Throwable t) {
-                    log.error("%s: failed to deliver OOB message %s: %s", local_addr, msg, t);
+                    log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "OOB message", msg, t);
                 }
             }
         }
@@ -741,7 +741,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                         up_prot.up(new Event(Event.MSG, msg));
                     }
                     catch(Throwable t) {
-                        log.error("%s: failed to deliver OOB message %s: %s", local_addr, msg, t);
+                        log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "OOB message", msg, t);
                     }
                 }
             }
@@ -796,7 +796,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                     up_prot.up(batch);
                 }
                 catch(Throwable t) {
-                    log.error("%s: failed to deliver batch %s: %s", local_addr, batch, t);
+                    log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
                 }
             }
         }
@@ -903,7 +903,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         SenderEntry entry=send_table.get(sender);
         Table<Message> win=entry != null? entry.sent_msgs : null;
         if(win == null) {
-            log.warn("%s: sender window for %s not found", local_addr, sender);
+            log.warn(Util.getMessage("SenderNotFound"), local_addr, sender);
             return;
         }
 
@@ -932,10 +932,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             for(long seqno: missing) {
                 Message msg=win.get(seqno);
                 if(msg == null) {
-                    if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(sender) && seqno > win.getLow()) {
-                        log.warn("%s: (requester=%s) message %s::%d not found in retransmission table of %s:\n%s",
-                                 local_addr, sender, sender, seqno, sender, win);
-                    }
+                    if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(sender) && seqno > win.getLow())
+                        log.warn(Util.getMessage("MessageNotFound"), local_addr, sender, seqno);
                     continue;
                 }
 
@@ -972,7 +970,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             num_acks_sent++;
         }
         catch(Throwable t) {
-            log.error("%s: failed sending ACK(%d) to %s: %s", local_addr, seqno, dst, t);
+            log.error(Util.getMessage("FailedSendingAck"), local_addr, seqno, dst, t);
         }
     }
 

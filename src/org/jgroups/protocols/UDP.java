@@ -194,7 +194,6 @@ public class UDP extends TP {
                     }
                     // solve reconnection issue with Windows (https://jira.jboss.org/browse/JGRP-1254)
                     catch(NoRouteToHostException e) {
-                        log.warn(e.getMessage() +", reset interface");
                         mcast_sock.setInterface(mcast_sock.getInterface());
                     }
                 }
@@ -336,7 +335,7 @@ public class UDP extends TP {
                 sock.setTrafficClass(tos);
             }
             catch(SocketException e) {
-                log.warn("traffic class of " + tos + " could not be set, will be ignored: " + e);
+                log.warn(Util.getMessage("TrafficClass"), tos, e);
             }
         }
 
@@ -369,7 +368,7 @@ public class UDP extends TP {
                     mcast_sock.setTrafficClass(tos);
                 }
                 catch(SocketException e) {
-                    log.warn("traffic class of " + tos + " could not be set, will be ignored: " + e);
+                    log.warn(Util.getMessage("TrafficClass"), tos, e);
                 }
             }
 
@@ -426,17 +425,16 @@ public class UDP extends TP {
                                   MulticastSocket s,
                                   InetAddress mcastAddr) {
         SocketAddress tmp_mcast_addr=new InetSocketAddress(mcastAddr, mcast_port);
-        for(NetworkInterface intf:interfaces) {
+        for(NetworkInterface intf: interfaces) {
 
             //[ JGRP-680] - receive_on_all_interfaces requires every NIC to be configured
             try {
                 s.joinGroup(tmp_mcast_addr, intf);
-                if(log.isTraceEnabled())
-                    log.trace("joined " + tmp_mcast_addr + " on " + intf.getName());
+                log.trace("joined %s on %s", tmp_mcast_addr, intf.getName());
             }
             catch(IOException e) {
                 if(log.isWarnEnabled())
-                    log.warn("Could not join " + tmp_mcast_addr + " on interface " + intf.getName());
+                    log.warn(Util.getMessage("InterfaceJoinFailed"), tmp_mcast_addr, intf.getName());
             }
         }
     }
@@ -534,7 +532,7 @@ public class UDP extends TP {
             }
         }
         catch(Throwable ex) {
-            if(log.isWarnEnabled()) log.warn("failed setting send buffer size of " + send_buf_size + " in " + sock + ": " + ex);
+            log.warn(Util.getMessage("BufferSizeFailed"), "send", send_buf_size, sock, ex);
         }
 
         try {
@@ -546,7 +544,7 @@ public class UDP extends TP {
             }
         }
         catch(Throwable ex) {
-            if(log.isWarnEnabled()) log.warn("failed setting receive buffer size of " + recv_buf_size + " in " + sock + ": " + ex);
+            log.warn(Util.getMessage("BufferSizeFailed"), "receive", recv_buf_size, sock, ex);
         }
     }
 
