@@ -1332,10 +1332,8 @@ public abstract class TP extends Protocol {
             Thread.currentThread().interrupt(); // let someone else handle the interrupt
         }
         catch(Throwable e) {
-            if(log.isErrorEnabled()) {
-                log.error(local_addr + ": failed sending message to " + (dest == null? "cluster" : dest) +
-                            " (" + msg.size() + " bytes): " + e + ", cause: " + e.getCause());
-            }
+            log.error("%s: failed sending message to %s (%d bytes): %s, headers: %s",
+                      local_addr, (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
         }
         return null;
     }
