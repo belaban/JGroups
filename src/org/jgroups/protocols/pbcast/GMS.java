@@ -599,9 +599,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
         catch(TimeoutException e) {
             if(log_collect_msgs)
-                log.warn("%s: failed to collect all ACKs (expected=%d) for view %s after %dms, missing ACKs from %s",
+                log.warn("%s: failed to collect all ACKs (expected=%d) for view %s after %dms, missing %d ACKs from %s",
                          local_addr, ack_collector.expectedAcks(), new_view.getViewId(), view_ack_collection_timeout,
-                         ack_collector.printMissing());
+                         ack_collector.size(), ack_collector.printMissing());
         }
     }
 
@@ -617,8 +617,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             }
             catch(TimeoutException e) {
                 if(log_collect_msgs)
-                    log.warn("%s: failed to collect all ACKs (expected=%d) for unicast view %s after %dms, missing ACKs from %s",
-                             local_addr, ack_collector.expectedAcks(), view_id, view_ack_collection_timeout,  ack_collector.printMissing());
+                    log.warn("%s: failed to collect all ACKs (expected=%d) for unicast view %s after %dms, missing %d ACKs from %s",
+                             local_addr, ack_collector.expectedAcks(), view_id, view_ack_collection_timeout,
+                             ack_collector.size(), ack_collector.printMissing());
             }
         }
     }
