@@ -624,12 +624,12 @@ public class SizeTest {
         members.add(addr);
         members.add(addr);
         View v=new View(addr, 33, members);
-        hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, v, null);
+        hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP);
         _testSize(hdr);
 
         Collection<Address> mbrs=new ArrayList<Address>();
         Collections.addAll(mbrs, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
-        hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ, mbrs);
+        hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
         _testSize(hdr);
 
         Address[]     addresses=Util.createRandomAddresses(20);
@@ -639,7 +639,7 @@ public class SizeTest {
             long hd=i + 10000;
             digest.set(addresses[i], hd, hd + 500);
         }
-        hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP, view, digest);
+        hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
         _testSize(hdr);
 
         view=View.create(addresses[0],1,addresses);
@@ -648,7 +648,7 @@ public class SizeTest {
             long hd=i + 10000;
             digest.set(addresses[i], hd, hd + 500);
         }
-        hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP, view, digest);
+        hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
         _testSize(hdr);
     }
 

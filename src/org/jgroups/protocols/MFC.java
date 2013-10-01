@@ -94,10 +94,8 @@ public class MFC extends FlowControl {
     }
 
     protected Object handleDownMessage(final Event evt, final Message msg, Address dest, int length) {
-        if(dest != null) { // 2nd line of defense, not really needed
-            log.error(getClass().getSimpleName() + " doesn't handle unicast messages; passing message down");
+        if(dest != null) // 2nd line of defense, not really needed
             return down_prot.down(evt);
-        }
 
         long block_time=max_block_times != null? getMaxBlockTime(length) : max_block_time;
         while(running) {

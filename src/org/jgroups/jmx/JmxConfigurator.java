@@ -50,7 +50,8 @@ public class JmxConfigurator {
             List<Protocol> protocols = stack.getProtocols();
             for (Protocol p : protocols) {
                 if (p.getClass().isAnnotationPresent(MBean.class)) {
-                         register(p, server, getProtocolRegistrationName(cluster_name, domain, p));
+                    String jmx_name=getProtocolRegistrationName(cluster_name,domain,p);
+                    register(p, server, jmx_name);
                 }
             }
         }
@@ -163,8 +164,7 @@ public class JmxConfigurator {
         try {
             ObjectName objName = getObjectName(obj, name);
             if(server.isRegistered(objName)) {
-                if(log.isWarnEnabled())
-                    log.warn("unregistering already registered MBean: " + objName);
+                log.warn("unregistering already registered MBean: " + objName);
                 try {
                     server.unregisterMBean(objName);
                 }

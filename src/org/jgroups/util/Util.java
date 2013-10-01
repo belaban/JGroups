@@ -744,8 +744,6 @@ public class Util {
     }
 
 
-
-
     public static Streamable streamableFromByteBuffer(Class<? extends Streamable> cl, byte[] buffer) throws Exception {
         if(buffer == null) return null;
         Streamable retval=null;
@@ -758,16 +756,27 @@ public class Util {
     }
 
 
-    public static Streamable streamableFromByteBuffer(Class<? extends Streamable> cl, byte[] buffer, int offset, int length) throws Exception {
+    public static <T extends Streamable> Streamable streamableFromByteBuffer(Class<T> cl, byte[] buffer, int offset, int length) throws Exception {
         if(buffer == null) return null;
-        Streamable retval=null;
         ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
         DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
-        retval=cl.newInstance();
+        T retval=cl.newInstance();
         retval.readFrom(in);
         in.close();
         return retval;
     }
+
+
+    public static <T extends Streamable> T streamableFromBuffer(Class<T> clazz, byte[] buffer, int offset, int length) throws Exception {
+        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
+        DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
+        return (T)Util.readStreamable(clazz,in);
+    }
+
+    public static <T extends Streamable> T streamableFromBuffer(Class<T> clazz, byte[] buffer) throws Exception {
+        return streamableFromBuffer(clazz,buffer,0,buffer.length);
+    }
+
 
     public static byte[] streamableToByteBuffer(Streamable obj) throws Exception {
         byte[] result=null;
@@ -777,6 +786,18 @@ public class Util {
         result=out_stream.toByteArray();
         out.close();
         return result;
+    }
+
+    public static Buffer streamableToBuffer(Streamable obj) {
+        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
+        DataOutputStream out=new ExposedDataOutputStream(out_stream);
+        try {
+            Util.writeStreamable(obj,out);
+            return out_stream.getBuffer();
+        }
+        catch(Exception ex) {
+            return null;
+        }
     }
 
 

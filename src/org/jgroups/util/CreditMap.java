@@ -105,7 +105,7 @@ public class CreditMap {
             if(credit_needed > min_credits) {
                 flushAccumulatedCredits();
                 for(Map.Entry<Address,Long> entry: credits.entrySet()) {
-                    if(entry.getValue().longValue() < credit_needed)
+                    if(entry.getValue() < credit_needed)
                         retval.add(entry.getKey());
                 }
             }
@@ -124,7 +124,7 @@ public class CreditMap {
         try {
             flushAccumulatedCredits();
             for(Map.Entry<Address,Long> entry: credits.entrySet()) {
-                if(entry.getValue().longValue() <= min_credits )
+                if(entry.getValue() <= min_credits )
                     retval.add(new Tuple<Address,Long>(entry.getKey(), entry.getValue()));
             }
             return retval;
@@ -181,7 +181,7 @@ public class CreditMap {
             if(val == null)
                 return;
 
-            boolean potential_update=val.longValue() - accumulated_credits <= min_credits;
+            boolean potential_update=val - accumulated_credits <= min_credits;
             decrementAndAdd(sender, new_credits);
             if(potential_update) {
                 long new_min=computeLowestCredit();
@@ -276,11 +276,11 @@ public class CreditMap {
 
         if(accumulated_credits > 0) {
             for(Map.Entry<Address,Long> entry: this.credits.entrySet()) {
-                entry.setValue(Math.max(0, entry.getValue().longValue() - accumulated_credits));
+                entry.setValue(Math.max(0,entry.getValue() - accumulated_credits));
                 if(replenish) {
                     Address tmp=entry.getKey();
                     if(tmp.equals(member))
-                        entry.setValue(Math.min(max_credits, entry.getValue().longValue() + new_credits));
+                        entry.setValue(Math.min(max_credits,entry.getValue() + new_credits));
                 }
             }
             accumulated_credits=0;
@@ -289,7 +289,7 @@ public class CreditMap {
             if(replenish) {
                 Long val=this.credits.get(member);
                 if(val != null)
-                    this.credits.put(member, Math.min(max_credits, val.longValue() + new_credits));
+                    this.credits.put(member, Math.min(max_credits,val + new_credits));
             }
         }
     }
@@ -298,7 +298,7 @@ public class CreditMap {
     protected void flushAccumulatedCredits() {
         if(accumulated_credits > 0) {
             for(Map.Entry<Address,Long> entry: this.credits.entrySet()) {
-                entry.setValue(Math.max(0, entry.getValue().longValue() - accumulated_credits));
+                entry.setValue(Math.max(0,entry.getValue() - accumulated_credits));
             }
             accumulated_credits=0;
         }
