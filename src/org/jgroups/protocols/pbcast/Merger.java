@@ -107,9 +107,10 @@ public class Merger {
   
 
     protected void _handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs) throws Exception {
+        MergeId current_merge_id=this.merge_id;
         boolean success=matchMergeId(merge_id) || setMergeId(null, merge_id);
         if(!success)
-            throw new Exception("merge " + this.merge_id + " is already in progress, received merge-id=" + merge_id);
+            throw new Exception("merge " + current_merge_id + " is already in progress, received merge-id=" + merge_id);
 
         /* Clears the view handler queue and discards all JOIN/LEAVE/MERGE requests until after the MERGE  */
         // gms.getViewHandler().suspend();
