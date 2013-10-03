@@ -419,11 +419,6 @@ public class JChannel extends Channel {
         checkClosedOrNotConnected();
         if(msg == null)
             throw new NullPointerException("msg is null");
-        if(stats) {
-            sent_msgs++;
-            sent_bytes+=msg.getLength();
-        }
-
         down(new Event(Event.MSG, msg));
     }
 
