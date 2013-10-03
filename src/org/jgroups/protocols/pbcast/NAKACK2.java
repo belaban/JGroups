@@ -11,10 +11,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
@@ -173,7 +170,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     /** RetransmitTask running every xmit_interval ms */
     protected Future<?>                 xmit_task;
     /** Used by the retransmit task to keep the last retransmitted seqno per sender (https://issues.jboss.org/browse/JGRP-1539) */
-    protected final Map<Address,Long>   xmit_task_map=new HashMap<Address,Long>();
+    protected final Map<Address,Long>   xmit_task_map=new ConcurrentHashMap<Address,Long>();
 
     protected volatile boolean          leaving=false;
     protected volatile boolean          running=false;
