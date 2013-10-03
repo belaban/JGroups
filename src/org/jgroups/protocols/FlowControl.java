@@ -377,11 +377,6 @@ public abstract class FlowControl extends Protocol {
             case Event.VIEW_CHANGE:
                 handleViewChange(((View)evt.getArg()).getMembers());
                 break;
-
-            case Event.CONFIG:
-                Map<String,Object> map=(Map<String,Object>)evt.getArg();
-                handleConfigEvent(map);
-                break;
         }
         return up_prot.up(evt);
     }

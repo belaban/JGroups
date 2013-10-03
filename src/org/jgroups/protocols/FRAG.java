@@ -83,7 +83,6 @@ public class FRAG extends Protocol {
         super.init();
         Map<String,Object> info=new HashMap<String,Object>(1);
         info.put("frag_size", frag_size);
-        up_prot.up(new Event(Event.CONFIG, info));
         down_prot.down(new Event(Event.CONFIG, info));
     }
 
@@ -118,12 +117,6 @@ public class FRAG extends Protocol {
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
                 break;
-
-            case Event.CONFIG:
-                Object ret=down_prot.down(evt);
-                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-                handleConfigEvent((Map<String,Object>)evt.getArg());
-                return ret;
         }
 
         return down_prot.down(evt);  // Pass on to the layer below us
@@ -152,12 +145,6 @@ public class FRAG extends Protocol {
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
                 break;
-
-            case Event.CONFIG:
-                Object ret=up_prot.up(evt);
-                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-                handleConfigEvent((Map<String,Object>)evt.getArg());
-                return ret;
         }
 
         return up_prot.up(evt); // Pass up to the layer above us by default
@@ -286,15 +273,6 @@ public class FRAG extends Protocol {
         }
         finally {
             Util.close(in);
-        }
-    }
-
-
-    void handleConfigEvent(Map<String,Object> map) {
-        if(map == null) return;
-        if(map.containsKey("frag_size")) {
-            frag_size=(Integer)map.get("frag_size");
-            if(log.isDebugEnabled()) log.debug("setting frag_size=" + frag_size);
         }
     }
 

@@ -141,7 +141,7 @@ public class RATE_LIMITER extends Protocol {
             Map<String,Object> map=(Map<String, Object>)evt.getArg();
             Integer tmp=map != null? (Integer)map.get("frag_size") : null;
             if(tmp != null)
-                frag_size=tmp.intValue();
+                frag_size=tmp;
             if(frag_size > 0) {
                 if(max_bytes % frag_size != 0) {
                     if(log.isWarnEnabled())

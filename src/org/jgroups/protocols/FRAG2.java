@@ -96,7 +96,6 @@ public class FRAG2 extends Protocol {
 
         Map<String,Object> info=new HashMap<String,Object>(1);
         info.put("frag_size", frag_size);
-        up_prot.up(new Event(Event.CONFIG, info));
         down_prot.down(new Event(Event.CONFIG, info));
     }
 
@@ -132,12 +131,6 @@ public class FRAG2 extends Protocol {
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
                 break;
-
-            case Event.CONFIG:
-                Object ret=down_prot.down(evt);
-                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-                handleConfigEvent((Map<String,Object>)evt.getArg());
-                return ret;
         }
 
         return down_prot.down(evt);  // Pass on to the layer below us
@@ -156,7 +149,7 @@ public class FRAG2 extends Protocol {
                 if(hdr != null) { // needs to be defragmented
                     Message assembled_msg=unfragment(msg, hdr);
                     if(assembled_msg != null) {
-                        if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
+                        if(log.isTraceEnabled()) log.trace("%s: assembled_msg is %s", local_addr, assembled_msg);
                         assembled_msg.setSrc(msg.getSrc()); // needed ? YES, because fragments have a null src !!
                         up_prot.up(new Event(Event.MSG, assembled_msg));
                     }
@@ -167,12 +160,6 @@ public class FRAG2 extends Protocol {
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
                 break;
-
-            case Event.CONFIG:
-                Object ret=up_prot.up(evt);
-                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-                handleConfigEvent((Map<String,Object>)evt.getArg());
-                return ret;
         }
 
         return up_prot.up(evt); // Pass up to the layer above us by default
@@ -204,8 +191,7 @@ public class FRAG2 extends Protocol {
         for(Address mbr: left_mbrs) {
             // the new view doesn't contain the sender, it must have left, hence we will clear its fragmentation tables
             fragment_list.remove(mbr);
-            if(log.isTraceEnabled())
-                log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
+            log.trace("%s: removed %s from fragmentation table", local_addr, mbr);
         }
     }
 
@@ -213,8 +199,7 @@ public class FRAG2 extends Protocol {
     public void clearFragmentsFor(Address mbr) {
         if(mbr == null) return;
         fragment_list.remove(mbr);
-        if(log.isTraceEnabled())
-            log.trace("removed " + mbr + " from fragmentation table");
+        log.trace("%s: removed %s from fragmentation table", local_addr, mbr);
     }
 
     @ManagedOperation(description="Removes all entries from the fragmentation table. " +
@@ -243,10 +228,8 @@ public class FRAG2 extends Protocol {
 
             if(log.isTraceEnabled()) {
                 Address dest=msg.getDest();
-                StringBuilder sb=new StringBuilder(local_addr +  ": fragmenting message to ");
-                sb.append((dest != null ? dest.toString() : "<all members>")).append(" (size=").append(buffer.length);
-                sb.append(") into ").append(num_frags).append(" fragment(s) [frag_size=").append(frag_size).append(']');
-                log.trace(sb.toString());
+                log.trace("%s: fragmenting message to %s (size=%d) into %d fragment(s) [frag_size=%d]",
+                          local_addr, dest != null ? dest : "<all>", msg.getLength(), num_frags, frag_size);
             }
 
             long frag_id=getNextId(); // used as a seqno
@@ -261,7 +244,7 @@ public class FRAG2 extends Protocol {
             }
         }
         catch(Exception e) {
-            if(log.isErrorEnabled()) log.error("fragmentation failure", e);
+            log.error("%s: fragmentation failure: %s", local_addr, e);
         }
     }
 
@@ -301,8 +284,8 @@ public class FRAG2 extends Protocol {
                 assembled_msg=entry.assembleMessage();
                 frag_table.remove(hdr.id);
                 if(log.isTraceEnabled())
-                    log.trace(local_addr + ": unfragmented message to " + sender + " (size=" + assembled_msg.getLength() +
-                                ") from " + entry.number_of_frags_recvd + " fragments");
+                    log.trace("%s: unfragmented message from %s (size=%d) from %d fragments",
+                              local_addr, sender, assembled_msg.getLength(), entry.number_of_frags_recvd);
             }
         }
         finally {
@@ -310,15 +293,6 @@ public class FRAG2 extends Protocol {
         }
 
         return assembled_msg;
-    }
-
-
-    void handleConfigEvent(Map<String,Object> map) {
-        if(map == null) return;
-        if(map.containsKey("frag_size")) {
-            frag_size=(Integer)map.get("frag_size");
-            if(log.isDebugEnabled()) log.debug("setting frag_size=" + frag_size);
-        }
     }
 
 
