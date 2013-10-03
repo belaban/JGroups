@@ -393,7 +393,7 @@ public class MessageTest {
     private static void addHeaders(Message msg) {       
         TpHeader tp_hdr=new TpHeader("DemoChannel2");
         msg.putHeader(UDP_ID, tp_hdr);
-        PingHeader ping_hdr=new PingHeader(PingHeader.GET_MBRS_REQ, "demo-cluster");
+        PingHeader ping_hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName("demo-cluster");
         msg.putHeader(PING_ID, ping_hdr);
         NakAckHeader nak_hdr=NakAckHeader.createXmitRequestHeader(100, 104, null);
         msg.putHeader(NAKACK_ID, nak_hdr);

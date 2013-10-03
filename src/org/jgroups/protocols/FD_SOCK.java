@@ -270,17 +270,16 @@ public class FD_SOCK extends Protocol implements Runnable {
 
                     // Return the cache to the sender of this message
                     case FdHeader.GET_CACHE:
-                        Address sender=msg.getSrc(); // guaranteed to be non-null
-                        hdr=new FdHeader(FdHeader.GET_CACHE_RSP,new HashMap<Address,IpAddress>(cache));
-                        msg=new Message(sender).setFlag(Message.Flag.INTERNAL).putHeader(this.id, hdr);
+                        msg=new Message(msg.getSrc()).setFlag(Message.Flag.INTERNAL)
+                          .putHeader(this.id, new FdHeader(FdHeader.GET_CACHE_RSP))
+                          .setBuffer(marshal(cache));
                         down_prot.down(new Event(Event.MSG, msg));
                         break;
 
                     case FdHeader.GET_CACHE_RSP:
-                        if(hdr.cachedAddrs == null) {
-                            return null;
-                        }
-                        get_cache_promise.setResult(hdr.cachedAddrs);
+                        Map<Address,IpAddress> cachedAddrs=readAddresses(msg.getRawBuffer(),msg.getOffset(),msg.getLength());
+                        if(cachedAddrs != null)
+                            get_cache_promise.setResult(cachedAddrs);
                         break;
                 }
                 return null;
@@ -811,6 +810,51 @@ public class FD_SOCK extends Protocol implements Runnable {
         return null;
     }
 
+    public static Buffer marshal(Map<Address,IpAddress> addrs) {
+        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
+        DataOutputStream out=new ExposedDataOutputStream(out_stream);
+        try {
+            int size=addrs != null? addrs.size() : 0;
+            out.writeInt(size);
+            if(size > 0) {
+                for(Map.Entry<Address,IpAddress> entry: addrs.entrySet()) {
+                    Address key=entry.getKey();
+                    IpAddress val=entry.getValue();
+                    Util.writeAddress(key, out);
+                    Util.writeStreamable(val, out);
+                }
+            }
+            return out_stream.getBuffer();
+        }
+        catch(Exception ex) {
+            return null;
+        }
+    }
+
+    protected Map<Address,IpAddress> readAddresses(byte[] buffer, int offset, int length) {
+        if(buffer == null) return null;
+        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
+        DataInputStream in=new DataInputStream(in_stream);
+        HashMap<Address,IpAddress> addrs=null;
+        try {
+            int size=in.readInt();
+            if(size > 0) {
+                addrs=new HashMap<Address,IpAddress>(size);
+                for(int i=0; i < size; i++) {
+                    Address key=Util.readAddress(in);
+                    IpAddress val=(IpAddress)Util.readStreamable(IpAddress.class, in);
+                    addrs.put(key, val);
+                }
+            }
+            return addrs;
+        }
+        catch(Exception ex) {
+            log.error("%s: failed reading addresses from message: %s", local_addr, ex);
+            return null;
+        }
+    }
+
+
 
     protected Address determineCoordinator() {
         List<Address> tmp=members;
@@ -833,18 +877,17 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     public static class FdHeader extends Header {
-        public static final byte SUSPECT=10;
-        public static final byte WHO_HAS_SOCK=11;
-        public static final byte I_HAVE_SOCK=12;
-        public static final byte GET_CACHE=13; // sent by joining member to coordinator
-        public static final byte GET_CACHE_RSP=14; // sent by coordinator to joining member in response to GET_CACHE
+        public static final byte SUSPECT       = 10;
+        public static final byte WHO_HAS_SOCK  = 11;
+        public static final byte I_HAVE_SOCK   = 12;
+        public static final byte GET_CACHE     = 13; // sent by joining member to coordinator
+        public static final byte GET_CACHE_RSP = 14; // sent by coordinator to joining member in response to GET_CACHE
 
 
         byte                      type=SUSPECT;
-        Address                   mbr=null;           // set on WHO_HAS_SOCK (requested mbr), I_HAVE_SOCK
-        IpAddress                 sock_addr;          // set on I_HAVE_SOCK
-        Map<Address,IpAddress>    cachedAddrs=null;   // set on GET_CACHE_RSP
-        Set<Address>              mbrs=null;          // set on SUSPECT (list of suspected members)
+        Address                   mbr;           // set on WHO_HAS_SOCK (requested mbr), I_HAVE_SOCK
+        IpAddress                 sock_addr;     // set on I_HAVE_SOCK
+        Set<Address>              mbrs;          // set on SUSPECT (list of suspected members)
 
 
         public FdHeader() {
@@ -870,11 +913,6 @@ public class FD_SOCK extends Protocol implements Runnable {
             this.mbrs=mbrs;
         }
 
-        public FdHeader(byte type, Map<Address,IpAddress> cachedAddrs) {
-            this.type=type;
-            this.cachedAddrs=cachedAddrs;
-        }
-
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
@@ -883,8 +921,6 @@ public class FD_SOCK extends Protocol implements Runnable {
                 sb.append(", mbr=").append(mbr);
             if(sock_addr != null)
                 sb.append(", sock_addr=").append(sock_addr);
-            if(cachedAddrs != null)
-                sb.append(", cache=").append(cachedAddrs);
             if(mbrs != null)
                 sb.append(", mbrs=").append(mbrs);
             return sb.toString();
@@ -920,46 +956,18 @@ public class FD_SOCK extends Protocol implements Runnable {
             if (sock_addr != null)
               ipaddr_size += sock_addr.size();  // IpAddress size
             retval += ipaddr_size ;
-
-            retval+=Global.INT_SIZE; // cachedAddrs size
-            Address key;
-            IpAddress val;
-            if(cachedAddrs != null) {
-                for(Map.Entry<Address,IpAddress> entry: cachedAddrs.entrySet()) {
-                    if((key=entry.getKey()) != null)
-                        retval+=Util.size(key);
-                    retval+=Global.BYTE_SIZE; // presence for val
-                    if((val=entry.getValue()) != null)
-                        retval+=val.size();
-                }
-            }
-
             retval+=Global.INT_SIZE; // mbrs size
-            if(mbrs != null) {
-                for(Address m: mbrs) {
+            if(mbrs != null)
+                for(Address m: mbrs)
                     retval+=Util.size(m);
-                }
-            }
-
             return retval;
         }
 
         public void writeTo(DataOutput out) throws Exception {
-            int size;
             out.writeByte(type);
             Util.writeAddress(mbr, out);
             Util.writeStreamable(sock_addr, out);
-            size=cachedAddrs != null? cachedAddrs.size() : 0;
-            out.writeInt(size);
-            if(size > 0) {
-                for(Map.Entry<Address,IpAddress> entry: cachedAddrs.entrySet()) {
-                    Address key=entry.getKey();
-                    IpAddress val=entry.getValue();
-                    Util.writeAddress(key, out);
-                    Util.writeStreamable(val, out);
-                }
-            }
-            size=mbrs != null? mbrs.size() : 0;
+            int size=mbrs != null? mbrs.size() : 0;
             out.writeInt(size);
             if(size > 0) {
                 for(Address address: mbrs) {
@@ -969,28 +977,15 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
 
         public void readFrom(DataInput in) throws Exception {
-            int size;
             type=in.readByte();
             mbr=Util.readAddress(in);
             sock_addr=(IpAddress)Util.readStreamable(IpAddress.class, in);
-            size=in.readInt();
-            if(size > 0) {
-                if(cachedAddrs == null)
-                    cachedAddrs=new HashMap<Address,IpAddress>(size);
-                for(int i=0; i < size; i++) {
-                    Address key=Util.readAddress(in);
-                    IpAddress val=(IpAddress)Util.readStreamable(IpAddress.class, in);
-                    cachedAddrs.put(key, val);
-                }
-            }
-            size=in.readInt();
+            int size=in.readInt();
             if(size > 0) {
                 if(mbrs == null)
                     mbrs=new HashSet<Address>();
-                for(int i=0; i < size; i++) {
-                    Address addr=Util.readAddress(in);
-                    mbrs.add(addr);
-                }
+                for(int i=0; i < size; i++)
+                    mbrs.add(Util.readAddress(in));
             }
         }
 

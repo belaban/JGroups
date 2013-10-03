@@ -3,7 +3,6 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.protocols.PingData;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.TpHeader;
 import org.jgroups.util.UUID;
@@ -115,7 +114,7 @@ public class StreamableTest {
         Address dest=UUID.randomUUID();
         Address src=UUID.randomUUID();
         Message msg=new Message(dest, src, "Hello world".getBytes());
-        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingData(src, View.create(src, 1, src), true));
+        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ);
         msg.putHeader(PING_ID, hdr);
         TpHeader udp_hdr=new TpHeader("bla");
         msg.putHeader(UDP_ID, udp_hdr);

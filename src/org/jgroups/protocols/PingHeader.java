@@ -17,39 +17,27 @@ public class PingHeader extends Header {
     public static final byte GET_MBRS_RSP=2;   // arg = PingData (local_addr, creator)
 
     public byte     type=0;
-    public PingData data=null;
-    public String   cluster_name=null;
+    public String   cluster_name;
 
     // when set, we don't need the address mappings, but only the view.
     // This is typically done for a merge-triggered discovery request
-    public ViewId   view_id=null;
+    public ViewId   view_id;
 
     
     public PingHeader() {
     }
 
-    public PingHeader(byte type, String cluster_name) {
+    public PingHeader(byte type) {
         this.type=type;
-        this.cluster_name=cluster_name;
     }
 
-    public PingHeader(byte type, PingData data) {
-        this.type=type;
-        this.data=data;
-    }
-
-    public PingHeader(byte type, PingData data, String cluster_name) {
-        this(type, data);
-        this.cluster_name=cluster_name;
-    }
+    public PingHeader clusterName(String name) {this.cluster_name=name; return this;}
+    public PingHeader viewId(ViewId view_id)   {this.view_id=view_id; return this;}
 
     public int size() {
-        int retval=Global.BYTE_SIZE *3; // type, data presence and cluster_name presence
-        if(data != null)
-            retval+=data.size();
+        int retval=Global.BYTE_SIZE *2; // type and cluster_name presence
         if(cluster_name != null)
             retval += cluster_name.length() +2;
-
         retval+=Util.size(view_id);
         return retval;
     }
@@ -59,8 +47,6 @@ public class PingHeader extends Header {
         sb.append("[PING: type=" + type2Str(type));
         if(cluster_name != null)
             sb.append(", cluster=").append(cluster_name);
-        if(data != null)
-            sb.append(", arg=" + data);
         if(view_id != null)
             sb.append(", view_id=").append(view_id);
         sb.append(']');
@@ -78,14 +64,12 @@ public class PingHeader extends Header {
 
     public void writeTo(DataOutput outstream) throws Exception {
         outstream.writeByte(type);
-        Util.writeStreamable(data, outstream);
         Util.writeString(cluster_name, outstream);
         Util.writeViewId(view_id, outstream);
     }
 
     public void readFrom(DataInput instream) throws Exception {
         type=instream.readByte();
-        data=(PingData)Util.readStreamable(PingData.class, instream);
         cluster_name=Util.readString(instream);
         view_id=Util.readViewId(instream);
     }

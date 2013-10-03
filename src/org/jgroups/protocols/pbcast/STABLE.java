@@ -234,7 +234,7 @@ public class STABLE extends Protocol {
                     return up_prot.up(evt);
                 }
 
-                handleUpEvent(hdr,msg.getSrc());
+                handleUpEvent(hdr, msg.getSrc(), readDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
                 return null;  // don't pass STABLE or STABILITY messages up the stack
 
             case Event.VIEW_CHANGE:
@@ -245,13 +245,13 @@ public class STABLE extends Protocol {
         return up_prot.up(evt);
     }
 
-    protected void handleUpEvent(StableHeader hdr, Address sender) {
+    protected void handleUpEvent(StableHeader hdr, Address sender, Digest digest) {
         switch(hdr.type) {
             case StableHeader.STABLE_GOSSIP:
-                handleStableMessage(hdr.digest, sender, hdr.view_id);
+                handleStableMessage(digest, sender, hdr.view_id);
                 break;
             case StableHeader.STABILITY:
-                handleStabilityMessage(hdr.digest, sender, hdr.view_id);
+                handleStabilityMessage(digest, sender, hdr.view_id);
                 break;
             default:
                 log.error("%s: StableHeader type %s not known", local_addr, hdr.type);
@@ -265,7 +265,7 @@ public class STABLE extends Protocol {
         for(Message msg: batch) { // remove and handle messages with flow control headers (STABLE_GOSSIP, STABILITY)
             if((hdr=(StableHeader)msg.getHeader(id)) != null) {
                 batch.remove(msg);
-                handleUpEvent(hdr, batch.sender());
+                handleUpEvent(hdr, batch.sender(), readDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
             }
         }
 
@@ -662,7 +662,8 @@ public class STABLE extends Protocol {
 
         final Message msg=new Message(dest)
           .setFlag(Message.Flag.OOB,Message.Flag.INTERNAL,Message.Flag.NO_RELIABILITY)
-          .putHeader(this.id,new StableHeader(StableHeader.STABLE_GOSSIP,d,current_view.getViewId()));
+          .putHeader(this.id, new StableHeader(StableHeader.STABLE_GOSSIP, current_view.getViewId()))
+          .setBuffer(marshal(d));
         try {
             if(!send_in_background) {
                 down_prot.down(new Event(Event.MSG, msg));
@@ -684,6 +685,20 @@ public class STABLE extends Protocol {
         }
     }
 
+
+    public static Buffer marshal(Digest digest) {
+        return Util.streamableToBuffer(digest);
+    }
+
+    protected Digest readDigest(byte[] buffer, int offset, int length) {
+        try {
+            return buffer != null? Util.streamableFromBuffer(Digest.class, buffer, offset, length) : null;
+        }
+        catch(Exception ex) {
+            log.error("%s: failed reading Digest from message: %s", local_addr, ex);
+            return null;
+        }
+    }
 
 
     /**
@@ -726,15 +741,13 @@ public class STABLE extends Protocol {
         public static final byte STABILITY=2;
 
         protected byte   type;
-        protected Digest digest;
         protected ViewId view_id;
 
         public StableHeader() {
         }
 
-        public StableHeader(byte type, final Digest digest, ViewId view_id) {
+        public StableHeader(byte type, ViewId view_id) {
             this.type=type;
-            this.digest=digest;
             this.view_id=view_id;
         }
 
@@ -747,26 +760,21 @@ public class STABLE extends Protocol {
         }
 
         public String toString() {
-            return String.format("[%s] digest= %s, view-id= %s", type2String(type), digest,  view_id);
+            return String.format("[%s] view-id= %s", type2String(type), view_id);
         }
 
         public int size() {
-            int retval=Global.BYTE_SIZE *2; // type + presence
-            if(digest != null)
-                retval+=digest.serializedSize(true);
-            retval+=Util.size(view_id);
-            return retval;
+            return Global.BYTE_SIZE // type
+              + Util.size(view_id);
         }
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
-            Util.writeStreamable(digest, out);
             Util.writeViewId(view_id, out);
         }
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            digest=(Digest)Util.readStreamable(Digest.class,in);
             view_id=Util.readViewId(in);
         }
     }
@@ -828,7 +836,8 @@ public class STABLE extends Protocol {
             // but clear votes *before* sending it
             try {
                 Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.NO_RELIABILITY)
-                  .putHeader(id, new StableHeader(StableHeader.STABILITY, stability_digest, view_id));
+                  .putHeader(id, new StableHeader(StableHeader.STABILITY, view_id))
+                  .setBuffer(marshal(stability_digest));
                 log.trace("%s: sending stability msg %s", local_addr, printDigest(stability_digest));
                 num_stability_msgs_sent++;
                 down_prot.down(new Event(Event.MSG, msg));

@@ -415,7 +415,7 @@ public class MessageBatchTest {
         for(long seqno=1; seqno <= 5; seqno++)
             retval.add(new Message(b).putHeader(UNICAST2_ID, UNICAST2.Unicast2Header.createDataHeader(seqno, (short)22, false)));
 
-        retval.add(new Message(b).putHeader(PING_ID, new PingHeader(PingHeader.GET_MBRS_RSP, "demo-cluster")));
+        retval.add(new Message(b).putHeader(PING_ID, new PingHeader(PingHeader.GET_MBRS_RSP).clusterName("demo-cluster")));
         retval.add(new Message(b).putHeader(FD_ID, new FD.FdHeader(org.jgroups.protocols.FD.FdHeader.HEARTBEAT)));
         retval.add(new Message(b).putHeader(MERGE_ID, MERGE3.MergeHeader.createViewResponse()));
 

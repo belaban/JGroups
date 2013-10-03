@@ -44,19 +44,6 @@ IF rendezvous("rv") != -1
 ENDRULE
 
 
-## Signals that A's message has been received by B
-#RULE MessageReception
-#CLASS NAKACK2
-#METHOD up
-#HELPER org.jgroups.tests.helpers.BecomeServerTestHelper
-#AFTER INVOKE BoundedList.add(Message) ALL
-#BIND len=$msg.getLength();
-#     is_server=$0.is_server;
-#IF len > 0
-#   DO System.out.println("--> " + $0.local_addr + ": received message " + $msg.printHeaders() + ", added to queue, is_server=" + is_server);
-#   rendezvous("rv");
-#ENDRULE
-
 
 ## Signals that A's message has been received by B
 RULE MessageReception

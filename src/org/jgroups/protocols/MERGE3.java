@@ -283,7 +283,6 @@ public class MERGE3 extends Protocol {
                             if(set != existing)
                                 set.remove(sender);
 
-                        log.trace(local_addr + "%s <-- %s: %s, cached views: %d", local_addr, sender, hdr, views.size());
                         break;
                     case VIEW_REQ:
                         Message view_rsp=new Message(sender).setFlag(Message.Flag.INTERNAL)

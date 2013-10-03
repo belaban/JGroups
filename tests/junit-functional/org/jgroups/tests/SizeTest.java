@@ -38,16 +38,10 @@ public class SizeTest {
 
 
     public static void testPingHeader() throws Exception {
-        _testSize(new PingHeader(PingHeader.GET_MBRS_REQ, "bla"));
-        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, new PingData()));
-        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, (PingData)null));
-        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, (String)null));
-        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, new PingData(Util.createRandomAddress(), null, true)));
+        _testSize(new PingHeader(PingHeader.GET_MBRS_REQ).clusterName("bla"));
+        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP));
+        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP).clusterName(null));
         Address self=Util.createRandomAddress();
-        PingData rsp=new PingData(self, View.create(self, 1, self), true);
-        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, rsp));
-        rsp=new PingData(self, View.create(self, 1, self, Util.createRandomAddress(), Util.createRandomAddress()), true);
-        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, rsp));
     }
  
 
@@ -205,7 +199,7 @@ public class SizeTest {
         Map<Address,IpAddress> cache=new HashMap<Address,IpAddress>();
         cache.put(a1, a2);
         cache.put(a2, a1);
-        sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, cache);
+        sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT);
         _testSize(sockhdr);
     }
 
@@ -225,13 +219,6 @@ public class SizeTest {
         hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE, set);
         _testSize(hdr);
 
-        Map<Address,IpAddress> map=new HashMap<Address,IpAddress>();
-        map.put(new IpAddress("127.0.0.1", 5000), new IpAddress(4553));
-        map.put(new IpAddress("127.0.0.1", 6000), new IpAddress(4523));
-        map.put(new IpAddress(7000), new IpAddress(4553));
-         hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE, map);
-        _testSize(hdr);
-        
         // check that IpAddress is correctly sized in FD_SOCK.FdHeader
         hdr = new FD_SOCK.FdHeader(FD_SOCK.FdHeader.I_HAVE_SOCK, new IpAddress("127.0.0.1", 4567), 
 				   new IpAddress("127.0.0.1", 4567));
@@ -307,10 +294,10 @@ public class SizeTest {
         View view=View.create(addr, 1, addr);
         Digest digest=new Digest(view.getMembersRaw(), new long[]{200, 205});
 
-        hdr=new STABLE.StableHeader(STABLE.StableHeader.STABLE_GOSSIP, digest, view.getViewId());
+        hdr=new STABLE.StableHeader(STABLE.StableHeader.STABLE_GOSSIP, view.getViewId());
         _testSize(hdr);
 
-        hdr=new STABLE.StableHeader(STABLE.StableHeader.STABILITY, null, null);
+        hdr=new STABLE.StableHeader(STABLE.StableHeader.STABILITY, null);
         _testSize(hdr);
     }
 
