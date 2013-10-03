@@ -858,7 +858,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, false, null, hdr.useFlushIfPresent));
                         break;
                     case GmsHeader.JOIN_RSP:
-                        JoinRsp join_rsp=readJoinRsp(msg.getBuffer(), msg.getOffset(), msg.getLength());
+                        JoinRsp join_rsp=readJoinRsp(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                         if(join_rsp != null)
                             impl.handleJoinResponse(join_rsp);
                         break;
@@ -871,7 +871,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         impl.handleLeaveResponse();
                         break;
                     case GmsHeader.VIEW:
-                        Tuple<View,Digest> tuple=readViewAndDigest(msg.getBuffer(), msg.getOffset(), msg.getLength());
+                        Tuple<View,Digest> tuple=readViewAndDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                         if(tuple == null)
                             return null;
                         View new_view=tuple.getVal1();
@@ -912,13 +912,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         return null; // don't pass further up
 
                     case GmsHeader.MERGE_REQ:
-                        Collection<? extends Address> mbrs=readMembers(msg.getBuffer(), msg.getOffset(), msg.getLength());
+                        Collection<? extends Address> mbrs=readMembers(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                         if(mbrs != null)
                             impl.handleMergeRequest(msg.getSrc(), hdr.merge_id, mbrs);
                         break;
 
                     case GmsHeader.MERGE_RSP:
-                        tuple=readViewAndDigest(msg.getBuffer(), msg.getOffset(), msg.getLength());
+                        tuple=readViewAndDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                         if(tuple == null)
                             return null;
                         MergeData merge_data=new MergeData(msg.getSrc(), tuple.getVal1(), tuple.getVal2(), hdr.merge_rejected);
@@ -928,14 +928,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         break;
 
                     case GmsHeader.INSTALL_MERGE_VIEW:
-                        tuple=readViewAndDigest(msg.getBuffer(), msg.getOffset(), msg.getLength());
+                        tuple=readViewAndDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                         if(tuple == null)
                             return null;
                         impl.handleMergeView(new MergeData(msg.getSrc(), tuple.getVal1(), tuple.getVal2()), hdr.merge_id);
                         break;
 
                     case GmsHeader.INSTALL_DIGEST:
-                        tuple=readViewAndDigest(msg.getBuffer(), msg.getOffset(), msg.getLength());
+                        tuple=readViewAndDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                         if(tuple == null)
                             return null;
                         Digest tmp=tuple.getVal2();
@@ -976,7 +976,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         break;
 
                     case GmsHeader.GET_DIGEST_RSP:
-                        tuple=readViewAndDigest(msg.getBuffer(), msg.getOffset(), msg.getLength());
+                        tuple=readViewAndDigest(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                         if(tuple == null)
                             return null;
                         Digest digest_rsp=tuple.getVal2();

@@ -287,12 +287,14 @@ public class MERGE3 extends Protocol {
                         break;
                     case VIEW_REQ:
                         Message view_rsp=new Message(sender).setFlag(Message.Flag.INTERNAL)
-                          .putHeader(getId(), MergeHeader.createViewResponse(view));
+                          .putHeader(getId(), MergeHeader.createViewResponse())
+                          .setBuffer(marshal(view));
                         down_prot.down(new Event(Event.MSG, view_rsp));
                         break;
                     case VIEW_RSP:
-                        if(hdr.view != null)
-                            view_rsps.add(sender, hdr.view);
+                        View tmp_view=readView(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+                        if(tmp_view != null)
+                            view_rsps.add(sender, tmp_view);
                         break;
                     default:
                         log.error("Type " + hdr.type + " not known");
@@ -315,6 +317,19 @@ public class MERGE3 extends Protocol {
         return ret;
     }
 
+    public static Buffer marshal(View view) {
+        return Util.streamableToBuffer(view);
+    }
+
+    protected View readView(byte[] buffer, int offset, int length) {
+        try {
+            return buffer != null? Util.streamableFromBuffer(View.class, buffer, offset, length) : null;
+        }
+        catch(Exception ex) {
+            log.error("%s: failed reading View from message: %s", local_addr, ex);
+            return null;
+        }
+    }
 
     protected class InfoSender implements TimeScheduler.Task {
 
@@ -477,7 +492,6 @@ public class MERGE3 extends Protocol {
     public static class MergeHeader extends Header {
         protected Type                        type=Type.INFO;
         protected ViewId                      view_id;
-        protected View                        view;
         protected String                      logical_name;
         protected Collection<PhysicalAddress> physical_addrs;
 
@@ -486,21 +500,20 @@ public class MERGE3 extends Protocol {
         }
 
         public static MergeHeader createInfo(ViewId view_id, String logical_name, Collection<PhysicalAddress> physical_addrs) {
-            return new MergeHeader(Type.INFO, view_id, null, logical_name, physical_addrs);
+            return new MergeHeader(Type.INFO, view_id, logical_name, physical_addrs);
         }
 
         public static MergeHeader createViewRequest() {
-            return new MergeHeader(Type.VIEW_REQ, null, null, null, null);
+            return new MergeHeader(Type.VIEW_REQ, null, null, null);
         }
 
-        public static MergeHeader createViewResponse(View view) {
-            return new MergeHeader(Type.VIEW_RSP, null, view, null, null);
+        public static MergeHeader createViewResponse() {
+            return new MergeHeader(Type.VIEW_RSP, null, null, null);
         }
 
-        protected MergeHeader(Type type, ViewId view_id, View view, String logical_name, Collection<PhysicalAddress> physical_addrs) {
+        protected MergeHeader(Type type, ViewId view_id, String logical_name, Collection<PhysicalAddress> physical_addrs) {
             this.type=type;
             this.view_id=view_id;
-            this.view=view;
             this.logical_name=logical_name;
             this.physical_addrs=physical_addrs;
         }
@@ -508,7 +521,6 @@ public class MERGE3 extends Protocol {
         public int size() {
             int retval=Global.BYTE_SIZE; // for the type
             retval+=Util.size(view_id);
-            retval+=Util.size(view);
             retval+=Global.BYTE_SIZE;     // presence byte for logical_name
             if(logical_name != null)
                 retval+=logical_name.length() +2;
@@ -519,7 +531,6 @@ public class MERGE3 extends Protocol {
         public void writeTo(DataOutput outstream) throws Exception {
             outstream.writeByte(type.ordinal()); // a byte if ok as we only have 3 types anyway
             Util.writeViewId(view_id,outstream);
-            Util.writeView(view, outstream);
             Util.writeString(logical_name, outstream);
             Util.writeAddresses(physical_addrs, outstream);
         }
@@ -528,7 +539,6 @@ public class MERGE3 extends Protocol {
         public void readFrom(DataInput instream) throws Exception {
             type=Type.values()[instream.readByte()];
             view_id=Util.readViewId(instream);
-            view=Util.readView(instream);
             logical_name=Util.readString(instream);
             physical_addrs=(Collection<PhysicalAddress>)Util.readAddresses(instream,ArrayList.class);
         }
@@ -538,8 +548,6 @@ public class MERGE3 extends Protocol {
             sb.append(type + ": ");
             if(view_id != null)
                 sb.append("view_id=" + view_id);
-            else if(view != null)
-                sb.append(" view=").append(view);
             sb.append(", logical_name=" + logical_name + ", physical_addr=" + physical_addrs);
             return sb.toString();
         }

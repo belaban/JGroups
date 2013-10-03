@@ -572,7 +572,7 @@ public class SizeTest {
         View view=View.create(a, 22, a,b,c);
         hdr=MERGE3.MergeHeader.createViewRequest();
         _testSize(hdr);
-        hdr=MERGE3.MergeHeader.createViewResponse(view);
+        hdr=MERGE3.MergeHeader.createViewResponse();
         _testSize(hdr);
     }
 
