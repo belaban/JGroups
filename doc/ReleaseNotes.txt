@@ -106,6 +106,17 @@ Compress Digest and MutableDigest
   are present, we only marshal the members once
 
 
+Large clusters:
+---------------
+- https://issues.jboss.org/browse/JGRP-1700: STABLE uses a bitset rather than a list for STABLE msgs, reducing
+  memory consumption
+- https://issues.jboss.org/browse/JGRP-1704: don't print the full list of members
+- https://issues.jboss.org/browse/JGRP-1705: suppression of fake merge-views
+- https://issues.jboss.org/browse/JGRP-1710: move contents of GMS headers into message body (otherwise packet at
+  transport gets too big)
+- https://issues.jboss.org/browse/JGRP-1713: ditto for VIRE-RSP in MERGE3
+- https://issues.jboss.org/browse/JGRP-1714: move large data in headers to message body
+
 
 
 Bug fixes
@@ -163,17 +174,6 @@ Logical name cache is cleared, affecting other channels
 If we have multiple channels in the same JVM, the a new view in one channel triggers removal of the entries
 of all other caches
 
-
-Large clusters:
----------------
-- https://issues.jboss.org/browse/JGRP-1700: STABLE uses a bitset rather than a list for STABLE msgs, reducing
-  memory consumption
-- https://issues.jboss.org/browse/JGRP-1704: don't print the full list of members
-- https://issues.jboss.org/browse/JGRP-1705: suppression of fake merge-views
-- https://issues.jboss.org/browse/JGRP-1710: move contents of GMS headers into message body (otherwise packet at
-  transport gets too big)
-- https://issues.jboss.org/browse/JGRP-1713: ditto for VIRE-RSP in MERGE3
-- https://issues.jboss.org/browse/JGRP-1714: move large data in headers to message body
 
 
 
