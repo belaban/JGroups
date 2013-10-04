@@ -65,13 +65,14 @@ public class IpAddress implements PhysicalAddress {
             ip_addr=InetAddress.getLocalHost();  // get first NIC found (on multi-homed systems)
         }
         catch(Exception e) {
+            ip_addr=null;
         }
         if(ip_addr == null) {
             try {
                 ip_addr=InetAddress.getByName(null);
             }
             catch(UnknownHostException e) {
-                if(log.isWarnEnabled()) log.warn("exception: " + e);
+                log.error("exception: " + e);
             }
         }
     }

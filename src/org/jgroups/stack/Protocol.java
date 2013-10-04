@@ -401,7 +401,7 @@ public abstract class Protocol {
                     up(new Event(Event.MSG, msg));
                 }
                 catch(Throwable t) {
-                    log.error("failed passing message up", t);
+                    log.error(Util.getMessage("PassUpFailure"), t);
                 }
             }
         }

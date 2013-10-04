@@ -443,7 +443,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
     @SuppressWarnings("unchecked")
     protected void checkReceivedMessages(Tuple<MyReceiver,Integer> ... expected_messages) {
-        for(int i=0; i < 15; i++) {
+        for(int i=0; i < 30; i++) {
             boolean all_received=true;
             for(Tuple<MyReceiver,Integer> tuple: expected_messages) {
                 MyReceiver receiver=tuple.getVal1();

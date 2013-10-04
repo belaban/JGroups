@@ -125,8 +125,7 @@ public class DiagnosticsHandler implements Runnable {
             catch(IOException socket_ex) {
             }
             catch(Throwable e) {
-                if(log.isErrorEnabled())
-                    log.error("failure handling diagnostics request", e);
+                log.error("failure handling diagnostics request", e);
             }
         }
     }
@@ -155,14 +154,12 @@ public class DiagnosticsHandler implements Runnable {
             }
 
             byte[] diag_rsp=info.toString().getBytes();
-            if(log.isDebugEnabled())
-                log.debug("sending diag response to " + sender);
+            log.debug("sending diag response to %s", sender);
             try {
                 sendResponse(sock, sender, diag_rsp);
             }
             catch(Throwable t) {
-                if(log.isErrorEnabled())
-                    log.error("failed sending diag rsp to " + sender, t);
+                log.error("failed sending diag rsp to " + sender, t);
             }
         }
     }

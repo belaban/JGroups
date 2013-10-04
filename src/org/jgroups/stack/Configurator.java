@@ -589,8 +589,7 @@ public class Configurator {
                 ipv6_addrs.add(address) ;
         }
 
-        if(log.isTraceEnabled())
-            log.trace("all addrs=" + addrs + ", IPv4 addrs=" + ipv4_addrs + ", IPv6 addrs=" + ipv6_addrs);
+        log.trace("all addrs=" + addrs + ", IPv4 addrs=" + ipv4_addrs + ", IPv6 addrs=" + ipv6_addrs);
 
 		// the user supplied 1 or more IP address inputs. Check if we have a consistent set
         if (!addrs.isEmpty()) {
@@ -743,7 +742,7 @@ public class Configurator {
                                         StackType ip_version) throws Exception {
         InetAddress default_ip_address=Util.getNonLoopbackAddress();
         if(default_ip_address == null) {
-            log.warn("unable to find an address other than loopback for IP version " + ip_version);
+            log.warn(Util.getMessage("OnlyLoopbackFound"), ip_version);
             default_ip_address=Util.getLocalhost(ip_version);
         }
 
@@ -781,8 +780,7 @@ public class Configurator {
                                     throw new Exception("default could not be assigned for method " + propertyName + " in "
                                             + protocolName + " with default " + defaultValue, e);
                                 }
-                                if(log.isDebugEnabled())
-                                    log.debug("set property " + protocolName + "." + propertyName + " to default value " + converted);
+                                log.debug("set property " + protocolName + "." + propertyName + " to default value " + converted);
                             }
                         }
                     }
@@ -819,8 +817,7 @@ public class Configurator {
                                             + protocolName + " with default value " + defaultValue, e);
                                 }
 
-                                if(log.isDebugEnabled())
-                                    log.debug("set property " + protocolName + "." + propertyName + " to default value " + converted);
+                                log.debug("set property " + protocolName + "." + propertyName + " to default value " + converted);
                             }
                         }
                     }
@@ -833,7 +830,7 @@ public class Configurator {
     public static void setDefaultValues(List<Protocol> protocols, StackType ip_version) throws Exception {
         InetAddress default_ip_address=Util.getNonLoopbackAddress();
         if(default_ip_address == null) {
-            log.warn("unable to find an address other than loopback for IP version " + ip_version);
+            log.warn(Util.getMessage("OnlyLoopbackFound"), ip_version);
             default_ip_address=Util.getLocalhost(ip_version);
         }
 
@@ -867,8 +864,7 @@ public class Configurator {
                                         + protocolName + " with default value " + defaultValue, e);
                             }
 
-                            if(log.isDebugEnabled())
-                                log.debug("set property " + protocolName + "." + fields[j].getName() + " to default value " + converted);
+                            log.debug("set property " + protocolName + "." + fields[j].getName() + " to default value " + converted);
                         }
                     }
                 }
@@ -1085,7 +1081,7 @@ public class Configurator {
                 String deprecated_msg=annotation.deprecatedMessage();
                 if(deprecated_msg != null && !deprecated_msg.isEmpty()) {
                     log.warn(Util.getMessage("Deprecated"), method.getDeclaringClass().getSimpleName() + "." + methodName,
-                                             deprecated_msg);
+                             deprecated_msg);
                 }
             }
 
@@ -1130,9 +1126,8 @@ public class Configurator {
             if(propertyName != null && propertyValue != null) {
                 String deprecated_msg=annotation.deprecatedMessage();
                 if(deprecated_msg != null && !deprecated_msg.isEmpty()) {
-
                     log.warn(Util.getMessage("Deprecated"), field.getDeclaringClass().getSimpleName() + "." + field.getName(),
-                                             deprecated_msg);
+                             deprecated_msg);
                 }
             }
             
@@ -1167,7 +1162,7 @@ public class Configurator {
                     if(propertyValue != null) {
                         if(log.isWarnEnabled()) {
                             String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
-                            log.warn(name + " property " + propertyName + " was deprecated and is ignored");
+                            log.warn(Util.getMessage("Deprecated"), name + "." + propertyName, "will be ignored");
                         }
                         props.remove(propertyName);
                     }
@@ -1201,7 +1196,7 @@ public class Configurator {
                         return retval;
                 }
                 catch(SecurityException ex) {
-                    log.error("failed getting system property for " + system_property_name, ex);
+                    log.error(Util.getMessage("SyspropFailure"), system_property_name, ex);
                 }
             }
         }
@@ -1338,11 +1333,7 @@ public class Configurator {
     				parameterizedTypeSanityCheck(methodParamType) ;
     			}
     			catch(IllegalArgumentException e) {
-    				if(log.isErrorEnabled()) {
-    					log.error("Method " + m.getName() + " failed paramaterizedTypeSanityCheck()") ;
-    				}
-    				// because this Method's parameter fails the sanity check, its probably not 
-    				// an InetAddress related structure
+    				// because this Method's parameter fails the sanity check, its probably not an InetAddress
     				return false ;
     			}
     			
@@ -1411,11 +1402,8 @@ public class Configurator {
     			return ((IpAddress) obj).getIpAddress() ;
     		else if (obj instanceof InetSocketAddress)
     			return ((InetSocketAddress) obj).getAddress() ;
-    		else {
-    			if (log.isWarnEnabled())
-    				log.warn("Input argument does not represent one of InetAddress...: class=" + obj.getClass().getName()) ;
-       			throw new IllegalArgumentException("Input argument does not represent one of InetAddress. IpAddress not InetSocketAddress") ;    			
-    		}
+    		else
+       			throw new IllegalArgumentException("Input argument does not represent one of InetAddress. IpAddress not InetSocketAddress") ;
      	}
     	
     	public String toString() {

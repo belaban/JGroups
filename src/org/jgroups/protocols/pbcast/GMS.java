@@ -1477,8 +1477,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         synchronized void add(Request req) {
             if(suspended) {
-                if(log.isTraceEnabled())
-                    log.trace(local_addr + ": queue is suspended; request " + req + " is discarded");
+                log.trace("%s: queue is suspended; request %s is discarded", local_addr, req);
                 return;
             }
             start();
@@ -1487,8 +1486,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 history.add(new Date() + ": " + req.toString());
             }
             catch(QueueClosedException e) {
-                if(log.isTraceEnabled())
-                    log.trace("queue is closed; request " + req + " is discarded");
+                log.trace("queue is closed; request %s is discarded", req);
             }
         }
 

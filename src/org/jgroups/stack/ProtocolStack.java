@@ -633,8 +633,7 @@ public class ProtocolStack extends Protocol {
         prot.down_prot=top_prot;
         prot.up_prot=this;
         top_prot=prot;
-        if(log.isDebugEnabled())
-            log.debug("inserted " + prot + " at the top of the stack");
+        log.debug("inserted " + prot + " at the top of the stack");
     }
 
 

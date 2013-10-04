@@ -124,10 +124,8 @@ public class Queue {
      * @exception QueueClosedException exception if closed() returns true
      */
     public void add(Object obj) throws QueueClosedException {
-        if(obj == null) {
-            if(log.isErrorEnabled()) log.error("argument must not be null");
+        if(obj == null)
             return;
-        }
 
         /*lock the queue from other threads*/
         synchronized(mutex) {
@@ -144,10 +142,8 @@ public class Queue {
     }
 
     public void addAll(Collection c) throws QueueClosedException {
-        if(c == null) {
-            if(log.isErrorEnabled()) log.error("argument must not be null");
+        if(c == null)
             return;
-        }
 
         /*lock the queue from other threads*/
         synchronized(mutex) {
@@ -171,10 +167,8 @@ public class Queue {
 
 
     public void addAll(List<Object> list) throws QueueClosedException {
-        if(list == null) {
-            if(log.isErrorEnabled()) log.error("argument must not be null");
+        if(list == null)
             return;
-        }
 
         /*lock the queue from other threads*/
         synchronized(mutex) {
@@ -203,7 +197,6 @@ public class Queue {
      * @return the first element to be taken of the queue
      */
     public Object remove() throws QueueClosedException {
-        Object retval;
         synchronized(mutex) {
             /*wait as long as the queue is empty. return when an element is present or queue is closed*/
             while(size == 0) {
@@ -220,20 +213,8 @@ public class Queue {
                 throw new QueueClosedException();
 
             /*remove the head from the queue, if we make it to this point, retval should not be null !*/
-            retval=removeInternal();
-            if(retval == null)
-                if(log.isErrorEnabled()) log.error("element was null, should never be the case");
+            return removeInternal();
         }
-
-        /*
-         * we ran into an Endmarker, which means that the queue was closed before
-         * through close(true)
-         */
-//        if(retval == endMarker) {
-//            close(false); // mark queue as closed
-//            throw new QueueClosedException();
-//        }
-        return retval;
     }
 
 
@@ -327,10 +308,8 @@ public class Queue {
     public void removeElement(Object obj) throws QueueClosedException {
         Element el, tmp_el;
 
-        if(obj == null) {
-            if(log.isErrorEnabled()) log.error("argument must not be null");
+        if(obj == null)
             return;
-        }
 
         synchronized(mutex) {
             if(closed) /*check to see if the queue is closed*/

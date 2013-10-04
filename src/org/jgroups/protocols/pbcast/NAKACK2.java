@@ -82,6 +82,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * stability messages in the error message
      */
     @Property(description="Should stability history be printed if we fail in retransmission. Default is false")
+    @Deprecated
     protected boolean print_stability_history_on_failed_xmit=false;
 
 
@@ -374,13 +375,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             transport.registerProbeHandler(this);
             if(!transport.supportsMulticasting()) {
                 if(use_mcast_xmit) {
-                    log.warn("use_mcast_xmit should not be used because the transport (" + transport.getName() +
-                            ") does not support IP multicasting; setting use_mcast_xmit to false");
+                    log.warn(Util.getMessage("NoMulticastTransport"), "use_mcast_xmit", transport.getName(), "use_mcast_xmit");
                     use_mcast_xmit=false;
                 }
                 if(use_mcast_xmit_req) {
-                    log.warn("use_mcast_xmit_req should not be used because the transport (" + transport.getName() +
-                            ") does not support IP multicasting; setting use_mcast_xmit_req to false");
+                    log.warn(Util.getMessage("NoMulticastTransport"), "use_mcast_xmit_req", transport.getName(), "use_mcast_xmit_req");
                     use_mcast_xmit_req=false;
                 }
             }
@@ -583,7 +582,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                         return null;
 
                     default:
-                        log.error("%s: header type %s not known", local_addr, hdr.type);
+                        log.error(Util.getMessage("HeaderTypeNotKnown"), local_addr, hdr.type);
                         return null;
                 }
 
@@ -647,7 +646,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     }
                     break;
                 default:
-                    log.error("%s: header type %s not known", local_addr, hdr.type);
+                    log.error(Util.getMessage("HeaderTypeNotKnown"), local_addr, hdr.type);
             }
         }
 
@@ -775,7 +774,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                         up_prot.up(new Event(Event.MSG, msg));
                     }
                     catch(Throwable t) {
-                        log.error("%s: failed to deliver OOB message %s: %t", local_addr, msg, t);
+                        log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "OOB message", msg, t);
                     }
                 }
             }
@@ -822,7 +821,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                             up_prot.up(new Event(Event.MSG, msg));
                         }
                         catch(Throwable t) {
-                            log.error("%s: failed to deliver OOB message %s: %s", local_addr, msg, t);
+                            log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "OOB message", msg, t);
                         }
                     }
                 }
@@ -877,7 +876,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     up_prot.up(batch);
                 }
                 catch(Throwable t) {
-                    log.error("%s: failed to deliver batch %s: %t", local_addr, batch, t);
+                    log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
                 }
             }
         }
@@ -906,32 +905,15 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
         Table<Message> buf=xmit_table.get(original_sender);
         if(buf == null) {
-            if(log.isErrorEnabled()) {
-                StringBuilder sb=new StringBuilder();
-                sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
-                sb.append(") ").append(original_sender).append(" not found in retransmission table");
-                // don't print the table unless we are in trace mode because it can be LARGE
-                if(log.isTraceEnabled())
-                    sb.append(":\n").append(printMessages());
-                if(print_stability_history_on_failed_xmit)
-                    sb.append(" (stability history:\n").append(printStabilityHistory());
-                log.error(sb.toString());
-            }
+            log.error(Util.getMessage("SenderNotFound"), local_addr, original_sender);
             return;
         }
 
         for(long i: missing_msgs) {
             Message msg=buf.get(i);
             if(msg == null) {
-                if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(xmit_requester) && i > buf.getLow()) {
-                    StringBuilder sb=new StringBuilder();
-                    sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
-                    sb.append(") message ").append(original_sender).append("::").append(i);
-                    sb.append(" not found in retransmission table of ").append(original_sender).append(":\n").append(buf);
-                    if(print_stability_history_on_failed_xmit)
-                        sb.append(" (stability history:\n").append(printStabilityHistory());
-                    log.warn(sb.toString());
-                }
+                if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(xmit_requester) && i > buf.getLow())
+                    log.warn(Util.getMessage("MessageNotFound"), local_addr, original_sender, i);
                 continue;
             }
             if(log.isTraceEnabled())
@@ -1030,7 +1012,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 checkForRebroadcasts();
         }
         catch(Exception ex) {
-            log.error("%s: failed handling retransmitted message: ", local_addr, ex);
+            log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "retransmitted message", msg, ex);
         }
     }
 

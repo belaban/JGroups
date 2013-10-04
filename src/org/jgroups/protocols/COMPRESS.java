@@ -8,6 +8,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -174,7 +175,7 @@ public class COMPRESS extends Protocol {
                     return msg.copy(false).setBuffer(uncompressed_payload);
                 }
                 catch(DataFormatException e) {
-                    if(log.isErrorEnabled()) log.error("exception on uncompression", e);
+                    log.error(Util.getMessage("CompressionFailure"), e);
                 }
             }
             catch(InterruptedException e) {

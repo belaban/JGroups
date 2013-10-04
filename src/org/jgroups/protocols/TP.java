@@ -1008,8 +1008,7 @@ public abstract class TP extends Protocol {
         if(timer == null) {
             if(timer_type.equalsIgnoreCase("old")) {
                 if(timer_min_threads < 2) {
-                    log.warn("timer.min_threads should not be less than 2 for timer_type=\"old\"; setting value to 2 (from " +
-                               timer_min_threads + ")");
+                    log.warn(Util.getMessage("TimerMinThreads"), timer_min_threads);
                     timer_min_threads=2;
                 }
                 timer=new DefaultTimeScheduler(timer_thread_factory, timer_min_threads);
@@ -1207,16 +1206,16 @@ public abstract class TP extends Protocol {
 
         if(bundler_type.startsWith("new")) {
             if(bundler_type.endsWith("new2"))
-                log.warn("bundler_type=\"new2\" has been removed; using TransferQueueBundler (new)");
+                log.warn(Util.getMessage("OldBundlerType"), "new2", "TransferQueueBundler (new)");
             bundler=new TransferQueueBundler(bundler_capacity);
         }
         else if(bundler_type.startsWith("old")) {
             if(bundler_type.endsWith("old2"))
-                log.warn("bundler_type=\"old2\" has been removed; using DefaultBundler (old)");
+                log.warn(Util.getMessage("OldBundlerType"), "old2", "DefaultBundler (old)");
             bundler=new DefaultBundler();
         }
         else
-            log.warn("bundler_type \"" + bundler_type + "\" not known; using default bundler (new)");
+            log.warn(Util.getMessage("UnknownBundler"), bundler_type);
         if(bundler == null)
             bundler=new TransferQueueBundler(bundler_capacity);
         bundler.start();
@@ -1284,7 +1283,7 @@ public abstract class TP extends Protocol {
         if(!isSingleton())
             setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
         if(log.isTraceEnabled())
-            log.trace(local_addr + ": sending msg to " + msg.getDest() + ", src=" + msg.getSrc() + ", headers are " + msg.printHeaders());
+            log.trace("%s: sending msg to %s, src=%s, headers are %s", local_addr, msg.getDest(), msg.getSrc(), msg.printHeaders());
 
 
         Address dest=msg.getDest();
@@ -1304,7 +1303,7 @@ public abstract class TP extends Protocol {
             // we *have* to make a copy, or else up_prot.up() might remove headers from msg which will then *not*
             // be available for marshalling further down (when sending the message)
             final Message copy=msg.copy();
-            if(log.isTraceEnabled()) log.trace(local_addr + ": looping back message " + copy);
+            if(log.isTraceEnabled()) log.trace("%s: looping back message %s", local_addr, copy);
 
             TpHeader hdr=(TpHeader)msg.getHeader(this.id); // added by the code above *or* by ProtocolAdapter.down()
             final String cluster_name=hdr.channel_name;
@@ -1332,7 +1331,7 @@ public abstract class TP extends Protocol {
             Thread.currentThread().interrupt(); // let someone else handle the interrupt
         }
         catch(Throwable e) {
-            log.error("%s: failed sending message to %s (%d bytes): %s, headers: %s",
+            log.error(Util.getMessage("SendFailure"),
                       local_addr, (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
         }
         return null;
@@ -1362,7 +1361,7 @@ public abstract class TP extends Protocol {
     protected void passMessageUp(Message msg, String cluster_name, boolean perform_cluster_name_matching,
                                  boolean multicast, boolean discard_own_mcast) {
         if(log.isTraceEnabled())
-            log.trace(new StringBuilder(local_addr + ": ").append("received ").append(msg).append(", headers are ").append(msg.printHeaders()));
+            log.trace("%s: received %s, headers are %s", local_addr, msg, msg.printHeaders());
 
         final Protocol tmp_prot=isSingleton()? up_prots.get(cluster_name) : up_prot;
         if(tmp_prot == null)
@@ -1393,7 +1392,7 @@ public abstract class TP extends Protocol {
 
     protected void passBatchUp(MessageBatch batch, boolean perform_cluster_name_matching, boolean discard_own_mcast) {
         if(log.isTraceEnabled())
-            log.trace(new StringBuilder(local_addr + ": ").append("received message batch of " + batch.size() + " messages from " + batch.sender()));
+            log.trace("%s: received message batch of %d messages from %s", local_addr, batch.size(), batch.sender());
 
         String ch_name=batch.clusterName();
         final Protocol tmp_prot=isSingleton()? up_prots.get(ch_name) : up_prot;
@@ -1501,8 +1500,7 @@ public abstract class TP extends Protocol {
             num_rejected_msgs++;
         }
         catch(Throwable t) {
-            if(log.isErrorEnabled())
-                log.error(local_addr + ": failed handling incoming message", t);
+            log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
         }
         finally {
             Util.close(dis);
@@ -1534,8 +1532,7 @@ public abstract class TP extends Protocol {
             if(!multicast) {
                 Address dest=msg.getDest(), target=local_addr;
                 if(dest != null && target != null && !dest.equals(target)) {
-                    if(log.isWarnEnabled())
-                        log.warn(local_addr +  ": dropping unicast message to wrong destination " + dest + "; my local_addr is " + target);
+                    log.warn(Util.getMessage("IncorrectDest"), local_addr, dest);
                     return;
                 }
             }
@@ -1566,8 +1563,7 @@ public abstract class TP extends Protocol {
             if(!batch.multicast()) {
                 Address dest=batch.dest(), target=local_addr;
                 if(dest != null && target != null && !dest.equals(target)) {
-                    if(log.isWarnEnabled())
-                        log.warn(local_addr + ": dropping unicast message batch to wrong destination " + dest + "; my local_addr is " + target);
+                    log.warn(Util.getMessage("IncorrectDest"), local_addr, dest);
                     return;
                 }
             }
@@ -1586,7 +1582,7 @@ public abstract class TP extends Protocol {
                     passMessageUp(msg, batch.clusterName(), true, batch.multicast(), true);
                 }
                 catch(Throwable t) {
-                    log.error(local_addr + ": failed passing up message: " + t);
+                    log.error(Util.getMessage("PassUpFailure"), t);
                 }
             }
             if(stats)
@@ -1651,7 +1647,7 @@ public abstract class TP extends Protocol {
         if(physical_dest != null)
             sendUnicast(physical_dest, buf, offset, length);
         else if(log.isWarnEnabled())
-            log.warn(local_addr+  ": no physical address for " + dest + ", dropping message");
+            log.warn(Util.getMessage("PhysicalAddrMissing"), local_addr, dest);
     }
 
 
@@ -1661,8 +1657,7 @@ public abstract class TP extends Protocol {
             synchronized(this) {
                 if(last_discovery_request == 0 || (current_time=System.currentTimeMillis()) - last_discovery_request >= 10000) {
                     last_discovery_request=current_time == 0? System.currentTimeMillis() : current_time;
-                    if(log.isWarnEnabled())
-                        log.warn(local_addr + ": logical address cache didn't contain all physical address, sending up a discovery request");
+                    log.warn(Util.getMessage("NotAllPhysAddrsFound"), local_addr);
                     up(new Event(Event.FIND_INITIAL_MBRS));
                 }
             }
@@ -1674,8 +1669,7 @@ public abstract class TP extends Protocol {
                     sendUnicast(entry.getVal(), buf, offset, length);
             }
             catch(Throwable t) {
-                if(log.isErrorEnabled())
-                    log.error(local_addr + ": failure sending message to " + entry.getVal() + ": " + t);
+                log.error(Util.getMessage("FailureSendingToPhysAddr"), local_addr, entry.getVal(), t);
             }
         }
     }
@@ -2036,8 +2030,7 @@ public abstract class TP extends Protocol {
                 prot.up(evt);
             }
             catch(Exception e) {
-                if(log.isErrorEnabled())
-                    log.error(local_addr + ": failed passing up event " + evt, e);
+                log.error(Util.getMessage("PassUpFailureEvent"), local_addr, evt, e);
             }
         }
     }
@@ -2204,7 +2197,7 @@ public abstract class TP extends Protocol {
                     doSend(buffer, dest, multicast);
                 }
                 catch(Throwable e) {
-                    if(log.isErrorEnabled()) log.error(local_addr + ": exception sending bundled msgs", e);
+                    log.error(Util.getMessage("FailureSendingMsgBundle"), local_addr, e);
                 }
             }
             msgs.clear();
@@ -2229,7 +2222,7 @@ public abstract class TP extends Protocol {
                             sendBundledMessages(msgs);
                         }
                         catch(Exception e) {
-                            log.error(local_addr + ": failed sending bundled messages", e);
+                            log.error(Util.getMessage("FailureSendingMsgBundle"), local_addr, e);
                         }
                     }
                 }
@@ -2403,7 +2396,7 @@ public abstract class TP extends Protocol {
                     doSend(buf, dest, multicast);
                 }
                 catch(Throwable e) {
-                    if(log.isErrorEnabled()) log.error(local_addr + ": exception sending bundled msgs: " + e + ":, cause: " + e.getCause());
+                    log.error(Util.getMessage("FailureSendingMsgBundle"), local_addr, e);
                 }
             }
         }
@@ -2534,8 +2527,7 @@ public abstract class TP extends Protocol {
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
                 if(dest != null && local_addr != null && !dest.equals(local_addr)) {
-                    if(log.isWarnEnabled())
-                        log.warn(local_addr + ": dropping unicast message to wrong destination " + dest + "; my local_addr is " + local_addr);
+                    log.warn(Util.getMessage("IncorrectDest"), local_addr, dest);
                     return null;
                 }
             }

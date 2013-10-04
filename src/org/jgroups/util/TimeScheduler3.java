@@ -208,10 +208,8 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
     }
 
     protected Task add(Task task) {
-        if(!running) {
-            log.error("failed adding task to queue as timer is not running; task: "+ task);
+        if(!running)
             return null;
-        }
         queue.add(task);
         return task;
     }

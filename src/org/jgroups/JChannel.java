@@ -362,7 +362,7 @@ public class JChannel extends Channel {
                         down(new Event(Event.DISCONNECT, local_addr));   // DISCONNECT is handled by each layer
                     }
                     catch(Throwable t) {
-                        log.error("disconnect failed", t);
+                        log.error(Util.getMessage("DisconnectFailure"), t);
                     }
                 }
                 state=State.OPEN;
@@ -555,8 +555,7 @@ public class JChannel extends Channel {
         if(target == null)
             target=determineCoordinator();
         if(target != null && local_addr != null && target.equals(local_addr)) {
-            if(log.isTraceEnabled())
-                log.trace("cannot get state from myself (" + target + "): probably the first member");
+            log.trace("cannot get state from myself (" + target + "): probably the first member");
             return;
         }
 
@@ -731,7 +730,7 @@ public class JChannel extends Channel {
                     up_handler.up(new Event(Event.MSG, msg));
                 }
                 catch(Throwable t) {
-                    log.error("failed passing message to up-handler", t);
+                    log.error(Util.getMessage("UpHandlerFailure"), t);
                 }
             }
             else if(receiver != null) {
@@ -739,7 +738,7 @@ public class JChannel extends Channel {
                     receiver.receive(msg);
                 }
                 catch(Throwable t) {
-                    log.error("failed passing message to receiver", t);
+                    log.error(Util.getMessage("ReceiverFailure"), t);
                 }
             }
         }
@@ -854,9 +853,8 @@ public class JChannel extends Channel {
         checkClosed();
 
         /*make sure we have a valid channel name*/
-        if(cluster_name == null) {
-            if(log.isDebugEnabled()) log.debug("cluster_name is null, assuming unicast channel");
-        }
+        if(cluster_name == null)
+            log.debug("cluster_name is null, assuming unicast channel");
         else
             this.cluster_name=cluster_name;
 
@@ -951,8 +949,7 @@ public class JChannel extends Channel {
                     prot_stack.destroy();
             }
             catch(Exception e) {
-                if(log.isErrorEnabled())
-                    log.error("failed destroying the protocol stack", e);
+                log.error(Util.getMessage("StackDestroyFailure"), e);
             }
 
             TP transport=prot_stack.getTransport();
@@ -1048,7 +1045,7 @@ public class JChannel extends Channel {
                             handleOperation(map, key.substring(index+1));
                         }
                         catch(Throwable throwable) {
-                            log.error("failed invoking operation " + key.substring(index+1), throwable);
+                            log.error(Util.getMessage("OperationInvocationFailure"), key.substring(index+1), throwable);
                         }
                     }
                 }
@@ -1097,10 +1094,8 @@ public class JChannel extends Channel {
                                   if(value != null)
                                       prot.setValue(attrname, value);
                             }
-                            else {
-                                if(log.isWarnEnabled())
-                                    log.warn("Field \"" + attrname + "\" not found in protocol " + protocol_name);
-                            }
+                            else
+                                log.warn(Util.getMessage("FieldNotFound"), attrname, protocol_name);
                             it.remove();
                         }
                     }
@@ -1149,8 +1144,7 @@ public class JChannel extends Channel {
 
             Method method=MethodCall.findMethod(prot.getClass(), method_name, args);
             if(method == null) {
-                if(log.isWarnEnabled())
-                    log.warn(local_addr + ": method " + prot.getClass().getSimpleName() + "." + method_name + " not found");
+                log.warn(Util.getMessage("MethodNotFound"), local_addr, prot.getClass().getSimpleName(), method_name);
                 return;
             }
             MethodCall call=new MethodCall(method);
