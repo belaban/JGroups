@@ -23,12 +23,34 @@ New features
 ============
 
 
+Pluggable policy for picking coordinator
+----------------------------------------
+[https://issues.jboss.org/browse/JGRP-592]
+
+View and merge-view creation is now pluggable; this means that an application can determine which member is
+the coordinator.
+Documentation: http://www.jgroups.org/manual/html/user-advanced.html#MembershipChangePolicy.
+
+
 RELAY2: allow for more than one site master
 -------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1649]
 
 If we have a lot of traffic between sites, having more than 1 site master increases performance and reduces stress
 on the single site master
+
+
+Fork channels: private light-weight channels
+--------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1613]
+
+This allows multiple light-weight channels to be created over the same (base) channel. The fork channels are
+private to the app which creates them and the app can also add protocols over the default stack. These protocols are
+also private to the app.
+
+Doc: http://www.jgroups.org/manual/html/user-advanced.html#ForkChannel
+Blog: http://belaban.blogspot.ch/2013/08/how-to-hijack-jgroups-channel-inside.html
+
 
 
 Kerberos based authentication
@@ -63,6 +85,8 @@ delay acking the message, which could lead to unneeded retransmission by the sen
 Compress Digest and MutableDigest
 ---------------------------------
 [https://issues.jboss.org/browse/JGRP-1317]
+[https://issues.jboss.org/browse/JGRP-1354]
+[https://issues.jboss.org/browse/JGRP-1391]
 [https://issues.jboss.org/browse/JGRP-1690]
 
 - In some cases, when a digest and a view are the same, the members
@@ -80,8 +104,6 @@ Compress Digest and MutableDigest
   MergeView (https://issues.jboss.org/browse/JGRP-1690)
 - More efficient marshalling of GMS$GmsHeader: when view and digest
   are present, we only marshal the members once
-- JoinRsp: marshalling members in view and digest only once
-- Digest: marshalling members in view and digest only once
 
 
 
@@ -142,6 +164,18 @@ If we have multiple channels in the same JVM, the a new view in one channel trig
 of all other caches
 
 
+Large clusters:
+---------------
+- https://issues.jboss.org/browse/JGRP-1700: STABLE uses a bitset rather than a list for STABLE msgs, reducing
+  memory consumption
+- https://issues.jboss.org/browse/JGRP-1704: don't print the full list of members
+- https://issues.jboss.org/browse/JGRP-1705: suppression of fake merge-views
+- https://issues.jboss.org/browse/JGRP-1710: move contents of GMS headers into message body (otherwise packet at
+  transport gets too big)
+- https://issues.jboss.org/browse/JGRP-1713: ditto for VIRE-RSP in MERGE3
+- https://issues.jboss.org/browse/JGRP-1714: move large data in headers to message body
+
+
 
 Manual
 ======
@@ -152,5 +186,5 @@ The complete list of features and bug fixes can be found at http://jira.jboss.co
 
 
 Bela Ban, Kreuzlingen, Switzerland
-Aug 2013
+AuOct 2013
 
