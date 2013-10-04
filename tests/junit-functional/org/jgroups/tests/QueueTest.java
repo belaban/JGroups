@@ -624,9 +624,9 @@ public class QueueTest {
         }
 
         System.out.println("-- adding element 99");
-        queue.add(new Long(99));
+        queue.add((long)99);
         System.out.println("-- adding element 100");
-        queue.add(new Long(100));
+        queue.add((long)100);
 
         long target_time=System.currentTimeMillis() + 10000L;
         do {
