@@ -70,9 +70,9 @@ public class DefaultThreadFactory implements ThreadFactory {
                                String name,
                                String addr,
                                String cluster_name) {
-        Thread retval=new Thread(r, name);
+        String thread_name=getNewThreadName(name, addr, cluster_name);
+        Thread retval=new Thread(r, thread_name);
         retval.setDaemon(createDaemons);
-        renameThread(retval, addr, cluster_name);
         return retval;
     }
 
@@ -90,15 +90,25 @@ public class DefaultThreadFactory implements ThreadFactory {
      * @param cluster_name
      */
     public void renameThread(String base_name, Thread thread, String addr, String cluster_name) {
+        String thread_name=getThreadName(base_name, thread, addr, cluster_name);
+        if(thread_name != null)
+            thread.setName(thread_name);
+    }
+
+    public void renameThread(Thread thread) {
+        renameThread(null, thread);
+    }
+
+    protected String getThreadName(String base_name, final Thread thread, String addr, String cluster_name) {
         if(thread == null)
-            return;
+            return null;
         StringBuilder sb=new StringBuilder(base_name != null? base_name : thread.getName());
         if(use_numbering) {
             short id;
             synchronized(this) {
                 id=++counter;
             }
-            sb.append("-" + id);
+            sb.append("-").append(id);
         }
 
         if(cluster_name == null)
@@ -108,8 +118,7 @@ public class DefaultThreadFactory implements ThreadFactory {
 
         if(!includeClusterName && !includeLocalAddress && cluster_name != null) {
             sb.append(",shared=").append(cluster_name);
-            thread.setName(sb.toString());
-            return;
+            return sb.toString();
         }
 
         if(includeClusterName)
@@ -119,14 +128,37 @@ public class DefaultThreadFactory implements ThreadFactory {
             sb.append(',').append(addr);
 
         if(use_numbering || includeClusterName || includeLocalAddress)
-            thread.setName(sb.toString());
+            return sb.toString();
+        return null;
     }
 
-    protected void renameThread(Thread thread, String addr, String cluster_name) {
-        renameThread(null, thread, addr, cluster_name);
+    protected String getNewThreadName(String base_name, String addr, String cluster_name) {
+        StringBuilder sb=new StringBuilder(base_name != null? base_name : "thread");
+        if(use_numbering) {
+            short id;
+            synchronized(this) {
+                id=++counter;
+            }
+            sb.append("-").append(id);
+        }
+
+        if(cluster_name == null)
+            cluster_name=clusterName;
+        if(addr == null)
+            addr=this.address;
+
+        if(!includeClusterName && !includeLocalAddress && cluster_name != null) {
+            sb.append(",shared=").append(cluster_name);
+            return sb.toString();
+        }
+
+        if(includeClusterName)
+            sb.append(',').append(cluster_name);
+
+        if(includeLocalAddress)
+            sb.append(',').append(addr);
+
+        return sb.toString();
     }
 
-    public void renameThread(Thread thread) {
-        renameThread(null, thread);
-    }
 }
