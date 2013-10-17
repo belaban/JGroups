@@ -39,7 +39,7 @@ public class UPerf extends ReceiverAdapter {
 
 
     // ============ configurable properties ==================
-    private boolean sync=true, oob=true;
+    private boolean sync=true, oob=false;
     private int num_threads=25;
     private int num_msgs=20000, msg_size=1000;
     private int anycast_count=2;
@@ -365,7 +365,7 @@ public class UPerf extends ReceiverAdapter {
     /** Kicks off the benchmark on all cluster nodes */
     void startBenchmark() throws Throwable {
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0);
-        options.setFlags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.NO_FC);
+        options.setFlags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
         RspList<Object> responses=disp.callRemoteMethods(null, new MethodCall(START), options);
 
         long total_reqs=0;
@@ -485,21 +485,12 @@ public class UPerf extends ReceiverAdapter {
             RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 40000, false, null);
             RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 40000, true, null);
 
-            // Don't use bundling as we have sync requests (e.g. GETs) regardless of whether we set sync=true or false
-            get_options.setFlags(Message.Flag.DONT_BUNDLE);
-            put_options.setFlags(Message.Flag.DONT_BUNDLE);
-
             if(oob) {
                 get_options.setFlags(Message.Flag.OOB);
                 put_options.setFlags(Message.Flag.OOB);
             }
-            if(sync) {
-                get_options.setFlags(Message.Flag.DONT_BUNDLE, Message.NO_FC);
-                put_options.setFlags(Message.Flag.DONT_BUNDLE, Message.NO_FC);
-            }
-            if(use_anycast_addrs) {
+            if(use_anycast_addrs)
                 put_options.useAnycastAddresses(true);
-            }
 
             while(true) {
                 long i=num_msgs_sent.getAndIncrement();
