@@ -489,7 +489,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         teardownPingSocket();     // make sure we have no leftovers
         if(!regular_sock_close) { // only suspect if socket was not closed regularly (by interruptPingerThread())
             if(log.isDebugEnabled())
-                log.debug("peer " + ping_dest + " closed socket (" + (ex != null ? ex.getClass().getName() : "eof") + ')');
+                log.debug("peer " + ping_dest + " closed socket (" + (ex != null ? ex.toString() : "eof") + ')');
             broadcastSuspectMessage(ping_dest);
             pingable_mbrs.remove(ping_dest);
         }
