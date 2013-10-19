@@ -1495,16 +1495,21 @@ public class Util {
         }
     }
 
-
     public static void sleep(long timeout, int nanos) {
-        try {
-            Thread.sleep(timeout,nanos);
-        }
-        catch(InterruptedException e) {
-            Thread.currentThread().interrupt();
+        //the Thread.sleep method is not precise at all regarding nanos
+        if (timeout > 0 || nanos > 900000) {
+            try {
+                Thread.sleep(timeout + (nanos / 1000000), (nanos % 1000000));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        } else {
+            //this isn't a superb metronome either, but allows a granularity
+            //with a reasonable precision in the order of 50ths of millisecond
+            long initialTime = System.nanoTime() - 200;
+            while (System.nanoTime() < initialTime + nanos);
         }
     }
-
 
     /**
      * On most UNIX systems, the minimum sleep time is 10-20ms. Even if we specify sleep(1), the thread will
