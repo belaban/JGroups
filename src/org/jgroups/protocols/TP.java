@@ -54,6 +54,7 @@ public abstract class TP extends Protocol {
 
     protected static final byte LIST=1; // we have a list of messages rather than a single message when set
     protected static final byte MULTICAST=2; // message is a multicast (versus a unicast) message when set
+    protected static final int  MSG_OFFSET=Global.SHORT_SIZE + Global.BYTE_SIZE*2; // offset for flags for single msgs
 
     protected static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
 
@@ -464,26 +465,6 @@ public abstract class TP extends Protocol {
 
     @ManagedAttribute(description="Number of bytes received")
     protected long num_bytes_received=0;
-
-
-    /** Average time (in us) until a message is started to get processed by the thread pool */
-    protected final Average avg_dead_time=new Average(50);
-
-    /** Average time (in us) for the thread pool to process a message */
-    protected final Average avg_processing_time=new Average(50);
-
-
-    @ManagedAttribute(description="Average (us) time for the thread pool to process a message")
-    public double getAverageProcessingTime() {
-        return avg_processing_time.getAverage() / 1000.0;
-    }
-
-    @ManagedAttribute(description="Average time (in us) from message (or batch) reception " +
-      "until it is started to get processed by the thread pool")
-    public double getAverageDeadTime() {
-        return avg_dead_time.getAverage() / 1000.0;
-    }
-
 
     @ManagedAttribute(description="Number of messages rejected by the thread pool")
     protected int num_rejected_msgs=0;
@@ -1423,77 +1404,54 @@ public abstract class TP extends Protocol {
     }
 
 
-
-
     /**
      * Subclasses must call this method when a unicast or multicast message has been received.
-     *
-     * @param sender
-     * @param data
-     * @param offset
-     * @param length
      */
-    protected void receive(Address sender, byte[] data, int offset, int length) {
+    public void receive(Address sender, byte[] data, int offset, int length) {
         if(data == null) return;
+
+        byte flags=data[Global.SHORT_SIZE];
+        boolean is_message_list=(flags & LIST) == LIST;
+
+        if(is_message_list) // used if message bundling is enabled
+            handleMessageBatch(sender, data, offset, length);
+        else
+            handleSingleMessage(sender, data, offset, length);
+    }
+
+
+    protected void handleMessageBatch(Address sender, byte[] data, int offset, int length) {
         DataInputStream dis=null;
         try {
             ExposedByteArrayInputStream in_stream=new ExposedByteArrayInputStream(data, offset, length);
             dis=new DataInputStream(in_stream);
             short version=dis.readShort();
-            if(Version.isBinaryCompatible(version) == false) {
-                if(log_discard_msgs_version && log.isWarnEnabled()) {
-                    if(suppress_log_different_version != null)
-                        suppress_log_different_version.log(SuppressLog.Level.warn, sender,
-                                                           suppress_time_different_version_warnings,
-                                                           sender, Version.print(version), Version.printVersion());
-                    else
-                        log.warn(Util.getMessage("VersionMismatch"), sender, Version.print(version), Version.printVersion());
-                }
+            if(!versionMatch(version, sender))
                 return;
-            }
 
             byte flags=dis.readByte();
-            boolean is_message_list=(flags & LIST) == LIST;
             final boolean multicast=(flags & MULTICAST) == MULTICAST;
 
-            if(is_message_list) { // used if message bundling is enabled
-                final MessageBatch[] batches=readMessageBatch(dis, multicast);
-                final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch_oob=batches[2], internal_batch=batches[3];
+            final MessageBatch[] batches=readMessageBatch(dis, multicast);
+            final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch_oob=batches[2], internal_batch=batches[3];
 
-                if(oob_batch != null) {
-                    num_oob_msgs_received+=oob_batch.size();
-                    oob_thread_pool.execute(new BatchHandler(oob_batch));
-                }
-                if(batch != null) {
-                    num_incoming_msgs_received+=batch.size();
-                    thread_pool.execute(new BatchHandler(batch));
-                }
-                if(internal_batch_oob != null) {
-                    num_oob_msgs_received+=internal_batch_oob.size();
-                    Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
-                    pool.execute(new BatchHandler(internal_batch_oob));
-                }
-                if(internal_batch != null) {
-                    num_internal_msgs_received+=internal_batch.size();
-                    Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
-                    pool.execute(new BatchHandler(internal_batch));
-                }
+            if(oob_batch != null) {
+                num_oob_msgs_received+=oob_batch.size();
+                oob_thread_pool.execute(new BatchHandler(oob_batch));
             }
-            else {
-                Message msg=readMessage(dis);
-                if(msg.isFlagSet(Message.Flag.OOB))
-                    num_oob_msgs_received++;
-                else if(msg.isFlagSet(Message.Flag.INTERNAL))
-                    num_internal_msgs_received++;
-                else
-                    num_incoming_msgs_received++;
-
-                boolean internal=msg.isFlagSet(Message.Flag.INTERNAL); // use internal pool or OOB (if internal pool is null)
-                Executor pool=internal && internal_thread_pool != null? internal_thread_pool
-                  : internal || msg.isFlagSet(Message.Flag.OOB)? oob_thread_pool : thread_pool;
-                TpHeader hdr=(TpHeader)msg.getHeader(id);
-                String cluster_name=hdr.channel_name;
-                pool.execute(new MyHandler(msg, cluster_name, multicast));
+            if(batch != null) {
+                num_incoming_msgs_received+=batch.size();
+                thread_pool.execute(new BatchHandler(batch));
+            }
+            if(internal_batch_oob != null) {
+                num_oob_msgs_received+=internal_batch_oob.size();
+                Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
+                pool.execute(new BatchHandler(internal_batch_oob));
+            }
+            if(internal_batch != null) {
+                num_internal_msgs_received+=internal_batch.size();
+                Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
+                pool.execute(new BatchHandler(internal_batch));
             }
         }
         catch(RejectedExecutionException rejected) {
@@ -1507,39 +1465,102 @@ public abstract class TP extends Protocol {
         }
     }
 
+    protected void handleSingleMessage(Address sender, byte[] data, int offset, int length) {
+        // the message flags are at indexes 4-5
+        short   msg_flags=Util.makeShort(data, offset + MSG_OFFSET);
+        boolean internal=(msg_flags & Message.Flag.INTERNAL.value()) == Message.Flag.INTERNAL.value();
+        boolean oob=(msg_flags & Message.Flag.OOB.value()) == Message.Flag.OOB.value();
+
+        if(oob)
+            num_oob_msgs_received++;
+        else if(internal)
+            num_internal_msgs_received++;
+        else
+            num_incoming_msgs_received++;
+
+        Executor pool=internal && internal_thread_pool != null? internal_thread_pool
+          : internal || oob? oob_thread_pool : thread_pool;
+
+        try {
+            if(pool instanceof DirectExecutor)
+                pool.execute(new MyHandler(sender, data, offset, length)); // we don't make a copy if we execute on this thread
+            else {
+                byte[] tmp=new byte[length];
+                System.arraycopy(data, offset, tmp, 0, length);
+                pool.execute(new MyHandler(sender, tmp, 0, tmp.length));
+            }
+        }
+        catch(RejectedExecutionException ex) {
+            num_rejected_msgs++;
+        }
+    }
+
+    protected boolean versionMatch(short version, Address sender) {
+        boolean match=Version.isBinaryCompatible(version);
+        if(!match) {
+            if(log_discard_msgs_version && log.isWarnEnabled()) {
+                if(suppress_log_different_version != null)
+                    suppress_log_different_version.log(SuppressLog.Level.warn, sender,
+                                                       suppress_time_different_version_warnings,
+                                                       sender, Version.print(version), Version.printVersion());
+                else
+                    log.warn(Util.getMessage("VersionMismatch"), sender, Version.print(version), Version.printVersion());
+            }
+        }
+        return match;
+    }
+
 
 
     protected class MyHandler implements Runnable {
-        protected final Message msg;
-        protected final String  cluster_name;
-        protected final boolean multicast;
-        protected final long    created; // timestamp (ns) when created
+        protected final Address sender;
+        protected final byte[]  data;
+        protected final int     offset;
+        protected final int     length;
 
-        public MyHandler(Message msg, String cluster_name, boolean multicast) {
-            this.msg=msg;
-            this.cluster_name=cluster_name;
-            this.multicast=multicast;
-            this.created=stats? System.nanoTime() : 0;
+        protected MyHandler(Address sender, byte[] data, int offset, int length) {
+            this.sender=sender;
+            this.data=data;
+            this.offset=offset;
+            this.length=length;
         }
 
         public void run() {
-            if(stats) {
-                avg_dead_time.add(System.nanoTime() - created);
-                num_msgs_received++;
-                num_bytes_received+=msg.getLength();
-            }
-
-            if(!multicast) {
-                Address dest=msg.getDest(), target=local_addr;
-                if(dest != null && target != null && !dest.equals(target)) {
-                    log.warn(Util.getMessage("IncorrectDest"), local_addr, dest);
+            DataInputStream dis=null;
+            try {
+                ExposedByteArrayInputStream in_stream=new ExposedByteArrayInputStream(data, offset, length);
+                dis=new DataInputStream(in_stream);
+                short version=dis.readShort();
+                if(!versionMatch(version, sender))
                     return;
+
+                byte flags=dis.readByte();
+                final boolean multicast=(flags & MULTICAST) == MULTICAST;
+                Message msg=readMessage(dis);
+
+                if(!multicast) {
+                    Address dest=msg.getDest(), target=local_addr;
+                    if(dest != null && target != null && !dest.equals(target)) {
+                        log.warn(Util.getMessage("IncorrectDest"), local_addr, dest);
+                        return;
+                    }
                 }
+
+                if(stats) {
+                    num_msgs_received++;
+                    num_bytes_received+=length;
+                }
+
+                TpHeader hdr=(TpHeader)msg.getHeader(id);
+                String cluster_name=hdr.channel_name;
+                passMessageUp(msg, cluster_name, true, multicast, true);
             }
-            long processing_started=stats? System.nanoTime() : 0;
-            passMessageUp(msg, cluster_name, true, multicast, true);
-            if(stats)
-                avg_processing_time.add(System.nanoTime() - processing_started);
+            catch(Throwable t) {
+                log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
+            }
+            finally {
+                Util.close(dis); // only nulls the buffer
+            }
         }
     }
 
@@ -1555,7 +1576,6 @@ public abstract class TP extends Protocol {
 
         public void run() {
             if(stats) {
-                avg_dead_time.add(System.nanoTime() - created);
                 num_msgs_received+=batch.size();
                 num_bytes_received+=batch.length();
             }
@@ -1568,12 +1588,8 @@ public abstract class TP extends Protocol {
                 }
             }
 
-            int batch_size=batch.size();
-            long processing_started=stats? System.nanoTime() : 0;
             if(enable_batching) {
                 passBatchUp(batch, true, true);
-                if(stats)
-                    avg_processing_time.add((System.nanoTime() - processing_started) / batch_size);
                 return;
             }
 
@@ -1585,8 +1601,6 @@ public abstract class TP extends Protocol {
                     log.error(Util.getMessage("PassUpFailure"), t);
                 }
             }
-            if(stats)
-                avg_processing_time.add((System.nanoTime() - processing_started) / batch_size);
         }
     }
 
@@ -1615,12 +1629,10 @@ public abstract class TP extends Protocol {
             num_msgs_sent++;
             num_bytes_sent+=buf.getLength();
         }
-        if(multicast) {
+        if(multicast)
             sendMulticast(buf.getBuf(), buf.getOffset(), buf.getLength());
-        }
-        else {
+        else
             sendToSingleMember(dest, buf.getBuf(), buf.getOffset(), buf.getLength());
-        }
     }
 
 

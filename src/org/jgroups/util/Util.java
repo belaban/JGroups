@@ -2102,6 +2102,11 @@ public class Util {
     }
 
 
+    public static short makeShort(byte[] buf, int offset) {
+        byte c1=buf[offset], c2=buf[offset+1];
+        return  (short)((c1 << 8) + (c2 << 0));
+    }
+
     static long makeLong(byte[] buf, int offset, int len) {
         long retval=0;
         for(int i=0; i < len; i++) {
