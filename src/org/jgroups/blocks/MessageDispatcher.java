@@ -319,8 +319,9 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
         }
 
         if(options != null && options.hasExclusionList()) {
-            Collection<Address> exclusion_list=options.getExclusionList();
-            real_dests.removeAll(exclusion_list);
+            Address[] exclusion_list=options.exclusionList();
+            for(Address excluding: exclusion_list)
+                real_dests.remove(excluding);
         }
 
         // don't even send the message if the destination list is empty

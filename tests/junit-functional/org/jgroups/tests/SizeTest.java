@@ -41,7 +41,6 @@ public class SizeTest {
         _testSize(new PingHeader(PingHeader.GET_MBRS_REQ).clusterName("bla"));
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP));
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP).clusterName(null));
-        Address self=Util.createRandomAddress();
     }
  
 
@@ -900,6 +899,11 @@ public class SizeTest {
         assert hdr.rsp_expected;
         Assert.assertEquals(356, hdr.corrId);
         Assert.assertEquals(RequestCorrelator.Header.RSP, hdr.type);
+
+        Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B");
+
+        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.REQ, 322649, true, (short)22, new Address[]{a,b});
+        _testSize(hdr);
     }
 
 

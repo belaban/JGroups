@@ -142,7 +142,7 @@ public class RequestCorrelator {
         // iii. If deadlock detection is enabled, set/update the call stack
         // iv.  Pass the msg down to the protocol layer below
         Header hdr=options.hasExclusionList()?
-                new MultiDestinationHeader(Header.REQ, id, (coll != null), this.id, options.getExclusionList())
+                new MultiDestinationHeader(Header.REQ, id, (coll != null), this.id, options.exclusionList())
                 : new Header(Header.REQ, id, (coll != null), this.id);
 
         msg.putHeader(this.id, hdr);
@@ -350,15 +350,12 @@ public class RequestCorrelator {
         }
 
         if(hdr instanceof MultiDestinationHeader) {
-            // If the header contains an exclusion list, and we are part of it, then we discard the
-            // request (was addressed to other members)
-            java.util.Collection exclusion_list=((MultiDestinationHeader)hdr).exclusion_list;
-            if(exclusion_list != null && local_addr != null && exclusion_list.contains(local_addr)) {
-                if(log.isTraceEnabled()) {
-                    log.trace(new StringBuilder("discarded request from ").append(msg.getSrc()).
-                            append(" as we are in the exclusion list (local_addr=").
-                            append(local_addr).append(", hdr=").append(hdr).append(')'));
-                }
+            // if we are part of the exclusion list, then we discard the request (addressed to different members)
+            Address[] exclusion_list=((MultiDestinationHeader)hdr).exclusion_list;
+            if(exclusion_list != null && local_addr != null && Util.contains(local_addr, exclusion_list)) {
+                if(log.isTraceEnabled())
+                    log.trace("%s: discarded request from %s as we are in the exclusion list, hdr=",
+                              local_addr, msg.getSrc(), hdr);
                 return true; // don't pass this message further up
             }
         }
@@ -631,12 +628,12 @@ public class RequestCorrelator {
 
     public static final class MultiDestinationHeader extends Header {
         /** Contains a list of members who should not receive the request (others will drop). Ignored if null */
-        public java.util.Collection<? extends Address> exclusion_list;
+        public Address[] exclusion_list;
 
         public MultiDestinationHeader() {
         }
 
-        public MultiDestinationHeader(byte type, long id, boolean rsp_expected, short corr_id, Collection<Address> exclusion_list) {
+        public MultiDestinationHeader(byte type, long id, boolean rsp_expected, short corr_id, Address[] exclusion_list) {
             super(type, id, rsp_expected, corr_id);
             this.exclusion_list=exclusion_list;
         }
@@ -649,7 +646,7 @@ public class RequestCorrelator {
 
         public void readFrom(DataInput in) throws Exception {
             super.readFrom(in);
-            exclusion_list=Util.readAddresses(in, LinkedList.class);
+            exclusion_list=Util.readAddresses(in);
         }
 
         public int size() {
@@ -659,7 +656,7 @@ public class RequestCorrelator {
         public String toString() {
             String str=super.toString();
             if(exclusion_list != null)
-                str=str+ ", exclusion_list=" + exclusion_list;
+                str=str+ ", exclusion_list=" + Arrays.toString(exclusion_list);
             return str;
         }
     }
