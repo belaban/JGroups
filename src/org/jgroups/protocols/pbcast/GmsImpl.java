@@ -54,20 +54,18 @@ public abstract class GmsImpl {
 
 
     protected void sendMergeRejectedResponse(Address sender, MergeId merge_id) {
-        Message msg=new Message(sender, null, null);
-        msg.setFlag(Message.Flag.OOB);
+        Message msg=new Message(sender).setFlag(Message.Flag.OOB);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
         hdr.merge_rejected=true;
         hdr.merge_id=merge_id;
         msg.putHeader(gms.getId(), hdr);
-        if(log.isDebugEnabled()) log.debug("merge response=" + hdr);
+        log.debug("%s: merge response=%s", gms.local_addr, hdr);
         gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 
 
     protected void wrongMethod(String method_name) {
-        if(log.isWarnEnabled())
-            log.warn(method_name + "() should not be invoked on an instance of " + getClass().getName());
+        log.warn("%s: %s() should not be invoked on an instance of %s", gms.local_addr, method_name, getClass().getName());
     }
 
 
