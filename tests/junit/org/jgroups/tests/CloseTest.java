@@ -43,6 +43,24 @@ public class CloseTest extends ChannelTestBase {
         assert !a.isConnected();
     }
 
+    public void testCreationAndCoordClose() throws Exception {
+        a=createChannel(true, 2, "A");
+        b=createChannel(a, "B");
+        a.connect("testCreationAndCoordClose");
+        b.connect("testCreationAndCoordClose");
+        Util.waitUntilAllChannelsHaveSameSize(10000,500,a,b);
+
+        a.disconnect();
+
+        long startTs = System.currentTimeMillis();
+        while(b.getView().size() != 1) {
+            Thread.sleep(100);
+        }
+        long elapsedTime = System.currentTimeMillis() - startTs;
+        System.out.println("Time: "+ elapsedTime);
+        assert elapsedTime < 1000;
+    }
+
     public void testViewChangeReceptionOnChannelCloseByParticipant() throws Exception {
         List<Address> members;
         MyReceiver    r1=new MyReceiver(), r2=new MyReceiver();

@@ -6,10 +6,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.util.Digest;
-import org.jgroups.util.MergeId;
-import org.jgroups.util.MutableDigest;
-import org.jgroups.util.Tuple;
+import org.jgroups.util.*;
 
 import java.util.*;
 
@@ -109,6 +106,8 @@ public class CoordGmsImpl extends ServerGmsImpl {
         Collection<Address> suspected_mbrs=new LinkedHashSet<Address>(requests.size());
         Collection<Address> leaving_mbrs=new LinkedHashSet<Address>(requests.size());
 
+        boolean self_leaving=false; // is the coord leaving
+
         for(Request req: requests) {
             switch(req.type) {
                 case Request.JOIN:
@@ -125,8 +124,11 @@ public class CoordGmsImpl extends ServerGmsImpl {
                 case Request.LEAVE:
                     if(req.suspected)
                         suspected_mbrs.add(req.mbr);
-                    else
+                    else {
                         leaving_mbrs.add(req.mbr);
+                        if(gms.local_addr != null && gms.local_addr.equals(req.mbr))
+                            self_leaving=true;
+                    }
                     break;
                 case Request.SUSPECT:
                     suspected_mbrs.add(req.mbr);
@@ -134,13 +136,13 @@ public class CoordGmsImpl extends ServerGmsImpl {
             }
         }
 
-        new_mbrs.remove(gms.local_addr); // remove myself - cannot join myself (already joined)        
+        new_mbrs.remove(gms.local_addr); // remove myself - cannot join myself (already joined)
 
         if(gms.getViewId() == null) {
             // we're probably not the coord anymore (we just left ourselves), let someone else do it
             // (client will retry when it doesn't get a response)
             log.debug("gms.view_id is null, I'm not the coordinator anymore (leaving=%b); " +
-                        "the new coordinator will handle the leave request", leaving);
+                        "the new coordinator will handle the leave request", self_leaving);
             return;
         }
 
@@ -173,7 +175,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
         View new_view=gms.getNextView(new_mbrs, leaving_mbrs, suspected_mbrs);
 
         if(new_view.size() == 0 && gms.local_addr != null && gms.local_addr.equals(new_view.getCreator())) {
-            if(leaving)
+            if(self_leaving)
                 gms.initState(); // in case connect() is called again
             return;
         }
@@ -224,7 +226,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
                 gms.getDownProtocol().down(new Event(Event.RESUME_STABLE));
             if(!joinAndStateTransferInitiated && useFlushIfPresent)
                 gms.stopFlush();
-            if(leaving)
+            if(self_leaving)
                 gms.initState(); // in case connect() is called again
         }
     }
