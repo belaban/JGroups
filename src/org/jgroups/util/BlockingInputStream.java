@@ -84,24 +84,29 @@ public class BlockingInputStream extends InputStream {
     public int read(byte[] b, int off, int len) throws IOException {
         sanityCheck(b, off, len);
 
+        int bytes_read=0;
+        int bytes_to_be_read=Math.min(b.length, len);
+
         lock.lock();
         try {
-            while(true) {
+            while(bytes_read < bytes_to_be_read) {
                 if(read_pos < write_pos) {
                     int bytes_to_read=Math.min(len, size());
-                    System.arraycopy(buf, read_pos, b, off, bytes_to_read);
+                    System.arraycopy(buf, read_pos, b, bytes_read + off, bytes_to_read);
                     read_pos+=bytes_to_read;
+                    bytes_read+=bytes_to_read;
                     not_full.signalAll();
-                    return bytes_to_read;
+                    continue;
                 }
                 if(closed)
-                    return -1; // EOF
+                    return bytes_read > 0? bytes_read : -1;
                 try {
                     not_empty.await();
                 }
                 catch(InterruptedException e) {
                 }
             }
+            return bytes_read > 0? bytes_read : -1;
         }
         finally {
             lock.unlock();
