@@ -44,10 +44,11 @@ public class UPerf extends ReceiverAdapter {
     private int num_msgs=20000, msg_size=1000;
     private int anycast_count=2;
     private boolean use_anycast_addrs;
+    private boolean dont_bundle=false;
     private double read_percentage=0.8; // 80% reads, 20% writes
     // =======================================================
 
-    private static final Method[] METHODS=new Method[15];
+    private static final Method[] METHODS=new Method[16];
 
     private static final short START                 =  0;
     private static final short SET_OOB               =  1;
@@ -61,6 +62,7 @@ public class UPerf extends ReceiverAdapter {
     private static final short GET                   =  9;
     private static final short PUT                   = 10;
     private static final short GET_CONFIG            = 11;
+    private static final short SET_DONT_BUNDLE       = 12;
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[] GET_RSP=new byte[msg_size];
@@ -82,6 +84,7 @@ public class UPerf extends ReceiverAdapter {
             METHODS[GET]                   = UPerf.class.getMethod("get", long.class);
             METHODS[PUT]                   = UPerf.class.getMethod("put", long.class, byte[].class);
             METHODS[GET_CONFIG]            = UPerf.class.getMethod("getConfig");
+            METHODS[SET_DONT_BUNDLE]       = UPerf.class.getMethod("setDontBundle", boolean.class);
 
             ClassConfigurator.add((short)11000, Results.class);
             f=NumberFormat.getNumberInstance();
@@ -136,6 +139,7 @@ public class UPerf extends ReceiverAdapter {
         ConfigOptions config=(ConfigOptions)disp.callRemoteMethod(coord, new MethodCall(GET_CONFIG), new RequestOptions(ResponseMode.GET_ALL, 5000));
         if(config != null) {
             this.oob=config.oob;
+            this.dont_bundle=config.dont_bundle;
             this.sync=config.sync;
             this.num_threads=config.num_threads;
             this.num_msgs=config.num_msgs;
@@ -176,8 +180,8 @@ public class UPerf extends ReceiverAdapter {
 
         addSiteMastersToMembers();
 
-        System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) +
-                             ", sync=" + sync + ", oob=" + oob + ", use_anycast_addrs=" + use_anycast_addrs);
+        System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) + ", sync=" + sync +
+                             ", oob=" + oob + ", dont_bundle=" + dont_bundle + ", use_anycast_addrs=" + use_anycast_addrs);
         int total_gets=0, total_puts=0;
         final AtomicInteger num_msgs_sent=new AtomicInteger(0);
 
@@ -205,6 +209,11 @@ public class UPerf extends ReceiverAdapter {
         this.oob=oob;
         System.out.println("oob=" + oob);
     }
+
+    public void setDontBundle(boolean dont_bundle) {
+        this.dont_bundle=dont_bundle;
+        System.out.println("dont_bundle=" + dont_bundle);
+      }
 
     public void setSync(boolean val) {
         this.sync=val;
@@ -251,7 +260,8 @@ public class UPerf extends ReceiverAdapter {
     }
 
     public ConfigOptions getConfig() {
-        return new ConfigOptions(oob, sync, num_threads, num_msgs, msg_size, anycast_count, use_anycast_addrs, read_percentage);
+        return new ConfigOptions(oob, sync, dont_bundle,
+                                 num_threads, num_msgs, msg_size, anycast_count, use_anycast_addrs, read_percentage);
     }
 
     // ================================= end of callbacks =====================================
@@ -270,7 +280,8 @@ public class UPerf extends ReceiverAdapter {
                               " [9] Set anycast count (" + anycast_count + ")" +
                               "\n[o] Toggle OOB (" + oob + ") [s] Toggle sync (" + sync +
                               ") [r] Set read percentage (" + f.format(read_percentage) + ") " +
-                              "[a] Toggle use_anycast_addrs (" + use_anycast_addrs + ")" +
+                              "\n[a] Toggle use_anycast_addrs (" + use_anycast_addrs + ") [b] Toggle DONT_BUNDLE (" +
+                              (dont_bundle? "on" : "off") + ")" +
                               "\n[q] Quit\n");
             switch(c) {
                 case -1:
@@ -321,6 +332,10 @@ public class UPerf extends ReceiverAdapter {
                     break;
                 case 'r':
                     setReadPercentage();
+                    break;
+                case 'b':
+                    new_value=!dont_bundle;
+                    disp.callRemoteMethods(null, new MethodCall(SET_DONT_BUNDLE, new_value), RequestOptions.SYNC());
                     break;
                 case 'q':
                     channel.close();
@@ -489,6 +504,10 @@ public class UPerf extends ReceiverAdapter {
                 get_options.setFlags(Message.Flag.OOB);
                 put_options.setFlags(Message.Flag.OOB);
             }
+            if(dont_bundle) {
+                get_options.setFlags(Message.Flag.DONT_BUNDLE);
+                put_options.setFlags(Message.Flag.DONT_BUNDLE);
+            }
             if(use_anycast_addrs)
                 put_options.useAnycastAddresses(true);
 
@@ -579,7 +598,7 @@ public class UPerf extends ReceiverAdapter {
 
 
     public static class ConfigOptions implements Streamable {
-        private boolean sync, oob;
+        private boolean sync, oob, dont_bundle;
         private int     num_threads;
         private int     num_msgs, msg_size;
         private int     anycast_count;
@@ -589,10 +608,11 @@ public class UPerf extends ReceiverAdapter {
         public ConfigOptions() {
         }
 
-        public ConfigOptions(boolean oob, boolean sync, int num_threads, int num_msgs, int msg_size,
+        public ConfigOptions(boolean oob, boolean sync, boolean dont_bundle, int num_threads, int num_msgs, int msg_size,
                              int anycast_count, boolean use_anycast_addrs,
                              double read_percentage) {
             this.oob=oob;
+            this.dont_bundle=dont_bundle;
             this.sync=sync;
             this.num_threads=num_threads;
             this.num_msgs=num_msgs;
@@ -605,6 +625,7 @@ public class UPerf extends ReceiverAdapter {
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeBoolean(oob);
+            out.writeBoolean(dont_bundle);
             out.writeBoolean(sync);
             out.writeInt(num_threads);
             out.writeInt(num_msgs);
@@ -616,6 +637,7 @@ public class UPerf extends ReceiverAdapter {
 
         public void readFrom(DataInput in) throws Exception {
             oob=in.readBoolean();
+            dont_bundle=in.readBoolean();
             sync=in.readBoolean();
             num_threads=in.readInt();
             num_msgs=in.readInt();
@@ -626,7 +648,7 @@ public class UPerf extends ReceiverAdapter {
         }
 
         public String toString() {
-            return "oob=" + oob + ", sync=" + sync + ", anycast_count=" + anycast_count +
+            return "oob=" + oob + ", sync=" + sync + ", dont_bundle=" + dont_bundle + ", anycast_count=" + anycast_count +
               ", use_anycast_addrs=" + use_anycast_addrs +
               ", num_threads=" + num_threads + ", num_msgs=" + num_msgs + ", msg_size=" + msg_size +
               ", read percentage=" + read_percentage;
@@ -647,6 +669,7 @@ public class UPerf extends ReceiverAdapter {
                     return new Buffer(buf.array());
                 case SET_OOB:
                 case SET_SYNC:
+                case SET_DONT_BUNDLE:
                 case SET_USE_ANYCAST_ADDRS:
                     return new Buffer(booleanBuffer(call.getId(), (Boolean)call.getArgs()[0]));
                 case SET_NUM_MSGS:
@@ -684,6 +707,7 @@ public class UPerf extends ReceiverAdapter {
                     return new MethodCall(type);
                 case SET_OOB:
                 case SET_SYNC:
+                case SET_DONT_BUNDLE:
                 case SET_USE_ANYCAST_ADDRS:
                     return new MethodCall(type, buf.get() == 1);
                 case SET_NUM_MSGS:
