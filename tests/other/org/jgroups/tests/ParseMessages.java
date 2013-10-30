@@ -7,7 +7,8 @@ import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Parses messages out of a captured file and writes them to stdout
@@ -22,14 +23,17 @@ public class ParseMessages {
         this.input=new FileInputStream(input);
     }
 
-    public void parse() {
-        short           version;
-        byte            flags;
-        DataInputStream dis=null;
+    public ParseMessages(InputStream input) {
+        this.input=input;
+    }
 
+    public List<Message> parse() {
+        List<Message>   retval=new ArrayList<Message>();
+        DataInputStream dis=null;
         try {
             dis=new DataInputStream(input);
 
+            short version;
             for(;;) {
                 try {
                     version=dis.readShort();
@@ -38,15 +42,8 @@ public class ParseMessages {
                     break;
                 }
 
-//                int ch1 = input.read();
-//                int ch2 = input.read();
-//                if ((ch1 | ch2) < 0)
-//                    throw new EOFException();
-//                version=(short)((ch1 << 8) + (ch2 << 0));
-
-
                 System.out.println("version = " + version + " (" + Version.print(version) + ")");
-                flags=dis.readByte();
+                byte flags=dis.readByte();
                 System.out.println("flags: " + Message.flagsToString(flags));
 
                 boolean is_message_list=(flags & LIST) == LIST;
@@ -54,37 +51,22 @@ public class ParseMessages {
 
                 if(is_message_list) { // used if message bundling is enabled
                     final MessageBatch[] batches=TP.readMessageBatch(dis,multicast);
-                    final MessageBatch batch=batches[0], oob_batch=batches[1],
-                      internal_batch_oob=batches[2], internal_batch=batches[3];
-                    int size=batch != null? batch.size() : 0;
-                    if(oob_batch != null)
-                        size+=oob_batch.size();
-                    if(internal_batch_oob != null)
-                        size+=internal_batch_oob.size();
-                    if(internal_batch != null)
-                        size+=internal_batch.size();
-
-                    System.out.println(size + " msgs: ");
-
-                    int cnt=1;
-
-                    for(MessageBatch tmp: Arrays.asList(batch, oob_batch, internal_batch_oob, internal_batch)) {
-                        if(tmp != null) {
-                            for(Message msg: tmp) {
-                                System.out.print("#" + cnt++ + ": ");
-                                print(msg, multicast);
-                            }
-                        }
+                    for(MessageBatch batch: batches) {
+                        if(batch != null)
+                            for(Message msg: batch)
+                                retval.add(msg);
                     }
                 }
                 else {
                     Message msg=TP.readMessage(dis);
-                    print(msg, multicast);
+                    retval.add(msg);
                 }
             }
+            return retval;
         }
         catch(Throwable t) {
             t.printStackTrace();
+            return null;
         }
         finally {
             Util.close(dis);
@@ -110,7 +92,10 @@ public class ParseMessages {
             return;
         }
 
-        new ParseMessages(file).parse();
+        List<Message> msgs=new ParseMessages(file).parse();
+        int cnt=1;
+        for(Message msg: msgs)
+            System.out.println(cnt++ + ": " + msg + ", hdrs: " + msg.printHeaders());
     }
 
     static private void help() {
