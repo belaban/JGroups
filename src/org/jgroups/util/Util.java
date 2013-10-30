@@ -2585,7 +2585,7 @@ public class Util {
             return list.get(index);
         }
 
-    public static Object pickRandomElement(Object[] array) {
+    public static <T> T pickRandomElement(T[] array) {
         if(array == null) return null;
         int size=array.length;
         int index=(int)((Math.random() * size * 10) % size);

@@ -507,7 +507,7 @@ public abstract class FlowControl extends Protocol {
     protected void sendCreditRequest(final Address dest, Long credits_needed) {
         if(log.isTraceEnabled())
             log.trace("sending request for " + credits_needed + " credits to " + dest);
-        Message msg=new Message(dest, credits_needed).setFlag(Message.Flag.INTERNAL)
+        Message msg=new Message(dest, credits_needed).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
           .putHeader(this.id, CREDIT_REQUEST_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_requests_sent++;
