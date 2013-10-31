@@ -497,10 +497,18 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
     }
 
     protected static class MyOutput extends PrintStream {
+        private static final String TMPFILE_NAME;
+        static {
+            if (Util.checkForWindows()) {
+                TMPFILE_NAME = System.getProperty("java.io.tmpdir") + "\\" + "tmp.txt";
+            } else {
+                TMPFILE_NAME = System.getProperty("java.io.tmpdir") + "/" + "tmp.txt";
+            }
+        }
         final int type;
 
         public MyOutput(int type) throws FileNotFoundException {
-            super("/tmp/tmp.txt"); // dummy name
+            super(TMPFILE_NAME); // dummy name
             this.type=type;
             if(type != 1 && type != 2)
                 throw new IllegalArgumentException("index has to be 1 or 2");
