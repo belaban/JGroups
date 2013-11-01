@@ -86,6 +86,7 @@ public class McastReceiverTest {
         DatagramPacket packet;
         byte buf[]=null;
         byte[] recv_buf;
+        int recv_len=0;
 
         Receiver(InetAddress mcast_addr, InetAddress bind_interface, int port) throws Exception {
             sock=new MulticastSocket(port);
@@ -104,7 +105,8 @@ public class McastReceiverTest {
                     packet=new DatagramPacket(buf, buf.length);
                     sock.receive(packet);
                     recv_buf=packet.getData();
-                    System.out.println(new String(recv_buf) + " [sender=" + packet.getAddress().getHostAddress() +
+                    recv_len=packet.getLength();
+                    System.out.println(new String(recv_buf,0,recv_len) + " [sender=" + packet.getAddress().getHostAddress() +
                             ':' + packet.getPort() + ']');
                 }
                 catch(Exception ex) {
