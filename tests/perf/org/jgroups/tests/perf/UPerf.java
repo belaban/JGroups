@@ -28,23 +28,25 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Bela Ban
  */
 public class UPerf extends ReceiverAdapter {
-    private JChannel             channel;
-    private Address              local_addr;
-    private RpcDispatcher        disp;
-    static final String          groupname="uperf";
-    private final List<Address>  members=new ArrayList<Address>();
+    private JChannel               channel;
+    private Address                local_addr;
+    private RpcDispatcher          disp;
+    static final String            groupname="uperf";
+    protected final List<Address>  members=new ArrayList<Address>();
+    protected final List<Address>  site_masters=new ArrayList<Address>();
 
 
     // ============ configurable properties ==================
-    private boolean sync=true, oob=true;
+    private boolean sync=true, oob=false;
     private int num_threads=25;
     private int num_msgs=20000, msg_size=1000;
     private int anycast_count=2;
     private boolean use_anycast_addrs;
+    private boolean msg_bundling=true;
     private double read_percentage=0.8; // 80% reads, 20% writes
     // =======================================================
 
-    private static final Method[] METHODS=new Method[15];
+    private static final Method[] METHODS=new Method[16];
 
     private static final short START                 =  0;
     private static final short SET_OOB               =  1;
@@ -58,11 +60,10 @@ public class UPerf extends ReceiverAdapter {
     private static final short GET                   =  9;
     private static final short PUT                   = 10;
     private static final short GET_CONFIG            = 11;
+    private static final short SET_MSB_BUNDLING      = 12;
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[] GET_RSP=new byte[msg_size];
-
-    private static final Class<?>[] unicast_protocols=new Class<?>[]{UNICAST.class, UNICAST2.class};
 
     static NumberFormat f;
 
@@ -81,6 +82,7 @@ public class UPerf extends ReceiverAdapter {
             METHODS[GET]                   = UPerf.class.getMethod("get", long.class);
             METHODS[PUT]                   = UPerf.class.getMethod("put", long.class, byte[].class);
             METHODS[GET_CONFIG]            = UPerf.class.getMethod("getConfig");
+            METHODS[SET_MSB_BUNDLING]       = UPerf.class.getMethod("setMsgBundling", boolean.class);
 
             ClassConfigurator.add((short)11000, Results.class);
             f=NumberFormat.getNumberInstance();
@@ -94,7 +96,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
 
-    public void init(String props, String name) throws Throwable {
+    public void init(String props, String name, boolean xsite) throws Throwable {
         channel=new JChannel(props);
         if(name != null)
             channel.setName(name);
@@ -107,6 +109,19 @@ public class UPerf extends ReceiverAdapter {
         disp.setRequestMarshaller(new CustomMarshaller());
         channel.connect(groupname);
         local_addr=channel.getAddress();
+
+        if(xsite) {
+           /* List<String> site_names=getSites(channel);
+            for(String site_name: site_names) {
+                try {
+                    SiteMaster sm=new SiteMaster(site_name);
+                    site_masters.add(sm);
+                }
+                catch(Throwable t) {
+                    System.err.println("failed creating site master: " + t);
+                }
+            }*/
+        }
 
         try {
             MBeanServer server=Util.getMBeanServer();
@@ -122,6 +137,7 @@ public class UPerf extends ReceiverAdapter {
         ConfigOptions config=(ConfigOptions)disp.callRemoteMethod(coord, new MethodCall(GET_CONFIG), new RequestOptions(ResponseMode.GET_ALL, 5000));
         if(config != null) {
             this.oob=config.oob;
+            this.msg_bundling=config.msg_bundling;
             this.sync=config.sync;
             this.num_threads=config.num_threads;
             this.num_msgs=config.num_msgs;
@@ -145,13 +161,25 @@ public class UPerf extends ReceiverAdapter {
         System.out.println("** view: " + new_view);
         members.clear();
         members.addAll(new_view.getMembers());
+        addSiteMastersToMembers();
+    }
+
+    protected void addSiteMastersToMembers() {
+        if(!site_masters.isEmpty()) {
+            for(Address sm: site_masters)
+                if(!members.contains(sm))
+                    members.add(sm);
+        }
     }
 
     // =================================== callbacks ======================================
 
     public Results startTest() throws Throwable {
-        System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) +
-                             ", sync=" + sync + ", oob=" + oob + ", use_anycast_addrs=" + use_anycast_addrs);
+
+        addSiteMastersToMembers();
+
+        System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) + ", sync=" + sync +
+                             ", oob=" + oob + ", msg_bundling=" + msg_bundling + ", use_anycast_addrs=" + use_anycast_addrs);
         int total_gets=0, total_puts=0;
         final AtomicInteger num_msgs_sent=new AtomicInteger(0);
 
@@ -179,6 +207,11 @@ public class UPerf extends ReceiverAdapter {
         this.oob=oob;
         System.out.println("oob=" + oob);
     }
+
+    public void setMsgBundling(boolean msg_bundling) {
+        this.msg_bundling=msg_bundling;
+        System.out.println("msg_bundling = " + this.msg_bundling);
+      }
 
     public void setSync(boolean val) {
         this.sync=val;
@@ -225,7 +258,8 @@ public class UPerf extends ReceiverAdapter {
     }
 
     public ConfigOptions getConfig() {
-        return new ConfigOptions(oob, sync, num_threads, num_msgs, msg_size, anycast_count, use_anycast_addrs, read_percentage);
+        return new ConfigOptions(oob, sync,msg_bundling,
+                                 num_threads, num_msgs, msg_size, anycast_count, use_anycast_addrs, read_percentage);
     }
 
     // ================================= end of callbacks =====================================
@@ -233,6 +267,8 @@ public class UPerf extends ReceiverAdapter {
 
     public void eventLoop() throws Throwable {
         int c;
+
+        addSiteMastersToMembers();
 
         while(true) {
             c=Util.keyPress("[1] Send msgs [2] Print view [3] Print conns " +
@@ -242,7 +278,8 @@ public class UPerf extends ReceiverAdapter {
                               " [9] Set anycast count (" + anycast_count + ")" +
                               "\n[o] Toggle OOB (" + oob + ") [s] Toggle sync (" + sync +
                               ") [r] Set read percentage (" + f.format(read_percentage) + ") " +
-                              "[a] Toggle use_anycast_addrs (" + use_anycast_addrs + ")" +
+                              "\n[a] Toggle use_anycast_addrs (" + use_anycast_addrs + ") [b] Toggle msg_bundling (" +
+                              (msg_bundling? "on" : "off") + ")" +
                               "\n[q] Quit\n");
             switch(c) {
                 case -1:
@@ -294,6 +331,10 @@ public class UPerf extends ReceiverAdapter {
                 case 'r':
                     setReadPercentage();
                     break;
+                case 'b':
+                    new_value=!msg_bundling;
+                    disp.callRemoteMethods(null, new MethodCall(SET_MSB_BUNDLING, new_value), RequestOptions.SYNC());
+                    break;
                 case 'q':
                     channel.close();
                     return;
@@ -307,7 +348,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
    private void printConnections() {
-        Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+        Protocol prot=channel.getProtocolStack().findProtocol(getUnicastProtocols());
         if(prot instanceof UNICAST)
             System.out.println("connections:\n" + ((UNICAST)prot).printConnections());
         else if(prot instanceof UNICAST2)
@@ -317,7 +358,7 @@ public class UPerf extends ReceiverAdapter {
     private void removeConnection() {
         Address member=getReceiver();
         if(member != null) {
-            Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+            Protocol prot=channel.getProtocolStack().findProtocol(getUnicastProtocols());
             if(prot instanceof UNICAST)
                 ((UNICAST)prot).removeConnection(member);
             else if(prot instanceof UNICAST2)
@@ -326,18 +367,22 @@ public class UPerf extends ReceiverAdapter {
     }
 
     private void removeAllConnections() {
-        Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+        Protocol prot=channel.getProtocolStack().findProtocol(getUnicastProtocols());
         if(prot instanceof UNICAST)
             ((UNICAST)prot).removeAllConnections();
         else if(prot instanceof UNICAST2)
             ((UNICAST2)prot).removeAllConnections();
     }
 
+    public static final Class<?>[] getUnicastProtocols() {
+        return new Class<?>[]{UNICAST.class, UNICAST2.class};
+    }
+
 
     /** Kicks off the benchmark on all cluster nodes */
     void startBenchmark() throws Throwable {
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0);
-        options.setFlags(Message.OOB, Message.DONT_BUNDLE, Message.NO_FC);
+        options.setFlags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
         RspList<Object> responses=disp.callRemoteMethods(null, new MethodCall(START), options);
 
         long total_reqs=0;
@@ -355,7 +400,7 @@ public class UPerf extends ReceiverAdapter {
         double total_reqs_sec=total_reqs / ( total_time/ 1000.0);
         double throughput=total_reqs_sec * msg_size;
         double ms_per_req=total_time / (double)total_reqs;
-        Protocol prot=channel.getProtocolStack().findProtocol(unicast_protocols);
+        Protocol prot=channel.getProtocolStack().findProtocol(getUnicastProtocols());
         System.out.println("\n");
         System.out.println(Util.bold("Average of " + f.format(total_reqs_sec) + " requests / sec (" +
                                        Util.printBytes(throughput) + " / sec), " +
@@ -401,7 +446,7 @@ public class UPerf extends ReceiverAdapter {
 
 
     void printView() {
-        System.out.println("\n-- view: " + channel.getView() + '\n');
+        System.out.println("\n-- view: " + members + '\n');
         try {
             System.in.skip(System.in.available());
         }
@@ -409,6 +454,10 @@ public class UPerf extends ReceiverAdapter {
         }
     }
 
+   /* protected static List<String> getSites(JChannel channel) {
+        RELAY2 relay=(RELAY2)channel.getProtocolStack().findProtocol(RELAY2.class);
+        return relay != null? relay.siteNames() : new ArrayList<String>(0);
+    }*/
 
     /** Picks the next member in the view */
     private Address getReceiver() {
@@ -453,21 +502,16 @@ public class UPerf extends ReceiverAdapter {
             RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 40000, false, null);
             RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 40000, true, null);
 
-            // Don't use bundling as we have sync requests (e.g. GETs) regardless of whether we set sync=true or false
-            get_options.setFlags(Message.DONT_BUNDLE);
-            put_options.setFlags(Message.DONT_BUNDLE);
-
             if(oob) {
-                get_options.setFlags(Message.OOB);
-                put_options.setFlags(Message.OOB);
+                get_options.setFlags(Message.Flag.OOB);
+                put_options.setFlags(Message.Flag.OOB);
             }
-            if(sync) {
-                get_options.setFlags(Message.DONT_BUNDLE, Message.NO_FC);
-                put_options.setFlags(Message.DONT_BUNDLE, Message.NO_FC);
+            if(!msg_bundling) {
+                get_options.setFlags(Message.Flag.DONT_BUNDLE);
+                put_options.setFlags(Message.Flag.DONT_BUNDLE);
             }
-            if(use_anycast_addrs) {
+            if(use_anycast_addrs)
                 put_options.useAnycastAddresses(true);
-            }
 
             while(true) {
                 long i=num_msgs_sent.getAndIncrement();
@@ -556,7 +600,7 @@ public class UPerf extends ReceiverAdapter {
 
 
     public static class ConfigOptions implements Streamable {
-        private boolean sync, oob;
+        private boolean sync, oob, msg_bundling;
         private int     num_threads;
         private int     num_msgs, msg_size;
         private int     anycast_count;
@@ -566,10 +610,11 @@ public class UPerf extends ReceiverAdapter {
         public ConfigOptions() {
         }
 
-        public ConfigOptions(boolean oob, boolean sync, int num_threads, int num_msgs, int msg_size,
+        public ConfigOptions(boolean oob, boolean sync, boolean msg_bundling, int num_threads, int num_msgs, int msg_size,
                              int anycast_count, boolean use_anycast_addrs,
                              double read_percentage) {
             this.oob=oob;
+            this.msg_bundling=msg_bundling;
             this.sync=sync;
             this.num_threads=num_threads;
             this.num_msgs=num_msgs;
@@ -582,6 +627,7 @@ public class UPerf extends ReceiverAdapter {
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeBoolean(oob);
+            out.writeBoolean(msg_bundling);
             out.writeBoolean(sync);
             out.writeInt(num_threads);
             out.writeInt(num_msgs);
@@ -593,6 +639,7 @@ public class UPerf extends ReceiverAdapter {
 
         public void readFrom(DataInput in) throws Exception {
             oob=in.readBoolean();
+            msg_bundling=in.readBoolean();
             sync=in.readBoolean();
             num_threads=in.readInt();
             num_msgs=in.readInt();
@@ -603,7 +650,7 @@ public class UPerf extends ReceiverAdapter {
         }
 
         public String toString() {
-            return "oob=" + oob + ", sync=" + sync + ", anycast_count=" + anycast_count +
+            return "oob=" + oob + ", sync=" + sync + ", msg_bundling=" + msg_bundling + ", anycast_count=" + anycast_count +
               ", use_anycast_addrs=" + use_anycast_addrs +
               ", num_threads=" + num_threads + ", num_msgs=" + num_msgs + ", msg_size=" + msg_size +
               ", read percentage=" + read_percentage;
@@ -624,6 +671,7 @@ public class UPerf extends ReceiverAdapter {
                     return new Buffer(buf.array());
                 case SET_OOB:
                 case SET_SYNC:
+                case SET_MSB_BUNDLING:
                 case SET_USE_ANYCAST_ADDRS:
                     return new Buffer(booleanBuffer(call.getId(), (Boolean)call.getArgs()[0]));
                 case SET_NUM_MSGS:
@@ -661,6 +709,7 @@ public class UPerf extends ReceiverAdapter {
                     return new MethodCall(type);
                 case SET_OOB:
                 case SET_SYNC:
+                case SET_MSB_BUNDLING:
                 case SET_USE_ANYCAST_ADDRS:
                     return new MethodCall(type, buf.get() == 1);
                 case SET_NUM_MSGS:
@@ -704,8 +753,9 @@ public class UPerf extends ReceiverAdapter {
 
 
     public static void main(String[] args) {
-        String props=null;
-        String name=null;
+        String  props=null;
+        String  name=null;
+        boolean xsite=true;
 
 
         for(int i=0; i < args.length; i++) {
@@ -717,6 +767,10 @@ public class UPerf extends ReceiverAdapter {
                 name=args[++i];
                 continue;
             }
+            if("-xsite".equals(args[i])) {
+                xsite=Boolean.valueOf(args[++i]);
+                continue;
+            }
             help();
             return;
         }
@@ -724,7 +778,7 @@ public class UPerf extends ReceiverAdapter {
         UPerf test=null;
         try {
             test=new UPerf();
-            test.init(props, name);
+            test.init(props, name, xsite);
             test.eventLoop();
         }
         catch(Throwable ex) {
@@ -735,7 +789,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("UPerf [-props <props>] [-name name]");
+        System.out.println("UPerf [-props <props>] [-name name] [-xsite <true | false>]");
     }
 
 
