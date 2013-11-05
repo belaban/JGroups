@@ -1,8 +1,5 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="stack-independent"
-       parallel="tests"
-       thread-count="1" >
-
+<suite name="stack-independent">
     <test name="stack-independent" junit="false" time-out="1200000">
         <groups>
             <run>            	

@@ -1,9 +1,5 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="tcp"
-       parallel="methods"
-       thread-count="1"
-        >
-
+<suite name="tcp">
     <test name="tcp" junit="false" time-out="1200000">
         <parameter name="channel.conf" value="tcp.xml"/>
         <groups>

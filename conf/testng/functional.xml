@@ -1,8 +1,5 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="functional"
-       parallel="methods"
-       thread-count="10" >
-
+<suite name="functional">
     <test name="functional" junit="false" time-out="1200000">
         <groups>
             <run>            	

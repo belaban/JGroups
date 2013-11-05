@@ -1,9 +1,5 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="udp-flush"
-       parallel="methods"
-       thread-count="5">
-
-
+<suite name="udp-flush">
 	<parameter name="channel.conf" value="flush-udp.xml"/>
 	<parameter name="use_blocking" value="true"/>
     <test name="udp-flush" junit="false" time-out="1200000">
