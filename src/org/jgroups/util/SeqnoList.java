@@ -163,7 +163,7 @@ public class SeqnoList implements Streamable, Iterable<Long> {
     }
 
     public String toString() {
-        return seqnos.toString();
+        return Util.printListWithDelimiter(seqnos, ", ", Util.MAX_LIST_PRINT_SIZE);
     }
 
     public Iterator<Long> iterator() {
