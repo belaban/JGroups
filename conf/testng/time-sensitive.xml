@@ -1,8 +1,5 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="time-sensitive"
-       parallel="methods"
-       thread-count="1" >
-
+<suite name="time-sensitive">
     <test name="time-sensitive" junit="false" time-out="1200000">
         <groups>
             <run>            	
