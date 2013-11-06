@@ -1,5 +1,9 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="udp">
+<suite name="udp"
+       parallel="methods"
+       thread-count="5"
+        >
+
     <test name="udp" junit="false" time-out="1200000">
         <parameter name="channel.conf" value="udp.xml"/>
         <groups>

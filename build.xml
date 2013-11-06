@@ -566,8 +566,6 @@
                     listeners="org.jgroups.util.JUnitXMLReporter"
             		timeout="${unittest.timeout}"
             	    verbose="${test.verbose}"
-                    parallel="@{parallel}"
-                    threadcount="@{threadcount}"
                     >
                 <xmlfileset dir="${testng.conf.dir}" includes="@{testng.xmlfile}"/>
                 <sysproperty key="test.suffix" value="@{testname.ext}"/>
