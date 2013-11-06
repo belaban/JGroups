@@ -820,6 +820,11 @@ public abstract class TP extends Protocol {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getPoolSize() : 0;
     }
 
+    @ManagedAttribute(description="Current number of active threads in the OOB thread pool")
+    public int getOOBPoolSizeActive() {
+        return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getActiveCount() : 0;
+    }
+
     public long getOOBMessages() {
         return num_oob_msgs_received;
     }
@@ -846,6 +851,11 @@ public abstract class TP extends Protocol {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getPoolSize() : 0;
     }
 
+    @ManagedAttribute(description="Current number of active threads in the default thread pool")
+    public int getRegularPoolSizeActive() {
+        return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getActiveCount() : 0;
+    }
+
     public long getRegularMessages() {
         return num_incoming_msgs_received;
     }
@@ -863,6 +873,11 @@ public abstract class TP extends Protocol {
     @ManagedAttribute(description="Current number of threads in the internal thread pool")
     public int getInternalPoolSize() {
         return internal_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)internal_thread_pool).getPoolSize() : 0;
+    }
+
+    @ManagedAttribute(description="Current number of active threads in the internal thread pool")
+    public int getInternalPoolSizeActive() {
+        return internal_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)internal_thread_pool).getActiveCount() : 0;
     }
 
     public long getInternalMessages() {
