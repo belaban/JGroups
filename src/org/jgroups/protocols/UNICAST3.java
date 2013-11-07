@@ -663,14 +663,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
      * add message. Set e.received_msgs to the new window. Else just add the message.
      */
     protected void handleDataReceived(Address sender, long seqno, short conn_id,  boolean first, Message msg, Event evt) {
-        if(log.isTraceEnabled()) {
-            StringBuilder sb=new StringBuilder();
-            sb.append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno);
-            if(conn_id != 0) sb.append(", conn_id=").append(conn_id);
-            if(first) sb.append(", first");
-            sb.append(')');
-            log.trace(sb);
-        }
+        if(log.isTraceEnabled())
+            log.trace("%s <-- DATA(%s: #%d, conn_id=%d%s)", local_addr, sender, seqno, conn_id, first? ", first" : "");
 
         ReceiverEntry entry=getReceiverEntry(sender, seqno, first, conn_id);
         if(entry == null)
@@ -679,6 +673,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             entry.update();
         if(entry.state() == State.CLOSING)
             entry.state(State.OPEN);
+        boolean oob=msg.isFlagSet(Message.Flag.OOB);
+        if(oob) // done so this thread delivers the message and no work stealing for OOB msgs is performed (JGRP-1733)
+            msg.setTransientFlag(Message.TransientFlag.OOB_DELIVERED);
         Table<Message> win=entry.received_msgs;
         boolean added=win.add(seqno, msg); // win is guaranteed to be non-null if we get here
         num_msgs_received++;
@@ -690,16 +687,14 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
-        if(msg.isFlagSet(Message.Flag.OOB) && added) {
-            if(msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED)) {
-                if(log.isTraceEnabled())
-                    log.trace("%s: delivering %s#%s", local_addr, sender, seqno);
-                try {
-                    up_prot.up(evt);
-                }
-                catch(Throwable t) {
-                    log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "OOB message", msg, t);
-                }
+        if(oob && added) {
+            if(log.isTraceEnabled())
+                log.trace("%s: delivering %s#%s", local_addr, sender, seqno);
+            try {
+                up_prot.up(evt);
+            }
+            catch(Throwable t) {
+                log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "OOB message", msg, t);
             }
         }
 
