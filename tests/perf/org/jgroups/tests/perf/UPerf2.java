@@ -347,31 +347,31 @@ public class UPerf2 extends ReceiverAdapter {
         }
     }
 
-   private void printConnections() {
-       /* Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
+    private void printConnections() {
+        Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         if(prot instanceof UNICAST)
             System.out.println("connections:\n" + ((UNICAST)prot).printConnections());
         else if(prot instanceof UNICAST2)
-            System.out.println("connections:\n" + ((UNICAST2)prot).printConnections());*/
+            System.out.println("connections:\n" + ((UNICAST2)prot).printConnections());
     }
 
     private void removeConnection() {
-       /* Address member=getReceiver();
+       Address member=getReceiver();
         if(member != null) {
             Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
             if(prot instanceof UNICAST)
                 ((UNICAST)prot).removeConnection(member);
             else if(prot instanceof UNICAST2)
                 ((UNICAST2)prot).removeConnection(member);
-        }*/
+        }
     }
 
     private void removeAllConnections() {
-        /*Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
+        Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         if(prot instanceof UNICAST)
             ((UNICAST)prot).removeAllConnections();
         else if(prot instanceof UNICAST2)
-            ((UNICAST2)prot).removeAllConnections();*/
+            ((UNICAST2)prot).removeAllConnections();
     }
 
 
