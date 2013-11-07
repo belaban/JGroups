@@ -1480,6 +1480,18 @@ public class Util {
     }
 
 
+    public static boolean patternMatch(String pattern, String str) {
+        Pattern pat=Pattern.compile(pattern);
+        Matcher matcher=pat.matcher(str);
+        return matcher.matches();
+    }
+
+    public static void main(String[] args) {
+        boolean result=patternMatch(args[0],args[1]);
+        System.out.println(args[1] + " matches " + args[0] + ": " + result);
+    }
+
+
     public static <T> boolean different(T one, T two) {
         return !match(one, two);
     }

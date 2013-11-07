@@ -23,7 +23,8 @@ public class Probe {
     }
 
     public void start(InetAddress addr, InetAddress bind_addr, int port, int ttl,
-                      final long timeout, List query, String match, boolean weed_out_duplicates, String passcode) throws Exception {
+                      final long timeout, List<String> query, String match,
+                      boolean weed_out_duplicates, String passcode) throws Exception {
 
         boolean unicast_dest=addr != null && !addr.isMulticastAddress();
         if(unicast_dest) {
@@ -32,9 +33,8 @@ public class Probe {
                 System.err.println("Found no valid hosts - terminating");
                 return;
             }
-            for(InetAddress target: targets) {
+            for(InetAddress target: targets)
                 sendRequest(target, bind_addr, port, ttl, query, passcode);
-            }
         }
         else
             sendRequest(addr, bind_addr, port, ttl, query, passcode);
@@ -121,7 +121,7 @@ public class Probe {
 
 
     protected void sendRequest(InetAddress addr, InetAddress bind_addr, int port, int ttl,
-                               List query, String passcode) throws Exception {
+                               List<String> query, String passcode) throws Exception {
         if(mcast_sock == null) {
             mcast_sock=new MulticastSocket();
             mcast_sock.setTimeToLive(ttl);
@@ -221,9 +221,19 @@ public class Probe {
                     continue;
                 }
                 if("-passcode".equals(args[i])) {
-                   passcode=args[++i];
-                   continue;
-               }
+                    passcode=args[++i];
+                    continue;
+                }
+                if("-cluster".equals(args[i])) {
+                    String cluster=args[++i];
+                    query.add("cluster=" + cluster);
+                    continue;
+                }
+               /* if("-node".equals(args[i])) {
+                    String node=args[++i];
+                    query.add("node=" + node);
+                    continue;
+                }*/
                 if("-help".equals(args[i]) || "-h".equals(args[i]) || "--help".equals(args[i])) {
                     help();
                     return;
@@ -248,8 +258,7 @@ public class Probe {
     static void help() {
         System.out.println("Probe [-help] [-addr <addr>] [-bind_addr <addr>] " +
                              "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-passcode <code>] [-weed_out_duplicates] " +
-                             "[-match pattern] " +
-                             "[key[=value]]*\n\n" +
+                             "[-cluster regexp-pattern] [-match pattern] [key[=value]]*\n\n" +
                              "Examples:\n" +
                              "probe.sh keys // dumps all valid commands\n" +
                              "probe.sh jmx=NAKACK // dumps JMX info about all NAKACK protocols\n" +

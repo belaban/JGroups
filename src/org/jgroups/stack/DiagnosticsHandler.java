@@ -145,13 +145,19 @@ public class DiagnosticsHandler implements Runnable {
             tokens[i]=list.get(i);
 
         for(ProbeHandler handler: handlers) {
-            Map<String, String> map=handler.handleProbe(tokens);
+            Map<String, String> map=null;
+            try {
+                map=handler.handleProbe(tokens);
+            }
+            catch(IllegalArgumentException ex) {
+                log.warn(ex.getMessage());
+                return;
+            }
             if(map == null || map.isEmpty())
                 continue;
             StringBuilder info=new StringBuilder();
-            for(Map.Entry<String,String> entry: map.entrySet()) {
+            for(Map.Entry<String,String> entry: map.entrySet())
                 info.append(entry.getKey()).append("=").append(entry.getValue()).append("\r\n");
-            }
 
             byte[] diag_rsp=info.toString().getBytes();
             log.debug("sending diag response to %s", sender);

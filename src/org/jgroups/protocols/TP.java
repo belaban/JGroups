@@ -1169,12 +1169,41 @@ public abstract class TP extends Protocol {
                             String list=Util.print(physical_addrs);
                             retval.put("addrs", list);
                         }
+                        if(key.startsWith("cluster")) {
+                            String cluster_name_pattern=key.substring("cluster".length()+1).trim();
+                            if(!isSingleton()) {
+                                if(cluster_name_pattern != null && !Util.patternMatch(cluster_name_pattern, channel_name))
+                                    throw new IllegalArgumentException("Request dropped as cluster name " + channel_name +
+                                                                         "does not match cluster name pattern " + cluster_name_pattern);
+                            }
+                            else {
+                                // not optimal, this matches *any* of the shared clusters. would be better to return only
+                                // responses for matching clusters
+                                if(up_prots != null) {
+                                    boolean match=false;
+                                    List<String> cluster_names=new ArrayList<String>();
+                                    for(Protocol prot: up_prots.values())
+                                        if(prot instanceof ProtocolAdapter)
+                                            cluster_names.add(((ProtocolAdapter)prot).getClusterName());
+                                    for(String cluster_name: cluster_names) {
+                                        if(Util.patternMatch(cluster_name_pattern, cluster_name)) {
+                                            match=true;
+                                            break;
+                                        }
+                                    }
+
+                                    if(!match)
+                                        throw new IllegalArgumentException("Request dropped as cluster names " + cluster_names +
+                                                                             " do not match cluster name pattern " + cluster_name_pattern);
+                                }
+                            }
+                        }
                     }
                     return retval;
                 }
 
                 public String[] supportedKeys() {
-                    return new String[]{"dump", "keys", "uuids", "info", "addrs"};
+                    return new String[]{"dump", "keys", "uuids", "info", "addrs", "cluster"};
                 }
             });
             if(diag_handler_created)
