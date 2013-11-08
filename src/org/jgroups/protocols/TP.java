@@ -2230,15 +2230,32 @@ public abstract class TP extends Protocol {
                 Address src_addr=list.get(0).getSrc();
 
                 boolean multicast=dest == null;
-                try {
-                    bundler_out_stream.reset();
-                    bundler_dos.reset();
-                    writeMessageList(dest, src_addr, cluster_name, list, bundler_dos, multicast, id); // flushes output stream when done
-                    Buffer buffer=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
-                    doSend(buffer, dest, multicast);
+                if(list.size() == 1) {
+                    Message msg=null;
+                    try {
+                        bundler_out_stream.reset();
+                        bundler_dos.reset();
+                        msg=list.get(0);
+                        writeMessage(msg, bundler_dos, multicast);
+                        Buffer buf=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
+                        doSend(buf, dest, multicast);
+                    }
+                    catch(Throwable e) {
+                        log.error(Util.getMessage("SendFailure"),
+                                  local_addr, (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
+                    }
                 }
-                catch(Throwable e) {
-                    log.error(Util.getMessage("FailureSendingMsgBundle"), local_addr, e);
+                else {
+                    try {
+                        bundler_out_stream.reset();
+                        bundler_dos.reset();
+                        writeMessageList(dest, src_addr, cluster_name, list, bundler_dos, multicast, id); // flushes output stream when done
+                        Buffer buf=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
+                        doSend(buf, dest, multicast);
+                    }
+                    catch(Throwable e) {
+                        log.error(Util.getMessage("FailureSendingMsgBundle"), local_addr, e);
+                    }
                 }
             }
             msgs.clear();
