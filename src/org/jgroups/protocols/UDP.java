@@ -116,6 +116,12 @@ public class UDP extends TP {
     /** Runnable to receive unicast packets */
     protected PacketReceiver  ucast_receiver=null;
 
+    protected static final boolean is_android;
+
+    static  {
+        is_android=Util.checkForAndroid();
+    }
+
 
     /**
      * Usually, src addresses are nulled, and the receiver simply sets them to
@@ -669,6 +675,11 @@ public class UDP extends TP {
 
             while(thread != null && Thread.currentThread().equals(thread)) {
                 try {
+
+                    // solves Android ISSUE #24748 - DatagramPacket truncated UDP in ICS
+                    if(is_android)
+                        packet.setLength(receive_buf.length);
+
                     receiver_socket.receive(packet);
                     int len=packet.getLength();
                     if(len > receive_buf.length) {
