@@ -299,7 +299,7 @@ public class ReconciliationTest extends ChannelTestBase {
         JChannel c2 = createChannel(c1);
         Cache cache_2 = new Cache(c2, "cache-2");
         c2.connect("testVirtualSynchrony");
-        Assert.assertEquals(c2.getView().size(), 2, "view: " + c1.getView());
+        Util.waitUntilAllChannelsHaveSameSize(10000, 500, c1, c2);
 
         // start adding messages
         flush(c1, 5000); // flush all pending message out of the system so everyone receives them

@@ -254,8 +254,13 @@ public abstract class TP extends Protocol {
 
     @Property(description="Allows the transport to pass received message batches up as MessagesBatch instances " +
       "(up(MessageBatch)), rather than individual messages. This flag will be removed in a future version " +
-      "when batching has been implemented by all protocols")
+      "when batching has been implemented by all protocols",deprecatedMessage="bundling is enabled by default")
+    @Deprecated
     protected boolean enable_batching=true;
+
+    @Property(description="Whether or not messages with DONT_BUNDLE set should be ignored by default (JGRP-1737). " +
+      "This property will be removed in a future release, so don't use it")
+    protected boolean ignore_dont_bundle=true;
 
     @Property(description="Switch to enable diagnostic probing. Default is true")
     protected boolean enable_diagnostics=true;
@@ -1189,7 +1194,7 @@ public abstract class TP extends Protocol {
                             if(!isSingleton()) {
                                 if(cluster_name_pattern != null && !Util.patternMatch(cluster_name_pattern, channel_name))
                                     throw new IllegalArgumentException("Request dropped as cluster name " + channel_name +
-                                                                         "does not match cluster name pattern " + cluster_name_pattern);
+                                                                         " does not match cluster name pattern " + cluster_name_pattern);
                             }
                             else {
                                 // not optimal, this matches *any* of the shared clusters. would be better to return only
@@ -1479,7 +1484,9 @@ public abstract class TP extends Protocol {
             final MessageBatch[] batches=readMessageBatch(dis, multicast);
             final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch_oob=batches[2], internal_batch=batches[3];
 
-            if(oob_batch != null) {
+            removeAndDispatchNonBundledMessages(oob_batch, internal_batch_oob);
+
+            if(oob_batch != null && !oob_batch.isEmpty()) {
                 num_oob_msgs_received+=oob_batch.size();
                 oob_thread_pool.execute(new BatchHandler(oob_batch));
             }
@@ -1487,7 +1494,7 @@ public abstract class TP extends Protocol {
                 num_incoming_msgs_received+=batch.size();
                 thread_pool.execute(new BatchHandler(batch));
             }
-            if(internal_batch_oob != null) {
+            if(internal_batch_oob != null && !internal_batch_oob.isEmpty()) {
                 num_oob_msgs_received+=internal_batch_oob.size();
                 Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
                 pool.execute(new BatchHandler(internal_batch_oob));
@@ -1522,8 +1529,7 @@ public abstract class TP extends Protocol {
         else
             num_incoming_msgs_received++;
 
-        Executor pool=internal && internal_thread_pool != null? internal_thread_pool
-          : internal || oob? oob_thread_pool : thread_pool;
+        Executor pool=pickThreadPool(oob, internal);
 
         try {
             if(pool instanceof DirectExecutor)
@@ -1537,6 +1543,32 @@ public abstract class TP extends Protocol {
         catch(RejectedExecutionException ex) {
             num_rejected_msgs++;
         }
+    }
+
+    /**
+     * Removes messages with flag DONT_BUNDLE set and executes them in the oob or internal thread pool. JGRP-1737
+     */
+    protected void removeAndDispatchNonBundledMessages(MessageBatch ... oob_batches) {
+        for(MessageBatch oob_batch: oob_batches) {
+            if(oob_batch == null)
+                continue;
+
+            for(Message msg: oob_batch) {
+                if(msg.isFlagSet(Message.Flag.DONT_BUNDLE)) {
+                    boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
+                    msg.putHeader(id, new TpHeader(oob_batch.clusterName()));
+                    Executor pool=pickThreadPool(oob, internal);
+                    pool.execute(new SingleMessageHandler(msg));
+                    oob_batch.remove(msg);
+                    num_oob_msgs_received++;
+                }
+            }
+        }
+    }
+
+    protected Executor pickThreadPool(boolean oob, boolean internal) {
+        return internal && internal_thread_pool != null? internal_thread_pool
+          : (internal || oob)? oob_thread_pool : thread_pool;
     }
 
     protected boolean versionMatch(short version, Address sender) {
@@ -1608,14 +1640,46 @@ public abstract class TP extends Protocol {
         }
     }
 
+    protected class SingleMessageHandler implements Runnable {
+        protected final Message msg;
+
+        protected SingleMessageHandler(final Message msg) {
+            this.msg=msg;
+        }
+
+        public void run() {
+            boolean multicast=msg.getDest() == null;
+            try {
+                if(!multicast) {
+                    Address dest=msg.getDest(), target=local_addr;
+                    if(dest != null && target != null && !dest.equals(target)) {
+                        log.warn(Util.getMessage("IncorrectDest"), local_addr, dest);
+                        return;
+                    }
+                }
+
+                if(stats) {
+                    num_msgs_received++;
+                    num_bytes_received+=msg.getLength();
+                }
+
+                TpHeader hdr=(TpHeader)msg.getHeader(id);
+                String cluster_name=hdr.channel_name;
+                passMessageUp(msg, cluster_name, true, multicast, true);
+            }
+            catch(Throwable t) {
+                log.error(Util.getMessage("PassUpFailure"), t);
+            }
+        }
+    }
+
+
 
     protected class BatchHandler implements Runnable {
         protected final MessageBatch batch;
-        protected final long         created; // timestamp (ns) when created
 
         public BatchHandler(final MessageBatch batch) {
             this.batch=batch;
-            this.created=stats? System.nanoTime() : 0;
         }
 
         public void run() {
@@ -1632,27 +1696,18 @@ public abstract class TP extends Protocol {
                 }
             }
 
-            if(enable_batching) {
-                passBatchUp(batch, true, true);
-                return;
-            }
-
-            for(Message msg: batch) {
-                try {
-                    passMessageUp(msg, batch.clusterName(), true, batch.multicast(), true);
-                }
-                catch(Throwable t) {
-                    log.error(Util.getMessage("PassUpFailure"), t);
-                }
-            }
+            passBatchUp(batch, true, true);
         }
     }
 
 
     /** Serializes and sends a message. This method is not reentrant */
     protected void send(Message msg, Address dest, boolean multicast) throws Exception {
-        // bundle all messages except when tagged with DONT_BUNDLE
-        if(!msg.isFlagSet(Message.Flag.DONT_BUNDLE)) {
+        // bundle all messages, even the ones tagged with DONT_BUNDLE, except if we use the old bundler (DefaultBundler)
+        // JIRA: https://issues.jboss.org/browse/JGRP-1737
+        boolean bypass_bundling=msg.isFlagSet(Message.Flag.DONT_BUNDLE) &&
+          (!ignore_dont_bundle || bundler instanceof DefaultBundler || dest instanceof PhysicalAddress);
+        if(!bypass_bundling) {
             bundler.send(msg);
             return;
         }
@@ -2156,7 +2211,6 @@ public abstract class TP extends Protocol {
         int                                        num_msgs=0;
         @GuardedBy("lock")
         int                                        num_bundling_tasks=0;
-        long                                       last_bundle_time; // in nanoseconds
         final ReentrantLock                        lock=new ReentrantLock();
 
         public void start() {}
@@ -2200,8 +2254,6 @@ public abstract class TP extends Protocol {
 
             SingletonAddress dest=new SingletonAddress(cluster_name, msg.getDest());
 
-            if(msgs.isEmpty())
-                last_bundle_time=System.nanoTime();
             List<Message> tmp=msgs.get(dest);
             if(tmp == null) {
                 tmp=new LinkedList<Message>();
@@ -2223,10 +2275,6 @@ public abstract class TP extends Protocol {
                 StringBuilder sb=new StringBuilder(local_addr + ": sending ").append(num_msgs).append(" msgs (");
                 num_msgs=0;
                 sb.append(count).append(" bytes (").append(f.format(percentage)).append("% of max_bundle_size)");
-                if(last_bundle_time > 0) {
-                    long diff=(System.nanoTime() - last_bundle_time) / 1000000;
-                    sb.append(", collected in ").append(diff).append("ms) ");
-                }
                 sb.append(" to ").append(msgs.size()).append(" destination(s)");
                 if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
                 log.trace(sb);
@@ -2444,11 +2492,11 @@ public abstract class TP extends Protocol {
                 Address src_addr=list.get(0).getSrc();
 
                 boolean multicast=dest == null;
+                bundler_out_stream.reset();
+                bundler_dos.reset();
                 if(list.size() == 1) {
                     Message msg=null;
                     try {
-                        bundler_out_stream.reset();
-                        bundler_dos.reset();
                         msg=list.get(0);
                         writeMessage(msg, bundler_dos, multicast);
                         Buffer buf=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
@@ -2461,8 +2509,6 @@ public abstract class TP extends Protocol {
                 }
                 else {
                     try {
-                        bundler_out_stream.reset();
-                        bundler_dos.reset();
                         writeMessageList(dest, src_addr, cluster_name, list, bundler_dos, multicast, id); // flushes output stream when done
                         Buffer buf=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
                         doSend(buf, dest, multicast);

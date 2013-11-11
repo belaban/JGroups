@@ -35,7 +35,7 @@ public class StateTransferTest2 extends ChannelTestBase {
             StateHandler sh1=new StateHandler("Bela", false, false), sh2=new StateHandler(null, false, false);
             c1.setReceiver(sh1);
             c2.setReceiver(sh2);
-            c2.getState(null, 0);
+            c2.getState(null, 30000);
             Object state=sh2.getReceivedState();
             System.out.println("state = " + state);
             assert state != null && state.equals("Bela");
@@ -53,7 +53,7 @@ public class StateTransferTest2 extends ChannelTestBase {
             c1.setReceiver(sh1);
             c2.setReceiver(sh2);
             try {
-                c2.getState(null, 0);
+                c2.getState(null, 30000);
                 assert false : "we shouldn't get here; getState() should have thrown an exception";
             }
             catch(StateTransferException ex) {
@@ -76,7 +76,7 @@ public class StateTransferTest2 extends ChannelTestBase {
         c1.setReceiver(sh1);
         c2.setReceiver(sh2);
         try {
-            c2.getState(null, 0);
+            c2.getState(null, 30000);
             assert false : "we shouldn't get here; getState() should have thrown an exception";
         }
         catch(StateTransferException ste) {
