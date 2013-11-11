@@ -662,7 +662,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
      * e.received_msgs is null and <code>first</code> is true: create a new AckReceiverWindow(seqno) and
      * add message. Set e.received_msgs to the new window. Else just add the message.
      */
-    protected void handleDataReceived(Address sender, long seqno, short conn_id,  boolean first, Message msg, Event evt) {
+    protected void handleDataReceived(Address sender, long seqno, short conn_id,  boolean first, final Message msg, Event evt) {
         if(log.isTraceEnabled())
             log.trace("%s <-- DATA(%s: #%d, conn_id=%d%s)", local_addr, sender, seqno, conn_id, first? ", first" : "");
 
@@ -697,6 +697,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "OOB message", msg, t);
             }
         }
+
+        // we don't steal work if the message is internal (https://issues.jboss.org/browse/JGRP-1733)
+        // we also don't care if the message was added successfully or not
+        if(oob && msg.isFlagSet(Message.Flag.INTERNAL))
+            return;
 
         final AtomicBoolean processing=win.getProcessing();
         if(processing.compareAndSet(false, true))
