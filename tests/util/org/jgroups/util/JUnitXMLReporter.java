@@ -101,7 +101,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
     }
 
     public void onConfigurationSuccess(ITestResult tr) {
-
+        closeStreams();
     }
 
     public void onConfigurationFailure(ITestResult tr) {
@@ -110,6 +110,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
     }
 
     public void onConfigurationSkip(ITestResult tr) {
+        closeStreams();
     }
 
 
