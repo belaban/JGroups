@@ -555,7 +555,7 @@ public class JChannel extends Channel {
         if(target == null)
             target=determineCoordinator();
         if(target != null && local_addr != null && target.equals(local_addr)) {
-            log.trace("cannot get state from myself (" + target + "): probably the first member");
+            log.trace(local_addr + ": cannot get state from myself (" + target + "): probably the first member");
             return;
         }
 
@@ -575,13 +575,16 @@ public class JChannel extends Channel {
 
         state_promise.reset();
         StateTransferInfo state_info=new StateTransferInfo(target, timeout);
+        long start=System.currentTimeMillis();
         down(new Event(Event.GET_STATE, state_info));
         StateTransferResult result=state_promise.getResult(state_info.timeout);
 
         if(initiateFlush)
             stopFlush();
 
-        if(result != null && result.hasException())
+        if(result == null)
+            throw new StateTransferException("timeout during state transfer (" + (System.currentTimeMillis() - start) + "ms)");
+        if(result.hasException())
             throw new StateTransferException("state transfer failed", result.getException());
     }
 
@@ -649,12 +652,14 @@ public class JChannel extends Channel {
                     }
                 }
 
-                byte[] tmp_state=result.getBuffer();
                 if(receiver != null) {
                     try {
-                        ByteArrayInputStream input=new ByteArrayInputStream(tmp_state);
-                        receiver.setState(input);
-                        state_promise.setResult(new StateTransferResult());
+                        if(result.hasBuffer()) {
+                            byte[] tmp_state=result.getBuffer();
+                            ByteArrayInputStream input=new ByteArrayInputStream(tmp_state);
+                            receiver.setState(input);
+                        }
+                        state_promise.setResult(result);
                     }
                     catch(Throwable t) {
                         state_promise.setResult(new StateTransferResult(t));

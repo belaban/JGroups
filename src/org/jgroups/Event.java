@@ -58,6 +58,9 @@ public class Event {
     public static final int GET_PHYSICAL_ADDRESSES             = 102; // arg = null (returns all physical addresses)
     public static final int SITE_UNREACHABLE                   = 104; // arg = SiteMaster (RELAY2)
     public static final int FORWARD_TO_COORD                   = 105; // arg = Message
+    public static final int PUNCH_HOLE                         = 106; // arg = Address (member)
+    public static final int CLOSE_HOLE                         = 107; // arg = Address (member)
+    public static final int GET_VIEW_FROM_COORD                = 108;
 
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
@@ -141,6 +144,9 @@ public class Event {
             case GET_PHYSICAL_ADDRESSES: return "GET_PHYSICAL_ADDRESSES";
             case SITE_UNREACHABLE:       return "SITE_UNREACHABLE";
             case FORWARD_TO_COORD:       return "FORWARD_TO_COORD";
+            case PUNCH_HOLE:             return "PUNCH_HOLE";
+            case CLOSE_HOLE:             return "CLOSE_HOLE";
+            case GET_VIEW_FROM_COORD:    return "GET_VIEW_FROM_COORD";
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";

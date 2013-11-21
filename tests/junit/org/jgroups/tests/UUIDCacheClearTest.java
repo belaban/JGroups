@@ -39,7 +39,7 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             List<Message> c1_list=r1.getList();
             List<Message> c2_list=r2.getList();
 
-            for(int i=0; i < 10; i++) { // poor man's way of waiting until we have 1 message in each receiver... :-)
+            for(int i=0; i < 20; i++) { // poor man's way of waiting until we have 1 message in each receiver... :-)
                 if(!c1_list.isEmpty() && !c2_list.isEmpty())
                     break;
                 Util.sleep(500);

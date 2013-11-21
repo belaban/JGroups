@@ -1,7 +1,9 @@
 package org.jgroups.protocols;
 
+import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.TimeoutException;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -13,8 +15,10 @@ import org.jgroups.util.Util;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,23 +39,44 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BARRIER extends Protocol {
     
     @Property(description="Max time barrier can be closed. Default is 60000 ms")
-    long max_close_time=60000; // how long can the barrier stay closed (in ms) ? 0 means forever
-    final Lock lock=new ReentrantLock();
-    final AtomicBoolean barrier_closed=new AtomicBoolean(false);
+    protected long                       max_close_time=60000; // how long can the barrier stay closed (in ms) ? 0 means forever
+
+    @Property(description="Max time (in ms) to wait until the threads which passed the barrier before it was closed " +
+      "have completed. If this time elapses, an exception will be thrown and state transfer will fail. 0 = wait forever")
+    protected long                       flush_timeout=5000;
+
+
+    protected final Lock                 lock=new ReentrantLock();
+    protected final AtomicBoolean        barrier_closed=new AtomicBoolean(false);
 
     /** signals to waiting threads that the barrier is open again */
-    Condition barrier_opened=lock.newCondition();
-    Condition no_msgs_pending=lock.newCondition();
-    ConcurrentMap<Thread, Object> in_flight_threads=Util.createConcurrentMap();
-    Future<?> barrier_opener_future=null;
-    TimeScheduler timer;
-    private static final Object NULL=new Object();
+    protected Condition                  no_pending_threads=lock.newCondition();
+    protected Map<Thread,Object>         in_flight_threads=Util.createConcurrentMap();
+    protected volatile Future<?>         barrier_opener_future;
+    protected TimeScheduler              timer;
+    protected Address                    local_addr;
+
+    // mbrs from which unicasts should be accepted even if BARRIER is closed (PUNCH_HOLE adds, CLOSE_HOLE removes mbrs)
+    protected final Set<Address>         holes=new HashSet<Address>();
+
+    // queues multicast messages or message batches (dest == null)
+    protected final Map<Address,Message> mcast_queue=new ConcurrentHashMap<Address,Message>();
+
+    // queues unicast messages or message batches (dest != null)
+    protected final Map<Address,Message> ucast_queue=new ConcurrentHashMap<Address,Message>();
+
+    protected TP                         transport;
+
+    protected static final Object        NULL=new Object();
 
 
-    @ManagedAttribute
+    @ManagedAttribute(description="Shows whether the barrier closed")
     public boolean isClosed() {
         return barrier_closed.get();
     }
+
+    @ManagedAttribute(description="Lists the members whose unicast messages are let through")
+    public String getHoles() {return holes.toString();}
 
     public int getNumberOfInFlightThreads() {
         return in_flight_threads.size();
@@ -69,7 +94,8 @@ public class BARRIER extends Protocol {
 
     public void init() throws Exception {
         super.init();
-        timer=getTransport().getTimer();
+        transport=getTransport();
+        timer=transport.getTimer();
     }
 
     public void stop() {
@@ -91,6 +117,17 @@ public class BARRIER extends Protocol {
             case Event.OPEN_BARRIER:
                 openBarrier();
                 return null;
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
+            case Event.PUNCH_HOLE:
+                Address mbr=(Address)evt.getArg();
+                holes.add(mbr);
+                return null;
+            case Event.CLOSE_HOLE:
+                mbr=(Address)evt.getArg();
+                holes.remove(mbr);
+                return null;
         }
         return down_prot.down(evt);
     }
@@ -99,10 +136,18 @@ public class BARRIER extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                if(msg.getDest() != null) // https://issues.jboss.org/browse/JGRP-1341: let unicast messages pass
+                // https://issues.jboss.org/browse/JGRP-1341: let unicast messages pass
+                if(msg.isFlagSet(Message.Flag.SKIP_BARRIER) || msg.getDest() != null
+                  && ((msg.isFlagSet(Message.Flag.OOB) && msg.isFlagSet(Message.Flag.INTERNAL)) || holes.contains(msg.getSrc())))
                     return up_prot.up(evt);
+
+                if(barrier_closed.get()) {
+                    final Map<Address,Message> map=msg.getDest() == null? mcast_queue : ucast_queue;
+                    map.put(msg.getSrc(), msg);
+                    return null; // queue and drop the message
+                }
                 Thread current_thread=Thread.currentThread();
-                blockIfBarrierClosed(current_thread);
+                in_flight_threads.put(current_thread, NULL);
                 try {
                     return up_prot.up(evt);
                 }
@@ -112,6 +157,7 @@ public class BARRIER extends Protocol {
             case Event.CLOSE_BARRIER:
                 closeBarrier();
                 return null;
+
             case Event.OPEN_BARRIER:
                 openBarrier();
                 return null;
@@ -122,12 +168,21 @@ public class BARRIER extends Protocol {
 
 
     public void up(MessageBatch batch) {
-        if(batch.dest() != null) { // let unicast messages pass
-            up_prot.up(batch);
-            return;
+        if(batch.dest() != null) { // let unicast message batches pass
+            if((batch.mode() == MessageBatch.Mode.OOB && batch.mode() == MessageBatch.Mode.INTERNAL) || holes.contains(batch.sender())) {
+                up_prot.up(batch);
+                return;
+            }
         }
+
+        if(barrier_closed.get()) {
+            final Map<Address,Message> map=batch.dest() == null? mcast_queue : ucast_queue;
+            map.put(batch.sender(), batch.last().putHeader(transport.getId(),new TpHeader(batch.clusterName())));
+            return; // queue the last message of the batch and drop the batch
+        }
+
         Thread current_thread=Thread.currentThread();
-        blockIfBarrierClosed(current_thread);
+        in_flight_threads.put(current_thread, NULL);
         try {
             up_prot.up(batch);
         }
@@ -137,34 +192,11 @@ public class BARRIER extends Protocol {
     }
 
 
-    protected void blockIfBarrierClosed(final Thread current_thread) {
-        in_flight_threads.put(current_thread, NULL);
-        if(barrier_closed.get()) {
-            lock.lock();
-            try {
-                // Feb 28 2008 (Gray Watson): remove myself because barrier is closed
-                in_flight_threads.remove(current_thread);
-                while(barrier_closed.get()) {
-                    try {
-                        barrier_opened.await();
-                    }
-                    catch(InterruptedException e) {
-                    }
-                }
-            }
-            finally {
-                // Feb 28 2008 (Gray Watson): barrier is now open, put myself back in_flight
-                in_flight_threads.put(current_thread, NULL);
-                lock.unlock();
-            }
-        }
-    }
-
     protected void unblock(final Thread current_thread) {
-        if(in_flight_threads.remove(current_thread) == NULL && barrier_closed.get() && in_flight_threads.isEmpty()) {
+        if(in_flight_threads.remove(current_thread) == NULL && in_flight_threads.isEmpty()) {
             lock.lock();
             try {
-                no_msgs_pending.signalAll();
+                no_pending_threads.signalAll();
             }
             finally {
                 lock.unlock();
@@ -173,72 +205,102 @@ public class BARRIER extends Protocol {
     }
 
     /** Close the barrier. Temporarily remove all threads which are waiting or blocked, re-insert them after the call */
-    private void closeBarrier() {
+    protected void closeBarrier() {
         if(!barrier_closed.compareAndSet(false, true))
-            return; // barrier was already closed
+            return; // barrier is already closed
 
-        Set<Thread> threads=new HashSet<Thread>();
+        long target_time=0, wait_time=0, start=System.currentTimeMillis();
+
+        in_flight_threads.remove(Thread.currentThread());
 
         lock.lock();
         try {
-            // wait until all pending (= in-progress, runnable threads) msgs have returned
-            in_flight_threads.remove(Thread.currentThread());
-            while(!in_flight_threads.isEmpty()) {
+            // wait until all pending threads have returned
+            while(barrier_closed.get() && !in_flight_threads.isEmpty()) {
+                if(target_time == 0 && flush_timeout > 0)
+                    target_time=System.currentTimeMillis() + flush_timeout;
                 for(Iterator<Thread> it=in_flight_threads.keySet().iterator(); it.hasNext();) {
                     Thread thread=it.next();
-                    Thread.State state=thread.getState();
-                    if(state != Thread.State.RUNNABLE && state != Thread.State.NEW) {
-                        threads.add(thread);
+                    if(!thread.isAlive() || thread.getState() == Thread.State.TERMINATED) // should be the same
                         it.remove();
+                }
+                if(in_flight_threads.isEmpty())
+                    break;
+                try {
+                    if(flush_timeout <= 0)
+                        no_pending_threads.await();
+                    else {
+                        if((wait_time=target_time - System.currentTimeMillis()) <= 0)
+                            break;
+                        no_pending_threads.await(wait_time, TimeUnit.MILLISECONDS);
                     }
                 }
-                if(!in_flight_threads.isEmpty()) {
-                    try {
-                        no_msgs_pending.await(1000, TimeUnit.MILLISECONDS);
-                    }
-                    catch(InterruptedException e) {
-                    }
+                catch(InterruptedException e) {
                 }
+            }
+            if(flush_timeout > 0 && !in_flight_threads.isEmpty()) {
+                long time=System.currentTimeMillis() - start;
+                throw new TimeoutException(local_addr + ": failed flushing pending threads in " + time +
+                                             " ms; threads:\n" + printInFlightThreads());
             }
         }
         finally {
-            for(Thread thread: threads)
-                in_flight_threads.put(thread, NULL);
             lock.unlock();
         }
-
-        if(log.isTraceEnabled())
-            log.trace("barrier was closed");
 
         if(max_close_time > 0)
             scheduleBarrierOpener();
     }
 
+
     @ManagedOperation(description="Opens the barrier. No-op if already open")
     public void openBarrier() {
-        lock.lock();
-        try {
-            if(!barrier_closed.compareAndSet(true, false))
-                return; // barrier was already open
-            barrier_opened.signalAll();
-        }
-        finally {
-            lock.unlock();
-        }
-        if(log.isTraceEnabled())
-            log.trace("barrier was opened");
+        if(!barrier_closed.compareAndSet(true, false))
+            return; // barrier was already open
+
         cancelBarrierOpener(); // cancels if running
+
+        synchronized(mcast_queue) {
+            flushQueue(mcast_queue);
+        }
+
+        synchronized(ucast_queue) {
+            flushQueue(ucast_queue);
+        }
     }
 
-    private void scheduleBarrierOpener() {
+    @ManagedOperation(description="Lists the in-flight threads")
+    protected String printInFlightThreads() {
+        StringBuilder sb=new StringBuilder();
+        for(Thread thread: in_flight_threads.keySet())
+            sb.append(thread.toString()).append("\n");
+        return sb.toString();
+    }
+
+    protected void flushQueue(final Map<Address,Message> queue) {
+        if(queue.isEmpty())
+            return;
+
+        for(Message msg: queue.values()) {
+            Executor pool=transport.pickThreadPool(msg.isFlagSet(Message.Flag.OOB),msg.isFlagSet(Message.Flag.INTERNAL));
+            try {
+                pool.execute(transport.new SingleMessageHandler(msg));
+            }
+            catch(Throwable t) {
+                log.warn("%s: failure passing message up the stack: %s", local_addr, t);
+            }
+        }
+        queue.clear();
+    }
+
+    protected void scheduleBarrierOpener() {
         if(barrier_opener_future == null || barrier_opener_future.isDone()) {
             barrier_opener_future=timer.schedule(new Runnable() {public void run() {openBarrier();}},
-                                                 max_close_time, TimeUnit.MILLISECONDS
-            );
+                                                 max_close_time, TimeUnit.MILLISECONDS);
         }
     }
 
-    private void cancelBarrierOpener() {
+    protected void cancelBarrierOpener() {
         if(barrier_opener_future != null) {
             barrier_opener_future.cancel(true);
             barrier_opener_future=null;

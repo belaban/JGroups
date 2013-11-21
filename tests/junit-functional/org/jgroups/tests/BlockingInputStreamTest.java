@@ -5,8 +5,8 @@ import org.jgroups.util.BlockingInputStream;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -297,6 +297,60 @@ public class BlockingInputStreamTest {
         byte[] buf=new byte[1000];
         int read=in.read(buf);
         assert read == buf.length;
+    }
+
+
+    public void testSimpleWrite() throws Exception {
+        final BlockingInputStream input=new BlockingInputStream(8192);
+        byte[] in={'B', 'e', 'l', 'a'};
+        input.write(in);
+
+        byte[] buf=new byte[5];
+        for(int i=0; i < in.length; i++) {
+            int read=input.read(buf, i, 1);
+            assert read == 1;
+        }
+        for(int i=0; i < in.length; i++)
+            assert in[i] == buf[i];
+    }
+
+
+    public void testObjectStreaming() throws Exception {
+        final BlockingInputStream input=new BlockingInputStream(8192);
+
+        Map<String,List<Long>> map=new HashMap<String,List<Long>>(4);
+        for(String key: Arrays.asList("A", "B", "C", "D")) {
+            List<Long> list=new ArrayList<Long>(1000);
+            map.put(key, list);
+            for(int i=1; i <= 1000; i++)
+                list.add((long)i);
+        }
+
+        ByteArrayOutputStream output=new ByteArrayOutputStream(8192);
+        OutputStream out=new BufferedOutputStream(output);
+        Util.objectToStream(map, new DataOutputStream(out));
+        out.flush();
+        final byte[] buffer=output.toByteArray();
+
+        Thread writer=new Thread() {
+            public void run() {
+                try {
+                    input.write(buffer);
+                }
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        writer.start();
+
+        Map<String,List<Long>> tmp=(Map<String,List<Long>>)Util.objectFromStream(new DataInputStream(input));
+        assert tmp.size() == 4;
+        for(String key: Arrays.asList("A", "B", "C", "D")) {
+            List<Long> list=map.get(key);
+            assert list.size() == 1000;
+            assert list.iterator().next() == 1;
+        }
     }
 
 

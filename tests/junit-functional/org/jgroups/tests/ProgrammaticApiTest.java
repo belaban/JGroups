@@ -19,14 +19,12 @@ import org.testng.annotations.Test;
 public class ProgrammaticApiTest {
     JChannel c1, c2;
 
-    @BeforeMethod
-    void init() {
-        c1=new JChannel(false); c1.setName("A");
-        c2=new JChannel(false); c2.setName("B");
+    @BeforeMethod void init() {
+        c1=new JChannel(false).name("A");
+        c2=new JChannel(false).name("B");
     }
 
-    @AfterMethod
-    void destroy() {
+    @AfterMethod void destroy() {
         Util.close(c2, c1);
     }
 

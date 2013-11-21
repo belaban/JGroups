@@ -1,16 +1,19 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.StateTransferException;
 import org.jgroups.protocols.pbcast.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.ArrayIterator;
 import org.jgroups.util.Util;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 /**
  * Tests state transfer API (including exception handling)
@@ -23,7 +26,7 @@ public class StateTransferTest2 extends ChannelTestBase {
 
     @DataProvider(name="createChannels")
     protected Iterator<Class<?>[]> createChannels() {
-        return new MyIterator(new Class<?>[]{STATE_TRANSFER.class, STATE.class, STATE_SOCK.class});
+        return new ArrayIterator<Class<?>[]>(new Class<?>[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
     }
 
 
@@ -114,26 +117,6 @@ public class StateTransferTest2 extends ChannelTestBase {
         }
     }
 
-
-
-    protected static class MyIterator implements Iterator<Class<?>[]> {
-        protected final Class<?>[] stream_transfer_prots;
-        protected int              index=0;
-
-        public MyIterator(Class<?>[] stream_transfer_prots) {
-            this.stream_transfer_prots=stream_transfer_prots;
-        }
-
-        public boolean hasNext() {return index < stream_transfer_prots.length;}
-
-        public Class<?>[] next() {
-            if(index+1 > stream_transfer_prots.length)
-                throw new NoSuchElementException();
-            return new Class<?>[]{stream_transfer_prots[index++]};
-        }
-
-        public void remove() {}
-    }
 
 
     protected static class StateHandler extends ReceiverAdapter {

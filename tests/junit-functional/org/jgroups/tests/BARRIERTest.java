@@ -1,15 +1,13 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.BARRIER;
-import org.jgroups.protocols.EXAMPLE;
-import org.jgroups.protocols.PING;
-import org.jgroups.protocols.SHARED_LOOPBACK;
+import org.jgroups.protocols.*;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -18,25 +16,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class BARRIERTest {
-    JChannel ch;
-    PING     ping_prot;
-    BARRIER  barrier_prot;
-    EXAMPLE example_prot;
+    protected JChannel ch;
+    protected PING     ping_prot;
+    protected BARRIER  barrier_prot;
+    protected TP       tp;
 
 
-    @BeforeMethod
-    void setUp() throws Exception {
-        ping_prot=new PING();
-        example_prot=new EXAMPLE();
-        barrier_prot=new BARRIER();
-        ch=Util.createChannel(new SHARED_LOOPBACK(), ping_prot, barrier_prot, example_prot);
+    @BeforeMethod void setUp() throws Exception {
+        ch=new JChannel(tp=new SHARED_LOOPBACK(), ping_prot=new PING(), barrier_prot=new BARRIER()).name("A");
         ch.connect("BARRIERTest");
     }
 
-    @AfterMethod
-    void destroy() {
-        Util.close(ch);
-    }
+    @AfterMethod void destroy() {Util.close(ch);}
 
     public void testBlocking() {
         assert !barrier_prot.isClosed();
@@ -46,17 +37,12 @@ public class BARRIERTest {
         assert !barrier_prot.isClosed();
     }
 
-
     public void testThreadsBlockedOnBarrier() {
         MyReceiver receiver=new MyReceiver();
         ch.setReceiver(receiver);
-        ch.down(new Event(Event.CLOSE_BARRIER));
+        ch.down(new Event(Event.CLOSE_BARRIER)); // BARRIER starts discarding messages from now on
         for(int i=0; i < 5; i++) {
-            new Thread() {
-                public void run() {
-                    ping_prot.up(new Event(Event.MSG, new Message(null, null, null)));
-                }
-            }.start();
+            new Thread() {public void run() {ping_prot.up(createMessage());}}.start();
         }
 
         Util.sleep(2000);
@@ -69,36 +55,79 @@ public class BARRIERTest {
         num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
         assert num_in_flight_threads == 0;
         int received_msgs=receiver.getNumberOfReceivedMessages();
-        assert received_msgs == 5 : "expected " + 5 + " messages but got " + received_msgs;
+        assert received_msgs == 0 : "expected " + 0 + " messages but got " + received_msgs;
     }
 
 
-    public void testThreadsBlockedOnMutex() throws InterruptedException {
-        BlockingReceiver receiver=new BlockingReceiver();
+    public void testThreadsBlockedOnMutex() throws Exception {
+        final CyclicBarrier barrier=new CyclicBarrier(3);
+        BlockingReceiver receiver=new BlockingReceiver(barrier);
         ch.setReceiver(receiver);
 
-        Thread thread=new Thread() {
-            public void run() {
-                ping_prot.up(new Event(Event.MSG, new Message()));}
-        };
+        Thread[] threads=new Thread[2];
+        for(int i=1; i <= threads.length; i++) {
+            Thread thread=new Thread() {
+                public void run() {ping_prot.up(createMessage());}
+            };
+            thread.setName("blocker-" + i);
+            thread.start();
+        }
 
-        Thread thread2=new Thread() {
-            public void run() {
-                ping_prot.up(new Event(Event.MSG, new Message()));}
-        };
+        waitUntilNumThreadsAreBlocked(2, 10000, 500);
+        assert barrier_prot.getNumberOfInFlightThreads() == 2;
+        barrier.await(); // starts the threads
 
-        thread.start();
-        thread2.start();
-
-        thread.join();
-        thread2.join();
+        waitUntilNumThreadsAreBlocked(0, 10000, 500);
+        assert barrier_prot.getNumberOfInFlightThreads() == 0;
     }
 
 
+    public void testThreadFlushTimeout() throws Exception {
+        final CyclicBarrier barrier=new CyclicBarrier(3);
+        BlockingReceiver receiver=new BlockingReceiver(barrier);
+        ch.setReceiver(receiver);
+        barrier_prot.setValue("flush_timeout", 2000);
+
+        Thread[] threads=new Thread[2];
+        for(int i=1; i <= threads.length; i++) {
+            Thread thread=new Thread() {
+                public void run() {ping_prot.up(createMessage());}
+            };
+            thread.setName("blocker-" + i);
+            thread.start();
+        }
+
+        // wait until all threads are blocked
+        waitUntilNumThreadsAreBlocked(2, 10000, 500);
+        assert barrier_prot.getNumberOfInFlightThreads() == 2;
+
+        try {
+            ch.down(new Event(Event.CLOSE_BARRIER));
+            assert false : "closing BARRIER should have thrown an exception as threads couldn't be flushed";
+        }
+        catch(Exception ex) {
+            System.out.println("got exception as expected: " + ex);
+        }
+        barrier.await();
+    }
 
 
-    static class MyReceiver extends ReceiverAdapter {
-        AtomicInteger num_mgs_received=new AtomicInteger(0);
+    protected Event createMessage() {
+        return new Event(Event.MSG, new Message(null, ch.getAddress()).putHeader(tp.getId(),new TpHeader("BARRIERTest")));
+    }
+
+    protected void waitUntilNumThreadsAreBlocked(int expected, long timeout, long interval) {
+        long target_time=System.currentTimeMillis() + timeout;
+        while(System.currentTimeMillis() < target_time) {
+            if(barrier_prot.getNumberOfInFlightThreads() == expected)
+                break;
+            Util.sleep(interval);
+        }
+    }
+
+
+    protected static class MyReceiver extends ReceiverAdapter {
+        protected final AtomicInteger num_mgs_received=new AtomicInteger(0);
 
         public void receive(Message msg) {
             if(num_mgs_received.incrementAndGet() % 1000 == 0)
@@ -111,16 +140,19 @@ public class BARRIERTest {
     }
 
 
-    class BlockingReceiver extends ReceiverAdapter {
+    protected static class BlockingReceiver extends ReceiverAdapter {
+        protected final CyclicBarrier barrier;
+
+        BlockingReceiver(CyclicBarrier barrier) {
+            this.barrier=barrier;
+        }
 
         public void receive(Message msg) {
-            System.out.println("Thread " + Thread.currentThread().getId() + " receive() called - about to enter mutex");
-            synchronized(this) {
-                System.out.println("Thread " + Thread.currentThread().getId() + " entered mutex");
-                Util.sleep(2000);
-                System.out.println("Thread " + Thread.currentThread().getId() + " closing barrier");
-                ch.down(new Event(Event.CLOSE_BARRIER));
-                System.out.println("Thread " + Thread.currentThread().getId() + " closed barrier");
+            try {
+                barrier.await();
+            }
+            catch(Exception e) {
+                e.printStackTrace();
             }
         }
     }

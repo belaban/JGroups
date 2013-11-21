@@ -162,9 +162,7 @@ public class ChannelTestBase {
     }
 
     protected JChannel createChannel(boolean unique, int num, String name) throws Exception {
-        JChannel ch=(JChannel)new DefaultChannelTestFactory().createChannel(unique, num);
-        ch.setName(name);
-        return ch;
+        return (JChannel)new DefaultChannelTestFactory().createChannel(unique, num).name(name);
     }
 
     protected JChannel createChannel() throws Exception {
@@ -180,9 +178,7 @@ public class ChannelTestBase {
     }
 
     protected JChannel createChannel(JChannel ch, String name) throws Exception {
-        JChannel retval=(JChannel) new DefaultChannelTestFactory().createChannel(ch);
-        retval.setName(name);
-        return retval;
+        return (JChannel) new DefaultChannelTestFactory().createChannel(ch).name(name);
     }
 
     protected static String getUniqueClusterName() {
@@ -260,7 +256,7 @@ public class ChannelTestBase {
                 for (short port : ports) {
                     initial_hosts.add(bind_addr + "[" + port + "]");
                 }
-                String tmp = Util.printListWithDelimiter(initial_hosts, ",");
+                String tmp = Util.printListWithDelimiter(initial_hosts, ",", 2000, false);
                 List<IpAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 0);
                 ((TCPPING) ping).setInitialHosts(init_hosts);
             } else {

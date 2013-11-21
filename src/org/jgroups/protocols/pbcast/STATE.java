@@ -4,12 +4,10 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.util.BlockingInputStream;
 import org.jgroups.util.StateTransferResult;
+import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -41,7 +39,7 @@ public class STATE extends StreamingStateTransfer {
     /** If use_default_transport is true, we consume bytes off of this blocking queue. Used on the state
      * <em>requester</em> side only. Note that we cannot use a PipedInputStream as we have multiple writer threads
      * pushing data into the input stream */
-    protected volatile BlockingInputStream input_stream=null;
+    protected volatile BlockingInputStream input_stream;
 
 
 
@@ -76,8 +74,8 @@ public class STATE extends StreamingStateTransfer {
         if(buffer == null || input_stream == null)
             return;
         try {
-            if(log.isDebugEnabled())
-                log.debug(local_addr + " received state chunk of " + Util.printBytes(length) + " from " + sender);
+            if(log.isTraceEnabled())
+                log.trace("%s: received chunk of %s from %s",local_addr,Util.printBytes(length),sender);
             input_stream.write(buffer, offset, length);
         }
         catch(IOException e) {
@@ -89,25 +87,17 @@ public class STATE extends StreamingStateTransfer {
 
     protected void createStreamToRequester(Address requester) {
         OutputStream bos=new StateOutputStream(requester);
-        getStateFromApplication(requester, bos, true);
+        getStateFromApplication(requester, bos, false);
     }
 
-    
-    protected void createStreamToProvider(final Address provider, final StateHeader hdr) {
+    protected Tuple<InputStream,Object> createStreamToProvider(final Address provider, final StateHeader hdr) {
         Util.close(input_stream);
         input_stream=new BlockingInputStream(buffer_size);
-
-        // use another thread to read state because the state requester has to receive state chunks from the state provider
-        Thread t=getThreadFactory().newThread(new Runnable() {
-            public void run() {
-                setStateInApplication(provider, input_stream, hdr.getDigest());
-            }
-        }, "STATE state reader");
-        t.start();
+        return new Tuple<InputStream,Object>(input_stream, null);
     }
 
-
-
+    @Override
+    protected boolean useAsyncStateDelivery() {return true;}
 
     protected class StateOutputStream extends OutputStream {
         protected final Address        stateRequester;
@@ -162,8 +152,8 @@ public class STATE extends StreamingStateTransfer {
             if(Thread.interrupted())
                 throw interrupted((int)bytesWrittenCounter);
             down_prot.down(new Event(Event.MSG, m));
-            if(log.isDebugEnabled())
-                log.debug(local_addr + " sent " + Util.printBytes(len) + " of state to " + stateRequester);
+            if(log.isTraceEnabled())
+                log.trace("%s: sent chunk of %s to %s",local_addr,Util.printBytes(len),stateRequester);
         }
 
 

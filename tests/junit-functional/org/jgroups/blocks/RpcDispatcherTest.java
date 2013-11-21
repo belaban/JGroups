@@ -270,7 +270,7 @@ public class RpcDispatcherTest {
 
 
     public void testFuture() throws Exception {
-        MethodCall sleep=new MethodCall("sleep", new Object[]{1000L}, new Class[]{long.class});
+        MethodCall sleep=new MethodCall("sleep", new Object[]{5000L}, new Class[]{long.class});
         Future<RspList<Object>> future=disp1.callRemoteMethodsWithFuture(null, sleep, new RequestOptions(ResponseMode.GET_ALL, 5000L, false, null));
         assert !future.isDone();
         assert !future.isCancelled();
@@ -284,7 +284,7 @@ public class RpcDispatcherTest {
         
         assert !future.isDone();
 
-        RspList result=future.get(6000L, TimeUnit.MILLISECONDS);
+        RspList result=future.get(10000L, TimeUnit.MILLISECONDS);
         System.out.println("result:\n" + result);
         assert result != null;
         assert result.size() == 3;

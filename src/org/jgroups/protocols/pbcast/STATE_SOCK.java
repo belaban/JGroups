@@ -10,6 +10,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.StateTransferResult;
+import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -112,40 +113,34 @@ public class STATE_SOCK extends StreamingStateTransfer {
     }
 
 
-    protected void createStreamToRequester(Address requester) {
-    }
-
-    protected void createStreamToProvider(Address provider, StateHeader hdr) {
+    protected Tuple<InputStream,Object> createStreamToProvider(Address provider, StateHeader hdr) throws Exception {
         IpAddress address=hdr.bind_addr;
-        InputStream bis=null;
+        Tuple<InputStream,Object> retval=new Tuple<InputStream,Object>(null,null);
         Socket socket=null;
         try {
             socket=getSocketFactory().createSocket("jgroups.state_sock.sock");
+            retval.setVal2(socket);
             socket.bind(new InetSocketAddress(bind_addr, 0));
             socket.setReceiveBufferSize(buffer_size);
             Util.connect(socket, new InetSocketAddress(address.getIpAddress(), address.getPort()), 0);
-            if(log.isDebugEnabled())
-                log.debug(local_addr + ": connected to state provider " + address.getIpAddress() + ":" + address.getPort());
-
-            // write out our address
+            log.debug("%s: connected to state provider %s:%d", local_addr, address.getIpAddress(), address.getPort());
             DataOutputStream out=new DataOutputStream(socket.getOutputStream());
             Util.writeAddress(local_addr, out);
-
-            // bis=new BufferedInputStream(new StreamingInputStreamWrapper(socket), buffer_size);
-            bis=new BufferedInputStream(socket.getInputStream(), buffer_size);
-            setStateInApplication(provider, bis, hdr.getDigest());
+            retval.setVal1(new BufferedInputStream(socket.getInputStream(), buffer_size));
+            return retval;
         }
-        catch(Exception e) {
-            if(log.isWarnEnabled())
-                log.warn(local_addr + ": state reader socket thread spawned abnormally", e);
-            handleException(e);
-        }
-        finally {
-            Util.close(bis);
+        catch(Throwable t) {
             Util.close(socket);
+            if(t instanceof Exception)
+                throw (Exception)t;
+            throw new Exception("failed creating socket", t);
         }
     }
 
+    protected void close(Object resource) {
+        if(resource instanceof Socket)
+            Util.close((Socket)resource);
+    }
 
     protected void handleStateReq(Address requester) {
         if(spawner == null || !spawner.isRunning())

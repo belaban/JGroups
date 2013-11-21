@@ -27,10 +27,10 @@ public class StateTransferResult {
         this.buffer=null;
     }
 
-    public boolean hasBuffer()      {return buffer    != null;}
-    public boolean hasException()   {return exception != null;}
-    public byte[] getBuffer()       {return buffer;}
-    public Throwable getException() {return exception;}
+    public boolean   hasBuffer()      {return buffer    != null;}
+    public boolean   hasException()   {return exception != null;}
+    public byte[]    getBuffer()      {return buffer;}
+    public Throwable getException()   {return exception;}
 
     public String toString() {
         if(buffer != null)
