@@ -30,6 +30,7 @@
     <property name="javadoc.dir" value="${dist.dir}/javadoc"/>
     <property name="conf.dir" value="${root.dir}/conf"/>
     <property name="testng.conf.dir" value="${root.dir}/conf/testng"/>
+    <property name="scripts.dir" value="${root.dir}/conf/scripts"/>
     <property name="bin.dir"          value="${root.dir}/bin"/>
     <property name="keystore.dir"     value="${root.dir}/keystore"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
@@ -62,6 +63,7 @@
     <!-- We need to include tools.jar for byteman to inject code into a running agent -->
     <path id="jg.classpath.byteman">
         <path refid="jg.classpath"/>
+        <pathelement location="${scripts.dir}"/>
         <pathelement location="${java.home}/../lib/tools.jar"/>
     </path>
 

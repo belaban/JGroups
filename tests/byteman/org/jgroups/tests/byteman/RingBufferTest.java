@@ -59,7 +59,7 @@ public class RingBufferTest extends BMNGRunner {
      * T1 does a CAS(null, 5) and succeeds because T2 just nulled the element
      ==> We now deliver the message at index 5 TWICE (or multiple times) !
      */
-    @BMScript(dir="scripts/RingBufferTest", value="testRemoveAndConcurrentAdd")
+    @BMScript(dir="RingBufferTest", value="testRemoveAndConcurrentAdd")
     public void testRemoveAndConcurrentAdd() throws InterruptedException {
         final RingBufferLockless<Integer> buf=new RingBufferLockless<Integer>(10, 0);
         for(int i=1; i <= 5; i++)
@@ -88,7 +88,7 @@ public class RingBufferTest extends BMNGRunner {
      * Same as above, but using removeMany() rather than remove()
      * @throws InterruptedException
      */
-    @BMScript(dir="scripts/RingBufferTest", value="testRemoveAndConcurrentAdd2")
+    @BMScript(dir="RingBufferTest", value="testRemoveAndConcurrentAdd2")
     public void testRemoveAndConcurrentAdd2() throws InterruptedException {
         final RingBufferLockless<Integer> buf=new RingBufferLockless<Integer>(10, 0);
         for(int i=1; i <= 10; i++)
