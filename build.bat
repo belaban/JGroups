@@ -14,7 +14,7 @@ set LIBS=%LIB%\ant.jar;%LIB%\ant-junit.jar;%LIB%\ant-launcher.jar;%LIB%\junit.ja
 REM echo LIBS=%LIBS%
 
 set CP=%JAVA_HOME%\lib\tools.jar;%JAVA_HOME%\jre\lib\rt.jar;%CLASSPATH%;%LIBS%
-"%JAVA_HOME%\bin\java" -classpath "%CP%" org.apache.tools.ant.Main -buildfile build.xml %1 %2 %3 %4 %5 %6 %7 %8 %9
+"%JAVA_HOME%\bin\java" -classpath "%CP%" org.apache.tools.ant.Main -buildfile build.xml %*
 
 goto endOfFile
 
