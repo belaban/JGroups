@@ -1038,6 +1038,10 @@ public class JChannel extends Channel {
                     handleJmx(map, key);
                     continue;
                 }
+                if(key.startsWith("reset-stats")) {
+                    resetAllStats();
+                    continue;
+                }
                 if(key.startsWith("invoke") || key.startsWith("op")) {
                     int index=key.indexOf("=");
                     if(index != -1) {
@@ -1064,7 +1068,14 @@ public class JChannel extends Channel {
         }
 
         public String[] supportedKeys() {
-            return new String[]{"jmx", "invoke=<operation>[<args>]", "\nop=<operation>[<args>]"};
+            return new String[]{"reset-stats", "jmx", "invoke=<operation>[<args>]", "\nop=<operation>[<args>]"};
+        }
+
+        protected void resetAllStats() {
+            List<Protocol> prots=getProtocolStack().getProtocols();
+            for(Protocol prot: prots)
+                prot.resetStatistics();
+            resetStats();
         }
 
         protected void handleJmx(Map<String, String> map, String input) {
