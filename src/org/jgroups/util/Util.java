@@ -3798,14 +3798,14 @@ public class Util {
             return bind_addr;
 
     	// 1. if bind_interface_str is null, or empty, no constraint on bind_addr
-    	if (bind_interface_str == null || bind_interface_str.trim().length() == 0)
+    	if (bind_interface_str == null || bind_interface_str.trim().isEmpty())
     		return bind_addr;
     	
     	// 2. get the preferred IP version for the JVM - it will be IPv4 or IPv6 
     	StackType ip_version = getIpStackType();
     	
     	// 3. if bind_interface_str specified, get interface and check that it has correct version
-    	bind_intf=NetworkInterface.getByName(bind_interface_str);
+    	bind_intf=Util.getByName(bind_interface_str); // NetworkInterface.getByName(bind_interface_str);
     	if(bind_intf != null) {
             // check that the interface supports the IP version
             boolean supportsVersion = interfaceHasIPAddresses(bind_intf, ip_version) ;
@@ -3860,6 +3860,25 @@ public class Util {
     	// in such a case, return the original value of null so the default will be applied
 
     	return bind_addr;
+    }
+
+    /** Finds a network interface of sub-interface with the given name */
+    public static NetworkInterface getByName(String name) throws SocketException {
+        if(name == null) return null;
+        Enumeration<NetworkInterface> en=NetworkInterface.getNetworkInterfaces();
+        while(en.hasMoreElements()) {
+            NetworkInterface intf=en.nextElement();
+            if(intf.getName().equals(name))
+                return intf;
+            Enumeration<NetworkInterface> en2=intf.getSubInterfaces();
+            while(en2.hasMoreElements()) {
+                NetworkInterface intf2=en2.nextElement();
+                if(intf2.getName().equals(name)) {
+                    return intf2;
+                }
+            }
+        }
+        return null;
     }
 
 
