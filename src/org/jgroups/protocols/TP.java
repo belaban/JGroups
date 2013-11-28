@@ -50,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Transport protocol")
-public abstract class TP extends Protocol {
+public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected static final byte LIST=1; // we have a list of messages rather than a single message when set
     protected static final byte MULTICAST=2; // message is a multicast (versus a unicast) message when set
@@ -583,7 +583,7 @@ public abstract class TP extends Protocol {
 
     protected Bundler bundler;
 
-    protected DiagnosticsHandler diag_handler=null;
+    protected DiagnosticsHandler diag_handler;
     protected final List<DiagnosticsHandler.ProbeHandler> preregistered_probe_handlers=new LinkedList<DiagnosticsHandler.ProbeHandler>();
 
     /**
@@ -682,9 +682,10 @@ public abstract class TP extends Protocol {
      * @param handler
      */
     public void setDiagnosticsHandler(DiagnosticsHandler handler) {
-        if(diag_handler != null)
+        if(handler != null) {
             diag_handler.stop();
-        diag_handler=handler;
+            diag_handler=handler;
+        }
     }
 
 
@@ -919,6 +920,9 @@ public abstract class TP extends Protocol {
         return ManagementFactory.getThreadMXBean().getThreadCount();
     }
 
+    @ManagedAttribute(description="Whether the diagnostics handler is running or not")
+    public boolean isDiagnosticsHandlerRunning() {return diag_handler.isRunning();}
+
     public void setRegularRejectionPolicy(String rejection_policy) {
         RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
         if(thread_pool instanceof ThreadPoolExecutor)
@@ -1005,6 +1009,10 @@ public abstract class TP extends Protocol {
 
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
+
+        if(diag_handler == null)
+            diag_handler=new DiagnosticsHandler(diagnostics_addr, diagnostics_port, diagnostics_bind_interfaces,
+                                                diagnostics_ttl, log, getSocketFactory(), getThreadFactory(), diagnostics_passcode);
 
         if(timer == null) {
             if(timer_type.equalsIgnoreCase("old")) {
@@ -1148,91 +1156,8 @@ public abstract class TP extends Protocol {
         if(timer == null)
             throw new Exception("timer is null");
 
-        if(enable_diagnostics) {
-            boolean diag_handler_created=diag_handler == null;
-            if(diag_handler == null)
-                diag_handler=new DiagnosticsHandler(diagnostics_addr, diagnostics_port, diagnostics_bind_interfaces,
-                                                    diagnostics_ttl, log, getSocketFactory(), getThreadFactory(), diagnostics_passcode);
-
-            diag_handler.registerProbeHandler(new DiagnosticsHandler.ProbeHandler() {
-                public Map<String, String> handleProbe(String... keys) {
-                    Map<String,String> retval=new HashMap<String,String>(2);
-                    for(String key: keys) {
-                        if(key.equals("dump")) {
-                            retval.put("dump", Util.dumpThreads());
-                            continue;
-                        }
-                        if(key.equals("uuids")) {
-                            retval.put("uuids", printLogicalAddressCache());
-                            if(!isSingleton() && !retval.containsKey("local_addr"))
-                                retval.put("local_addr", local_addr != null? local_addr.toString() : null);
-                            continue;
-                        }
-                        if(key.equals("keys")) {
-                            StringBuilder sb=new StringBuilder();
-                            for(DiagnosticsHandler.ProbeHandler handler: diag_handler.getProbeHandlers()) {
-                                String[] tmp=handler.supportedKeys();
-                                if(tmp != null && tmp.length > 0) {
-                                    for(String s: tmp)
-                                        sb.append(s).append(" ");
-                                }
-                            }
-                            retval.put("keys", sb.toString());
-                        }
-                        if(key.equals("info")) {
-                            if(singleton_name != null && !singleton_name.isEmpty())
-                                retval.put("singleton_name", singleton_name);
-
-                        }
-                        if(key.equals("addrs")) {
-                            Set<PhysicalAddress> physical_addrs=logical_addr_cache.nonRemovedValues();
-                            String list=Util.print(physical_addrs);
-                            retval.put("addrs", list);
-                        }
-                        if(key.startsWith("cluster")) {
-                            String cluster_name_pattern=key.substring("cluster".length()+1).trim();
-                            if(!isSingleton()) {
-                                if(cluster_name_pattern != null && !Util.patternMatch(cluster_name_pattern, channel_name))
-                                    throw new IllegalArgumentException("Request dropped as cluster name " + channel_name +
-                                                                         " does not match cluster name pattern " + cluster_name_pattern);
-                            }
-                            else {
-                                // not optimal, this matches *any* of the shared clusters. would be better to return only
-                                // responses for matching clusters
-                                if(up_prots != null) {
-                                    boolean match=false;
-                                    List<String> cluster_names=new ArrayList<String>();
-                                    for(Protocol prot: up_prots.values())
-                                        if(prot instanceof ProtocolAdapter)
-                                            cluster_names.add(((ProtocolAdapter)prot).getClusterName());
-                                    for(String cluster_name: cluster_names) {
-                                        if(Util.patternMatch(cluster_name_pattern, cluster_name)) {
-                                            match=true;
-                                            break;
-                                        }
-                                    }
-
-                                    if(!match)
-                                        throw new IllegalArgumentException("Request dropped as cluster names " + cluster_names +
-                                                                             " do not match cluster name pattern " + cluster_name_pattern);
-                                }
-                            }
-                        }
-                    }
-                    return retval;
-                }
-
-                public String[] supportedKeys() {
-                    return new String[]{"dump", "keys", "uuids", "info", "addrs", "cluster"};
-                }
-            });
-            if(diag_handler_created)
-                diag_handler.start();
-            
-            for(DiagnosticsHandler.ProbeHandler handler: preregistered_probe_handlers)
-                diag_handler.registerProbeHandler(handler);
-            preregistered_probe_handlers.clear();
-        }
+        if(enable_diagnostics)
+            startDiagnostics();
 
         if(bundler_type.startsWith("new")) {
             if(bundler_type.endsWith("new2"))
@@ -1256,13 +1181,110 @@ public abstract class TP extends Protocol {
 
 
     public void stop() {
-        if(diag_handler != null) {
-            diag_handler.stop();
-            diag_handler=null;
-        }
-        preregistered_probe_handlers.clear();
+        stopDiagnostics();
         if(bundler != null)
             bundler.stop();
+    }
+
+    @ManagedOperation(description="Enables diagnostics and starts DiagnosticsHandler (if not running)")
+    public void enableDiagnostics() {
+        enable_diagnostics=true;
+        try {
+            startDiagnostics();
+        }
+        catch(Exception e) {
+            log.error("failed starting diagnostics", e);
+        }
+    }
+
+    @ManagedOperation(description="Disables diagnostics and stops DiagnosticsHandler (if running)")
+    public void disableDiagnostics() {
+        enable_diagnostics=false;
+        stopDiagnostics();
+    }
+
+    protected void startDiagnostics() throws Exception {
+        diag_handler.registerProbeHandler(this);
+        diag_handler.start();
+        for(DiagnosticsHandler.ProbeHandler handler: preregistered_probe_handlers)
+            diag_handler.registerProbeHandler(handler);
+        preregistered_probe_handlers.clear();
+    }
+
+    protected void stopDiagnostics() {
+        diag_handler.unregisterProbeHandler(this);
+        diag_handler.stop();
+        preregistered_probe_handlers.clear();
+    }
+
+
+    public Map<String, String> handleProbe(String... keys) {
+        Map<String,String> retval=new HashMap<String,String>(2);
+        for(String key: keys) {
+            if(key.equals("dump")) {
+                retval.put("dump", Util.dumpThreads());
+                continue;
+            }
+            if(key.equals("uuids")) {
+                retval.put("uuids", printLogicalAddressCache());
+                if(!isSingleton() && !retval.containsKey("local_addr"))
+                    retval.put("local_addr", local_addr != null? local_addr.toString() : null);
+                continue;
+            }
+            if(key.equals("keys")) {
+                StringBuilder sb=new StringBuilder();
+                for(DiagnosticsHandler.ProbeHandler handler: diag_handler.getProbeHandlers()) {
+                    String[] tmp=handler.supportedKeys();
+                    if(tmp != null && tmp.length > 0) {
+                        for(String s: tmp)
+                            sb.append(s).append(" ");
+                    }
+                }
+                retval.put("keys", sb.toString());
+            }
+            if(key.equals("info")) {
+                if(singleton_name != null && !singleton_name.isEmpty())
+                    retval.put("singleton_name", singleton_name);
+            }
+            if(key.equals("addrs")) {
+                Set<PhysicalAddress> physical_addrs=logical_addr_cache.nonRemovedValues();
+                String list=Util.print(physical_addrs);
+                retval.put("addrs", list);
+            }
+            if(key.startsWith("cluster")) {
+                String cluster_name_pattern=key.substring("cluster".length()+1).trim();
+                if(!isSingleton()) {
+                    if(cluster_name_pattern != null && !Util.patternMatch(cluster_name_pattern, channel_name))
+                        throw new IllegalArgumentException("Request dropped as cluster name " + channel_name +
+                                                             " does not match cluster name pattern " + cluster_name_pattern);
+                }
+                else {
+                    // not optimal, this matches *any* of the shared clusters. would be better to return only
+                    // responses for matching clusters
+                    if(up_prots != null) {
+                        boolean match=false;
+                        List<String> cluster_names=new ArrayList<String>();
+                        for(Protocol prot: up_prots.values())
+                            if(prot instanceof ProtocolAdapter)
+                                cluster_names.add(((ProtocolAdapter)prot).getClusterName());
+                        for(String cluster_name: cluster_names) {
+                            if(Util.patternMatch(cluster_name_pattern, cluster_name)) {
+                                match=true;
+                                break;
+                            }
+                        }
+                        if(!match)
+                            throw new IllegalArgumentException("Request dropped as cluster names " + cluster_names +
+                                                                 " do not match cluster name pattern " + cluster_name_pattern);
+                    }
+                }
+            }
+        }
+        return retval;
+    }
+
+    public String[] supportedKeys() {
+        return new String[]{"dump", "keys", "uuids", "info", "addrs", "cluster"};
     }
 
 

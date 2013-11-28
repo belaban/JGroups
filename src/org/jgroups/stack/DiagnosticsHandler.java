@@ -31,7 +31,7 @@ public class DiagnosticsHandler implements Runnable {
     protected final Log               log;
     protected final SocketFactory     socket_factory;
     protected final ThreadFactory     thread_factory;
-    protected final String    passcode;
+    protected final String            passcode;
 
 
     public DiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port,
@@ -96,7 +96,6 @@ public class DiagnosticsHandler implements Runnable {
     public void stop() {
         if(diag_sock != null)
             socket_factory.close(diag_sock);
-        handlers.clear();
         if(thread != null){
             try{
                 thread.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
@@ -107,11 +106,13 @@ public class DiagnosticsHandler implements Runnable {
         }
     }
 
+    public boolean isRunning() {return thread != null && thread.isAlive() && diag_sock != null && !diag_sock.isClosed();}
+
     public void run() {
         byte[] buf;
         DatagramPacket packet;
         while(!diag_sock.isClosed() && Thread.currentThread().equals(thread)) {
-            buf=new byte[1500]; // requests are small (responses might be bigger)
+            buf=new byte[10000]; // requests are small (responses might be bigger)
             packet=new DatagramPacket(buf, 0, buf.length);
             try {
                 diag_sock.receive(packet);
