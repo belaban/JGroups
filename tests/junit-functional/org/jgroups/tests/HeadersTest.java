@@ -135,6 +135,13 @@ public class HeadersTest {
         assert hdr == null;
         assert hdrs.size() == 4;
         assert hdrs.capacity() == 6;
+
+        hdrs.putHeader(FRAG_ID,null);
+        assert hdrs.getHeader(FRAG_ID) == null;
+        MyHeader myhdr=new MyHeader();
+        hdr=hdrs.putHeaderIfAbsent(FRAG_ID, myhdr);
+        assert hdr == null;
+        assert hdrs.getHeader(FRAG_ID) == myhdr;
     }
 
     public static void testGetHeader() {

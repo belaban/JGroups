@@ -683,7 +683,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      */
     public void setDiagnosticsHandler(DiagnosticsHandler handler) {
         if(handler != null) {
-            diag_handler.stop();
+            if(diag_handler != null)
+                diag_handler.stop();
             diag_handler=handler;
         }
     }
@@ -921,7 +922,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     @ManagedAttribute(description="Whether the diagnostics handler is running or not")
-    public boolean isDiagnosticsHandlerRunning() {return diag_handler.isRunning();}
+    public boolean isDiagnosticsHandlerRunning() {return diag_handler != null && diag_handler.isRunning();}
 
     public void setRegularRejectionPolicy(String rejection_policy) {
         RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
