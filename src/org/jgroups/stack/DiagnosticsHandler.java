@@ -31,7 +31,7 @@ public class DiagnosticsHandler implements Runnable {
     protected final Log               log;
     protected final SocketFactory     socket_factory;
     protected final ThreadFactory     thread_factory;
-    protected final String    passcode;
+    protected final String            passcode;
 
 
     public DiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port,
@@ -106,6 +106,8 @@ public class DiagnosticsHandler implements Runnable {
             }
         }
     }
+
+    public boolean isRunning() {return thread != null && thread.isAlive() && diag_sock != null && !diag_sock.isClosed();}
 
     public void run() {
         byte[] buf;

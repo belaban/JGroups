@@ -677,9 +677,11 @@ public abstract class TP extends Protocol {
      * @param handler
      */
     public void setDiagnosticsHandler(DiagnosticsHandler handler) {
-        if(diag_handler != null)
-            diag_handler.stop();
-        diag_handler=handler;
+        if(handler != null) {
+            if(diag_handler != null)
+                diag_handler.stop();
+            diag_handler=handler;
+        }
     }
 
 
@@ -898,6 +900,9 @@ public abstract class TP extends Protocol {
     public static int getNumThreads() {
         return ManagementFactory.getThreadMXBean().getThreadCount();
     }
+
+    @ManagedAttribute(description="Whether the diagnostics handler is running or not")
+    public boolean isDiagnosticsHandlerRunning() {return diag_handler != null && diag_handler.isRunning();}
 
     public void setRegularRejectionPolicy(String rejection_policy) {
         RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
