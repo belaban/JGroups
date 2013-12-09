@@ -91,7 +91,7 @@ public class BlockingInputStream extends InputStream {
         try {
             while(bytes_read < bytes_to_be_read) {
                 if(read_pos < write_pos) {
-                    int bytes_to_read=Math.min(len, size());
+                    int bytes_to_read=Math.min(len-bytes_read-off, size());
                     System.arraycopy(buf, read_pos, b, bytes_read + off, bytes_to_read);
                     read_pos+=bytes_to_read;
                     bytes_read+=bytes_to_read;
