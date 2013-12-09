@@ -279,6 +279,27 @@ public class BlockingInputStreamTest {
     }
 
 
+    public void testWritingBeyondLength() throws IOException {
+        final BlockingInputStream in=new BlockingInputStream(800);
+
+        new Thread() {
+            public void run() {
+                byte[] buf=new byte[800+600];
+                try {
+                    in.write(buf);
+                }
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+
+        byte[] buf=new byte[1000];
+        int read=in.read(buf);
+        assert read == buf.length;
+    }
+
+
     protected byte[] generateBuffer(int size) {
         byte[] buf=new byte[size];
         for(int i=0; i < buf.length; i++)
