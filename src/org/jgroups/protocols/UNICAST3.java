@@ -72,13 +72,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     @Property(description="Send an ack immediately when a batch of ack_threshold (or more) messages is received. " +
       "Otherwise send delayed acks. If 1, ack single messages (similar to UNICAST)")
-    protected int ack_threshold=5;
+    protected int     ack_threshold=5;
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
-    protected long   num_msgs_sent=0, num_msgs_received=0;
-    protected long   num_acks_sent=0, num_acks_received=0, num_xmits=0;
+    protected long    num_msgs_sent=0, num_msgs_received=0;
+    protected long    num_acks_sent=0, num_acks_received=0, num_xmits=0;
 
     @ManagedAttribute(description="Number of retransmit requests received")
     protected final AtomicLong xmit_reqs_received=new AtomicLong(0);
@@ -358,6 +358,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     public void stop() {
+        sendPendingAcks();
         running=false;
         stopRetransmitTask();
         xmit_task_map.clear();
@@ -1352,6 +1353,18 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             removeExpiredConnections();
     }
 
+    /** Sends ACKs immediately for entries which are marked as pending (ACK hasn't been sent yet) */
+    protected void sendPendingAcks() {
+        for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
+            Address        target=entry.getKey(); // target to send retransmit requests to
+            ReceiverEntry  val=entry.getValue();
+            Table<Message> win=val != null? val.received_msgs : null;
+
+            // receiver: send ack for received messages if needed
+            if(win != null && val.sendAck()) // sendAck() resets send_ack to false
+                sendAck(target, win.getHighestDeliverable(), val.connId());
+        }
+    }
 
 
 }
