@@ -1366,10 +1366,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             Table<Message> win=val != null? val.received_msgs : null;
 
             // receiver: send ack for received messages if needed
-            if(win != null && val.sendAck()) { // sendAck() resets send_ack to false
-                System.out.println(local_addr + " ====> ACK(" + win.getHighestDeliverable() + ") to " + target);
+            if(win != null && val.sendAck())// sendAck() resets send_ack to false
                 sendAck(target, win.getHighestDeliverable(), val.connId());
-            }
         }
     }
 
