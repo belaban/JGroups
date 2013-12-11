@@ -1640,7 +1640,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 if(!multicast) {
                     Address dest=msg.getDest(), target=local_addr;
                     if(dest != null && target != null && !dest.equals(target)) {
-                        log.warn(Util.getMessage("IncorrectDest"), local_addr, dest);
+                        log.warn(Util.getMessage("IncorrectDest"), local_addr, "message", msg.getSrc(), dest, msg.printHeaders());
                         return;
                     }
                 }
@@ -1676,7 +1676,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 if(!multicast) {
                     Address dest=msg.getDest(), target=local_addr;
                     if(dest != null && target != null && !dest.equals(target)) {
-                        log.warn(Util.getMessage("IncorrectDest"), local_addr, dest);
+                        log.warn(Util.getMessage("IncorrectDest"), local_addr, "message", msg.getSrc(), dest, msg.printHeaders());
                         return;
                     }
                 }
@@ -1714,7 +1714,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(!batch.multicast()) {
                 Address dest=batch.dest(), target=local_addr;
                 if(dest != null && target != null && !dest.equals(target)) {
-                    log.warn(Util.getMessage("IncorrectDest"), local_addr, dest);
+                    log.warn(Util.getMessage("IncorrectDest"), local_addr, "batch",  batch.sender(), dest, "n/a");
                     return;
                 }
             }
@@ -2669,7 +2669,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
                 if(dest != null && local_addr != null && !dest.equals(local_addr)) {
-                    log.warn(Util.getMessage("IncorrectDest"), local_addr, dest);
+                    log.warn(Util.getMessage("IncorrectDest"), local_addr, "message", msg.getSrc(), dest, msg.printHeaders());
                     return null;
                 }
             }
