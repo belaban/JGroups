@@ -23,20 +23,16 @@ import org.testng.annotations.Test;
  */
 @Test(groups=Global.BYTEMAN,sequential=true)
 public class BecomeServerTest extends BMNGRunner {
-    JChannel          a, b;
+    protected JChannel          a, b;
 
-    @AfterMethod
-    protected void cleanup() {
-        Util.close(b,a);
-    }
-
+    @AfterMethod protected void cleanup() {Util.close(b,a);}
 
     /**
      * When we flush the server queue and one or more of the delivered messages triggers a response (in the same thread),
      * we need to make sure the channel is connected, or else the JOIN will fail as the exception happens on the same
      * thread. Note that the suggested fix on JGRP-1522 will solve this. Issue: https://issues.jboss.org/browse/JGRP-1522
      */
-    @BMScript(dir="BecomeServerTest", value="testSendingOfMsgsOnUnconnectedChannel")
+    @BMScript(dir="scripts/BecomeServerTest", value="testSendingOfMsgsOnUnconnectedChannel")
     public void testSendingOfMsgsOnUnconnectedChannel() throws Exception {
         a=createChannel("A");
         a.setReceiver(new ReceiverAdapter() {

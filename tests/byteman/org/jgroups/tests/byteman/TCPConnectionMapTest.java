@@ -90,7 +90,7 @@ public class TCPConnectionMapTest extends BMNGRunner {
      * <li>A.connect(B) || B.connect(A)</li>
      * </ul>
      */
-    @BMScript(dir="TCPConnectionMapTest", value="testConcurrentConnect")
+    @BMScript(dir="scripts/TCPConnectionMapTest", value="testConcurrentConnect")
     // @Test(invocationCount=100,threadPoolSize=0)
     public void testConcurrentConnect() throws Exception {
         _testConcurrentConnect(1, 1, 1);
@@ -102,7 +102,7 @@ public class TCPConnectionMapTest extends BMNGRunner {
      * its own connection to B. A will close its own connection and will therefore be able to send its message to B
      * (unless we implement some resending)
      */
-    @BMScript(dir="TCPConnectionMapTest", value="testConcurrentConnect2")
+    @BMScript(dir="scripts/TCPConnectionMapTest", value="testConcurrentConnect2")
     // @Test(invocationCount=100,threadPoolSize=0)
     public void testConcurrentConnect2() throws Exception {
         _testConcurrentConnect(1,

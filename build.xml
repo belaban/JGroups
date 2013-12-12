@@ -28,23 +28,17 @@
     <property name="manual.dir" value="${doc.dir}/manual"/>
     <property name="tutorial.dir" value="${doc.dir}/tutorial"/>
     <property name="javadoc.dir" value="${dist.dir}/javadoc"/>
-    <property name="conf.dir" value="${root.dir}/conf"/>
-    <property name="testng.conf.dir" value="${root.dir}/conf/testng"/>
-    <property name="scripts.dir" value="${root.dir}/conf/scripts"/>
+    <property name="conf.dir"         value="${root.dir}/conf"/>
     <property name="bin.dir"          value="${root.dir}/bin"/>
     <property name="keystore.dir"     value="${root.dir}/keystore"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <property name="timestamp"        value=".timestamp"/>
     <property name="protocols.xml"    value="${manual.dir}/en/modules/protocols.xml"/>
     <property name="maven.executable" value="mvn"/>
-    <property name="ivy.version" value="2.3.0" />
+    <property name="ivy.version"      value="2.3.0" />
 
 	<!-- 5 minutes per test suite timeout -->
     <property name="unittest.timeout" value="1800000"/>
-
-    <!-- default properties used in all test targets -->
-    <property name="channel.conf" value="udp.xml"/>
-    <property name="threadcount" value="false"/>
     <property name="test.verbose" value="0"/>
 
     <!-- Parallelization controls (disable with "-Dparallel.tests=false -Dparallel.methods=false") -->
@@ -63,8 +57,17 @@
     <!-- We need to include tools.jar for byteman to inject code into a running agent -->
     <path id="jg.classpath.byteman">
         <path refid="jg.classpath"/>
-        <pathelement location="${scripts.dir}"/>
         <pathelement location="${java.home}/../lib/tools.jar"/>
+    </path>
+
+    <path id="default.testclasses">
+        <fileset dir="${compile.dir}/org/jgroups/tests"         includes="**/*.class"/>
+        <fileset dir="${compile.dir}/org/jgroups/blocks"        includes="**/*.class"/>
+        <fileset dir="${compile.dir}/org/jgroups/protocols"     includes="**/*.class"/>
+    </path>
+
+    <path id="byteman.testclasses">
+        <fileset dir="${compile.dir}/org/jgroups/tests/byteman" includes="**/*.class"/>
     </path>
 
 
@@ -111,6 +114,17 @@
     <target name="retrieve" depends="check-jars-exist,get-ivy,define-ivy-task" unless="jars.exist"
             description="Retrieves all dependent libs defined in ivy.xml unless already present">
         <ivy:retrieve type="jar" transitive="false"/>
+
+        <!-- Move byteman-x.y.z.jar to byteman.jar (needed by -javaagent:byteman.jar in byteman tests) -->
+        <move todir="${lib.dir}">
+            <fileset dir="${lib.dir}">
+                <include name="byteman-*.jar"/>
+                <exclude name="byteman-bmunit-*.jar"/>
+                <exclude name="byteman-install-*.jar"/>
+                <exclude name="byteman-submit-*.jar"/>
+            </fileset>
+            <globmapper from="byteman*.jar" to="byteman.jar"/>
+        </move>
     </target>
 
 
@@ -409,7 +423,6 @@
         	<antcall target="stack-independent"/>
             <antcall target="udp"/>
             <antcall target="tcp"/>
-            <antcall target="tcp-stress"/>
         	<antcall target="udp-flush"/>
         	<antcall target="tcp-flush"/>
             <antcall target="time-sensitive"/>
@@ -419,62 +432,74 @@
 
     <target name="functional" depends="postcompile,define-testng-task">
         <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
-        <runtest testname.ext="functional"
-                 threadcount="10"
+        <runtest suitename="functional"
+                 groups="functional"
                  parallel="${parallel.methods}"
-                 testng.xmlfile="functional.xml"/>
+                 threadcount="10" />
     </target>
 
 
     <target name="byteman" depends="postcompile,define-testng-task">
         <mkdir dir="${tmp.dir}/test-results/xml/byteman"/>
         <runtest classpath="jg.classpath.byteman"
-                 testname.ext="byteman"
-                 threadcount="1"
+                 suitename="byteman"
+                 groups="byteman"
                  parallel="false"
-                 testng.xmlfile="byteman.xml"/>
+                 threadcount="1"
+                 jvmarg1="-Dorg.jboss.byteman.contrib.bmunit.agent.inhibit=true"
+                 jvmarg2="-javaagent:${lib.dir}/byteman.jar=listener:true"
+                >
+            <!--<additional-args>-->
+                <!--<jvmarg value="-Dorg.jboss.byteman.contrib.bmunit.agent.inhibit=true"/>-->
+                <!--<jvmarg value="-javaagent:${lib.dir}/byteman.jar=listener:true"/>-->
+            <!--</additional-args>-->
+        </runtest>
     </target>
 
 
     <target name="time-sensitive" depends="postcompile,define-testng-task">
         <mkdir dir="${tmp.dir}/test-results/xml/time-sensitive"/>
-        <runtest testname.ext="sensitive"
-                 threadcount="1"
+        <runtest suitename="sensitive"
+                 groups="time-sensitive"
                  parallel="${parallel.methods}"
-                 testng.xmlfile="time-sensitive.xml"/>
+                 threadcount="1" />
     </target>
 
     <target name="stack-independent" depends="postcompile,define-testng-task">
         <mkdir dir="${tmp.dir}/test-results/xml/stack-independent"/>
-        <runtest testname.ext="ind"
-                 threadcount="1"
+        <runtest suitename="ind"
+                 groups="stack-independent"
                  parallel="${parallel.tests}"
-                 testng.xmlfile="stack-independent.xml"
-                />
+                 threadcount="1" />
     </target>
 
 
     <target name="udp" depends="postcompile,define-testng-task">
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
-        <runtest testname.ext="udp"
+        <runtest suitename="udp"
+                 groups="base,stack-dependent"
+                 excludedgroups="stack-independent,flush,broken"
+                 parallel="${parallel.methods}"
                  threadcount="5"
-                 parallel="${parallel.tests}"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="25000"
                  initial.tcp.port="25000"
-                 testng.xmlfile="testng-udp.xml"
+                 jvmarg1="-Dchannel.conf=udp.xml"
                 />
     </target>
 
     <target name="udp-flush" depends="postcompile,define-testng-task">
         <mkdir dir="${tmp.dir}/test-results/xml/udp-flush"/>
-        <runtest testname.ext="udp-flush"
+        <runtest suitename="udp-flush"
+                 groups="base,flush"
+                 excludedgroups="stack-independent,stack-dependent,broken"
+                 parallel="${parallel.methods}"
                  threadcount="5"
-                 parallel="${parallel.tests}"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="26000"
                  initial.tcp.port="26000"
-                 testng.xmlfile="testng-udp-flush.xml"
+                 jvmarg1="-Dchannel.conf=flush-udp.xml"
+                 jvmarg2="-Duse_blocking=true"
                 />
     </target>
 
@@ -484,50 +509,38 @@
     	<property file="${build.properties.file}"/>
 
     	<mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
-        <runtest testname.ext="tcp"
+        <runtest suitename="tcp"
+                 groups="base,stack-dependent"
+                 excludedgroups="stack-independent,flush,broken"
+                 parallel="${parallel.methods}"
                  threadcount="5"
-                 parallel="${parallel.tests}"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="27000"
                  initial.tcp.port="27000"
-                 testng.xmlfile="testng-tcp.xml"
                  tcp.recv.buf.size="50000"
                  tcp.send.buf.size="10000"
+                 jvmarg1="-Dchannel.conf=tcp.xml"
                 />
     </target>
 
-    <target name="tcp-stress" depends="postcompile,define-testng-task">
-    	<!-- Needed to force reading of properties. Otherwise tcp tests will fail -->
-    	<property name="build.properties.file" value="build.properties"/>
-    	<property file="${build.properties.file}"/>
-
-    	<mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
-        <runtest testname.ext="tcp"
-                 threadcount="1"
-                 parallel="${parallel.tests}"
-                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
-                 initial.mcast.port="28000"
-                 initial.tcp.port="28000"
-                 testng.xmlfile="testng-tcp-stress.xml"
-                 tcp.recv.buf.size="50000"
-                 tcp.send.buf.size="10000"
-                />
-    </target>
 
     <target name="tcp-flush" depends="postcompile,define-testng-task">
     	<!-- Needed to force reading of properties. Otherwise tcp-flush tests will fail -->
     	<property name="build.properties.file" value="build.properties"/>
     	<property file="${build.properties.file}"/>
     	<mkdir dir="${tmp.dir}/test-results/xml/tcp-flush"/>
-        <runtest testname.ext="tcp-flush"
-                 threadcount="10"
-                 parallel="${parallel.tests}"
+        <runtest suitename="tcp-flush"
+                 groups="base,flush"
+                 excludedgroups="stack-independent,stack-dependent,broken"
+                 parallel="${parallel.methods}"
+                 threadcount="5"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="29000"
                  initial.tcp.port="29000"
-                 testng.xmlfile="testng-tcp-flush.xml"
                  tcp.recv.buf.size="50000"
                  tcp.send.buf.size="10000"
+                 jvmarg1="-Dchannel.conf=flush-tcp.xml"
+                 jvmarg2="-Duse_blocking=true"
                 />
     </target>
 
@@ -550,45 +563,65 @@
 
 
     <macrodef name="runtest" description="Runs a configuration-dependent test suite">
-        <attribute name="classpath" default="jg.classpath"/>
-        <attribute name="outputdir" default="${tmp.dir}/test-results/xml"/>
-        <attribute name="parallel" default="${parallel.methods}"/>
-        <attribute name="testname.ext" default="udp"/>
-        <attribute name="threadcount" default="1"/>
-        <attribute name="testng.xmlfile" default="stack-dependent.xml"/>
+        <attribute name="classpath"          default="jg.classpath"/>
+        <attribute name="suitename" />
+        <attribute name="groups" />  <!-- comma-separated list, e.g. udp,functional -->
+        <attribute name="excludedgroups"     default="broken"/>
+        <attribute name="parallel"           default="${parallel.methods}"/>
+        <attribute name="threadcount"        default="1"/>
+        <attribute name="outputdir"          default="${tmp.dir}/test-results/xml"/>
         <attribute name="initial.mcast.addr" default="${jgroups.udp.mcast_addr}"/>
         <attribute name="initial.mcast.port" default="23000"/>
-        <attribute name="initial.tcp.port" default="23000"/>
-        <attribute name="tcp.recv.buf.size" default="200000"/>
-        <attribute name="tcp.send.buf.size" default="64000"/>
+        <attribute name="initial.tcp.port"   default="23000"/>
+        <attribute name="tcp.recv.buf.size"  default="200000"/>
+        <attribute name="tcp.send.buf.size"  default="64000"/>
+        <attribute name="jvmarg1"            default="-Dnonex=1"/>
+        <attribute name="jvmarg2"            default="-Dnoney=1"/>
+        <!--<element   name="additional-args"    optional="true"/>-->
+
         <sequential>
             <testng classpathref="@{classpath}"
+                    suitename="@{suitename}"
+                    testname="@{suitename}"
+                    groups="@{groups}"
+                    excludedgroups="@{excludedgroups}"
+                    parallel="@{parallel}"
+                    threadcount="@{threadcount}"
                     usedefaultlisteners="false"
                     outputdir="@{outputdir}"
                     listeners="org.jgroups.util.JUnitXMLReporter"
-            		timeout="${unittest.timeout}"
-            	    verbose="${test.verbose}"
+                    timeout="${unittest.timeout}"
+                    timeOut="${unittest.timeout}"
+                    verbose="0"
                     >
-                <xmlfileset dir="${testng.conf.dir}" includes="@{testng.xmlfile}"/>
-                <sysproperty key="test.suffix" value="@{testname.ext}"/>
+
+                <classfileset dir="${compile.dir}"/>
+
+                <!--<xmlfileset dir="${testng.conf.dir}" includes="@{xml.file}"/>-->
                 <sysproperty key="INITIAL_MCAST_ADDR" value="@{initial.mcast.addr}"/>
                 <sysproperty key="INITIAL_MCAST_PORT" value="@{initial.mcast.port}"/>
-                <sysproperty key="INITIAL_TCP_PORT" value="@{initial.tcp.port}"/>
-                <sysproperty key="tcp.recv_buf_size" value="@{tcp.recv.buf.size}"/>
-                <sysproperty key="tcp.send_buf_size" value="@{tcp.send.buf.size}"/>
+                <sysproperty key="INITIAL_TCP_PORT"   value="@{initial.tcp.port}"/>
+                <sysproperty key="tcp.recv_buf_size"  value="@{tcp.recv.buf.size}"/>
+                <sysproperty key="tcp.send_buf_size"  value="@{tcp.send.buf.size}"/>
+
+
                 <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
                 <jvmarg value="-Djgroups.tunnel.gossip_router_hosts=${jgroups.tunnel.gossip_router_hosts}"/>
                 <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
                 <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
                 <jvmarg value="-Dlog4j.configurationFile=${conf.dir}/log4j2.xml"/>
-                <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>                
-    		  	<jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
+                <jvmarg value="-Djava.net.preferIPv4Stack=${java.net.preferIPv4Stack}"/>
+                <jvmarg value="-Djava.net.preferIPv6Addresses=${java.net.preferIPv6Addresses}"/>
                 <jvmarg value="-Xms400M"/>
                 <jvmarg value="-Xmx800M"/>
+                <jvmarg value="@{jvmarg1}"/>
+                <jvmarg value="@{jvmarg2}"/>
+                <!--<additional-args/>-->
             </testng>
         </sequential>
     </macrodef>
+
 
 
     <macrodef name="prot-properties-to-doc">
