@@ -171,18 +171,27 @@ abstract public class Executing extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case ExecutorEvent.TASK_SUBMIT:
-                Runnable runnable = (Runnable)evt.getArg();
-                _awaitingConsumer.add(runnable);
                 // We are limited to a number of concurrent request id's
                 // equal to 2^63-1.  This is quite large and if it 
                 // overflows it will still be positive
                 long requestId = Math.abs(counter.getAndIncrement());
                 if(requestId == Long.MIN_VALUE) {
+                    // TODO: need to fix this it isn't safe for concurrent
+                    // modifications
                     counter.set(0);
                     requestId = Math.abs(counter.getAndIncrement());
                 }
 
+                // Need to make sure to put the requestId in our map before
+                // adding the runnable to awaiting consumer in case if
+                // coordinator sent a consumer found and their original task
+                // is no longer around
+                // see https://issues.jboss.org/browse/JGRP-1744
                 _requestId.put(runnable, requestId);
+
+                Runnable runnable = (Runnable)evt.getArg();
+                _awaitingConsumer.add(runnable);
+
                 sendToCoordinator(Type.RUN_REQUEST, requestId, local_addr);
                 break;
             case ExecutorEvent.CONSUMER_READY:
