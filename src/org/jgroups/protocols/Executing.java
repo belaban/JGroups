@@ -171,6 +171,7 @@ abstract public class Executing extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case ExecutorEvent.TASK_SUBMIT:
+                Runnable runnable = (Runnable)evt.getArg();
                 // We are limited to a number of concurrent request id's
                 // equal to 2^63-1.  This is quite large and if it 
                 // overflows it will still be positive
@@ -189,7 +190,6 @@ abstract public class Executing extends Protocol {
                 // see https://issues.jboss.org/browse/JGRP-1744
                 _requestId.put(runnable, requestId);
 
-                Runnable runnable = (Runnable)evt.getArg();
                 _awaitingConsumer.add(runnable);
 
                 sendToCoordinator(Type.RUN_REQUEST, requestId, local_addr);
