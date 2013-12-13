@@ -564,8 +564,10 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
             case Event.GET_STATE_OK:
                 if(msg_listener != null) {
                     StateTransferResult result=(StateTransferResult)evt.getArg();
-                    ByteArrayInputStream input=new ByteArrayInputStream(result.getBuffer());
-                    msg_listener.setState(input);
+                    if(result.hasBuffer()) {
+                        ByteArrayInputStream input=new ByteArrayInputStream(result.getBuffer());
+                        msg_listener.setState(input);
+                    }
                 }
                 break;
 
