@@ -373,8 +373,6 @@ public class ENCRYPTAsymmetricTest {
         assert !server.getDesKey().equals(peer2.getDesKey());
 
         // now send back to peer
-        // TODO: The encrypted message encrypted by server secret key cannot be decrypted
-        // since peer does not have server's key
         peer.up(reply);
 
         // assert that both now have same key
