@@ -12,10 +12,12 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.ENCRYPT.EncryptHeader;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
+
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.Security;
@@ -197,11 +199,7 @@ public class ENCRYPTAsymmetricTest {
         Address serverAddress=new MockAddress("server");
 
         server.setLocal_addr(serverAddress);
-        //set the server up as keyserver
-        List<Address> serverVector=new ArrayList<Address>();
-        serverVector.add(serverAddress);
-        View tempView=new View(new ViewId(serverAddress, 1), serverVector);
-        Event serverEvent=new Event(Event.VIEW_CHANGE, tempView);
+        Event serverEvent = createViewChange( 1, serverAddress);
         server.up(serverEvent);
 
         // set up peer
@@ -306,11 +304,7 @@ public class ENCRYPTAsymmetricTest {
         Address serverAddress=new MockAddress("server");
         server.setLocal_addr(serverAddress);
 
-        //	set the server up as keyserver
-        List<Address> serverVector=new ArrayList<Address>() ;
-        serverVector.add(serverAddress);
-        View tempView=new View(new ViewId(serverAddress, 1), serverVector);
-        Event serverEvent=new Event(Event.VIEW_CHANGE, tempView);
+        Event serverEvent = createViewChange(1, serverAddress);
         server.up(serverEvent);
 
         // set up peer as if it has started but not recieved view change
@@ -345,12 +339,10 @@ public class ENCRYPTAsymmetricTest {
 
         //assert that message is queued as we have no key from server
         Util.assertTrue(peerObserver.getUpMessages().isEmpty());
-
-        // send a view change to peer where peer2 is  controller
-        List<Address> peerVector=new ArrayList<Address>() ;
-        peerVector.add(peer2Address);
-        View tempPeerView=new View(new ViewId(peer2Address, 1), peerVector);
-        Event event=new Event(Event.VIEW_CHANGE, tempPeerView);
+        updateViewFor(peer, server, serverObserver, serverEvent, peerObserver);
+        Util.assertFalse(peerObserver.getUpMessages().isEmpty());
+        
+        Event event = createViewChange(2, peer2Address);
 
         // send to peer - should set peer2 as keyserver
         peer.up(event);
@@ -365,18 +357,9 @@ public class ENCRYPTAsymmetricTest {
         Util.assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.KEY_REQUEST);
         Util.assertEquals(new String(((Message)sent.getArg()).getBuffer()), new String(peer.getKpair().getPublic().getEncoded()));
 
-        //assume that server is no longer available and peer2 is new server
-        // but did not get the key from server before assuming role
-        // send this event to peer2
-//		 send a view change to trigger the become key server
-        // we use the fact that our address is now the controller one
-        // send a view change where we are not the controller
-        List<Address> peer2Vector=new ArrayList<Address>() ;
-        peer2Vector.add(peer2Address);
-        View tempPeer2View=new View(new ViewId(peer2Address, 1), peer2Vector);
-        Event event2=new Event(Event.VIEW_CHANGE, tempPeer2View);
+        
         // this should have changed us to the key server
-        peer2.up(event2);
+        peer2.up(event);
 
         peer2.up(sent);
 
@@ -390,6 +373,8 @@ public class ENCRYPTAsymmetricTest {
         assert !server.getDesKey().equals(peer2.getDesKey());
 
         // now send back to peer
+        // TODO: The encrypted message encrypted by server secret key cannot be decrypted
+        // since peer does not have server's key
         peer.up(reply);
 
         // assert that both now have same key
@@ -409,9 +394,9 @@ public class ENCRYPTAsymmetricTest {
 
         peer.up(Evt2);
         // make sure we have the events now in the up layers
-        Util.assertEquals(2, peerObserver.getUpMessages().size());
+        Util.assertEquals(4, peerObserver.getUpMessages().size());
 
-        Event tempEvt=(Event)peerObserver.getUpMessages().get("message2");
+        Event tempEvt=getLatestUpMessage(peerObserver);
 
 
         Util.assertEquals("hello2", new String(((Message)tempEvt.getArg()).getBuffer()));
@@ -419,7 +404,116 @@ public class ENCRYPTAsymmetricTest {
 
     }
 
+    public static void testKeyChangesDuringKeyServerChange() throws Exception {
+        // create peers and server
+        ENCRYPT peer=new ENCRYPT();
+        peer.init();
 
+        ENCRYPT server=new ENCRYPT();
+        server.init();
+
+        ENCRYPT peer2=new ENCRYPT();
+        peer2.init();
+
+        // set up server
+        server.keyServer=true;
+        MockObserver serverObserver=new MockObserver();
+        server.setObserver(serverObserver);
+
+        //set the local address and view change to simulate a started instance
+        Address serverAddress=new MockAddress("server");
+        server.setLocal_addr(serverAddress);
+
+        //	set the server up as keyserver
+        Event serverEvent = createViewChange(1, serverAddress);
+        server.up(new Event(Event.TMP_VIEW, serverEvent.getArg()));
+        server.up(serverEvent);
+
+        Address peerAddress=new MockAddress("peer");
+        peer.setLocal_addr(peerAddress);
+        MockObserver peerObserver=new MockObserver();
+        peer.setObserver(peerObserver);
+        peer.keyServer=false;
+        
+        updateViewFor(peer, server, serverObserver, serverEvent, peerObserver);
+        
+
+        // set up peer2 with server as key server
+        Address peer2Address=new MockAddress("peer2");
+        peer2.setLocal_addr(peer2Address);
+        MockObserver peer2Observer=new MockObserver();
+        peer2.setObserver(peer2Observer);
+        peer2.keyServer=false;
+        updateViewFor(peer2, server, serverObserver, serverEvent, peer2Observer);
+
+        Assert.assertEquals(server.getDesKey(), peer.getDesKey());
+        Assert.assertEquals(server.getDesKey(), peer2.getDesKey());
+
+        // send an encrypted message from the server
+        Message msg=new Message();
+        msg.setBuffer("hello".getBytes());
+
+        Event viewChange2 = createViewChange(2, peer2Address);
+        peer2.up(new Event(Event.TMP_VIEW, viewChange2.getArg()));
+        peer2.up(viewChange2);
+
+        updateViewFor(peer, peer2, peer2Observer, viewChange2, peerObserver);
+
+        Assert.assertFalse(server.getDesKey().equals(peer.getDesKey()));
+        Assert.assertEquals(peer.getDesKey(), peer2.getDesKey());
+
+    }
+
+	private static void updateViewFor(ENCRYPT peer, ENCRYPT keyServer,
+			MockObserver serverObserver, Event serverEvent,
+			MockObserver peerObserver) {
+		peer.up(serverEvent);
+        Event peerKeyRequest = getLatestDownMessage(peerObserver);
+        keyServer.up(peerKeyRequest);
+        Event serverKeyToPeer = getLatestDownMessage(serverObserver);
+        peer.up(serverKeyToPeer);
+	}
+
+	private static Event createViewChange(int id, Address serverAddress, Address...addresses ) {
+		List<Address> serverVector=new ArrayList<Address>() ;
+        serverVector.add(serverAddress);
+        for ( Address a : addresses) {
+        	serverVector.add(a);
+        }
+        View tempView=new View(new ViewId(serverAddress, id), serverVector);
+        Event serverEvent=new Event(Event.VIEW_CHANGE, tempView);
+		return serverEvent;
+	}
+    
+    
+    static Event getLatestDownMessage(MockObserver observer) {
+    	Event latest = null;
+    	Map map = observer.getDownMessages();
+    	int counter = observer.counter-1;
+    	while ( latest == null && counter >= 0) {
+    		latest = (Event) map.get("message" + counter);
+    		counter--;
+    	}
+    	if ( latest == null) {
+    		throw new IllegalStateException("Could not find latest down message");
+    	}
+    	return latest;
+    }
+    
+    static Event getLatestUpMessage(MockObserver observer) {
+    	Event latest = null;
+    	Map map = observer.getUpMessages();
+    	int counter = observer.counter-1;
+    	while ( latest == null && counter >= 0) {
+    		latest = (Event) map.get("message" + counter);
+    		counter--;
+    	}
+    	if ( latest == null) {
+    		throw new IllegalStateException("Could not find latest down message");
+    	}
+    	return latest;
+    }
+    
     static class MockObserver implements ENCRYPT.Observer {
         private Map upMessages=new HashMap();
         private Map downMessages=new HashMap();
