@@ -31,7 +31,7 @@ public class ExposedDataOutputStream extends DataOutputStream {
 
     public void write(int b) throws IOException {
         out.write(b);
-        incCount(1);
+        incrementCount(1);
     }
 
     /**
@@ -48,11 +48,12 @@ public class ExposedDataOutputStream extends DataOutputStream {
     public void write(byte b[], int off, int len)
             throws IOException {
         out.write(b, off, len);
-        incCount(len);
+        incrementCount(len);
     }
 
 
-    private void incCount(int value) {
+    // Overwrites incCount() of super class, which is private
+    protected void incrementCount(int value) {
         int temp=written + value;
         if(temp < 0) {
             temp=Integer.MAX_VALUE;

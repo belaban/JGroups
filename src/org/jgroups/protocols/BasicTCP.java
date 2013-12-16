@@ -31,7 +31,7 @@ public abstract class BasicTCP extends TP {
     protected boolean     use_send_queues=true;
     
     @Property(description="Max number of messages in a send queue")
-    protected int         send_queue_size=10000;
+    protected int         send_queue_size=2000;
     
     @Property(description="Receiver buffer size in bytes")
     protected int         recv_buf_size=150000;
@@ -46,7 +46,7 @@ public abstract class BasicTCP extends TP {
     protected int         peer_addr_read_timeout=1000; // max time to block on reading of peer address
     
     @Property(description="Should TCP no delay flag be turned on")
-    protected boolean     tcp_nodelay=true;
+    protected boolean     tcp_nodelay=false;
     
     @Property(description="SO_LINGER in msec. Default of -1 disables it")
     protected int         linger=-1; // SO_LINGER (number of ms, -1 disables it)

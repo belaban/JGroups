@@ -1,5 +1,7 @@
 package org.jgroups.tests.perf;
 
+import org.jgroups.util.Util;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -11,16 +13,10 @@ import java.text.NumberFormat;
  * @author Bela Ban
  */
 public class JPerf {
-    boolean sender;
-    int num;
-    InetAddress local_addr;
-    int local_port;
-    int remote_port;
-    InetAddress remote_addr;
-    int size=1000;
-    int incr=1000;
-
-    static  NumberFormat f;
+    protected InetAddress local_addr, remote_addr;
+    protected int         local_port, remote_port;
+    protected int         num, size=1000, incr=1000;
+    static  NumberFormat  f;
 
     static {
         f=NumberFormat.getNumberInstance();
@@ -31,7 +27,6 @@ public class JPerf {
 
     private void start(boolean sender, int num, int size, String local_addr, int local_port,
                        String remote_addr, int remote_port, int receivebuf, int sendbuf) throws IOException {
-        this.sender=sender;
         this.num=num;
         this.size=size;
         this.local_addr=InetAddress.getByName(local_addr);
@@ -68,27 +63,22 @@ public class JPerf {
             DataInputStream in=new DataInputStream(new BufferedInputStream(client_sock.getInputStream()));
             byte[] buf=new byte[size];
             int counter=0;
-            long start=0, stop;
+            long received_bytes=0;
+            long start=0;
             while(counter < num) {
                 in.readFully(buf, 0, buf.length);
+                received_bytes+=buf.length;
                 if(start == 0)
                     start=System.currentTimeMillis();
                 counter++;
                 if(counter % incr == 0)
                     System.out.println("-- received " + counter);
             }
-            stop=System.currentTimeMillis();
-            long diff=stop-start;
-            double msgs_sec=(counter / (diff / 1000.0));
-            System.out.println("\nreceived " + counter + " messages in " + diff + "ms (" +
-                    f.format(msgs_sec) + " msgs/sec)");
-            double throughput=num * size / (diff / 1000.0) / 1000.0;
-            if(throughput < 1000)
-                System.out.println("throughput: " + f.format(throughput) + "KB/sec");
-            else {
-                throughput/=1000.0;
-                System.out.println("throughput: " + f.format(throughput) + "MB/sec");
-            }
+            long time=System.currentTimeMillis() - start;
+            double msgs_sec=(counter / (time / 1000.0));
+            double throughput=received_bytes / (time / 1000.0);
+            System.out.println(String.format("\nreceived %d messages in %d ms (%.2f msgs/sec), throughput=%s",
+                                             counter, time, msgs_sec, Util.printBytes(throughput)));
         }
     }
 

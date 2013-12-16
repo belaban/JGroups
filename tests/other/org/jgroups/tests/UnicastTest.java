@@ -2,15 +2,16 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.stack.Protocol;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
-import org.jgroups.util.Streamable;
 
 import javax.management.MBeanServer;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -20,34 +21,41 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Bela Ban
  */
-public class UnicastTest extends ReceiverAdapter {
-    private JChannel channel;
-    private final MyReceiver receiver=new MyReceiver();
-    static final String groupname="UnicastTest-Group";
-    private long sleep_time=0;
-    private boolean exit_on_end=false, busy_sleep=false, oob=false;
-    private int num_threads=1;
-    private int num_msgs=100000, msg_size=1000;
+public class UnicastTest {
+    protected JChannel             channel;
+    protected final MyReceiver     receiver=new MyReceiver();
+    protected long                 sleep_time=0;
+    protected boolean              busy_sleep=false, oob=false, dont_bundle=false;
+    protected int                  num_threads=1;
+    protected int                  num_msgs=100000, msg_size=1000;
+
+    protected static final byte    START = 1; // | num_msgs (long) |
+    protected static final byte    DATA  = 2; // | length (int) | data (byte[]) |
 
 
+    public void init(Protocol[] props, long sleep_time, boolean busy_sleep, String name) throws Exception {
+        _init(new JChannel(props), sleep_time, busy_sleep, name);
+    }
 
+    public void init(String props, long sleep_time, boolean busy_sleep, String name) throws Exception {
+        _init(new JChannel(props), sleep_time, busy_sleep, name);
+    }
 
-    public void init(String props, long sleep_time, boolean exit_on_end, boolean busy_sleep, String name) throws Exception {
+    protected void _init(JChannel ch, long sleep_time, boolean busy_sleep, String name) throws Exception {
         this.sleep_time=sleep_time;
-        this.exit_on_end=exit_on_end;
         this.busy_sleep=busy_sleep;
-        channel=new JChannel(props);
+        channel=ch;
         if(name != null)
             channel.setName(name);
-        channel.connect(groupname);
+        channel.connect(getClass().getSimpleName());
         channel.setReceiver(receiver);
 
         try {
             MBeanServer server=Util.getMBeanServer();
-            JmxConfigurator.registerChannel(channel, server, "jgroups", channel.getClusterName(), true);
+            JmxConfigurator.registerChannel(channel, server, "jgroups-" + name, channel.getClusterName(), true);
         }
         catch(Throwable ex) {
-            System.err.println("registering the channel in JMX failed: " + ex);
+            System.err.println("registering the channel with JMX failed: " + ex);
         }
     }
 
@@ -59,7 +67,7 @@ public class UnicastTest extends ReceiverAdapter {
             System.out.print("[1] Send msgs [2] Print view [3] Print conns [4] Trash conn [5] Trash all conns" +
                     "\n[6] Set sender threads (" + num_threads + ") [7] Set num msgs (" + num_msgs + ") " +
                     "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
-                    "\n[o] Toggle OOB (" + oob + ")\n[q] Quit\n");
+                    "\n[o] Toggle OOB (" + oob + ") [b] Toggle dont_bundle (" + dont_bundle + ")\n[q] Quit\n");
             System.out.flush();
             c=System.in.read();
             switch(c) {
@@ -93,6 +101,10 @@ public class UnicastTest extends ReceiverAdapter {
                 oob=!oob;
                 System.out.println("oob=" + oob);
                 break;
+                case 'b':
+                    dont_bundle=!dont_bundle;
+                    System.out.println("dont_bundle = " + dont_bundle);
+                    break;
             case 'q':
                 channel.close();
                 return;
@@ -102,7 +114,7 @@ public class UnicastTest extends ReceiverAdapter {
         }
     }
 
-    private void printConnections() {
+    protected void printConnections() {
         Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         if(prot instanceof UNICAST)
             System.out.println(((UNICAST)prot).printConnections());
@@ -110,7 +122,7 @@ public class UnicastTest extends ReceiverAdapter {
             System.out.println(((UNICAST2)prot).printConnections());
     }
 
-    private void removeConnection() {
+    protected void removeConnection() {
         Address member=getReceiver();
         if(member != null) {
             Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
@@ -121,7 +133,7 @@ public class UnicastTest extends ReceiverAdapter {
         }
     }
 
-    private void removeAllConnections() {
+    protected void removeAllConnections() {
         Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         if(prot instanceof UNICAST)
             ((UNICAST)prot).removeAllConnections();
@@ -144,8 +156,8 @@ public class UnicastTest extends ReceiverAdapter {
 
         System.out.println("sending " + num_msgs + " messages (" + Util.printBytes(msg_size) +
                 ") to " + destination + ": oob=" + oob + ", " + num_threads + " sender thread(s)");
-        byte[] buf=Util.objectToByteBuffer(new StartData(num_msgs));
-        Message msg=new Message(destination, null, buf);
+        ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE).put(START).putLong(num_msgs);
+        Message msg=new Message(destination, buf.array());
         channel.send(msg);
 
         long print=num_msgs / 10;
@@ -188,14 +200,9 @@ public class UnicastTest extends ReceiverAdapter {
 
 
 
-    private Address getReceiver() {
-        List<Address> mbrs=null;
-        int index;
-        BufferedReader reader;
-        String tmp;
-
+    protected Address getReceiver() {
         try {
-            mbrs=channel.getView().getMembers();
+            List<Address> mbrs=channel.getView().getMembers();
             System.out.println("pick receiver from the following members:");
             int i=0;
             for(Address mbr: mbrs) {
@@ -207,9 +214,9 @@ public class UnicastTest extends ReceiverAdapter {
             }
             System.out.flush();
             System.in.skip(System.in.available());
-            reader=new BufferedReader(new InputStreamReader(System.in));
-            tmp=reader.readLine().trim();
-            index=Integer.parseInt(tmp);
+            BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
+            String tmp=reader.readLine().trim();
+            int index=Integer.parseInt(tmp);
             return mbrs.get(index); // index out of bounds caught below
         }
         catch(Exception e) {
@@ -221,7 +228,6 @@ public class UnicastTest extends ReceiverAdapter {
 
     public static void main(String[] args) {
         long sleep_time=0;
-        boolean exit_on_end=false;
         boolean busy_sleep=false;
         String props=null;
         String name=null;
@@ -234,10 +240,6 @@ public class UnicastTest extends ReceiverAdapter {
             }
             if("-sleep".equals(args[i])) {
                 sleep_time=Long.parseLong(args[++i]);
-                continue;
-            }
-            if("-exit_on_end".equals(args[i])) {
-                exit_on_end=true;
                 continue;
             }
             if("-busy_sleep".equals(args[i])) {
@@ -255,7 +257,7 @@ public class UnicastTest extends ReceiverAdapter {
 
         try {
             UnicastTest test=new UnicastTest();
-            test.init(props, sleep_time, exit_on_end, busy_sleep, name);
+            test.init(props, sleep_time, busy_sleep, name);
             test.eventLoop();
         }
         catch(Exception ex) {
@@ -265,88 +267,31 @@ public class UnicastTest extends ReceiverAdapter {
 
     static void help() {
         System.out.println("UnicastTest [-help] [-props <props>] [-sleep <time in ms between msg sends] " +
-                           "[-exit_on_end] [-busy-sleep] [-name name]");
+                             "[-busy-sleep] [-name name]");
     }
 
 
-    public abstract static class Data implements Streamable {
-    }
-
-    public static class StartData extends Data {
-        long num_values=0;
-
-        public StartData() {}
-
-        StartData(long num_values) {
-            this.num_values=num_values;
-        }
-
-        public void writeTo(DataOutput out) throws Exception {
-            out.writeLong(num_values);
-        }
-
-        public void readFrom(DataInput in) throws Exception {
-            num_values=in.readLong();
-        }
-    }
-
-    public static class Value extends Data {
-        long value=0;
-        byte[] buf=null;
-
-        public Value() {
-        }
-
-        Value(long value, int len) {
-            this.value=value;
-            if(len > 0)
-                this.buf=new byte[len];
-        }
-
-
-        public void writeTo(DataOutput out) throws Exception {
-            out.writeLong(value);
-            if(buf != null) {
-                out.writeInt(buf.length);
-                out.write(buf, 0, buf.length);
-            }
-            else {
-                out.writeInt(0);
-            }
-        }
-
-        public void readFrom(DataInput in) throws Exception {
-            value=in.readLong();
-            int len=in.readInt();
-            if(len > 0) {
-                buf=new byte[len];
-                in.readFully(buf, 0, len);
-            }
-        }
-    }
-
-    private class Sender extends Thread {
-        private final int number_of_msgs;
-        private final int message_size;
-        private final Address destination;
-        private final int print;
+    protected class Sender extends Thread {
+        protected final int     number_of_msgs;
+        protected final Address destination;
+        protected final int     print;
+        protected final byte[]  buf;
 
         public Sender(int num_msgs, int msg_size, Address destination, int print) {
             this.number_of_msgs=num_msgs;
-            this.message_size=msg_size;
             this.destination=destination;
             this.print=print;
+            buf=ByteBuffer.allocate(Global.INT_SIZE + msg_size).put(DATA).array();
         }
 
         public void run() {
             for(int i=1; i <= number_of_msgs; i++) {
-                Value val=new Value(i, message_size);
-                byte[] buf=new byte[0];
                 try {
-                    buf=Util.objectToByteBuffer(val);
-                    Message msg=new Message(destination, null, buf);
+                    Message msg=new Message(destination, buf);
                     if(oob)
                         msg.setFlag(Message.Flag.OOB);
+                    if(dont_bundle)
+                        msg.setFlag(Message.Flag.DONT_BUNDLE);
                     if(i > 0 && print > 0 && i % print == 0)
                         System.out.println("-- sent " + i);
                     channel.send(msg);
@@ -361,59 +306,41 @@ public class UnicastTest extends ReceiverAdapter {
     }
 
 
-    private class MyReceiver extends ReceiverAdapter {
-        private boolean started=false;
-        private long start=0, stop=0;
-        private long tmp=0, num_values=0;
-        private long total_time=0, msgs_per_sec, print;
-        private AtomicLong current_value=new AtomicLong(0), total_bytes=new AtomicLong(0);
+    protected class MyReceiver extends ReceiverAdapter {
+        protected long        start=0;
+        protected long        print;
+        protected AtomicLong  current_value=new AtomicLong(0), total_bytes=new AtomicLong(0);
 
 
         public void receive(Message msg) {
-            Data data;
-            try {
-                data=(Data)Util.objectFromByteBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-                return;
-            }
+            byte[] buf=msg.getRawBuffer();
+            byte   type=buf[msg.getOffset()];
 
-            if(data instanceof StartData) {
-                if(started) {
-                    System.err.println("UnicastTest.run(): received START data, but am already processing data");
-                }
-                else {
-                    started=true;
-                    current_value.set(0); // first value to be received
-                    tmp=0;
-                    num_values=((StartData)data).num_values;
-                    print=num_values / 10;
+            switch(type) {
+                case START:
+                    ByteBuffer tmp=ByteBuffer.wrap(buf, 1, Global.LONG_SIZE);
+                    num_msgs=(int)tmp.getLong();
+                    print=num_msgs / 10;
+                    current_value.set(0);
                     total_bytes.set(0);
                     start=System.currentTimeMillis();
-                }
-            }
-            else
-            if(data instanceof Value) {
-                tmp=((Value)data).value;
-
-                long new_val=current_value.incrementAndGet();
-                if(((Value)data).buf != null)
-                    total_bytes.addAndGet(((Value)data).buf.length);
-                if(print > 0 && new_val % print == 0)
-                    System.out.println("received " + current_value);
-                if(new_val >= num_values) {
-                    stop=System.currentTimeMillis();
-                    total_time=stop - start;
-                    msgs_per_sec=(long)(num_values / (total_time / 1000.0));
-                    double throughput=total_bytes.get() / (total_time / 1000.0);
-                    System.out.println("-- received " + num_values + " messages (" + Util.printBytes(total_bytes.get()) +
-                            ") in " + total_time + " ms (" + msgs_per_sec + " messages/sec, " +
-                            Util.printBytes(throughput) + " / sec)");
-                    started=false;
-                    if(exit_on_end)
-                        System.exit(0);
-                }
+                    break;
+                case DATA:
+                    long new_val=current_value.incrementAndGet();
+                    total_bytes.addAndGet(msg.getLength() - Global.INT_SIZE);
+                    if(print > 0 && new_val % print == 0)
+                        System.out.println("received " + new_val);
+                    if(new_val >= num_msgs) {
+                        long time=System.currentTimeMillis() - start;
+                        double msgs_sec=(current_value.get() / (time / 1000.0));
+                        double throughput=total_bytes.get() / (time / 1000.0);
+                        System.out.println(String.format("\nreceived %d messages in %d ms (%.2f msgs/sec), throughput=%s",
+                                                         current_value.get(), time, msgs_sec, Util.printBytes(throughput)));
+                        break;
+                    }
+                    break;
+                default:
+                    System.err.println("Type " + type + " is invalid");
             }
         }
 

@@ -7,7 +7,8 @@ import java.io.UnsupportedEncodingException;
 
 /**
  * Extends ByteArrayOutputStream, but exposes the internal buffer. This way we don't need to call
- * toByteArray() which copies the internal buffer
+ * toByteArray() which copies the internal buffer. This class is unsynchronized and needs to be
+ * synchronized externally.
  * @author Bela Ban
  */
 public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
@@ -138,7 +139,7 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
      * @since JDK1.1
      */
     public String toString() {
-        return new String(buf, 0, count);
+        return Util.printBytes(count);
     }
 
     /**
@@ -160,7 +161,7 @@ public class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
      */
     public String toString(String charsetName)
             throws UnsupportedEncodingException {
-        return new String(buf, 0, count, charsetName);
+        return Util.printBytes(count);
     }
 
     

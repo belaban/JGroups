@@ -112,6 +112,10 @@ public class UUID implements Address {
         return cache.get(logical_addr);
     }
 
+    public static Address getByName(String logical_name) {
+        return cache.getByValue(logical_name);
+    }
+
     /** Returns a <em>copy</em> of the cache's contents */
     public static Map<Address,String> getContents() {
         return cache.contents();
