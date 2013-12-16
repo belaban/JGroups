@@ -462,6 +462,35 @@ public class ENCRYPTAsymmetricTest {
 
     }
 
+    public static void testSymmetricKeyIsChangedOnViewChange() throws Exception{
+    	
+        ENCRYPT server=new ENCRYPT();
+        server.changeKeysOnViewChange=true;
+        MockObserver serverObserver=new MockObserver();
+        server.setObserver(serverObserver);
+        Address serverAddress=new MockAddress("server");
+        server.setLocal_addr(serverAddress);
+        server.init();
+
+        //	set the server up as key server
+        Event initalView = createViewChange(1, serverAddress);
+        server.up(new Event(Event.TMP_VIEW, initalView.getArg()));
+        server.up(initalView);
+        
+        SecretKey key = server.getDesKey();
+        
+        //	Update the view with new member
+        Address peerAddress=new MockAddress("peer");
+        Event updatedView = createViewChange(2, serverAddress, peerAddress);
+        server.up(new Event(Event.TMP_VIEW, updatedView.getArg()));
+        server.up(updatedView);
+        
+        SecretKey keyAfterViewChange = server.getDesKey();
+        
+        Util.assertFalse(key.equals(keyAfterViewChange));
+        
+    }
+    
 	private static void updateViewFor(ENCRYPT peer, ENCRYPT keyServer,
 			MockObserver serverObserver, Event serverEvent,
 			MockObserver peerObserver) {
