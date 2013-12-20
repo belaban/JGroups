@@ -821,9 +821,7 @@ abstract public class Executing extends Protocol {
             // All we can do is log the error since their is no
             // way to return this to the user since they don't
             // have a future object.
-            log.error("Runtime Error encountered from "
-                    + "Cluster execute(Runnable) method",
-                    throwable);
+            log.error("Runtime Error encountered from cluster execute(Runnable) method", throwable);
         }
     }
 

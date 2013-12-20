@@ -250,8 +250,7 @@ public class TCPConnectionMap {
             client_sock.setReceiveBufferSize(recv_buf_size);
         }
         catch(IllegalArgumentException ex) {
-            if(log.isErrorEnabled())
-                log.error(local_addr + ": exception setting receive buffer size to " + send_buf_size + " bytes", ex);
+            log.error(local_addr + ": exception setting receive buffer size to " + send_buf_size + " bytes", ex);
         }
 
         client_sock.setKeepAlive(true);
