@@ -16,15 +16,15 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.beust.jcommander.internal.Lists;
-
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
-
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.Security;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.TreeMap;
 
 /**
  * @author xenephon
@@ -174,12 +174,12 @@ public class ENCRYPTAsymmetricTest {
         Util.assertEquals(3, observer.getUpMessages().size());
 
 
-        Event sent=(Event)observer.getUpMessages().get("message1");
+        Event sent=observer.getUpMessages().get("message1");
 
 
         Util.assertEquals("hello", new String(((Message)sent.getArg()).getBuffer()));
 
-        sent=(Event)observer.getUpMessages().get("message2");
+        sent=observer.getUpMessages().get("message2");
 
         Util.assertEquals("hello2", new String(((Message)sent.getArg()).getBuffer()));
 
@@ -241,7 +241,7 @@ public class ENCRYPTAsymmetricTest {
 
         // get the resulting message from the peer - should be a key request
 
-        Event sent=(Event)peerObserver.getDownMessages().get("message0");
+        Event sent=peerObserver.getDownMessages().get("message0");
 
         Util.assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.KEY_REQUEST);
         Util.assertEquals(new String(((Message)sent.getArg()).getBuffer()), new String(peer.getKpair().getPublic().getEncoded()));
@@ -249,7 +249,7 @@ public class ENCRYPTAsymmetricTest {
         // send this event to server
         server.up(sent);
 
-        Event reply=(Event)serverObserver.getDownMessages().get("message1");
+        Event reply=serverObserver.getDownMessages().get("message1");
 
         //assert that reply is the session key encrypted with peer's public key
         Util.assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.SECRETKEY);
@@ -274,12 +274,12 @@ public class ENCRYPTAsymmetricTest {
         // make sure we have the events now in the up layers
         Util.assertEquals(3, peerObserver.getUpMessages().size());
 
-        Event tempEvt=(Event)peerObserver.getUpMessages().get("message2");
+        Event tempEvt=peerObserver.getUpMessages().get("message2");
 
 
         Util.assertEquals("hello", new String(((Message)tempEvt.getArg()).getBuffer()));
 
-        tempEvt=(Event)peerObserver.getUpMessages().get("message3");
+        tempEvt=peerObserver.getUpMessages().get("message3");
 
         Util.assertEquals("hello2", new String(((Message)tempEvt.getArg()).getBuffer()));
 
@@ -335,7 +335,7 @@ public class ENCRYPTAsymmetricTest {
         server.down(evt);
 
         // message0 is in response to view change
-        Event encEvt=(Event)serverObserver.getDownMessages().get("message1");
+        Event encEvt=serverObserver.getDownMessages().get("message1");
 
         // sent to peer encrypted - should be queued in encyption layer as we do not have a keyserver set
         peer.up(encEvt);
@@ -354,7 +354,7 @@ public class ENCRYPTAsymmetricTest {
         Util.assertEquals(peer2Address, peer.getKeyServerAddr());
 
         // get the resulting message from the peer - should be a key request to peer2
-        Event sent=(Event)peerObserver.getDownMessages().get("message0");
+        Event sent=peerObserver.getDownMessages().get("message0");
 
         // ensure type and that request contains peers pub key
         Util.assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.KEY_REQUEST);
@@ -366,7 +366,7 @@ public class ENCRYPTAsymmetricTest {
 
         peer2.up(sent);
 
-        Event reply=(Event)peer2Observer.getDownMessages().get("message1");
+        Event reply=peer2Observer.getDownMessages().get("message1");
 
         //assert that reply is the session key encrypted with peer's public key
         Util.assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.SECRETKEY);
@@ -391,7 +391,7 @@ public class ENCRYPTAsymmetricTest {
 
         peer2.down(evt2);
 
-        Event Evt2=(Event)peer2Observer.getDownMessages().get("message2");
+        Event Evt2=peer2Observer.getDownMessages().get("message2");
 
         peer.up(Evt2);
         // make sure we have the events now in the up layers
@@ -505,8 +505,7 @@ public class ENCRYPTAsymmetricTest {
         serverVector.add(serverAddress);
     	serverVector.addAll(Arrays.asList(addresses));
         View tempView=new View(new ViewId(serverAddress, id), serverVector);
-        Event serverEvent=new Event(Event.VIEW_CHANGE, tempView);
-		return serverEvent;
+        return new Event(Event.VIEW_CHANGE, tempView);
 	}
     
     
@@ -580,6 +579,7 @@ public class ENCRYPTAsymmetricTest {
     }
 
     static class MockAddress implements Address {
+        private static final long serialVersionUID=990515143342934541L;
         String name;
 
         public MockAddress(String name) {

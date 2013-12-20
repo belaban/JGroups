@@ -562,7 +562,7 @@ public class ENCRYPT extends Protocol {
 			}
 
 		} catch (Exception e) {
-			log.error("Could not initialize new ciphers: {}", e.getMessage());
+			log.error("Could not initialize new ciphers: %s", e.getMessage());
 			if ( e instanceof RuntimeException) {
 				throw (RuntimeException)e;
 			} else {
