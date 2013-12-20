@@ -362,7 +362,7 @@ public class JChannel extends Channel {
                         down(new Event(Event.DISCONNECT, local_addr));   // DISCONNECT is handled by each layer
                     }
                     catch(Throwable t) {
-                        log.error(Util.getMessage("DisconnectFailure"), t);
+                        log.error(Util.getMessage("DisconnectFailure"), local_addr, t);
                     }
                 }
                 state=State.OPEN;

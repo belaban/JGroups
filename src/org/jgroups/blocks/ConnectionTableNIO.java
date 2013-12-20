@@ -624,7 +624,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          }
          catch (IOException io_ex)
          {
-            if (log.isErrorEnabled()) log.error("Attempt to bind serversocket failed, port="+start_port+", bind addr=" + bind_addr ,io_ex);
+            log.error("Attempt to bind serversocket failed, port="+start_port+", bind addr=" + bind_addr ,io_ex);
             throw io_ex;
          }
          srv_port = start_port;

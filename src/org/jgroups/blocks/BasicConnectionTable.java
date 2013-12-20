@@ -322,8 +322,7 @@ public abstract class BasicConnectionTable {
            conn.send(data, offset, length);
        }
        catch(Throwable ex) {
-           if(log.isTraceEnabled())
-               log.trace("sending msg to " + dest + " failed (" + ex.getClass().getName() + "); removing from connection table", ex);
+           log.trace("sending msg to " + dest + " failed (" + ex.getClass().getName() + "); removing from connection table", ex);
            removeConnection(dest);
        }
    }
