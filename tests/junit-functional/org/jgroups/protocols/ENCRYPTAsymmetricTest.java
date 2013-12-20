@@ -16,7 +16,10 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.beust.jcommander.internal.Lists;
+
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 
 import java.io.*;
 import java.security.MessageDigest;
@@ -447,10 +450,6 @@ public class ENCRYPTAsymmetricTest {
         Assert.assertEquals(server.getDesKey(), peer.getDesKey());
         Assert.assertEquals(server.getDesKey(), peer2.getDesKey());
 
-        // send an encrypted message from the server
-        Message msg=new Message();
-        msg.setBuffer("hello".getBytes());
-
         Event viewChange2 = createViewChange(2, peer2Address);
         peer2.up(new Event(Event.TMP_VIEW, viewChange2.getArg()));
         peer2.up(viewChange2);
@@ -504,9 +503,7 @@ public class ENCRYPTAsymmetricTest {
 	private static Event createViewChange(int id, Address serverAddress, Address...addresses ) {
 		List<Address> serverVector=new ArrayList<Address>() ;
         serverVector.add(serverAddress);
-        for ( Address a : addresses) {
-        	serverVector.add(a);
-        }
+    	serverVector.addAll(Arrays.asList(addresses));
         View tempView=new View(new ViewId(serverAddress, id), serverVector);
         Event serverEvent=new Event(Event.VIEW_CHANGE, tempView);
 		return serverEvent;
@@ -514,36 +511,26 @@ public class ENCRYPTAsymmetricTest {
     
     
     static Event getLatestDownMessage(MockObserver observer) {
-    	Event latest = null;
-    	Map map = observer.getDownMessages();
-    	int counter = observer.counter-1;
-    	while ( latest == null && counter >= 0) {
-    		latest = (Event) map.get("message" + counter);
-    		counter--;
+    	TreeMap<String, Event> map = observer.getDownMessages();
+    	if ( map.isEmpty()) {
+    		return null;
+    	} else {
+        	return map.lastEntry().getValue();
     	}
-    	if ( latest == null) {
-    		throw new IllegalStateException("Could not find latest down message");
-    	}
-    	return latest;
     }
     
     static Event getLatestUpMessage(MockObserver observer) {
-    	Event latest = null;
-    	Map map = observer.getUpMessages();
-    	int counter = observer.counter-1;
-    	while ( latest == null && counter >= 0) {
-    		latest = (Event) map.get("message" + counter);
-    		counter--;
+    	TreeMap<String, Event> map = observer.getUpMessages();
+    	if ( map.isEmpty()) {
+    		return null;
+    	} else {
+        	return map.lastEntry().getValue();
     	}
-    	if ( latest == null) {
-    		throw new IllegalStateException("Could not find latest down message");
-    	}
-    	return latest;
     }
     
     static class MockObserver implements ENCRYPT.Observer {
-        private Map upMessages=new HashMap();
-        private Map downMessages=new HashMap();
+        private TreeMap<String, Event> upMessages=new TreeMap<String, Event>();
+        private TreeMap<String, Event> downMessages=new TreeMap<String, Event>();
         private int counter=0;
         /* (non-Javadoc)
            * @see org.jgroups.UpHandler#up(org.jgroups.Event)
@@ -575,19 +562,19 @@ public class ENCRYPTAsymmetricTest {
             storeDown(evt);
         }
 
-        protected Map getUpMessages() {
+        protected TreeMap<String, Event> getUpMessages() {
             return upMessages;
         }
 
-        protected void setUpMessages(Map upMessages) {
+        protected void setUpMessages(TreeMap<String, Event> upMessages) {
             this.upMessages=upMessages;
         }
 
-        protected Map getDownMessages() {
+        protected TreeMap<String, Event> getDownMessages() {
             return downMessages;
         }
 
-        protected void setDownMessages(Map downMessages) {
+        protected void setDownMessages(TreeMap<String, Event> downMessages) {
             this.downMessages=downMessages;
         }
     }
