@@ -679,6 +679,11 @@ abstract public class Executing extends Protocol {
         }
         else {
             final Long requestId = _requestId.get(runnable);
+            if (requestId == null) {
+                // requestId is not available - this means the result has been 
+                // returned already or it has been interrupted
+            	return;
+            }
             owner = new Owner(address, requestId);
             _awaitingReturn.put(owner, runnable);
             // If local we pass along without serializing
