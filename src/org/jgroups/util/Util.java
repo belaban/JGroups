@@ -3612,111 +3612,7 @@ public class Util {
     }
 
 
-    /**
-     * Returns the address of the interface to use defined by bind_addr and bind_interface
-     * @param props
-     * @return
-     * @throws UnknownHostException
-     * @throws SocketException
-     */
-    public static InetAddress getBindAddress(Properties props) throws UnknownHostException, SocketException {
 
-    	// determine the desired values for bind_addr_str and bind_interface_str
-    	boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
-    	String bind_addr_str =Util.getProperty(new String[]{Global.BIND_ADDR}, props, "bind_addr",
-    			ignore_systemprops, null);
-    	String bind_interface_str =Util.getProperty(new String[]{Global.BIND_INTERFACE, null}, props, "bind_interface",
-    			ignore_systemprops, null);
-    	
-    	InetAddress bind_addr=null;
-    	NetworkInterface bind_intf=null;
-
-        StackType ip_version=Util.getIpStackType();
-
-    	// 1. if bind_addr_str specified, get bind_addr and check version
-    	if(bind_addr_str != null) {
-    		bind_addr=InetAddress.getByName(bind_addr_str);
-
-            // check that bind_addr_host has correct IP version
-            boolean hasCorrectVersion = ((bind_addr instanceof Inet4Address && ip_version == StackType.IPv4) ||
-                    (bind_addr instanceof Inet6Address && ip_version == StackType.IPv6)) ;
-            if (!hasCorrectVersion)
-                throw new IllegalArgumentException("bind_addr " + bind_addr_str + " has incorrect IP version") ;
-        }
-
-    	// 2. if bind_interface_str specified, get interface and check that it has correct version
-    	if(bind_interface_str != null) {
-    		bind_intf=NetworkInterface.getByName(bind_interface_str);
-    		if(bind_intf != null) {
-
-                // check that the interface supports the IP version
-                boolean supportsVersion = interfaceHasIPAddresses(bind_intf, ip_version) ;
-                if (!supportsVersion)
-                    throw new IllegalArgumentException("bind_interface " + bind_interface_str + " has incorrect IP version") ;
-            }
-            else {
-                // (bind_intf == null)
-    			throw new UnknownHostException("network interface " + bind_interface_str + " not found");
-    		}
-    	}
-
-    	// 3. intf and bind_addr are both are specified, bind_addr needs to be on intf
-    	if (bind_intf != null && bind_addr != null) {
-
-    		boolean hasAddress = false ;
-
-    		// get all the InetAddresses defined on the interface
-    		Enumeration addresses = bind_intf.getInetAddresses() ;
-
-    		while (addresses != null && addresses.hasMoreElements()) {
-    			// get the next InetAddress for the current interface
-    			InetAddress address = (InetAddress) addresses.nextElement() ;
-
-    			// check if address is on interface
-    			if (bind_addr.equals(address)) { 
-    				hasAddress = true ;
-    				break ;
-    			}
-    		}
-
-    		if (!hasAddress) {
-    			throw new IllegalArgumentException("network interface " + bind_interface_str + " does not contain address " + bind_addr_str);
-    		}
-
-    	}
-    	// 4. if only interface is specified, get first non-loopback address on that interface, 
-    	else if (bind_intf != null) {
-            bind_addr = getAddress(bind_intf, AddressScope.NON_LOOPBACK) ;
-    	}
-    	// 5. if neither bind address nor bind interface is specified, get the first non-loopback
-    	// address on any interface
-    	else if (bind_addr == null) {
-    		bind_addr = getNonLoopbackAddress() ;
-    	}
-
-    	// if we reach here, if bind_addr == null, we have tried to obtain a bind_addr but were not successful
-    	// in such a case, using a loopback address of the correct version is our only option
-    	boolean localhost = false;
-    	if (bind_addr == null) {
-    		bind_addr = getLocalhost(ip_version);
-    		localhost = true;
-    	}
-
-    	//http://jira.jboss.org/jira/browse/JGRP-739
-    	//check all bind_address against NetworkInterface.getByInetAddress() to see if it exists on the machine
-    	//in some Linux setups NetworkInterface.getByInetAddress(InetAddress.getLocalHost()) returns null, so skip
-    	//the check in that case
-    	if(!localhost && NetworkInterface.getByInetAddress(bind_addr) == null) {
-    		throw new UnknownHostException("Invalid bind address " + bind_addr);
-    	}
-
-    	if(props != null) {
-    		props.remove("bind_addr");
-    		props.remove("bind_interface");
-    	}
-    	return bind_addr;
-    }
-    
     /**
      * Method used by PropertyConverters.BindInterface to check that a bind_address is
      * consistent with a specified interface 
@@ -4162,55 +4058,35 @@ public class Util {
      * @param system_props
      * @param props List of properties read from the configuration file
      * @param prop_name The name of the property, will be removed from props if found
-     * @param ignore_sysprops If true, system properties are not used and the values will only be retrieved from
-     * props (not system_props)
      * @param default_value Used to return a default value if the properties or system properties didn't have the value
      * @return The value, or null if not found
      */
-    public static String getProperty(String[] system_props, Properties props, String prop_name,
-                                     boolean ignore_sysprops, String default_value) {
+    public static String getProperty(String[] system_props, Properties props, String prop_name, String default_value) {
         String retval=null;
         if(props != null && prop_name != null) {
             retval=props.getProperty(prop_name);
             props.remove(prop_name);
         }
 
-        if(!ignore_sysprops) {
-            String tmp, prop;
-            if(system_props != null) {
-                for(int i=0; i < system_props.length; i++) {
-                    prop=system_props[i];
-                    if(prop != null) {
-                        try {
-                            tmp=System.getProperty(prop);
-                            if(tmp != null)
-                                return tmp; // system properties override config file definitions
-                        }
-                        catch(SecurityException ex) {}
+        String tmp, prop;
+        if(retval == null && system_props != null) {
+            for(int i=0; i < system_props.length; i++) {
+                prop=system_props[i];
+                if(prop != null) {
+                    try {
+                        tmp=System.getProperty(prop);
+                        if(tmp != null)
+                            return tmp;
                     }
+                    catch(SecurityException ex) {}
                 }
             }
         }
+
         if(retval == null)
             return default_value;
         return retval;
     }
-
-
-
-    public static boolean isBindAddressPropertyIgnored() {
-        try {
-            String tmp=System.getProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY);
-            if(tmp == null)
-                return false;
-            tmp=tmp.trim().toLowerCase();
-            return !(tmp.equals("false") || tmp.equals("no") || tmp.equals("off")) && (tmp.equals("true") || tmp.equals("yes") || tmp.equals("on"));
-        }
-        catch(SecurityException ex) {
-            return false;
-        }
-    }
-
 
 
     public static boolean isCoordinator(JChannel ch) {

@@ -112,7 +112,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             boolean validation = false;
-            String tmp = Util.getProperty(new String[] { Global.XML_VALIDATION }, null, null, false, null);
+            String tmp = Util.getProperty(new String[] { Global.XML_VALIDATION }, null, null, null);
             if (tmp != null) {
                 validation =Boolean.valueOf(tmp);
             } else if (validate != null) {

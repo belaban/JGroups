@@ -70,9 +70,9 @@ public class ClassConfigurator {
         String magic_number_file=null, protocol_id_file=null;
         try { // PropertyPermission not granted if running in an untrusted environment with JNLP
             magic_number_file=Util.getProperty(new String[]{Global.MAGIC_NUMBER_FILE, "org.jgroups.conf.magicNumberFile"},
-                                               null, null, false, MAGIC_NUMBER_FILE);
+                                               null, null,  MAGIC_NUMBER_FILE);
             protocol_id_file=Util.getProperty(new String[]{Global.PROTOCOL_ID_FILE, "org.jgroups.conf.protocolIDFile"},
-                                              null, null, false, PROTOCOL_ID_FILE);
+                                              null, null, PROTOCOL_ID_FILE);
         }
         catch (SecurityException ex){
         }
