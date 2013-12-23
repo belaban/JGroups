@@ -2791,48 +2791,6 @@ public class Util {
 
 
 
-    public static long sizeOf(String classname) {
-        Object inst;
-        byte[] data;
-
-        try {
-            inst=Util.loadClass(classname, null).newInstance();
-            data=Util.objectToByteBuffer(inst);
-            return data.length;
-        }
-        catch(Exception ex) {
-            return -1;
-        }
-    }
-
-
-    public static long sizeOf(Object inst) {
-        byte[] data;
-
-        try {
-            data=Util.objectToByteBuffer(inst);
-            return data.length;
-        }
-        catch(Exception ex) {
-            return -1;
-        }
-    }
-
-    public static int  sizeOf(Streamable inst) {
-        try {
-            ByteArrayOutputStream output=new ExposedByteArrayOutputStream();
-            DataOutputStream out=new ExposedDataOutputStream(output);
-            inst.writeTo(out);
-            out.flush();
-            byte[] data=output.toByteArray();
-            return data.length;
-        }
-        catch(Exception ex) {
-            return -1;
-        }
-    }
-
-
 
     /**
      * Tries to load the class from the current thread's context class loader. If
@@ -2845,31 +2803,29 @@ public class Util {
     public static Class loadClass(String classname, Class clazz) throws ClassNotFoundException {
         ClassLoader loader;
 
-        try {
-            loader=Thread.currentThread().getContextClassLoader();
-            if(loader != null) {
-                return loader.loadClass(classname);
-            }
-        }
-        catch(Throwable t) {
-        }
-
+        // https://issues.jboss.org/browse/JGRP-1762: load the classloader from the defining class first
         if(clazz != null) {
             try {
                 loader=clazz.getClassLoader();
-                if(loader != null) {
+                if(loader != null)
                     return loader.loadClass(classname);
-                }
             }
             catch(Throwable t) {
             }
         }
 
         try {
-            loader=ClassLoader.getSystemClassLoader();
-            if(loader != null) {
+            loader=Thread.currentThread().getContextClassLoader();
+            if(loader != null)
                 return loader.loadClass(classname);
-            }
+        }
+        catch(Throwable t) {
+        }
+
+        try {
+            loader=ClassLoader.getSystemClassLoader();
+            if(loader != null)
+                return loader.loadClass(classname);
         }
         catch(Throwable t) {
         }
@@ -3062,17 +3018,7 @@ public class Util {
         ClassLoader loader;
         InputStream retval=null;
 
-        try {
-            loader=Thread.currentThread().getContextClassLoader();
-            if(loader != null) {
-                retval=loader.getResourceAsStream(name);
-                if(retval != null)
-                    return retval;
-            }
-        }
-        catch(Throwable t) {
-        }
-
+        // https://issues.jboss.org/browse/JGRP-1762: load the classloader from the defining class first
         if(clazz != null) {
             try {
                 loader=clazz.getClassLoader();
@@ -3084,6 +3030,17 @@ public class Util {
             }
             catch(Throwable t) {
             }
+        }
+
+        try {
+            loader=Thread.currentThread().getContextClassLoader();
+            if(loader != null) {
+                retval=loader.getResourceAsStream(name);
+                if(retval != null)
+                    return retval;
+            }
+        }
+        catch(Throwable t) {
         }
 
         try {
