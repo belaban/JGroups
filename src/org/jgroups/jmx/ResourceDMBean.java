@@ -270,16 +270,17 @@ public class ResourceDMBean implements DynamicMBean {
 
     /** Finds an accessor for an attribute. Tries to find setAttrName(), attrName() methods. If not
      * found, tries to use reflection to set the value of attr_name. If still not found, creates a NullAccessor. */
-    protected static Accessor findSetter(Object target, String attr_name) {
+    public static Accessor findSetter(Object target, String attr_name) {
         final String name=Util.attributeNameToMethodName(attr_name);
         final String fluent_name=toLowerCase(name);
         Class<?> clazz=target.getClass();
         Class<?> field_type=null;
         Field field=Util.getField(clazz, attr_name);
         field_type=field != null? field.getType() : null;
+        String setter_name="set" + name;
 
         if(field_type != null) {
-            Method method=Util.findMethod(target, Arrays.asList(fluent_name, "set" + name), field_type);
+            Method method=Util.findMethod(target, Arrays.asList(fluent_name, setter_name), field_type);
             if(method != null && isSetMethod(method))
                 return new MethodAccessor(method, target);
         }
@@ -290,7 +291,7 @@ public class ResourceDMBean implements DynamicMBean {
 
         for(Method method: methods) {
             String method_name=method.getName();
-            if((method_name.equals(name) || method_name.equals(fluent_name)) && isSetMethod(method))
+            if((method_name.equals(name) || method_name.equals(fluent_name) || method_name.equals(setter_name)) && isSetMethod(method))
                 return new MethodAccessor(method, target);
         }
 
@@ -420,13 +421,13 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
 
-    protected static interface Accessor {
+    public static interface Accessor {
         /** Invokes a getter or setter. For the getter, new_val must be ignored (null) */
         public Object invoke(Object new_val) throws Exception;
     }
 
 
-    protected static class MethodAccessor implements Accessor {
+    public static class MethodAccessor implements Accessor {
         protected final Method method;
         protected final Object target;
 
@@ -435,6 +436,8 @@ public class ResourceDMBean implements DynamicMBean {
             this.target=target;
         }
 
+        public Method getMethod() {return method;}
+
         public Object invoke(Object new_val) throws Exception {
             return new_val != null? method.invoke(target, new_val) : method.invoke(target);
         }
@@ -442,7 +445,7 @@ public class ResourceDMBean implements DynamicMBean {
         public String toString() {return method.getName() + "()";}
     }
 
-    protected static class FieldAccessor implements Accessor {
+    public static class FieldAccessor implements Accessor {
         protected final Field  field;
         protected final Object target;
 
@@ -452,6 +455,8 @@ public class ResourceDMBean implements DynamicMBean {
             if(!field.isAccessible())
                 field.setAccessible(true);
         }
+
+        public Field getField() {return field;}
 
         public Object invoke(Object new_val) throws Exception {
             if(new_val == null)

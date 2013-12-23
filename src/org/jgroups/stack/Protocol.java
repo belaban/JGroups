@@ -72,8 +72,8 @@ public abstract class Protocol {
      * @param level The new level. Valid values are "fatal", "error", "warn", "info", "debug", "trace"
      * (capitalization not relevant)
      */
-    @Property(name="level", description="Sets the logger level (see javadocs)")
     public void          setLevel(String level)            {log.setLevel(level);}
+    @Property(name="level", description="logger level (see javadocs)")
     public String        getLevel()                        {return log.getLevel();}
     public Protocol      level(String level)               {this.log.setLevel(level); return this;}
     public boolean       isErgonomics()                    {return ergonomics;}

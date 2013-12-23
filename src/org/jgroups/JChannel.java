@@ -7,6 +7,7 @@ import org.jgroups.blocks.MethodCall;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.conf.ProtocolStackConfigurator;
+import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.*;
 import org.jgroups.util.*;
@@ -226,9 +227,6 @@ public class JChannel extends Channel {
     public boolean statsEnabled() {return stats;}
 
     public void enableStats(boolean stats) {this.stats=stats;}
-
-    @ManagedAttribute public boolean isOpen() {return !(state == State.CLOSED);}
-    @ManagedAttribute public boolean isConnected() {return state == State.CONNECTED;}
 
     @ManagedOperation
     public void resetStats()          {sent_msgs=received_msgs=sent_bytes=received_bytes=0;}
@@ -1106,12 +1104,30 @@ public class JChannel extends Channel {
                             Protocol prot=prot_stack.findProtocol(protocol_name);
                             Field field=prot != null? Util.getField(prot.getClass(), attrname) : null;
                             if(field != null) {
-                                Object value=MethodCall.convert(attrvalue, field.getType());
+                                Object value=MethodCall.convert(attrvalue,field.getType());
                                   if(value != null)
                                       prot.setValue(attrname, value);
                             }
-                            else
-                                log.warn(Util.getMessage("FieldNotFound"), attrname, protocol_name);
+                            else {
+                                // try to find a setter for X, e.g. x(type-of-x) or setX(type-of-x)
+                                ResourceDMBean.Accessor setter=ResourceDMBean.findSetter(prot, attrname);  // Util.getSetter(prot.getClass(), attrname);
+                                if(setter != null) {
+                                    try {
+                                        Class<?> type=setter instanceof ResourceDMBean.FieldAccessor?
+                                          ((ResourceDMBean.FieldAccessor)setter).getField().getType() :
+                                          setter instanceof ResourceDMBean.MethodAccessor?
+                                            ((ResourceDMBean.MethodAccessor)setter).getMethod().getParameterTypes()[0].getClass() : null;
+                                        Object converted_value=MethodCall.convert(attrvalue, type);
+                                        setter.invoke(converted_value);
+                                    }
+                                    catch(Exception e) {
+                                        log.error("unable to invoke %s() on %s: %s", setter, protocol_name, e);
+                                    }
+                                }
+                                else
+                                    log.warn(Util.getMessage("FieldNotFound"), attrname, protocol_name);
+                            }
+
                             it.remove();
                         }
                     }

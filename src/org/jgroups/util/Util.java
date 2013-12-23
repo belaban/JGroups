@@ -1486,10 +1486,6 @@ public class Util {
         return matcher.matches();
     }
 
-    public static void main(String[] args) {
-        boolean result=patternMatch(args[0],args[1]);
-        System.out.println(args[1] + " matches " + args[0] + ": " + result);
-    }
 
 
     public static <T> boolean different(T one, T two) {
@@ -2935,7 +2931,12 @@ public class Util {
     public static Method findMethod(Object target, List<String> possible_names, Class<?> ... parameter_types) {
         if(target == null)
             return null;
-        for(Class<?> clazz=target.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+        return findMethod(target.getClass(), possible_names, parameter_types);
+    }
+
+
+    public static Method findMethod(Class<?> root_class, List<String> possible_names, Class<?> ... parameter_types) {
+        for(Class<?> clazz=root_class; clazz != null; clazz=clazz.getSuperclass()) {
             for(String name: possible_names) {
                 try {
                     return clazz.getDeclaredMethod(name, parameter_types);

@@ -152,10 +152,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             "Default=true",writable=false)
     protected boolean oob_thread_pool_enabled=true;
 
+    @Property(name="oob_thread_pool.min_threads",description="Minimum thread pool size for the OOB thread pool")
     protected int oob_thread_pool_min_threads=2;
 
+    @Property(name="oob_thread_pool.max_threads",description="Max thread pool size for the OOB thread pool")
     protected int oob_thread_pool_max_threads=10;
 
+    @Property(name="oob_thread_pool.keep_alive_time", description="Timeout in ms to remove idle threads from the OOB pool")
     protected long oob_thread_pool_keep_alive_time=30000;
 
     @Property(name="oob_thread_pool.queue_enabled", description="Use queue to enqueue incoming OOB messages")
@@ -168,10 +171,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
               description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
     protected String oob_thread_pool_rejection_policy="discard";
 
+    @Property(name="thread_pool.min_threads",description="Minimum thread pool size for the regular thread pool")
     protected int thread_pool_min_threads=2;
 
+    @Property(name="thread_pool.max_threads",description="Maximum thread pool size for the regular thread pool")
     protected int thread_pool_max_threads=10;
 
+    @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from regular pool")
     protected long thread_pool_keep_alive_time=30000;
 
     @Property(name="thread_pool.enabled",description="Switch for enabling thread pool for regular messages")
@@ -219,10 +225,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "might disappear in future releases, if one of the 3 timers is chosen as default timer")
     protected String timer_type="new3";
 
+    @Property(name="timer.min_threads",description="Minimum thread pool size for the timer thread pool")
     protected int timer_min_threads=4;
 
+    @Property(name="timer.max_threads",description="Max thread pool size for the timer thread pool")
     protected int timer_max_threads=10;
 
+    @Property(name="timer.keep_alive_time", description="Timeout in ms to remove idle threads from the timer pool")
     protected long timer_keep_alive_time=5000;
 
     @Property(name="timer.queue_max_size", description="Max number of elements on a timer queue")
@@ -317,12 +326,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * Maximum number of bytes for messages to be queued until they are sent.
      * This value needs to be smaller than the largest datagram packet size in case of UDP
      */
+    @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
     protected int max_bundle_size=64000;
 
     /**
      * Max number of milliseconds until queued messages are sent. Messages are sent when max_bundle_size
      * or max_bundle_timeout has been exceeded (whichever occurs faster)
      */
+    @Property(name="max_bundle_timeout", description="Max number of milliseconds until queued messages are sent")
     protected long max_bundle_timeout=20;
 
     @Property(description="The type of bundler used. Has to be \"old\" or \"new\" (default)")
@@ -332,7 +343,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected int bundler_capacity=20000;
 
 
-    @Property(name="max_bundle_size", description="Maximum number of bytes for messages to be queued until they are sent")
     public void setMaxBundleSize(int size) {
         if(size <= 0)
             throw new IllegalArgumentException("max_bundle_size (" + size + ") is <= 0");
@@ -342,11 +352,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public long getMaxBundleTimeout() {return max_bundle_timeout;}
     
 
-    @Property(name="max_bundle_timeout", description="Max number of milliseconds until queued messages are sent")
     public void setMaxBundleTimeout(long timeout) {
-        if(timeout <= 0) {
+        if(timeout <= 0)
             throw new IllegalArgumentException("max_bundle_timeout of " + timeout + " is invalid");
-        }
         max_bundle_timeout=timeout;
     }
 
@@ -358,7 +366,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return 0;
     }
 
-    @Property(name="oob_thread_pool.keep_alive_time", description="Timeout in ms to remove idle threads from the OOB pool")
     public void setOOBThreadPoolKeepAliveTime(long time) {
         oob_thread_pool_keep_alive_time=time;
         if(oob_thread_pool instanceof ThreadPoolExecutor)
@@ -368,7 +375,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public long getOOBThreadPoolKeepAliveTime() {return oob_thread_pool_keep_alive_time;}
 
 
-    @Property(name="oob_thread_pool.min_threads",description="Minimum thread pool size for the OOB thread pool")
     public void setOOBThreadPoolMinThreads(int size) {
         oob_thread_pool_min_threads=size;
         if(oob_thread_pool instanceof ThreadPoolExecutor)
@@ -377,7 +383,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public int getOOBThreadPoolMinThreads() {return oob_thread_pool_min_threads;}
 
-    @Property(name="oob_thread_pool.max_threads",description="Max thread pool size for the OOB thread pool")
     public void setOOBThreadPoolMaxThreads(int size) {
         oob_thread_pool_max_threads=size;
         if(oob_thread_pool instanceof ThreadPoolExecutor)
@@ -389,8 +394,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void setOOBThreadPoolQueueEnabled(boolean flag) {this.oob_thread_pool_queue_enabled=flag;}
 
 
-
-    @Property(name="thread_pool.min_threads",description="Minimum thread pool size for the regular thread pool")
     public void setThreadPoolMinThreads(int size) {
         thread_pool_min_threads=size;
         if(thread_pool instanceof ThreadPoolExecutor)
@@ -400,7 +403,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public int getThreadPoolMinThreads() {return thread_pool_min_threads;}
 
 
-    @Property(name="thread_pool.max_threads",description="Maximum thread pool size for the regular thread pool")
     public void setThreadPoolMaxThreads(int size) {
         thread_pool_max_threads=size;
         if(thread_pool instanceof ThreadPoolExecutor)
@@ -410,7 +412,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public int getThreadPoolMaxThreads() {return thread_pool_max_threads;}
 
 
-    @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from regular pool")
     public void setThreadPoolKeepAliveTime(long time) {
         thread_pool_keep_alive_time=time;
         if(thread_pool instanceof ThreadPoolExecutor)
@@ -421,7 +422,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
 
-    @Property(name="timer.min_threads",description="Minimum thread pool size for the timer thread pool")
     public void setTimerMinThreads(int size) {
         timer_min_threads=size;
         if(timer != null)
@@ -431,7 +431,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public int getTimerMinThreads() {return timer_min_threads;}
 
 
-    @Property(name="timer.max_threads",description="Max thread pool size for the timer thread pool")
     public void setTimerMaxThreads(int size) {
         timer_max_threads=size;
         if(timer != null)
@@ -441,7 +440,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public int getTimerMaxThreads() {return timer_max_threads;}
 
 
-    @Property(name="timer.keep_alive_time", description="Timeout in ms to remove idle threads from the timer pool")
     public void setTimerKeepAliveTime(long time) {
         timer_keep_alive_time=time;
         if(timer != null)
@@ -2552,6 +2550,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * Used when the transport is shared (singleton_name is not null). Maintains the cluster name, local address and
      * view
      */
+    @MBean(description="Protocol adapter (used when the shared transport is enabled)")
     public static class ProtocolAdapter extends Protocol implements DiagnosticsHandler.ProbeHandler {
         String                  cluster_name;
         final short             transport_id;
