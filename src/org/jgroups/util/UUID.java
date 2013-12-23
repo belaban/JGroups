@@ -45,7 +45,7 @@ public class UUID implements Address {
         long max_age=5000L;
 
         try {
-            tmp=Util.getProperty(new String[]{Global.UUID_CACHE_MAX_ELEMENTS}, null, null, false, "500");
+            tmp=Util.getProperty(new String[]{Global.UUID_CACHE_MAX_ELEMENTS}, null, null, "500");
             if(tmp != null)
                 max_elements=Integer.valueOf(tmp);
         }
@@ -53,7 +53,7 @@ public class UUID implements Address {
         }
 
         try {
-            tmp=Util.getProperty(new String[]{Global.UUID_CACHE_MAX_AGE}, null, null, false, "120000");
+            tmp=Util.getProperty(new String[]{Global.UUID_CACHE_MAX_AGE}, null, null, "120000");
             if(tmp != null)
                 max_age=Long.valueOf(tmp);
         }
@@ -66,7 +66,7 @@ public class UUID implements Address {
         /* Trying to get value of jgroups.print_uuids. PropertyPermission not granted if
         * running in an untrusted environment with JNLP */
         try {
-            tmp=Util.getProperty(new String[]{Global.PRINT_UUIDS}, null, null, false, "false");
+            tmp=Util.getProperty(new String[]{Global.PRINT_UUIDS}, null, null, "false");
             print_uuids=Boolean.valueOf(tmp);
         }
         catch (SecurityException ex){

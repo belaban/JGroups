@@ -33,7 +33,6 @@ public class Global {
     public static final String TCP_CLIENT_BIND_ADDR="jgroups.tcp.client_bind_addr";
 
     public static final String BIND_INTERFACE="jgroups.bind_interface";
-    public static final String IGNORE_BIND_ADDRESS_PROPERTY="jgroups.ignore.bind_addr";
 
     public static final String TCPPING_INITIAL_HOSTS="jgroups.tcpping.initial_hosts";
 

@@ -78,7 +78,7 @@
         <para>
             <literal>bind_addr</literal> can be set to the address of a network interface, e.g. <literal>192.168.1.5</literal>.
             It can also be set for the entire stack using system property <literal>-Djgroups.bind_addr</literal>, which
-            overrrides the XML value (if given).
+            provides a value for bind_addr unless it has already been set in the XML config.
         </para>
         <para>
             The following special values are also recognized for <literal>bind_addr</literal>:

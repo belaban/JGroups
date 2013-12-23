@@ -32,7 +32,7 @@ public class IpAddress implements PhysicalAddress {
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
         * running in an untrusted environment  with JNLP */
         try {
-            String tmp=Util.getProperty(new String[]{Global.RESOLVE_DNS, "resolve.dns"}, null, null, false, "false"); 
+            String tmp=Util.getProperty(new String[]{Global.RESOLVE_DNS, "resolve.dns"}, null, null, "false");
             resolve_dns=Boolean.valueOf(tmp);
         }
         catch (SecurityException ex){

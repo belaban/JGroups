@@ -64,10 +64,7 @@ public class ChannelTestBase {
         this.use_flush = testRequiresFlush;
         this.channel_conf = chconf;
         
-        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
-        bind_addr = Util.getProperty(new String[]{Global.BIND_ADDR}, null, "bind_addr",
-    			ignore_systemprops, bind_addr);
-        // bind_addr = Util.getBindAddress(null).getHostAddress();
+        bind_addr = Util.getProperty(new String[]{Global.BIND_ADDR}, null, "bind_addr", bind_addr);
         System.setProperty(Global.BIND_ADDR, bind_addr);
     }
 
@@ -230,7 +227,7 @@ public class ChannelTestBase {
 
         protected void makeUnique(Channel channel, int num) throws Exception {
             String str = Util.getProperty(new String[]{ Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup" },
-                                          null, "mcast_addr", false, null);
+                                          null, "mcast_addr", null);
             makeUnique(channel, num, str);
         }
 

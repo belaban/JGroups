@@ -1119,9 +1119,12 @@ public class Configurator {
     		String propertyValue=props.get(propertyName);
 
             // if there is a systemProperty attribute defined in the annotation, set the property value from the system property
-            String tmp=grabSystemProp(field.getAnnotation(Property.class));
-            if(tmp != null)
-                propertyValue=tmp;
+            // only do this if the property value hasn't yet been set
+            if(propertyValue == null) {
+                String tmp=grabSystemProp(field.getAnnotation(Property.class));
+                if(tmp != null)
+                    propertyValue=tmp;
+            }
 
             if(propertyName != null && propertyValue != null) {
                 String deprecated_msg=annotation.deprecatedMessage();
@@ -1186,10 +1189,6 @@ public class Configurator {
 
         for(String system_property_name: system_property_names) {
             if(system_property_name != null && !system_property_name.isEmpty()) {
-                if(system_property_name.equals(Global.BIND_ADDR))
-                    if(Util.isBindAddressPropertyIgnored())
-                        continue;
-                
                 try {
                     retval=System.getProperty(system_property_name);
                     if(retval != null)

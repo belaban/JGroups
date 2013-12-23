@@ -25,32 +25,32 @@ public class UtilTest {
         System.setProperty("name2", "Nicole");
         String retval;
 
-        retval=Util.getProperty(new String[]{"name", "name2"}, props, "name", false, "Jeannette");
-        Assert.assertEquals("Michelle", retval);
+        retval=Util.getProperty(new String[]{"name", "name2"}, props, "name", "Jeannette");
+        Assert.assertEquals("Bela", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
-        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", false, "Jeannette");
+        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", "Jeannette");
+        Assert.assertEquals("Bela", retval);
+        props.setProperty("name", "Bela"); props.setProperty("key", "val");
+
+        retval=Util.getProperty(new String[]{"name3", "name"}, props, "name", "Jeannette");
+        Assert.assertEquals("Bela", retval);
+        props.setProperty("name", "Bela"); props.setProperty("key", "val");
+
+        retval=Util.getProperty(new String[]{"name3", "name4"}, props, "name", "Jeannette");
+        Assert.assertEquals("Bela", retval);
+        props.setProperty("name", "Bela"); props.setProperty("key", "val");
+
+        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", "Jeannette");
+        Assert.assertEquals("Bela", retval);
+        props.setProperty("name", "Bela"); props.setProperty("key", "val");
+
+        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", "Jeannette");
         Assert.assertEquals("Nicole", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
-        retval=Util.getProperty(new String[]{"name3", "name"}, props, "name", false, "Jeannette");
-        Assert.assertEquals("Michelle", retval);
-        props.setProperty("name", "Bela"); props.setProperty("key", "val");
-
-        retval=Util.getProperty(new String[]{"name3", "name4"}, props, "name", false, "Jeannette");
-        Assert.assertEquals("Bela", retval);
-        props.setProperty("name", "Bela"); props.setProperty("key", "val");
-
-        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", true, "Jeannette");
-        Assert.assertEquals("Bela", retval);
-        props.setProperty("name", "Bela"); props.setProperty("key", "val");
-
-        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", true, "Jeannette");
-        Assert.assertEquals("Jeannette", retval);
-        props.setProperty("name", "Bela"); props.setProperty("key", "val");
-
-        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", true, null);
-        assert retval == null;
+        retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", null);
+        Assert.assertEquals("Nicole", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
     }
 
@@ -136,38 +136,6 @@ public class UtilTest {
         }
     }
 
-
-    public static void testIgnoreBindAddress() {
-        boolean retval;
-
-        retval=Util.isBindAddressPropertyIgnored();
-        assert !(retval);
-
-        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "true");
-        retval=Util.isBindAddressPropertyIgnored();
-        assert retval;
-
-        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "true2");
-        retval=Util.isBindAddressPropertyIgnored();
-        assert !(retval);
-
-        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "false");
-        retval=Util.isBindAddressPropertyIgnored();
-        assert !(retval);
-
-        System.getProperties().remove(Global.IGNORE_BIND_ADDRESS_PROPERTY);
-        retval=Util.isBindAddressPropertyIgnored();
-        assert !retval;
-
-        System.getProperties().remove(Global.IGNORE_BIND_ADDRESS_PROPERTY);
-        retval=Util.isBindAddressPropertyIgnored();
-        assert !retval;
-
-
-        System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "true");
-        retval=Util.isBindAddressPropertyIgnored();
-        assert retval;
-    }
 
 
     public static void testPrintBytes() {
