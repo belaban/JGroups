@@ -14,7 +14,7 @@ import java.io.DataOutput;
 /**
  * Protocol measuring latency between stacks. On {@link Protocol#down(org.jgroups.Event)}, a header is added to the
  * message with the ID of the PERF protocol and the start time is set in the header.
- * On {@link Protocol#up(org.jgroups.Event)}, the time different is computed and a rolling average is updated in PERF.<p/>
+ * On {@link Protocol#up(org.jgroups.Event)}, the time difference is computed and a rolling average is updated in PERF.<p/>
  * Note that we can have several measurements by inserting PERF protocols with different IDs (Protocol.id) into the stack.</p>
  * If PERF is used to measure latency between nodes running on different physical boxes, it is important that the clocks
  * are synchronized, or else latency cannot be computed correctly (may even be negative).
