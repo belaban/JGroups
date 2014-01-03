@@ -136,7 +136,7 @@ public class Relay2RpcDispatcherTest {
         
         
         System.out.println("B: call foo method on SFO master site");
-        rsp = rpcb.callRemoteMethod(sm_sfo, call, new RequestOptions(ResponseMode.GET_ALL,5000));
+        rsp = rpcb.callRemoteMethod(sm_sfo, call, new RequestOptions(ResponseMode.GET_ALL,15000));
         System.out.println("RSP is: " + rsp );
         
         System.out.println("B: call foo method on all members dest = null");
