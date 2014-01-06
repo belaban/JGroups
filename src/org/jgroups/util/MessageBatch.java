@@ -92,6 +92,7 @@ public class MessageBatch implements Iterable<Message> {
     public MessageBatch clusterName(String name) {this.cluster_name=name; return this;}
     public boolean      multicast()              {return multicast;}
     public Mode         mode()                   {return mode;}
+    public MessageBatch mode(Mode mode)          {this.mode=mode; return this;}
     public int          capacity()               {return messages.length;}
 
 
@@ -247,6 +248,17 @@ public class MessageBatch implements Iterable<Message> {
             sb.append(", ");
         sb.append(size() + " messages [capacity=" + messages.length + "]");
 
+        return sb.toString();
+    }
+
+    public String printHeaders() {
+        StringBuilder sb=new StringBuilder().append("dest=" + dest);
+        if(sender != null)
+            sb.append(", sender=").append(sender);
+        sb.append("\n").append(size()).append(":\n");
+        int count=1;
+        for(Message msg: this)
+            sb.append("#").append(count++).append(": ").append(msg.printHeaders()).append("\n");
         return sb.toString();
     }
 

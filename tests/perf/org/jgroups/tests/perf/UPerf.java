@@ -45,6 +45,7 @@ public class UPerf extends ReceiverAdapter {
     @Property protected boolean use_anycast_addrs;
     @Property protected boolean msg_bundling=true;
     @Property protected double  read_percentage=0.8; // 80% reads, 20% writes
+    @Property protected boolean get_before_put=false; // invoke a sync GET before a PUT
     // ... add your own here, just don't forget to annotate them with @Property
     // =======================================================
 
@@ -172,7 +173,7 @@ public class UPerf extends ReceiverAdapter {
         }
 
         long total_time=System.currentTimeMillis() - start;
-        System.out.println("done (in " + total_time + " ms)");
+        System.out.println("\ndone (in " + total_time + " ms)");
         return new Results(total_gets, total_puts, total_time);
     }
 
@@ -227,7 +228,7 @@ public class UPerf extends ReceiverAdapter {
                               "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
                               " [9] Set anycast count (" + anycast_count + ")" +
                               "\n[o] Toggle OOB (" + oob + ") [s] Toggle sync (" + sync +
-                              ") [r] Set read percentage (" + f.format(read_percentage) + ") " +
+                              ") [r] Set read percentage (" + f.format(read_percentage) + ") [g] get_before_put (" + get_before_put + ") " +
                               "\n[a] Toggle use_anycast_addrs (" + use_anycast_addrs + ") [b] Toggle msg_bundling (" +
                               (msg_bundling? "on" : "off") + ")" +
                               "\n[q] Quit\n");
@@ -271,6 +272,9 @@ public class UPerf extends ReceiverAdapter {
                 case 'b':
                     changeFieldAcrossCluster("msg_bundling", !msg_bundling);
                     break;
+                case 'g':
+                    changeFieldAcrossCluster("get_before_put", !get_before_put);
+                    break;
                 case 'q':
                     channel.close();
                     return;
@@ -286,7 +290,7 @@ public class UPerf extends ReceiverAdapter {
 
     /** Kicks off the benchmark on all cluster nodes */
     void startBenchmark() {
-        RspList<Object> responses=null;
+        RspList<Results> responses=null;
         try {
             RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0);
             options.setFlags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
@@ -301,10 +305,10 @@ public class UPerf extends ReceiverAdapter {
         long total_time=0;
 
         System.out.println("\n======================= Results: ===========================");
-        for(Map.Entry<Address,Rsp<Object>> entry: responses.entrySet()) {
+        for(Map.Entry<Address,Rsp<Results>> entry: responses.entrySet()) {
             Address mbr=entry.getKey();
-            Rsp rsp=entry.getValue();
-            Results result=(Results)rsp.getValue();
+            Rsp<Results> rsp=entry.getValue();
+            Results result=rsp.getValue();
             total_reqs+=result.num_gets + result.num_puts;
             total_time+=result.time;
             System.out.println(mbr + ": " + result);
@@ -381,12 +385,14 @@ public class UPerf extends ReceiverAdapter {
         private final AtomicInteger  num_msgs_sent;
         private int                  num_gets=0;
         private int                  num_puts=0;
+        private final int            PRINT;
 
 
         public Invoker(Collection<Address> dests, int num_msgs_to_send, AtomicInteger num_msgs_sent) {
             this.num_msgs_sent=num_msgs_sent;
             this.dests.addAll(dests);
             this.num_msgs_to_send=num_msgs_to_send;
+            PRINT=num_msgs_to_send / 10;
             setName("Invoker-" + COUNTER.getAndIncrement());
         }
 
@@ -403,6 +409,7 @@ public class UPerf extends ReceiverAdapter {
             MethodCall put_call=new MethodCall(PUT, put_args);
             RequestOptions get_options=new RequestOptions(ResponseMode.GET_ALL, 40000, false, null);
             RequestOptions put_options=new RequestOptions(sync ? ResponseMode.GET_ALL : ResponseMode.GET_NONE, 40000, true, null);
+            RequestOptions get_before_put_options=new RequestOptions(ResponseMode.GET_FIRST, 40000, true, null, Message.Flag.DONT_BUNDLE, Message.Flag.OOB);
 
             if(oob) {
                 get_options.setFlags(Message.Flag.OOB);
@@ -419,6 +426,8 @@ public class UPerf extends ReceiverAdapter {
                 long i=num_msgs_sent.getAndIncrement();
                 if(i >= num_msgs_to_send)
                     break;
+                if(i > 0 && i % PRINT == 0)
+                    System.out.print(".");
                 
                 boolean get=Util.tossWeightedCoin(read_percentage);
 
@@ -430,7 +439,13 @@ public class UPerf extends ReceiverAdapter {
                         num_gets++;
                     }
                     else {    // sync or async (based on value of 'sync') PUT
-                        Collection<Address> targets=pickAnycastTargets();
+                        final Collection<Address> targets=pickAnycastTargets();
+                        if(get_before_put) {
+                            // sync GET
+                            get_args[0]=i;
+                            disp.callRemoteMethods(targets, get_call, get_before_put_options);
+                            num_gets++;
+                        }
                         put_args[0]=i;
                         disp.callRemoteMethods(targets, put_call, put_options);
                         num_puts++;

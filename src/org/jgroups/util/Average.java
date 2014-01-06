@@ -52,5 +52,7 @@ public class Average {
             samples[i]=-1;
     }
 
-
+    public String toString() {
+        return String.valueOf(getAverage());
+    }
 }

@@ -763,6 +763,27 @@ public class MPerf extends ReceiverAdapter {
             if(type == DATA)
                 seqno=Util.readLong(in);
         }
+
+        public String toString() {
+            return typeToString(type) + (seqno > 0? seqno : "");
+        }
+
+        protected static String typeToString(byte type) {
+            switch(type) {
+                case DATA:          return "DATA";
+                case START_SENDING: return "START_SENDING";
+                case SENDING_DONE:  return "SENDING_DONE";
+                case RESULT:        return "RESULT";
+                case CLEAR_RESULTS: return "CLEAR_RESULTS";
+                case CONFIG_CHANGE: return "CONFIG_CHANGE";
+                case CONFIG_REQ:    return "CONFIG_REQ";
+                case CONFIG_RSP:    return "CONFIG_RSP";
+                case EXIT:          return "EXIT";
+                case NEW_CONFIG:    return "NEW_CONFIG";
+                case ACK:           return "ACK";
+                default:            return "n/a";
+            }
+        }
     }
 
 

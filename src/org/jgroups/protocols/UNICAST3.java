@@ -12,6 +12,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @MBean(description="Reliable unicast layer")
 public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
-    public static final long DEFAULT_FIRST_SEQNO=Global.DEFAULT_FIRST_UNICAST_SEQNO;
+    protected static final long DEFAULT_FIRST_SEQNO=Global.DEFAULT_FIRST_UNICAST_SEQNO;
 
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
@@ -95,27 +96,31 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected final ConcurrentMap<Address, SenderEntry>   send_table=Util.createConcurrentMap();
     protected final ConcurrentMap<Address, ReceiverEntry> recv_table=Util.createConcurrentMap();
 
-    protected final ReentrantLock      recv_table_lock=new ReentrantLock();
+    protected final ReentrantLock          recv_table_lock=new ReentrantLock();
 
     /** Used by the retransmit task to keep the last retransmitted seqno per sender (https://issues.jboss.org/browse/JGRP-1539) */
-    protected final Map<Address,Long>  xmit_task_map=new HashMap<Address,Long>();
+    protected final Map<Address,Long>      xmit_task_map=new HashMap<Address,Long>();
 
     /** RetransmitTask running every xmit_interval ms */
-    protected Future<?>                xmit_task;
+    protected Future<?>                    xmit_task;
 
-    protected volatile List<Address>   members=new ArrayList<Address>(11);
+    protected volatile List<Address>       members=new ArrayList<Address>(11);
 
-    protected Address                  local_addr;
+    protected Address                      local_addr;
 
-    protected TimeScheduler            timer; // used for retransmissions (passed to AckSenderWindow)
+    protected TimeScheduler                timer; // used for retransmissions
 
-    protected volatile boolean         running=false;
+    protected volatile boolean             running=false;
 
-    protected short                    last_conn_id;
+    protected short                        last_conn_id;
 
-    protected AgeOutCache<Address>     cache;
+    protected AgeOutCache<Address>         cache;
 
+    protected static final Message         DUMMY_OOB_MSG=new Message(false).setFlag(Message.Flag.OOB);
 
+    protected static final Filter<Message> drop_oob_msgs_filter=new Filter<Message>() {
+        public boolean accept(Message msg) {return msg != null && msg.hashCode() != DUMMY_OOB_MSG.hashCode();}
+    };
 
 
     public void setMaxMessageBatchSize(int size) {
@@ -663,7 +668,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
      * e.received_msgs is null and <code>first</code> is true: create a new AckReceiverWindow(seqno) and
      * add message. Set e.received_msgs to the new window. Else just add the message.
      */
-    protected void handleDataReceived(Address sender, long seqno, short conn_id,  boolean first, final Message msg, Event evt) {
+    protected void handleDataReceived(final Address sender, long seqno, short conn_id,  boolean first, final Message msg, Event evt) {
         if(log.isTraceEnabled())
             log.trace("%s <-- DATA(%s: #%d, conn_id=%d%s)", local_addr, sender, seqno, conn_id, first? ", first" : "");
 
@@ -675,10 +680,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(entry.state() == State.CLOSING)
             entry.state(State.OPEN);
         boolean oob=msg.isFlagSet(Message.Flag.OOB);
-        if(oob) // done so this thread delivers the message and no work stealing for OOB msgs is performed (JGRP-1733)
-            msg.setTransientFlag(Message.TransientFlag.OOB_DELIVERED);
-        Table<Message> win=entry.received_msgs;
-        boolean added=win.add(seqno, msg); // win is guaranteed to be non-null if we get here
+        final Table<Message> win=entry.received_msgs;
+        boolean added=win.add(seqno, oob? DUMMY_OOB_MSG : msg); // adding the same dummy OOB msg saves space (we won't remove it)
         num_msgs_received++;
 
         if(ack_threshold <= 1)
@@ -688,21 +691,25 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
-        if(oob && added) {
-            if(log.isTraceEnabled())
-                log.trace("%s: delivering %s#%s", local_addr, sender, seqno);
-            try {
-                up_prot.up(evt);
-            }
-            catch(Throwable t) {
-                log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "OOB message", msg, t);
-            }
-        }
+        if(oob && added)
+            deliverMessage(evt, sender, seqno);
 
         // we don't steal work if the message is internal (https://issues.jboss.org/browse/JGRP-1733)
         // we also don't care if the message was added successfully or not
-        if(oob && msg.isFlagSet(Message.Flag.INTERNAL))
+        if(oob && msg.isFlagSet(Message.Flag.INTERNAL)) {
+            // If there are other msgs, tell the regular thread pool to handle them (https://issues.jboss.org/browse/JGRP-1732)
+            final AtomicBoolean processing=win.getProcessing();
+            if(!win.isEmpty() && !processing.get() && seqno < win.getHighestReceived()) {
+                Executor pool=getTransport().getDefaultThreadPool();
+                pool.execute(new Runnable() {
+                    public void run() {
+                        if(processing.compareAndSet(false, true))
+                            removeAndDeliver(processing, win, sender);
+                    }
+                });
+            }
             return;
+        }
 
         final AtomicBoolean processing=win.getProcessing();
         if(processing.compareAndSet(false, true))
@@ -718,7 +725,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         int batch_size=msgs.size();
         Table<Message> win=entry.received_msgs;
         num_msgs_received+=batch_size;
-        boolean added=oob ? win.add(msgs, true) : win.add(msgs);
+
+        // adds all messages to the table, removing messages from 'msgs' which could not be added (already present)
+        boolean added=win.add(msgs, oob, oob? DUMMY_OOB_MSG : null);
 
         if(conn_expiry_timeout > 0)
             entry.update();
@@ -732,20 +741,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
         if(added && oob) {
-            for(Tuple<Long,Message> tuple: msgs) {
-                long    seq=tuple.getVal1();
-                Message msg=tuple.getVal2();
-                if(msg.isFlagSet(Message.Flag.OOB) && msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED)) {
-                    if(log.isTraceEnabled())
-                        log.trace("%s: delivering %s#%s", local_addr, sender, seq);
-                    try {
-                        up_prot.up(new Event(Event.MSG, msg));
-                    }
-                    catch(Throwable t) {
-                        log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "OOB message", msg, t);
-                    }
-                }
-            }
+            MessageBatch oob_batch=new MessageBatch(local_addr, sender, null, false, MessageBatch.Mode.OOB, msgs.size());
+            for(Tuple<Long,Message> tuple: msgs)
+                oob_batch.add(tuple.getVal2());
+
+            deliverBatch(oob_batch);
         }
 
         final AtomicBoolean processing=win.getProcessing();
@@ -763,47 +763,22 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
      * delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered in the
      * order in which they were sent
      */
-    protected int removeAndDeliver(final AtomicBoolean processing, Table<Message> win, Address sender) {
-        int retval=0;
+    protected void removeAndDeliver(final AtomicBoolean processing, Table<Message> win, Address sender) {
         boolean released_processing=false;
         try {
             while(true) {
-                List<Message> list=win.removeMany(processing, true, max_msg_batch_size);
-                if(list == null) {
+                List<Message> list=win.removeMany(processing, true, max_msg_batch_size, drop_oob_msgs_filter);
+                if(list != null) // list is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter removed them
+                    deliverBatch(new MessageBatch(local_addr, sender, null, false, list));
+                else {
                     released_processing=true;
-                    return retval;
-                }
-
-                MessageBatch batch=new MessageBatch(local_addr, sender, null, false, list);
-                for(Message msg_to_deliver: batch) {
-                    // discard OOB msg: it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
-                    if(msg_to_deliver.isFlagSet(Message.Flag.OOB) && !msg_to_deliver.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
-                        batch.remove(msg_to_deliver);
-                }
-                if(batch.isEmpty())
-                    continue;
-
-                try {
-                    if(log.isTraceEnabled()) {
-                        Message first=batch.first(), last=batch.last();
-                        StringBuilder sb=new StringBuilder(local_addr + ": delivering");
-                        if(first != null && last != null) {
-                            Header hdr1=(Header)first.getHeader(id), hdr2=(Header)last.getHeader(id);
-                            sb.append(" #").append(hdr1.seqno).append(" - #").append(hdr2.seqno);
-                        }
-                        sb.append(" (" + batch.size()).append(" messages)");
-                        log.trace(sb);
-                    }
-                    up_prot.up(batch);
-                }
-                catch(Throwable t) {
-                    log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
+                    return;
                 }
             }
         }
         finally {
             // processing is always set in win.remove(processing) above and never here ! This code is just a
-            // 2nd line of defense should there be an exception before win.remove(processing) sets processing
+            // 2nd line of defense should there be an exception before win.removeMany(processing) sets processing
             if(!released_processing)
                 processing.set(false);
         }
@@ -941,6 +916,40 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 down_prot.down(new Event(Event.MSG, msg));
                 xmit_rsps_sent.incrementAndGet();
             }
+        }
+    }
+
+    protected void deliverMessage(final Event evt, final Address sender, final long seqno) {
+        if(log.isTraceEnabled())
+            log.trace("%s: delivering %s#%s", local_addr, sender, seqno);
+        try {
+            up_prot.up(evt);
+        }
+        catch(Throwable t) {
+            Message msg=(Message)evt.getArg();
+            log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, msg.isFlagSet(Message.Flag.OOB) ?
+              "OOB message" : "message", msg, t);
+        }
+    }
+
+    protected void deliverBatch(MessageBatch batch) {
+        try {
+            if(batch.isEmpty())
+                return;
+            if(log.isTraceEnabled()) {
+                Message first=batch.first(), last=batch.last();
+                StringBuilder sb=new StringBuilder(local_addr + ": delivering");
+                if(first != null && last != null) {
+                    Header hdr1=(Header)first.getHeader(id), hdr2=(Header)last.getHeader(id);
+                    sb.append(" #").append(hdr1.seqno).append(" - #").append(hdr2.seqno);
+                }
+                sb.append(" (" + batch.size()).append(" messages)");
+                log.trace(sb);
+            }
+            up_prot.up(batch);
+        }
+        catch(Throwable t) {
+            log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
         }
     }
 

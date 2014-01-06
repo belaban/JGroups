@@ -1,10 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
-import org.jgroups.util.SeqnoList;
-import org.jgroups.util.Table;
-import org.jgroups.util.Tuple;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -42,6 +39,25 @@ public class TableTest {
         System.out.println("buf = " + buf);
         assert rc;
         assert buf.size() == 2;
+    }
+
+    public void testAddListWithConstValue() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        List<Tuple<Long,Integer>> msgs=createList(1,2,3,4,5,6,7,8,9,10);
+        final Integer DUMMY=0;
+        boolean rc=buf.add(msgs, false, DUMMY);
+        System.out.println("buf = " + buf);
+        assert rc;
+        assert buf.size() == 10;
+        List<Integer> list=buf.removeMany(null,true,0,new Filter<Integer>() {
+            public boolean accept(Integer element) {
+                return element.hashCode() == DUMMY.hashCode();
+            }
+        });
+        System.out.println("list = " + list);
+        assert list.size() == 10;
+        for(int num: list)
+            assert num == DUMMY;
     }
 
     public void testAddListWithRemoval() {
@@ -126,6 +142,29 @@ public class TableTest {
     }
 
 
+    public static void testAddListWithResizing() {
+        Table<Integer> table=new Table<Integer>(3, 5, 0);
+        List<Tuple<Long,Integer>> msgs=new ArrayList<Tuple<Long,Integer>>();
+        for(int i=1; i < 100; i++)
+            msgs.add(new Tuple<Long,Integer>((long)i,i));
+        table.add(msgs, false);
+        System.out.println("table = " + table);
+        int num_resizes=table.getNumResizes();
+        System.out.println("num_resizes = " + num_resizes);
+        assert num_resizes == 1 : "number of resizings=" + num_resizes + " (expected 1)";
+    }
+
+    public static void testAddListWithResizing2() {
+        Table<Integer> table=new Table<Integer>(3, 500, 0);
+        List<Tuple<Long,Integer>> msgs=new ArrayList<Tuple<Long,Integer>>();
+        for(int i=1; i < 100; i++)
+            msgs.add(new Tuple<Long,Integer>((long)i,i));
+        table.add(msgs, false);
+        System.out.println("table = " + table);
+        int num_resizes=table.getNumResizes();
+        System.out.println("num_resizes = " + num_resizes);
+        assert num_resizes == 0 : "number of resizings=" + num_resizes + " (expected 0)";
+    }
 
     public static void testAdditionWithOffset2() {
         Table<Integer> table=new Table<Integer>(3, 10, 2);
@@ -540,6 +579,60 @@ public class TableTest {
         assert table.size() == 6 && table.getNumMissing() == 2;
     }
 
+    public static void testRemoveManyWithFilter() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 10; i++)
+            table.add(i, i);
+        List<Integer> list=table.removeMany(null,true,0,new Filter<Integer>() {
+            public boolean accept(Integer element) {
+                return element % 2 == 0;
+            }
+        });
+        System.out.println("list = " + list);
+        System.out.println("table = " + table);
+        assert list.size() == 5;
+        assert table.isEmpty();
+        for(Integer num: Arrays.asList(2,4,6,8,10))
+            assert list.contains(num);
+    }
+
+    public static void testRemoveManyWithFilterAcceptAll() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 10; i++)
+            table.add(i, i);
+        List<Integer> list=table.removeMany(null,true,0,new Filter<Integer>() {
+            public boolean accept(Integer element) {return true;}});
+        System.out.println("list = " + list);
+        System.out.println("table = " + table);
+        assert list.size() == 10;
+        assert table.isEmpty();
+    }
+
+    public static void testRemoveManyWithFilterAcceptNone() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 10; i++)
+            table.add(i, i);
+        List<Integer> list=table.removeMany(null,true,0,new Filter<Integer>() {
+            public boolean accept(Integer element) {return false;}});
+        System.out.println("list = " + list);
+        System.out.println("table = " + table);
+        assert list == null;
+        assert table.isEmpty();
+    }
+
+    public static void testRemoveManyWithFilterAcceptNone2() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 10; i++)
+            table.add(i, i);
+        List<Integer> list=table.removeMany(null,true,3,new Filter<Integer>() {
+            int cnt=0;
+            public boolean accept(Integer element) {return ++cnt <= 2;}});
+        System.out.println("list = " + list);
+        System.out.println("table = " + table);
+        assert list.size() == 2;
+        assert table.isEmpty();
+    }
+
 
     public static void testForEach() {
         class MyVisitor<T> implements Table.Visitor<T> {
@@ -804,10 +897,10 @@ public class TableTest {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
         assertCapacity(table.capacity(), table.getNumRows(), 10);
         addAndGet(table, 30);
-        addAndGet(table, 35);
+        addAndGet(table,35);
         assertCapacity(table.capacity(), table.getNumRows(), 10);
-        addAndGet(table, 500);
-        assertCapacity(table.capacity(), table.getNumRows(), 10);
+        addAndGet(table,500);
+        assertCapacity(table.capacity(),table.getNumRows(),10);
 
         addAndGet(table, 515);
         assertCapacity(table.capacity(), table.getNumRows(), 10);
@@ -828,7 +921,7 @@ public class TableTest {
 
         table.purge(50);
         System.out.println("now triggering a resize() by addition of seqno=120");
-        addAndGet(table, 120);
+        addAndGet(table,120);
         
     }
 
@@ -888,7 +981,7 @@ public class TableTest {
         assertIndices(table, 0, 43, 50);
         table.purge(43);
         System.out.println("table = " + table);
-        assertIndices(table, 43, 43, 50);
+        assertIndices(table,43,43,50);
         addAndGet(table, 52);
         assert table.get(43) == null;
 
@@ -919,10 +1012,10 @@ public class TableTest {
     public static void testMove2() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
         for(int i=1; i < 30; i++)
-            table.add(i, i);
+            table.add(i,i);
         table.removeMany(true, 23);
         System.out.println("table = " + table);
-        table.add(35, 35); // triggers a resize() --> move()
+        table.add(35,35); // triggers a resize() --> move()
         for(int i=1; i <= 23; i++)
             assert table._get(i) == null;
         for(int i=24; i < 30; i++)
@@ -1017,7 +1110,7 @@ public class TableTest {
         for(int i=1; i <= 100; i++)
             table.add(i, i);
         System.out.println("table = " + table);
-        table.removeMany(false, 53);
+        table.removeMany(false,53);
         table.purge(53);
         for(int i=54; i <= 100; i++)
             assert table.get(i) == i;
@@ -1057,7 +1150,7 @@ public class TableTest {
         for(int i=1; i <= 30; i++)
             table.add(i, i);
         System.out.println("table = " + table);
-        table.purge(15, true);
+        table.purge(15,true);
         System.out.println("table = " + table);
         assertIndices(table, 15, 15, 30);
         for(int i=1; i <= 15; i++)
@@ -1089,20 +1182,20 @@ public class TableTest {
     public void testCompact() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
         for(int i=1; i <= 80; i++)
-            addAndGet(table, i);
+            addAndGet(table,i);
         assert table.size() == 80;
-        assertIndices(table, 0, 0, 80);
+        assertIndices(table,0,0,80);
         List<Integer> list=table.removeMany(false,60);
         assert list.size() == 60;
         assert list.get(0) == 1 && list.get(list.size() -1) == 60;
         assertIndices(table, 0, 60, 80);
         table.purge(60);
-        assertIndices(table, 60, 60, 80);
+        assertIndices(table,60,60,80);
         assert table.size() == 20;
         table.compact();
-        assertIndices(table, 60, 60, 80);
+        assertIndices(table,60,60,80);
         assert table.size() == 20;
-        assertCapacity(table.capacity(), table.getNumRows(), 10);
+        assertCapacity(table.capacity(),table.getNumRows(),10);
     }
 
 

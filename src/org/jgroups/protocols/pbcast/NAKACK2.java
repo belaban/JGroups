@@ -652,7 +652,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
         // Process (new and retransmitted) messages:
         if(msgs != null)
-            handleMessages(batch.sender(), msgs, batch.mode() == MessageBatch.Mode.OOB, batch.clusterName());
+            handleMessages(batch.dest(), batch.sender(), msgs, batch.mode() == MessageBatch.Mode.OOB, batch.clusterName());
 
         // received XMIT-RSPs:
         if(got_retransmitted_msg && rebroadcasting)
@@ -784,7 +784,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
 
-    protected void handleMessages(Address sender, List<Tuple<Long,Message>> msgs, boolean oob, String cluster_name) {
+    protected void handleMessages(Address dest, Address sender, List<Tuple<Long,Message>> msgs, boolean oob, String cluster_name) {
         Table<Message> buf=xmit_table.get(sender);
         if(buf == null) {  // discard message if there is no entry for sender
             if(leaving)
@@ -810,22 +810,14 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
         if(added && oob) {
+            MessageBatch oob_batch=new MessageBatch(dest, sender, null, dest == null, MessageBatch.Mode.OOB, msgs.size());
             for(Tuple<Long,Message> tuple: msgs) {
                 long    seq=tuple.getVal1();
                 Message msg=loopback? buf.get(seq) : tuple.getVal2(); // we *have* to get the message, because loopback means we didn't add it to win !
-                if(msg != null && msg.isFlagSet(Message.Flag.OOB)) {
-                    if(msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED)) {
-                        if(log.isTraceEnabled())
-                            log.trace("%s: delivering %s#%d", local_addr, sender, seq);
-                        try {
-                            up_prot.up(new Event(Event.MSG, msg));
-                        }
-                        catch(Throwable t) {
-                            log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "OOB message", msg, t);
-                        }
-                    }
-                }
+                if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
+                    oob_batch.add(msg);
             }
+            deliverBatch(oob_batch);
         }
 
         removeAndPassUp(buf,sender,loopback,cluster_name); // at most 1 thread will execute this at any given time
@@ -859,25 +851,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     if(msg_to_deliver.isFlagSet(Message.Flag.OOB) && !msg_to_deliver.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
                         batch.remove(msg_to_deliver);
                 }
-                if(batch.isEmpty())
-                    continue;
-
-                try {
-                    if(log.isTraceEnabled()) {
-                        Message first=batch.first(), last=batch.last();
-                        StringBuilder sb=new StringBuilder(local_addr + ": delivering");
-                        if(first != null && last != null) {
-                            NakAckHeader2 hdr1=(NakAckHeader2)first.getHeader(id), hdr2=(NakAckHeader2)last.getHeader(id);
-                            sb.append(" #").append(hdr1.seqno).append(" - #").append(hdr2.seqno);
-                        }
-                        sb.append(" (" + batch.size()).append(" messages)");
-                        log.trace(sb);
-                    }
-                    up_prot.up(batch);
-                }
-                catch(Throwable t) {
-                    log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
-                }
+                deliverBatch(batch);
             }
         }
         finally {
@@ -919,6 +893,27 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": resending " + original_sender + "::" + i);
             sendXmitRsp(xmit_requester, msg);
+        }
+    }
+
+    protected void deliverBatch(MessageBatch batch) {
+        try {
+            if(batch.isEmpty())
+                return;
+            if(log.isTraceEnabled()) {
+                Message first=batch.first(), last=batch.last();
+                StringBuilder sb=new StringBuilder(local_addr + ": delivering");
+                if(first != null && last != null) {
+                    NakAckHeader2 hdr1=(NakAckHeader2)first.getHeader(id), hdr2=(NakAckHeader2)last.getHeader(id);
+                    sb.append(" #").append(hdr1.seqno).append(" - #").append(hdr2.seqno);
+                }
+                sb.append(" (" + batch.size()).append(" messages)");
+                log.trace(sb);
+            }
+            up_prot.up(batch);
+        }
+        catch(Throwable t) {
+            log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
         }
     }
 

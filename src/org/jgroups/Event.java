@@ -158,7 +158,7 @@ public class Event {
 
     public String toString() {
         StringBuilder ret=new StringBuilder(64);
-        ret.append("Event[type=" + type2String(type) + ", arg=" + arg + ']');
+        ret.append(type2String(type)).append(", arg=").append(arg);
         if(type == MSG)
             ret.append(" (headers=").append(((Message)arg).printHeaders()).append(")");
         return ret.toString();

@@ -1578,7 +1578,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     /**
-     * Removes messages with flag DONT_BUNDLE set and executes them in the oob or internal thread pool. JGRP-1737
+     * Removes messages with flags DONT_BUNDLE and OOB set and executes them in the oob or internal thread pool. JGRP-1737
      */
     protected void removeAndDispatchNonBundledMessages(MessageBatch ... oob_batches) {
         for(MessageBatch oob_batch: oob_batches) {
@@ -1586,13 +1586,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 continue;
 
             for(Message msg: oob_batch) {
-                if(msg.isFlagSet(Message.Flag.DONT_BUNDLE)) {
+                if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
                     boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
                     msg.putHeader(id, new TpHeader(oob_batch.clusterName()));
                     Executor pool=pickThreadPool(oob, internal);
-                    pool.execute(new SingleMessageHandler(msg));
-                    oob_batch.remove(msg);
-                    num_oob_msgs_received++;
+                    try {
+                        pool.execute(new SingleMessageHandler(msg));
+                        oob_batch.remove(msg);
+                        num_oob_msgs_received++;
+                    }
+                    catch(Throwable t) {
+                        log.error("%s: failed submitting DONT_BUNDLE message to thread pool: %s. Msg: %s",
+                                  local_addr, t, msg.printHeaders());
+                    }
                 }
             }
         }
