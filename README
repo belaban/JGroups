@@ -19,7 +19,7 @@ consists of 3 parts: (1) a socket-like API for application
 development, (2) a protocol stack, which implements reliable
 communication, and (3) a set of building blocks, which give the
 developer high-level abstractions (e.g. ReplicatedHashMap, an
-implementation of java.util.Map.
+implementation of java.util.Map).
 
 The API (a channel) looks like a socket: there are methods for joining
 and leaving groups, sending and receiving messages,
