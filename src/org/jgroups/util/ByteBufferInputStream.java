@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import java.io.*;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 /**
@@ -20,7 +21,11 @@ public class ByteBufferInputStream implements DataInput {
     }
 
     public void readFully(byte[] b, int off, int len) throws IOException {
-        buf.get(b, off, len);
+        try {
+            buf.get(b, off, len);
+        } catch (BufferUnderflowException e) {
+            throw new EOFException();
+        }
     }
 
 
@@ -31,49 +36,73 @@ public class ByteBufferInputStream implements DataInput {
     }
 
     public boolean readBoolean() throws IOException {
-        return buf.get() == 1;
+        return readByte() == 1;
     }
 
     public byte readByte() throws IOException {
-        return buf.get();
+        try {
+            return buf.get();
+        } catch (BufferUnderflowException e) {
+            throw new EOFException();
+        }
     }
 
     public int readUnsignedByte() throws IOException {
         int ch=readByte();
-        if(ch < 0)
-            throw new EOFException();
         return ch;
     }
 
     public short readShort() throws IOException {
-        return buf.getShort();
+        try {
+            return buf.getShort();
+        } catch (BufferUnderflowException e) {
+            throw new EOFException();
+        }
     }
 
     public int readUnsignedShort() throws IOException {
         int retval=readShort();
-        if(retval < 0)
-            throw new EOFException();
         return retval;
     }
 
     public char readChar() throws IOException {
-        return buf.getChar();
+        try {
+            return buf.getChar();
+        } catch (BufferUnderflowException e) {
+            throw new EOFException();
+        }
     }
 
     public int readInt() throws IOException {
-        return buf.getInt();
+        try {
+            return buf.getInt();
+        } catch (BufferUnderflowException e) {
+            throw new EOFException();
+        }
     }
 
     public long readLong() throws IOException {
-        return buf.getLong();
+        try {
+            return buf.getLong();
+        } catch (BufferUnderflowException e) {
+            throw new EOFException();
+        }
     }
 
     public float readFloat() throws IOException {
-        return buf.getFloat();
+        try {
+            return buf.getFloat();
+        } catch (BufferUnderflowException e) {
+            throw new EOFException();
+        }
     }
 
     public double readDouble() throws IOException {
-        return buf.getDouble();
+        try {
+            return buf.getDouble();
+        } catch (BufferUnderflowException e) {
+            throw new EOFException();
+        }
     }
 
     public String readLine() throws IOException {
