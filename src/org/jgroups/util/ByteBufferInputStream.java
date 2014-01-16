@@ -26,7 +26,7 @@ public class ByteBufferInputStream implements DataInput {
 
     public int skipBytes(int n) throws IOException {
         int skip=Math.min(n, buf.limit() - buf.position());
-        buf.limit(buf.limit() + skip);
+        buf.position(buf.position() + skip);
         return skip;
     }
 
