@@ -39,7 +39,7 @@ public class ByteBufferInputStream implements DataInput {
     }
 
     public int readUnsignedByte() throws IOException {
-        int ch=readByte();
+        int ch=readByte() & 0xff;
         if(ch < 0)
             throw new EOFException();
         return ch;
@@ -50,7 +50,7 @@ public class ByteBufferInputStream implements DataInput {
     }
 
     public int readUnsignedShort() throws IOException {
-        int retval=readShort();
+        int retval=readShort() & 0xffff;
         if(retval < 0)
             throw new EOFException();
         return retval;
