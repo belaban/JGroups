@@ -46,17 +46,15 @@ public class NumberEncoding {
 
    @Deprecated
    public static byte[] encode(final long num) {
-      if(num == 0)
-          return new byte[]{0};
-
-      byte bytes_needed=numberOfBytesRequiredForLong(num);
-      byte[] buf=new byte[bytes_needed + 1];
-      buf[0]=bytes_needed;
-
-      int index=1;
-      for(int i=0; i < bytes_needed; i++)
-          buf[index++]=getByteAt(num, i);
-      return buf;
+      byte bufferSize = numberOfBytesRequiredForLong(num);
+      ExposedByteArrayOutputStream arrayOutputStream = new ExposedByteArrayOutputStream(bufferSize);
+      ExposedDataOutputStream output = new ExposedDataOutputStream(arrayOutputStream);
+      try {
+         writeLong(num, output);
+      } catch (IOException e) {
+         //Can't happen
+      }
+      return arrayOutputStream.getRawBuffer();
   }
 
   public static void writeLongSequence(final long highest_delivered, final long highest_received, DataOutput out) throws Exception {
