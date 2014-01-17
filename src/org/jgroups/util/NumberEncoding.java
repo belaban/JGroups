@@ -7,8 +7,15 @@ import java.io.IOException;
 public class NumberEncoding {
 
    public static void writeLong(final long num, final DataOutput out) throws IOException {
-      byte[] buf = encode(num);
-      out.write(buf, 0, buf.length);
+      if(num == 0) {
+         out.write(0);
+         return;
+      }
+      final byte bytes_needed=numberOfBytesRequiredForLong(num);
+      //Current implementation encodes the size as headers
+      out.write(bytes_needed);
+      for(int i=0; i < bytes_needed; i++)
+         out.write(getByteAt(num, i));
    }
 
    public static long decode(final byte[] buf) {
