@@ -417,7 +417,7 @@
 =============================== TestNG ======================================== -->
 
 
-    <target name="all-tests">
+    <target name="all-tests" description="Run all tests">
         <sequential>
         	<antcall target="functional"/>
         	<antcall target="stack-independent"/>
@@ -430,7 +430,7 @@
         </sequential>
     </target>
 
-    <target name="functional" depends="postcompile,define-testng-task">
+    <target name="functional" depends="postcompile,define-testng-task" description="Run functional tests">
         <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
         <runtest suitename="functional"
                  groups="functional"
@@ -544,7 +544,7 @@
                 />
     </target>
 
-    <target name="report">
+    <target name="report" description="Produce test reports">
         <antcall target="reports"/>
     </target>
 
