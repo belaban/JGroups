@@ -2119,11 +2119,6 @@ public class Util {
     }
 
     @Deprecated
-    public static long[] decodeLongSequence(byte[] buf) {
-       return NumberEncoding.decodeLongSequence(buf);
-    }
-
-    @Deprecated
     public static void writeLongSequence(final long highest_delivered, final long highest_received, DataOutput out) throws Exception {
        NumberEncoding.writeLongSequence(highest_delivered, highest_received, out);
     }
@@ -2131,16 +2126,6 @@ public class Util {
     @Deprecated
     public static long[] readLongSequence(DataInput in) throws Exception {
         return NumberEncoding.readLongSequence(in);
-    }
-
-    @Deprecated
-    public static byte encodeLength(byte len1, byte len2) {
-       return NumberEncoding.encodeLength(len1, len2);
-    }
-
-    @Deprecated
-    public static byte[] decodeLength(final byte len) {
-       return NumberEncoding.decodeLength(len);
     }
 
     public static <T> String printListWithDelimiter(Collection<T> list, String delimiter) {

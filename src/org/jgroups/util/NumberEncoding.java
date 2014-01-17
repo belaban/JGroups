@@ -159,18 +159,6 @@ public class NumberEncoding {
       return (byte)(number == 0? 1 : numberOfBytesRequiredForLong(number) +1);
    }
 
-   public static long[] decodeLongSequence(final byte[] buf) {
-      if(buf[0] == 0)
-         return new long[]{0,0};
-
-      byte[] lengths=decodeLength(buf[0]);
-      long[] seqnos=new long[2];
-      seqnos[0]=makeLong(buf, 1, lengths[0]);
-      seqnos[1]=makeLong(buf, 1 + lengths[0], lengths[1]) + seqnos[0];
-
-      return seqnos;
-   }
-
    static byte numberOfBytesRequiredForLong(final long number) {
       if(number >> 56 != 0) return 8;
       if(number >> 48 != 0) return 7;
