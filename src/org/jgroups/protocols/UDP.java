@@ -194,7 +194,7 @@ public class UDP extends TP {
         DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
         try {
             if(mcast) {
-                if(mcast_sock != null && !mcast_sock.isClosed()) {
+                if(mcast_sock != null) {
                     try {
                         mcast_sock.send(packet);
                     }
@@ -204,10 +204,8 @@ public class UDP extends TP {
                     }
                 }
             }
-            else {
-                if(sock != null && !sock.isClosed())
-                    sock.send(packet);
-            }
+            else if(sock != null)
+                sock.send(packet);
         }
         catch(Exception ex) {
             throw new Exception("dest=" + dest + ":" + port + " (" + length + " bytes)", ex);
