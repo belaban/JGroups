@@ -1,10 +1,12 @@
 
 package org.jgroups;
 
+import org.jgroups.util.Bits;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
 
 
 /**
@@ -102,16 +104,16 @@ public class ViewId implements Comparable<ViewId>, Streamable {
 
     public void writeTo(DataOutput out) throws Exception {
         Util.writeAddress(creator, out);
-        Util.writeLong(id, out);
+        Bits.writeLong(id,out);
     }
 
     public void readFrom(DataInput in) throws Exception {
         creator=Util.readAddress(in);
-        id=Util.readLong(in);
+        id=Bits.readLong(in);
     }
 
     public int serializedSize() {
-        return Util.size(id) + Util.size(creator);
+        return Bits.size(id) + Util.size(creator);
     }
 
 }

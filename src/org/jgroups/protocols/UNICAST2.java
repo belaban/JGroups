@@ -1236,20 +1236,20 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             int retval=Global.BYTE_SIZE; // type
             switch(type) {
                 case DATA:
-                    retval+=Util.size(seqno) // seqno
+                    retval+=Bits.size(seqno) // seqno
                       + Global.SHORT_SIZE    // conn_id
                       + Global.BYTE_SIZE;    // first
                     break;
                 case XMIT_REQ:
                     break;
                 case STABLE:
-                    retval+=Util.size(seqno, high_seqno) + Global.SHORT_SIZE; // conn_id
+                    retval+=Bits.size(seqno, high_seqno) + Global.SHORT_SIZE; // conn_id
                     break;
                 case SEND_FIRST_SEQNO:
-                    retval+=Util.size(seqno);
+                    retval+=Bits.size(seqno);
                     break;
                 case ACK:
-                    retval+=Util.size(seqno) + Global.SHORT_SIZE; // conn_id
+                    retval+=Bits.size(seqno) + Global.SHORT_SIZE; // conn_id
                     break;
             }
             return retval;
@@ -1265,21 +1265,21 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             out.writeByte(type);
             switch(type) {
                 case DATA:
-                    Util.writeLong(seqno, out);
+                    Bits.writeLong(seqno, out);
                     out.writeShort(conn_id);
                     out.writeBoolean(first);
                     break;
                 case XMIT_REQ:
                     break;
                 case STABLE:
-                    Util.writeLongSequence(seqno, high_seqno, out);
+                    Bits.writeLongSequence(seqno, high_seqno, out);
                     out.writeShort(conn_id);
                     break;
                 case SEND_FIRST_SEQNO:
-                    Util.writeLong(seqno, out);
+                    Bits.writeLong(seqno, out);
                     break;
                 case ACK:
-                    Util.writeLong(seqno, out);
+                    Bits.writeLong(seqno, out);
                     out.writeShort(conn_id);
                     break;
             }
@@ -1289,23 +1289,23 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             type=in.readByte();
             switch(type) {
                 case DATA:
-                    seqno=Util.readLong(in);
+                    seqno=Bits.readLong(in);
                     conn_id=in.readShort();
                     first=in.readBoolean();
                     break;
                 case XMIT_REQ:
                     break;
                 case STABLE:
-                    long[] seqnos=Util.readLongSequence(in);
+                    long[] seqnos=Bits.readLongSequence(in);
                     seqno=seqnos[0];
                     high_seqno=seqnos[1];
                     conn_id=in.readShort();
                     break;
                 case SEND_FIRST_SEQNO:
-                    seqno=Util.readLong(in);
+                    seqno=Bits.readLong(in);
                     break;
                 case ACK:
-                    seqno=Util.readLong(in);
+                    seqno=Bits.readLong(in);
                     conn_id=in.readShort();
                     break;
             }

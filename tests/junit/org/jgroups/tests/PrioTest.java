@@ -21,7 +21,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=false)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class PrioTest extends ChannelTestBase {
     protected JChannel c1, c2;
     protected PrioReceiver r1, r2;

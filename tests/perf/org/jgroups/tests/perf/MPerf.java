@@ -6,10 +6,8 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.AckCollector;
-import org.jgroups.util.ResponseCollector;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
+import org.jgroups.util.Bits;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -707,17 +705,17 @@ public class MPerf extends ReceiverAdapter {
         }
 
         public int size() {
-            return Util.size(time) + Util.size(msgs);
+            return Bits.size(time) + Bits.size(msgs);
         }
 
         public void writeTo(DataOutput out) throws Exception {
-            Util.writeLong(time, out);
-            Util.writeLong(msgs, out);
+            Bits.writeLong(time,out);
+            Bits.writeLong(msgs,out);
         }
 
         public void readFrom(DataInput in) throws Exception {
-            time=Util.readLong(in);
-            msgs=Util.readLong(in);
+            time=Bits.readLong(in);
+            msgs=Bits.readLong(in);
         }
 
         public String toString() {
@@ -748,20 +746,20 @@ public class MPerf extends ReceiverAdapter {
         public int size() {
             int retval=Global.BYTE_SIZE;
             if(type == DATA)
-                retval+=Util.size(seqno);
+                retval+=Bits.size(seqno);
             return retval;
         }
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             if(type == DATA)
-                Util.writeLong(seqno, out);
+                Bits.writeLong(seqno, out);
         }
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
             if(type == DATA)
-                seqno=Util.readLong(in);
+                seqno=Bits.readLong(in);
         }
 
         public String toString() {

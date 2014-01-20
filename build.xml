@@ -3,7 +3,7 @@
 
 <project name="JGroups" default="compile" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
     <description>
-        build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
+        Ant/ivy based build.xml file for JGroups. Needs ant to run
     </description>
 
     <property name="version" value="3.5.0.Alpha1"/>
@@ -105,7 +105,7 @@
     </target>
 
 
-    <target name="get-ivy" depends="check-ivy-exists" unless="ivy.exists">
+    <target name="get-ivy" description="Fetches ivy from a maven repo" depends="check-ivy-exists" unless="ivy.exists">
         <get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.version}/ivy-${ivy.version}.jar"
              dest="${lib.dir}" usetimestamp="true"/>
     </target>
@@ -136,13 +136,6 @@
         <taskdef resource="org/apache/ivy/ant/antlib.xml"
                  uri="antlib:org.apache.ivy.ant" classpathref="jg.classpath"/>
     </target>
-
-
-    <target name="retrieve-sources" depends="get-ivy,define-ivy-task">
-        <mkdir dir="${lib.dir}"/>
-        <ivy:retrieve transitive="false"/>
-    </target>
-
 
     <target name="prepare" depends="retrieve">
         <property environment="env"/>
@@ -175,7 +168,7 @@
     </target>
 
 
-    <target name="compile-no-unittests" depends="prepare" description="Compiles all Java files">
+    <target name="compile-no-unittests" depends="prepare" description="Compiles all Java files except unit tests">
         <javac srcdir="${src.dir}"
                destdir="${compile.dir}"
                source="1.6"
@@ -212,7 +205,7 @@
 
 
     <target name="jar"
-            description="Compiles and creates JAR files in the ./dist directory"
+            description="Compiles and creates JARs in ./dist"
             depends="jgroups.jar,jgroups-sources.jar">
         <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
 
@@ -220,7 +213,7 @@
 
 
     <target name="jgroups.jar"
-            description="Creates the jgroups-${version}.jar (includes everything)"
+            description="Creates the jgroups.jar (includes everything)"
             depends="clean,compile-no-unittests,compile-essential-unittests,create-schema">
         <mkdir dir="${dist.dir}"/>
         <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
@@ -255,7 +248,7 @@
 
 
     <target name="jgroups-sources.jar"
-            description="Creates the jgroups-sources.jar. Includes only core source files, no demos, no tests">
+            description="Creates the jgroups-sources.jar (no demos, tests)">
         <mkdir dir="${dist.dir}"/>
         <property name="bndclasspath" refid="jg.classpath"/>
         <property name="-savemanifest" value="${conf.dir}/MANIFEST.MF"/>
@@ -279,7 +272,7 @@
     <!-- generate java doc -->
     <target name="javadoc"
             depends="prepare,check-javadoc" unless="javadoc.exists"
-            description="Create Javadoc documentation in the ./dist/javadoc directory">
+            description="Creates Javadoc documentation in ./dist/javadoc">
          <mkdir dir="${javadoc.dir}"/>
         <javadoc packagenames="${javadoc.packages}"
                  sourcepath="${src.dir}"
@@ -301,12 +294,10 @@
         <available file="${javadoc.dir}" type="dir" property="javadoc.exists"/>
     </target>
 
-    <target name="all" depends="compile"/>
-
-    <target name="docs" description="Build all html and pdf docs" depends="manual,tutorial">
+    <target name="docs" description="Builds all html and pdf docs" depends="manual,tutorial">
     </target>
 
-    <target name="manual" description="Build all html and pdf docs"
+    <target name="manual" description="Builds all html and pdf docs"
             depends="check-manual,compile" unless="manual.up-to-date">
         <echo message="Building manual from docbook ..."/>
         <prot-properties-to-doc input="${protocols.xml}"/>
@@ -316,7 +307,7 @@
     </target>
 
 
-    <target name="tutorial" description="Build all html and pdf docs"
+    <target name="tutorial" description="Builds all html and pdf docs"
             depends="check-tutorial" unless="tutorial.up-to-date">
         <echo message="Building tutorial from docbook ..."/>
         <run-maven dir="${tutorial.dir}"/>
@@ -340,7 +331,7 @@
     </target>
 
 
-	<target name="create-schema" description="creates XML schema for this version of JGroups">
+	<target name="create-schema" description="Creates XML schema for this version of JGroups">
 		<delete dir="${compile.dir}/schema" failonerror="false"/>
 		<mkdir dir="${compile.dir}/schema"/>
 		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath">
@@ -350,7 +341,7 @@
 
 
     <target name="clean"
-            description="Removes all class files and the ./dist directory">
+            description="Removes all class files and ./dist">
         <delete dir="${compile.dir}" failonerror="false"/>
         <delete dir="${dist.dir}" failonerror="false"/>
         <delete dir="${tmp.dir}" failonerror="false"/>
@@ -387,7 +378,7 @@
 
     <target name="makeKeystore" unless="isKeyStoreGenerated"
             depends="keyStoreGenerated, compile"
-            description="Generates an appropriate temporary keystore file for the unit tests and the JVM in use">
+            description="Generates a temp keystore in ./keystore (for unit tests)">
         <mkdir dir="${keystore.dir}"/>
         <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
             <arg value="--storeName"/>
@@ -417,7 +408,7 @@
 =============================== TestNG ======================================== -->
 
 
-    <target name="all-tests">
+    <target name="all-tests" description="Runs all tests">
         <sequential>
         	<antcall target="functional"/>
         	<antcall target="stack-independent"/>
@@ -430,7 +421,7 @@
         </sequential>
     </target>
 
-    <target name="functional" depends="postcompile,define-testng-task">
+    <target name="functional" depends="postcompile,define-testng-task" description="Runs functional tests">
         <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
         <runtest suitename="functional"
                  groups="functional"
@@ -439,7 +430,7 @@
     </target>
 
 
-    <target name="byteman" depends="postcompile,define-testng-task">
+    <target name="byteman" depends="postcompile,define-testng-task" description="Runs the byteman tests">
         <mkdir dir="${tmp.dir}/test-results/xml/byteman"/>
         <runtest classpath="jg.classpath.byteman"
                  suitename="byteman"
@@ -447,17 +438,12 @@
                  parallel="false"
                  threadcount="1"
                  jvmarg1="-Dorg.jboss.byteman.contrib.bmunit.agent.inhibit=true"
-                 jvmarg2="-javaagent:${lib.dir}/byteman.jar=listener:true"
-                >
-            <!--<additional-args>-->
-                <!--<jvmarg value="-Dorg.jboss.byteman.contrib.bmunit.agent.inhibit=true"/>-->
-                <!--<jvmarg value="-javaagent:${lib.dir}/byteman.jar=listener:true"/>-->
-            <!--</additional-args>-->
+                 jvmarg2="-javaagent:${lib.dir}/byteman.jar=listener:true">
         </runtest>
     </target>
 
 
-    <target name="time-sensitive" depends="postcompile,define-testng-task">
+    <target name="time-sensitive" depends="postcompile,define-testng-task" description="Runs time-sensitive tests">
         <mkdir dir="${tmp.dir}/test-results/xml/time-sensitive"/>
         <runtest suitename="sensitive"
                  groups="time-sensitive"
@@ -465,7 +451,7 @@
                  threadcount="1" />
     </target>
 
-    <target name="stack-independent" depends="postcompile,define-testng-task">
+    <target name="stack-independent" depends="postcompile,define-testng-task" description="Runs stack-independent tests">
         <mkdir dir="${tmp.dir}/test-results/xml/stack-independent"/>
         <runtest suitename="ind"
                  groups="stack-independent"
@@ -474,7 +460,7 @@
     </target>
 
 
-    <target name="udp" depends="postcompile,define-testng-task">
+    <target name="udp" depends="postcompile,define-testng-task" description="Runs UDP tests">
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest suitename="udp"
                  groups="base,stack-dependent"
@@ -488,7 +474,7 @@
                 />
     </target>
 
-    <target name="udp-flush" depends="postcompile,define-testng-task">
+    <target name="udp-flush" depends="postcompile,define-testng-task" description="Runs UDP/FLUSH tests">
         <mkdir dir="${tmp.dir}/test-results/xml/udp-flush"/>
         <runtest suitename="udp-flush"
                  groups="base,flush"
@@ -503,7 +489,7 @@
                 />
     </target>
 
-    <target name="tcp" depends="postcompile,define-testng-task">
+    <target name="tcp" depends="postcompile,define-testng-task" description="Runs TCP tests">
     	<!-- Needed to force reading of properties. Otherwise tcp tests will fail -->
     	<property name="build.properties.file" value="build.properties"/>
     	<property file="${build.properties.file}"/>
@@ -524,7 +510,7 @@
     </target>
 
 
-    <target name="tcp-flush" depends="postcompile,define-testng-task">
+    <target name="tcp-flush" depends="postcompile,define-testng-task" description="Runs TCP/FLUSH tests">
     	<!-- Needed to force reading of properties. Otherwise tcp-flush tests will fail -->
     	<property name="build.properties.file" value="build.properties"/>
     	<property file="${build.properties.file}"/>
@@ -544,11 +530,7 @@
                 />
     </target>
 
-    <target name="report">
-        <antcall target="reports"/>
-    </target>
-
-    <target name="reports">
+    <target name="reports" description="Produces the test report">
         <mkdir dir="${tmp.dir}/test-results/html"/>
         <junitreport todir="${tmp.dir}/test-results/html">
             <fileset dir="${tmp.dir}/test-results/xml">

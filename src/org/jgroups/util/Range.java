@@ -44,17 +44,17 @@ public class Range implements Streamable, Comparable<Range> {
 
 
     public void writeTo(DataOutput out) throws Exception {
-        Util.writeLongSequence(low, high, out);
+        Bits.writeLongSequence(low, high, out);
     }
 
     public void readFrom(DataInput in) throws Exception {
-        long[] seqnos=Util.readLongSequence(in);
+        long[] seqnos=Bits.readLongSequence(in);
         low=seqnos[0];
         high=seqnos[1];
     }
 
     public int serializedSize() {
-        return Util.size(low, high);
+        return Bits.size(low, high);
     }
 
 

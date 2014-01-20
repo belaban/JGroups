@@ -1,10 +1,12 @@
 package org.jgroups.protocols.tom;
 
 import org.jgroups.Address;
+import org.jgroups.util.Bits;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
+
 
 /**
  * The represents an unique identifier for the messages processed by the Total Order Anycast protocol
@@ -79,19 +81,19 @@ public class MessageID implements Externalizable, Comparable<MessageID>, Cloneab
 
 
     public int serializedSize() {
-        return Util.size(id) + Util.size(address);
+        return Bits.size(id) + Util.size(address);
     }
 
     @Override
     public void writeTo(DataOutput out) throws Exception {
         Util.writeAddress(address, out);
-        Util.writeLong(id, out);
+        Bits.writeLong(id,out);
     }
 
     @Override
     public void readFrom(DataInput in) throws Exception {
         address = Util.readAddress(in);
-        id = Util.readLong(in);
+        id = Bits.readLong(in);
     }
 
     @Override

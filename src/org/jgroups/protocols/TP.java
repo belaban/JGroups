@@ -1550,7 +1550,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected void handleSingleMessage(Address sender, byte[] data, int offset, int length) {
         // the message flags are at indexes 4-5
-        short   msg_flags=Util.makeShort(data, offset + MSG_OFFSET);
+        short   msg_flags=Bits.makeShort(data, offset + MSG_OFFSET);
         boolean internal=(msg_flags & Message.Flag.INTERNAL.value()) == Message.Flag.INTERNAL.value();
         boolean oob=(msg_flags & Message.Flag.OOB.value()) == Message.Flag.OOB.value();
 

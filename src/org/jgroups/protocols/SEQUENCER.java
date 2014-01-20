@@ -7,10 +7,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.BoundedHashMap;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Promise;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -669,18 +666,18 @@ public class SEQUENCER extends Protocol {
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
-            Util.writeLong(seqno, out);
+            Bits.writeLong(seqno,out);
             out.writeBoolean(flush_ack);
         }
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            seqno=Util.readLong(in);
+            seqno=Bits.readLong(in);
             flush_ack=in.readBoolean();
         }
 
         public int size() {
-            return Global.BYTE_SIZE + Util.size(seqno) + Global.BYTE_SIZE; // type + seqno + flush_ack
+            return Global.BYTE_SIZE + Bits.size(seqno) + Global.BYTE_SIZE; // type + seqno + flush_ack
         }
 
     }

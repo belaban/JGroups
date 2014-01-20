@@ -15,7 +15,7 @@ import java.util.List;
  * Demos the creation of a channel and subsequent connection and closing. Demo application should exit (no
  * more threads running)
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class CloseTest extends ChannelTestBase {
     protected JChannel a, b, c;
 

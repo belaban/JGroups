@@ -634,17 +634,17 @@ public class MPerfRpc extends ReceiverAdapter {
         }
 
         public int size() {
-            return Util.size(time) + Util.size(msgs);
+            return Bits.size(time) + Bits.size(msgs);
         }
 
         public void writeTo(DataOutput out) throws Exception {
-            Util.writeLong(time, out);
-            Util.writeLong(msgs, out);
+            Bits.writeLong(time, out);
+            Bits.writeLong(msgs, out);
         }
 
         public void readFrom(DataInput in) throws Exception {
-            time=Util.readLong(in);
-            msgs=Util.readLong(in);
+            time=Bits.readLong(in);
+            msgs=Bits.readLong(in);
         }
 
         public String toString() {

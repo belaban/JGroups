@@ -147,7 +147,7 @@ public class Digest implements Streamable, Iterable<Digest.Entry> {
         else
             out.writeShort(members.length);
         for(int i=0; i < capacity(); i++)
-            Util.writeLongSequence(seqnos[i * 2], seqnos[i * 2 +1], out);
+            Bits.writeLongSequence(seqnos[i * 2], seqnos[i * 2 +1], out);
     }
 
     public void readFrom(DataInput in) throws Exception {
@@ -163,7 +163,7 @@ public class Digest implements Streamable, Iterable<Digest.Entry> {
             seqnos=new long[in.readShort() *2];
 
         for(int i=0; i < seqnos.length/2; i++) {
-            long[] tmp=Util.readLongSequence(in);
+            long[] tmp=Bits.readLongSequence(in);
             seqnos[i * 2]=tmp[0];
             seqnos[i * 2 +1]=tmp[1];
         }
@@ -172,7 +172,7 @@ public class Digest implements Streamable, Iterable<Digest.Entry> {
     public long serializedSize(boolean with_members) {
         long retval=with_members? Util.size(members) : Global.SHORT_SIZE;
         for(int i=0; i < members.length; i++)
-            retval+=Util.size(seqnos[i*2], seqnos[i*2+1]);
+            retval+=Bits.size(seqnos[i*2], seqnos[i*2+1]);
         return retval;
     }
 

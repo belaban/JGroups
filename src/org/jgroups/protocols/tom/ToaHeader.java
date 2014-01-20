@@ -3,6 +3,7 @@ package org.jgroups.protocols.tom;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Header;
+import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -66,7 +67,7 @@ public class ToaHeader extends Header {
 
     @Override
     public int size() {
-        return (int) (Global.BYTE_SIZE  + messageID.serializedSize() + Util.size(sequencerNumber) +
+        return (int) (Global.BYTE_SIZE  + messageID.serializedSize() + Bits.size(sequencerNumber) +
                 Util.size(destinations));
     }
 
@@ -74,7 +75,7 @@ public class ToaHeader extends Header {
     public void writeTo(DataOutput out) throws Exception {
         out.writeByte(type);
         messageID.writeTo(out);
-        Util.writeLong(sequencerNumber, out);
+        Bits.writeLong(sequencerNumber,out);
         Util.writeAddresses(destinations, out);
     }
 
@@ -82,7 +83,7 @@ public class ToaHeader extends Header {
     public void readFrom(DataInput in) throws Exception {
         type = in.readByte();
         messageID.readFrom(in);
-        sequencerNumber = Util.readLong(in);
+        sequencerNumber = Bits.readLong(in);
         destinations= (Collection<Address>) Util.readAddresses(in, ArrayList.class);
     }
 

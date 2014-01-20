@@ -6,10 +6,10 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
-import org.jgroups.AnycastAddress;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Bits;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
@@ -604,21 +604,21 @@ public class RequestCorrelator {
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
-            Util.writeLong(id, out);
+            Bits.writeLong(id,out);
             out.writeBoolean(rsp_expected);
             out.writeShort(corrId);
         }
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            id=Util.readLong(in);
+            id=Bits.readLong(in);
             rsp_expected=in.readBoolean();
             corrId=in.readShort();
         }
 
         public int size() {
             return Global.BYTE_SIZE  // type
-              + Util.size(id)        // id
+              + Bits.size(id)        // id
               + Global.BYTE_SIZE     // rsp_expected
               + Global.SHORT_SIZE;   // corrId
         }

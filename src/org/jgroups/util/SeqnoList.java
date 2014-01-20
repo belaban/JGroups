@@ -111,11 +111,11 @@ public class SeqnoList implements Streamable, Iterable<Long> {
             if(seqno instanceof SeqnoRange) {
                 SeqnoRange range=(SeqnoRange)seqno;
                 out.writeBoolean(true);
-                Util.writeLongSequence(range.from, range.to, out);
+                Bits.writeLongSequence(range.from, range.to, out);
             }
             else {
                 out.writeBoolean(false);
-                Util.writeLong(seqno.from, out);
+                Bits.writeLong(seqno.from, out);
             }
         }
     }
@@ -124,11 +124,11 @@ public class SeqnoList implements Streamable, Iterable<Long> {
         int len=in.readInt();
         for(int i=0; i < len; i++) {
             if(in.readBoolean()) {
-                long[] tmp=Util.readLongSequence(in);
+                long[] tmp=Bits.readLongSequence(in);
                 seqnos.add(new SeqnoRange(tmp[0], tmp[1]));
             }
             else {
-                seqnos.add(new Seqno(Util.readLong(in)));
+                seqnos.add(new Seqno(Bits.readLong(in)));
             }
         }
     }
@@ -139,10 +139,10 @@ public class SeqnoList implements Streamable, Iterable<Long> {
         for(Seqno seqno: seqnos) {
             if(seqno instanceof SeqnoRange) {
                 SeqnoRange range=(SeqnoRange)seqno;
-                retval+=Util.size(range.from, range.to);
+                retval+=Bits.size(range.from, range.to);
             }
             else {
-                retval+=Util.size(seqno.from);
+                retval+=Bits.size(seqno.from);
             }
         }
         return retval;

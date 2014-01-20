@@ -33,12 +33,12 @@ public class Owner implements Streamable {
 
     public void writeTo(DataOutput out) throws Exception {
         Util.writeAddress(address, out);
-        Util.writeLong(thread_id, out);
+        Bits.writeLong(thread_id, out);
     }
 
     public void readFrom(DataInput in) throws Exception {
         address=Util.readAddress(in);
-        thread_id=Util.readLong(in);
+        thread_id=Bits.readLong(in);
     }
 
     public boolean equals(Object obj) {

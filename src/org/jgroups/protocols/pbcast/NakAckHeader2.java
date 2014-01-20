@@ -4,6 +4,7 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Header;
+import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -67,7 +68,7 @@ public class NakAckHeader2 extends Header {
         switch(type) {
             case MSG:
             case XMIT_RSP:
-                Util.writeLong(seqno, out);
+                Bits.writeLong(seqno, out);
                 break;
             case XMIT_REQ:
                 Util.writeAddress(sender, out);
@@ -80,7 +81,7 @@ public class NakAckHeader2 extends Header {
         switch(type) {
             case MSG:
             case XMIT_RSP:
-                seqno=Util.readLong(in);
+                seqno=Bits.readLong(in);
                 break;
             case XMIT_REQ:
                 sender=Util.readAddress(in);
@@ -94,7 +95,7 @@ public class NakAckHeader2 extends Header {
         switch(type) {
             case MSG:
             case XMIT_RSP:
-                return retval + Util.size(seqno);
+                return retval + Bits.size(seqno);
 
             case XMIT_REQ:
                 retval+=Util.size(sender);

@@ -5,6 +5,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Bits;
 import org.jgroups.util.ForwardQueue;
 import org.jgroups.util.Util;
 
@@ -206,16 +207,16 @@ public class FORWARD_TO_COORD extends Protocol {
 
         public long getId()   {return id;}
         public byte getType() {return type;}
-        public int  size()    {return Global.BYTE_SIZE + Util.size(id);}
+        public int  size()    {return Global.BYTE_SIZE + Bits.size(id);}
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
-            Util.writeLong(id, out);
+            Bits.writeLong(id,out);
         }
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            id=Util.readLong(in);
+            id=Bits.readLong(in);
         }
 
         public String toString() {
