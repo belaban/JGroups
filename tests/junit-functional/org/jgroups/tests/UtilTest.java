@@ -328,16 +328,24 @@ public class UtilTest {
         Assert.assertEquals(msg.getLength(), msg2.getLength());
     }
 
+    public static void testStringMarshalling() throws Exception {
+        byte[] tmp={'B', 'e', 'l', 'a'};
+        String str=new String(tmp);
+        byte[] buf=Util.objectToByteBuffer(str);
+        String str2=(String)Util.objectFromByteBuffer(buf);
+        assert str.equals(str2);
+        tmp[1]='a';
+        str2=(String)Util.objectFromByteBuffer(buf);
+        assert str.equals(str2);
+    }
 
     public static void testObjectToByteArrayWithLargeString() throws Exception {
         marshalString(Short.MAX_VALUE );
     }
 
-
-     public static void testObjectToByteArrayWithLargeString2() throws Exception {
+    public static void testObjectToByteArrayWithLargeString2() throws Exception {
         marshalString(Short.MAX_VALUE - 100);
     }
-
 
     public static void testObjectToByteArrayWithLargeString3() throws Exception {
         marshalString(Short.MAX_VALUE + 1);

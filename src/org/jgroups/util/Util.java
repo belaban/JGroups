@@ -486,7 +486,6 @@ public class Util {
         Object retval=null;
         byte type=buffer[offset];
 
-
         switch(type) {
             case TYPE_NULL:
                 return null;
@@ -522,11 +521,9 @@ public class Util {
             case TYPE_SHORT:
                 return ByteBuffer.wrap(buffer, offset + 1, length - 1).getShort();
             case TYPE_STRING:
-                byte[] tmp=new byte[length -1];
-                System.arraycopy(buffer, offset +1, tmp, 0, length -1);
-                return new String(tmp);
+                return new String(buffer, offset +1, length -1);
             case TYPE_BYTEARRAY:
-                tmp=new byte[length -1];
+                byte[] tmp=new byte[length - 1];
                 System.arraycopy(buffer, offset +1, tmp, 0, length -1);
                 return tmp;
             default:
@@ -589,14 +586,15 @@ public class Util {
                         .putShort((Short)obj).array();
             case TYPE_STRING:
                 String str=(String)obj;
-                byte[] buf=new byte[str.length()];
-                for(int i=0; i < buf.length; i++)
-                    buf[i]=(byte)str.charAt(i);
-                return ByteBuffer.allocate(Global.BYTE_SIZE + buf.length).put(TYPE_STRING).put(buf, 0, buf.length).array();
+                int len=str.length();
+                ByteBuffer retval=ByteBuffer.allocate(Global.BYTE_SIZE + len).put(TYPE_STRING);
+                for(int i=0; i < len; i++)
+                    retval.put((byte)str.charAt(i));
+                return retval.array();
             case TYPE_BYTEARRAY:
-                buf=(byte[])obj;
+                byte[] buf=(byte[])obj;
                 return ByteBuffer.allocate(Global.BYTE_SIZE + buf.length).put(TYPE_BYTEARRAY)
-                        .put(buf, 0, buf.length).array();
+                  .put(buf, 0, buf.length).array();
             default:
                 throw new IllegalArgumentException("type " + type + " is invalid");
         }
