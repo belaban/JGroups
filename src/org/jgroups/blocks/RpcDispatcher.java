@@ -342,7 +342,7 @@ public class RpcDispatcher extends MessageDispatcher {
         }
 
         Object body=req_marshaller != null?
-          req_marshaller.objectFromBuffer(req.getBuffer(), req.getOffset(), req.getLength()) : req.getObject();
+          req_marshaller.objectFromBuffer(req.getRawBuffer(), req.getOffset(), req.getLength()) : req.getObject();
 
         if(!(body instanceof MethodCall))
             throw new IllegalArgumentException("message does not contain a MethodCall object") ;

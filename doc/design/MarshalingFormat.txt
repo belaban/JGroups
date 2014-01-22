@@ -17,9 +17,9 @@ SingleMessage:
 - leading: byte. Has bits set for null src and dest addresses, buf and headers
 - flags: byte
 - src address: Address
+- [Headers]: list of headers --> Headers
 - [length of buf]: int
 - [buf]: byte[] array
-- [Headers]: list of headers --> Headers
 
 
 MessageList:

@@ -208,7 +208,7 @@ public class UnicastTestTcp {
 
         switch(type) {
             case START:
-                ByteBuffer tmp=ByteBuffer.wrap(buf, 1, Global.LONG_SIZE);
+                ByteBuffer tmp=ByteBuffer.wrap(buf, 1+msg.getOffset(), Global.LONG_SIZE);
                 num_msgs=(int)tmp.getLong();
                 print=num_msgs / 10;
                 current_value.set(0);

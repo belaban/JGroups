@@ -1628,7 +1628,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected class MyHandler implements Runnable {
         protected final Address sender;
-        protected final byte[]  data;
+        protected final byte[]  data; // this is always a copy, or we use a DirectExecutor
         protected final int     offset;
         protected final int     length;
 
@@ -1650,7 +1650,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
                 byte flags=dis.readByte();
                 final boolean multicast=(flags & MULTICAST) == MULTICAST;
-                Message msg=readMessage(dis);
+                Message msg=new Message(false); // don't create headers, readFrom() will do this
+                int payload_offset=msg.readFromSkipPayload(dis, in_stream);
 
                 if(!multicast) {
                     Address dest=msg.getDest(), target=local_addr;
@@ -1659,6 +1660,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                         return;
                     }
                 }
+
+                if(payload_offset >= 0)
+                    msg.setBuffer(data, payload_offset, length - payload_offset);
 
                 if(stats) {
                     num_msgs_received++;

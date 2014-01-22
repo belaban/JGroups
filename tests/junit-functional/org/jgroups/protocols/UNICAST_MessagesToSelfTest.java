@@ -146,7 +146,7 @@ public class UNICAST_MessagesToSelfTest {
         public void receive(Message msg) {
             if(exception != null)
                 return;
-            ByteBuffer buf=ByteBuffer.wrap(msg.getRawBuffer());
+            ByteBuffer buf=ByteBuffer.wrap(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             int seqno=buf.getInt();
             if(seqno != next) {
                 exception=new Exception("expected seqno was " + next + ", but received " + seqno);

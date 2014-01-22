@@ -233,7 +233,7 @@ public class TotalOrder extends Frame {
                 public void receive(Message msg) {
                     try {
                         TotOrderRequest req=new TotOrderRequest();
-                        ByteBuffer buf=ByteBuffer.wrap(msg.getBuffer());
+                        ByteBuffer buf=ByteBuffer.wrap(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                         req.init(buf);
                         processRequest(req);
                     }

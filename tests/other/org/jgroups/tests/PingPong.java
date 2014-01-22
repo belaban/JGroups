@@ -54,7 +54,7 @@ public class PingPong extends ReceiverAdapter {
     }
 
     public void receive(Message msg) {
-        byte type=msg.getRawBuffer()[0];
+        byte type=msg.getRawBuffer()[msg.getOffset()];
         switch(type) {
             case PING:
                 final Message rsp=new Message(msg.getSrc(), null, PONG_RSP);

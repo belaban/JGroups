@@ -94,6 +94,7 @@ public class ExposedByteArrayInputStream extends ByteArrayInputStream {
         pos=mark;
     }
 
+    public int position() {return pos;}
 
     public void close() throws IOException {
         buf=null;

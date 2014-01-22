@@ -52,7 +52,7 @@ public class RoundTrip extends ReceiverAdapter {
             System.err.println("buffer was null !");
             return;
         }
-        if(buf[0] == 0) { // request
+        if(buf[msg.getOffset()] == 0) { // request
             if(!server) {// client ignores requests
                 return;
             }

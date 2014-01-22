@@ -381,7 +381,7 @@ public class RequestCorrelator {
                     boolean is_exception=hdr.type == Header.EXC_RSP;
                     Address sender=msg.getSrc();
                     Object retval;
-                    byte[] buf=msg.getBuffer();
+                    byte[] buf=msg.getRawBuffer();
                     int offset=msg.getOffset(), length=msg.getLength();
                     try {
                         retval=marshaller != null? marshaller.objectFromBuffer(buf, offset, length) :

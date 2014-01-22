@@ -5,10 +5,7 @@ package org.jgroups;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.Headers;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.util.Map;
@@ -697,13 +694,7 @@ public class Message implements Streamable {
         if(src_addr != null)
             Util.writeAddress(src_addr, out);
 
-        // 5. buf
-        if(buf != null) {
-            out.writeInt(length);
-            out.write(buf, offset, length);
-        }
-
-        // 6. headers
+        // 5. headers
         int size=headers.size();
         out.writeShort(size);
         final short[]  ids=headers.getRawIDs();
@@ -713,6 +704,12 @@ public class Message implements Streamable {
                 out.writeShort(ids[i]);
                 writeHeader(hdrs[i], out);
             }
+        }
+
+        // 6. buf
+        if(buf != null) {
+            out.writeInt(length);
+            out.write(buf, offset, length);
         }
     }
 
@@ -746,13 +743,7 @@ public class Message implements Streamable {
         if(write_src_addr)
             Util.writeAddress(src_addr, out);
 
-        // 5. buf
-        if(buf != null) {
-            out.writeInt(length);
-            out.write(buf, offset, length);
-        }
-
-        // 6. headers
+        // 5. headers
         int size=headers.size(excluded_headers);
         out.writeShort(size);
         final short[]  ids=headers.getRawIDs();
@@ -764,6 +755,12 @@ public class Message implements Streamable {
                 out.writeShort(ids[i]);
                 writeHeader(hdrs[i], out);
             }
+        }
+
+        // 6. buf
+        if(buf != null) {
+            out.writeInt(length);
+            out.write(buf, offset, length);
         }
     }
 
@@ -784,15 +781,7 @@ public class Message implements Streamable {
         if(Util.isFlagSet(leading, SRC_SET))
             src_addr=Util.readAddress(in);
 
-        // 5. buf
-        if(Util.isFlagSet(leading, BUF_SET)) {
-            int len=in.readInt();
-            buf=new byte[len];
-            in.readFully(buf, 0, len);
-            length=len;
-        }
-
-        // 6. headers
+        // 5. headers
         int len=in.readShort();
         headers=createHeaders(len);
 
@@ -805,16 +794,63 @@ public class Message implements Streamable {
             ids[i]=id;
             hdrs[i]=hdr;
         }
+
+        // 6. buf
+        if(Util.isFlagSet(leading, BUF_SET)) {
+            len=in.readInt();
+            buf=new byte[len];
+            in.readFully(buf, 0, len);
+            length=len;
+        }
+    }
+
+
+    /** Reads the message's contents from an input stream, but skips the buffer and instead returns the
+     * position (offset) at which the buffer starts */
+    public int readFromSkipPayload(DataInput in, ExposedByteArrayInputStream input) throws Exception {
+
+        // 1. read the leading byte first
+        byte leading=in.readByte();
+
+        // 2. the flags
+        flags=in.readShort();
+
+        // 3. dest_addr
+        if(Util.isFlagSet(leading, DEST_SET))
+            dest_addr=Util.readAddress(in);
+
+        // 4. src_addr
+        if(Util.isFlagSet(leading, SRC_SET))
+            src_addr=Util.readAddress(in);
+
+        // 5. headers
+        int len=in.readShort();
+        headers=createHeaders(len);
+
+        short[]  ids=headers.getRawIDs();
+        Header[] hdrs=headers.getRawHeaders();
+
+        for(int i=0; i < len; i++) {
+            short id=in.readShort();
+            Header hdr=readHeader(in);
+            ids[i]=id;
+            hdrs[i]=hdr;
+        }
+
+        // 6. buf
+        if(Util.isFlagSet(leading, BUF_SET))
+            length=in.readInt();
+        return input.position();
     }
 
     /* --------------------------------- End of Interface Streamable ----------------------------- */
 
-   /**
-    * Returns the exact size of the marshalled message. Uses method size() of each header to compute
-    * the size, so if a Header subclass doesn't implement size() we will use an approximation.
-    * However, most relevant header subclasses have size() implemented correctly. (See
-    * org.jgroups.tests.SizeTest).
-    *
+    /**
+     * Returns the exact size of the marshalled message. Uses method size() of each header to compute
+     * the size, so if a Header subclass doesn't implement size() we will use an approximation.
+     * However, most relevant header subclasses have size() implemented correctly. (See
+     * org.jgroups.tests.SizeTest).
+     *
     * @return The number of bytes for the marshalled message
     */
     public long size() {
