@@ -5,10 +5,7 @@ import org.jgroups.Version;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.DefaultSocketFactory;
-import org.jgroups.util.SocketFactory;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.net.*;
@@ -47,6 +44,7 @@ public class TCPConnectionMap {
     protected final AtomicBoolean running=new AtomicBoolean(false);
     protected volatile boolean    use_send_queues=true;
     protected SocketFactory       socket_factory=new DefaultSocketFactory();
+    protected TimeService         time_service;
 
 
     public TCPConnectionMap(String service_name,
@@ -124,6 +122,7 @@ public class TCPConnectionMap {
     public void             setReceiveBufferSize(int recv_buf_size) {this.recv_buf_size = recv_buf_size;}
     public void             setSocketConnectionTimeout(int timeout) {this.sock_conn_timeout = timeout;}
     public TCPConnectionMap peerAddressReadTimeout(int timeout)     {this.peer_addr_read_timeout=timeout; return this;}
+    public TCPConnectionMap timeService(TimeService ts)             {this.time_service=ts; return this;}
     public void             setSendBufferSize(int send_buf_size)    {this.send_buf_size = send_buf_size;}
     public void             setLinger(int linger)                   {this.linger = linger;}
     public void             setTcpNodelay(boolean tcp_nodelay)      {this.tcp_nodelay = tcp_nodelay;}
@@ -360,7 +359,7 @@ public class TCPConnectionMap {
         protected DataOutputStream       out;
         protected DataInputStream        in;
         protected Address                peer_addr; // address of the 'other end' of the connection
-        protected long                   last_access=System.currentTimeMillis(); // last time a message was sent or received
+        protected long                   last_access=getTimestamp(); // last time a message was sent or received
         protected Sender                 sender;
         protected Receiver               receiver;
 
@@ -383,6 +382,10 @@ public class TCPConnectionMap {
             this.sock=s;
         }
 
+        protected long getTimestamp() {
+            return time_service != null? time_service.timestamp() : System.currentTimeMillis();
+        }
+
         protected Address getPeerAddress() {
             return peer_addr;
         }
@@ -401,7 +404,7 @@ public class TCPConnectionMap {
         }
 
         protected void updateLastAccessed() {
-            last_access=System.currentTimeMillis();
+            last_access=getTimestamp();
         }
 
         /** Called after {@link TCPConnection#TCPConnection(org.jgroups.Address)} */
@@ -692,7 +695,7 @@ public class TCPConnectionMap {
                            + ':'
                            + tmp_sock.getPort()
                            + "> ("
-                           + ((System.currentTimeMillis() - last_access) / 1000)
+                           + ((getTimestamp() - last_access) / 1000)
                            + " secs old) [" + (isOpen()? "open]" : "closed]"));
             }
             tmp_sock=null;

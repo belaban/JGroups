@@ -403,6 +403,12 @@ public class MessageTest {
         msg2.setBuffer(buf, payload_position, buf.length - payload_position);
         assert msg2.getOffset() == payload_position;
         assert msg2.getLength() == msg.getLength();
+        assert msg2.size() == msg.size();
+
+        Message copy=msg2.copy();
+        assert copy.getOffset() == payload_position;
+        assert copy.getLength() == msg.getLength();
+        assert copy.size() == msg2.size();
     }
 
     public static void testReadFromSkipPayloadNullPayload() throws Exception {
@@ -422,6 +428,14 @@ public class MessageTest {
         assert msg2.getRawBuffer() == null;
         assert msg.getBuffer() == null;
         assert msg2.getBuffer() == null;
+        assert msg2.size() == msg.size();
+
+        Message copy=msg2.copy();
+        assert copy.getOffset() == 0;
+        assert copy.getLength() == msg.getLength();
+        assert copy.getRawBuffer() == null;
+        assert copy.getBuffer() == null;
+        assert copy.size() == msg2.size();
     }
 
     protected static void addHeaders(Message msg) {

@@ -12,6 +12,7 @@ import org.jgroups.util.DefaultSocketFactory;
 import org.jgroups.util.SocketFactory;
 import org.jgroups.util.Util;
 
+import java.io.Closeable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,7 +54,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @see JChannel
  */
 @MBean(description="Channel")
-public abstract class Channel /* implements Transport */ {
+public abstract class Channel implements Closeable {
 
     public static enum State {
         OPEN,       // initial state, after channel has been created, or after a disconnect()

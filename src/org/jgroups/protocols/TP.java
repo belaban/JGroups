@@ -252,6 +252,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
               description="Tick duration in the HashedTimingWheel timer. Only applicable if timer_type is \"wheel\"")
     protected long tick_time=50L;
 
+    @Property(description="Interval (in ms) at which the time service updates its timestamp. 0 disables the time service")
+    protected long time_service_interval=500;
+
     @Property(description="Enable bundling of smaller messages into bigger ones. Default is true",
               deprecatedMessage="will be ignored as bundling is on by default")
     @Deprecated
@@ -575,6 +578,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected ThreadFactory           timer_thread_factory;
 
+    protected TimeService             time_service;
+
     // ================================ Default thread factory ========================
     /** Used by all threads created by JGroups outside of the thread pools */
     protected ThreadFactory           global_thread_factory=null;
@@ -767,6 +772,18 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      */
     public void setTimer(TimeScheduler timer) {
         this.timer=timer;
+    }
+
+    public TimeService getTimeService() {return time_service;}
+
+    public void setTimeService(TimeService ts) {
+        if(ts == null)
+            return;
+        if(time_service != null)
+            time_service.stop();
+        time_service=ts;
+        if(!time_service.running())
+            time_service.start();
     }
 
     public ThreadFactory getThreadFactory() {
@@ -1045,6 +1062,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
         }
 
+        if(time_service_interval > 0)
+            time_service=new TimeService(timer).interval(time_service_interval).start();
+
         who_has_cache=new ExpiryCache<Address>(who_has_cache_timeout);
 
         if(suppress_time_different_version_warnings > 0)
@@ -1138,6 +1158,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             logical_addr_cache_reaper.cancel(false);
             logical_addr_cache_reaper=null;
         }
+
+        if(time_service != null)
+            time_service.stop();
 
         if(timer != null)
             timer.stop();
@@ -1812,12 +1835,16 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected void sendToAllPhysicalAddresses(byte[] buf, int offset, int length) throws Exception {
         if(!logical_addr_cache.containsKeys(members)) {
             long current_time=0;
+            boolean do_send=false;
             synchronized(this) {
                 if(last_discovery_request == 0 || (current_time=System.currentTimeMillis()) - last_discovery_request >= 10000) {
                     last_discovery_request=current_time == 0? System.currentTimeMillis() : current_time;
-                    log.warn(Util.getMessage("NotAllPhysAddrsFound"), local_addr);
-                    up(new Event(Event.FIND_INITIAL_MBRS));
+                    do_send=true;
                 }
+            }
+            if(do_send) {
+                log.warn(Util.getMessage("NotAllPhysAddrsFound"), local_addr);
+                up(new Event(Event.FIND_INITIAL_MBRS));
             }
         }
 
@@ -1825,6 +1852,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             try {
                 if(!entry.isRemovable())
                     sendUnicast(entry.getVal(), buf, offset, length);
+            }
+            catch(SocketException sock_ex) {
+                log.debug(Util.getMessage("FailureSendingToPhysAddr"), local_addr, entry.getVal(), sock_ex);
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("FailureSendingToPhysAddr"), local_addr, entry.getVal(), t);
@@ -2589,7 +2619,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         final ExposedDataOutputStream              bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
         long                                       count;    // current number of bytes accumulated
         int                                        num_msgs;
-        volatile boolean                           running=true;
         public static final String                 THREAD_NAME="TransferQueueBundler";
 
 
@@ -2601,22 +2630,27 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             threshold=(int)(capacity * .9); // 90% of capacity
         }
 
-        public void start() {
-            if(bundler_thread == null || !bundler_thread.isAlive()) {
-                bundler_thread=getThreadFactory().newThread(this, THREAD_NAME);
-                running=true;
-                bundler_thread.start();
-            }
+        public synchronized void start() {
+            if(bundler_thread != null)
+                stop();
+            bundler_thread=getThreadFactory().newThread(this, THREAD_NAME);
+            bundler_thread.start();
         }
 
         public Thread getThread()     {return bundler_thread;}
         public int    getBufferSize() {return buffer.size();}
 
 
-        public void stop() {
-            running=false;
-            if(bundler_thread != null)
-                bundler_thread.interrupt();
+        public synchronized void stop() {
+            Thread tmp=bundler_thread;
+            if(tmp != null) {
+                bundler_thread=null;
+                tmp.interrupt();
+            }
+            buffer.clear();
+            if(tmp != null && tmp.isAlive()) {
+                try {tmp.join(500);} catch(InterruptedException e) {}
+            }
         }
 
         public void send(Message msg) throws Exception {
@@ -2626,7 +2660,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         public void run() {
-            while(running) {
+            while(Thread.currentThread() == bundler_thread) {
                 Message msg=null;
                 try {
                     if(count == 0) {
@@ -2745,6 +2779,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                         writeMessageList(dest, src_addr, cluster_name, list, bundler_dos, multicast, id); // flushes output stream when done
                         Buffer buf=bundler_out_stream.getBuffer();
                         doSend(buf, dest, multicast);
+                    }
+                    catch(SocketException sock_ex) {
+                        log.debug(Util.getMessage("FailureSendingMsgBundle"),local_addr,sock_ex);
                     }
                     catch(Throwable e) {
                         log.error(Util.getMessage("FailureSendingMsgBundle"), local_addr, e);

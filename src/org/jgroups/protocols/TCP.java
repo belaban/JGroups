@@ -67,7 +67,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                               external_addr,
                               external_port,
                               bind_port,
-                              bind_port+port_range).log(log);
+                              bind_port+port_range).log(log).timeService(time_service);
         ct.setReceiveBufferSize(recv_buf_size);      
         ct.setSendQueueSize(send_queue_size);
         ct.setUseSendQueues(use_send_queues);
@@ -136,10 +136,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                         externalAddress,
                                         external_port,
                                         startPort,
-                                        endPort)
-              .clientBindAddress(client_bind_addr)
-              .clientBindPort(client_bind_port)
-              .deferClientBinding(defer_client_bind_addr);
+                                        endPort);
         }
         else {
             if(reaperInterval == 0) {
@@ -162,13 +159,11 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                                         startPort,
                                         endPort,
                                         reaperInterval,
-                                        connExpireTime)
-              .clientBindAddress(client_bind_addr)
-              .clientBindPort(client_bind_port)
-              .deferClientBinding(defer_client_bind_addr);
+                                        connExpireTime);
         }
 
-        return cTable;
+        return cTable.clientBindAddress(client_bind_addr).clientBindPort(client_bind_port)
+          .deferClientBinding(defer_client_bind_addr);
     }
 
     protected PhysicalAddress getPhysicalAddress() {

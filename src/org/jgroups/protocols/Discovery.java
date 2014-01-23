@@ -265,7 +265,7 @@ public abstract class Discovery extends Protocol {
             // message needs to have DONT_BUNDLE flag: if A sends message M to B, and we need to fetch B's physical
             // address, then the bundler thread blocks until the discovery request has returned. However, we cannot send
             // the discovery *request* until the bundler thread has returned from sending M
-            Message msg=new Message(null).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
+            Message msg=new Message(null).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
               .putHeader(getId(), hdr).setBuffer(marshal(data));
             sendMcastDiscoveryRequest(msg);
         }
@@ -649,7 +649,7 @@ public abstract class Discovery extends Protocol {
         final PingData data=return_view_only? new PingData(logical_addr, view, is_server, null, null)
           : new PingData(logical_addr, null, view != null? view.getViewId() : null, is_server, logical_name, physical_addrs);
 
-        final Message rsp_msg=new Message(sender).setFlag(Message.Flag.INTERNAL)
+        final Message rsp_msg=new Message(sender).setFlag(Message.Flag.INTERNAL, Message.Flag.OOB, Message.Flag.DONT_BUNDLE)
           .putHeader(this.id, new PingHeader(PingHeader.GET_MBRS_RSP)).setBuffer(marshal(data));
 
         if(stagger_timeout > 0) {

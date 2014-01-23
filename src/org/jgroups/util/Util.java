@@ -3,7 +3,6 @@ package org.jgroups.util;
 import org.jgroups.*;
 import org.jgroups.TimeoutException;
 import org.jgroups.auth.AuthToken;
-import org.jgroups.blocks.Connection;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
@@ -372,16 +371,6 @@ public class Util {
         sock.connect(dest, sock_conn_timeout);
     }
 
-    public static void close(InputStream inp) {
-        if(inp != null)
-            try {inp.close();} catch(IOException e) {}
-    }
-
-    public static void close(OutputStream out) {
-        if(out != null) {
-            try {out.close();} catch(IOException e) {}
-        }
-    }
 
     public static void close(Socket s) {
         if(s != null) {
@@ -401,29 +390,21 @@ public class Util {
         }
     }
 
-    public static void close(Channel ch) {
-        if(ch != null) {
-            try {ch.close();} catch(Throwable t) {}
+
+    public static void close(Closeable closeable) {
+        if(closeable != null) {
+            try {closeable.close();} catch(Throwable t) {}
         }
     }
 
-    public static void close(Channel ... channels) {
-        if(channels != null) {
-            for(Channel ch: channels)
-                Util.close(ch);
+
+    public static void close(Closeable ... closeables) {
+        if(closeables != null) {
+            for(Closeable closeable: closeables)
+                Util.close(closeable);
         }
     }
 
-    public static void close(Connection conn) {
-        if(conn != null) {
-            try {conn.close();} catch(Throwable t) {}
-        }
-    }
-
-    public static void close(Connection ... conns) {
-        for(Connection conn: conns)
-            close(conn);
-    }
 
     /** Drops messages to/from other members and then closes the channel. Note that this member won't get excluded from
      * the view until failure detection has kicked in and the new coord installed the new view */

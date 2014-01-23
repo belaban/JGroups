@@ -862,12 +862,13 @@ public class Message implements Streamable {
             retval+=Util.size(dest_addr);
         if(src_addr != null)
             retval+=Util.size(src_addr);
-        if(buf != null)
-            retval+=Global.INT_SIZE // length (integer)
-                    + length;       // number of bytes in the buffer
 
         retval+=Global.SHORT_SIZE;  // number of headers
         retval+=headers.marshalledSize();
+
+        if(buf != null)
+            retval+=Global.INT_SIZE // length (integer)
+              + length;       // number of bytes in the buffer
         return retval;
     }
 

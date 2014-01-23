@@ -287,7 +287,7 @@ public class MERGE2 extends Protocol {
 
             if(log.isTraceEnabled()) {
                 StringBuilder sb=new StringBuilder();
-                sb.append("Discovery results:\n");
+                sb.append(local_addr + ": discovery results:\n");
                 for(PingData data: discovery_rsps)
                     sb.append("[" + data.getAddress() + "]: " + data.printViewId()).append("\n");
                 log.trace(sb);

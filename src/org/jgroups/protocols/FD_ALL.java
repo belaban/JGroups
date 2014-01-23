@@ -28,56 +28,61 @@ public class FD_ALL extends Protocol {
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     @Property(description="Interval at which a HEARTBEAT is sent to the cluster")
-    long interval=8000;
+    protected long                                   interval=8000;
 
     @Property(description="Timeout after which a node P is suspected if neither a heartbeat nor data were received from P")
-    long timeout=40000;
+    protected long                                   timeout=40000;
 
     @Property(description="Interval at which the HEARTBEAT timeouts are checked")
-    long timeout_check_interval=2000;
+    protected long                                   timeout_check_interval=2000;
 
     @Property(description="Treat messages received from members as heartbeats. Note that this means we're updating " +
             "a value in a hashmap every time a message is passing up the stack through FD_ALL, which is costly. Default is false")
-    boolean msg_counts_as_heartbeat=false;
+    protected boolean                                msg_counts_as_heartbeat=false;
+
+    @Property(description="Uses TimeService to get the current time rather than System.currentTimeMillis. Might get " +
+      "removed soon, don't use !")
+    protected boolean                                use_time_service=true;
 
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
     @ManagedAttribute(description="Number of heartbeats sent")
-    protected int num_heartbeats_sent;
+    protected int                                    num_heartbeats_sent;
 
     @ManagedAttribute(description="Number of heartbeats received")
-    protected int num_heartbeats_received=0;
+    protected int                                    num_heartbeats_received;
 
     @ManagedAttribute(description="Number of suspected events received")
-    protected int num_suspect_events=0;
+    protected int                                    num_suspect_events;
 
-    
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     // Map of addresses and timestamps of last updates
-    private final Map<Address, Long> timestamps=Util.createConcurrentMap();
+    protected final Map<Address, Long>               timestamps=Util.createConcurrentMap();
 
-    private Address local_addr=null;
+    protected Address                                local_addr;
     
-    private final List<Address> members=new ArrayList<Address>();
+    protected final List<Address>                    members=new ArrayList<Address>();
 
-    protected final Set<Address> suspected_mbrs=new HashSet<Address>();
+    protected final Set<Address>                     suspected_mbrs=new HashSet<Address>();
 
     @ManagedAttribute(description="Shows whether there are currently any suspected members")
-    protected volatile boolean has_suspected_mbrs;
+    protected volatile boolean                       has_suspected_mbrs;
 
-    private TimeScheduler timer=null;
+    protected TimeScheduler                          timer;
+
+    protected TimeService                            time_service;
 
     // task which multicasts HEARTBEAT message after 'interval' ms
     @GuardedBy("lock")
-    private Future<?> heartbeat_sender_future=null;
+    protected Future<?>                              heartbeat_sender_future;
 
     // task which checks for members exceeding timeout and suspects them
     @GuardedBy("lock")
-    private Future<?> timeout_checker_future=null;    
+    protected Future<?>                              timeout_checker_future;
 
-    private final BoundedList<Tuple<Address,Long>> suspect_history=new BoundedList<Tuple<Address,Long>>(20);
+    protected final BoundedList<Tuple<Address,Long>> suspect_history=new BoundedList<Tuple<Address,Long>>(20);
     
-    private final Lock lock=new ReentrantLock();
+    protected final Lock                             lock=new ReentrantLock();
 
 
 
@@ -147,6 +152,16 @@ public class FD_ALL extends Protocol {
         timer=getTransport().getTimer();
         if(timer == null)
             throw new Exception("timer not set");
+        time_service=getTransport().getTimeService();
+        if(time_service == null)
+            log.warn("%s: time service is not available, using System.currentTimeMillis() instead", local_addr);
+        else {
+            if(time_service.interval() > timeout) {
+                log.warn("%s: interval of time service (%d) is greater than timeout (%d), disabling time service",
+                         local_addr, time_service.interval(), timeout);
+                use_time_service=false;
+            }
+        }
         suspected_mbrs.clear();
         has_suspected_mbrs=false;
     }
@@ -217,7 +232,7 @@ public class FD_ALL extends Protocol {
         return down_prot.down(evt);
     }
 
-    private void startTimeoutChecker() {
+    protected void startTimeoutChecker() {
         lock.lock();
         try {
             if(!isTimeoutCheckerRunning()) {
@@ -229,7 +244,7 @@ public class FD_ALL extends Protocol {
         }
     }
 
-    private void stopTimeoutChecker() {
+    protected void stopTimeoutChecker() {
          lock.lock();
          try {
              if(timeout_checker_future != null) {
@@ -243,19 +258,18 @@ public class FD_ALL extends Protocol {
      }
 
 
-    private void startHeartbeatSender() {
+    protected void startHeartbeatSender() {
         lock.lock();
         try {
-            if(!isHeartbeatSenderRunning()) {
+            if(!isHeartbeatSenderRunning())
                 heartbeat_sender_future=timer.scheduleWithFixedDelay(new HeartbeatSender(), interval, interval, TimeUnit.MILLISECONDS);
-            }
         }
         finally {
             lock.unlock();
         }
     }
 
-     private void stopHeartbeatSender() {
+     protected void stopHeartbeatSender() {
         lock.lock();
         try {
             if(heartbeat_sender_future != null) {
@@ -268,22 +282,26 @@ public class FD_ALL extends Protocol {
         }
     }
      
-    private boolean isTimeoutCheckerRunning() {
+    protected boolean isTimeoutCheckerRunning() {
         return timeout_checker_future != null && !timeout_checker_future.isDone();
     }
      
-    private boolean isHeartbeatSenderRunning() {
+    protected boolean isHeartbeatSenderRunning() {
         return heartbeat_sender_future != null && !heartbeat_sender_future.isDone();
     }
 
 
-    private void update(Address sender) {
+    protected void update(Address sender) {
         if(sender != null && !sender.equals(local_addr))
-            timestamps.put(sender, System.currentTimeMillis());
+            timestamps.put(sender, getTimestamp());
+    }
+
+    protected long getTimestamp() {
+        return use_time_service && time_service != null? time_service.timestamp() : System.currentTimeMillis();
     }
 
 
-    private void handleViewChange(View v) {
+    protected void handleViewChange(View v) {
         List<Address> mbrs=v.getMembers();
 
         synchronized(this) {
@@ -309,13 +327,13 @@ public class FD_ALL extends Protocol {
 
 
 
-    private String _printTimestamps() {
+    protected String _printTimestamps() {
         StringBuilder sb=new StringBuilder();
-        long current_time=System.currentTimeMillis();
+        long current_time=getTimestamp();
         for(Iterator<Entry<Address,Long>> it=timestamps.entrySet().iterator(); it.hasNext();) {
             Entry<Address,Long> entry=it.next();
             sb.append(entry.getKey()).append(": ");
-            sb.append(current_time - entry.getValue()).append(" ms old\n");
+            sb.append((current_time - entry.getValue())/1000).append(" secs old\n");
         }
         return sb.toString();
     }
@@ -329,7 +347,7 @@ public class FD_ALL extends Protocol {
         final List<Address> eligible_mbrs=new ArrayList<Address>();
         synchronized(this) {
             for(Address suspect: suspects) {
-                suspect_history.add(new Tuple<Address,Long>(suspect, System.currentTimeMillis()));
+                suspect_history.add(new Tuple<Address,Long>(suspect, getTimestamp()));
                 suspected_mbrs.add(suspect);
             }
             eligible_mbrs.addAll(members);
@@ -401,7 +419,7 @@ public class FD_ALL extends Protocol {
 
         public void run() {                        
             List<Address> suspects=new LinkedList<Address>();
-            long current_time=System.currentTimeMillis(), diff;
+            long current_time=getTimestamp(), diff;
             for(Iterator<Entry<Address,Long>> it=timestamps.entrySet().iterator(); it.hasNext();) {
                 Entry<Address,Long> entry=it.next();
                 Address key=entry.getKey();

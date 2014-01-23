@@ -1,0 +1,76 @@
+package org.jgroups.util;
+
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Provides a coarse grained time service. Registers a timer task which calls and caches {@link System#currentTimeMillis()}
+ * and returns the cached value. This is way faster than calling {@link System#currentTimeMillis()} many times, e.g.
+ * for each received message. The granularity (interval) can be chosen by the user.
+ * @author Bela Ban
+ * @since  3.5
+ */
+public class TimeService  implements Runnable {
+    protected TimeScheduler timer;
+    protected Future<?>     task;
+    protected long          interval=500; // ms
+    protected volatile long timestamp;
+
+
+    public TimeService(final TimeScheduler timer) {
+        this(timer, 500);
+    }
+
+    public TimeService(final TimeScheduler timer, long interval) {
+        this.timer=timer;
+        this.interval=interval;
+    }
+
+    public long timestamp() {
+        return timestamp > 0? timestamp : System.currentTimeMillis();
+    }
+
+    public long interval() {
+        return interval;
+    }
+
+    public TimeService interval(long interval) {
+        if(interval != this.interval) {
+            this.interval=interval;
+            stopTask();
+            startTask();
+        }
+        return this;
+    }
+
+    public boolean running() {return task != null && !task.isDone();}
+
+    public TimeService start() {
+        stopTask();
+        startTask();
+        return this;
+    }
+
+    public TimeService stop() {
+        stopTask();
+        return this;
+    }
+
+
+    public void run() {
+        timestamp=System.currentTimeMillis();
+    }
+
+    public String toString() {
+        return getClass().getSimpleName() + " (interval=" + interval + "ms)";
+    }
+
+    protected void startTask() {
+        task=timer != null? timer.scheduleWithFixedDelay(this, interval, interval, TimeUnit.MILLISECONDS) : null;
+    }
+
+    protected void stopTask() {
+        if(task != null && !task.isDone())
+            task.cancel(false);
+    }
+}

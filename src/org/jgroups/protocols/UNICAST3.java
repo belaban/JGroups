@@ -116,6 +116,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected AgeOutCache<Address>         cache;
 
+    protected TimeService                  time_service;
+
     protected static final Message         DUMMY_OOB_MSG=new Message(false).setFlag(Message.Flag.OOB);
 
     protected static final Filter<Message> drop_oob_msgs_filter=new Filter<Message>() {
@@ -351,6 +353,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
+    public void init() throws Exception {
+        super.init();
+        time_service=getTransport().getTimeService();
+        if(time_service == null)
+            throw new IllegalStateException("time service from transport is null");
+    }
 
     public void start() throws Exception {
         timer=getTransport().getTimer();
@@ -954,6 +962,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
+    protected long getTimestamp() {
+        return time_service.timestamp();
+    }
 
     protected void startRetransmitTask() {
         if(xmit_task == null || xmit_task.isDone())
@@ -1232,8 +1243,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
 
         short       connId()              {return conn_id;}
-        void        update()              {timestamp.set(System.currentTimeMillis());}
-        long        age()                 {return System.currentTimeMillis() - timestamp.longValue();}
+        void        update()              {timestamp.set(getTimestamp());}
+        long        age()                 {return getTimestamp() - timestamp.longValue();}
         State       state()               {return state;}
         Entry       state(State state)    {this.state=state; return this;}
     }
@@ -1256,7 +1267,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             StringBuilder sb=new StringBuilder();
             if(sent_msgs != null)
                 sb.append(sent_msgs).append(", ");
-            sb.append("send_conn_id=" + conn_id).append(" (" + age() + " ms old) - " + state);
+            sb.append("send_conn_id=" + conn_id).append(" (" + age()/1000 + " secs old) - " + state);
             return sb.toString();
         }
     }
@@ -1279,7 +1290,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             if(received_msgs != null)
                 sb.append(received_msgs).append(", ");
             sb.append("recv_conn_id=" + conn_id);
-            sb.append(" (" + age() + " ms old) - " + state);
+            sb.append(" (" + age()/1000 + " secs old) - " + state);
             if(send_ack)
                 sb.append(" [ack pending]");
             return sb.toString();
