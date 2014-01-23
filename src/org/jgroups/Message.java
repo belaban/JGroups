@@ -838,8 +838,10 @@ public class Message implements Streamable {
         }
 
         // 6. buf
-        if(Util.isFlagSet(leading, BUF_SET))
-            length=in.readInt();
+        if(!Util.isFlagSet(leading, BUF_SET))
+            return -1;
+
+        length=in.readInt();
         return input.position();
     }
 

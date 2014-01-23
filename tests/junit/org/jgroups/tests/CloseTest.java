@@ -200,12 +200,12 @@ public class CloseTest extends ChannelTestBase {
         b.disconnect();
         assert b.isOpen();
         assert !b.isConnected();
-        Util.waitUntilAllChannelsHaveSameSize(5000, 500, a);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a);
         assertView(a, 1);
 
         b.connect(GROUP);
         assert b.isConnected();
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameSize(20000, 1000, a, b);
         assertView(b, 2);
         assertView(a, 2);
 
@@ -219,7 +219,7 @@ public class CloseTest extends ChannelTestBase {
         a.disconnect();
         assert a.isOpen();
         assert !a.isConnected();
-        Util.waitUntilAllChannelsHaveSameSize(5000, 500, b);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, b);
         assertView(b, 1);
         assert c.isOpen();
         assert !c.isConnected();
@@ -227,7 +227,7 @@ public class CloseTest extends ChannelTestBase {
         a.connect(GROUP);
         assert a.isOpen();
         assert a.isConnected();
-        Util.waitUntilAllChannelsHaveSameSize(5000, 500, a, b);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a, b);
         assertView(a, 2);
         assertView(b,2);
     }

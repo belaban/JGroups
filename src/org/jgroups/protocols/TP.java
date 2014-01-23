@@ -18,6 +18,7 @@ import java.io.InterruptedIOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
@@ -1392,6 +1393,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         catch(InterruptedException interruptedEx) {
             Thread.currentThread().interrupt(); // let someone else handle the interrupt
         }
+        catch(SocketException sock_ex) {
+            log.error(Util.getMessage("SendFailure"),
+                      local_addr, (dest == null? "cluster" : dest), msg.size(), sock_ex.toString(), msg.printHeaders());
+        }
         catch(Throwable e) {
             log.error(Util.getMessage("SendFailure"),
                       local_addr, (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
@@ -2502,6 +2507,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                         Buffer buf=bundler_out_stream.getBuffer();
                         doSend(buf, dest, multicast);
                     }
+                    catch(SocketException sock_ex) {
+                        log.error(Util.getMessage("SendFailure"),
+                                  local_addr, (dest == null? "cluster" : dest), msg.size(), sock_ex.toString(), msg.printHeaders());
+                    }
                     catch(Throwable e) {
                         log.error(Util.getMessage("SendFailure"),
                                   local_addr, (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
@@ -2532,6 +2541,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 writeMessage(msg, bundler_dos, multicast);
                 Buffer buf=bundler_out_stream.getBuffer();
                 doSend(buf, dest, multicast);
+            }
+            catch(SocketException sock_ex) {
+                log.error(Util.getMessage("SendFailure"),
+                          local_addr, (dest == null? "cluster" : dest), msg.size(), sock_ex.toString(), msg.printHeaders());
             }
             catch(Throwable e) {
                 log.error(Util.getMessage("SendFailure"),
@@ -2717,6 +2730,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                         writeMessage(msg, bundler_dos, multicast);
                         Buffer buf=bundler_out_stream.getBuffer();
                         doSend(buf, dest, multicast);
+                    }
+                    catch(SocketException sock_ex) {
+                        log.debug(Util.getMessage("SendFailure"),
+                                  local_addr, (dest == null? "cluster" : dest), msg.size(), sock_ex.toString(), msg.printHeaders());
                     }
                     catch(Throwable e) {
                         log.error(Util.getMessage("SendFailure"),

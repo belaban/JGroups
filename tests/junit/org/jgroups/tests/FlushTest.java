@@ -112,6 +112,7 @@ public class FlushTest extends ChannelTestBase {
                 System.out.print("flush #" + i + ": ");
                 a.startFlush(false);
                 a.stopFlush();
+                System.out.println("OK");
             }
         } finally {
             Util.close(a, b, c);

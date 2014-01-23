@@ -414,9 +414,14 @@ public class MessageTest {
         DataInput in=new DataInputStream(input);
         Message msg2=new Message(false);
         int payload_position=msg2.readFromSkipPayload(in, input);
-        msg2.setBuffer(buf, payload_position, buf.length - payload_position);
-        assert msg2.getOffset() == payload_position;
+        if(payload_position >= 0)
+            msg2.setBuffer(buf, payload_position, buf.length - payload_position);
+        assert msg2.getOffset() == 0;
         assert msg2.getLength() == msg.getLength();
+        assert msg.getRawBuffer() == null;
+        assert msg2.getRawBuffer() == null;
+        assert msg.getBuffer() == null;
+        assert msg2.getBuffer() == null;
     }
 
     protected static void addHeaders(Message msg) {

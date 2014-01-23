@@ -192,24 +192,19 @@ public class UDP extends TP {
 
     protected void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
         DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
-        try {
-            if(mcast) {
-                if(mcast_sock != null) {
-                    try {
-                        mcast_sock.send(packet);
-                    }
-                    // solve reconnection issue with Windows (https://jira.jboss.org/browse/JGRP-1254)
-                    catch(NoRouteToHostException e) {
-                        mcast_sock.setInterface(mcast_sock.getInterface());
-                    }
+        if(mcast) {
+            if(mcast_sock != null) {
+                try {
+                    mcast_sock.send(packet);
+                }
+                // solve reconnection issue with Windows (https://jira.jboss.org/browse/JGRP-1254)
+                catch(NoRouteToHostException e) {
+                    mcast_sock.setInterface(mcast_sock.getInterface());
                 }
             }
-            else if(sock != null)
-                sock.send(packet);
         }
-        catch(Exception ex) {
-            throw new Exception("dest=" + dest + ":" + port + " (" + length + " bytes)", ex);
-        }
+        else if(sock != null)
+            sock.send(packet);
     }
 
 
