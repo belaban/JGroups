@@ -653,7 +653,22 @@
 
         </section>
 
-         <section id="FD_SOCK">
+
+        <section id="FD_ALL2">
+            <title>FD_ALL2</title>
+
+            <para>
+                Similar to FD_ALL, but doesn't use any timestamps. Instead, a boolean flag is associated with each
+                member. When a message or heartbeat (sent every interval ms) from P is received, P's flag is set to true.
+                The heartbeat checker checks every timeout ms for members whose flag is false, suspects those, and
+                - when done - resets all flags to false again.
+            </para>
+
+            ${FD_ALL2}
+
+        </section>
+
+        <section id="FD_SOCK">
             <title>FD_SOCK</title>
 
             <para>
