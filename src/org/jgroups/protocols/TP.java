@@ -229,10 +229,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected String timer_type="new3";
 
     @Property(name="timer.min_threads",description="Minimum thread pool size for the timer thread pool")
-    protected int timer_min_threads=4;
+    protected int timer_min_threads=2;
 
     @Property(name="timer.max_threads",description="Max thread pool size for the timer thread pool")
-    protected int timer_max_threads=10;
+    protected int timer_max_threads=4;
 
     @Property(name="timer.keep_alive_time", description="Timeout in ms to remove idle threads from the timer pool")
     protected long timer_keep_alive_time=5000;

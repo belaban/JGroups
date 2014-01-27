@@ -24,9 +24,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
     protected final BlockingQueue<Task>               queue=new DelayQueue<Task>();
 
     /** Thread which removes tasks ready to be executed from the queue and submits them to the pool for execution */
-    protected Thread                                  runner;
-
-    protected volatile boolean                        running;
+    protected volatile Thread                         runner;
 
     protected static final Log                        log=LogFactory.getLog(TimeScheduler3.class);
 
@@ -159,7 +157,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
 
 
     public void run() {
-        while(running) {
+        while(Thread.currentThread() == runner) {
             try {
                 final Task entry=queue.take();
                 submitToPool(entry);
@@ -208,23 +206,28 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
     }
 
     protected Task add(Task task) {
-        if(!running)
+        if(!isRunning())
             return null;
         queue.add(task);
         return task;
     }
 
-
+    protected boolean isRunning() {
+        Thread tmp=runner;
+        return tmp != null && tmp.isAlive();
+    }
 
     protected void startRunner() {
-        running=true;
+        stopRunner();
         runner=timer_thread_factory != null? timer_thread_factory.newThread(this, "Timer runner") : new Thread(this, "Timer runner");
         runner.start();
     }
 
     protected void stopRunner() {
-        running=false;
-        runner.interrupt();
+        Thread tmp=runner;
+        runner=null;
+        if(tmp != null)
+            tmp.interrupt();
     }
 
 

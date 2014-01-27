@@ -23,8 +23,8 @@
          thread_naming_pattern="cl"
 
          timer_type="new3"
-         timer.min_threads="4"
-         timer.max_threads="10"
+         timer.min_threads="2"
+         timer.max_threads="4"
          timer.keep_alive_time="3000"
          timer.queue_max_size="500"
 

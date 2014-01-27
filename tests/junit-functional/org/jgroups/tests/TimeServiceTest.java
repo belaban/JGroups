@@ -42,7 +42,7 @@ public class TimeServiceTest {
         assert times.size() <= 20;
 
         set.clear();
-        time_service.interval(50);
+        time_service.stop().interval(50).start();
         for(int i=0; i < 20; i++) {
             set.add(time_service.timestamp());
             Util.sleep(200);
