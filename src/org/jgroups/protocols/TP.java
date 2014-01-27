@@ -782,8 +782,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(time_service != null)
             time_service.stop();
         time_service=ts;
-        if(!time_service.running())
-            time_service.start();
+        time_service.start();
     }
 
     public ThreadFactory getThreadFactory() {
