@@ -11,10 +11,10 @@ import java.util.concurrent.TimeUnit;
  * @since  3.5
  */
 public class TimeService  implements Runnable {
-    protected TimeScheduler timer;
-    protected Future<?>     task;
-    protected long          interval=500; // ms
-    protected volatile long timestamp;
+    protected TimeScheduler          timer;
+    protected volatile Future<?>     task;
+    protected long                   interval=500; // ms
+    protected volatile long          timestamp;
 
 
     public TimeService(final TimeScheduler timer) {
@@ -35,18 +35,14 @@ public class TimeService  implements Runnable {
     }
 
     public TimeService interval(long interval) {
-        if(interval != this.interval) {
+        if(interval != this.interval)
             this.interval=interval;
-            stopTask();
-            startTask();
-        }
         return this;
     }
 
     public boolean running() {return task != null && !task.isDone();}
 
     public TimeService start() {
-        stopTask();
         startTask();
         return this;
     }
@@ -65,12 +61,15 @@ public class TimeService  implements Runnable {
         return getClass().getSimpleName() + " (interval=" + interval + "ms)";
     }
 
-    protected void startTask() {
+    protected synchronized void startTask() {
+        stopTask();
         task=timer != null? timer.scheduleWithFixedDelay(this, interval, interval, TimeUnit.MILLISECONDS) : null;
     }
 
-    protected void stopTask() {
-        if(task != null && !task.isDone())
+    protected synchronized void stopTask() {
+        if(task != null) {
             task.cancel(false);
+            task=null;
+        }
     }
 }

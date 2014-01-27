@@ -1063,7 +1063,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         if(time_service_interval > 0)
-            time_service=new TimeService(timer).interval(time_service_interval).start();
+            time_service=new TimeService(timer, time_service_interval).start();
 
         who_has_cache=new ExpiryCache<Address>(who_has_cache_timeout);
 

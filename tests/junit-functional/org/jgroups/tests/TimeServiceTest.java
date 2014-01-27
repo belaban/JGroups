@@ -23,7 +23,7 @@ public class TimeServiceTest {
     protected TimeService   time_service;
 
     @BeforeClass  public void init()    {timer=new TimeScheduler3();}
-    @BeforeMethod public void start()   {time_service=new TimeService(timer); time_service.start();}
+    @BeforeMethod public void start()   {time_service=new TimeService(timer).start();}
     @AfterMethod  public void stop()    {time_service.stop();}
     @AfterClass   public void destroy() {timer.stop();}
 
@@ -55,7 +55,7 @@ public class TimeServiceTest {
 
 
     public void testChangeInterval() {
-        time_service.interval(1000);
+        time_service.interval(1000).start();
         assert time_service.interval() == 1000;
     }
 
