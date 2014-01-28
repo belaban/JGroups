@@ -217,17 +217,20 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         return tmp != null && tmp.isAlive();
     }
 
-    protected void startRunner() {
+    protected synchronized void startRunner() {
         stopRunner();
         runner=timer_thread_factory != null? timer_thread_factory.newThread(this, "Timer runner") : new Thread(this, "Timer runner");
         runner.start();
     }
 
-    protected void stopRunner() {
+    protected synchronized void stopRunner() {
         Thread tmp=runner;
         runner=null;
-        if(tmp != null)
+        if(tmp != null) {
             tmp.interrupt();
+            try {tmp.join(500);} catch(InterruptedException e) {}
+        }
+        queue.clear();
     }
 
 

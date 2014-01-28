@@ -56,23 +56,25 @@ public class RpcDispatcherTest {
 
         b=createChannel("B");
         disp2=new RpcDispatcher(b, new ServerObject(2));
+        b.connect(GROUP);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000,a,b);
 
         c=createChannel("C");
         disp3=new RpcDispatcher(c, new ServerObject(3));
-
-        Util.sleep(2000);
-        b.connect(GROUP);
         c.connect(GROUP);
 
-        Util.waitUntilAllChannelsHaveSameSize(30000, 1000,a,b,c);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000,a,b,c);
         System.out.println("A=" + a.getView() + "\nB=" + b.getView() + "\nC=" + c.getView());
     }
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        disp3.stop();
-        disp2.stop();
-        disp1.stop();
+        if(disp3 != null)
+            disp3.stop();
+        if(disp2 != null)
+            disp2.stop();
+        if(disp1 != null)
+            disp1.stop();
         Util.close(c,b,a);
     }
 

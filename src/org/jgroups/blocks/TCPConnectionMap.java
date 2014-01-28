@@ -404,7 +404,8 @@ public class TCPConnectionMap {
         }
 
         protected void updateLastAccessed() {
-            last_access=getTimestamp();
+            if(conn_expire_time > 0)
+                last_access=getTimestamp();
         }
 
         /** Called after {@link TCPConnection#TCPConnection(org.jgroups.Address)} */
@@ -519,7 +520,6 @@ public class TCPConnectionMap {
                                             ") from ours (" + Version.printVersion() + "); discarding it");
                 Address client_peer_addr=new IpAddress();
                 client_peer_addr.readFrom(in);
-
                 updateLastAccessed();
                 return client_peer_addr;
             }

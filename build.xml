@@ -575,6 +575,7 @@
                     timeout="${unittest.timeout}"
                     timeOut="${unittest.timeout}"
                     verbose="0"
+                    configfailurepolicy="continue"
                     >
 
                 <classfileset dir="${compile.dir}"/>

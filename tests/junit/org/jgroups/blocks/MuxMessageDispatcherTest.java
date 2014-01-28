@@ -1,12 +1,6 @@
 package org.jgroups.blocks;
 
-import java.util.Map;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.blocks.mux.MuxMessageDispatcher;
 import org.jgroups.blocks.mux.MuxUpHandler;
 import org.jgroups.tests.ChannelTestBase;
@@ -17,36 +11,31 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.Map;
+
 /**
  * @author Paul Ferraro
  */
 @Test(groups=Global.STACK_DEPENDENT)
 public class MuxMessageDispatcherTest extends ChannelTestBase {
-
-    private JChannel[] channels = new JChannel[2];
-
-    private MessageDispatcher[] dispatchers  = new MessageDispatcher[2];
-    private MessageDispatcher[][] muxDispatchers = new MessageDispatcher[2][2];
-    private MethodCall method = new MethodCall("getName", new Object[0], new Class[0]);
+    private final JChannel[]            channels = new JChannel[2];
+    private final MessageDispatcher[]   dispatchers  = new MessageDispatcher[2];
+    private final MessageDispatcher[][] muxDispatchers = new MessageDispatcher[2][2];
+    private static final MethodCall     method = new MethodCall("getName", new Object[0], new Class[0]);
     
     @BeforeClass
     void setUp() throws Exception {
-
         channels[0] = createChannel(true);
         channels[1] = createChannel(channels[0]);
         
         for (int i = 0; i < dispatchers.length; i++) {
-
             dispatchers[i] = new MessageDispatcher(channels[i], null, null, new MuxRequestListener("dispatcher[" + i + "]"));
-
             channels[i].setUpHandler(new MuxUpHandler(dispatchers[i].getProtocolAdapter()));
 
             for (int j = 0; j < muxDispatchers[i].length; j++) {
                 muxDispatchers[i][j] = new MuxMessageDispatcher((short) j, channels[i], null, null, new MuxRequestListener("muxDispatcher[" + i + "][" + j + "]"));
             }
- 
             channels[i].connect("MuxMessageDispatcherTest");
-
             Util.sleep(1000);
         }
     }
@@ -54,13 +43,10 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
     @AfterClass
     void tearDown() throws Exception {
         for (int i = 0; i < dispatchers.length; ++i) {
-            channels[i].disconnect();
             channels[i].close();
             dispatchers[i].stop();
-            
-            for (int j = 0; j < muxDispatchers[i].length; ++j) {
+            for (int j = 0; j < muxDispatchers[i].length; ++j)
                 muxDispatchers[i][j].stop();
-            }
         }
     }
 

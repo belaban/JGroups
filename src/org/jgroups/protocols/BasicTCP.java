@@ -87,6 +87,17 @@ public abstract class BasicTCP extends TP {
                 throw new IllegalArgumentException("bind_port cannot be set to " + bind_port +
                                                      ", as no dynamic discovery protocol (e.g. MPING or TCPGOSSIP) has been detected.");
         }
+
+        if(reaper_interval > 0 || conn_expire_time > 0) {
+            if(conn_expire_time == 0 && reaper_interval > 0) {
+                log.warn("reaper interval (%d) set, but not conn_expire_time, disabling reaping", reaper_interval);
+                reaper_interval=0;
+            }
+            else if(conn_expire_time > 0 && reaper_interval == 0) {
+                reaper_interval=conn_expire_time / 2;
+                log.warn("conn_expire_time (%d) is set but reaper_interval is 0; setting it to %d", conn_expire_time, reaper_interval);
+            }
+        }
     }
 
 
