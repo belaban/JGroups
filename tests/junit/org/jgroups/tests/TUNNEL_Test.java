@@ -27,7 +27,7 @@ import java.net.InetAddress;
  * @author Bela Ban belaban@yahoo.com
  **/
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
-public class TUNNEL_Test extends ChannelTestBase{
+public class TUNNEL_Test extends ChannelTestBase {
     private JChannel            channel, coordinator;
     private final static String GROUP="TUNNEL_Test";
     private GossipRouter        gossipRouter;
@@ -36,18 +36,11 @@ public class TUNNEL_Test extends ChannelTestBase{
 
     @BeforeClass
     void startRouter() throws Exception {
-        String bind_addr=Util.getProperty(Global.BIND_ADDR);
-        if(bind_addr == null) {
-            StackType type=Util.getIpStackType();
-            if(type == StackType.IPv6)
-                bind_addr="::1";
-            else
-                bind_addr="127.0.0.1";
-        }
-
+        StackType type=Util.getIpStackType();
+        bind_addr=type == StackType.IPv6? "::1" : "127.0.0.1";
         gossip_router_port=ResourceManager.getNextTcpPort(InetAddress.getByName(bind_addr));
         gossip_router_hosts=bind_addr + "[" + gossip_router_port + "]";
-        gossipRouter=new GossipRouter(gossip_router_port, null);
+        gossipRouter=new GossipRouter(gossip_router_port, bind_addr);
         gossipRouter.start();
     }
     
@@ -251,7 +244,7 @@ public class TUNNEL_Test extends ChannelTestBase{
 
 
     protected JChannel createTunnelChannel(String name) throws Exception {
-        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("enable_bundling",false);
+        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("enable_bundling",false).setValue("bind_addr", InetAddress.getByName(bind_addr));
         tunnel.setGossipRouterHosts(gossip_router_hosts);
         JChannel ch=Util.createChannel(tunnel,
                                        new PING(),

@@ -28,36 +28,33 @@ import java.net.InetAddress;
  */
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
 public class TUNNELDeadLockTest extends ChannelTestBase {
-    private JChannel channel;
+    private JChannel         channel;
     private Promise<Boolean> promise;
-    private int receivedCnt;
+    private int              receivedCnt;
 
     // the total number of the messages pumped down the channel
-    private int msgCount=20000;
+    private static final int msgCount=20000;
     // the message payload size (in bytes);
-    private int payloadSize=32;
+    private static final int payloadSize=32;
     // the time (in ms) the main thread waits for all the messages to arrive,
     // before declaring the test failed.
-    private int mainTimeout=60000;
-    GossipRouter                gossipRouter;
-    private int                 gossip_router_port;
-    private String              gossip_router_hosts;
+    private static final int mainTimeout=60000;
+    GossipRouter             gossipRouter;
+    private int              gossip_router_port;
+    private String           gossip_router_hosts;
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        String bind_addr=Util.getProperty(Global.BIND_ADDR);
-        if(bind_addr == null) {
-            StackType type=Util.getIpStackType();
-            if(type == StackType.IPv6)
-                bind_addr="::1";
-            else
-                bind_addr="127.0.0.1";
-        }
+        StackType type=Util.getIpStackType();
+        if(type == StackType.IPv6)
+            bind_addr="::1";
+        else
+            bind_addr="127.0.0.1";
         promise=new Promise<Boolean>();
         gossip_router_port=ResourceManager.getNextTcpPort(InetAddress.getByName(bind_addr));
         gossip_router_hosts=bind_addr + "[" + gossip_router_port + "]";
-        gossipRouter=new GossipRouter(gossip_router_port, null);
+        gossipRouter=new GossipRouter(gossip_router_port, bind_addr);
         gossipRouter.start();
     }
 
@@ -70,7 +67,7 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
         // TO_DO: no elegant way to stop the Router threads and clean-up
         //        resources. Use the Router administrative interface, when available.
         
-        channel.close();
+        Util.close(channel);
         promise.reset();
         promise=null;
         gossipRouter.stop();
@@ -142,8 +139,8 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
         }       
     }
 
-     protected JChannel createTunnelChannel(String name) throws Exception {
-        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("enable_bundling",false);
+    protected JChannel createTunnelChannel(String name) throws Exception {
+        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("enable_bundling",false).setValue("bind_addr", InetAddress.getByName(bind_addr));
         tunnel.setGossipRouterHosts(gossip_router_hosts);
         JChannel ch=Util.createChannel(tunnel,
                                        new PING(),

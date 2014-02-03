@@ -28,25 +28,20 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Test(groups={Global.STACK_INDEPENDENT,Global.GOSSIP_ROUTER},sequential=true)
 public class GossipRouterTest {
-    GossipRouter                router;
-    JChannel                    a, b;
-    String                      bind_addr=null;
-    private int                 gossip_router_port;
-    private String              gossip_router_hosts;
+    protected GossipRouter        router;
+    protected JChannel            a, b;
+    protected int                 gossip_router_port;
+    protected String              gossip_router_hosts;
+    protected InetAddress         bind_addr;
+    protected String              bind_addr_str;
 
     @BeforeClass
     protected void setUp() throws Exception {
-        bind_addr=Util.getProperty(Global.BIND_ADDR);
-        if(bind_addr == null) {
-            StackType type=Util.getIpStackType();
-            if(type == StackType.IPv6)
-                bind_addr="::1";
-            else
-                bind_addr="127.0.0.1";
-        }
-
-        gossip_router_port=ResourceManager.getNextTcpPort(InetAddress.getByName(bind_addr));
-        gossip_router_hosts=bind_addr + "[" + gossip_router_port + "]";
+        StackType type=Util.getIpStackType();
+        bind_addr_str=type == StackType.IPv6? "::1" : "127.0.0.1";
+        bind_addr=InetAddress.getByName(bind_addr_str);
+        gossip_router_port=ResourceManager.getNextTcpPort(bind_addr);
+        gossip_router_hosts=bind_addr.getHostAddress() + "[" + gossip_router_port + "]";
     }
 
 
@@ -83,7 +78,7 @@ public class GossipRouterTest {
         b.connect("demo");
 
         System.out.println("-- starting GossipRouter");
-        router=new GossipRouter(gossip_router_port, bind_addr);
+        router=new GossipRouter(gossip_router_port, bind_addr_str);
         router.start();
 
         System.out.println("-- waiting for merge to happen --");
@@ -106,7 +101,7 @@ public class GossipRouterTest {
     }
 
     protected JChannel createTunnelChannel(String name) throws Exception {
-        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("enable_bundling",false);
+        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("enable_bundling",false).setValue("bind_addr", bind_addr);
         tunnel.setGossipRouterHosts(gossip_router_hosts);
         JChannel ch=Util.createChannel(tunnel,
                                        new PING(),

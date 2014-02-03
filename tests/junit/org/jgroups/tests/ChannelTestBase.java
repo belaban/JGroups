@@ -34,16 +34,11 @@ import java.util.regex.Pattern;
  */
 @Test(groups = "base", sequential = true)
 public class ChannelTestBase {
-
-    protected String channel_conf = "udp.xml";
-
+    protected String  channel_conf = "udp.xml";
     protected boolean use_blocking = false;
-
     protected boolean use_flush = false;
-
-    private String bind_addr = null;
-
-    protected Log log;
+    protected String  bind_addr = null;
+    protected Log     log;
 
     @BeforeClass
     @Parameters(value = { "channel.conf", "use_blocking" })
