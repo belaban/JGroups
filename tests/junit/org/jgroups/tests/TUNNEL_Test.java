@@ -41,16 +41,12 @@ public class TUNNEL_Test extends ChannelTestBase{
 
     @BeforeClass
     void startRouter() throws Exception {
-        String tmp=Util.getProperty(Global.BIND_ADDR);
-        if(tmp == null) {
-            StackType type=Util.getIpStackType();
-            tmp=type == StackType.IPv6? "::1" : "127.0.0.1";
-        }
-
-        bind_addr=InetAddress.getByName(tmp);
+        StackType type=Util.getIpStackType();
+        String bind_addr_str=type == StackType.IPv6? "::1" : "127.0.0.1";
+        bind_addr=InetAddress.getByName(bind_addr_str);
         gossip_router_port=ResourceManager.getNextTcpPort(bind_addr);
         gossip_router_hosts=bind_addr.getHostAddress() + "[" + gossip_router_port + "]";
-        gossipRouter=new GossipRouter(gossip_router_port, null);
+        gossipRouter=new GossipRouter(gossip_router_port, bind_addr_str);
         gossipRouter.start();
     }
     

@@ -37,16 +37,13 @@ public class GossipRouterTest {
     protected int                 gossip_router_port;
     protected String              gossip_router_hosts;
     protected InetAddress         bind_addr;
+    protected String              bind_addr_str;
 
     @BeforeClass
     protected void setUp() throws Exception {
-        String tmp=Util.getProperty(Global.BIND_ADDR);
-        if(tmp == null) {
-            StackType type=Util.getIpStackType();
-            tmp=type == StackType.IPv6? "::1" : "127.0.0.1";
-        }
-
-        bind_addr=InetAddress.getByName(tmp);
+        StackType type=Util.getIpStackType();
+        bind_addr_str=type == StackType.IPv6? "::1" : "127.0.0.1";
+        bind_addr=InetAddress.getByName(bind_addr_str);
         gossip_router_port=ResourceManager.getNextTcpPort(bind_addr);
         gossip_router_hosts=bind_addr.getHostAddress() + "[" + gossip_router_port + "]";
     }
@@ -85,7 +82,7 @@ public class GossipRouterTest {
         b.connect("demo");
 
         System.out.println("-- starting GossipRouter");
-        router=new GossipRouter(gossip_router_port, bind_addr.getHostAddress());
+        router=new GossipRouter(gossip_router_port, bind_addr_str);
         router.start();
 
         System.out.println("-- waiting for merge to happen --");
