@@ -309,8 +309,10 @@ public class UPerf extends ReceiverAdapter {
             Address mbr=entry.getKey();
             Rsp<Results> rsp=entry.getValue();
             Results result=rsp.getValue();
-            total_reqs+=result.num_gets + result.num_puts;
-            total_time+=result.time;
+            if(result != null) {
+                total_reqs+=result.num_gets + result.num_puts;
+                total_time+=result.time;
+            }
             System.out.println(mbr + ": " + result);
         }
         double total_reqs_sec=total_reqs / ( total_time/ 1000.0);
