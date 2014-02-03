@@ -5,11 +5,15 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.MethodLookup;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -18,6 +22,34 @@ import java.lang.reflect.Method;
  **/
 @Test(groups=Global.FUNCTIONAL)
 public class MethodCallTest {
+
+    protected static final Method CALL;
+    protected static final Map<Short,Method> methods=new HashMap<Short,Method>();
+
+    static {
+        try {
+            CALL=MethodCallTest.class.getMethod("call", boolean.class, Boolean.class, int.class, double.class,
+                                                float.class, byte[].class, String[].class);
+        }
+        catch(NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+
+        methods.put((short)1, CALL);
+
+        try {
+            methods.put((short)2, TargetClass.class.getMethod("foobar"));
+        }
+        catch(NoSuchMethodException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public static final MethodLookup lookup=new MethodLookup() {
+        public Method findMethod(short id) {
+            return methods.get(id);
+        }
+    };
 
     public static class TargetClass {
         public static boolean foo(int a, String b) {
@@ -45,59 +77,38 @@ public class MethodCallTest {
         }
     }
 
+    @Test(enabled=false)
+    public static void call(boolean b, Boolean bool, int i, double d, float f, byte[] buf, String[] strings) {
+        System.out.println("b = " + b + ", bool=" + bool + ", i=" + i + ", d=" + d + ", f=" + f +
+                             ", buf=" + buf.length + " bytes, strings=" + Arrays.toString(strings));
+    }
 
     final TargetClass target=new TargetClass();
 
 
-    public void testOld() throws Exception {
-        MethodCall mc=new MethodCall("foo", new Object[]{new Integer(22), "Bela"}, new Class[]{int.class,String.class});
-        Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
-    }
-
-
-    public void testOld2() throws Exception {
-        new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"},
-                       new Class[]{String[].class, String.class}).invoke(target);
-    }
-
-
-    public void testWithNull() throws Exception {
-        new MethodCall("foobar", null, null).invoke(target);
-    }
-
-
-    public void testOldWithNull() throws Exception {
-        new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null},
-                       new Class[]{String[].class, String.class}).invoke(target);
-    }
-
-
-    public void testOldWithNull2() throws Exception {
-        new MethodCall("bar", new Object[]{null, "Bela"},
-                       new Class[]{String[].class, String.class}).invoke(target);
-    }
-
-
-    public void testOldWithNull3() throws Exception {
-        new MethodCall("foobar", null, null).invoke(target);
-    }
-
-
-    public void testOldWithNull4() throws Exception {
-        new MethodCall("foobar", new Object[0], null).invoke(target);
-    }
-
 
     public void testMethod() throws Exception {
         Method m=TargetClass.class.getMethod("foo", new Class[]{int.class, String.class});
-        MethodCall mc=new MethodCall(m, new Integer(22), "Bela");
-        Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
+        MethodCall mc=new MethodCall(m,22, "Bela");
+        Assert.assertEquals(mc.invoke(target),Boolean.TRUE);
+    }
+
+
+    public void testMethod2() throws Exception {
+        MethodCall call=new MethodCall(CALL, true, Boolean.FALSE, 322649, 3.24, (float)54.345,
+                                       new byte[]{'b', 'e', 'l', 'a'}, new String[]{"Bela", "Michelle"});
+        call.invoke(this);
     }
 
 
     public void testTypes() throws Exception {
-        MethodCall mc=new MethodCall("foo", new Object[]{new Integer(35),"Bela"}, new Class[]{int.class,String.class});
-        Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
+        MethodCall mc=new MethodCall("foo", new Object[]{35,"Bela"}, new Class[]{int.class,String.class});
+        Assert.assertEquals(mc.invoke(target),Boolean.TRUE);
+    }
+
+    public void testTypes2() throws Exception {
+        new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"},
+                       new Class[]{String[].class, String.class}).invoke(target);
     }
 
 
@@ -141,22 +152,31 @@ public class MethodCallTest {
 
 
     public void testSignature() throws Exception {
-        MethodCall mc=new MethodCall("foo", new Object[]{new Integer(35), "Bela"},
+        MethodCall mc=new MethodCall("foo", new Object[]{35, "Bela"},
                                      new Class[]{int.class, String.class});
-        Assert.assertEquals(mc.invoke(target), Boolean.TRUE);
+        Assert.assertEquals(mc.invoke(target),Boolean.TRUE);
+    }
+
+    public void testID() throws Exception {
+        MethodCall call=new MethodCall((short)1, true, Boolean.FALSE, 322649, 3.24, (float)54.345,
+                                       new byte[]{'b', 'e', 'l', 'a'}, new String[]{"Bela", "Michelle"})
+          .lookup(lookup);
+        call.invoke(this);
+
+        call=new MethodCall((short)2).lookup(lookup);
+        call.invoke(target);
     }
 
 
-
     public static void testBufferSize() throws Exception {
-        MethodCall m=new MethodCall("foo", new Object[]{new Integer(10),"Bela"}, new Class[]{int.class, String.class});
+        MethodCall m=new MethodCall("foo", new Object[]{10,"Bela"}, new Class[]{int.class, String.class});
         byte[] data=Util.objectToByteBuffer(m);
         
         MethodCall m2=(MethodCall)Util.objectFromByteBuffer(data);
         System.out.println(m2);
         Object[] args=m2.getArgs();
         assert args.length == 2;
-        assert args[0].equals(new Integer(10));
+        assert args[0].equals(10);
         assert args[1].equals("Bela");
     }
 
@@ -165,7 +185,7 @@ public class MethodCallTest {
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"}, new Class[]{String.class});
         Target target = new Target();
         Object result = methodCall.invoke(target);
-        Assert.assertEquals("ABC", result);
+        Assert.assertEquals("ABC",result);
     }
 
 
@@ -173,7 +193,7 @@ public class MethodCallTest {
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"}, new Class[]{String.class});
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
-        Assert.assertEquals("ABC", result);
+        Assert.assertEquals("ABC",result);
     }
 
 
@@ -182,7 +202,7 @@ public class MethodCallTest {
         MethodCall methodCall = new MethodCall(method, "abc");
         Target target = new Target();
         Object result = methodCall.invoke(target);
-        Assert.assertEquals("ABC", result);
+        Assert.assertEquals("ABC",result);
     }
 
 
@@ -191,7 +211,7 @@ public class MethodCallTest {
         MethodCall methodCall = new MethodCall(method, "abc");
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
-        Assert.assertEquals("ABC", result);
+        Assert.assertEquals("ABC",result);
     }
 
 
@@ -199,7 +219,7 @@ public class MethodCallTest {
         MethodCall methodCall = new MethodCall("someMethod", new Object[] { "abc" }, new Class[] { String.class });
         Target target = new Target();
         Object result = methodCall.invoke(target);
-        Assert.assertEquals("ABC", result);
+        Assert.assertEquals("ABC",result);
     }
 
 
@@ -207,7 +227,7 @@ public class MethodCallTest {
         MethodCall methodCall = new MethodCall("someMethod", new Object[] { "abc" }, new Class[] { String.class });
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
-        Assert.assertEquals("ABC", result);
+        Assert.assertEquals("ABC",result);
     }
 
     /**
@@ -234,7 +254,7 @@ public class MethodCallTest {
         MethodCall methodCall = new MethodCall("someMethod", new Object[] { "abc" }, new Class[] {String.class});
         Target target = new Target();
         Object result = methodCall.invoke(target);
-        Assert.assertEquals("ABC", result);
+        Assert.assertEquals("ABC",result);
     }
 
 
@@ -242,7 +262,7 @@ public class MethodCallTest {
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"}, new Class[] {String.class});
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
-        Assert.assertEquals("ABC", result);
+        Assert.assertEquals("ABC",result);
     }
 
 
@@ -263,9 +283,49 @@ public class MethodCallTest {
         System.out.println("m = " + m);
     }
 
+    public static void testMarshallingMETHOD() throws Exception {
+        Method m=TargetClass.class.getMethod("foo", new Class[]{int.class, String.class});
+        MethodCall mc=new MethodCall(m,22, "Bela");
+        MethodCall call2=marshalAndUnmarshal(mc);
+        System.out.println("call2 = " + call2);
+
+        mc=new MethodCall(CALL, true, Boolean.FALSE, 322649, 3.24, (float)54.345,
+                          new byte[]{'b', 'e', 'l', 'a'}, new String[]{"Bela", "Michelle"});
+        call2=marshalAndUnmarshal(mc);
+        System.out.println("call2 = " + call2);
+    }
+
+    public static void testMarshallingTYPES() throws Exception {
+        MethodCall mc=new MethodCall("call", new Object[]
+                                     {true,Boolean.FALSE,322649,3.24,(float)54.345,
+                                       new byte[]{'b','e','l','a'},new String[]{"Bela","Michelle"}},
+                                     new Class<?>[]{boolean.class, Boolean.class, int.class, double.class, float.class,
+                                       byte[].class, String[].class});
+        MethodCall call2=marshalAndUnmarshal(mc);
+        System.out.println("call2 = " + call2);
+    }
+
+    public static void testMarshallingID() throws Exception {
+        MethodCall mc=new MethodCall((short)1, true, Boolean.FALSE, 322649, 3.24, (float)54.345,
+                                     new byte[]{'b', 'e', 'l', 'a'}, new String[]{"Bela", "Michelle"});
+        MethodCall call2=marshalAndUnmarshal(mc);
+        System.out.println("call2 = " + call2);
+
+        mc=new MethodCall((short)1, true, Boolean.FALSE, 322649, 3.24, (float)54.345,
+                          new byte[]{'b', 'e', 'l', 'a'}, new String[]{"Bela", "Michelle"});
+        call2=marshalAndUnmarshal(mc);
+        System.out.println("call2 = " + call2);
+
+
+        mc=new MethodCall((short)2).lookup(lookup);
+        call2=marshalAndUnmarshal(mc);
+        System.out.println("call2 = " + call2);
+    }
+
 
     private static MethodCall marshalAndUnmarshal(MethodCall m) throws Exception {
         byte[] buf=Util.objectToByteBuffer(m);
+        System.out.println("marshalled buffer size: " + buf.length + " bytes");
         return (MethodCall)Util.objectFromByteBuffer(buf);
     }
 

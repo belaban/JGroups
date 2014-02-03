@@ -70,4 +70,5 @@
     <class id="107" name="org.jgroups.protocols.UNICAST3$Header"/>
     <class id="108" name="org.jgroups.protocols.FORK$ForkHeader"/>
     <class id="109" name="org.jgroups.protocols.PERF$PerfHeader"/>
+    <class id="110" name="org.jgroups.blocks.MethodCall"/>
 </magic-number-class-mapping>

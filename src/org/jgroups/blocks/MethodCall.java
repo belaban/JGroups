@@ -3,11 +3,10 @@ package org.jgroups.blocks;
 
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -21,41 +20,40 @@ import java.util.List;
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
  */
-public class MethodCall implements Externalizable {
+public class MethodCall implements Externalizable, Streamable {
 
-    private static final long serialVersionUID=7873471327078957662L;
+    private static final long    serialVersionUID=7873471327078957662L;
 
     /** The name of the method, case sensitive. */
-    protected String method_name;
+    protected String             method_name;
 
     /** The ID of a method, maps to a java.lang.reflect.Method */
-    protected short method_id;
+    protected short              method_id;
 
     /** The arguments of the method. */
-    protected Object[] args;
+    protected Object[]           args;
 
     /** The class types, e.g., new Class[]{String.class, int.class}. */
-    protected Class[] types;
+    protected Class[]            types;
 
     /** The Method of the call. */
-    protected Method method;
+    protected Method             method;
 
-    protected static final Log log=LogFactory.getLog(MethodCall.class);
+    protected static final Log   log=LogFactory.getLog(MethodCall.class);
 
     /** Which mode to use. */
-    protected short mode;
+    protected short              mode;
 
-    /** Infer the method from the arguments. */
-    protected static final short OLD=1;
+    protected MethodLookup       lookup;
 
     /** Explicitly ship the method, caller has to determine method himself. */
-    protected static final short METHOD=2;
+    protected static final short METHOD=1;
 
     /** Use class information. */
-    protected static final short TYPES=3;
+    protected static final short TYPES=2;
 
     /** Use an ID to map to a method */
-    protected static final short ID=5;
+    protected static final short ID=3;
 
 
 
@@ -98,6 +96,7 @@ public class MethodCall implements Externalizable {
         method_name=method.getName();
     }
 
+    public MethodCall lookup(MethodLookup lookup) {this.lookup=lookup; return this;}
 
     public int getMode() {
         return mode;
@@ -152,29 +151,6 @@ public class MethodCall implements Externalizable {
 
 
 
-    /**
-     *
-     * @param target_class
-     * @return
-     * @throws Exception
-     */
-    Method findMethod(Class target_class) throws Exception {
-        int     len=args != null? args.length : 0;
-        Method  m;
-
-        Method[] methods=getAllMethods(target_class);
-        for(int i=0; i < methods.length; i++) {
-            m=methods[i];
-            if(m.getName().equals(method_name)) {
-                if(m.getParameterTypes().length == len)
-                    return m;
-            }
-        }
-
-        return null;
-    }
-
-
     /** Called by the ProbeHandler impl. All args are strings. Needs to find a method where all parameter
      * types are primitive types, so the strings can be converted */
     public static Method findMethod(Class target_class, String method_name, Object[] args) throws Exception {
@@ -200,7 +176,6 @@ public class MethodCall implements Externalizable {
                 }
             }
         }
-
         return retval;
     }
 
@@ -285,17 +260,13 @@ public class MethodCall implements Externalizable {
      * @return an object
      */
     public Object invoke(Object target) throws Exception {
+        if(target == null)
+            throw new IllegalArgumentException("target is null");
+
+        Class cl=target.getClass();
         Method meth=null;
 
-        if(method_name == null || target == null) {
-            if(log.isErrorEnabled()) log.error("method name or target is null");
-            return null;
-        }
-        Class cl=target.getClass();
         switch(mode) {
-            case OLD:
-                meth=findMethod(cl);
-                break;
             case METHOD:
                 if(this.method != null)
                     meth=this.method;
@@ -304,6 +275,7 @@ public class MethodCall implements Externalizable {
                 meth = getMethod(cl, method_name, types);
                 break;
             case ID:
+                meth=lookup != null? lookup.findMethod(method_id) : null;
                 break;
             default:
                 if(log.isErrorEnabled()) log.error("mode " + mode + " is invalid");
@@ -418,8 +390,6 @@ public class MethodCall implements Externalizable {
         out.writeShort(mode);
 
         switch(mode) {
-        case OLD:
-            break;
         case METHOD:
             out.writeObject(method.getParameterTypes());
             out.writeObject(method.getDeclaringClass());
@@ -445,8 +415,6 @@ public class MethodCall implements Externalizable {
         mode=in.readShort();
 
         switch(mode) {
-        case OLD:
-            break;
         case METHOD:
             Class[] parametertypes=(Class[])in.readObject();
             Class   declaringclass=(Class)in.readObject();
@@ -467,6 +435,115 @@ public class MethodCall implements Externalizable {
             break;
         }
     }
+
+    public void writeTo(DataOutput out) throws Exception {
+        out.write(mode);
+
+        switch(mode) {
+            case METHOD:
+                Util.writeString(method_name, out);
+                writeMethod(out);
+                break;
+            case TYPES:
+                Util.writeString(method_name, out);
+                writeTypes(out);
+                break;
+            case ID:
+                out.writeShort(method_id);
+                break;
+            default:
+                throw new IllegalStateException("mode " + mode + " unknown");
+        }
+        writeArgs(out);
+    }
+
+
+
+    public void readFrom(DataInput in) throws Exception {
+        mode=in.readByte();
+
+        switch(mode) {
+            case METHOD:
+                method_name=Util.readString(in);
+                readMethod(in);
+                break;
+            case TYPES:
+                method_name=Util.readString(in);
+                readTypes(in);
+                break;
+            case ID:
+                method_id=in.readShort();
+                break;
+            default:
+                throw new IllegalStateException("mode " + mode + " unknown");
+        }
+        readArgs(in);
+    }
+
+
+    protected void writeArgs(DataOutput out) throws Exception {
+        int args_len=args != null? args.length : 0;
+        out.write(args_len);
+        if(args_len > 0) {
+            for(Object obj: args)
+                Util.objectToStream(obj, out);
+        }
+    }
+
+    protected void readArgs(DataInput in) throws Exception {
+        int args_len=in.readByte();
+        if(args_len > 0) {
+            args=new Object[args_len];
+            for(int i=0; i < args_len; i++)
+                args[i]=Util.objectFromStream(in);
+        }
+    }
+
+
+    protected void writeTypes(DataOutput out) throws Exception {
+        int types_len=types != null? types.length : 0;
+        out.write(types_len);
+        if(types_len > 0)
+            for(Class<?> type: types)
+                Util.objectToStream(type, out);
+    }
+
+    protected void readTypes(DataInput in) throws Exception {
+        int types_len=in.readByte();
+        if(types_len > 0) {
+            types=new Class<?>[types_len];
+            for(int i=0; i < types_len; i++)
+                types[i]=(Class)Util.objectFromStream(in);
+        }
+    }
+
+    protected void writeMethod(DataOutput out) throws Exception {
+        if(method != null) {
+            out.write(1);
+            Util.objectToStream(method.getParameterTypes(),out);
+            Util.objectToStream(method.getDeclaringClass(),out);
+        }
+        else
+            out.write(0);
+    }
+
+    protected void readMethod(DataInput in) throws Exception {
+        if(in.readByte() == 1) {
+            Class[] parametertypes=(Class[])Util.objectFromStream(in);
+            Class   declaringclass=(Class)Util.objectFromStream(in);
+            try {
+                method=declaringclass.getDeclaredMethod(method_name, parametertypes);
+            }
+            catch(NoSuchMethodException e) {
+                throw new IOException(e.toString());
+            }
+        }
+    }
+
+
+
+
+
 
 
     public static Object convert(String arg, Class<?> type) {

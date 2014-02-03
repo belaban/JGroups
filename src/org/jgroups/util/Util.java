@@ -1097,19 +1097,12 @@ public class Util {
 
         out.write(1);
         magic_number=ClassConfigurator.getMagicNumber(obj.getClass());
-        // write the magic number or the class name
+        out.writeShort(magic_number);
         if(magic_number == -1) {
-            out.writeBoolean(false);
             classname=obj.getClass().getName();
             out.writeUTF(classname);
         }
-        else {
-            out.writeBoolean(true);
-            out.writeShort(magic_number);
-        }
-
-        // write the contents
-        obj.writeTo(out);
+        obj.writeTo(out); // write the contents
     }
 
 
@@ -1120,18 +1113,16 @@ public class Util {
         if(b == 0)
             return null;
 
-        boolean use_magic_number=in.readBoolean();
-        String classname;
-        Class clazz;
+        short magic_number=in.readShort();
 
-        if(use_magic_number) {
-            short magic_number=in.readShort();
+        Class<?> clazz;
+        if(magic_number != -1) {
             clazz=ClassConfigurator.get(magic_number);
             if (clazz==null)
                 throw new ClassNotFoundException("Class for magic number "+magic_number+" cannot be found.");
         }
         else {
-            classname=in.readUTF();
+            String classname=in.readUTF();
             clazz=ClassConfigurator.get(classname);
         }
 
