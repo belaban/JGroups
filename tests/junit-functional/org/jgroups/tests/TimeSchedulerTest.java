@@ -218,7 +218,7 @@ public class TimeSchedulerTest {
             assert !(future.isCancelled());
             assert !(future.isDone());
 
-            Thread.sleep(3000);
+            sleep(3000);
             assert !(future.isCancelled());
             assert !(future.isDone());
 
@@ -241,7 +241,7 @@ public class TimeSchedulerTest {
             assert !(future.isCancelled());
             assert !(future.isDone());
 
-            Thread.sleep(3000);
+            sleep(3000);
             assert !(future.isCancelled());
             assert !(future.isDone());
 
@@ -266,7 +266,7 @@ public class TimeSchedulerTest {
             assert !(future.isCancelled());
             assert !(future.isDone());
 
-            Thread.sleep(3000);
+            sleep(3000);
             assert !(future.isCancelled());
             assert !(future.isDone());
 
@@ -289,7 +289,7 @@ public class TimeSchedulerTest {
             assert !future.isCancelled();
             assert !future.isDone();
 
-            Thread.sleep(3500);
+            sleep(3500);
             assert !future.isCancelled();
             assert future.isDone();
 
@@ -309,7 +309,7 @@ public class TimeSchedulerTest {
         try {
             TimeScheduler.Task task=new DynamicTask(new long[]{-1});
             Future<?> future=timer.scheduleWithDynamicInterval(task);
-            Thread.sleep(100);
+            sleep(100);
             assert !future.isCancelled();
             assert future.isDone();
 
@@ -354,12 +354,12 @@ public class TimeSchedulerTest {
             size=timer.size();
             System.out.println("queue size=" + size);
             Assert.assertEquals(1, size);
-            Thread.sleep(1000);
+            sleep(1000);
             size=timer.size();
             System.out.println("queue size=" + size);
             Assert.assertEquals(0, size);
 
-            Thread.sleep(1500);
+            sleep(1500);
             System.out.println(System.currentTimeMillis() + ": adding task");
             timer.schedule(new MyTask(), 500, TimeUnit.MILLISECONDS);
 
@@ -373,7 +373,7 @@ public class TimeSchedulerTest {
             System.out.println("queue size=" + size);
             Assert.assertEquals(3, size);
 
-            Thread.sleep(1000);
+            sleep(1000);
             size=timer.size();
             System.out.println("queue size=" + size);
             Assert.assertEquals(0, size);
@@ -502,6 +502,21 @@ public class TimeSchedulerTest {
     }
 
 
+    protected void sleep(long millis) {
+        long target_time=System.currentTimeMillis() + millis;
+        while(true) {
+            try {
+                Thread.sleep(millis);
+                break;
+            }
+            catch(InterruptedException e) {
+                millis=target_time - System.currentTimeMillis();
+                if(millis > 0)
+                    continue;
+                break;
+            }
+        }
+    }
 
     static int check(Map<Long,Entry> msgs, boolean print) {
         int retval=0;
