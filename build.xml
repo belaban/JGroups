@@ -43,8 +43,9 @@
     <property name="test.verbose" value="0"/>
 
     <!-- Parallelization controls (disable with "-Dparallel.tests=false -Dparallel.methods=false") -->
-    <property name="parallel.tests" value="tests"/>
+    <property name="parallel.tests"   value="tests"/>
     <property name="parallel.methods" value="methods"/>
+    <property name="parallel.classes" value="classes"/>
 
     <path id="jg.classpath">
         <pathelement location="${compile.dir}"/>
@@ -388,7 +389,7 @@
         <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
         <runtest suitename="functional"
                  groups="functional"
-                 parallel="${parallel.methods}"
+                 parallel="${parallel.classes}"
                  threadcount="10" />
     </target>
 
@@ -398,7 +399,7 @@
         <runtest classpath="jg.classpath.byteman"
                  suitename="byteman"
                  groups="byteman"
-                 parallel="false"
+                 parallel="${parallel.classes}"
                  threadcount="1"
                  jvmarg1="-Dorg.jboss.byteman.contrib.bmunit.agent.inhibit=true"
                  jvmarg2="-javaagent:${lib.dir}/byteman.jar=listener:true">
@@ -410,7 +411,7 @@
         <mkdir dir="${tmp.dir}/test-results/xml/sensitive"/>
         <runtest suitename="sensitive"
                  groups="time-sensitive"
-                 parallel="${parallel.methods}"
+                 parallel="${parallel.classes}"
                  threadcount="1" />
     </target>
 
@@ -418,7 +419,7 @@
         <mkdir dir="${tmp.dir}/test-results/xml/ind"/>
         <runtest suitename="ind"
                  groups="stack-independent"
-                 parallel="${parallel.tests}"
+                 parallel="${parallel.classes}"
                  threadcount="1" />
     </target>
 
@@ -428,7 +429,7 @@
         <runtest suitename="udp"
                  groups="base,stack-dependent"
                  excludedgroups="stack-independent,flush,broken"
-                 parallel="${parallel.methods}"
+                 parallel="${parallel.classes}"
                  threadcount="5"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="25000"
@@ -442,7 +443,7 @@
         <runtest suitename="udp-flush"
                  groups="base,flush"
                  excludedgroups="stack-independent,stack-dependent,broken"
-                 parallel="${parallel.methods}"
+                 parallel="${parallel.classes}"
                  threadcount="5"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="26000"
@@ -461,7 +462,7 @@
         <runtest suitename="tcp"
                  groups="base,stack-dependent"
                  excludedgroups="stack-independent,flush,broken"
-                 parallel="${parallel.methods}"
+                 parallel="${parallel.classes}"
                  threadcount="5"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="27000"
@@ -482,7 +483,7 @@
         <runtest suitename="tcp-stress"
                  groups="stress"
                  excludedgroups="base,stack-dependent,stack-independent,flush,broken"
-                 parallel="${parallel.methods}"
+                 parallel="${parallel.classes}"
                  threadcount="1"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="28000"
@@ -501,7 +502,7 @@
         <runtest suitename="tcp-flush"
                  groups="base,flush"
                  excludedgroups="stack-independent,stack-dependent,broken"
-                 parallel="${parallel.methods}"
+                 parallel="${parallel.classes}"
                  threadcount="5"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="29000"
@@ -536,7 +537,7 @@
         <attribute name="suitename" />
         <attribute name="groups" />  <!-- comma-separated list, e.g. udp,functional -->
         <attribute name="excludedgroups"     default="broken"/>
-        <attribute name="parallel"           default="${parallel.methods}"/>
+        <attribute name="parallel"           default="classes"/>
         <attribute name="threadcount"        default="1"/>
         <attribute name="outputdir"          default="${tmp.dir}/test-results/xml"/>
         <attribute name="initial.mcast.addr" default="${jgroups.udp.mcast_addr}"/>
