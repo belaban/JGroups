@@ -1473,6 +1473,23 @@ public class Util {
         }
     }
 
+    /** Sleeps for the entire millis ms, ignoring interrupts */
+    public static void sleepUninterrupted(long millis) {
+        long target_time=System.currentTimeMillis() + millis;
+        while(true) {
+            try {
+                Thread.sleep(millis);
+                break;
+            }
+            catch(InterruptedException e) {
+                millis=target_time - System.currentTimeMillis();
+                if(millis > 0)
+                    continue;
+                break;
+            }
+        }
+    }
+
     public static void sleep(long timeout, int nanos) {
         //the Thread.sleep method is not precise at all regarding nanos
         if (timeout > 0 || nanos > 900000) {
