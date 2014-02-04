@@ -86,8 +86,10 @@ public class ConnectStressTest extends ChannelTestBase {
 
         for(MyThread thread: threads) {
             View view=thread.getChannel().getView();
-            int size=view.size();
-            assert size == NUM : "view doesn't have size of " + NUM + " (has " + size + "): " + view;
+            if(view != null) {
+                int size=view.size();
+                assert size == NUM : "view doesn't have size of " + NUM + " (has " + size + "): " + view;
+            }
         }
     }
 
