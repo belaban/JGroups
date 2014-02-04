@@ -80,9 +80,11 @@ public class PRIO extends Protocol {
      */
     public void stop() {
 		if (downMessageThread != null) {
+            downMessageThread.setRunning(false);
 			downMessageThread.interrupt();
 		}
 		if (upMessageThread != null) {
+            upMessageThread.setRunning(false);
 			upMessageThread.interrupt();
 		}
     }
@@ -221,6 +223,7 @@ public class PRIO extends Protocol {
     {
 		private PRIO prio;
 		private PriorityBlockingQueue<PriorityMessage> messageQueue;
+        private volatile boolean running=true;
 
         private MessageThread( PRIO prio, PriorityBlockingQueue<PriorityMessage> messageQueue  ) {
 			this.prio = prio;
@@ -232,7 +235,7 @@ public class PRIO extends Protocol {
 
         @Override
         public void run() {
-            while (true) {
+            while (running) {
                 PriorityMessage priorityMessage = null;
                 try {
                 	priorityMessage = messageQueue.take();
@@ -257,6 +260,10 @@ public class PRIO extends Protocol {
 					messageQueue.add( priorityMessage );
                 }
             }
+        }
+
+        public void setRunning(boolean flag) {
+            running=flag;
         }
     }
 
