@@ -43,8 +43,8 @@
     <property name="test.verbose" value="0"/>
 
     <!-- Parallelization controls (disable with "-Dparallel.tests=false -Dparallel.methods=false") -->
-    <property name="parallel.tests" value="false"/>
-    <property name="parallel.methods" value="false"/>
+    <property name="parallel.tests" value="tests"/>
+    <property name="parallel.methods" value="methods"/>
 
     <path id="jg.classpath">
         <pathelement location="${compile.dir}"/>
