@@ -23,7 +23,7 @@ import java.util.List;
  * @author Bela Ban
  * @since  3.3
  */
-@Test(groups=Global.BYTEMAN,sequential=true)
+@Test(groups=Global.BYTEMAN,singleThreaded=true)
 public class TCPConnectionMapTest extends BMNGRunner {
     protected TCPConnectionMap    conn_a, conn_b;
     protected InetAddress         loopback;

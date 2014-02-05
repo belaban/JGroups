@@ -16,7 +16,7 @@ import java.util.concurrent.*;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class TransportThreadPoolTest extends ChannelTestBase {
     JChannel c1, c2;
 

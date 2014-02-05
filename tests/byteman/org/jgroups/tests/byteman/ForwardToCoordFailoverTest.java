@@ -24,7 +24,7 @@ import java.util.List;
  * Tests FIFO ordering of {@link FORWARD_TO_COORD} with message sending while the coordinator crashes
  * @author Bela Ban
  */
-@Test(groups=Global.BYTEMAN,sequential=true)
+@Test(groups={Global.BYTEMAN,Global.EAP_EXCLUDED},singleThreaded=true)
 public class ForwardToCoordFailoverTest extends BMNGRunner {
     JChannel a, b, c; // A is the coordinator
     static final String CLUSTER="ForwardToCoordFailoverTest";

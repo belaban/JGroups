@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * @author Paul Ferraro
  */
-@Test(groups={Global.STACK_DEPENDENT},sequential=true)
+@Test(groups={Global.STACK_DEPENDENT},singleThreaded=true)
 public class MuxRpcDispatcherTest extends ChannelTestBase {
 
     private JChannel[]        channels = null;

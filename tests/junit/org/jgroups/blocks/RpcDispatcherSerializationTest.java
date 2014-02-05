@@ -16,7 +16,7 @@ import java.io.*;
 import java.util.Iterator;
 import java.util.List;
 
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class RpcDispatcherSerializationTest extends ChannelTestBase {
     private JChannel channel, channel2;
     private RpcDispatcher disp, disp2;

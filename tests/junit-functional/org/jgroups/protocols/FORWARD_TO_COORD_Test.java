@@ -18,7 +18,7 @@ import java.util.List;
  * @author Bela Ban
  * @since 3.2
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED},singleThreaded=true)
 public class FORWARD_TO_COORD_Test {
     protected static final int     NUM=3; // number of members
     protected static final int     BASE='A';

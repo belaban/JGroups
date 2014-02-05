@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * Tests which test the shared transport
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
     private MyReceiver r1, r2, r3;

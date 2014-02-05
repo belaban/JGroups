@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests for contention on UNICAST, measured by the number of retransmissions in UNICAST 
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, sequential=true)
+@Test(groups=Global.FUNCTIONAL, singleThreaded=true)
 public class UNICAST_ContentionTest {
     JChannel c1, c2;
     static final String unicast_props="SHARED_LOOPBACK(thread_pool.queue_max_size=5000;" +

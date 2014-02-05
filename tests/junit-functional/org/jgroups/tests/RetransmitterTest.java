@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.List;
 
 
-@Test(groups=Global.FUNCTIONAL,sequential=true,dataProvider="createRetransmitter")
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="createRetransmitter")
 public class RetransmitterTest {
     private final Address sender=Util.createRandomAddress();
     private TimeScheduler timer;

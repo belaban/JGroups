@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ConnectionMapUnitTest {
     TCPConnectionMap ct1, ct2;
     static final int port1=15555, port2=16666;

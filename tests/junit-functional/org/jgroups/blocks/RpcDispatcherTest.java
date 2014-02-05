@@ -38,7 +38,7 @@ import java.util.concurrent.TimeoutException;
  * 
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class RpcDispatcherTest {
     protected RpcDispatcher       disp1, disp2, disp3;
     protected JChannel            a, b, c;

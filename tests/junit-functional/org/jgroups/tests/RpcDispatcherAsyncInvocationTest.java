@@ -27,13 +27,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Bela Ban
  * @since  3.3
  */
-@Test(groups=Global.TIME_SENSITIVE,sequential=true)
+@Test(groups=Global.TIME_SENSITIVE,singleThreaded=true)
 public class RpcDispatcherAsyncInvocationTest {
     protected JChannel            a, b;
     protected RpcDispatcher       disp1, disp2;
     protected final AtomicInteger count=new AtomicInteger(0);
     protected Method              incr_method;
 
+    @Test(enabled=false)
     public int incr() {
         Util.sleep(500);
         return count.incrementAndGet();

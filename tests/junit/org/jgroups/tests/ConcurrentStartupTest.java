@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author bela
  */
 
-@Test(groups={Global.FLUSH},sequential=true)
+@Test(groups={Global.FLUSH},singleThreaded=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
     private AtomicInteger mod = new AtomicInteger(0);
 

@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Richard Achmatowicz
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, sequential=true)
+@Test(groups=Global.FUNCTIONAL, singleThreaded=true)
 public class NakackTest {
     final static int NUM_PEERS=3;
     final static int NUM_SENDERS=NUM_PEERS-1;

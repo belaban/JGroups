@@ -12,7 +12,7 @@ import org.testng.annotations.Test;
  * 
  * @author Bela Ban
  */
-@Test(groups = Global.FUNCTIONAL,sequential=true)
+@Test(groups = Global.FUNCTIONAL,singleThreaded=true)
 public class AgeOutCacheTest {
 
     @DataProvider(name="timerCreator")

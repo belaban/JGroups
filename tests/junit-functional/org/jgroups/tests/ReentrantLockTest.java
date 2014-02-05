@@ -13,7 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests the ReentrantLock
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ReentrantLockTest {
     ReentrantLock lock;
 

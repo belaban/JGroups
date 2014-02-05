@@ -22,7 +22,7 @@ import java.util.Arrays;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, sequential=true)
+@Test(groups=Global.FUNCTIONAL, singleThreaded=true)
 public class DigestTest {
     protected Digest         d, d2;
     protected MutableDigest  md;

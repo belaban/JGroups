@@ -26,7 +26,7 @@ import java.net.InetAddress;
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @see TUNNELDeadLockTest#testStress
  */
-@Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
+@Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER, Global.EAP_EXCLUDED},singleThreaded=true)
 public class TUNNELDeadLockTest extends ChannelTestBase {
     private JChannel         channel;
     private Promise<Boolean> promise;

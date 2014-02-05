@@ -13,7 +13,7 @@ import java.util.List;
  * @author Bela Ban
  * @since 3.1
  */
-@Test(groups=Global.BYTEMAN,description="Correctness tests for RingBuffer",enabled=false)
+@Test(groups={Global.BYTEMAN,Global.EAP_EXCLUDED},description="Correctness tests for RingBuffer",enabled=false)
 public class RingBufferTest extends BMNGRunner {
 
 

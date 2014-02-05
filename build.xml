@@ -406,6 +406,10 @@
     <!--
 =============================== TestNG ======================================== -->
 
+    <target name="all-tests-eap" description="Runs all tests except those which are excluded from EAP">
+        <property name="default-excludes" value="eap-excluded"/>
+        <antcall target="all-tests"/>
+    </target>
 
     <target name="all-tests" description="Runs all tests">
         <sequential>
@@ -425,7 +429,7 @@
         <runtest suitename="functional"
                  groups="functional"
                  parallel="${parallel.classes}"
-                 threadcount="10" />
+                 threadcount="5" />
     </target>
 
 
@@ -561,11 +565,13 @@
         <!--<element   name="additional-args"    optional="true"/>-->
 
         <sequential>
+            <property name="default-excludes" value=""/>
+
             <testng classpathref="@{classpath}"
                     suitename="@{suitename}"
                     testname="@{suitename}"
                     groups="@{groups}"
-                    excludedgroups="@{excludedgroups}"
+                    excludedgroups="@{excludedgroups},${default-excludes}"
                     parallel="@{parallel}"
                     threadcount="@{threadcount}"
                     usedefaultlisteners="false"
@@ -574,8 +580,7 @@
                     timeout="${unittest.timeout}"
                     timeOut="${unittest.timeout}"
                     verbose="0"
-                    configfailurepolicy="continue"
-                    >
+                    configfailurepolicy="continue">
 
                 <classfileset dir="${compile.dir}"/>
 

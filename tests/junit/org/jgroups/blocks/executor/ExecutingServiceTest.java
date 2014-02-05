@@ -33,7 +33,7 @@ import java.util.concurrent.locks.Lock;
 /** Tests {@link org.jgroups.blocks.executor.ExecutionService}
  * @author wburns
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups={Global.STACK_DEPENDENT,Global.EAP_EXCLUDED},singleThreaded=true)
 public class ExecutingServiceTest extends ChannelTestBase {
     protected static Log logger=null;
     protected ExposedExecutingProtocol exposedProtocol;

@@ -21,7 +21,7 @@ import java.util.List;
  * @author Bela Ban
  * @since  3.3
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class UNICAST_DropFirstAndLastTest {
     protected JChannel            a, b;
     protected MyReceiver<Integer> rb;

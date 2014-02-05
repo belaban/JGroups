@@ -21,7 +21,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * @author Bela Ban
  * @since  3.3
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MessageBatchTest {
     protected static final short UNICAST2_ID=ClassConfigurator.getProtocolId(UNICAST2.class),
       PING_ID=ClassConfigurator.getProtocolId(PING.class),

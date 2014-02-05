@@ -19,7 +19,7 @@ import java.util.List;
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ConfiguratorTest {
     ProtocolStack stack;
     static final String props="UDP:PING:FD:pbcast.NAKACK(retransmit_timeouts=300,600):UNICAST:FC";

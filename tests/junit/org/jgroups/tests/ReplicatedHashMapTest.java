@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Test methods for ReplicatedHashMap
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups={Global.STACK_DEPENDENT,Global.EAP_EXCLUDED},singleThreaded=true)
 public class ReplicatedHashMapTest extends ChannelTestBase {
     private ReplicatedHashMap<String,String> map1;
     private ReplicatedHashMap<String,String> map2;

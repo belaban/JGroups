@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * @author Bela Ban
  */
-@Test(groups={Global.STACK_INDEPENDENT,Global.GOSSIP_ROUTER},sequential=true)
+@Test(groups={Global.STACK_INDEPENDENT,Global.GOSSIP_ROUTER,Global.EAP_EXCLUDED},singleThreaded=true)
 public class GossipRouterTest {
     protected GossipRouter        router;
     protected JChannel            a, b;

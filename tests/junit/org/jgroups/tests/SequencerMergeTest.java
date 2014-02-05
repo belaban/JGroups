@@ -23,7 +23,7 @@ import java.util.*;
  * @author Bela Ban
  * @since 3.1
  */
-@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
+@Test(groups=Global.STACK_INDEPENDENT,singleThreaded=true)
 public class SequencerMergeTest {
     JChannel a, b, c, d;
     static final String GROUP="SequencerMergeTest";

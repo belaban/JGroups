@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
-@Test(groups = Global.FUNCTIONAL, sequential = true)
+@Test(groups = {Global.FUNCTIONAL,Global.EAP_EXCLUDED}, sequential = true)
 public class RpcLockingTest {
 	protected JChannel            a, b;
 	protected MessageDispatcher   disp_a, disp_b;

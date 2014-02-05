@@ -24,7 +24,7 @@ import java.util.List;
  * @author Bela Ban
  * @since 3.3
  */
-@Test(groups=Global.BYTEMAN,sequential=true)
+@Test(groups=Global.BYTEMAN,singleThreaded=true)
 public class MessageBeforeConnectedTest extends BMNGRunner {
     protected JChannel            a;
     protected static final String HELLO1="hello-1";

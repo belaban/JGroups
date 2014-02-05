@@ -21,7 +21,7 @@ import java.util.concurrent.locks.LockSupport;
  * Tests RATE_LIMITER
  * @author Bela Ban
  */
-@Test(groups=Global.TIME_SENSITIVE, sequential=true)
+@Test(groups={Global.TIME_SENSITIVE,Global.EAP_EXCLUDED}, singleThreaded=true)
 public class RATE_LIMITER_Test {
     final byte[] buffer=new byte[1000];
 

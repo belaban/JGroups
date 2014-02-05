@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ProgrammaticApiTest {
     JChannel c1, c2;
 

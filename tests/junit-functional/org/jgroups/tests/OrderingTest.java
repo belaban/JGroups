@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests message ordering
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class OrderingTest {
     protected static final int NUM_MSGS=200000;
     protected static final int NUM_SENDERS=2;

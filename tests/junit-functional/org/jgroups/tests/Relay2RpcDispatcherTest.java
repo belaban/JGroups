@@ -30,7 +30,7 @@ import java.util.List;
  * @author Bela Ban
  * @since 3.2
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class Relay2RpcDispatcherTest {
     protected JChannel a, b;  			// members in site "lon"
     protected JChannel x, y;  			// members in site "sfo

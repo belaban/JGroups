@@ -29,7 +29,7 @@ import java.util.List;
  *
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class FragTest {
     public static final long NUM_MSGS  =   1000;
     public static final int  MSG_SIZE  = 100000;

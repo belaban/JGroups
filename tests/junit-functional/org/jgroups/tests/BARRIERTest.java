@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests the BARRIER protocol
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class BARRIERTest {
     protected JChannel ch;
     protected PING     ping_prot;

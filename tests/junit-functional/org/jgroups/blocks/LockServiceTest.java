@@ -18,7 +18,7 @@ import java.util.concurrent.locks.Lock;
 /** Tests {@link org.jgroups.blocks.locking.LockService}
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED},singleThreaded=true)
 public class LockServiceTest {
     protected JChannel    c1, c2, c3;
     protected LockService s1, s2, s3;

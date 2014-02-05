@@ -21,7 +21,7 @@ import java.util.List;
  * Tests the UNICAST{2,3} protocols with messages sent by member A to itself
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class UNICAST_MessagesToSelfTest {
     protected JChannel ch;
     protected Address  a1;

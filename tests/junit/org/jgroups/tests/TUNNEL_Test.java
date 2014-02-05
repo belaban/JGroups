@@ -30,7 +30,7 @@ import java.util.List;
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
  **/
-@Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER},sequential=true)
+@Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER, Global.EAP_EXCLUDED},singleThreaded=true)
 public class TUNNEL_Test extends ChannelTestBase{
     protected JChannel            channel, coordinator;
     protected final static String GROUP="TUNNEL_Test";

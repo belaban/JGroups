@@ -20,7 +20,7 @@ import java.util.concurrent.CyclicBarrier;
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
  */
-@Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
+@Test(groups={Global.STACK_INDEPENDENT}, singleThreaded=true)
 public class ConnectStressTest extends ChannelTestBase {
     static final int            NUM=20;
     private final CyclicBarrier barrier=new CyclicBarrier(NUM+1);

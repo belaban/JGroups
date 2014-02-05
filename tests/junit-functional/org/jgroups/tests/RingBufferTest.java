@@ -15,7 +15,7 @@ import java.util.concurrent.CountDownLatch;
  * @author Bela Ban
  * @since 3.1
  */
-@Test(groups=Global.FUNCTIONAL,description="Functional tests of RingBuffer")
+@Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED},description="Functional tests of RingBuffer")
 public class RingBufferTest {
 
     public void testConstructor() {

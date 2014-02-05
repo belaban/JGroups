@@ -22,7 +22,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Tests ConnectionMap
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ConnectionMapTest {
     private TCPConnectionMap ct1, ct2;
     static final InetAddress loopback_addr;

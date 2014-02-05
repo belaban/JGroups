@@ -22,7 +22,7 @@ import java.util.List;
  * @author Bela Ban
  * @since 3.3
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class NAKACK2_RetransmitTest {
     protected static final short ID=ClassConfigurator.getProtocolId(NAKACK2.class);
     protected static final Address A=Util.createRandomAddress("A"), B=Util.createRandomAddress("B");

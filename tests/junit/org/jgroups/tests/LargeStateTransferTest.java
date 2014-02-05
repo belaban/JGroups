@@ -24,7 +24,7 @@ import java.io.OutputStream;
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
  */
-@Test(groups={Global.STACK_DEPENDENT}, sequential=true)
+@Test(groups={Global.STACK_DEPENDENT,Global.EAP_EXCLUDED}, singleThreaded=true)
 public class LargeStateTransferTest extends ChannelTestBase {
     JChannel          provider, requester;
     Promise<Integer>  p=new Promise<Integer>();

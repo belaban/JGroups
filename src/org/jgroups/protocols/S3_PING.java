@@ -1,9 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
-import org.jgroups.annotations.Unsupported;
 import org.jgroups.util.Util;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
@@ -33,7 +31,6 @@ import static java.lang.String.valueOf;
 
 /**
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
- * This protocol is unsupported and experimental !
  * @author Bela Ban
  */
 public class S3_PING extends FILE_PING {

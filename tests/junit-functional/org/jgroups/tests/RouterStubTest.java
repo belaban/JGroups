@@ -11,7 +11,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @author Bela Ban
  * @since  3.3
  */
-@Test(groups=Global.FUNCTIONAL,sequential=false)
+@Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED},sequential=false)
 public class RouterStubTest {
 
     public void testEquality() {

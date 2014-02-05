@@ -19,7 +19,7 @@ import java.util.concurrent.locks.Lock;
  * @author Bela Ban
  * @since  3.4
  */
-@Test(groups=Global.BYTEMAN,singleThreaded=true)
+@Test(groups={Global.BYTEMAN,Global.EAP_EXCLUDED},singleThreaded=true)
 public class LockServiceConcurrencyTest extends BMNGRunner {
     protected JChannel    ch;
     protected LockService lock_service;

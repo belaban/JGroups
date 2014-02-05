@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 /** Tests https://issues.jboss.org/browse/JGRP-1696 */
-@Test(groups=Global.FUNCTIONAL, singleThreaded=true)
+@Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED}, singleThreaded=true)
 public class ExecutingServiceTest2 {
 
     Set<Thread> threads=new HashSet<Thread>();

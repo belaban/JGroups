@@ -22,7 +22,7 @@ import org.testng.annotations.Test;
  * 
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT, sequential=true)
+@Test(groups=Global.STACK_DEPENDENT, singleThreaded=true)
 public class MessageDispatcherUnitTest extends ChannelTestBase {
     MessageDispatcher d1, d2;
     JChannel          a, b;

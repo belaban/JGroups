@@ -16,7 +16,7 @@ import org.testng.annotations.Test;
  * @author Bela Ban
  * @since  3.3
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class UNICAST_DroppedAckTest {
     protected JChannel a, b;
 

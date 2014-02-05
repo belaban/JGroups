@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class GMS_MergeTest {
 
     static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
