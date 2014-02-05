@@ -99,9 +99,8 @@
     	<copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
     </target>
 
-    <target name="compile"
-            depends="prepare"
-            description="Compiles all Java files">
+
+    <target name="compile" depends="prepare" description="Compiles all Java files">
         <javac destdir="${compile.dir}"
                source="1.6"
                target="1.6"
@@ -125,9 +124,7 @@
     </target>
 
 
-    <target name="compile-no-unittests"
-            depends="prepare"
-            description="Compiles all Java files">
+    <target name="compile-no-unittests" depends="prepare" description="Compiles all Java files except unit tests">
         <javac srcdir="${src.dir}"
                destdir="${compile.dir}"
                source="1.6"
@@ -164,7 +161,7 @@
 
 
     <target name="jar"
-            description="Compiles and creates JAR files in the ./dist directory"
+            description="Compiles and creates JARs in ./dist"
             depends="jgroups.jar,jgroups-sources.jar">
         <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
 
@@ -172,7 +169,7 @@
 
 
     <target name="jgroups.jar"
-            description="Creates the jgroups-${version}.jar (includes everything)"
+            description="Creates the jgroups.jar (includes everything)"
             depends="clean,compile-no-unittests,compile-essential-unittests,create-schema">
         <mkdir dir="${dist.dir}"/>
         <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
@@ -207,7 +204,7 @@
 
 
     <target name="jgroups-sources.jar"
-            description="Creates the jgroups-sources.jar. Includes only core source files, no demos, no tests">
+            description="Creates the jgroups-sources.jar (no demos, tests)">
         <mkdir dir="${dist.dir}"/>
         <property name="bndclasspath" refid="jg.classpath"/>
         <property name="-savemanifest" value="${conf.dir}/MANIFEST.MF"/>
@@ -231,7 +228,7 @@
     <!-- generate java doc -->
     <target name="javadoc"
             depends="prepare,check-javadoc" unless="javadoc.exists"
-            description="Create Javadoc documentation in the ./dist/javadoc directory">
+            description="Creates Javadoc documentation in ./dist/javadoc">
          <mkdir dir="${javadoc.dir}"/>
         <javadoc packagenames="${javadoc.packages}"
                  sourcepath="${src.dir}"
@@ -253,10 +250,10 @@
         <available file="${javadoc.dir}" type="dir" property="javadoc.exists"/>
     </target>
 
-    <target name="docs" description="Build all html and pdf docs" depends="manual,tutorial">
+    <target name="docs" description="Builds all html and pdf docs" depends="manual,tutorial">
     </target>
 
-    <target name="manual" description="Build all html and pdf docs"
+    <target name="manual" description="Builds all html and pdf docs"
             depends="check-manual,compile" unless="manual.up-to-date">
         <echo message="Building manual from docbook ..."/>
         <prot-properties-to-doc input="${protocols.xml}"/>
@@ -266,7 +263,7 @@
     </target>
 
 
-    <target name="tutorial" description="Build all html and pdf docs"
+    <target name="tutorial" description="Builds all html and pdf docs"
             depends="check-tutorial" unless="tutorial.up-to-date">
         <echo message="Building tutorial from docbook ..."/>
         <run-maven dir="${tutorial.dir}"/>
@@ -284,14 +281,13 @@
 
     <target name="check-manual">
         <uptodate property="manual.up-to-date" targetfile="${manual.dir}/target/timestamp">
-            <srcfiles dir="${manual.dir}/en" includes="**/*">
-            </srcfiles>
+            <srcfiles dir="${manual.dir}/en" includes="**/*"/>
         </uptodate>
         <echo message="manual.up-to-data=${manual.up-to-date}"/>
     </target>
 
 
-	<target name="create-schema" description="creates XML schema for this version of JGroups">
+	<target name="create-schema" description="Creates XML schema for this version of JGroups">
 		<delete dir="${compile.dir}/schema" failonerror="false"/>
 		<mkdir dir="${compile.dir}/schema"/>
 		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath">
@@ -301,7 +297,7 @@
 
 
     <target name="clean"
-            description="Removes all class files and the ./dist directory">
+            description="Removes all class files and ./dist">
         <delete dir="${compile.dir}" failonerror="false"/>
         <delete dir="${dist.dir}" failonerror="false"/>
         <delete dir="${tmp.dir}" failonerror="false"/>
@@ -334,7 +330,7 @@
 
     <target name="makeKeystore" unless="isKeyStoreGenerated"
             depends="keyStoreGenerated, compile"
-            description="Generates an appropriate temporary keystore file for the unit tests and the JVM in use">
+            description="Generates a temp keystore in ./keystore (for unit tests)">
         <mkdir dir="${keystore.dir}"/>
         <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
             <arg value="--storeName"/>
@@ -363,21 +359,17 @@
     <!--
 =============================== TestNG ======================================== -->
 
-    <target name="all-tests-cc">
+    <target name="all-tests-eap" description="Runs all tests except those which are excluded from EAP">
+        <property name="default-excludes" value="eap-excluded"/>
         <antcall target="all-tests"/>
     </target>
 
-    <target name="all-new-tests">
-        <antcall target="all-tests"/>
-    </target>
-
-    <target name="all-tests">
+    <target name="all-tests" description="Runs all tests">
         <sequential>
         	<antcall target="functional"/>
         	<antcall target="stack-independent"/>
             <antcall target="udp"/>
             <antcall target="tcp"/>
-            <antcall target="tcp-stress"/>
         	<antcall target="udp-flush"/>
         	<antcall target="tcp-flush"/>
             <antcall target="time-sensitive"/>
@@ -390,7 +382,7 @@
         <runtest suitename="functional"
                  groups="functional"
                  parallel="${parallel.classes}"
-                 threadcount="10" />
+                 threadcount="5" />
     </target>
 
 
@@ -408,7 +400,7 @@
 
 
     <target name="time-sensitive" depends="postcompile,define-testng-task" description="Runs time-sensitive tests">
-        <mkdir dir="${tmp.dir}/test-results/xml/sensitive"/>
+        <mkdir dir="${tmp.dir}/test-results/xml/time-sensitive"/>
         <runtest suitename="sensitive"
                  groups="time-sensitive"
                  parallel="${parallel.classes}"
@@ -416,7 +408,7 @@
     </target>
 
     <target name="stack-independent" depends="postcompile,define-testng-task" description="Runs stack-independent tests">
-        <mkdir dir="${tmp.dir}/test-results/xml/ind"/>
+        <mkdir dir="${tmp.dir}/test-results/xml/stack-independent"/>
         <runtest suitename="ind"
                  groups="stack-independent"
                  parallel="${parallel.classes}"
@@ -474,26 +466,6 @@
     </target>
 
 
-    <target name="tcp-stress" depends="postcompile,define-testng-task" description="Runs TCP stress tests">
-    	<!-- Needed to force reading of properties. Otherwise tcp tests will fail -->
-    	<property name="build.properties.file" value="build.properties"/>
-    	<property file="${build.properties.file}"/>
-
-    	<mkdir dir="${tmp.dir}/test-results/xml/tcp-stress"/>
-        <runtest suitename="tcp-stress"
-                 groups="stress"
-                 excludedgroups="base,stack-dependent,stack-independent,flush,broken"
-                 parallel="${parallel.classes}"
-                 threadcount="1"
-                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
-                 initial.mcast.port="28000"
-                 initial.tcp.port="28000"
-                 tcp.recv.buf.size="50000"
-                 tcp.send.buf.size="10000"
-                 jvmarg1="-Dchannel.conf=tcp.xml"
-                />
-    </target>
-
     <target name="tcp-flush" depends="postcompile,define-testng-task" description="Runs TCP/FLUSH tests">
     	<!-- Needed to force reading of properties. Otherwise tcp-flush tests will fail -->
     	<property name="build.properties.file" value="build.properties"/>
@@ -514,12 +486,7 @@
                 />
     </target>
 
-
-    <target name="report">
-        <antcall target="reports"/>
-    </target>
-
-    <target name="reports">
+    <target name="reports" description="Produces the test report">
         <mkdir dir="${tmp.dir}/test-results/html"/>
         <junitreport todir="${tmp.dir}/test-results/html">
             <fileset dir="${tmp.dir}/test-results/xml">
@@ -532,12 +499,13 @@
         <echo message="******************************************************************"/>
     </target>
 
+
     <macrodef name="runtest" description="Runs a configuration-dependent test suite">
         <attribute name="classpath"          default="jg.classpath"/>
         <attribute name="suitename" />
         <attribute name="groups" />  <!-- comma-separated list, e.g. udp,functional -->
         <attribute name="excludedgroups"     default="broken"/>
-        <attribute name="parallel"           default="classes"/>
+        <attribute name="parallel"           default="${parallel.classes}"/>
         <attribute name="threadcount"        default="1"/>
         <attribute name="outputdir"          default="${tmp.dir}/test-results/xml"/>
         <attribute name="initial.mcast.addr" default="${jgroups.udp.mcast_addr}"/>
@@ -550,11 +518,13 @@
         <!--<element   name="additional-args"    optional="true"/>-->
 
         <sequential>
+            <property name="default-excludes" value=""/>
+
             <testng classpathref="@{classpath}"
                     suitename="@{suitename}"
                     testname="@{suitename}"
                     groups="@{groups}"
-                    excludedgroups="@{excludedgroups}"
+                    excludedgroups="@{excludedgroups},${default-excludes}"
                     parallel="@{parallel}"
                     threadcount="@{threadcount}"
                     usedefaultlisteners="false"
@@ -563,8 +533,7 @@
                     timeout="${unittest.timeout}"
                     timeOut="${unittest.timeout}"
                     verbose="0"
-                    configfailurepolicy="continue"
-                    >
+                    configfailurepolicy="continue">
 
                 <classfileset dir="${compile.dir}"/>
 
@@ -588,11 +557,12 @@
                 <jvmarg value="-Xmx800M"/>
                 <jvmarg value="@{jvmarg1}"/>
                 <jvmarg value="@{jvmarg2}"/>
-                <jvmarg value="-Dorg.jboss.byteman.verbose=true"/>
                 <!--<additional-args/>-->
             </testng>
         </sequential>
     </macrodef>
+
+
 
     <macrodef name="prot-properties-to-doc">
         <attribute name="input" default="${protocols.xml}"/>
