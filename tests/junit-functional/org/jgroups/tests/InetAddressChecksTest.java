@@ -20,7 +20,7 @@ import java.net.InetAddress ;
  * Tests checks made on InetAddress and related addresses in Configurator.
  * @author Richard Achmatowicz
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class InetAddressChecksTest {
 	ProtocolStack stack = null;
 	Protocol protocol = null ;

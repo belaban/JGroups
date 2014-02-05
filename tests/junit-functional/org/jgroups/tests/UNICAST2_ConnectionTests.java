@@ -17,7 +17,7 @@ import java.util.concurrent.CyclicBarrier;
  * Tests unilateral closings of UNICAST2 connections. The test scenarios are described in doc/design.UNICAST.new.txt.
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class UNICAST2_ConnectionTests {
     private JChannel a, b;
     private Address a_addr, b_addr;

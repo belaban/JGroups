@@ -20,7 +20,7 @@ import java.util.Vector;
  * Tests the NAKACK protocol's REBROADCAST behavior
  * @author Dennis Reed
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class NAKACK_REBROADCAST_Test {
     static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK2.class);
     IpAddress a1;

@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * should exclude them: {A,B,D,F}. The digests must also exclude C and E.
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MergeTest3 {
     protected MyDiagnosticsHandler handler;
     protected JChannel a,b,c,d,e,f;

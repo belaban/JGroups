@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Stresses the NakReceiverWindow in isolation(https://jira.jboss.org/jira/browse/JGRP-1103)
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, sequential=true)
+@Test(groups=Global.FUNCTIONAL, singleThreaded=true)
 public class NakReceiverWindowTest2 {
     final static int NUM_THREADS=200;
     final static int NUM_MSGS=5000;

@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
  * @author Richard Achmatowicz 12 May 2008
  * @author Bela Ban Dec 31 2003
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class UnicastLoopbackTest extends ChannelTestBase {
     JChannel channel=null;
 

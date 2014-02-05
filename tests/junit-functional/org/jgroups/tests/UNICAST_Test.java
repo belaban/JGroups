@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
  * Tests the UNICAST protocol
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class UNICAST_Test {
     JChannel ch;
     Address a1;

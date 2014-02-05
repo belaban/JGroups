@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests time for N threads to deliver M messages to NAKACK
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, sequential=true)
+@Test(groups=Global.FUNCTIONAL, singleThreaded=true)
 public class NAKACK_StressTest {
     static final int   NUM_MSGS=1000000;
     static final int   NUM_THREADS=50;

@@ -15,7 +15,7 @@ import java.util.*;
  * 
  * @author vlada
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class MergeTest extends ChannelTestBase {
    
     @Test

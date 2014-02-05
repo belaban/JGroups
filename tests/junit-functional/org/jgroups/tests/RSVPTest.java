@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * Tests tthe {@link RSVP} protocol
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class RSVPTest {
     protected static final int     NUM=5; // number of members
     protected final JChannel[]     channels=new JChannel[NUM];

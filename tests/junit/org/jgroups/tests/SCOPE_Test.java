@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
  * Tests the SCOPE protocol (https://jira.jboss.org/jira/browse/JGRP-822) 
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups={Global.STACK_DEPENDENT,Global.EAP_EXCLUDED},singleThreaded=true)
 public class SCOPE_Test extends ChannelTestBase {
     JChannel c1, c2;
     static final int NUM_MSGS=5;

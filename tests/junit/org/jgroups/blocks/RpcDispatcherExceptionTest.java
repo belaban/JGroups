@@ -13,7 +13,7 @@ import java.io.NotSerializableException;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class RpcDispatcherExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
     Channel channel;

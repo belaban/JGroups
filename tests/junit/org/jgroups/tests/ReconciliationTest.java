@@ -19,7 +19,7 @@ import java.util.*;
  * Various tests for the FLUSH protocol
  * @author Bela Ban
  */
-@Test(groups=Global.FLUSH,sequential=true)
+@Test(groups=Global.FLUSH,singleThreaded=true)
 public class ReconciliationTest extends ChannelTestBase {
 
     private List<JChannel> channels;

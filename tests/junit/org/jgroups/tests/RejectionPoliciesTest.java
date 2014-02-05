@@ -10,7 +10,7 @@ import java.util.concurrent.*;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class RejectionPoliciesTest {
     public void testCustomPolicy() {
         BlockingQueue<Runnable> queue = new SynchronousQueue<Runnable>();

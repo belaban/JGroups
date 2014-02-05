@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
  * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups={Global.STACK_DEPENDENT,Global.EAP_EXCLUDED},singleThreaded=true)
 public class StateTransferTest extends ChannelTestBase {
     static final int MSG_SEND_COUNT=5000;
     static final String[] names= { "A", "B", "C", "D"};

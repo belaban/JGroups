@@ -21,7 +21,7 @@ import java.util.Properties;
  * 
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class DiscardTest extends ChannelTestBase {
     JChannel ch1, ch2;
     static final long NUM_MSGS=10000;

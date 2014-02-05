@@ -12,7 +12,7 @@ import org.testng.annotations.Test;
 
 import java.util.*;
 
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class RspListTest {
     RspList rl;
     Address a1, a2, a3, a4, a5;

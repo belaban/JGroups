@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging with a large number of members
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class LargeMergeTest {
     static final int NUM=100; // number of members
     static final int MAX_PARTICIPANTS_IN_MERGE=Math.max(100, NUM / 3);

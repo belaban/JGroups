@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * Goal: the merge should *not* get cancelled, but instead all 3 non-faulty member should merge
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MergeTest2 {
     protected MyDiagnosticsHandler handler;
     protected JChannel a,b,c,d;

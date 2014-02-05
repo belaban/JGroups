@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests the concurrent stack (TP)
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class FifoOrderTest extends ChannelTestBase {    
     JChannel ch1, ch2, ch3;
     final static int NUM=25, EXPECTED=NUM * 3;

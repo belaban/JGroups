@@ -15,7 +15,7 @@ import java.util.concurrent.CyclicBarrier;
  * Tests CreditMap
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class CreditMapTest {
     static Address a=Util.createRandomAddress("A");
     static Address b=Util.createRandomAddress("B");
