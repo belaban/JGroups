@@ -1436,7 +1436,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             Thread.currentThread().interrupt(); // let someone else handle the interrupt
         }
         catch(SocketException sock_ex) {
-            log.error(Util.getMessage("SendFailure"),
+            log.trace(Util.getMessage("SendFailure"),
                       local_addr, (dest == null? "cluster" : dest), msg.size(), sock_ex.toString(), msg.printHeaders());
         }
         catch(Throwable e) {
@@ -2365,7 +2365,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     num_single_msgs_sent++;
             }
             catch(SocketException sock_ex) {
-                log.error(Util.getMessage("SendFailure"),
+                log.trace(Util.getMessage("SendFailure"),
                           local_addr, (dest == null? "cluster" : dest), msg.size(), sock_ex.toString(), msg.printHeaders());
             }
             catch(Throwable e) {

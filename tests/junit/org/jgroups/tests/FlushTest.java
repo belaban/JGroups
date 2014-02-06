@@ -1,9 +1,9 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.FD;
-import org.jgroups.protocols.FD_ALL;
-import org.jgroups.protocols.pbcast.FLUSH;
+import org.jgroups.protocols.*;
+import org.jgroups.protocols.pbcast.*;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Tests the FLUSH protocol. Adds a FLUSH layer on top of the stack unless already present. Should
@@ -20,8 +22,8 @@ import java.util.concurrent.TimeUnit;
  * 
  * @author Bela Ban
  */
-@Test(groups = Global.FLUSH, sequential = true)
-public class FlushTest extends ChannelTestBase {
+@Test(groups = {Global.FLUSH, Global.EAP_EXCLUDED}, sequential = true)
+public class FlushTest {
 
     public void testSingleChannel() throws Exception {
         Semaphore s = new Semaphore(1);
@@ -45,17 +47,16 @@ public class FlushTest extends ChannelTestBase {
 
     /** Tests issue #1 in http://jira.jboss.com/jira/browse/JGRP-335 */
     public void testJoinFollowedByUnicast() throws Exception {
-        JChannel a = null;
-        JChannel b = null;
+        JChannel a=null, b=null;
         try {
-            a = createChannel(true, 2, "A");
+            a = createChannel("A");
             a.setReceiver(new SimpleReplier(a,true));
             a.connect("testJoinFollowedByUnicast");
 
             Address target = a.getAddress();
             Message unicast_msg = new Message(target);
 
-            b = createChannel(a, "B");
+            b = createChannel("B");
             b.setReceiver(new SimpleReplier(b,false));
             b.connect("testJoinFollowedByUnicast");
 
@@ -71,17 +72,16 @@ public class FlushTest extends ChannelTestBase {
      * Tests issue #2 in http://jira.jboss.com/jira/browse/JGRP-335
      */
     public void testStateTransferFollowedByUnicast() throws Exception {
-        JChannel a = null;
-        JChannel b = null;
+        JChannel a=null, b=null;
         try {
-            a = createChannel(true, 2, "A");
+            a = createChannel("A");
             a.setReceiver(new SimpleReplier(a,true));
             a.connect("testStateTransferFollowedByUnicast");
 
             Address target = a.getAddress();
             Message unicast_msg = new Message(target);
 
-            b = createChannel(a, "B");
+            b = createChannel("B");
             b.setReceiver(new SimpleReplier(b,false));
             b.connect("testStateTransferFollowedByUnicast");
 
@@ -95,15 +95,15 @@ public class FlushTest extends ChannelTestBase {
     }
     
     public void testSequentialFlushInvocation() throws Exception {
-        Channel a=null, b= null, c=null;
+        Channel a=null, b=null, c=null;
         try {
-            a = createChannel(true, 3, "A");
+            a = createChannel("A");
             a.connect("testSequentialFlushInvocation");
 
-            b = createChannel((JChannel) a, "B");
+            b = createChannel("B");
             b.connect("testSequentialFlushInvocation");
 
-            c = createChannel((JChannel) a, "C");
+            c = createChannel("C");
             c.connect("testSequentialFlushInvocation");
 
             Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a,b,c);
@@ -120,15 +120,15 @@ public class FlushTest extends ChannelTestBase {
     }
 
     public void testFlushWithCrashedFlushCoordinator() throws Exception {
-        JChannel a = null, b = null, c = null;
+        JChannel a=null, b=null, c=null;
         try {
-            a = createChannel(true, 3, "A"); changeProps(a);
+            a = createChannel("A"); changeProps(a);
             a.connect("testFlushWithCrashedFlushCoordinator");
 
-            b = createChannel(a, "B"); changeProps(b);
+            b = createChannel("B"); changeProps(b);
             b.connect("testFlushWithCrashedFlushCoordinator");
 
-            c = createChannel(a, "C"); changeProps(c);
+            c = createChannel("C"); changeProps(c);
             c.connect("testFlushWithCrashedFlushCoordinator");
 
 
@@ -146,8 +146,8 @@ public class FlushTest extends ChannelTestBase {
             Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, c);
 
             // cluster should not hang and two remaining members should have a correct view
-            assertTrue("correct view size", a.getView().size() == 2);
-            assertTrue("correct view size", c.getView().size() == 2);
+            assert a.getView().size() == 2;
+            assert c.getView().size() == 2;
 
             a.getProtocolStack().findProtocol(FLUSH.class).setLevel("warn");
             c.getProtocolStack().findProtocol(FLUSH.class).setLevel("warn");
@@ -158,72 +158,68 @@ public class FlushTest extends ChannelTestBase {
     }
 
     public void testFlushWithCrashedParticipant() throws Exception {
-        JChannel c1 = null;
-        JChannel c2 = null;
-        JChannel c3 = null;
+        JChannel a=null, b=null, c=null;
 
         try {
-            c1 = createChannel(true, 3, "C1"); changeProps(c1);
-            c1.connect("testFlushWithCrashedParticipant");
+            a = createChannel("A"); changeProps(a);
+            a.connect("testFlushWithCrashedParticipant");
 
-            c2 = createChannel(c1, "C2"); changeProps(c2);
-            c2.connect("testFlushWithCrashedParticipant");
+            b = createChannel("B"); changeProps(b);
+            b.connect("testFlushWithCrashedParticipant");
 
-            c3 = createChannel(c1, "C3"); changeProps(c3);
-            c3.connect("testFlushWithCrashedParticipant");
+            c = createChannel("C"); changeProps(c);
+            c.connect("testFlushWithCrashedParticipant");
 
             System.out.println("shutting down C3");
-            Util.shutdown(c3); // kill a flush participant
+            Util.shutdown(c); // kill a flush participant
 
             System.out.println("C2: starting flush");
-            boolean rc=Util.startFlush(c2);
+            boolean rc=Util.startFlush(b);
             System.out.println("flush " + (rc? " was successful" : "failed"));
             assert rc;
 
             System.out.println("stopping flush");
-            c2.stopFlush();
+            b.stopFlush();
 
             System.out.println("waiting for view to contain C1 and C2");
-            Util.waitUntilAllChannelsHaveSameSize(10000, 500, c1, c2);
+            Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
 
             // cluster should not hang and two remaining members should have a correct view
-            System.out.println("C1: view=" + c1.getView() + "\nC2: view=" + c2.getView());
-            assertTrue("correct view size", c1.getView().size() == 2);
-            assertTrue("correct view size", c2.getView().size() == 2);
+            System.out.println("C1: view=" + a.getView() + "\nC2: view=" + b.getView());
+            assert a.getView().size() == 2;
+            assert b.getView().size() == 2;
         } finally {
-            Util.close(c3, c2, c1);
+            Util.close(c, b, a);
         }
     }
 
     public void testFlushWithCrashedParticipants() throws Exception {
-        JChannel c1 = null;
-        JChannel c2 = null;
-        JChannel c3 = null;
+        JChannel a=null, b=null, c=null;
 
         try {
-            c1 = createChannel(true, 3, "C1"); changeProps(c1);
-            c1.connect("testFlushWithCrashedFlushCoordinator");
+            a = createChannel("A"); changeProps(a);
+            a.connect("testFlushWithCrashedFlushCoordinator");
 
-            c2 = createChannel(c1, "C2"); changeProps(c2);
-            c2.connect("testFlushWithCrashedFlushCoordinator");
+            b = createChannel("B"); changeProps(b);
+            b.connect("testFlushWithCrashedFlushCoordinator");
 
-            c3 = createChannel(c1, "C3"); changeProps(c3);
-            c3.connect("testFlushWithCrashedFlushCoordinator");
+            c = createChannel("C"); changeProps(c);
+            c.connect("testFlushWithCrashedFlushCoordinator");
 
             // and then kill members other than flush coordinator
-            Util.shutdown(c3);
-            Util.shutdown(c1);
+            Util.shutdown(c);
+            Util.shutdown(a);
 
             // start flush
-            Util.startFlush(c2);
+            Util.startFlush(b);
 
-            c2.stopFlush();
-            Util.waitUntilAllChannelsHaveSameSize(10000, 500, c2);
+            b.stopFlush();
+            Util.waitUntilAllChannelsHaveSameSize(10000, 500, b);
 
             // cluster should not hang and one remaining member should have a correct view
-            assertTrue("correct view size", c2.getView().size() == 1);
+            assert b.getView().size() == 1;
         } finally {
-            Util.close(c3, c2, c1);
+            Util.close(c, b, a);
         }
     }
 
@@ -231,26 +227,22 @@ public class FlushTest extends ChannelTestBase {
      * Tests http://jira.jboss.com/jira/browse/JGRP-661
      */
     public void testPartialFlush() throws Exception {
-        JChannel c1 = null;
-        JChannel c2 = null;
+        JChannel a=null, b=null;
         try {
-            c1 = createChannel(true, 2);
-            c1.setReceiver(new SimpleReplier(c1, true));
-            c1.connect("testPartialFlush");
+            a = createChannel("A");
+            a.setReceiver(new SimpleReplier(a,true));
+            a.connect("testPartialFlush");
 
-            c2 = createChannel(c1);
-            c2.setReceiver(new SimpleReplier(c2, false));
-            c2.connect("testPartialFlush");
+            b = createChannel("B");
+            b.setReceiver(new SimpleReplier(b,false));
+            b.connect("testPartialFlush");
 
             List<Address> members = new ArrayList<Address>();
-            members.add(c2.getAddress());
-            boolean flushedOk = Util.startFlush(c2, members);
-
-            assertTrue("Partial flush worked", flushedOk);
-
-            c2.stopFlush(members);
+            members.add(b.getAddress());
+            assert Util.startFlush(b, members);
+            b.stopFlush(members);
         } finally {
-            Util.close(c2, c1);
+            Util.close(b, a);
         }
     }
 
@@ -286,12 +278,7 @@ public class FlushTest extends ChannelTestBase {
             boolean first = true;
             for (String channelName : names) {
                 FlushTestReceiver channel = null;
-                if (first)
-                    channel = new FlushTestReceiver(channelName, semaphore, 0, connectType);
-                else {
-                    channel = new FlushTestReceiver((JChannel) channels.get(0).getChannel(),
-                                    channelName, semaphore, 0, connectType);
-                }
+                channel = new FlushTestReceiver(channelName, semaphore, 0, connectType);
                 channels.add(channel);
 
                 // Release one ticket at a time to allow the thread to start working
@@ -330,6 +317,81 @@ public class FlushTest extends ChannelTestBase {
         }
     }
 
+    protected static void checkEventStateTransferSequence(EventSequence receiver) {
+        String events = receiver.getEventSequence();
+        assert events != null;
+        final String validSequence = "([b][vgs]*[u])+";
+        // translate the eventTrace to an eventString
+        try {
+            assert validateEventString(translateEventTrace(events), validSequence) : "Invalid event sequence " + events;
+        } catch (Exception e) {
+            assert false : "Invalid event sequence " + events;
+        }
+    }
+
+    /**
+     * Method for validating event strings against event string specifications, where a
+     * specification is a regular expression involving event symbols. e.g. [b]([sgv])[u]
+     */
+    protected static boolean validateEventString(String eventString, String spec) {
+        Pattern pattern = null;
+        Matcher matcher = null;
+
+        // set up the regular expression specification
+        pattern = Pattern.compile(spec);
+        // set up the actual event string
+        matcher = pattern.matcher(eventString);
+
+        // check if the actual string satisfies the specification
+        if (matcher.find()) {
+            // a match has been found, but we need to check that the whole event string
+            // matches, and not just a substring
+            if (!(matcher.start() == 0 && matcher.end() == eventString.length())) {
+                // match on full eventString not found
+                System.err.println("event string invalid (proper substring matched): event string = "
+                                     + eventString
+                                     + ", specification = "
+                                     + spec
+                                     + "matcher.start() "
+                                     + matcher.start()
+                                     + " matcher.end() " + matcher.end());
+                return false;
+            }
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Method for translating event traces into event strings, where each event in the trace is
+     * represented by a letter.
+     */
+    protected static String translateEventTrace(String s) throws Exception {
+        // if it ends with block, strip it out because it will be regarded as error sequence
+        while (s.endsWith("b")) {
+            s = s.substring(0, s.length() - 1);
+        }
+        return s;
+    }
+
+    protected JChannel createChannel(String name) throws Exception {
+          Protocol[] protocols={
+            new SHARED_LOOPBACK(),
+            new PING().timeout(1000),
+            new FD_ALL().setValue("timeout", 3000).setValue("interval", 1000),
+            new NAKACK2(),
+            new UNICAST3(),
+            new STABLE(),
+            new GMS(),
+            new FRAG2().fragSize(8000),
+            new STATE_TRANSFER(),
+            new FLUSH()
+          };
+
+          return new JChannel(protocols).name(name);
+      }
+
     private static void changeProps(JChannel ... channels) {
         for(JChannel ch: channels) {
             FD fd=(FD)ch.getProtocolStack().findProtocol(FD.class);
@@ -345,23 +407,25 @@ public class FlushTest extends ChannelTestBase {
         }
     }
 
-    private class FlushTestReceiver extends PushChannelApplicationWithSemaphore {
-        private final int connectMethod;
-
-        public static final int CONNECT_ONLY = 1;
-
-        public static final int CONNECT_AND_SEPARATE_GET_STATE = 2;
-
-        public static final int CONNECT_AND_GET_STATE = 3;
-
-        int msgCount = 0;
+    private class FlushTestReceiver extends ReceiverAdapter implements Runnable, EventSequence {
+        private final int             connectMethod;
+        public static final int       CONNECT_ONLY = 1;
+        public static final int       CONNECT_AND_SEPARATE_GET_STATE = 2;
+        public static final int       CONNECT_AND_GET_STATE = 3;
+        protected int                 msgCount = 0;
+        protected final StringBuilder events=new StringBuilder();
+        protected final Semaphore     semaphore;
+        protected final JChannel      channel;
+        protected Thread              thread;
+        protected Exception           exception;
 
         protected FlushTestReceiver(String name, Semaphore semaphore, int msgCount,
                         int connectMethod) throws Exception {
-            super(name, semaphore);
+            this.semaphore=semaphore;
             this.connectMethod = connectMethod;
             this.msgCount = msgCount;
-            events = new StringBuilder();
+            this.channel=createChannel(name);
+            this.channel.setReceiver(this);
             if (connectMethod == CONNECT_ONLY || connectMethod == CONNECT_AND_SEPARATE_GET_STATE)
                 channel.connect("FlushTestReceiver");
 
@@ -370,54 +434,57 @@ public class FlushTest extends ChannelTestBase {
             }
         }
 
-        protected FlushTestReceiver(JChannel ch, String name, Semaphore semaphore, int msgCount,
-                        int connectMethod) throws Exception {
-            super(ch, name, semaphore);
-            this.connectMethod = connectMethod;
-            this.msgCount = msgCount;
-            events = new StringBuilder();
-            if (connectMethod == CONNECT_ONLY || connectMethod == CONNECT_AND_SEPARATE_GET_STATE)
-                channel.connect("FlushTestReceiver");
-
-            if (connectMethod == CONNECT_AND_GET_STATE) {
-                channel.connect("FlushTestReceiver", null, 25000);
-            }
+        public void start() {
+            thread=new Thread(this);
+            thread.start();
         }
 
-        public String getEventSequence() {
-            return events.toString();
+        public void cleanup() {
+            Util.close(channel);
+            thread.interrupt();
         }
 
+        public String    getEventSequence()   {return events.toString();}
+        public Exception getException()       {return exception;}
+        public JChannel  getChannel()         {return channel;}
+        public String    getName()            {return channel != null? channel.getName() : "n/a";}
+        public void      block()              {events.append('b');}
+        public void      unblock()            {events.append('u');}
+        public void      viewAccepted(View v) {events.append('v');}
 
         public void getState(OutputStream ostream) throws Exception {
-            super.getState(ostream);
+            events.append('g');
             byte[] payload ={ 'b', 'e', 'l', 'a' };
             ostream.write(payload);
         }
 
         public void setState(InputStream istream) throws Exception {
-            super.setState(istream);
+            events.append('s');
             byte[] payload = new byte[4];
             istream.read(payload);
         }
 
-        protected void useChannel() throws Exception {
-            if (connectMethod == CONNECT_AND_SEPARATE_GET_STATE) {
-                channel.getState(null, 25000);
-            }
-            if (msgCount > 0) {
-                for (int i = 0; i < msgCount; i++) {
-                    channel.send(new Message());
-                    Util.sleep(100);
+        public void run() {
+            try {
+                if (connectMethod == CONNECT_AND_SEPARATE_GET_STATE) {
+                    channel.getState(null, 25000);
                 }
+                if (msgCount > 0) {
+                    for (int i = 0; i < msgCount; i++) {
+                        channel.send(new Message());
+                        Util.sleep(100);
+                    }
+                }
+            }
+            catch(Exception ex) {
+                exception=ex;
             }
         }
     }
 
     private static class SimpleReplier extends ReceiverAdapter {
-        Channel channel;
-
-        boolean handle_requests = false;
+        protected final Channel channel;
+        protected boolean       handle_requests=false;
 
         public SimpleReplier(Channel channel, boolean handle_requests) {
             this.channel = channel;
@@ -427,8 +494,7 @@ public class FlushTest extends ChannelTestBase {
         public void receive(Message msg) {
             Message reply = new Message(msg.getSrc());
             try {
-                System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: received message from "
-                                + msg.getSrc());
+                System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: received message from " + msg.getSrc());
                 if (handle_requests) {
                     System.out.println(", sending reply");
                     channel.send(reply);
@@ -440,8 +506,7 @@ public class FlushTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: viewAccepted(" + new_view
-                            + ")");
+            System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: viewAccepted(" + new_view + ")");
         }
 
         public void block() {
@@ -451,6 +516,13 @@ public class FlushTest extends ChannelTestBase {
         public void unblock() {
             System.out.println("-- MySimpleReplier[" + channel.getAddress() + "]: unblock()");
         }
+    }
+
+    interface EventSequence {
+        /** Return an event string. Events are translated as follows: get state='g', set state='s',
+         *  block='b', unlock='u', view='v' */
+        String getEventSequence();
+        String getName();
     }
 
 }

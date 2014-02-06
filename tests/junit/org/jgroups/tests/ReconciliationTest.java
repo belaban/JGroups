@@ -1,39 +1,34 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.DISCARD;
+import org.jgroups.protocols.*;
+import org.jgroups.protocols.pbcast.FLUSH;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
+import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.*;
 
 /**
  * Various tests for the FLUSH protocol
  * @author Bela Ban
  */
-@Test(groups=Global.FLUSH,singleThreaded=true)
-public class ReconciliationTest extends ChannelTestBase {
+@Test(groups={Global.FLUSH,Global.EAP_EXCLUDED},singleThreaded=true)
+public class ReconciliationTest {
+    protected List<JChannel>   channels;
+    protected List<MyReceiver> receivers;
 
-    private List<JChannel> channels;
-
-    private List<MyReceiver> receivers;
-
-    @AfterMethod
-    void tearDown() throws Exception {
-        if(channels != null) {
-            for(JChannel channel:channels) {
-                channel.close();
-            }
-        }
-        Util.sleep(500);
+    @AfterMethod void tearDown() throws Exception {
+        if(channels != null)
+            for(Closeable closeable: channels)
+                Util.close(closeable);
     }
 
     /**
@@ -50,13 +45,12 @@ public class ReconciliationTest extends ChannelTestBase {
      * </ul>
      */
     public void testReconciliationFlushTriggeredByNewMemberJoin() throws Exception {
-
         FlushTrigger t=new FlushTrigger() {
             public void triggerFlush() {
                 System.out.println("Joining D, this will trigger FLUSH and a subsequent view change to {A,B,C,D}");
                 JChannel newChannel;
                 try {
-                    newChannel=createChannel(channels.get(0));
+                    newChannel=createChannel("X");
                     newChannel.connect("ReconciliationTest");
                     channels.add(newChannel);
                 }
@@ -65,8 +59,7 @@ public class ReconciliationTest extends ChannelTestBase {
                 }
             };
         };
-        String apps[]={"A", "B", "C"};
-        reconciliationHelper(apps, t);
+        reconciliationHelper(new String[]{"A", "B", "C"}, t);
     }
 
     /**
@@ -118,7 +111,7 @@ public class ReconciliationTest extends ChannelTestBase {
                     Util.shutdown(channel);
                 }
                 catch(Exception e) {
-                    log.error("failed shutting down the channel", e);
+                    e.printStackTrace();
                 }
             };
         };
@@ -133,9 +126,6 @@ public class ReconciliationTest extends ChannelTestBase {
      * that the 5 messages have been received correctly by all nodes but the second-but-last node (B). Then we remove
      * DISCARD from B and trigger a manual flush. After the flush, B should also have received the 5 messages sent
      * by C.
-     * @param names
-     * @param ft
-     * @throws Exception
      */
     protected void reconciliationHelper(String[] names, FlushTrigger ft) throws Exception {
 
@@ -144,19 +134,14 @@ public class ReconciliationTest extends ChannelTestBase {
         channels=new ArrayList<JChannel>(names.length);
         receivers=new ArrayList<MyReceiver>(names.length);
         for(int i=0;i < channelCount;i++) {
-            JChannel channel;
-            if(i == 0) {
-                channel=createChannel(true, names.length+2, names[i]);
-                modifyNAKACK(channel);
-            }
-            else
-                channel=createChannel(channels.get(0), names[i]);
+            JChannel channel=createChannel(names[i]);
+            modifyNAKACK(channel);
             MyReceiver r=new MyReceiver(channel, names[i]);
             receivers.add(r);
             channels.add(channel);
             channel.setReceiver(r);
             channel.connect("ReconciliationTest");
-            Util.sleep(250);
+            Util.sleep(i == 0? 1000 : 250);
         }
 
         View view=channels.get(channels.size() -1).getView();
@@ -235,6 +220,22 @@ public class ReconciliationTest extends ChannelTestBase {
         Assert.assertEquals(5, list.size());
     }
 
+    protected JChannel createChannel(String name) throws Exception {
+        Protocol[] protocols={
+          new SHARED_LOOPBACK(),
+          new PING().timeout(1000),
+          new FD_ALL().setValue("timeout", 3000).setValue("interval", 1000),
+          new NAKACK2(),
+          new UNICAST3(),
+          new STABLE(),
+          new GMS(),
+          new FRAG2().fragSize(8000),
+          new FLUSH()
+        };
+
+        return new JChannel(protocols).name(name);
+    }
+
     /** Sets discard_delivered_msgs to false */
     protected void modifyNAKACK(JChannel ch) {
         if(ch == null) return;
@@ -290,19 +291,18 @@ public class ReconciliationTest extends ChannelTestBase {
         }
     }
 
-    // @Test(invocationCount=10)
     public void testVirtualSynchrony() throws Exception {
-        JChannel c1 = createChannel(true,2);
-        Cache cache_1 = new Cache(c1, "cache-1");
-        c1.connect("testVirtualSynchrony");
+        JChannel a = createChannel("A");
+        Cache cache_1 = new Cache(a, "cache-1");
+        a.connect("testVirtualSynchrony");
 
-        JChannel c2 = createChannel(c1);
-        Cache cache_2 = new Cache(c2, "cache-2");
-        c2.connect("testVirtualSynchrony");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 500, c1, c2);
+        JChannel b = createChannel("B");
+        Cache cache_2 = new Cache(b, "cache-2");
+        b.connect("testVirtualSynchrony");
+        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
 
         // start adding messages
-        flush(c1, 5000); // flush all pending message out of the system so everyone receives them
+        flush(a); // flush all pending message out of the system so everyone receives them
 
         for(int i = 1; i <= 20;i++) {
             if(i % 2 == 0)
@@ -312,9 +312,9 @@ public class ReconciliationTest extends ChannelTestBase {
         }
 
         System.out.println("Starting flush on C1");
-        flush(c1,5000);
+        flush(a);
         System.out.println("Starting flush on C2");
-        flush(c2, 5000);
+        flush(b);
         System.out.println("flush done");
 
         System.out.println("cache_1 (" + cache_1.size()
@@ -326,26 +326,22 @@ public class ReconciliationTest extends ChannelTestBase {
                              + cache_2);
         Assert.assertEquals(cache_1.size(), 20, "cache 1: " + cache_1);
         Assert.assertEquals(cache_2.size(), 20, "cache 2: " + cache_2);
-        Util.close(c2,c1);
+        Util.close(b,a);
     }
 
-    private void flush(Channel channel, long timeout) {
-        if(channel.flushSupported()) {
-            boolean success=Util.startFlush(channel);
-            channel.stopFlush();
-            log.debug("startFlush(): " + success);
-            assertTrue(success);
+    protected static void flush(Channel channel) {
+        try {
+            assert Util.startFlush(channel);
         }
-        else
-            Util.sleep(timeout);
+        finally {
+            channel.stopFlush();
+        }
     }
 
-    private class Cache extends ReceiverAdapter {
+    protected static class Cache extends ReceiverAdapter {
         protected final Map<Object,Object> data;
-
-        Channel ch;
-
-        String name;
+        protected Channel                  ch;
+        protected String                   name;
 
         public Cache(Channel ch,String name) {
             this.data=new HashMap<Object,Object>();
@@ -361,11 +357,7 @@ public class ReconciliationTest extends ChannelTestBase {
         }
 
         protected void put(Object key, Object val) throws Exception {
-            Object[] buf=new Object[2];
-            buf[0]=key;
-            buf[1]=val;
-            Message msg=new Message(null, null, buf);
-            ch.send(msg);
+            ch.send(new Message(null, null, new Object[]{key,val}));
         }
 
         protected int size() {
@@ -376,10 +368,8 @@ public class ReconciliationTest extends ChannelTestBase {
 
         public void receive(Message msg) {
             Object[] modification=(Object[])msg.getObject();
-            Object key=modification[0];
-            Object val=modification[1];
             synchronized(data) {
-                data.put(key, val);
+                data.put(modification[0], modification[1]);
             }
         }
 
@@ -399,19 +389,11 @@ public class ReconciliationTest extends ChannelTestBase {
             }
         }
 
-        public void viewAccepted(View new_view) {
-            log("view is " + new_view);
-        }
-
         public String toString() {
             synchronized(data) {
                 TreeMap<Object,Object> map=new TreeMap<Object,Object>(data);
                 return map.keySet().toString();
             }
-        }
-
-        private void log(String msg) {
-            log.debug("-- [" + name + "] " + msg);
         }
     }
 }

@@ -414,11 +414,10 @@
     <target name="all-tests" description="Runs all tests">
         <sequential>
         	<antcall target="functional"/>
-        	<antcall target="stack-independent"/>
             <antcall target="udp"/>
             <antcall target="tcp"/>
-        	<antcall target="udp-flush"/>
-        	<antcall target="tcp-flush"/>
+            <antcall target="stack-independent"/>
+            <antcall target="flush"/>
             <antcall target="time-sensitive"/>
             <antcall target="byteman"/>
         </sequential>
@@ -446,13 +445,6 @@
     </target>
 
 
-    <target name="time-sensitive" depends="postcompile,define-testng-task" description="Runs time-sensitive tests">
-        <mkdir dir="${tmp.dir}/test-results/xml/time-sensitive"/>
-        <runtest suitename="sensitive"
-                 groups="time-sensitive"
-                 parallel="${parallel.classes}"
-                 threadcount="1" />
-    </target>
 
     <target name="stack-independent" depends="postcompile,define-testng-task" description="Runs stack-independent tests">
         <mkdir dir="${tmp.dir}/test-results/xml/stack-independent"/>
@@ -477,20 +469,6 @@
                 />
     </target>
 
-    <target name="udp-flush" depends="postcompile,define-testng-task" description="Runs UDP/FLUSH tests">
-        <mkdir dir="${tmp.dir}/test-results/xml/udp-flush"/>
-        <runtest suitename="udp-flush"
-                 groups="base,flush"
-                 excludedgroups="stack-independent,stack-dependent,broken"
-                 parallel="${parallel.classes}"
-                 threadcount="5"
-                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
-                 initial.mcast.port="26000"
-                 initial.tcp.port="26000"
-                 jvmarg1="-Dchannel.conf=flush-udp.xml"
-                 jvmarg2="-Duse_blocking=true"
-                />
-    </target>
 
     <target name="tcp" depends="postcompile,define-testng-task" description="Runs TCP tests">
     	<!-- Needed to force reading of properties. Otherwise tcp tests will fail -->
@@ -513,24 +491,23 @@
     </target>
 
 
-    <target name="tcp-flush" depends="postcompile,define-testng-task" description="Runs TCP/FLUSH tests">
-    	<!-- Needed to force reading of properties. Otherwise tcp-flush tests will fail -->
-    	<property name="build.properties.file" value="build.properties"/>
-    	<property file="${build.properties.file}"/>
-    	<mkdir dir="${tmp.dir}/test-results/xml/tcp-flush"/>
-        <runtest suitename="tcp-flush"
+
+    <target name="time-sensitive" depends="postcompile,define-testng-task" description="Runs time-sensitive tests">
+        <mkdir dir="${tmp.dir}/test-results/xml/time-sensitive"/>
+        <runtest suitename="sensitive"
+                 groups="time-sensitive"
+                 parallel="${parallel.classes}"
+                 threadcount="1" />
+    </target>
+
+
+    <target name="flush" depends="postcompile,define-testng-task" description="Runs FLUSH tests">
+        <mkdir dir="${tmp.dir}/test-results/xml/flush"/>
+        <runtest suitename="flush"
                  groups="base,flush"
                  excludedgroups="stack-independent,stack-dependent,broken"
                  parallel="${parallel.classes}"
-                 threadcount="5"
-                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
-                 initial.mcast.port="29000"
-                 initial.tcp.port="29000"
-                 tcp.recv.buf.size="50000"
-                 tcp.send.buf.size="10000"
-                 jvmarg1="-Dchannel.conf=flush-tcp.xml"
-                 jvmarg2="-Duse_blocking=true"
-                />
+                 threadcount="5"/>
     </target>
 
     <target name="reports" description="Produces the test report">

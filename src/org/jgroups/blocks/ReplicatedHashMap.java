@@ -198,10 +198,7 @@ public class ReplicatedHashMap<K, V> extends
             disp.stop();
             disp=null;
         }
-        if(channel != null) {
-            channel.close();
-            channel=null;
-        }
+        Util.close(channel);
     }
 
     /**
