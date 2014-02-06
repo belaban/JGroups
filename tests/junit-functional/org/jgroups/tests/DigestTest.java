@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, sequential=true)
+@Test(groups=Global.FUNCTIONAL, singleThreaded=true)
 public class DigestTest {
     Digest         d, d2;
     MutableDigest  md;

@@ -17,7 +17,7 @@ import java.util.Map;
  * @author Bela Ban
  * @since 3.1
  */
-@Test(groups=Global.TIME_SENSITIVE,sequential=true)
+@Test(groups=Global.TIME_SENSITIVE,singleThreaded=true)
 public class VERIFY_SUSPECT_Test {
     static final Address a=Util.createRandomAddress("A"),
       b=Util.createRandomAddress("B"),

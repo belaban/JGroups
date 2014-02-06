@@ -24,7 +24,7 @@ import java.util.List;
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class UNICAST_OOB_Test extends ChannelTestBase {
     JChannel c1, c2;
 

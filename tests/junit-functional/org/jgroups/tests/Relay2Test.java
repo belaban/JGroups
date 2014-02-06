@@ -25,7 +25,7 @@ import java.util.List;
  * @author Bela Ban
  * @since 3.2
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class Relay2Test {
     protected JChannel a, b, c;  // members in site "lon"
     protected JChannel x, y, z;  // members in site "sfo

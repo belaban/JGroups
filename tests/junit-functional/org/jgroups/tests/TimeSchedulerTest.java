@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Test cases for TimeScheduler
  * @author Bela Ban
  */
-@Test(groups=Global.TIME_SENSITIVE,dataProvider="createTimer",sequential=true)
+@Test(groups=Global.TIME_SENSITIVE,dataProvider="createTimer",singleThreaded=true)
 public class TimeSchedulerTest {
     static final int NUM_MSGS=1000;
     static int[]     xmit_timeouts={1000, 2000, 4000, 8000};

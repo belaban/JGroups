@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentMap;
  * @author Richard Achmatowicz
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, sequential=true)
+@Test(groups=Global.FUNCTIONAL, singleThreaded=true)
 public class NakackTest {
     final static int NUM_PEERS=3;
     final static int NUM_MSGS=1000;

@@ -21,7 +21,7 @@ import org.testng.annotations.Test;
  * @author Bela Ban
  * @since 3.2
  */
-@Test(groups=Global.BYTEMAN,sequential=true)
+@Test(groups=Global.BYTEMAN,singleThreaded=true)
 public class BecomeServerTest extends BMNGRunner {
     JChannel          a, b;
 

@@ -41,7 +41,7 @@ import java.util.concurrent.TimeoutException;
  * 
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
     JChannel c1, c2, c3;

@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Author: Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MembershipTest {
     Membership m1, m2;
     List<Address> v1, v2;

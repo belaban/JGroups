@@ -2,7 +2,14 @@ package org.jgroups.tests;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import org.jgroups.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.View;
 import org.jgroups.blocks.ReplicatedHashMap;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
@@ -10,17 +17,12 @@ import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Tests concurrent startup or replicated hashmap.
  * 
  * @author vlada
  */
-@Test(groups= { Global.FLUSH }, sequential=true)
+@Test(groups={Global.FLUSH,Global.EAP_EXCLUDED},singleThreaded=true)
 public class ReplicatedHashMapStartupTest extends ChannelTestBase {
 
     public void testConcurrentStartup4Members() {

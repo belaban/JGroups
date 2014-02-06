@@ -1,19 +1,19 @@
 package org.jgroups.tests.byteman;
 
+import java.util.List;
+
 import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jboss.byteman.contrib.bmunit.BMScript;
 import org.jgroups.Global;
 import org.jgroups.util.RingBufferLockless;
 import org.testng.annotations.Test;
 
-import java.util.List;
-
 /**
  * Tests the correctness of RingBuffer
  * @author Bela Ban
  * @since 3.1
  */
-@Test(groups=Global.BYTEMAN,description="Correctness tests for RingBuffer",enabled=false)
+@Test(groups={Global.BYTEMAN,Global.EAP_EXCLUDED},description="Correctness tests for RingBuffer",enabled=false)
 public class RingBufferTest extends BMNGRunner {
 
 

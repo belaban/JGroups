@@ -11,7 +11,7 @@ import org.testng.annotations.Test;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
     Channel channel;

@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests the GMS protocol for merging functionality
  * @author Bela Ban
  */
-@Test(groups={Global.STACK_INDEPENDENT}, sequential=true)
+@Test(groups={Global.STACK_INDEPENDENT}, singleThreaded=true)
 public class GMS_MergeTest extends ChannelTestBase {
     static final String simple_props="SHARED_LOOPBACK:PING(timeout=1000):" +
             "pbcast.NAKACK2(use_mcast_xmit=false;log_discard_msgs=false;log_not_found_msgs=false)" +

@@ -10,7 +10,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class RequestOptionsTest {
     protected JChannel channel;
     protected RequestOptions reqOpt = new RequestOptions(ResponseMode.GET_ALL, 5000);

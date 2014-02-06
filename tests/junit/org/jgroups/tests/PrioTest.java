@@ -1,5 +1,9 @@
 package org.jgroups.tests;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -14,14 +18,10 @@ import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.CyclicBarrier;
-
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=false,enabled=false)
+@Test(groups={Global.STACK_DEPENDENT,Global.EAP_EXCLUDED},sequential=false,enabled=false)
 public class PrioTest extends ChannelTestBase {
     protected JChannel c1, c2;
     protected PrioReceiver r1, r2;

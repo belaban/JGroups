@@ -22,7 +22,7 @@ import java.util.Vector;
  * Tests the use of @Property dependency processing and default assignment.
  * @author Richard Achmatowicz
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ProtocolConfigurationTest {
 	ProtocolStack stack = null;
 	Protocol protocol = null ;

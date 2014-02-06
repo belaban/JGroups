@@ -16,7 +16,7 @@ import java.util.NoSuchElementException;
  * Tests state transfer API (including exception handling)
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups={Global.STACK_DEPENDENT,Global.EAP_EXCLUDED},singleThreaded=true)
 public class StateTransferTest2 extends ChannelTestBase {
     JChannel c1, c2;
 

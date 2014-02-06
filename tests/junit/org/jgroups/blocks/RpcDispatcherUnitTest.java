@@ -15,7 +15,7 @@ import java.util.Arrays;
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class RpcDispatcherUnitTest extends ChannelTestBase {
     private RpcDispatcher d1, d2, d3;
     private JChannel      c1, c2, c3;

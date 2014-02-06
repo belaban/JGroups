@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * receiver delivered all messages in the same order.
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
+@Test(groups=Global.STACK_INDEPENDENT,singleThreaded=true)
 public class SequencerOrderTest {
     private JChannel    c1, c2, c3;
     private MyReceiver  r1, r2, r3;

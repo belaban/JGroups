@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
  * Tests the flow control (FC) protocol
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class FCTest {
     JChannel ch;
     static final int SIZE=1000; // bytes

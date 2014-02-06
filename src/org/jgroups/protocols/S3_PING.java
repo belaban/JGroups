@@ -1,19 +1,7 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.annotations.Experimental;
-import org.jgroups.annotations.Property;
-import org.jgroups.annotations.Unsupported;
-import org.jgroups.util.Util;
-import org.xml.sax.Attributes;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.DefaultHandler;
-import org.xml.sax.helpers.XMLReaderFactory;
+import static java.lang.String.valueOf;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,14 +14,35 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.SimpleTimeZone;
+import java.util.SortedMap;
+import java.util.TimeZone;
+import java.util.TreeMap;
 
-import static java.lang.String.valueOf;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.jgroups.Address;
+import org.jgroups.annotations.Property;
+import org.jgroups.util.Util;
+import org.xml.sax.Attributes;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.DefaultHandler;
+import org.xml.sax.helpers.XMLReaderFactory;
 
 
 /**
  * Discovery protocol using Amazon's S3 storage. The S3 access code reuses the example shipped by Amazon.
- * This protocol is unsupported and experimental !
  * @author Bela Ban
  */
 public class S3_PING extends FILE_PING {

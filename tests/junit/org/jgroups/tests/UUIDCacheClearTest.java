@@ -13,7 +13,7 @@ import java.util.List;
  * Test whether physical addresses are fetched correctly after the UUID-physical address cache has been cleared
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class UUIDCacheClearTest extends ChannelTestBase {
 
 

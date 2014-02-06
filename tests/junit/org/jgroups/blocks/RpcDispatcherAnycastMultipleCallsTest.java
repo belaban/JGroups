@@ -8,7 +8,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-@Test(groups=Global.STACK_DEPENDENT, sequential=true)
+@Test(groups=Global.STACK_DEPENDENT, singleThreaded=true)
 public class RpcDispatcherAnycastMultipleCallsTest extends ChannelTestBase {
     private RpcDispatcherAnycastServerObject[] targets=null;
     static final int NUM=3;

@@ -27,7 +27,7 @@ import java.util.Vector;
  * *
  * @version $Revision: 1.23 $
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class Deadlock2Test extends ChannelTestBase {
     private String name = "Deadlock2Test";
 

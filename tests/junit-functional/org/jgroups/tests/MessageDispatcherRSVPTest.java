@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * @author Dan Berindei
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MessageDispatcherRSVPTest {
     protected static final int          NUM=2; // number of members
     protected final JChannel[]          channels=new JChannel[NUM];

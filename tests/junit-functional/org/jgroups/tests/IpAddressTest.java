@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
-@Test(groups=Global.FUNCTIONAL,sequential=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class IpAddressTest {
     IpAddress a, b, c, d, e, f, g, h, i, j, k;
 

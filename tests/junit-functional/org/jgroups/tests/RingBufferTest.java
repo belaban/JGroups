@@ -1,21 +1,21 @@
 package org.jgroups.tests;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+
 import org.jgroups.Global;
 import org.jgroups.util.RingBuffer;
 import org.jgroups.util.SeqnoList;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-
 /**
  * Functional tests of RingBuffer
  * @author Bela Ban
  * @since 3.1
  */
-@Test(groups=Global.FUNCTIONAL,description="Functional tests of RingBuffer")
+@Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED},description="Functional tests of RingBuffer")
 public class RingBufferTest {
 
     public void testConstructor() {

@@ -16,7 +16,7 @@ import org.testng.annotations.Test;
  * and expects reception of N messages within a given time. Fails otherwise.
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
+@Test(groups=Global.STACK_INDEPENDENT,singleThreaded=true)
 public class SendAndReceiveTest {
     JChannel channel;
     static final int NUM_MSGS=1000;

@@ -17,7 +17,7 @@ import java.util.*;
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
     private MyReceiver r2;
