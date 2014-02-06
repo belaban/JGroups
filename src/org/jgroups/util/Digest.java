@@ -468,6 +468,12 @@ public class Digest implements Streamable, Iterable<Digest.DigestEntry> {
         public long getHighestReceivedSeqno()  {return highest_received;}
         public long getHighest()               {return max(highest_delivered, highest_received);}
 
+        public boolean equals(Object obj) {
+            DigestEntry other=(DigestEntry)obj;
+            return member.equals(other.member) && highest_delivered == other.highest_delivered
+              && highest_received == other.highest_received;
+        }
+
         public String toString() {
             return member + ": [" + highest_delivered + " (" + highest_received + ")]";
         }
