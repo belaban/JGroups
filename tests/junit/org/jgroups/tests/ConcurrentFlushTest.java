@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
  * @author Manik Surtani
  * @author Bela Ban
  */
-@Test(groups=Global.FLUSH, singleThreaded=true)
+@Test(groups={Global.FLUSH,Global.EAP_EXCLUDED}, singleThreaded=true)
 public class ConcurrentFlushTest extends ChannelTestBase {
 
     JChannel c1, c2, c3;

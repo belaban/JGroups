@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
  * @author vladimir
  * @since 2.8
  */
-@Test(groups = Global.FLUSH, sequential = true)
+@Test(groups = {Global.FLUSH,Global.EAP_EXCLUDED}, sequential = true)
 public class FlushWithChannelJoinsAndFailuresTest extends ChannelTestBase {
 
    private static final String cName = "FlushWithChannelFailuresTest";

@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * @author Bela Ban
  */
-@Test(groups = Global.FLUSH, sequential = false)
+@Test(groups = {Global.FLUSH,Global.EAP_EXCLUDED}, sequential = false)
 public class FlushTest extends ChannelTestBase {
 
     @Test
