@@ -72,4 +72,6 @@
     <class id="109" name="org.jgroups.protocols.PERF$PerfHeader"/>
     <class id="110" name="org.jgroups.blocks.MethodCall"/>
     <class id="111" name="org.jgroups.util.ExtendedUUID"/>
+    <class id="112" name="org.jgroups.protocols.SaslHeader"/>
 </magic-number-class-mapping>
+
