@@ -8,10 +8,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.util.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -274,16 +271,12 @@ public class MPING extends PING implements Runnable {
 
     @Override
     protected void sendMcastDiscoveryRequest(Message msg) {
-        DataOutputStream out=null;
-
         try {
             if(msg.getSrc() == null)
                 msg.setSrc(local_addr);
-            ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(128);
-            out=new DataOutputStream(out_stream);
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(128);
             msg.writeTo(out);
-            out.flush(); // flushes contents to out_stream
-            Buffer buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+            Buffer buf=out.getBuffer();
             DatagramPacket packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), mcast_addr, mcast_port);
             if(mcast_send_sockets != null) {
                 MulticastSocket s;
@@ -305,9 +298,6 @@ public class MPING extends PING implements Runnable {
         catch(Exception ex) {
             log.error("failed sending discovery request", ex);
         }
-        finally {
-            Util.close(out);
-        }
     }
 
 
@@ -315,19 +305,13 @@ public class MPING extends PING implements Runnable {
     public void run() {
         final byte[]         receive_buf=new byte[65535];
         DatagramPacket       packet=new DatagramPacket(receive_buf, receive_buf.length);
-        byte[]               data;
-        ByteArrayInputStream inp_stream;
-        DataInputStream      inp=null;
-        Message              msg;
 
         while(mcast_sock != null && receiver != null && Thread.currentThread().equals(receiver)) {
             packet.setData(receive_buf, 0, receive_buf.length);
             try {
                 mcast_sock.receive(packet);
-                data=packet.getData();
-                inp_stream=new ExposedByteArrayInputStream(data, 0, data.length);
-                inp=new DataInputStream(inp_stream);
-                msg=new Message();
+                DataInput inp=new ByteArrayDataInputStream(packet.getData(), packet.getOffset(), packet.getLength());
+                Message msg=new Message();
                 msg.readFrom(inp);
                 up(new Event(Event.MSG, msg));
             }

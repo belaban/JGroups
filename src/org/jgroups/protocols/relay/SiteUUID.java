@@ -1,7 +1,6 @@
 package org.jgroups.protocols.relay;
 
-import org.jgroups.util.UUID;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 
@@ -59,14 +58,14 @@ public class SiteUUID extends UUID implements SiteAddress {
 
     public void readFrom(DataInput in) throws Exception {
         super.readFrom(in);
-        name=Util.readString(in);
-        site=Util.readString(in);
+        name=Bits.readString(in);
+        site=Bits.readString(in);
     }
 
     public void writeTo(DataOutput out) throws Exception {
         super.writeTo(out);
-        Util.writeString(name, out);
-        Util.writeString(site, out);
+        Bits.writeString(name,out);
+        Bits.writeString(site,out);
     }
 
     public int size() {

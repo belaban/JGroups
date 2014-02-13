@@ -7,10 +7,7 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.*;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.ExposedByteArrayOutputStream;
-import org.jgroups.util.ExposedDataOutputStream;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.DataInputStream;
 import java.net.DatagramSocket;
@@ -249,22 +246,19 @@ public class TUNNEL extends TP {
             throw new Exception("message " + msg + " doesn't have a transport header, cannot route it");
         String group=hdr.channel_name;
 
-        ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream((int)(msg.size() + 50));
-        ExposedDataOutputStream dos=new ExposedDataOutputStream(out_stream);
-
+        ByteArrayDataOutputStream dos=new ByteArrayDataOutputStream((int)(msg.size() + 50));
         writeMessage(msg, dos, multicast);
-        Buffer buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
 
         if(stats) {
             num_msgs_sent++;
-            num_bytes_sent+=buf.getLength();
+            num_bytes_sent+=dos.position();
         }
         List<RouterStub> stubs = stubManager.getStubs();
         if(multicast) {
-            tunnel_policy.sendToAllMembers(stubs, group, buf.getBuf(), buf.getOffset(), buf.getLength());
+            tunnel_policy.sendToAllMembers(stubs, group, dos.buffer(), 0, dos.position());
         }
         else {
-            tunnel_policy.sendToSingleMember(stubs, group, dest, buf.getBuf(), buf.getOffset(), buf.getLength());
+            tunnel_policy.sendToSingleMember(stubs, group, dest, dos.buffer(), 0, dos.position());
         }
     }
 

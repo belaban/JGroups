@@ -4,7 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.ViewId;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 
@@ -64,13 +64,13 @@ public class PingHeader extends Header {
 
     public void writeTo(DataOutput outstream) throws Exception {
         outstream.writeByte(type);
-        Util.writeString(cluster_name, outstream);
+        Bits.writeString(cluster_name,outstream);
         Util.writeViewId(view_id, outstream);
     }
 
     public void readFrom(DataInput instream) throws Exception {
         type=instream.readByte();
-        cluster_name=Util.readString(instream);
+        cluster_name=Bits.readString(instream);
         view_id=Util.readViewId(instream);
     }
 }

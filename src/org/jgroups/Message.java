@@ -722,7 +722,7 @@ public class Message implements Streamable {
     * @param excluded_headers Don't marshal headers that are part of excluded_headers
     * @throws Exception
     */
-    public void writeToNoAddrs(Address src, DataOutputStream out, short ... excluded_headers) throws Exception {
+    public void writeToNoAddrs(Address src, DataOutput out, short ... excluded_headers) throws Exception {
         byte leading=0;
 
         boolean write_src_addr=src == null || src_addr != null && !src_addr.equals(src);
@@ -807,7 +807,7 @@ public class Message implements Streamable {
 
     /** Reads the message's contents from an input stream, but skips the buffer and instead returns the
      * position (offset) at which the buffer starts */
-    public int readFromSkipPayload(DataInput in, ExposedByteArrayInputStream input) throws Exception {
+    public int readFromSkipPayload(ByteArrayDataInputStream in) throws Exception {
 
         // 1. read the leading byte first
         byte leading=in.readByte();
@@ -842,7 +842,7 @@ public class Message implements Streamable {
             return -1;
 
         length=in.readInt();
-        return input.position();
+        return in.position();
     }
 
     /* --------------------------------- End of Interface Streamable ----------------------------- */

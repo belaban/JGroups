@@ -941,12 +941,11 @@ public class FLUSH extends Protocol {
     }
 
     protected static Buffer marshal(final Collection<? extends Address> participants, final Digest digest) {
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
-        DataOutputStream out=new ExposedDataOutputStream(out_stream);
+        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
         try {
             Util.writeAddresses(participants, out);
             Util.writeStreamable(digest,out);
-            return out_stream.getBuffer();
+            return out.getBuffer();
         }
         catch(Exception ex) {
             return null;
@@ -956,9 +955,8 @@ public class FLUSH extends Protocol {
 
     protected  Tuple<Collection<? extends Address>,Digest> readParticipantsAndDigest(byte[] buffer, int offset, int length) {
         if(buffer == null) return null;
-        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
-        DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
         try {
+            DataInput in=new ByteArrayDataInputStream(buffer, offset, length);
             Collection<? extends Address> participants=Util.readAddresses(in, ArrayList.class);
             Digest digest=(Digest)Util.readStreamable(Digest.class,in);
             return new Tuple<Collection<? extends Address>,Digest>(participants, digest);

@@ -61,7 +61,7 @@ public class PayloadUUID extends UUID {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
         try {
-            payload=Util.readString(in);
+            payload=Bits.readString(in);
         }
         catch(Exception e) {
             throw new IOException(e);
@@ -71,7 +71,7 @@ public class PayloadUUID extends UUID {
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
         try {
-            Util.writeString(payload, out);
+            Bits.writeString(payload,out);
         }
         catch(Exception e) {
             throw new IOException(e);
@@ -80,12 +80,12 @@ public class PayloadUUID extends UUID {
 
     public void writeTo(DataOutput out) throws Exception {
         super.writeTo(out);
-        Util.writeString(payload, out);
+        Bits.writeString(payload,out);
     }
 
     public void readFrom(DataInput in) throws Exception {
         super.readFrom(in);
-        payload=Util.readString(in);
+        payload=Bits.readString(in);
     }
 
 

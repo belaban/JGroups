@@ -6,10 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.Version;
 import org.jgroups.util.*;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -128,15 +125,14 @@ public class UnicastTestTcpSlow {
         Message msg=new Message(null, buf.array());
         // msg.writeTo(output);
 
-        ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream((int)(msg.size()));
-        ExposedDataOutputStream dos=new ExposedDataOutputStream(out_stream);
+        ByteArrayDataOutputStream dos=new ByteArrayDataOutputStream((int)(msg.size()));
         byte flags=0;
         dos.writeShort(Version.version); // write the version
         if(msg.getDest() == null)
             flags+=(byte)2;
         dos.writeByte(flags);
         msg.writeTo(dos);
-        Buffer buffer=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+        Buffer buffer=dos.getBuffer();
 
         output_lock.lock(); // need to sync if we have more than 1 sender
         try {
@@ -294,11 +290,10 @@ public class UnicastTestTcpSlow {
 
 
     private class Sender extends Thread {
-        protected final int    number_of_msgs;
-        protected final int    do_print;
-        protected final byte[] buf;
-        protected final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(1024);
-        protected final ExposedDataOutputStream dos=new ExposedDataOutputStream(out_stream);
+        protected final int                       number_of_msgs;
+        protected final int                       do_print;
+        protected final byte[]                    buf;
+        protected final ByteArrayDataOutputStream dos=new ByteArrayDataOutputStream(1024);
 
         public Sender(int num_msgs, int msg_size, int print) {
             this.number_of_msgs=num_msgs;
@@ -307,7 +302,6 @@ public class UnicastTestTcpSlow {
         }
 
         public void run() {
-
             for(int i=1; i <= number_of_msgs; i++) {
                 try {
                     Message msg=new Message(null, buf);
@@ -338,28 +332,26 @@ public class UnicastTestTcpSlow {
         }
 
         protected Buffer writeMessage(final Message msg) throws Exception {
-            out_stream.reset();
-            dos.reset();
+            dos.position(0);
             byte flags=0;
             dos.writeShort(Version.version); // write the version
             if(msg.getDest() == null)
                 flags+=(byte)2;
             dos.writeByte(flags);
             msg.writeTo(dos);
-            return new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+            return new Buffer(dos.buffer(), 0, dos.position());
         }
     }
 
 
 
     protected static Message readMessage(byte[] buf, int offset, int length) throws Exception {
-        ExposedByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buf, offset, length);
-        DataInputStream dis=new DataInputStream(in_stream);
-        short ver=dis.readShort();
-        byte flags=dis.readByte();
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
+        short ver=in.readShort();
+        byte flags=in.readByte();
         // final boolean multicast=(flags & (byte)2) == (byte)2;
         Message msg=new Message(false); // don't create headers, readFrom() will do this
-        msg.readFrom(dis);
+        msg.readFrom(in);
         return msg;
     }
 

@@ -611,12 +611,12 @@ public class MPerf extends ReceiverAdapter {
         }
 
         public void writeTo(DataOutput out) throws Exception {
-            Util.writeString(attr_name, out);
+            Bits.writeString(attr_name,out);
             Util.writeByteBuffer(attr_value, out);
         }
 
         public void readFrom(DataInput in) throws Exception {
-            attr_name=Util.readString(in);
+            attr_name=Bits.readString(in);
             attr_value=Util.readByteBuffer(in);
         }
     }

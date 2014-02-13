@@ -3,7 +3,7 @@ package org.jgroups.auth;
 import org.ietf.jgss.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.Util;
+import org.jgroups.util.Bits;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.*;
@@ -109,11 +109,11 @@ public class Krb5TokenUtils {
 		
         log.debug(" : Written Encoded Data: \n%s", encodedToken);
 		
-        Util.writeString(encodedToken, out);
+        Bits.writeString(encodedToken,out);
     }
 	
     public static byte[] decodeDataFromStream(DataInput in) throws Exception {
-        String str = Util.readString(in);
+        String str = Bits.readString(in);
         log.debug(" : Read Encoded Data: \n%s", str);
         return DatatypeConverter.parseBase64Binary(str);
     }

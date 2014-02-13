@@ -4,14 +4,11 @@ import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.ExposedByteArrayInputStream;
-import org.jgroups.util.ExposedByteArrayOutputStream;
+import org.jgroups.util.ByteArrayDataInputStream;
+import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -103,48 +100,34 @@ public class BPING extends PING implements Runnable {
 
     @Override
     protected void sendMcastDiscoveryRequest(Message msg) {
-        DataOutputStream out=null;
-
         try {
             if(msg.getSrc() == null)
                 msg.setSrc(local_addr);
-            ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(128);
-            out=new DataOutputStream(out_stream);
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(128);
             msg.writeTo(out);
-            out.flush();
-            Buffer buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-
             for(int i=bind_port; i <= bind_port+port_range; i++) {
-                DatagramPacket packet=new DatagramPacket(buf.getBuf(), buf.getOffset(), buf.getLength(), dest_addr, i);
+                DatagramPacket packet=new DatagramPacket(out.buffer(), 0, out.position(), dest_addr, i);
                 sock.send(packet);
             }
         }
         catch(Exception ex) {
             log.error("failed sending discovery request", ex);
         }
-        finally {
-            Util.close(out);
-        }
     }
 
 
 
     public void run() {
-        final byte[]         receive_buf=new byte[65535];
-        DatagramPacket       packet=new DatagramPacket(receive_buf, receive_buf.length);
-        byte[]               data;
-        ByteArrayInputStream inp_stream;
-        DataInputStream      inp=null;
-        Message              msg;
+        final byte[]    receive_buf=new byte[65535];
+        DatagramPacket  packet=new DatagramPacket(receive_buf, receive_buf.length);
+        DataInput       inp;
 
         while(sock != null && receiver != null && Thread.currentThread().equals(receiver)) {
             packet.setData(receive_buf, 0, receive_buf.length);
             try {
                 sock.receive(packet);
-                data=packet.getData();
-                inp_stream=new ExposedByteArrayInputStream(data, 0, data.length);
-                inp=new DataInputStream(inp_stream);
-                msg=new Message();
+                inp=new ByteArrayDataInputStream(packet.getData(), packet.getOffset(), packet.getLength());
+                Message msg=new Message();
                 msg.readFrom(inp);
                 up(new Event(Event.MSG, msg));
             }
@@ -153,9 +136,6 @@ public class BPING extends PING implements Runnable {
             }
             catch(Throwable ex) {
                 log.error("failed receiving packet (from " + packet.getSocketAddress() + ")", ex);
-            }
-            finally {
-                Util.close(inp);
             }
         }
         if(log.isTraceEnabled())

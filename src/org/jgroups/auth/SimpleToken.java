@@ -2,6 +2,7 @@ package org.jgroups.auth;
 
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
+import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -84,7 +85,7 @@ public class SimpleToken extends AuthToken {
         if (log.isDebugEnabled()) {
             log.debug("SimpleToken writeTo()");
         }
-        Util.writeString(this.auth_value, out);
+        Bits.writeString(this.auth_value,out);
     }
 
     /**
@@ -99,7 +100,7 @@ public class SimpleToken extends AuthToken {
         if (log.isDebugEnabled()) {
             log.debug("SimpleToken readFrom()");
         }
-        this.auth_value = Util.readString(in);
+        this.auth_value = Bits.readString(in);
     }
 
     public int size() {

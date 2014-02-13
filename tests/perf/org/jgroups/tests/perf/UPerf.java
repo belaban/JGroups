@@ -8,10 +8,7 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import javax.management.MBeanServer;
 import java.io.DataInput;
@@ -528,7 +525,7 @@ public class UPerf extends ReceiverAdapter {
         public void writeTo(DataOutput out) throws Exception {
             out.writeInt(values.size());
             for(Map.Entry<String,Object> entry: values.entrySet()) {
-                Util.writeString(entry.getKey(), out);
+                Bits.writeString(entry.getKey(),out);
                 Util.objectToStream(entry.getValue(), out);
             }
         }
@@ -536,7 +533,7 @@ public class UPerf extends ReceiverAdapter {
         public void readFrom(DataInput in) throws Exception {
             int size=in.readInt();
             for(int i=0; i < size; i++) {
-                String key=Util.readString(in);
+                String key=Bits.readString(in);
                 Object value=Util.objectFromStream(in);
                 if(key == null)
                     continue;

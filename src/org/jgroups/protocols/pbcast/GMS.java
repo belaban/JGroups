@@ -1181,10 +1181,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     protected static Buffer marshal(final View view, final Digest digest) {
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
-        DataOutputStream out=new ExposedDataOutputStream(out_stream);
-
         try {
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
             out.writeShort(determineFlags(view, digest));
             if(view != null)
                 view.writeTo(out);
@@ -1192,7 +1190,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             if(digest != null)
                 digest.writeTo(out, writeAddresses(view, digest));
 
-            return out_stream.getBuffer();
+            return out.getBuffer();
         }
         catch(Exception ex) {
             return null;
@@ -1204,11 +1202,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     protected static Buffer marshal(Collection<? extends Address> mbrs) {
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
-        DataOutputStream out=new ExposedDataOutputStream(out_stream);
         try {
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
             Util.writeAddresses(mbrs, out);
-            return out_stream.getBuffer();
+            return out.getBuffer();
         }
         catch(Exception ex) {
             return null;
@@ -1216,11 +1213,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     protected static Buffer marshal(final ViewId view_id) {
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
-        DataOutputStream out=new ExposedDataOutputStream(out_stream);
         try {
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
             Util.writeViewId(view_id, out);
-            return out_stream.getBuffer();
+            return out.getBuffer();
         }
         catch(Exception ex) {
             return null;
@@ -1240,9 +1236,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected Collection<? extends Address> readMembers(byte[] buffer, int offset, int length) {
         if(buffer == null) return null;
-        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
-        DataInputStream in=new DataInputStream(in_stream);
         try {
+            DataInput in=new ByteArrayDataInputStream(buffer, offset, length);
             return Util.readAddresses(in, ArrayList.class);
         }
         catch(Exception ex) {
@@ -1265,8 +1260,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public static Tuple<View,Digest> _readViewAndDigest(byte[] buffer, int offset, int length) throws Exception {
         if(buffer == null) return null;
-        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
-        DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
+        DataInput in=new ByteArrayDataInputStream(buffer, offset, length);
         View tmp_view=null;
         Digest digest=null;
         short flags=in.readShort();
@@ -1293,9 +1287,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected ViewId readViewId(byte[] buffer, int offset, int length) {
         if(buffer == null) return null;
-        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
-        DataInputStream in=new DataInputStream(in_stream);
         try {
+            DataInput in=new ByteArrayDataInputStream(buffer, offset, length);
             return Util.readViewId(in);
         }
         catch(Exception ex) {

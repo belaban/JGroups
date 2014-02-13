@@ -4,6 +4,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Property;
+import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -112,7 +113,7 @@ public class FixedMembershipToken extends AuthToken {
         if (log.isDebugEnabled()) {
             log.debug("SimpleToken writeTo()");
         }
-        Util.writeString(this.token, out);
+        Bits.writeString(this.token,out);
     }
 
     /**
@@ -127,7 +128,7 @@ public class FixedMembershipToken extends AuthToken {
         if (log.isDebugEnabled()) {
             log.debug("SimpleToken readFrom()");
         }
-        this.token = Util.readString(in);
+        this.token = Bits.readString(in);
     }
 
     public int size() {

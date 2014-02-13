@@ -3,8 +3,7 @@ package org.jgroups.blocks;
 
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -441,11 +440,11 @@ public class MethodCall implements Externalizable, Streamable {
 
         switch(mode) {
             case METHOD:
-                Util.writeString(method_name, out);
+                Bits.writeString(method_name,out);
                 writeMethod(out);
                 break;
             case TYPES:
-                Util.writeString(method_name, out);
+                Bits.writeString(method_name,out);
                 writeTypes(out);
                 break;
             case ID:
@@ -464,11 +463,11 @@ public class MethodCall implements Externalizable, Streamable {
 
         switch(mode) {
             case METHOD:
-                method_name=Util.readString(in);
+                method_name=Bits.readString(in);
                 readMethod(in);
                 break;
             case TYPES:
-                method_name=Util.readString(in);
+                method_name=Bits.readString(in);
                 readTypes(in);
                 break;
             case ID:

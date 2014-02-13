@@ -98,24 +98,24 @@ public class TopologyUUID extends UUID {
 
     public void writeTo(DataOutput out) throws Exception {
         super.writeTo(out);
-        Util.writeString(site_id, out);
-        Util.writeString(rack_id, out);
-        Util.writeString(machine_id, out);
+        Bits.writeString(site_id,out);
+        Bits.writeString(rack_id,out);
+        Bits.writeString(machine_id,out);
     }
 
     public void readFrom(DataInput in) throws Exception {
         super.readFrom(in);
-        site_id=Util.readString(in);
-        rack_id=Util.readString(in);
-        machine_id=Util.readString(in);
+        site_id=Bits.readString(in);
+        rack_id=Bits.readString(in);
+        machine_id=Bits.readString(in);
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
         try {
-            site_id=Util.readString(in);
-            rack_id=Util.readString(in);
-            machine_id=Util.readString(in);
+            site_id=Bits.readString(in);
+            rack_id=Bits.readString(in);
+            machine_id=Bits.readString(in);
         }
         catch(Exception e) {
             throw new IOException(e);
@@ -125,9 +125,9 @@ public class TopologyUUID extends UUID {
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
         try {
-            Util.writeString(site_id, out);
-            Util.writeString(rack_id, out);
-            Util.writeString(machine_id, out);
+            Bits.writeString(site_id,out);
+            Bits.writeString(rack_id,out);
+            Bits.writeString(machine_id,out);
         }
         catch(Exception e) {
             throw new IOException(e);

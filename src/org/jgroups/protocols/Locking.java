@@ -9,6 +9,7 @@ import org.jgroups.blocks.locking.AwaitInfo;
 import org.jgroups.blocks.locking.LockInfo;
 import org.jgroups.blocks.locking.LockNotification;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Bits;
 import org.jgroups.util.Owner;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -1316,7 +1317,7 @@ abstract public class Locking extends Protocol {
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type.ordinal());
-            Util.writeString(lock_name, out);
+            Bits.writeString(lock_name,out);
             out.writeInt(lock_id);
             Util.writeStreamable(owner, out);
             out.writeLong(timeout);
@@ -1325,7 +1326,7 @@ abstract public class Locking extends Protocol {
 
         public void readFrom(DataInput in) throws Exception {
             type=Type.values()[in.readByte()];
-            lock_name=Util.readString(in);
+            lock_name=Bits.readString(in);
             lock_id=in.readInt();
             owner=(Owner)Util.readStreamable(Owner.class, in);
             timeout=in.readLong();

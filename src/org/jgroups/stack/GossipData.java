@@ -5,6 +5,7 @@ package org.jgroups.stack;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.util.Bits;
 import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Util;
 
@@ -106,9 +107,9 @@ public class GossipData implements SizeStreamable {
 
     public void writeTo(DataOutput out) throws Exception {
         out.writeByte(type);
-        Util.writeString(group, out);
+        Bits.writeString(group,out);
         Util.writeAddress(addr, out);
-        Util.writeString(logical_name, out);
+        Bits.writeString(logical_name,out);
         Util.writeAddresses(mbrs, out);
         Util.writeAddresses(physical_addrs, out);
         Util.writeByteBuffer(buffer, offset, length, out);
@@ -116,9 +117,9 @@ public class GossipData implements SizeStreamable {
 
     public void readFrom(DataInput in) throws Exception {
         type=in.readByte();
-        group=Util.readString(in);
+        group=Bits.readString(in);
         addr=Util.readAddress(in);
-        logical_name=Util.readString(in);
+        logical_name=Bits.readString(in);
         mbrs=(List<Address>)Util.readAddresses(in, LinkedList.class);
         physical_addrs=(Collection<PhysicalAddress>)Util.readAddresses(in, ArrayList.class);
         buffer=Util.readByteBuffer(in);

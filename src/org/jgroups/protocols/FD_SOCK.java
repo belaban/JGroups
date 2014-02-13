@@ -801,8 +801,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
     public static Buffer marshal(Map<Address,IpAddress> addrs) {
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
-        DataOutputStream out=new ExposedDataOutputStream(out_stream);
+        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
         try {
             int size=addrs != null? addrs.size() : 0;
             out.writeInt(size);
@@ -814,7 +813,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     Util.writeStreamable(val, out);
                 }
             }
-            return out_stream.getBuffer();
+            return out.getBuffer();
         }
         catch(Exception ex) {
             return null;
@@ -823,8 +822,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     protected Map<Address,IpAddress> readAddresses(byte[] buffer, int offset, int length) {
         if(buffer == null) return null;
-        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
-        DataInputStream in=new DataInputStream(in_stream);
+        DataInput in=new ByteArrayDataInputStream(buffer, offset, length);
         HashMap<Address,IpAddress> addrs=null;
         try {
             int size=in.readInt();

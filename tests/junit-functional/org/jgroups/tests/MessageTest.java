@@ -7,7 +7,7 @@ import org.jgroups.Message;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.TpHeader;
 import org.jgroups.protocols.pbcast.NakAckHeader;
-import org.jgroups.util.ExposedByteArrayInputStream;
+import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.Range;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
@@ -15,7 +15,6 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.DataInput;
-import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.util.Map;
 
@@ -396,10 +395,12 @@ public class MessageTest {
         addHeaders(msg);
         byte[] buf=Util.streamableToByteBuffer(msg);
 
-        ExposedByteArrayInputStream input=new ExposedByteArrayInputStream(buf);
-        DataInput in=new DataInputStream(input);
+        // ExposedByteArrayInputStream input=new ExposedByteArrayInputStream(buf);
+        // DataInput in=new DataInputStream(input);
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
+
         Message msg2=new Message(false);
-        int payload_position=msg2.readFromSkipPayload(in, input);
+        int payload_position=msg2.readFromSkipPayload(in);
         msg2.setBuffer(buf, payload_position, buf.length - payload_position);
         assert msg2.getOffset() == payload_position;
         assert msg2.getLength() == msg.getLength();
@@ -416,10 +417,11 @@ public class MessageTest {
         addHeaders(msg);
         byte[] buf=Util.streamableToByteBuffer(msg);
 
-        ExposedByteArrayInputStream input=new ExposedByteArrayInputStream(buf);
-        DataInput in=new DataInputStream(input);
+        // ExposedByteArrayInputStream input=new ExposedByteArrayInputStream(buf);
+        // DataInput in=new DataInputStream(input);
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
         Message msg2=new Message(false);
-        int payload_position=msg2.readFromSkipPayload(in, input);
+        int payload_position=msg2.readFromSkipPayload(in);
         if(payload_position >= 0)
             msg2.setBuffer(buf, payload_position, buf.length - payload_position);
         assert msg2.getOffset() == 0;

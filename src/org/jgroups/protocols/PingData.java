@@ -2,6 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.util.Bits;
 import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Util;
 
@@ -149,7 +150,7 @@ public class PingData implements SizeStreamable {
         Util.writeView(view, outstream);
         Util.writeViewId(view_id, outstream);
         outstream.writeBoolean(is_server);
-        Util.writeString(logical_name, outstream);
+        Bits.writeString(logical_name,outstream);
         Util.writeAddresses(physical_addrs, outstream);
     }
 
@@ -159,7 +160,7 @@ public class PingData implements SizeStreamable {
         view=Util.readView(instream);
         view_id=Util.readViewId(instream);
         is_server=instream.readBoolean();
-        logical_name=Util.readString(instream);
+        logical_name=Bits.readString(instream);
         physical_addrs=(Collection<PhysicalAddress>)Util.readAddresses(instream, ArrayList.class);
     }
 

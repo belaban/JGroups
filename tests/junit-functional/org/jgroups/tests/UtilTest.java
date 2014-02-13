@@ -2,8 +2,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.util.Buffer;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -432,14 +431,14 @@ public class UtilTest {
         String s1="Bela Ban", s2="Michelle Ban";
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
-        Util.writeString(s1, dos);
-        Util.writeString(s2, dos);
+        Bits.writeString(s1,dos);
+        Bits.writeString(s2,dos);
         dos.close();
         byte[] buf=outstream.toByteArray();
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
-        String s3=Util.readString(dis);
-        String s4=Util.readString(dis);
+        String s3=Bits.readString(dis);
+        String s4=Bits.readString(dis);
         Assert.assertEquals(s1, s3);
         Assert.assertEquals(s2, s4);
     }

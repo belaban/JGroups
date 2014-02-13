@@ -9,12 +9,11 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
+import org.jgroups.util.Bits;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.UUID;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.InterruptedIOException;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -1549,18 +1548,16 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     protected void handleMessageBatch(Address sender, byte[] data, int offset, int length) {
-        DataInputStream dis=null;
         try {
-            ExposedByteArrayInputStream in_stream=new ExposedByteArrayInputStream(data, offset, length);
-            dis=new DataInputStream(in_stream);
-            short version=dis.readShort();
+            ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
+            short version=in.readShort();
             if(!versionMatch(version, sender))
                 return;
 
-            byte flags=dis.readByte();
+            byte flags=in.readByte();
             final boolean multicast=(flags & MULTICAST) == MULTICAST;
 
-            final MessageBatch[] batches=readMessageBatch(dis, multicast);
+            final MessageBatch[] batches=readMessageBatch(in, multicast);
             final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch_oob=batches[2], internal_batch=batches[3];
 
             removeAndDispatchNonBundledMessages(oob_batch, internal_batch_oob);
@@ -1590,14 +1587,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         catch(Throwable t) {
             log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
         }
-        finally {
-            Util.close(dis);
-        }
     }
 
     protected void handleSingleMessage(Address sender, byte[] data, int offset, int length) {
         // the message flags are at indexes 4-5
-        short   msg_flags=Bits.makeShort(data, offset + MSG_OFFSET);
+        short   msg_flags=Bits.makeShort(data[offset + MSG_OFFSET], data[offset + MSG_OFFSET +1]);
         boolean internal=(msg_flags & Message.Flag.INTERNAL.value()) == Message.Flag.INTERNAL.value();
         boolean oob=(msg_flags & Message.Flag.OOB.value()) == Message.Flag.OOB.value();
 
@@ -1687,18 +1681,16 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         public void run() {
-            DataInputStream dis=null;
             try {
-                ExposedByteArrayInputStream in_stream=new ExposedByteArrayInputStream(data, offset, length);
-                dis=new DataInputStream(in_stream);
-                short version=dis.readShort();
+                ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
+                short version=in.readShort();
                 if(!versionMatch(version, sender))
                     return;
 
-                byte flags=dis.readByte();
+                byte flags=in.readByte();
                 final boolean multicast=(flags & MULTICAST) == MULTICAST;
                 Message msg=new Message(false); // don't create headers, readFrom() will do this
-                int payload_offset=msg.readFromSkipPayload(dis, in_stream);
+                int payload_offset=msg.readFromSkipPayload(in);
 
                 if(!multicast) {
                     Address dest=msg.getDest(), target=local_addr;
@@ -1723,9 +1715,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
-            }
-            finally {
-                Util.close(dis); // only nulls the buffer
             }
         }
     }
@@ -1808,25 +1797,23 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         // we can create between 300'000 - 400'000 output streams and do the marshalling per second,
         // so this is not a bottleneck !
-        ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream((int)(msg.size() + MSG_OVERHEAD)); // version+flag+msg
-        DataOutputStream dos=new DataOutputStream(out_stream); // ok, the locks are uncontended, so this is fast
-        writeMessage(msg, dos, multicast);
-        Buffer buf=out_stream.getBuffer();
-        doSend(buf, dest, multicast);
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)(msg.size() + MSG_OVERHEAD)); // version+flag+msg
+        writeMessage(msg, out, multicast);
+        doSend(out.buffer(), 0, out.position(), dest, multicast);
         if(stats)
             num_single_msgs_sent++;
     }
 
 
-    protected void doSend(Buffer buf, Address dest, boolean multicast) throws Exception {
+    protected void doSend(byte[] buf, int offset, int length, Address dest, boolean multicast) throws Exception {
         if(stats) {
             num_msgs_sent++;
-            num_bytes_sent+=buf.getLength();
+            num_bytes_sent+=length;
         }
         if(multicast)
-            sendMulticast(buf.getBuf(), buf.getOffset(), buf.getLength());
+            sendMulticast(buf, offset, length);
         else
-            sendToSingleMember(dest, buf.getBuf(), buf.getOffset(), buf.getLength());
+            sendToSingleMember(dest, buf, offset, length);
     }
 
 
@@ -1893,7 +1880,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * @return
      * @throws java.io.IOException
      */
-    protected static void writeMessage(Message msg, DataOutputStream dos, boolean multicast) throws Exception {
+    protected static void writeMessage(Message msg, DataOutput dos, boolean multicast) throws Exception {
         byte flags=0;
         dos.writeShort(Version.version); // write the version
         if(multicast)
@@ -1902,7 +1889,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         msg.writeTo(dos);
     }
 
-    public static Message readMessage(DataInputStream instream) throws Exception {
+    public static Message readMessage(DataInput instream) throws Exception {
         Message msg=new Message(false); // don't create headers, readFrom() will do this
         msg.readFrom(instream);
         return msg;
@@ -1928,7 +1915,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * @throws Exception
      */
     public static void writeMessageList(Address dest, Address src, String cluster_name,
-                                        List<Message> msgs, DataOutputStream dos, boolean multicast, short transport_id) throws Exception {
+                                        List<Message> msgs, DataOutput dos, boolean multicast, short transport_id) throws Exception {
         dos.writeShort(Version.version);
 
         byte flags=LIST;
@@ -1941,7 +1928,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         Util.writeAddress(src, dos);
 
-        Util.writeString(cluster_name, dos);
+        Bits.writeString(cluster_name,dos);
 
         // Number of messages (0 == no messages)
         dos.writeInt(msgs != null? msgs.size() : 0);
@@ -1953,11 +1940,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
 
-    public static List<Message> readMessageList(DataInputStream in, short transport_id) throws Exception {
+    public static List<Message> readMessageList(DataInput in, short transport_id) throws Exception {
         List<Message> list=new LinkedList<Message>();
         Address dest=Util.readAddress(in);
         Address src=Util.readAddress(in);
-        String cluster_name=Util.readString(in); // not used here
+        String cluster_name=Bits.readString(in); // not used here
         TpHeader transport_header=new TpHeader(cluster_name);
 
         int len=in.readInt();
@@ -1989,11 +1976,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * @return an array of 4 MessageBatches in the order above, the first batch is at index 0
      * @throws Exception
      */
-    public static MessageBatch[] readMessageBatch(DataInputStream in, boolean multicast) throws Exception {
+    public static MessageBatch[] readMessageBatch(DataInput in, boolean multicast) throws Exception {
         MessageBatch[] batches=new MessageBatch[4]; // [0]: reg, [1]: OOB, [2]: internal-oob, [3]: internal
         Address dest=Util.readAddress(in);
         Address src=Util.readAddress(in);
-        String  cluster_name=Util.readString(in);
+        String  cluster_name=Bits.readString(in);
 
         int len=in.readInt();
         for(int i=0; i < len; i++) {
@@ -2298,8 +2285,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected class BaseBundler implements Bundler {
         /** Keys are destinations, values are lists of Messages */
         final Map<SingletonAddress,List<Message>>  msgs=new HashMap<SingletonAddress,List<Message>>(24);
-        final ExposedByteArrayOutputStream         bundler_out_stream=new ExposedByteArrayOutputStream(1024);
-        final ExposedDataOutputStream              bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
+        final ByteArrayDataOutputStream            output=new ByteArrayDataOutputStream(1024);
         @GuardedBy("lock") long                    count;    // current number of bytes accumulated
         final ReentrantLock                        lock=new ReentrantLock();
 
@@ -2312,8 +2298,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
          * Sends all messages in the map. Messages for the same destination are bundled into a message list. The map will
          * be cleared when done
          */
-        protected void sendBundledMessages(final Map<SingletonAddress,List<Message>> msgs,
-                                           final ExposedByteArrayOutputStream out_stream, final ExposedDataOutputStream out) {
+        protected void sendBundledMessages(final Map<SingletonAddress,List<Message>> msgs, final ByteArrayDataOutputStream out) {
             if(log.isTraceEnabled()) {
                 double percentage=100.0 / max_bundle_size * count;
                 log.trace(BUNDLE_MSG, local_addr, numMessages(msgs), count, percentage, msgs.size(), msgs.keySet());
@@ -2324,13 +2309,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 if(list.isEmpty())
                     continue;
 
-                out_stream.reset();
-                out.reset();
+                out.position(0);
                 if(list.size() == 1)
-                    sendSingleMessage(list.get(0), false, out_stream, out);
+                    sendSingleMessage(list.get(0), false, out);
                 else {
                     SingletonAddress dst=entry.getKey();
-                    sendMessageList(dst.getAddress(), list.get(0).getSrc(), dst.getClusterName(), list, false, out_stream, out);
+                    sendMessageList(dst.getAddress(), list.get(0).getSrc(), dst.getClusterName(), list, false, out);
                     if(stats)
                         num_batches_sent++;
                 }
@@ -2348,19 +2332,15 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
 
-        protected void sendSingleMessage(final Message msg, boolean reset,
-                                         final ExposedByteArrayOutputStream out_stream, final ExposedDataOutputStream out) {
+        protected void sendSingleMessage(final Message msg, boolean reset, final ByteArrayDataOutputStream out) {
             Address dest=msg.getDest();
             boolean multicast=dest == null;
 
             try {
-                if(reset) {
-                    out_stream.reset();
-                    out.reset();
-                }
+                if(reset)
+                    out.position(0);
                 writeMessage(msg, out, multicast);
-                Buffer buf=out_stream.getBuffer();
-                doSend(buf, dest, multicast);
+                doSend(out.buffer(), 0, out.position(), dest, multicast);
                 if(stats)
                     num_single_msgs_sent++;
             }
@@ -2377,16 +2357,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
         protected void sendMessageList(final Address dest, final Address src, final String cluster_name,
-                                       final List<Message> list, boolean reset,
-                                       final ExposedByteArrayOutputStream out_stream, final ExposedDataOutputStream out) {
+                                       final List<Message> list, boolean reset, final ByteArrayDataOutputStream out) {
             try {
-                if(reset) {
-                    out_stream.reset();
-                    out.reset();
-                }
+                if(reset)
+                    out.position(0);
                 writeMessageList(dest, src, cluster_name, list, out, dest == null, id); // flushes output stream when done
-                Buffer buf=out_stream.getBuffer();
-                doSend(buf, dest, dest == null);
+                doSend(out.buffer(), 0, out.position(), dest, dest == null);
             }
             catch(SocketException sock_ex) {
                 log.debug(Util.getMessage("FailureSendingMsgBundle"),local_addr,sock_ex);
@@ -2441,7 +2417,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             lock.lock();
             try {
                 if(count + size >= max_bundle_size)
-                    sendBundledMessages(msgs, bundler_out_stream, bundler_dos);
+                    sendBundledMessages(msgs, output);
                 addMessage(msg, size);
                 if(num_bundling_tasks < MIN_NUMBER_OF_BUNDLING_TASKS) {
                     num_bundling_tasks++;
@@ -2461,7 +2437,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             try {
                 if(!msgs.isEmpty()) {
                     try {
-                        sendBundledMessages(msgs, bundler_out_stream, bundler_dos);
+                        sendBundledMessages(msgs, output);
                     }
                     catch(Exception e) {
                         log.error(Util.getMessage("FailureSendingMsgBundle"), local_addr, e);
@@ -2491,15 +2467,15 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 num_senders.decrementAndGet();
 
                 if(count + size >= max_bundle_size)
-                    sendBundledMessages(msgs, bundler_out_stream, bundler_dos);
+                    sendBundledMessages(msgs, output);
 
                 // at this point, we haven't sent our message yet !
                 if(num_senders.get() == 0) { // no other sender threads present at this time
                     if(count == 0)
-                        sendSingleMessage(msg, true, bundler_out_stream, bundler_dos);
+                        sendSingleMessage(msg, true, output);
                     else {
                         addMessage(msg,size);
-                        sendBundledMessages(msgs, bundler_out_stream, bundler_dos);
+                        sendBundledMessages(msgs, output);
                     }
                 }
                 else  // there are other sender threads waiting, so our message will be sent by a different thread
@@ -2569,17 +2545,17 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                             continue;
                         long size=msg.size();
                         if(count + size >= max_bundle_size || queue.size() >= threshold)
-                            sendBundledMessages(msgs, bundler_out_stream, bundler_dos);
+                            sendBundledMessages(msgs, output);
                         addMessage(msg, size);
                     }
                     while(null != (msg=queue.poll())) {
                         long size=msg.size();
                         if(count + size >= max_bundle_size || queue.size() >= threshold)
-                            sendBundledMessages(msgs, bundler_out_stream, bundler_dos);
+                            sendBundledMessages(msgs, output);
                         addMessage(msg, size);
                     }
                     if(count > 0)
-                        sendBundledMessages(msgs, bundler_out_stream, bundler_dos);
+                        sendBundledMessages(msgs, output);
                 }
                 catch(Throwable t) {
                 }

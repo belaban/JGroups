@@ -6,9 +6,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.QueueClosedException;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
@@ -1255,13 +1253,13 @@ public class ENCRYPT extends Protocol {
 
         public void writeTo(DataOutput out) throws Exception {
             out.writeShort(type);
-            Util.writeString(version, out);
+            Bits.writeString(version,out);
             out.writeBoolean(encrypt_entire_msg);
         }
 
         public void readFrom(DataInput in) throws Exception {
             type=in.readShort();
-            version=Util.readString(in);
+            version=Bits.readString(in);
             encrypt_entire_msg=in.readBoolean();
         }
 

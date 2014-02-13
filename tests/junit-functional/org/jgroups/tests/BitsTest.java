@@ -30,10 +30,10 @@ public class BitsTest {
 
     public static void testSize() {
         int[] shifts={0, 1, 2, 4, 7, 8, 15, 16, 17, 23, 24, 25, 31, 32, 33, 39, 40, 41, 47, 48, 49, 55, 56};
-        assert Bits.size(0) == 1;
+        assert Bits.size((long)0) == 1;
         for(int shift: shifts) {
             long num=((long)1) << shift;
-            byte size=Bits.size(num);
+            int size=Bits.size(num);
             System.out.println(num + " needs " + size + " bytes");
             int num_bytes_required=(shift / 8) +2;
             assert size == num_bytes_required;

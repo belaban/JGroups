@@ -540,12 +540,12 @@ public class MPerfRpc extends ReceiverAdapter {
         }
 
         public void writeTo(DataOutput out) throws Exception {
-            Util.writeString(attr_name, out);
+            Bits.writeString(attr_name,out);
             Util.writeByteBuffer(attr_value, out);
         }
 
         public void readFrom(DataInput in) throws Exception {
-            attr_name=Util.readString(in);
+            attr_name=Bits.readString(in);
             attr_value=Util.readByteBuffer(in);
         }
     }
@@ -655,8 +655,7 @@ public class MPerfRpc extends ReceiverAdapter {
     protected class MperfMarshaller implements RpcDispatcher.Marshaller {
 
         public Buffer objectToBuffer(Object obj) throws Exception {
-            ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(msg_size + 100);
-            DataOutput out=new DataOutputStream(output);
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(msg_size + 100);
             boolean is_mc=obj instanceof MethodCall;
             out.writeBoolean(is_mc);
             if(!is_mc)
@@ -670,13 +669,11 @@ public class MPerfRpc extends ReceiverAdapter {
                 for(int i=0; i < num_args; i++)
                     Util.objectToStream(args[i], out);
             }
-            output.flush();
-            return output.getBuffer();
+            return out.getBuffer();
         }
 
         public Object objectFromBuffer(byte[] buf, int offset, int length) throws Exception {
-            ByteArrayInputStream input=new ExposedByteArrayInputStream(buf, offset, length);
-            DataInput in=new DataInputStream(input);
+            DataInput in=new ByteArrayDataInputStream(buf, offset, length);
             if(!in.readBoolean())
                 return Util.objectFromStream(in);
 

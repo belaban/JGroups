@@ -14,6 +14,7 @@ import org.jgroups.fork.ForkProtocolStack;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Bits;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
@@ -217,13 +218,13 @@ public class FORK extends Protocol {
         public int size() {return Util.size(fork_stack_id) + Util.size(fork_channel_id);}
 
         public void writeTo(DataOutput out) throws Exception {
-            Util.writeString(fork_stack_id, out);
-            Util.writeString(fork_channel_id, out);
+            Bits.writeString(fork_stack_id,out);
+            Bits.writeString(fork_channel_id,out);
         }
 
         public void readFrom(DataInput in) throws Exception {
-            fork_stack_id=Util.readString(in);
-            fork_channel_id=Util.readString(in);
+            fork_stack_id=Bits.readString(in);
+            fork_channel_id=Bits.readString(in);
         }
 
         public String toString() {return fork_stack_id + ":" + fork_channel_id;}

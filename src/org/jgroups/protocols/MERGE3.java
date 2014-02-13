@@ -530,7 +530,7 @@ public class MERGE3 extends Protocol {
         public void writeTo(DataOutput outstream) throws Exception {
             outstream.writeByte(type.ordinal()); // a byte if ok as we only have 3 types anyway
             Util.writeViewId(view_id,outstream);
-            Util.writeString(logical_name, outstream);
+            Bits.writeString(logical_name,outstream);
             Util.writeAddresses(physical_addrs, outstream);
         }
 
@@ -538,7 +538,7 @@ public class MERGE3 extends Protocol {
         public void readFrom(DataInput instream) throws Exception {
             type=Type.values()[instream.readByte()];
             view_id=Util.readViewId(instream);
-            logical_name=Util.readString(instream);
+            logical_name=Bits.readString(instream);
             physical_addrs=(Collection<PhysicalAddress>)Util.readAddresses(instream,ArrayList.class);
         }
 

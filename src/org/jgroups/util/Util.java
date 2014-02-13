@@ -2,12 +2,10 @@ package org.jgroups.util;
 
 import org.jgroups.*;
 import org.jgroups.TimeoutException;
-import org.jgroups.auth.AuthToken;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.protocols.*;
-import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
@@ -29,7 +27,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.NumberFormat;
@@ -66,8 +63,6 @@ public class Util {
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable
     static boolean resolve_dns=false;
-
-    private static short COUNTER=1;
 
     private static Pattern METHOD_NAME_TO_ATTR_NAME_PATTERN=Pattern.compile("[A-Z]+");
     private static Pattern ATTR_NAME_TO_METHOD_NAME_PATTERN=Pattern.compile("_.");
@@ -308,14 +303,6 @@ public class Util {
     }
 
 
-    public static void addFlush(Channel ch, FLUSH flush) {
-        if(ch == null || flush == null)
-            throw new IllegalArgumentException("ch and flush have to be non-null");
-        ProtocolStack stack=ch.getProtocolStack();
-        stack.insertProtocolAtTop(flush);
-    }
-
-
     public static void setScope(Message msg, short scope) {
         SCOPE.ScopeHeader hdr=SCOPE.ScopeHeader.createMessageHeader(scope);
         msg.putHeader(Global.SCOPE_ID, hdr);
@@ -405,12 +392,6 @@ public class Util {
         }
     }
 
-    public static void close(Collection<Closeable> closeables) {
-        if(closeables != null)
-            for(Closeable closeable: closeables)
-                Util.close(closeable);
-    }
-
 
     /** Drops messages to/from other members and then closes the channel. Note that this member won't get excluded from
      * the view until failure detection has kicked in and the new coord installed the new view */
@@ -477,19 +458,13 @@ public class Util {
             case TYPE_NULL:
                 return null;
             case TYPE_STREAMABLE:
-                ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset+1, length-1);
-                InputStream in=new DataInputStream(in_stream);
-                retval=readGenericStreamable((DataInputStream)in);
+                DataInput in=new ByteArrayDataInputStream(buffer, offset+1, length-1);
+                retval=readGenericStreamable(in);
                 break;
             case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
-                in_stream=new ExposedByteArrayInputStream(buffer, offset+1, length-1);
+                InputStream in_stream=new ByteArrayInputStream(buffer, offset+1, length-1);
                 in=new ObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
-                try {
-                    retval=((ObjectInputStream)in).readObject();
-                }
-                finally {
-                    Util.close(in);
-                }
+                retval=((ObjectInputStream)in).readObject();
                 break;
             case TYPE_BOOLEAN:
                 return ByteBuffer.wrap(buffer, offset + 1, length - 1).get() == 1;
@@ -531,16 +506,15 @@ public class Util {
             return ByteBuffer.allocate(Global.BYTE_SIZE).put(TYPE_NULL).array();
 
         if(obj instanceof Streamable) {
-            final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(128);
-            final ExposedDataOutputStream out=new ExposedDataOutputStream(out_stream);
-            out_stream.write(TYPE_STREAMABLE);
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(128);
+            out.write(TYPE_STREAMABLE);
             writeGenericStreamable((Streamable)obj, out);
-            return out_stream.toByteArray();
+            return Arrays.copyOf(out.buf,out.position());
         }
 
         Byte type=PRIMITIVE_TYPES.get(obj.getClass());
         if(type == null) { // will throw an exception if object is not serializable
-            final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(128);
+            final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(128);
             out_stream.write(TYPE_SERIALIZABLE);
             ObjectOutputStream out=new ObjectOutputStream(out_stream);
             out.writeObject(obj);
@@ -632,7 +606,9 @@ public class Util {
                     String str=(String)obj;
                     if(str.length() > Short.MAX_VALUE) {
                         out.writeBoolean(true);
-                        ObjectOutputStream oos=new ObjectOutputStream((OutputStream)out);
+                        ObjectOutputStream oos=new ObjectOutputStream(out instanceof ByteArrayDataOutputStream?
+                                                                        new OutputStreamAdapter((ByteArrayDataOutputStream)out) :
+                                                                        (OutputStream)out);
                         try {
                             oos.writeObject(str);
                         }
@@ -656,7 +632,9 @@ public class Util {
         }
         else { // will throw an exception if object is not serializable
             out.write(TYPE_SERIALIZABLE);
-            ObjectOutputStream tmp=new ObjectOutputStream((OutputStream)out);
+            ObjectOutputStream tmp=new ObjectOutputStream(out instanceof ByteArrayDataOutputStream?
+                                                            new OutputStreamAdapter((ByteArrayDataOutputStream)out) :
+                                                            (OutputStream)out);
             tmp.writeObject(obj);
         }
     }
@@ -675,7 +653,9 @@ public class Util {
                 retval=readGenericStreamable(in);
                 break;
             case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
-                ObjectInputStream tmp=new ObjectInputStream((InputStream)in);
+                ObjectInputStream tmp=new ObjectInputStream(in instanceof ByteArrayDataInputStream?
+                                                              new org.jgroups.util.InputStreamAdapter((ByteArrayDataInputStream)in) :
+                                                              (InputStream)in);
                 retval=tmp.readObject();
                 break;
             case TYPE_BOOLEAN:
@@ -704,7 +684,9 @@ public class Util {
                 break;
             case TYPE_STRING:
                 if(in.readBoolean()) { // large string
-                    ObjectInputStream ois=new ObjectInputStream((InputStream)in);
+                    ObjectInputStream ois=new ObjectInputStream(in instanceof ByteArrayDataInputStream?
+                                                                  new org.jgroups.util.InputStreamAdapter((ByteArrayDataInputStream)in) :
+                                                                  (InputStream)in);
                     try {
                         retval=ois.readObject();
                     }
@@ -730,55 +712,43 @@ public class Util {
 
 
     public static Streamable streamableFromByteBuffer(Class<? extends Streamable> cl, byte[] buffer) throws Exception {
-        if(buffer == null) return null;
-        Streamable retval=null;
-        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer);
-        DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
-        retval=cl.newInstance();
-        retval.readFrom(in);
-        in.close();
-        return retval;
+//        if(buffer == null) return null;
+//        Streamable retval=null;
+//        DataInput in=new ByteArrayDataInputStream(buffer);
+//        retval=cl.newInstance();
+//        retval.readFrom(in);
+//        return retval;
+
+        return streamableFromByteBuffer(cl, buffer, 0, buffer.length);
     }
 
 
-    public static <T extends Streamable> Streamable streamableFromByteBuffer(Class<T> cl, byte[] buffer, int offset, int length) throws Exception {
+    public static <T extends Streamable> Streamable streamableFromByteBuffer(Class<? extends Streamable> cl, byte[] buffer, int offset, int length) throws Exception {
         if(buffer == null) return null;
-        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
-        DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
-        T retval=cl.newInstance();
+        DataInput in=new ByteArrayDataInputStream(buffer, offset, length);
+        T retval=(T)cl.newInstance();
         retval.readFrom(in);
-        in.close();
         return retval;
     }
 
 
     public static <T extends Streamable> T streamableFromBuffer(Class<T> clazz, byte[] buffer, int offset, int length) throws Exception {
-        ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset, length);
-        DataInputStream in=new DataInputStream(in_stream); // changed Nov 29 2004 (bela)
+        DataInput in=new ByteArrayDataInputStream(buffer, offset, length);
         return (T)Util.readStreamable(clazz,in);
-    }
-
-    public static <T extends Streamable> T streamableFromBuffer(Class<T> clazz, byte[] buffer) throws Exception {
-        return streamableFromBuffer(clazz,buffer,0,buffer.length);
     }
 
 
     public static byte[] streamableToByteBuffer(Streamable obj) throws Exception {
-        byte[] result=null;
-        final ByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
-        DataOutputStream out=new ExposedDataOutputStream(out_stream);
+        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
         obj.writeTo(out);
-        result=out_stream.toByteArray();
-        out.close();
-        return result;
+        return Arrays.copyOf(out.buffer(), out.position());
     }
 
     public static Buffer streamableToBuffer(Streamable obj) {
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
-        DataOutputStream out=new ExposedDataOutputStream(out_stream);
+        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
         try {
             Util.writeStreamable(obj,out);
-            return out_stream.getBuffer();
+            return out.getBuffer();
         }
         catch(Exception ex) {
             return null;
@@ -787,33 +757,9 @@ public class Util {
 
 
     public static byte[] collectionToByteBuffer(Collection<Address> c) throws Exception {
-        byte[] result=null;
-        final ByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
-        DataOutputStream out=new ExposedDataOutputStream(out_stream);
+        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
         Util.writeAddresses(c, out);
-        result=out_stream.toByteArray();
-        out.close();
-        return result;
-    }
-
-
-
-    public static void writeAuthToken(AuthToken token, DataOutput out) throws Exception{
-        Util.writeString(token.getName(), out);
-        token.writeTo(out);
-    }
-
-    public static AuthToken readAuthToken(DataInput in) throws Exception {
-        try{
-            String type = Util.readString(in);
-            Object obj = Class.forName(type).newInstance();
-            AuthToken token = (AuthToken) obj;
-            token.readFrom(in);
-            return token;
-        }
-        catch(ClassNotFoundException cnfe) {
-            return null;
-        }
+        return Arrays.copyOf(out.buffer(), out.position());
     }
 
 
@@ -1190,26 +1136,6 @@ public class Util {
     }
 
 
-
-    public static void writeString(String s, DataOutput out) throws Exception {
-        if(s != null) {
-            out.write(1);
-            out.writeUTF(s);
-        }
-        else {
-            out.write(0);
-        }
-    }
-
-
-    public static String readString(DataInput in) throws Exception {
-        int b=in.readByte();
-        if(b == 1)
-            return in.readUTF();
-        return null;
-    }
-
-
     public static String readFile(String filename) throws FileNotFoundException {
         FileInputStream in=new FileInputStream(filename);
         return readContents(in);
@@ -1234,26 +1160,6 @@ public class Util {
         return sb.toString();
     }
 
-    public static byte[] readFileContents(String filename) throws IOException {
-        File file=new File(filename);
-        if(!file.exists())
-            throw new FileNotFoundException(filename);
-        long length=file.length();
-        byte contents[]=new byte[(int)length];
-        InputStream in=new BufferedInputStream(new FileInputStream(filename));
-        int bytes_read=0;
-
-        for(;;) {
-            int tmp=in.read(contents, bytes_read, (int)(length - bytes_read));
-            if(tmp == -1)
-                break;
-            bytes_read+=tmp;
-            if(bytes_read == length)
-                break;
-        }
-        return contents;
-    }
-
     public static byte[] readFileContents(InputStream input) throws IOException {
         byte contents[]=new byte[10000], buf[]=new byte[1024];
         InputStream in=new BufferedInputStream(input);
@@ -1272,53 +1178,6 @@ public class Util {
         return retval;
     }
 
-
-    public static String parseString(DataInput in) {
-        StringBuilder sb=new StringBuilder();
-        int ch;
-
-        // read white space
-        while(true) {
-            try {
-                ch=in.readByte();
-                if(ch == -1) {
-                    return null; // eof
-                }
-                if(Character.isWhitespace(ch)) {
-                    if(ch == '\n')
-                        return null;
-                }
-                else {
-                    sb.append((char)ch);
-                    break;
-                }
-            }
-            catch(EOFException eof) {
-                return null;
-            }
-            catch(IOException e) {
-                break;
-            }
-        }
-
-        while(true) {
-            try {
-                ch=in.readByte();
-                if(ch == -1)
-                    break;
-                if(Character.isWhitespace(ch))
-                    break;
-                else {
-                    sb.append((char)ch);
-                }
-            }
-            catch(IOException e) {
-                break;
-            }
-        }
-
-        return sb.toString();
-    }
 
     public static String readStringFromStdin(String message) throws Exception {
         System.out.print(message);
@@ -1372,56 +1231,22 @@ public class Util {
 
 
     public static Buffer messageToByteBuffer(Message msg) throws Exception {
-        ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(512);
-        DataOutputStream out=new ExposedDataOutputStream(output);
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
 
         out.writeBoolean(msg != null);
         if(msg != null)
             msg.writeTo(out);
-        out.flush();
-        Buffer retval=new Buffer(output.getRawBuffer(), 0, output.size());
-        out.close();
-        output.close();
-        return retval;
+        return out.getBuffer();
     }
 
     public static Message byteBufferToMessage(byte[] buffer, int offset, int length) throws Exception {
-        ByteArrayInputStream input=new ExposedByteArrayInputStream(buffer, offset, length);
-        DataInputStream in=new DataInputStream(input);
-
+        DataInput in=new ByteArrayDataInputStream(buffer, offset, length);
         if(!in.readBoolean())
             return null;
-
         Message msg=new Message(false); // don't create headers, readFrom() will do this
         msg.readFrom(in);
         return msg;
     }
-
-
-
-    /**
-       * Marshalls a list of messages.
-       * @param xmit_list LinkedList<Message>
-       * @return Buffer
-       * @throws Exception
-       */
-    public static Buffer msgListToByteBuffer(List<Message> xmit_list) throws Exception {
-        ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(512);
-        DataOutputStream out=new ExposedDataOutputStream(output);
-        Buffer retval=null;
-
-        out.writeInt(xmit_list.size());
-        for(Message msg: xmit_list) {
-            msg.writeTo(out);
-        }
-        out.flush();
-        retval=new Buffer(output.getRawBuffer(), 0, output.size());
-        out.close();
-        output.close();
-        return retval;
-    }
-
-
 
 
     public static <T> boolean match(T obj1, T obj2) {
@@ -1479,22 +1304,24 @@ public class Util {
         }
     }
 
-    /** Sleeps for the entire millis ms, ignoring interrupts */
-    public static void sleepUninterrupted(long millis) {
-        long target_time=System.currentTimeMillis() + millis;
-        while(true) {
-            try {
-                Thread.sleep(millis);
-                break;
-            }
-            catch(InterruptedException e) {
-                millis=target_time - System.currentTimeMillis();
-                if(millis > 0)
-                    continue;
-                break;
-            }
-        }
-    }
+// --Commented out by Inspection START (2/12/14 12:08 PM):
+//    /** Sleeps for the entire millis ms, ignoring interrupts */
+//    public static void sleepUninterrupted(long millis) {
+//        long target_time=System.currentTimeMillis() + millis;
+//        while(true) {
+//            try {
+//                Thread.sleep(millis);
+//                break;
+//            }
+//            catch(InterruptedException e) {
+//                millis=target_time - System.currentTimeMillis();
+//                if(millis > 0)
+//                    continue;
+//                break;
+//            }
+//        }
+//    }
+// --Commented out by Inspection STOP (2/12/14 12:08 PM)
 
     public static void sleep(long timeout, int nanos) {
         //the Thread.sleep method is not precise at all regarding nanos
@@ -1704,63 +1531,6 @@ public class Util {
     }
 
 
-    /**
-     * Use with caution: lots of overhead
-     */
-    public static String printStackTrace(Throwable t) {
-        StringWriter s=new StringWriter();
-        PrintWriter p=new PrintWriter(s);
-        t.printStackTrace(p);
-        return s.toString();
-    }
-
-    public static String getStackTrace(Throwable t) {
-        return printStackTrace(t);
-    }
-
-
-
-    public static String print(Throwable t) {
-        return printStackTrace(t);
-    }
-
-
-    public static void crash() {
-        System.exit(-1);
-    }
-
-
-    public static String printEvent(Event evt) {
-        Message msg;
-
-        if(evt.getType() == Event.MSG) {
-            msg=(Message)evt.getArg();
-            if(msg != null) {
-                if(msg.getLength() > 0)
-                    return printMessage(msg);
-                else
-                    return msg.printObjectHeaders();
-            }
-        }
-        return evt.toString();
-    }
-
-
-    /** Tries to read an object from the message's buffer and prints it */
-    public static String printMessage(Message msg) {
-        if(msg == null)
-            return "";
-        if(msg.getLength() == 0)
-            return null;
-
-        try {
-            return msg.getObject().toString();
-        }
-        catch(Exception e) {  // it is not an object
-            return "";
-        }
-    }
-
     public static String mapToString(Map<? extends Object,? extends Object> map) {
         if(map == null)
             return "null";
@@ -1775,32 +1545,6 @@ public class Util {
                 sb.append(val);
             sb.append("\n");
         }
-        return sb.toString();
-    }
-
-
-
-
-    public static void printThreads() {
-        Thread threads[]=new Thread[Thread.activeCount()];
-        Thread.enumerate(threads);
-        System.out.println("------- Threads -------");
-        for(int i=0; i < threads.length; i++) {
-            System.out.println("#" + i + ": " + threads[i]);
-        }
-        System.out.println("------- Threads -------\n");
-    }
-
-
-    public static String activeThreads() {
-        StringBuilder sb=new StringBuilder();
-        Thread threads[]=new Thread[Thread.activeCount()];
-        Thread.enumerate(threads);
-        sb.append("------- Threads -------\n");
-        for(int i=0; i < threads.length; i++) {
-            sb.append("#").append(i).append(": ").append(threads[i]).append('\n');
-        }
-        sb.append("------- Threads -------\n");
         return sb.toString();
     }
 
@@ -1909,26 +1653,6 @@ public class Util {
     }
 
 
-    public static List<String> split(String input, int separator) {
-        List<String> retval=new ArrayList<String>();
-        if(input == null)
-            return retval;
-        int index=0, end;
-        while(true) {
-            index=input.indexOf(separator, index);
-            if(index == -1)
-                break;
-            index++;
-            end=input.indexOf(separator, index);
-            if(end == -1)
-                retval.add(input.substring(index));
-            else
-                retval.add(input.substring(index, end));
-        }
-        return retval;
-    }
-
-
     public static String[] components(String path, String separator) {
         if(path == null || path.isEmpty())
             return null;
@@ -1972,11 +1696,6 @@ public class Util {
         }
         return retval;
     }
-
-    public static byte[][] fragmentBuffer(byte[] buf, int frag_size) {
-        return fragmentBuffer(buf, frag_size, buf.length);
-    }
-
 
 
     /**
@@ -2035,13 +1754,6 @@ public class Util {
         }
         return ret;
     }
-
-
-    public static void printFragments(byte[] frags[]) {
-        for(int i=0; i < frags.length; i++)
-            System.out.println('\'' + new String(frags[i]) + '\'');
-    }
-
 
 
     /** Returns true if all elements in the collection are the same */
@@ -2122,57 +1834,6 @@ public class Util {
 
 
 
-
-    public static String array2String(long[] array) {
-        StringBuilder ret=new StringBuilder("[");
-
-        if(array != null) {
-            for(int i=0; i < array.length; i++)
-                ret.append(array[i]).append(" ");
-        }
-
-        ret.append(']');
-        return ret.toString();
-    }
-
-    public static String array2String(short[] array) {
-        StringBuilder ret=new StringBuilder("[");
-
-        if(array != null) {
-            for(int i=0; i < array.length; i++)
-                ret.append(array[i]).append(" ");
-        }
-
-        ret.append(']');
-        return ret.toString();
-    }
-
-    public static String array2String(int[] array) {
-        StringBuilder ret=new StringBuilder("[");
-
-        if(array != null) {
-            for(int i=0; i < array.length; i++)
-                ret.append(array[i]).append(" ");
-        }
-
-        ret.append(']');
-        return ret.toString();
-    }
-
-    public static String array2String(boolean[] array) {
-        StringBuilder ret=new StringBuilder("[");
-
-        if(array != null) {
-            for(int i=0; i < array.length; i++)
-                ret.append(array[i]).append(" ");
-        }
-        ret.append(']');
-        return ret.toString();
-    }
-
-    public static String array2String(Object[] array) {
-        return Arrays.toString(array);
-    }
 
     /** Returns true if all elements of c match obj */
     public static boolean all(Collection c, Object obj) {
@@ -2524,16 +2185,6 @@ public class Util {
     }
 
 
-    public static String print(byte[] array, int n) {
-        StringBuilder sb=new StringBuilder();
-        if(array != null) {
-            for(int i=0; i < Math.min(n, array.length); i++)
-                sb.append("'").append(array[i]).append("' ");
-        }
-        return sb.toString();
-    }
-
-
     public static <T> String print(Map<T,T> map) {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
@@ -2566,26 +2217,6 @@ public class Util {
         }
         return sb.toString();
     }
-
-
-
-    /**
-    * if we were to register for OP_WRITE and send the remaining data on
-    * readyOps for this channel we have to either block the caller thread or
-    * queue the message buffers that may arrive while waiting for OP_WRITE.
-    * Instead of the above approach this method will continuously write to the
-    * channel until the buffer sent fully.
-    */
-    public static void writeFully(ByteBuffer buf, WritableByteChannel out) throws Exception {
-        int written = 0;
-        int toWrite = buf.limit();
-        while (written < toWrite) {
-            written += out.write(buf);
-        }
-    }
-
-
-
 
 
     /**
@@ -2656,10 +2287,6 @@ public class Util {
         for(int i=0; i < list.size(); i++)
             retval[i]=list.get(i);
         return retval;
-    }
-
-    public static Method[] getAllDeclaredMethods(final Class clazz) {
-        return getAllDeclaredMethodsWithAnnotations(clazz);
     }
 
     public static Method[] getAllDeclaredMethodsWithAnnotations(final Class clazz, Class<? extends Annotation> ... annotations) {
@@ -2878,17 +2505,6 @@ public class Util {
     }
 
 
-
-    public static boolean fileExists(String fname) {
-        return (new File(fname)).exists();
-    }
-
-    public static void verifyRejectionPolicy(String str) throws Exception{
-        if(!(str.equalsIgnoreCase("run") || str.equalsIgnoreCase("abort")|| str.equalsIgnoreCase("discard")|| str.equalsIgnoreCase("discardoldest"))) {
-            throw new Exception("Unknown rejection policy " + str);
-        }
-    }
-
     public static RejectedExecutionHandler parseRejectionPolicy(String rejection_policy) {
         if(rejection_policy == null)
             throw new IllegalArgumentException("rejection policy is null");
@@ -3020,63 +2636,6 @@ public class Util {
      }
 
 
-    public static String parseString(ByteBuffer buf) {
-        return parseString(buf, true);
-    }
-
-
-    public static String parseString(ByteBuffer buf, boolean discard_whitespace) {
-        StringBuilder sb=new StringBuilder();
-        char ch;
-
-        // read white space
-        while(buf.remaining() > 0) {
-            ch=(char)buf.get();
-            if(!Character.isWhitespace(ch)) {
-                buf.position(buf.position() -1);
-                break;
-            }
-        }
-
-        if(buf.remaining() == 0)
-            return null;
-
-        while(buf.remaining() > 0) {
-            ch=(char)buf.get();
-            if(!Character.isWhitespace(ch)) {
-                sb.append(ch);
-            }
-            else
-                break;
-        }
-
-        // read white space
-        if(discard_whitespace) {
-            while(buf.remaining() > 0) {
-                ch=(char)buf.get();
-                if(!Character.isWhitespace(ch)) {
-                    buf.position(buf.position() -1);
-                    break;
-                }
-            }
-        }
-        return sb.toString();
-    }
-
-    public static int readNewLine(ByteBuffer buf) {
-        char ch;
-        int num=0;
-
-        while(buf.remaining() > 0) {
-            ch=(char)buf.get();
-            num++;
-            if(ch == '\n')
-                break;
-        }
-        return num;
-    }
-
-
     /**
      * Reads and discards all characters from the input stream until a \r\n or EOF is encountered
      * @param in
@@ -3121,9 +2680,8 @@ public class Util {
             ch=in.read();
             if(ch == -1)
                 return null;
-            if(ch == '\r') {
+            if(ch == '\r')
                 ;
-            }
             else {
                 if(ch == '\n')
                     break;
@@ -3136,10 +2694,6 @@ public class Util {
     }
 
 
-    public static void writeString(ByteBuffer buf, String s) {
-        for(int i=0; i < s.length(); i++)
-            buf.put((byte)s.charAt(i));
-    }
 
 
     /**
@@ -3271,16 +2825,6 @@ public class Util {
     }
 
 
-
-
-    public synchronized static short incrCounter() {
-        short retval=COUNTER++;
-        if(COUNTER >= Short.MAX_VALUE)
-            COUNTER=1;
-        return retval;
-    }
-
-
     public static <K,V> ConcurrentMap<K,V> createConcurrentMap(int initial_capacity, float load_factor, int concurrency_level) {
         return new ConcurrentHashMap<K,V>(initial_capacity, load_factor, concurrency_level);
     }
@@ -3293,12 +2837,6 @@ public class Util {
         return new ConcurrentHashMap<K,V>(CCHM_INITIAL_CAPACITY, CCHM_LOAD_FACTOR, CCHM_CONCURRENCY_LEVEL);
     }
 
-    public static <K,V> Map<K,V> createHashMap() {
-        return new HashMap<K,V>(CCHM_INITIAL_CAPACITY, CCHM_LOAD_FACTOR);
-    }
-
-
-  
 
     public static ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr, int start_port) {
         ServerSocket ret=null;
@@ -3547,10 +3085,6 @@ public class Util {
         return checkForPresence("os.name", "win");
     }
 
-    public static boolean checkForMac() {
-        return checkForPresence("os.name", "mac");
-    }
-
     public static boolean checkForAndroid() {
         return contains("java.vm.vendor", "android");
     }
@@ -3574,22 +3108,6 @@ public class Util {
             return false;
         }
     }
-
-
-
-    public static void prompt(String s) {
-        System.out.println(s);
-        System.out.flush();
-        try {
-            while(System.in.available() > 0)
-                System.in.read();
-            System.in.read();
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
-    }
-
 
 
     /** IP related utilities */
@@ -3956,27 +3474,6 @@ public class Util {
                 e.printStackTrace();
             }
         }
-    }
-
-
-
-
-
-    public static String generateList(Collection c, String separator) {
-        if(c == null) return null;
-        StringBuilder sb=new StringBuilder();
-        boolean first=true;
-
-        for(Iterator it=c.iterator(); it.hasNext();) {
-            if(first) {
-                first=false;
-            }
-            else {
-                sb.append(separator);
-            }
-            sb.append(it.next());
-        }
-        return sb.toString();
     }
 
 
@@ -4392,28 +3889,6 @@ public class Util {
             }
         }
     }
-
-    public static String attributeNameToJavaMethodName(String attr_name) {
-        String retval=attributeNameToMethodName(attr_name);
-        if(Character.isUpperCase(retval.charAt(0)))
-            return retval.substring(0, 1).toLowerCase() + retval.substring(1);
-        return retval;
-    }
-
-
-
-    /**
-     * Runs a task on a separate thread
-     * @param task
-     * @param factory
-     * @param thread_name
-     */
-    public static void runAsync(Runnable task, ThreadFactory factory, String thread_name) {
-        Thread thread=factory.newThread(task, thread_name);
-        thread.start();
-    }
-
-
 
 
 }

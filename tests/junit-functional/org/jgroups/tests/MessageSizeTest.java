@@ -1,17 +1,19 @@
 
 package org.jgroups.tests;
 
+import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
-import org.jgroups.Address;
 import org.jgroups.Version;
 import org.jgroups.protocols.TpHeader;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.pbcast.NakAckHeader;
-import org.jgroups.util.*;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.ByteArrayDataOutputStream;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
-import java.io.DataOutputStream;
+import java.io.DataOutput;
 
 /**
  * Tests the size of marshalled messages (multicast, unicast)
@@ -86,15 +88,14 @@ public class MessageSizeTest {
     }
 
     private static Buffer marshal(Message msg) throws Exception {
-        ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream((int)(msg.size() + 50));
-        ExposedDataOutputStream dos=new ExposedDataOutputStream(out_stream);
+        ByteArrayDataOutputStream dos=new ByteArrayDataOutputStream((int)(msg.size() + 50));
         Address dest=msg.getDest();
         boolean multicast=dest == null;
         writeMessage(msg, dos, multicast);
-        return new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+        return dos.getBuffer();
     }
     
-    protected static void writeMessage(Message msg, DataOutputStream dos, boolean multicast) throws Exception {
+    protected static void writeMessage(Message msg, DataOutput dos, boolean multicast) throws Exception {
         byte flags=0;
         dos.writeShort(Version.version); // write the version
         if(multicast)
