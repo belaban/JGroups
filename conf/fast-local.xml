@@ -20,7 +20,6 @@
          loopback="false"
          max_bundle_size="64K"
          max_bundle_timeout="30"
-         ip_ttl="${jgroups.udp.ip_ttl:0}"
          enable_diagnostics="true"
          thread_naming_pattern="cl"
 
