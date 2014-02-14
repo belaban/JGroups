@@ -372,7 +372,7 @@ public class ByteArrayDataInputOutputStreamTest {
     }
 
     public void testUTFWithDoubleByteChar2() throws IOException {
-        String name="BelaБ";
+        String name="Bela\420";
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(2);
         out.writeUTF(name);
         assert out.position() == Bits.sizeUTF(name);
