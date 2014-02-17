@@ -203,15 +203,15 @@ public class MessageBatchTest {
         List<Message> msgs=createMessages();
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);
-        TP.writeMessageList(b, a, "cluster", msgs, out, false, UDP_ID);
+        TP.writeMessageList(b, a, "cluster".getBytes(), msgs, out, false, UDP_ID);
         out.flush();
 
         byte[] buf=output.toByteArray();
         System.out.println("size=" + buf.length + " bytes, " + msgs.size() + " messages");
 
         DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
-        short version=in.readShort();
-        byte flags=in.readByte();
+        in.readShort(); // version
+        in.readByte(); // flags
         List<Message> list=TP.readMessageList(in, UDP_ID);
         assert msgs.size() == list.size();
     }
@@ -343,7 +343,7 @@ public class MessageBatchTest {
         MessageBatch batch=new MessageBatch(msgs);
         int index=0;
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
-            Message msg=it.next();
+            it.next();
             if(index == 1 || index == 2 || index == 3 || index == 10 || index == msgs.size()-1)
                 it.remove();
             index++;
@@ -379,7 +379,7 @@ public class MessageBatchTest {
 
         int count=0;
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
-            Message msg=it.next();
+            it.next();
             count++;
             if(count % 2 == 0)
                 batch.add(new Message());

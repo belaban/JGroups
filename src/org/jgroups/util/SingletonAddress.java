@@ -9,11 +9,12 @@ import java.io.*;
  * @author Bela Ban
  */
 public class SingletonAddress implements Address {
-    private static final long serialVersionUID=7295848950180741550L;
-    protected final String  cluster_name;
-    protected final Address addr;
+    private static final long serialVersionUID=4251279268511779867L;
+    protected final byte[]    cluster_name;
+    protected final Address   addr;
 
-    public SingletonAddress(String cluster_name, Address addr) {
+
+    public SingletonAddress(byte[] cluster_name, Address addr) {
         this.cluster_name=cluster_name;
         this.addr=addr;
         if(cluster_name == null)
@@ -29,7 +30,7 @@ public class SingletonAddress implements Address {
         return addr;
     }
 
-    public String getClusterName() {
+    public byte[] getClusterName() {
         return cluster_name;
     }
 
@@ -54,9 +55,7 @@ public class SingletonAddress implements Address {
     }
 
     public int hashCode() {
-        int retval=0;
-        if(cluster_name != null)
-            retval+=cluster_name.hashCode();
+        int retval=hash();
         if(addr != null)
             retval+=addr.hashCode();
         return retval;
@@ -74,7 +73,7 @@ public class SingletonAddress implements Address {
             return 0;
         if(other == null)
             return 1;
-        int rc=cluster_name.compareTo(other.cluster_name);
+        int rc=compareTo(cluster_name, other.cluster_name);
         if(rc != 0)
             return rc;
         if(addr == null && other.addr == null)
@@ -89,6 +88,34 @@ public class SingletonAddress implements Address {
     }
 
     public String toString() {
-        return cluster_name + (addr != null? ":" + addr.toString() : "");
+        return new AsciiString(cluster_name) + (addr != null? ":" + addr.toString() : "");
     }
+
+    protected int hash() {
+        int h=0;
+        for(int i=0; i < cluster_name.length; i++)
+            h=31 * h + cluster_name[i];
+        return h;
+    }
+
+    protected static int compareTo(byte[] v1, byte[] v2) {
+        if(v2 == null) return 1;
+        if(v1.hashCode() == v2.hashCode())
+            return 0;
+
+        int len1=v1.length;
+        int len2=v2.length;
+        int lim=Math.min(len1, len2);
+
+        int k = 0;
+        while (k < lim) {
+            byte c1 =v1[k];
+            byte c2 =v2[k];
+            if (c1 != c2)
+                return c1 > c2? 1 : -1;
+            k++;
+        }
+        return len1 > len2? 1 : len1 < len2? -1 : 0;
+    }
+
 }

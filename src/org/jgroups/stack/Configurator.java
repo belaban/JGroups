@@ -11,6 +11,7 @@ import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
+import org.jgroups.util.AsciiString;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
@@ -202,11 +203,10 @@ public class Configurator {
              if(current_layer instanceof TP) {
                 TP transport = (TP)current_layer;                
                 if(transport.isSingleton()) {                   
-                    ConcurrentMap<String, Protocol> up_prots=transport.getUpProtocols();
-                    String key;
+                    ConcurrentMap<AsciiString, Protocol> up_prots=transport.getUpProtocols();
                     synchronized(up_prots) {
                         while(true) {
-                            key=Global.DUMMY + System.currentTimeMillis();
+                            AsciiString key=new AsciiString(Global.DUMMY + System.currentTimeMillis());
                             if(up_prots.containsKey(key))
                                 continue;
                             up_prots.put(key, next_layer);

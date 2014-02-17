@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.util.AsciiString;
 
 import java.util.Map;
 import java.util.Set;
@@ -20,7 +21,7 @@ public class SHARED_LOOPBACK extends TP {
     private PhysicalAddress physical_addr=null;
 
     /** Map of cluster names and address-protocol mappings. Used for routing messages to all or single members */
-    private static final ConcurrentMap<String,Map<Address,SHARED_LOOPBACK>> routing_table=new ConcurrentHashMap<String,Map<Address,SHARED_LOOPBACK>>();
+    private static final ConcurrentMap<AsciiString,Map<Address,SHARED_LOOPBACK>> routing_table=new ConcurrentHashMap<AsciiString,Map<Address,SHARED_LOOPBACK>>();
 
 
     public boolean supportsMulticasting() {
@@ -34,8 +35,8 @@ public class SHARED_LOOPBACK extends TP {
     @ManagedOperation(description="Dumps the contents of the routing table")
     public static String dumpRoutingTable() {
         StringBuilder sb=new StringBuilder();
-        for(Map.Entry<String,Map<Address,SHARED_LOOPBACK>> entry: routing_table.entrySet()) {
-            String cluster_name=entry.getKey();
+        for(Map.Entry<AsciiString,Map<Address,SHARED_LOOPBACK>> entry: routing_table.entrySet()) {
+            AsciiString cluster_name=entry.getKey();
             Set<Address> mbrs=entry.getValue().keySet();
             sb.append(cluster_name).append(": ").append(mbrs).append("\n");
         }
@@ -43,10 +44,10 @@ public class SHARED_LOOPBACK extends TP {
     }
 
     public void sendMulticast(byte[] data, int offset, int length) throws Exception {
-        Map<Address,SHARED_LOOPBACK> dests=routing_table.get(channel_name);
+        Map<Address,SHARED_LOOPBACK> dests=routing_table.get(cluster_name);
         if(dests == null) {
             if(log.isTraceEnabled())
-                log.trace("no destination found for " + channel_name);
+                log.trace("no destination found for " + cluster_name);
             return;
         }
         for(Map.Entry<Address,SHARED_LOOPBACK> entry: dests.entrySet()) {
@@ -62,10 +63,10 @@ public class SHARED_LOOPBACK extends TP {
     }
 
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-        Map<Address,SHARED_LOOPBACK> dests=routing_table.get(channel_name);
+        Map<Address,SHARED_LOOPBACK> dests=routing_table.get(cluster_name);
         if(dests == null) {
             if(log.isTraceEnabled())
-                log.trace("no destination found for " + channel_name);
+                log.trace("no destination found for " + cluster_name);
             return;
         }
         SHARED_LOOPBACK target=dests.get(dest);
@@ -78,10 +79,10 @@ public class SHARED_LOOPBACK extends TP {
     }
 
     protected void sendToSingleMember(Address dest, byte[] buf, int offset, int length) throws Exception {
-        Map<Address,SHARED_LOOPBACK> dests=routing_table.get(channel_name);
+        Map<Address,SHARED_LOOPBACK> dests=routing_table.get(cluster_name);
         if(dests == null) {
             if(log.isTraceEnabled())
-                log.trace("no destination found for " + channel_name);
+                log.trace("no destination found for " + cluster_name);
             return;
         }
         SHARED_LOOPBACK target=dests.get(dest);
@@ -113,7 +114,7 @@ public class SHARED_LOOPBACK extends TP {
             case Event.CONNECT_WITH_STATE_TRANSFER:
             case Event.CONNECT_USE_FLUSH:
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
-                register(channel_name, local_addr, this);
+                register(cluster_name, local_addr, this);
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -129,10 +130,10 @@ public class SHARED_LOOPBACK extends TP {
         super.destroy();
         // We cannot clear the routing table, as it is shared between channels, and so we would clear the routing for
         // a different channel, too !
-        unregister(channel_name, local_addr);
+        unregister(cluster_name, local_addr);
     }
 
-    protected static void register(String channel_name, Address local_addr, SHARED_LOOPBACK shared_loopback) {
+    protected static void register(AsciiString channel_name, Address local_addr, SHARED_LOOPBACK shared_loopback) {
         Map<Address,SHARED_LOOPBACK> map=routing_table.get(channel_name);
         if(map == null) {
             map=new ConcurrentHashMap<Address,SHARED_LOOPBACK>();
@@ -143,7 +144,7 @@ public class SHARED_LOOPBACK extends TP {
         map.put(local_addr, shared_loopback);
     }
 
-    protected static void unregister(String channel_name, Address local_addr) {
+    protected static void unregister(AsciiString channel_name, Address local_addr) {
         Map<Address,SHARED_LOOPBACK> map=channel_name != null? routing_table.get(channel_name) : null;
         if(map != null) {
             map.remove(local_addr);

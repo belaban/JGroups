@@ -497,7 +497,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** The name of the group to which this member is connected. With a shared transport, the channel name is
      * in TP.ProtocolAdapter (cluster_name), and this field is not used */
     @ManagedAttribute(description="Channel (cluster) name")
-    protected String channel_name=null;
+    protected AsciiString cluster_name;
 
     @ManagedAttribute(description="Number of OOB messages received")
     protected long num_oob_msgs_received;
@@ -511,6 +511,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedAttribute(description="Class of the timer implementation")
     public String getTimerClass() {
         return timer != null? timer.getClass().getSimpleName() : "null";
+    }
+
+    @ManagedAttribute(description="Name of the cluster to which this transport is connected")
+    public String getClusterName() {
+        return cluster_name != null? cluster_name.toString() : null;
     }
 
     @ManagedAttribute(description="Number of messages from members in a different cluster")
@@ -613,7 +618,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * names (attached to the message by the transport anyway). The values are the next protocols above the
      * transports.
      */
-    protected final ConcurrentMap<String,Protocol> up_prots=Util.createConcurrentMap(16, 0.75f, 16);
+    protected final ConcurrentMap<AsciiString,Protocol> up_prots=Util.createConcurrentMap(16, 0.75f, 16);
 
     /** The header including the cluster name, sent with each message. Not used with a shared transport (instead
      * TP.ProtocolAdapter attaches the header to the message */
@@ -859,7 +864,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public boolean isLoopback() {return loopback;}
     public void setLoopback(boolean b) {loopback=b;}
 
-    public ConcurrentMap<String,Protocol> getUpProtocols() {return up_prots;}
+    public ConcurrentMap<AsciiString,Protocol> getUpProtocols() {return up_prots;}
 
     
     @ManagedAttribute(description="Current number of threads in the OOB thread pool")
@@ -1049,7 +1054,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             internal_thread_factory=new DefaultThreadFactory("INT", false, true);
 
         // local_addr is null when shared transport, channel_name is not used
-        setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
+        setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
 
         if(diag_handler == null)
             diag_handler=new DiagnosticsHandler(diagnostics_addr, diagnostics_port, diagnostics_bind_interfaces,
@@ -1228,7 +1233,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         bundler.start();
 
         // local_addr is null when shared transport
-        setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
+        setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
     }
 
 
@@ -1306,8 +1311,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(key.startsWith("cluster")) {
                 String cluster_name_pattern=key.substring("cluster".length()+1).trim();
                 if(!isSingleton()) {
-                    if(cluster_name_pattern != null && !Util.patternMatch(cluster_name_pattern, channel_name))
-                        throw new IllegalArgumentException("Request dropped as cluster name " + channel_name +
+                    if(cluster_name_pattern != null && !Util.patternMatch(cluster_name_pattern,cluster_name != null? cluster_name.toString() : null))
+                        throw new IllegalArgumentException("Request dropped as cluster name " + cluster_name +
                                                              " does not match cluster name pattern " + cluster_name_pattern);
                 }
                 else {
@@ -1410,7 +1415,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(log.isTraceEnabled()) log.trace("%s: looping back message %s", local_addr, copy);
 
             TpHeader hdr=(TpHeader)msg.getHeader(this.id); // added by the code above *or* by ProtocolAdapter.down()
-            final String cluster_name=hdr.channel_name;
+            final AsciiString tmp_cluster_name=new AsciiString(hdr.cluster_name);
 
             // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
             boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
@@ -1418,7 +1423,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
               : internal || msg.isFlagSet(Message.Flag.OOB)? oob_thread_pool : thread_pool;
             pool.execute(new Runnable() {
                 public void run() {
-                    passMessageUp(copy, cluster_name, false, multicast, false);
+                    passMessageUp(copy, tmp_cluster_name, false, multicast, false);
                 }
             });
 
@@ -1466,7 +1471,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-    protected void passMessageUp(Message msg, String cluster_name, boolean perform_cluster_name_matching,
+    protected void passMessageUp(Message msg, AsciiString cluster_name, boolean perform_cluster_name_matching,
                                  boolean multicast, boolean discard_own_mcast) {
         if(log.isTraceEnabled())
             log.trace("%s: received %s, headers are %s", local_addr, msg, msg.printHeaders());
@@ -1476,15 +1481,15 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             return;
         boolean is_protocol_adapter=tmp_prot instanceof ProtocolAdapter;
         // Discard if message's cluster name is not the same as our cluster name
-        if(!is_protocol_adapter && perform_cluster_name_matching && channel_name != null && !channel_name.equals(cluster_name)) {
+        if(!is_protocol_adapter && perform_cluster_name_matching && this.cluster_name != null && !this.cluster_name.equals(cluster_name)) {
             if(log_discard_msgs && log.isWarnEnabled()) {
                 Address sender=msg.getSrc();
                 if(suppress_log_different_cluster != null)
                     suppress_log_different_cluster.log(SuppressLog.Level.warn, sender,
                                                        suppress_time_different_cluster_warnings,
-                                                       cluster_name, channel_name, sender);
+                                                       cluster_name,this.cluster_name, sender);
                 else
-                    log.warn(Util.getMessage("MsgDroppedDiffCluster"), cluster_name, channel_name, sender);
+                    log.warn(Util.getMessage("MsgDroppedDiffCluster"), cluster_name,this.cluster_name, sender);
             }
             return;
         }
@@ -1502,22 +1507,22 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(log.isTraceEnabled())
             log.trace("%s: received message batch of %d messages from %s", local_addr, batch.size(), batch.sender());
 
-        String ch_name=batch.clusterName();
+        AsciiString ch_name=batch.clusterName();
         final Protocol tmp_prot=isSingleton()? up_prots.get(ch_name) : up_prot;
         if(tmp_prot == null)
             return;
 
         boolean is_protocol_adapter=tmp_prot instanceof ProtocolAdapter;
         // Discard if message's cluster name is not the same as our cluster name
-        if(!is_protocol_adapter && perform_cluster_name_matching && channel_name != null && !channel_name.equals(ch_name)) {
+        if(!is_protocol_adapter && perform_cluster_name_matching && cluster_name != null && !cluster_name.equals(ch_name)) {
             if(log_discard_msgs && log.isWarnEnabled()) {
                 Address sender=batch.sender();
                 if(suppress_log_different_cluster != null)
                     suppress_log_different_cluster.log(SuppressLog.Level.warn, sender,
                                                        suppress_time_different_cluster_warnings,
-                                                       ch_name, channel_name, sender);
+                                                       ch_name,cluster_name, sender);
                 else
-                    log.warn(Util.getMessage("BatchDroppedDiffCluster"), ch_name, channel_name, sender);
+                    log.warn(Util.getMessage("BatchDroppedDiffCluster"), ch_name,cluster_name, sender);
             }
             return;
         }
@@ -1710,7 +1715,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 }
 
                 TpHeader hdr=(TpHeader)msg.getHeader(id);
-                String cluster_name=hdr.channel_name;
+                AsciiString cluster_name=new AsciiString(hdr.cluster_name);
                 passMessageUp(msg, cluster_name, true, multicast, true);
             }
             catch(Throwable t) {
@@ -1744,7 +1749,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 }
 
                 TpHeader hdr=(TpHeader)msg.getHeader(id);
-                String cluster_name=hdr.channel_name;
+                AsciiString cluster_name=new AsciiString(hdr.cluster_name);
                 passMessageUp(msg, cluster_name, true, multicast, true);
             }
             catch(Throwable t) {
@@ -1914,7 +1919,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * @param multicast
      * @throws Exception
      */
-    public static void writeMessageList(Address dest, Address src, String cluster_name,
+    public static void writeMessageList(Address dest, Address src, byte[] cluster_name,
                                         List<Message> msgs, DataOutput dos, boolean multicast, short transport_id) throws Exception {
         dos.writeShort(Version.version);
 
@@ -1928,7 +1933,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         Util.writeAddress(src, dos);
 
-        Bits.writeString(cluster_name,dos);
+        dos.writeShort(cluster_name != null? cluster_name.length : -1);
+        if(cluster_name != null)
+            dos.write(cluster_name);
 
         // Number of messages (0 == no messages)
         dos.writeInt(msgs != null? msgs.size() : 0);
@@ -1944,8 +1951,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         List<Message> list=new LinkedList<Message>();
         Address dest=Util.readAddress(in);
         Address src=Util.readAddress(in);
-        String cluster_name=Bits.readString(in); // not used here
-        TpHeader transport_header=new TpHeader(cluster_name);
+        // AsciiString cluster_name=Bits.readAsciiString(in); // not used here
+        short length=in.readShort();
+        byte[] cluster_name=length >= 0? new byte[length] : null;
+        if(cluster_name != null)
+            in.readFully(cluster_name, 0, cluster_name.length);
 
         int len=in.readInt();
 
@@ -1957,7 +1967,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 msg.setSrc(src);
 
             // Now add a TpHeader back on, was not marshalled. Every message references the *same* TpHeader, saving memory !
-            msg.putHeader(transport_id, transport_header);
+            msg.putHeader(transport_id, new TpHeader(cluster_name));
 
             list.add(msg);
         }
@@ -1980,7 +1990,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         MessageBatch[] batches=new MessageBatch[4]; // [0]: reg, [1]: OOB, [2]: internal-oob, [3]: internal
         Address dest=Util.readAddress(in);
         Address src=Util.readAddress(in);
-        String  cluster_name=Bits.readString(in);
+        // AsciiString cluster_name=Bits.readAsciiString(in);
+        short length=in.readShort();
+        byte[] cluster_name=length >= 0? new byte[length] : null;
+        if(cluster_name != null)
+            in.readFully(cluster_name, 0, cluster_name.length);
 
         int len=in.readInt();
         for(int i=0; i < len; i++) {
@@ -2005,7 +2019,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
 
             if(batches[index] == null)
-                batches[index]=new MessageBatch(dest, src, cluster_name, multicast, mode, len);
+                batches[index]=new MessageBatch(dest, src, new AsciiString(cluster_name), multicast, mode, len);
             batches[index].add(msg);
         }
         return batches;
@@ -2059,11 +2073,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             case Event.CONNECT_WITH_STATE_TRANSFER:
             case Event.CONNECT_USE_FLUSH:
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
-                channel_name=(String)evt.getArg();
-                header=new TpHeader(channel_name);
+                cluster_name=new AsciiString((String)evt.getArg());
+                header=new TpHeader(cluster_name);
 
                 // local_addr is null when shared transport
-                setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
+                setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
                 setThreadNames();
                 connectLock.lock();
                 try {
@@ -2356,7 +2370,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
 
-        protected void sendMessageList(final Address dest, final Address src, final String cluster_name,
+        protected void sendMessageList(final Address dest, final Address src, final byte[] cluster_name,
                                        final List<Message> list, boolean reset, final ByteArrayDataOutputStream out) {
             try {
                 if(reset)
@@ -2373,11 +2387,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         @GuardedBy("lock") protected void addMessage(Message msg, long size) {
-            String cluster_name;
-            if(!isSingleton())
-                cluster_name=TP.this.channel_name;
-            else
-                cluster_name=((TpHeader)msg.getHeader(id)).channel_name;
+            byte[] cluster_name=!isSingleton()? TP.this.cluster_name.chars():
+              ((TpHeader)msg.getHeader(id)).cluster_name;
 
             SingletonAddress dest=new SingletonAddress(cluster_name, msg.getDest());
             List<Message> tmp=msgs.get(dest);
@@ -2572,7 +2583,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      */
     @MBean(description="Protocol adapter (used when the shared transport is enabled)")
     public static class ProtocolAdapter extends Protocol implements DiagnosticsHandler.ProbeHandler {
-        String                  cluster_name;
+        AsciiString             cluster_name;
         final short             transport_id;
         TpHeader                header;
         final Set<Address>      members=new CopyOnWriteArraySet<Address>();
@@ -2581,7 +2592,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         Address                 local_addr;
 
 
-        public ProtocolAdapter(String cluster_name, Address local_addr, short transport_id, Protocol up, Protocol down, String pattern) {
+        public ProtocolAdapter(AsciiString cluster_name, Address local_addr, short transport_id, Protocol up, Protocol down, String pattern) {
             this.cluster_name=cluster_name;
             this.local_addr=local_addr;
             this.transport_id=transport_id;
@@ -2593,12 +2604,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(local_addr != null)
                 factory.setAddress(local_addr.toString());
             if(cluster_name != null)
-                factory.setClusterName(cluster_name);
+                factory.setClusterName(cluster_name != null? cluster_name.toString() : null);
         }
 
         @ManagedAttribute(description="Name of the cluster to which this adapter proxies")
         public String getClusterName() {
-            return cluster_name;
+            return cluster_name != null? cluster_name.toString() : null;
         }
 
 
@@ -2668,8 +2679,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 case Event.CONNECT_WITH_STATE_TRANSFER:
                 case Event.CONNECT_USE_FLUSH:
                 case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:  
-                    cluster_name=(String)evt.getArg();
-                    factory.setClusterName(cluster_name);
+                    cluster_name=new AsciiString((String)evt.getArg());
+                    factory.setClusterName(getClusterName());
                     this.header=new TpHeader(cluster_name);
                     break;
                 case Event.SET_LOCAL_ADDRESS:
@@ -2705,7 +2716,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         public Map<String, String> handleProbe(String... keys) {
             HashMap<String, String> retval=new HashMap<String, String>();
-            retval.put("cluster", cluster_name);
+            retval.put("cluster", getClusterName());
             retval.put("local_addr", local_addr != null? local_addr.toString() : null);
             retval.put("local_addr (UUID)", local_addr instanceof UUID? ((UUID)local_addr).toStringLong() : null);
             retval.put("transport_id", Short.toString(transport_id));

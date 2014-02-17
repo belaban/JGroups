@@ -1,5 +1,7 @@
 package org.jgroups.util;
 
+import org.jgroups.Global;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -492,7 +494,7 @@ public class Bits {
 
     /**
      * Writes a string to buf. The length of the string is written first, followed by the chars (as single-byte values).
-     * Multi-byte values are truncated: only the lower byte of each multi-byte char is written, similat to
+     * Multi-byte values are truncated: only the lower byte of each multi-byte char is written, similar to
      * {@link DataOutput#writeChars(String)}.
      * @param s the string
      * @param buf the buffer
@@ -503,7 +505,7 @@ public class Bits {
 
     /**
      * Writes a string to buf. The length of the string is written first, followed by the chars (as single-byte values).
-     * Multi-byte values are truncated: only the lower byte of each multi-byte char is written, similat to
+     * Multi-byte values are truncated: only the lower byte of each multi-byte char is written, similar to
      * {@link DataOutput#writeChars(String)}.
      * @param s the string
      * @param out the output stream
@@ -560,6 +562,71 @@ public class Bits {
                 utflen += 2;
         }
         return utflen;
+    }
+
+
+
+    // ------------------ AsciiString ------------------- //
+    /**
+     * Writes an AsciiString to buf. The length of the string is written first, followed by the chars (as single-byte values).
+     * @param s the string
+     * @param buf the buffer
+     */
+    public static void writeAsciiString(AsciiString s, ByteBuffer buf) {
+        short length=(short)(s != null? s.length() : -1);
+        buf.putShort(length);
+        if(s != null)
+            buf.put(s.chars());
+    }
+
+    /**
+     * Writes an AsciiString to buf. The length of the string is written first, followed by the chars (as single-byte values).
+     * @param s the string
+     * @param out the output stream
+     */
+    public static void writeAsciiString(AsciiString s, DataOutput out) throws IOException {
+        short length=(short)(s != null? s.length() : -1);
+        out.writeShort(length);
+        if(s != null)
+            out.write(s.chars());
+    }
+
+    /**
+     * Reads an AsciiString from buf. The length is read first, followed by the chars. Each char is a single byte
+     * @param buf the buffer
+     * @return the string read from buf
+     */
+    public static AsciiString readAsciiString(ByteBuffer buf) {
+        short len=buf.getShort();
+        if(len < 0)
+            return null;
+        AsciiString retval=new AsciiString(len);
+        buf.get(retval.chars());
+        return retval;
+    }
+
+    /**
+     * Reads an AsciiString from buf. The length is read first, followed by the chars. Each char is a single byte
+     * @param in the input stream
+     * @return the string read from buf
+     */
+    public static AsciiString readAsciiString(DataInput in) throws IOException {
+        short len=in.readShort();
+        if(len < 0)
+            return null;
+        AsciiString retval=new AsciiString(len);
+        in.readFully(retval.chars());
+        return retval;
+    }
+
+
+    /**
+     * Measures the number of bytes required to encode an AsciiSring.
+     * @param str the string
+     * @return the number of bytes required for encoding str
+     */
+    public static int size(AsciiString str) {
+        return str == null? Global.SHORT_SIZE : Global.SHORT_SIZE + str.length();
     }
 
 

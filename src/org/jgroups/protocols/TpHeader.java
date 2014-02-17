@@ -1,9 +1,12 @@
 package org.jgroups.protocols;
 
 
+import org.jgroups.Global;
 import org.jgroups.Header;
+import org.jgroups.util.AsciiString;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
 
 
 
@@ -12,28 +15,46 @@ import java.io.*;
  * @author Bela Ban
  */
 public class TpHeader extends Header {
-    public String channel_name=null;
+    protected byte[] cluster_name;
 
     public TpHeader() { // used for externalization
     }
 
     public TpHeader(String n) {
-        channel_name=n;
+        int len=n.length();
+        cluster_name=new byte[len];
+        for(int i=0; i < len; i++)
+            cluster_name[i]=(byte)n.charAt(i);
+    }
+
+    public TpHeader(AsciiString n) {
+        cluster_name=n != null? n.chars() : null;
+    }
+
+    public TpHeader(byte[] n) {
+        cluster_name=n;
     }
 
     public String toString() {
-        return "[cluster_name=" + channel_name + ']';
+        return "[cluster_name=" + new String(cluster_name) + ']';
     }
 
     public int size() {
-        return channel_name == null? 0 : channel_name.length()+2; // +2 for writeUTF(), String.length() is quick
+        return cluster_name != null? Global.SHORT_SIZE + cluster_name.length : Global.SHORT_SIZE;
     }
 
     public void writeTo(DataOutput out) throws Exception {
-        out.writeUTF(channel_name);
+        int length=cluster_name != null? cluster_name.length : -1;
+        out.writeShort(length);
+        if(cluster_name != null)
+            out.write(cluster_name, 0, cluster_name.length);
     }
 
     public void readFrom(DataInput in) throws Exception {
-        channel_name=in.readUTF();
+        int len=in.readShort();
+        if(len >= 0) {
+            cluster_name=new byte[len];
+            in.readFully(cluster_name, 0, cluster_name.length);
+        }
     }
 }

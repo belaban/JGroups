@@ -153,8 +153,7 @@ public class TUNNEL extends TP {
 
          case Event.DISCONNECT:
              local = local_addr;
-             group = channel_name;
-             disconnectStub(group,local);
+             disconnectStub(cluster_name != null? cluster_name.toString() : null,local);
             break;
       }
       return retEvent;
@@ -244,7 +243,7 @@ public class TUNNEL extends TP {
         TpHeader hdr=(TpHeader)msg.getHeader(this.id);
         if(hdr == null)
             throw new Exception("message " + msg + " doesn't have a transport header, cannot route it");
-        String group=hdr.channel_name;
+        String group=cluster_name != null? cluster_name.toString() : null;
 
         ByteArrayDataOutputStream dos=new ByteArrayDataOutputStream((int)(msg.size() + 50));
         writeMessage(msg, dos, multicast);

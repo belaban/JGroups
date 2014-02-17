@@ -784,7 +784,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
 
-    protected void handleMessages(Address dest, Address sender, List<Tuple<Long,Message>> msgs, boolean oob, String cluster_name) {
+    protected void handleMessages(Address dest, Address sender, List<Tuple<Long,Message>> msgs, boolean oob, AsciiString cluster_name) {
         Table<Message> buf=xmit_table.get(sender);
         if(buf == null) {  // discard message if there is no entry for sender
             if(leaving)
@@ -827,7 +827,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     /** Efficient way of checking whether another thread is already processing messages from sender. If that's the case,
      *  we return immediately and let the existing thread process our message (https://jira.jboss.org/jira/browse/JGRP-829).
      *  Benefit: fewer threads blocked on the same lock, these threads an be returned to the thread pool */
-    protected void removeAndPassUp(Table<Message> buf, Address sender, boolean loopback, String cluster_name) {
+    protected void removeAndPassUp(Table<Message> buf, Address sender, boolean loopback, AsciiString cluster_name) {
         final AtomicBoolean processing=buf.getProcessing();
         if(!processing.compareAndSet(false, true))
             return;

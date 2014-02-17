@@ -21,8 +21,8 @@ public class MessageBatch implements Iterable<Message> {
     /** The sender of the message batch */
     protected Address          sender;
 
-    /** The name of the cluster in which the message batch is sent, this is equivalent to TpHeader.channel_name */
-    protected String           cluster_name;
+    /** The name of the cluster in which the message batch is sent, this is equivalent to TpHeader.cluster_name */
+    protected AsciiString      cluster_name;
 
     /** The storage of the messages; removed messages have a null element */
     protected Message[]        messages;
@@ -65,7 +65,7 @@ public class MessageBatch implements Iterable<Message> {
             mode=Mode.MIXED;
     }
 
-    public MessageBatch(Address dest, Address sender, String cluster_name, boolean multicast, Collection<Message> msgs) {
+    public MessageBatch(Address dest, Address sender, AsciiString cluster_name, boolean multicast, Collection<Message> msgs) {
         messages=new Message[msgs.size()];
         for(Message msg: msgs)
             messages[index++]=msg;
@@ -75,7 +75,7 @@ public class MessageBatch implements Iterable<Message> {
         this.multicast=multicast;
     }
 
-    public MessageBatch(Address dest, Address sender, String cluster_name, boolean multicast, Mode mode, int capacity) {
+    public MessageBatch(Address dest, Address sender, AsciiString cluster_name, boolean multicast, Mode mode, int capacity) {
         this(capacity);
         this.dest=dest;
         this.sender=sender;
@@ -84,16 +84,16 @@ public class MessageBatch implements Iterable<Message> {
         this.mode=mode;
     }
 
-    public Address      dest()                   {return dest;}
-    public MessageBatch dest(Address dest)       {this.dest=dest; return this;}
-    public Address      sender()                 {return sender;}
-    public MessageBatch sender(Address sender)   {this.sender=sender; return this;}
-    public String       clusterName()            {return cluster_name;}
-    public MessageBatch clusterName(String name) {this.cluster_name=name; return this;}
-    public boolean      multicast()              {return multicast;}
-    public Mode         mode()                   {return mode;}
-    public MessageBatch mode(Mode mode)          {this.mode=mode; return this;}
-    public int          capacity()               {return messages.length;}
+    public Address      dest()                        {return dest;}
+    public MessageBatch dest(Address dest)            {this.dest=dest; return this;}
+    public Address      sender()                      {return sender;}
+    public MessageBatch sender(Address sender)        {this.sender=sender; return this;}
+    public AsciiString  clusterName()                 {return cluster_name;}
+    public MessageBatch clusterName(AsciiString name) {this.cluster_name=name; return this;}
+    public boolean      multicast()                   {return multicast;}
+    public Mode         mode()                        {return mode;}
+    public MessageBatch mode(Mode mode)               {this.mode=mode; return this;}
+    public int          capacity()                    {return messages.length;}
 
 
     /** Returns the underlying message array. This is only intended for testing ! */
