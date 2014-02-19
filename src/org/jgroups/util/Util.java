@@ -316,7 +316,7 @@ public class Util {
     
    public static byte[] createAuthenticationDigest(String passcode, long t1, double q1) throws IOException,
             NoSuchAlgorithmException {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream(128);
+      ByteArrayOutputStream baos = new ByteArrayOutputStream(512);
       DataOutputStream out = new DataOutputStream(baos);
       byte[] digest = createDigest(passcode, t1, q1);
       out.writeLong(t1);
@@ -506,7 +506,7 @@ public class Util {
             return ByteBuffer.allocate(Global.BYTE_SIZE).put(TYPE_NULL).array();
 
         if(obj instanceof Streamable) {
-            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(128);
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
             out.write(TYPE_STREAMABLE);
             writeGenericStreamable((Streamable)obj, out);
             return Arrays.copyOf(out.buf,out.position());
@@ -514,7 +514,7 @@ public class Util {
 
         Byte type=PRIMITIVE_TYPES.get(obj.getClass());
         if(type == null) { // will throw an exception if object is not serializable
-            final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(128);
+            final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
             out_stream.write(TYPE_SERIALIZABLE);
             ObjectOutputStream out=new ObjectOutputStream(out_stream);
             out.writeObject(obj);
