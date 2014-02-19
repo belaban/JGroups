@@ -6,7 +6,10 @@ import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.Protocol;
 import org.testng.annotations.Test;
 
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 
 /**
@@ -39,9 +42,13 @@ public class PropertyConvertersTest {
     public static void testNetworkList() throws Exception {
         PropertyConverter conv=new PropertyConverters.NetworkInterfaceList();
 
+        String loopback_name=getLoopbackName();
+        if(loopback_name == null)
+            loopback_name="lo";
+
         Object tmp;
         try {
-            tmp=conv.convert(null, List.class, "bela", "lo", false);
+            tmp=conv.convert(null, List.class, "bela", loopback_name, false);
         }
         catch(Throwable t) {
             tmp=conv.convert(null, List.class, "bela", "lo0", false); // when running on Mac OS
@@ -49,7 +56,7 @@ public class PropertyConvertersTest {
 
         Object str=conv.toString(tmp);
         System.out.println("str = " + str);
-        assert str.equals("lo") || str.equals("lo0");
+        assert str.equals(loopback_name) || str.equals("lo0");
     }
 
 
@@ -69,5 +76,15 @@ public class PropertyConvertersTest {
 
         String output=converter.toString(tmp);
         assert output.equals(prop) : "output=" + output + ", prop=" + prop;
+    }
+
+    private static String getLoopbackName() throws SocketException {
+        NetworkInterface intf;
+        for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+            intf=(NetworkInterface)en.nextElement();
+            if(intf.isLoopback())
+                return intf.getName();
+        }
+        return null;
     }
 }
