@@ -1,178 +1,39 @@
 
 
-Release Notes JGroups 3.4.0
+Release Notes JGroups 3.5.0
 ===========================
 
 
 Author: Bela Ban
 
 ********************************************************************************
-!! JGroups 3.4.0 is *not* API-backwards compatible with 2.x.x releases !!
-!! JGroups 3.4.0 is       API-backwards compatible with previous 3.x releases !!
+!! JGroups 3.5.0 is *not* API-backwards compatible with 2.x.x releases !!
+!! JGroups 3.5.0 is       API-backwards compatible with previous 3.x releases !!
 ********************************************************************************
 
 
 Below is a summary (with links to the detailed description) of the major new features, optimizations and bug fixes.
-
-****************************************************************************************************
-Note that the license was changed from LGPL 2.1 to AL 2.0: https://issues.jboss.org/browse/JGRP-1643
-****************************************************************************************************
 
 
 New features
 ============
 
 
-Pluggable policy for picking coordinator
+XYZ
 ----------------------------------------
-[https://issues.jboss.org/browse/JGRP-592]
-
-View and merge-view creation is now pluggable; this means that an application can determine which member is
-the coordinator.
-Documentation: http://www.jgroups.org/manual/html/user-advanced.html#MembershipChangePolicy.
-
-
-RELAY2: allow for more than one site master
--------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1649]
-
-If we have a lot of traffic between sites, having more than 1 site master increases performance and reduces stress
-on the single site master
-
-
-Fork channels: private light-weight channels
---------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1613]
-
-This allows multiple light-weight channels to be created over the same (base) channel. The fork channels are
-private to the app which creates them and the app can also add protocols over the default stack. These protocols are
-also private to the app.
-
-Doc: http://www.jgroups.org/manual/html/user-advanced.html#ForkChannel
-Blog: http://belaban.blogspot.ch/2013/08/how-to-hijack-jgroups-channel-inside.html
-
-
-
-Kerberos based authentication
------------------------------
-[https://issues.jboss.org/browse/JGRP-1657]
-
-New AUTH plugin contributed by Martin Swales. Experimental, needs more work
-
-
-Probe now works with TCP too
-----------------------------
-[https://issues.jboss.org/browse/JGRP-1568]
-
-If multicasting is not enabled, probe.sh can be started as follows:
-probe.sh -addr 192.168.1.5 -port 12345
-, where 192.168.1.5:12345 is the physical address:port of a node.
-Probe will ask that node for the addresses of all other members and then send the request to all members.
+[https://issues.jboss.org/browse/JGRP-XXX]
 
 
 
 Optimizations
 =============
 
-UNICAST3: ack messages sooner
------------------------------
-[https://issues.jboss.org/browse/JGRP-1664]
-
-A message would get acked after delivery, not reception. This was changed, so that long running app code would not
-delay acking the message, which could lead to unneeded retransmission by the sender.
-
-
-Compress Digest and MutableDigest
----------------------------------
-[https://issues.jboss.org/browse/JGRP-1317]
-[https://issues.jboss.org/browse/JGRP-1354]
-[https://issues.jboss.org/browse/JGRP-1391]
-[https://issues.jboss.org/browse/JGRP-1690]
-
-- In some cases, when a digest and a view are the same, the members
-  field of the digest points to the members field of the view,
-  resulting in reduced memory use.
-- When a view and digest are the same, we marshal the members only
-  once (in JOIN-RSP, MERGE-RSP and INSTALL-MERGE-VIEW).
-- We don't send the digest with a VIEW to *existing members*; the full
-  view and digest is only sent to the joiner. This means that new
-  views are smaller, which is useful in large clusters.
-- JIRA:  https://issues.jboss.org/browse/JGRP-1317
-- View and MergeView now use arrays rather than lists to store
-  membership and subgroups
-- Make sure digest matches view when returning JOIN-RSP or installing
-  MergeView (https://issues.jboss.org/browse/JGRP-1690)
-- More efficient marshalling of GMS$GmsHeader: when view and digest
-  are present, we only marshal the members once
-
-
-Large clusters:
----------------
-- https://issues.jboss.org/browse/JGRP-1700: STABLE uses a bitset rather than a list for STABLE msgs, reducing
-  memory consumption
-- https://issues.jboss.org/browse/JGRP-1704: don't print the full list of members
-- https://issues.jboss.org/browse/JGRP-1705: suppression of fake merge-views
-- https://issues.jboss.org/browse/JGRP-1710: move contents of GMS headers into message body (otherwise packet at
-  transport gets too big)
-- https://issues.jboss.org/browse/JGRP-1713: ditto for VIRE-RSP in MERGE3
-- https://issues.jboss.org/browse/JGRP-1714: move large data in headers to message body
 
 
 
 Bug fixes
 =========
 
-FRAG/FRAG2: incorrect ordering with message batches
-[https://issues.jboss.org/browse/JGRP-1648]
-
-Reassembled messages would get reinserted into the batch at the end instead of at their original position
-
-
-RSVP: incorrect ordering with message batches
----------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1641]
-
-RSVP-tagged messages in a batch would get delivered immediately, instead of waiting for their turn
-
-
-Memory leak in STABLE
----------------------
-[https://issues.jboss.org/browse/JGRP-1638]
-
-Occurred when send_stable_msg_to_coord_only was enabled.
-
-
-NAKACK2/UNICAST3: problems with flow control
---------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1665]
-
-If an incoming message sent out other messages before returning, it could block forever as new credits would not be
-processed. Caused by a regression (removal of ignore_sync_thread) in FlowControl.
-
-
-
-AUTH: nodes without AUTH protocol can join cluster
---------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1661]
-
-If a member didn't ship an AuthHeader, the message would get passed up instead of rejected.
-
-
-LockService issues
-------------------
-[https://issues.jboss.org/browse/JGRP-1634]
-[https://issues.jboss.org/browse/JGRP-1639]
-[https://issues.jboss.org/browse/JGRP-1660]
-
-Bug fix for concurrent tryLock() blocks and various optimizations.
-
-
-Logical name cache is cleared, affecting other channels
--------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1654]
-
-If we have multiple channels in the same JVM, the a new view in one channel triggers removal of the entries
-of all other caches
 
 
 
@@ -186,5 +47,5 @@ The complete list of features and bug fixes can be found at http://jira.jboss.co
 
 
 Bela Ban, Kreuzlingen, Switzerland
-AuOct 2013
+April 2014
 
