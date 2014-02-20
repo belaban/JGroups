@@ -45,34 +45,28 @@ public class MessageBatch implements Iterable<Message> {
 
     public MessageBatch(Collection<Message> msgs) {
         messages=new Message[msgs.size()];
-        int num_reg=0, num_oob=0, num_internal=0;
-        for(Message msg: msgs) {
+        for(Message msg: msgs)
             messages[index++]=msg;
-            if(msg.isFlagSet(Message.Flag.OOB))
-                num_oob++;
-            else if(msg.isFlagSet(Message.Flag.INTERNAL))
-                num_internal++;
-            else
-                num_reg++;
-        }
-        if(num_internal > 0 && num_oob == 0 && num_reg == 0)
-            mode=Mode.INTERNAL;
-        else if(num_oob > 0 && num_internal == 0 && num_reg == 0)
-            mode=Mode.OOB;
-        else if(num_reg > 0 && num_oob == 0 && num_internal == 0)
-            mode=Mode.REG;
-        else
-            mode=Mode.MIXED;
+        mode=determineMode();
     }
 
     public MessageBatch(Address dest, Address sender, AsciiString cluster_name, boolean multicast, Collection<Message> msgs) {
+        this(dest, sender, cluster_name, multicast, msgs, null);
+    }
+
+    public MessageBatch(Address dest, Address sender, AsciiString cluster_name, boolean multicast,
+                        Collection<Message> msgs, Filter<Message> filter) {
         messages=new Message[msgs.size()];
-        for(Message msg: msgs)
+        for(Message msg: msgs) {
+            if(filter != null && !filter.accept(msg))
+                continue;
             messages[index++]=msg;
+        }
         this.dest=dest;
         this.sender=sender;
         this.cluster_name=cluster_name;
         this.multicast=multicast;
+        this.mode=determineMode();
     }
 
     public MessageBatch(Address dest, Address sender, AsciiString cluster_name, boolean multicast, Mode mode, int capacity) {
@@ -143,12 +137,41 @@ public class MessageBatch implements Iterable<Message> {
     }
 
     /**
+     * Replaces all messages which match a given filter with a replacement message
+     * @param filter the filter. If null, no changes take place. Note that filter needs to be able to handle null msgs
+     * @param replacement the replacement message. Can be null, which essentially removes all messages matching filter
+     * @param match_all whether to replace the first or all matches
+     * @return the MessageBatch
+     */
+    public MessageBatch replace(Filter<Message> filter, Message replacement, boolean match_all) {
+        if(filter == null)
+            return this;
+        for(int i=0; i < index; i++) {
+            if(filter.accept(messages[i])) {
+                messages[i]=replacement;
+                if(!match_all)
+                    break;
+            }
+        }
+        return this;
+    }
+
+    /**
      * Removes the current message (found by indentity (==)) by nulling it in the message array
      * @param msg
      * @return
      */
     public MessageBatch remove(Message msg) {
         return replace(msg, null);
+    }
+
+    /**
+     * Removes all messages which match filter
+     * @param filter the filter. If null, no removal takes place
+     * @return the MessageBatch
+     */
+    public MessageBatch remove(Filter<Message> filter) {
+        return replace(filter, null, true);
     }
 
     public MessageBatch clear() {
@@ -202,6 +225,27 @@ public class MessageBatch implements Iterable<Message> {
             if(messages[i] != null)
                 return false;
         return true;
+    }
+
+    public Mode determineMode() {
+        int num_oob=0, num_reg=0, num_internal=0;
+        for(int i=0; i < index; i++) {
+            if(messages[i] == null)
+                continue;
+            if(messages[i].isFlagSet(Message.Flag.OOB))
+                num_oob++;
+            else if(messages[i].isFlagSet(Message.Flag.INTERNAL))
+                num_internal++;
+            else
+                num_reg++;
+        }
+        if(num_internal > 0 && num_oob == 0 && num_reg == 0)
+            return Mode.INTERNAL;
+        if(num_oob > 0 && num_internal == 0 && num_reg == 0)
+            return Mode.OOB;
+        if(num_reg > 0 && num_oob == 0 && num_internal == 0)
+            return Mode.REG;
+        return Mode.MIXED;
     }
 
 

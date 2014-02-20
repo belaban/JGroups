@@ -50,11 +50,10 @@ RULE MessageReception
 CLASS NAKACK2
 METHOD up
 HELPER org.jgroups.tests.helpers.BecomeServerTestHelper
-AFTER INVOKE BoundedList.add(Message) ALL
+AFTER INVOKE queueMessage ALL
 BIND queue=$0.become_server_queue;
      is_server=$0.is_server;
      local_addr_name=org.jgroups.util.UUID.get($0.local_addr);
-AFTER INVOKE BoundedList.add ALL
 IF !is_server && local_addr_name.equals("B") && messageReceived(queue)
   DO rendezvous("rv");
 ENDRULE
