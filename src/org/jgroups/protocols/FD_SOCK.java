@@ -407,7 +407,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             if(!setupPingSocket(ping_addr) && isPingerThreadRunning()) {
                 // covers use cases #7 and #8 in ManualTests.txt
-                log.debug("%s: could not create socket to %s", local_addr, ping_dest);
+                log.debug("%s: could not create socket to %s (pinger thread is %s)", local_addr, ping_dest, isPingerThreadRunning()? "running" : "not running");
                 broadcastSuspectMessage(ping_dest);
                 pingable_mbrs.remove(ping_dest);
                 continue;
@@ -442,8 +442,9 @@ public class FD_SOCK extends Protocol implements Runnable {
         log.trace("%s: pinger thread terminated", local_addr);
     }
 
-    protected synchronized boolean isPingerThreadRunning(){
-        return pinger_thread != null && pinger_thread.isAlive() && !pinger_thread.isInterrupted();
+    protected synchronized boolean isPingerThreadRunning() {
+        final Thread tmp=pinger_thread;
+        return tmp != null && tmp.isAlive() && !tmp.isInterrupted();
     }
 
 
@@ -620,6 +621,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 return true;
             }
             catch(Throwable ex) {
+                log.warn("%s: creating the client socket failed: %s", local_addr, ex);
                 return false;
             }
         }
