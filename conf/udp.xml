@@ -10,6 +10,7 @@
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.4.xsd">
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
+         ip_ttl="0"
          tos="8"
          ucast_recv_buf_size="5M"
          ucast_send_buf_size="640K"
