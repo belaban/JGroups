@@ -1,14 +1,25 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Membership;
+import org.jgroups.View;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
-
-import java.util.*;
 
 /**
  * Tests merging on all stacks
@@ -92,7 +103,7 @@ public class MergeTest extends ChannelTestBase {
 
     private static void close(JChannel[] channels) {
         if(channels == null) return;
-        for(int i=channels.length -1; i <= 0; i--) {
+        for(int i=channels.length -1; i >= 0; i--) {
             JChannel ch=channels[i];
             Util.close(ch);
         }
