@@ -40,7 +40,7 @@ public class NakackTest {
     final static int NUM_SENDERS=NUM_PEERS-1;
     final static int NUM_MSGS=1000;
     final static int WAIT_TIMEOUT=10; // secs
-    final static int MSGS_PER_STATUS_LINE=100;
+    final static int MSGS_PER_STATUS_LINE=500;
     final static int TOT_MSGS_FOR_ALL_RECEIVERS=NUM_SENDERS * NUM_MSGS * NUM_PEERS;
 
     // convey assertion failure from thread to main framework
@@ -70,6 +70,7 @@ public class NakackTest {
             receivers[i]=new Receiver(channels[i]);
             channels[i].setReceiver(receivers[i]);
         }
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, channels);
     }
 
     @AfterMethod
@@ -81,7 +82,7 @@ public class NakackTest {
      * Test to see thyat NAKACK delivery is reliable and FIFO.
      */
     public void testReceptionOfAllMessages() throws TimeoutException {
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, channels);
+
 
         // start the NAKACK peers and let them exchange messages
         for(int i=0; i < NUM_PEERS; i++) {
