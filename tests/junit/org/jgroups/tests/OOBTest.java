@@ -171,18 +171,19 @@ public class OOBTest extends ChannelTestBase {
         for(int i=0; i < 20; i++) {
             if(one.size() == NUM_MSGS && two.size() == NUM_MSGS)
                 break;
-            System.out.println("A size " + one.size() + ", B size " + two.size());
+            System.out.println("A: size=" + one.size() + ", B: size=" + two.size());
             sendStableMessages(a,b);
             Util.sleep(1000);
         }
-        System.out.println("A size " + one.size() + ", B size " + two.size());
+        System.out.println("A: size=" + one.size() + ", B: size=" + two.size());
 
         stack.removeProtocol(DISCARD.class);
 
         System.out.println("A received " + one.size() + " messages (" + NUM_MSGS + " expected)" +
                              "\nB received " + two.size() + " messages (" + NUM_MSGS + " expected)");
 
-        check(NUM_MSGS, one, two);
+        check(NUM_MSGS, one, "A");
+        check(NUM_MSGS, two, "B");
     }
 
     /**
@@ -337,22 +338,18 @@ public class OOBTest extends ChannelTestBase {
     }
 
     @SuppressWarnings("unchecked")
-    private static void check(final int num_expected_msgs, Collection<Integer>... lists) {
-        for(Collection<Integer> list: lists) {
-            System.out.println("list: " + list);
-        }
+    private static void check(final int num_expected_msgs, Collection<Integer> list, String name) {
+        System.out.println(name  + ": " + list);
 
-        for(Collection<Integer> list: lists) {
-            Collection<Integer> missing=new TreeSet<Integer>();
-            if(list.size() != num_expected_msgs) {
-                for(int i=1; i <= num_expected_msgs; i++)
-                    missing.add(i);
+        Collection<Integer> missing=new TreeSet<Integer>();
+        if(list.size() != num_expected_msgs) {
+            for(int i=1; i <= num_expected_msgs; i++)
+                missing.add(i);
 
-                missing.removeAll(list);
-                assert list.size() == num_expected_msgs : "expected " + num_expected_msgs + " elements, but got " +
-                        list.size() + " (list=" + list + "), missing=" + missing;
+            missing.removeAll(list);
+            assert list.size() == num_expected_msgs : "expected " + num_expected_msgs + " elements, but got " +
+              list.size() + " (list=" + list + "), missing=" + missing;
 
-            }
         }
     }
 
