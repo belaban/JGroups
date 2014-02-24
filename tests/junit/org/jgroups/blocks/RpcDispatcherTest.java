@@ -218,7 +218,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
                                                   new RspFilter() {
                                                       int num=0;
                                                       public boolean isAcceptable(Object response, Address sender) {
-                                                          boolean retval=((Integer)response).intValue() > 1;
+                                                          boolean retval=(Integer)response > 1;
                                                           if(retval)
                                                               num++;
                                                           return retval;
@@ -437,27 +437,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
         }
     }
     
-    /**
-     * Test the ability of RpcDispatcher to handle huge argument and return values
-     * with multicast RPC calls.
-     * 
-     * The test sends requests for return values (byte arrays) having increasing sizes,
-     * which increase the processing time for requests as well as the amount of memory
-     * required to process requests.
-     * 
-     * The expected behaviour is that RPC requests either timeout or trigger out of 
-     * memory exceptions. Huge return values extend the processing time required; but
-     * the length of time depends upon the speed of the machine the test runs on. 
-     *
-     */
-    /*@Test(groups="first")
-    public void testHugeReturnValue() {
-        setProps(c1, c2, c3);
-        for(int i=0; i < HUGESIZES.length; i++) {
-            _testHugeValue(HUGESIZES[i]);
-        }
-    }*/
-    
+
 
     /**
      * Tests a method call to {A,B,C} where C left *before* the call. http://jira.jboss.com/jira/browse/JGRP-620
@@ -505,7 +485,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     public void testLargeReturnValueUnicastCall() throws Exception {
         setProps(c1, c2, c3);
         for(int i=0; i < SIZES.length; i++) {
-            _testLargeValueUnicastCall(c1.getAddress(), SIZES[i]);
+            _testLargeValueUnicastCall(c3.getAddress(), SIZES[i]);
         }
     }
 
@@ -561,56 +541,6 @@ public class RpcDispatcherTest extends ChannelTestBase {
         }
     }
     
-    /**
-     * Helper method to perform a RPC call on server method "returnValue(int size)" for 
-     * all group members.
-     * 
-     * This method need to take into account that RPC calls can timeout with huge values,
-     * and they can also trigger OOMEs. But if we are lucky, they can also return
-     * reasonable values. 
-     * 
-     */
-    void _testHugeValue(int size) throws Exception {
-    	
-    	// 20 second timeout 
-    	final long timeout = 20 * 1000 ;
-    	
-        System.out.println("\ntesting with " + size + " bytes");
-        RspList<Object> rsps=disp1.callRemoteMethods(null, "largeReturnValue", new Object[]{size}, new Class[]{int.class},
-                                                     new RequestOptions(ResponseMode.GET_ALL, timeout));
-        System.out.println("rsps:");
-        assert rsps != null;
-        assert rsps.size() == 3 : "there should be three responses to the RPC call but only " + rsps.size() +
-                " were received: " + rsps;
-
-        // in checking the return values, we need to take account of timeouts (i.e. when
-        // a null value is returned) and exceptions 
-        for(Map.Entry<Address,Rsp<Object>> entry: rsps.entrySet()) {
-
-        	Object obj = entry.getValue().getValue() ;
-
-        	// its possible that an exception was raised
-        	if (obj instanceof java.lang.Throwable) {
-        		Throwable t = (Throwable) obj ;
-        		
-        		System.out.println(t.toString() + " exception was raised processing argument from " +
-        							entry.getValue().getSender() + " -this is expected") ;
-        		continue ;
-        	}        	
-        	
-        	// its possible that the request timed out before the serve could reply 
-        	if (obj == null) {
-        		System.out.println("request timed out processing argument from " + 
-        							entry.getValue().getSender() + " - this is expected") ;
-        		continue ;       	
-        	}
-        	
-        	// if we reach here, we sould have a reasobable value
-        	byte[] val=(byte[]) obj;
-            System.out.println(val.length + " bytes from " + entry.getValue().getSender());
-            assert val.length == size : "return value does not match required size";
-        }
-    }
 
     /**
      * Helper method to perform a RPC call on server method "returnValue(int size)" for 
