@@ -53,7 +53,6 @@ public class OOBTest extends ChannelTestBase {
      * A and B. A multicasts a regular message, which blocks in B. Then A multicasts an OOB message, which must be
      * received by B.
      */
-    // @Test(invocationCount=20)
     public void testNonBlockingUnicastOOBMessage() throws Exception {
         send(b.getAddress());
     }
@@ -174,7 +173,7 @@ public class OOBTest extends ChannelTestBase {
         discard.setDownDiscardRate(0.5);
         ProtocolStack stack=a.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK2.class);
-        MyReceiver r1=new MyReceiver("C1"), r2=new MyReceiver("C2");
+        MyReceiver r1=new MyReceiver("A"), r2=new MyReceiver("B");
         a.setReceiver(r1);
         b.setReceiver(r2);
         final int NUM_MSGS=20;
@@ -186,11 +185,11 @@ public class OOBTest extends ChannelTestBase {
         for(int i=0; i < 10; i++) {
             if(one.size() == NUM_MSGS && two.size() == NUM_MSGS)
                 break;
-            System.out.println("one size " + one.size() + ", two size " + two.size());
+            System.out.println("A: size=" + one.size() + ", B: size" + two.size());
             Util.sleep(1000);
             sendStableMessages(a,b);
         }
-        System.out.println("one size " + one.size() + ", two size " + two.size());
+        System.out.println("A: size=" + one.size() + ", B size=" + two.size());
 
         stack.removeProtocol("DISCARD");
 
@@ -200,10 +199,11 @@ public class OOBTest extends ChannelTestBase {
             sendStableMessages(a,b);
             Util.sleep(500);
         }
-        System.out.println("C1 received " + one.size() + " messages ("+ NUM_MSGS + " expected)" +
-                "\nC2 received " + two.size() + " messages ("+ NUM_MSGS + " expected)");
+        System.out.println("A: received " + one.size() + " messages ("+ NUM_MSGS + " expected)" +
+                "\nB: received " + two.size() + " messages ("+ NUM_MSGS + " expected)");
 
-        check(NUM_MSGS, one, two);
+        check(NUM_MSGS, one, "A");
+        check(NUM_MSGS, two, "B");
     }
 
     /**
@@ -297,7 +297,7 @@ public class OOBTest extends ChannelTestBase {
                             Channel sender=Util.tossWeightedCoin(0.5) ? a : b;
                             boolean oob=Util.tossWeightedCoin(oob_prob);
                             int num=counter.incrementAndGet();
-                            Message msg=new Message(dest, null, num);
+                            Message msg=new Message(dest, num);
                             if(oob)
                                msg.setFlag(Message.OOB);
                             try {
@@ -318,10 +318,10 @@ public class OOBTest extends ChannelTestBase {
         }
 
 
-        for(int i=0; i < num_msgs; i++) {
+        for(int i=1; i <= num_msgs; i++) {
             Channel sender=Util.tossWeightedCoin(0.5) ? a : b;
             boolean oob=Util.tossWeightedCoin(oob_prob);
-            Message msg=new Message(dest, null, i);
+            Message msg=new Message(dest, i);
             if(oob)
                msg.setFlag(Message.OOB);          
             sender.send(msg);            
@@ -372,22 +372,17 @@ public class OOBTest extends ChannelTestBase {
     }
 
     @SuppressWarnings("unchecked")
-    private static void check(final int num_expected_msgs, Collection<Integer>... lists) {
-        for(Collection<Integer> list: lists) {
-            System.out.println("list: " + list);
-        }
+    private static void check(final int num_expected_msgs, Collection<Integer> list, String name) {
+        System.out.println(name + ": " + list);
+        Collection<Integer> missing=new TreeSet<Integer>();
+        if(list.size() != num_expected_msgs) {
+            for(int i=1; i <= num_expected_msgs; i++)
+                missing.add(i);
 
-        for(Collection<Integer> list: lists) {
-            Collection<Integer> missing=new TreeSet<Integer>();
-            if(list.size() != num_expected_msgs) {
-                for(int i=0; i < num_expected_msgs; i++)
-                    missing.add(i);
+            missing.removeAll(list);
+            assert list.size() == num_expected_msgs : "expected " + num_expected_msgs + " elements, but got " +
+              list.size() + " (list=" + list + "), missing=" + missing;
 
-                missing.removeAll(list);
-                assert list.size() == num_expected_msgs : "expected " + num_expected_msgs + " elements, but got " +
-                        list.size() + " (list=" + list + "), missing=" + missing;
-
-            }
         }
     }
 
