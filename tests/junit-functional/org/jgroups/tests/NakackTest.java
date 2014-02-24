@@ -6,7 +6,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.ProtocolStack;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -38,7 +38,7 @@ public class NakackTest {
     final static int NUM_PEERS=3;
     final static int NUM_MSGS=1000;
     final static int WAIT_TIMEOUT=10; // secs
-    final static int MSGS_PER_STATUS_LINE=100;
+    final static int MSGS_PER_STATUS_LINE=NUM_MSGS / 2;
 
     // convey assertion failure from thread to main framework
     static boolean notFIFO=false;
@@ -62,11 +62,8 @@ public class NakackTest {
      */
     @BeforeMethod
     void setUp() throws Exception {
-
-        // create new simulator instances
         for(int i=0; i < NUM_PEERS; i++) {
-            channels[i]=createChannel();
-            channels[i].setName(Character.toString((char)(i + 'A')));
+            channels[i]=createChannel(Character.toString((char)(i + 'A')));
             channels[i].connect("NakackTest");
         }
 
@@ -75,30 +72,28 @@ public class NakackTest {
 
         // set up the sender and the receiver callbacks, according to whether the peer is a sender or a receiver
         for(int i=0; i < NUM_PEERS; i++) {
-            if(isSender[i])
-                receivers[i]=new ReceiverPeer(channels[i]);
-            else
-                receivers[i]=new ReceiverPeer(channels[i]);
+            receivers[i]=new ReceiverPeer(channels[i].getAddress());
             channels[i].setReceiver(receivers[i]);
         }
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, channels);
     }
 
     @AfterMethod
     void tearDown() throws Exception {
-        for(int i=0; i < NUM_PEERS; i++)
-            channels[i].close();
+        Util.close(channels);
     }
 
     /**
      * Test to see thyat NAKACK delivery is reliable and FIFO.
      */
+    // @Test(invocationCount=50)
     public void testReceptionOfAllMessages() throws TimeoutException {
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, channels);
-
         // start the NAKACK peers and let them exchange messages
         for(int i=0; i < NUM_PEERS; i++) {
-            threads[i]=new MyNAKACKPeer(channels[i], isSender[i]);
-            threads[i].start();
+            if(isSender[i]) {
+                threads[i]=new MyNAKACKPeer(channels[i]);
+                threads[i].start();
+            }
         }
 
         // wait for the receiver peer to signal that it has received messages, or timeout
@@ -111,14 +106,6 @@ public class NakackTest {
             }
         }
 
-        // wait for the threads to terminate
-        try {
-            for(int i=0; i < NUM_PEERS; i++)
-                threads[i].join();
-        }
-        catch(InterruptedException e) {
-        }
-
         // the test fails if:
         // - a seqno is received out of order (not FIFO), or
         // - not all messages are received in time allotted (allMsgsReceived)
@@ -126,22 +113,19 @@ public class NakackTest {
         Assert.assertFalse(notFIFO, "Sequenece numbers for a peer not in correct order");
     }
 
-    protected static JChannel createChannel() throws Exception {
-        JChannel ch=new JChannel(false);
-        ProtocolStack stack=new ProtocolStack();
-        ch.setProtocolStack(stack);
-        stack.addProtocol(new SHARED_LOOPBACK())
-          .addProtocol(new PING().setValue("timeout", 2000).setValue("num_initial_members", 3))
-          .addProtocol(new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000))
-          .addProtocol(new NAKACK2().setValue("use_mcast_xmit", false))
-          .addProtocol(new UNICAST2())
-          .addProtocol(new STABLE().setValue("max_bytes", 50000))
-          .addProtocol(new GMS().setValue("print_local_addr", false))
-          .addProtocol(new UFC())
-          .addProtocol(new MFC())
-          .addProtocol(new FRAG2());
-        stack.init();
-        return ch;
+    protected static JChannel createChannel(String name) throws Exception {
+        return new JChannel(new Protocol[] {
+          new SHARED_LOOPBACK(),
+          new PING().setValue("timeout", 2000).setValue("num_initial_members", 3),
+          new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000),
+          new NAKACK2().setValue("use_mcast_xmit", false),
+          new UNICAST2(),
+          new STABLE().setValue("max_bytes", 50000),
+          new GMS().setValue("print_local_addr", false),
+          new UFC(),
+          new MFC(),
+          new FRAG2()
+        }).name(name);
     }
 
    
@@ -153,17 +137,16 @@ public class NakackTest {
      * - terminate when correct number of messages have been received
      */
     static class ReceiverPeer extends ReceiverAdapter {
-        final JChannel channel;
-        int num_mgs_received=0;
-        ConcurrentMap<Address, Long> senders=new ConcurrentHashMap<Address, Long>();
+        protected int                                num_mgs_received;
+        protected final Address                      address;
+        protected final ConcurrentMap<Address, Long> senders=new ConcurrentHashMap<Address, Long>();
 
-        public ReceiverPeer(JChannel channel) {
-            this.channel=channel;
+        public ReceiverPeer(Address address) {
+            this.address=address;
         }
 
         /**
          * Receive() is concurrent for different senders, but sequential per sender
-         * @param msg
          */
         public void receive(Message msg) {
             // keep track of seqno ordering of messages received
@@ -172,29 +155,27 @@ public class NakackTest {
             // get the expected next seqno for this sender
             Long num=senders.get(sender);
             if(num == null) {
-                num=new Long(1);
+                num=(long)1;
                 senders.putIfAbsent(sender, num);
             }
-            long last_seqno=num.longValue();
+            long last_seqno=num;
 
             try {
                 num=(Long)msg.getObject();
-                long received_seqno=num.longValue();
+                long received_seqno=num;
                 num_mgs_received++;
 
                 // 1. check if sequence numbers are in sequence
-                if(received_seqno == last_seqno) { // correct - update with next expected seqno
-                    senders.put(sender, new Long(last_seqno + 1));
-                }
+                if(received_seqno == last_seqno) // correct - update with next expected seqno
+                    senders.put(sender,last_seqno + 1);
                 else {
                     // error, terminate test
                     notFIFO=true;
                     Assert.fail("FAIL: received msg #" + received_seqno + ", expected " + last_seqno);
                 }
 
-                Address address=channel.getAddress();
                 if(received_seqno % MSGS_PER_STATUS_LINE == 0 && received_seqno > 0)
-                    System.out.println("<" + address + ">:" + "PASS: received msg #" + received_seqno + " from " + sender);
+                    System.out.println(address + ": received msg #" + received_seqno + " from " + sender);
 
 
                 // condition to terminate the test - all messages received (whether in correct order or not)
@@ -221,30 +202,21 @@ public class NakackTest {
     }
 
 
-    static class MyNAKACKPeer extends Thread {
-        JChannel ch=null;
-        boolean sender=false;
+    protected static class MyNAKACKPeer extends Thread {
+        protected JChannel ch;
 
-        public MyNAKACKPeer(JChannel ch, boolean sender) {
+        public MyNAKACKPeer(JChannel ch) {
             this.ch=ch;
-            this.sender=sender;
         }
 
         public void run() {
-
             // senders send NUM_MSGS messages to all peers, beginning with seqno 1
-            if(sender) {
-                Address address=ch.getAddress();
-                for(int i=1; i <= NUM_MSGS; i++) {
-                    try {
-                        Message msg=new Message(null, address, new Long(i));
-                        ch.send(msg);
-                        if(i % MSGS_PER_STATUS_LINE == 0) // status indicator
-                            System.out.println("<" + address + ">:" + " ==> " + i);
-                    }
-                    catch(Exception e) {
-                        e.printStackTrace();
-                    }
+            for(long i=1; i <= NUM_MSGS; i++) {
+                try {
+                    ch.send(new Message(null,i));
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
                 }
             }
         }
