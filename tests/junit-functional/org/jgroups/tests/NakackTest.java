@@ -191,7 +191,7 @@ public class NakackTest {
                 }
             }
             catch(Exception ex) {
-                System.err.println(ex.toString());
+                System.err.println(ex);
             }
         }
 
