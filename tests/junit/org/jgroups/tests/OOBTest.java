@@ -30,10 +30,8 @@ public class OOBTest extends ChannelTestBase {
 
     @BeforeMethod
     void init() throws Exception {
-        a=createChannel(true, 2);
-        a.setName("A");
-        b=createChannel(a);
-        b.setName("B");
+        a=createChannel(true, 2).name("A");
+        b=createChannel(a).name("B");
         setOOBPoolSize(a,b);
         setStableGossip(a,b);
         a.connect("OOBTest");
@@ -55,9 +53,9 @@ public class OOBTest extends ChannelTestBase {
      * A and B. A multicasts a regular message, which blocks in B. Then A multicasts an OOB message, which must be
      * received by B.
      */
+    @Test(invocationCount=10)
     public void testNonBlockingUnicastOOBMessage() throws Exception {
-        Address dest=b.getAddress();
-        send(dest);
+        send(b.getAddress());
     }
 
     public void testNonBlockingMulticastOOBMessage() throws Exception {
@@ -339,18 +337,17 @@ public class OOBTest extends ChannelTestBase {
 
         a.send(new Message(dest, null, 1));
         for(int i=2; i <= NUM; i++) {
-            Message msg=new Message(dest, null, i);
-            msg.setFlag(Message.OOB);
+            Message msg=new Message(dest, i).setFlag(Message.OOB);
             a.send(msg);
         }
-        sendStableMessages(a,b);
 
         List<Integer> list=receiver.getMsgs();
         for(int i=0; i < 20; i++) {
             if(list.size() == NUM-1)
                 break;
-            sendStableMessages(a,b);
-            Util.sleep(1000); // give the asynchronous msgs some time to be received
+            if(i % 2 == 0)
+                sendStableMessages(a,b);
+            Util.sleep(500); // give the asynchronous msgs some time to be received
         }
 
         System.out.println("list = " + list);
@@ -398,8 +395,8 @@ public class OOBTest extends ChannelTestBase {
     private static void setOOBPoolSize(JChannel... channels) {
         for(Channel channel: channels) {
             TP transport=channel.getProtocolStack().getTransport();
-            transport.setOOBThreadPoolMinThreads(1);
-            transport.setOOBThreadPoolMaxThreads(2);
+            transport.setOOBThreadPoolMinThreads(4);
+            transport.setOOBThreadPoolMaxThreads(8);
         }
     }
 
