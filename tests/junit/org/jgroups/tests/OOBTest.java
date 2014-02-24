@@ -53,7 +53,7 @@ public class OOBTest extends ChannelTestBase {
      * A and B. A multicasts a regular message, which blocks in B. Then A multicasts an OOB message, which must be
      * received by B.
      */
-    @Test(invocationCount=10)
+    // @Test(invocationCount=20)
     public void testNonBlockingUnicastOOBMessage() throws Exception {
         send(b.getAddress());
     }
