@@ -44,7 +44,7 @@ public class LockServiceTest extends ChannelTestBase {
         c3=createChannel(c1, "C");
         s3=new LockService(c3);
         c3.connect("LockServiceTest");
-        
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, c1,c2,c3);
         lock=s1.getLock(LOCK);
     }
 
