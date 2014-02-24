@@ -530,6 +530,10 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
             append(i.toString(), false) ;
         }
 
+        public void flush() {
+            append("", true);
+        }
+
         public void println(String s) {
             append(s, true);
         }
