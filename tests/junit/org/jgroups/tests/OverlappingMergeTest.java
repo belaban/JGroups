@@ -61,6 +61,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
     }
 
     @SuppressWarnings("unchecked")
+   // @Test(invocationCount=20)
     public void testRegularMessageSending() throws Exception {
         sendMessages(5, a, b, c);
         checkReceivedMessages(make(ra, 15), make(rb,15), make(rc,15));
@@ -131,13 +132,13 @@ public class OverlappingMergeTest extends ChannelTestBase {
         injectMergeEvent(merge_evt, merge_leader);
 
         System.out.println("\n==== checking views after merge ====:");
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 20; i++) {
             if(a.getView().size() == 3 && b.getView().size() == 3 && c.getView().size() == 3) {
                 System.out.println("views are correct: all views have a size of 3");
                 break;
             }
             System.out.print(".");
-            runStableProtocol(a); runStableProtocol(b); runStableProtocol(c);
+            runStableProtocol(a,b,c);
             Util.sleep(1000);
         }
 
@@ -204,14 +205,13 @@ public class OverlappingMergeTest extends ChannelTestBase {
         injectMergeEvent(merge_evt,a,b,c);
 
         System.out.println("\n==== checking views after merge ====:");
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 20; i++) {
             if(a.getView().size() == 3 && b.getView().size() == 3 && c.getView().size() == 3) {
                 System.out.println("views are correct: all views have a size of 3");
                 break;
             }
             System.out.print(".");
-            for(JChannel ch: new JChannel[]{a,b,c})
-                runStableProtocol(ch);
+            runStableProtocol(a,b,c);
             Util.sleep(1000);
         }
 
@@ -341,13 +341,13 @@ public class OverlappingMergeTest extends ChannelTestBase {
         merge.sendMergeSolicitation();
 
         System.out.println("\n==== checking views after merge ====:");
-        for(int i=0; i < 10; i++) {
+        for(int i=0; i < 20; i++) {
             if(a.getView().size() == 3 && b.getView().size() == 3 && c.getView().size() == 3) {
                 System.out.println("views are correct: all views have a size of 3");
                 break;
             }
             System.out.print(".");
-            runStableProtocol(a); runStableProtocol(b); runStableProtocol(c);
+            runStableProtocol(a,b,c);
             Util.sleep(1000);
         }
 
@@ -430,10 +430,12 @@ public class OverlappingMergeTest extends ChannelTestBase {
         }
     }
 
-    private static void runStableProtocol(JChannel ch) {
-        STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
-        if(stable != null)
-            stable.gc();
+    private static void runStableProtocol(JChannel... channels) {
+        for(JChannel ch: channels) {
+            STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
+            if(stable != null)
+                stable.gc();
+        }
     }
 
     protected boolean isMulticastTransport(JChannel ch) {
@@ -454,10 +456,10 @@ public class OverlappingMergeTest extends ChannelTestBase {
                     all_received=false;
                     break;
                 }
-                runStableProtocol(receiver.ch);
             }
             if(all_received)
                 break;
+            runStableProtocol(a,b,c);
             Util.sleep(1000);
         }
 
@@ -513,7 +515,6 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
     protected static class MyReceiver extends ReceiverAdapter {
         final String name;
-        View view=null;
         final JChannel ch;
         final List<Message> mcasts=new ArrayList<Message>(20);
 
@@ -524,12 +525,11 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
         public void receive(Message msg) {
             Address dest=msg.getDest();
-            if(dest == null)
-                mcasts.add(msg);
-        }
-
-        public void viewAccepted(View new_view) {
-            view=new_view;
+            if(dest == null) {
+                synchronized(mcasts) {
+                    mcasts.add(msg);
+                }
+            }
         }
 
         public List<Message> getMulticasts() { return mcasts; }

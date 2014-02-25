@@ -172,9 +172,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
     private static void modifyConfigs(JChannel ... channels) throws Exception {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
-            stack.removeProtocol("MERGE2");
-            stack.removeProtocol("VERIFY_SUSPECT");
-            stack.removeProtocol("FC");
+            stack.removeProtocols("MERGE2", "VERIFY_SUSPECT", "FC");
         }
     }
 
@@ -191,8 +189,11 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
         public void receive(Message msg) {
             Address dest=msg.getDest();
             boolean mcast=dest == null;
-            if(!mcast)
-                ucasts.add(msg);
+            if(!mcast) {
+                synchronized(ucasts) {
+                    ucasts.add(msg);
+                }
+            }
         }
 
         public void viewAccepted(View new_view) {
