@@ -1037,11 +1037,13 @@ abstract public class Locking extends Protocol {
             }
         }
 
-        protected synchronized void unlockAll() {
+        protected void unlockAll() {
             List<ClientLock> lock_list=new ArrayList<ClientLock>();
-            Collection<Map<Owner,ClientLock>> maps=table.values();
-            for(Map<Owner,ClientLock> map: maps)
-                lock_list.addAll(map.values());
+            synchronized(this) {
+                Collection<Map<Owner,ClientLock>> maps=table.values();
+                for(Map<Owner,ClientLock> map: maps)
+                    lock_list.addAll(map.values());
+            }
             for(ClientLock lock: lock_list)
                 lock.unlock();
         }
