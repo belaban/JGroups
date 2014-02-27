@@ -1416,14 +1416,14 @@
     &lt;MERGE2 /&gt;
     &lt;FD /&gt;
     &lt;VERIFY_SUSPECT /&gt;
-    &lt;ENCRYPT encrypt_entire_message="false"
-             sym_init="128" sym_algorithm="AES/ECB/PKCS5Padding"
-             asym_init="512" asym_algorithm="RSA"/&gt;
     &lt;pbcast.NAKACK /&gt;
     &lt;UNICAST /&gt;
     &lt;pbcast.STABLE /&gt;
     &lt;FRAG2 /&gt;
     &lt;pbcast.GMS /&gt;
+    &lt;ENCRYPT encrypt_entire_message="false"
+             sym_init="128" sym_algorithm="AES/ECB/PKCS5Padding"
+             asym_init="512" asym_algorithm="RSA"/&gt;
 &lt;/config&gt;
                 </programlisting>
                 <para>
@@ -1469,6 +1469,13 @@ keytool -genseckey -alias myKey -keypass changeit -storepass changeit  -keyalg B
                     <para>
                         Note that defaultStore.keystore will have to be found in the claspath.
                     </para>
+                    <note>
+                        <para>
+                            If asymmetric encryption is used (no shared key via keystore), ENCRYPT has to be placed
+                            somewhere <emphasis>above</emphasis> GMS, or else the JOIN process would not function (
+                            as the JOIN response would get dropped).
+                        </para>
+                    </note>
                 </section>
 
                 ${ENCRYPT}

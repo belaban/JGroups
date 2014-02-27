@@ -712,13 +712,6 @@ public class Util {
 
 
     public static Streamable streamableFromByteBuffer(Class<? extends Streamable> cl, byte[] buffer) throws Exception {
-//        if(buffer == null) return null;
-//        Streamable retval=null;
-//        DataInput in=new ByteArrayDataInputStream(buffer);
-//        retval=cl.newInstance();
-//        retval.readFrom(in);
-//        return retval;
-
         return streamableFromByteBuffer(cl, buffer, 0, buffer.length);
     }
 

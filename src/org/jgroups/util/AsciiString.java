@@ -8,47 +8,47 @@ package org.jgroups.util;
  * @since  3.5
  */
 public class AsciiString implements Comparable<AsciiString> {
-    protected final byte[] chars;
+    protected final byte[] val;
 
     public AsciiString() {
-        chars=new byte[]{};
+        val=new byte[]{};
     }
 
     public AsciiString(String str) {
         int length=str.length();
-        this.chars=new byte[length];
+        this.val=new byte[length];
         for(int i=0; i < length; i++)
-            chars[i]=(byte)str.charAt(i);
+            val[i]=(byte)str.charAt(i);
     }
 
     public AsciiString(AsciiString str) {
-        this.chars=str.chars;
+        this.val=str.val;
     }
 
-    public AsciiString(byte[] chars) {
-        this.chars=chars; // mutable, used only for creation
+    public AsciiString(byte[] val) {
+        this.val=val; // mutable, used only for creation
     }
 
     public AsciiString(int length) {
-        this.chars=new byte[length];
+        this.val=new byte[length];
     }
 
-    public byte[] chars() {return chars;} // mutable
+    public byte[] chars() {return val;} // mutable
 
     public int length() {
-        return chars.length;
+        return val.length;
     }
 
     public int compareTo(AsciiString str) {
         if(str == null) return 1;
-        if(chars().hashCode() == str.chars.hashCode())
+        if(chars().hashCode() == str.val.hashCode())
             return 0;
 
-        int len1=chars.length;
-        int len2=str.chars.length;
+        int len1=val.length;
+        int len2=str.val.length;
         int lim=Math.min(len1, len2);
-        byte[] v1=chars;
-        byte[] v2=str.chars;
+        byte[] v1=val;
+        byte[] v2=str.val;
 
         int k = 0;
         while (k < lim) {
@@ -69,13 +69,13 @@ public class AsciiString implements Comparable<AsciiString> {
 
     public int hashCode() {
         int h=0;
-        for(int i=0; i < chars.length; i++)
-            h=31 * h + chars[i];
+        for(int i=0; i < val.length; i++)
+            h=31 * h + val[i];
         return h;
     }
 
     public String toString() {
-        return new String(chars);
+        return new String(val);
     }
 
 

@@ -763,7 +763,7 @@ public class MPerf extends ReceiverAdapter {
         }
 
         public String toString() {
-            return typeToString(type) + (seqno > 0? seqno : "");
+            return typeToString(type) + " " +  (seqno > 0? seqno : "");
         }
 
         protected static String typeToString(byte type) {

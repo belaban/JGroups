@@ -291,7 +291,6 @@ public class SizeTest {
         org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
         Address addr=UUID.randomUUID();
         View view=View.create(addr, 1, addr);
-        Digest digest=new Digest(view.getMembersRaw(), new long[]{200, 205});
 
         hdr=new STABLE.StableHeader(STABLE.StableHeader.STABLE_GOSSIP, view.getViewId());
         _testSize(hdr);
@@ -554,8 +553,6 @@ public class SizeTest {
         physical_addr.add(new IpAddress(5002));
         hdr=MERGE3.MergeHeader.createInfo(view_id, logical_name, physical_addr);
         _testSize(hdr);
-        Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B"), c=Util.createRandomAddress("C");
-        View view=View.create(a, 22, a,b,c);
         hdr=MERGE3.MergeHeader.createViewRequest();
         _testSize(hdr);
         hdr=MERGE3.MergeHeader.createViewResponse();
@@ -609,7 +606,6 @@ public class SizeTest {
         List<Address> members=new ArrayList<Address>();
         members.add(addr);
         members.add(addr);
-        View v=new View(addr, 33, members);
         hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP);
         _testSize(hdr);
 
@@ -683,9 +679,7 @@ public class SizeTest {
     }
 
     public static void testStateHeader() throws Exception {
-        IpAddress addr=new IpAddress("127.0.0.1", 5555);
-        STATE_TRANSFER.StateHeader hdr;
-        hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_REQ, null);
+        STATE_TRANSFER.StateHeader hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_REQ, null);
         _testSize(hdr);
     }
 
@@ -701,9 +695,9 @@ public class SizeTest {
 
 
     public static void testEncryptHeader() throws Exception {
-        ENCRYPT.EncryptHeader hdr=new ENCRYPT.EncryptHeader((short)1, null);
+        ENCRYPT.EncryptHeader hdr=new ENCRYPT.EncryptHeader((byte)1, new byte[]{'b','e', 'l', 'a'});
         _testSize(hdr);
-        hdr=new ENCRYPT.EncryptHeader((short)2, "Hello world");
+        hdr=new ENCRYPT.EncryptHeader((byte)2, "Hello world".getBytes());
         _testSize(hdr);
     }
 

@@ -200,11 +200,15 @@ public class MessageBatch implements Iterable<Message> {
     public <T> Collection<T> map(Visitor<T> visitor) {
         Collection<T> retval=null;
         for(int i=0; i < index; i++) {
-            T result=visitor.visit(messages[i], this);
-            if(result != null) {
-                if(retval == null)
-                    retval=new ArrayList<T>();
-                retval.add(result);
+            try {
+                T result=visitor.visit(messages[i], this);
+                if(result != null) {
+                    if(retval == null)
+                        retval=new ArrayList<T>();
+                    retval.add(result);
+                }
+            }
+            catch(Throwable t) {
             }
         }
         return retval;

@@ -804,7 +804,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         boolean added=loopback || buf.add(msgs, oob, oob? DUMMY_OOB_MSG : null);
 
         if(added && log.isTraceEnabled())
-            log.trace("%s: received %s#%d - #%d (%d messages)",
+            log.trace("%s: received %s#%d-%d (%d messages)",
                       local_addr, sender, msgs.get(0).getVal1(), msgs.get(size-1).getVal1(), msgs.size());
 
 
@@ -915,10 +915,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 return;
             if(log.isTraceEnabled()) {
                 Message first=batch.first(), last=batch.last();
-                StringBuilder sb=new StringBuilder(local_addr + ": delivering");
+                StringBuilder sb=new StringBuilder(local_addr + ": delivering " + batch.sender());
                 if(first != null && last != null) {
                     NakAckHeader2 hdr1=(NakAckHeader2)first.getHeader(id), hdr2=(NakAckHeader2)last.getHeader(id);
-                    sb.append(" #").append(hdr1.seqno).append(" - #").append(hdr2.seqno);
+                    sb.append("#").append(hdr1.seqno).append("-").append(hdr2.seqno);
                 }
                 sb.append(" (" + batch.size()).append(" messages)");
                 log.trace(sb);
