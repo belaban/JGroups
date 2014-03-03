@@ -14,67 +14,49 @@ import java.util.concurrent.ConcurrentMap;
  * @since 3.1
  */
 public class DeliveryManagerImpl implements DeliveryManager {
-    private static final MessageInfoComparator COMPARATOR = new MessageInfoComparator();
-    private final SortedSet<MessageInfo> deliverySet= new TreeSet<MessageInfo>(COMPARATOR);
+    private final SortedSet<MessageInfo> deliverySet = new TreeSet<MessageInfo>();
     private final ConcurrentMap<MessageID, MessageInfo> messageCache = new ConcurrentHashMap<MessageID, MessageInfo>(8192, .75f, 64);
-    private final Set<Message> singleDestinationSet = new HashSet<Message>();
+    private final SequenceNumberManager sequenceNumberManager = new SequenceNumberManager();
 
-    /**
-     * Add a new group message to be deliver 
-     * @param messageID         the message ID
-     * @param message           the message (needed to be deliver later)
-     * @param sequenceNumber    the initial sequence number
-     */
-    public void addNewMessageToDeliver(MessageID messageID, Message message, long sequenceNumber) {
-        MessageInfo messageInfo = new MessageInfo(messageID, message, sequenceNumber);
+    public long addLocalMessageToDeliver(MessageID messageID, Message message, ToaHeader header) {
+        MessageInfo messageInfo;
+        long sequenceNumber;
         synchronized (deliverySet) {
+            sequenceNumber = sequenceNumberManager.getAndIncrement();
+            header.setSequencerNumber(sequenceNumber);
+            messageInfo = new MessageInfo(messageID, message, sequenceNumber);
             deliverySet.add(messageInfo);
         }
         messageCache.put(messageID, messageInfo);
+        return sequenceNumber;
+    }
+
+    public long addRemoteMessageToDeliver(MessageID messageID, Message message, long remoteSequenceNumber) {
+        MessageInfo messageInfo;
+        long sequenceNumber;
+        synchronized (deliverySet) {
+            sequenceNumber = sequenceNumberManager.updateAndGet(remoteSequenceNumber);
+            messageInfo = new MessageInfo(messageID, message, sequenceNumber);
+            deliverySet.add(messageInfo);
+        }
+        messageCache.put(messageID, messageInfo);
+        return sequenceNumber;
+    }
+
+    public void updateSequenceNumber(long sequenceNumber) {
+        synchronized (deliverySet) {
+            sequenceNumberManager.update(sequenceNumber);
+        }
     }
 
     /**
      * marks the message as ready to deliver and set the final sequence number (to be ordered)
-     * @param messageID             the message ID
-     * @param finalSequenceNumber   the final sequence number
+     *
+     * @param messageID           the message ID
+     * @param finalSequenceNumber the final sequence number
      */
     public void markReadyToDeliver(MessageID messageID, long finalSequenceNumber) {
         markReadyToDeliverV2(messageID, finalSequenceNumber);
-    }
-
-    @SuppressWarnings({"SuspiciousMethodCalls"})    
-    private void markReadyToDeliverV1(MessageID messageID, long finalSequenceNumber) {
-        //This is an old version. It was the bottleneck. Updated to version 2. It can be removed later
-        synchronized (deliverySet) {
-            MessageInfo messageInfo = null;
-            boolean needsUpdatePosition = false;
-            Iterator<MessageInfo> iterator = deliverySet.iterator();
-
-            while (iterator.hasNext()) {
-                MessageInfo aux = iterator.next();
-                if (aux.equals(messageID)) {
-                    messageInfo = aux;
-                    if (messageInfo.sequenceNumber != finalSequenceNumber) {
-                        needsUpdatePosition = true;
-                        iterator.remove();
-                    }
-                    break;
-                }
-            }
-
-            if (messageInfo == null) {
-                throw new IllegalStateException("Message ID not found in to deliver list. this can't happen. " +
-                        "Message ID is " + messageID);
-            }
-            messageInfo.updateAndmarkReadyToDeliver(finalSequenceNumber);
-            if (needsUpdatePosition) {
-                deliverySet.add(messageInfo);
-            }
-
-            if (!deliverySet.isEmpty() && deliverySet.first().isReadyToDeliver()) {
-                deliverySet.notify();
-            }
-        }
     }
 
     private void markReadyToDeliverV2(MessageID messageID, long finalSequenceNumber) {
@@ -88,6 +70,7 @@ public class DeliveryManagerImpl implements DeliveryManager {
         boolean needsUpdatePosition = messageInfo.isUpdatePositionNeeded(finalSequenceNumber);
 
         synchronized (deliverySet) {
+            sequenceNumberManager.update(finalSequenceNumber);
             if (needsUpdatePosition) {
                 deliverySet.remove(messageInfo);
                 messageInfo.updateAndmarkReadyToDeliver(finalSequenceNumber);
@@ -95,7 +78,7 @@ public class DeliveryManagerImpl implements DeliveryManager {
             } else {
                 messageInfo.updateAndmarkReadyToDeliver(finalSequenceNumber);
             }
-            
+
             if (deliverySet.first().isReadyToDeliver()) {
                 deliverySet.notify();
             }
@@ -128,24 +111,9 @@ public class DeliveryManagerImpl implements DeliveryManager {
     public List<Message> getNextMessagesToDeliver() throws InterruptedException {
         LinkedList<Message> toDeliver = new LinkedList<Message>();
         synchronized (deliverySet) {
-            while (deliverySet.isEmpty() && singleDestinationSet.isEmpty()) {
+            while (deliverySet.isEmpty() || !deliverySet.first().isReadyToDeliver()) {
                 deliverySet.wait();
             }
-            
-            if (!singleDestinationSet.isEmpty()) {
-                toDeliver.addAll(singleDestinationSet);
-                singleDestinationSet.clear();
-                return toDeliver;
-            }
-
-            if (!deliverySet.first().isReadyToDeliver()) {
-                deliverySet.wait();
-            }
-
-           if (!singleDestinationSet.isEmpty()) {
-                toDeliver.addAll(singleDestinationSet);
-                singleDestinationSet.clear();                
-           }
 
             Iterator<MessageInfo> iterator = deliverySet.iterator();
 
@@ -172,22 +140,27 @@ public class DeliveryManagerImpl implements DeliveryManager {
         }
     }
 
-   /**
-    * delivers a message that has only as destination member this node
-    * 
-    * @param msg  the message
-    */
-    public void deliverSingleDestinationMessage(Message msg) {
+    /**
+     * delivers a message that has only as destination member this node
+     *
+     * @param msg the message
+     */
+    public void deliverSingleDestinationMessage(Message msg, MessageID messageID) {
         synchronized (deliverySet) {
-            singleDestinationSet.add(msg);
-            deliverySet.notify();
+            long sequenceNumber = sequenceNumberManager.get();
+            MessageInfo messageInfo = new MessageInfo(messageID, msg, sequenceNumber);
+            messageInfo.updateAndmarkReadyToDeliver(sequenceNumber);
+            deliverySet.add(messageInfo);
+            if (deliverySet.first().isReadyToDeliver()) {
+                deliverySet.notify();
+            }
         }
     }
 
     /**
      * Keeps the state of a message
      */
-    private static class MessageInfo {
+    private static class MessageInfo implements Comparable<MessageInfo> {
 
         private MessageID messageID;
         private Message message;
@@ -260,34 +233,23 @@ public class DeliveryManagerImpl implements DeliveryManager {
         public boolean isUpdatePositionNeeded(long finalSequenceNumber) {
             return sequenceNumber != finalSequenceNumber;
         }
-    }
-
-    private static class MessageInfoComparator implements Comparator<MessageInfo> {
 
         @Override
-        public int compare(MessageInfo messageInfo, MessageInfo messageInfo1) {
-            if (messageInfo == null) {
-                return messageInfo1 == null ? 0 : 1;
-            } else if (messageInfo1 == null) {
-                return -1;
+        public int compareTo(MessageInfo o) {
+            if (o == null) {
+                throw new NullPointerException();
             }
-
-            int compareMessageID = messageInfo.messageID.compareTo(messageInfo1.messageID);
-
-            if (compareMessageID == 0) {
+            int sameId = messageID.compareTo(o.messageID);
+            if (sameId == 0) {
                 return 0;
             }
-
-            if (messageInfo.sequenceNumber != messageInfo1.sequenceNumber) {
-                return Long.signum(messageInfo.sequenceNumber - messageInfo1.sequenceNumber);
-            }
-
-            return compareMessageID;
+            return sequenceNumber < o.sequenceNumber ? -1 : sequenceNumber == o.sequenceNumber ? sameId : 1;
         }
     }
 
     /**
      * It is used for testing (see the messages in JMX)
+     *
      * @return unmodifiable set of messages
      */
     public Set<MessageInfo> getMessageSet() {

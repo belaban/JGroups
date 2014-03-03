@@ -10,55 +10,55 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * The header for the Total Order Anycast (TOA) protocol
- * 
+ *
  * @author Pedro Ruivo
  * @since 3.1
  */
 public class ToaHeader extends Header {
 
     //type
-    public static final byte DATA_MESSAGE                = 1 << 0;
-    public static final byte PROPOSE_MESSAGE             = 1 << 1;
-    public static final byte FINAL_MESSAGE               = 1 << 2;
-    public static final byte SINGLE_DESTINATION_MESSAGE  = 1 << 3;
+    public static final byte DATA_MESSAGE = 1 << 0;
+    public static final byte PROPOSE_MESSAGE = 1 << 1;
+    public static final byte FINAL_MESSAGE = 1 << 2;
+    public static final byte SINGLE_DESTINATION_MESSAGE = 1 << 3;
 
     private byte type = 0;
     private MessageID messageID; //address and sequence number
     private long sequencerNumber;
-    private Collection<Address> destinations= new ArrayList<Address>();
+    private Collection<Address> destinations;
 
     public ToaHeader() {
-        messageID = new MessageID();
+    }
+
+    private ToaHeader(MessageID messageID, byte type) {
+        this.messageID = messageID;
+        this.type = type;
     }
 
     public MessageID getMessageID() {
         return messageID;
     }
 
-    public Address getOrigin() {
-        return messageID.getAddress();
-    }
-
-    public void addDestinations(Collection<Address> addresses) {
-        if(addresses != null && !addresses.isEmpty())
-            for(Address address: addresses)
-                if(!destinations.contains(address))
-                    destinations.add(address);
+    private ToaHeader setDestinations(Collection<Address> addresses) {
+        this.destinations = addresses;
+        return this;
     }
 
     public Collection<Address> getDestinations() {
-        return destinations;
+        return Collections.unmodifiableCollection(destinations);
     }
 
     public long getSequencerNumber() {
         return sequencerNumber;
     }
 
-    public void setSequencerNumber(long sequencerNumber) {
+    public ToaHeader setSequencerNumber(long sequencerNumber) {
         this.sequencerNumber = sequencerNumber;
+        return this;
     }
 
     public byte getType() {
@@ -67,7 +67,7 @@ public class ToaHeader extends Header {
 
     @Override
     public int size() {
-        return (int) (Global.BYTE_SIZE  + messageID.serializedSize() + Bits.size(sequencerNumber) +
+        return (int) (Global.BYTE_SIZE + messageID.serializedSize() + Bits.size(sequencerNumber) +
                 Util.size(destinations));
     }
 
@@ -75,62 +75,71 @@ public class ToaHeader extends Header {
     public void writeTo(DataOutput out) throws Exception {
         out.writeByte(type);
         messageID.writeTo(out);
-        Bits.writeLong(sequencerNumber,out);
-        Util.writeAddresses(destinations, out);
+        Bits.writeLong(sequencerNumber, out);
+        if (type == DATA_MESSAGE) {
+            Util.writeAddresses(destinations, out);
+        }
     }
 
     @Override
     public void readFrom(DataInput in) throws Exception {
         type = in.readByte();
+        messageID = new MessageID();
         messageID.readFrom(in);
         sequencerNumber = Bits.readLong(in);
-        destinations= (Collection<Address>) Util.readAddresses(in, ArrayList.class);
+        if (type == DATA_MESSAGE) {
+            destinations = (Collection<Address>) Util.readAddresses(in, ArrayList.class);
+        }
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("ToaHeader [")
-                .append("type=").append(type2String(type))
-                .append(", message_id=").append(messageID)
-                .append(", sequence_number=").append(sequencerNumber)
-                .append(", destinations=").append(destinations)
-                .append("]");
-        return sb.toString();
+        return "ToaHeader{" +
+                "type=" + type2String(type) +
+                ", message_id=" + messageID +
+                ", sequence_number=" + sequencerNumber +
+                ", destinations=" + destinations +
+                '}';
     }
 
     public static String type2String(byte type) {
-        switch(type) {
-            case DATA_MESSAGE: return "DATA_MESSAGE";
-            case PROPOSE_MESSAGE: return "PROPOSE_MESSAGE";
-            case FINAL_MESSAGE: return "FINAL_MESSAGE";
-            case SINGLE_DESTINATION_MESSAGE: return "SINGLE_DESTINATION_MESSAGE";
-            default: return "UNKNOWN";
+        switch (type) {
+            case DATA_MESSAGE:
+                return "DATA_MESSAGE";
+            case PROPOSE_MESSAGE:
+                return "PROPOSE_MESSAGE";
+            case FINAL_MESSAGE:
+                return "FINAL_MESSAGE";
+            case SINGLE_DESTINATION_MESSAGE:
+                return "SINGLE_DESTINATION_MESSAGE";
+            default:
+                return "UNKNOWN";
         }
     }
 
-    public static ToaHeader createNewHeader(byte type, MessageID messageID) {
+    public static ToaHeader newDataMessageHeader(MessageID messageID, Collection<Address> destinations) {
+        assertMessageIDNotNull(messageID);
+        return new ToaHeader(messageID, DATA_MESSAGE).setDestinations(new ArrayList<Address>(destinations));
+    }
+
+    public static ToaHeader newProposeMessageHeader(MessageID messageID, long sequencerNumber) {
+        assertMessageIDNotNull(messageID);
+        return new ToaHeader(messageID, PROPOSE_MESSAGE).setSequencerNumber(sequencerNumber);
+    }
+
+    public static ToaHeader newFinalMessageHeader(MessageID messageID, long sequenceNumber) {
+        assertMessageIDNotNull(messageID);
+        return new ToaHeader(messageID, FINAL_MESSAGE).setSequencerNumber(sequenceNumber);
+    }
+
+    public static ToaHeader createSingleDestinationHeader(MessageID messageID) {
+        return new ToaHeader(messageID, SINGLE_DESTINATION_MESSAGE);
+    }
+
+    private static void assertMessageIDNotNull(MessageID messageID) {
         if (messageID == null) {
-            throw new NullPointerException("The message ID can't be null");
+            throw new NullPointerException("The message ID can't be null.");
         }
-        ToaHeader header = new ToaHeader();
-        header.setType(type);
-        header.setMessageID(messageID);
-        return header;
-    }
-
-   public static ToaHeader createSingleDestinationHeader() {      
-      ToaHeader header = new ToaHeader();
-      header.setType(SINGLE_DESTINATION_MESSAGE);      
-      return header;
-   }
-
-    private void setType(byte type) {
-        this.type = type;
-    }
-
-    private void setMessageID(MessageID messageID) {
-        this.messageID = messageID;
     }
 }
 
