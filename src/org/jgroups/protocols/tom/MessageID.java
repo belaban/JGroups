@@ -10,14 +10,14 @@ import java.io.*;
 
 /**
  * The represents an unique identifier for the messages processed by the Total Order Anycast protocol
- * 
+ * <p/>
  * Note: it is similar to the ViewId (address + counter)
- * 
+ *
  * @author Pedro Ruivo
  * @since 3.1
  */
 public class MessageID implements Externalizable, Comparable<MessageID>, Cloneable, Streamable {
-    private static final long serialVersionUID=878801547232534461L;
+    private static final long serialVersionUID = 878801547232534461L;
     private Address address = null;
     private long id = -1;
 
@@ -28,34 +28,16 @@ public class MessageID implements Externalizable, Comparable<MessageID>, Cloneab
         this.id = id;
     }
 
-    public MessageID(Address address) {
-        this.address = address;
-    }
-
-    public void setID(long id) {
-        this.id = id;
-    }
-
     @Override
     public int compareTo(MessageID other) {
-        if(other == null) return 1;
-
-        if(this.getId() < other.getId()){
-            return -1;
-        } else if(this.getId() > other.getId()){
-            return 1;
+        if (other == null) {
+            throw new NullPointerException();
         }
 
-        return this.address.compareTo(other.address);
+        return id == other.id ? this.address.compareTo(other.address) :
+                id < other.id ? -1 : 1;
     }
 
-    public MessageID copy() {
-        return (MessageID) clone();
-    }
-
-    public long getId() {
-        return id;
-    }
 
     public Address getAddress() {
         return address;
@@ -67,18 +49,33 @@ public class MessageID implements Externalizable, Comparable<MessageID>, Cloneab
     }
 
     public Object clone() {
-        return new MessageID(address, id);
+        try {
+            MessageID dolly = (MessageID) super.clone();
+            dolly.address = address;
+            return dolly;
+        } catch (CloneNotSupportedException e) {
+            throw new IllegalStateException();
+        }
     }
 
-    public boolean equals(Object other) {
-        return (other instanceof MessageID) && compareTo((MessageID) other) == 0;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MessageID messageID = (MessageID) o;
+
+        return id == messageID.id &&
+                !(address != null ? !address.equals(messageID.address) : messageID.address != null);
+
     }
 
-
+    @Override
     public int hashCode() {
-        return (int)id;
+        int result = address != null ? address.hashCode() : 0;
+        result = 31 * result + (int) (id ^ (id >>> 32));
+        return result;
     }
-
 
     public int serializedSize() {
         return Bits.size(id) + Util.size(address);
@@ -87,7 +84,7 @@ public class MessageID implements Externalizable, Comparable<MessageID>, Cloneab
     @Override
     public void writeTo(DataOutput out) throws Exception {
         Util.writeAddress(address, out);
-        Bits.writeLong(id,out);
+        Bits.writeLong(id, out);
     }
 
     @Override
