@@ -1,8 +1,23 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Membership;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.View;
 import org.jgroups.protocols.Discovery;
 import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.PING;
+import org.jgroups.protocols.TCPPING;
 import org.jgroups.protocols.pbcast.CoordGmsImpl;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
@@ -14,8 +29,6 @@ import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.util.*;
 
 /**
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast as well as multicast seqno tables.<br/>
@@ -128,6 +141,9 @@ public class OverlappingMergeTest extends ChannelTestBase {
         views.put(c.getAddress(), c.getView());
         Event merge_evt=new Event(Event.MERGE, views);
         JChannel merge_leader=determineMergeLeader(a, b);
+
+        enableTRACELogging(a,b,c);
+
         System.out.println("\n==== Injecting a merge event (leader=" + merge_leader.getAddress() + ") ====");
         injectMergeEvent(merge_evt, merge_leader);
 
@@ -141,6 +157,8 @@ public class OverlappingMergeTest extends ChannelTestBase {
             runStableProtocol(a,b,c);
             Util.sleep(1000);
         }
+
+        disableTRACELogging(a,b,c);
 
         System.out.println("\n ==== Digests after the merge:\n" + dumpDigests(a,b,c));
 
@@ -196,10 +214,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         views.put(c.getAddress(),c.getView());
         Event merge_evt=new Event(Event.MERGE, views);
 
-        for(JChannel ch: new JChannel[]{a,b,c}) {
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
-            gms.setLevel("trace");
-        }
+        enableTRACELogging(a,b,c);
 
         System.out.println("\n==== Injecting a merge event into A, B and C ====");
         injectMergeEvent(merge_evt,a,b,c);
@@ -215,24 +230,21 @@ public class OverlappingMergeTest extends ChannelTestBase {
             Util.sleep(1000);
         }
 
-        System.out.println("\n ==== Digests after the merge:\n" + dumpDigests(a,b,c));
+        disableTRACELogging(a,b,c);
+
+        System.out.println("\n ==== Digests after the merge:\n" + dumpDigests(a, b, c));
 
         View va=a.getView(), vb=b.getView(), vc=c.getView();
         System.out.println("\nA's view: " + va);
         System.out.println("B's view: " + vb);
         System.out.println("C's view: " + vc);
-        assertEquals("A's view is " + va,3,va.size());
+        assertEquals("A's view is " + va, 3, va.size());
         assertEquals("B's view is " + vb, 3, vb.size());
         assertEquals("C's view is " + vc,3,vc.size());
 
         System.out.println("\n==== Sending messages after merge ====");
-        sendMessages(5,a,b,c);
-        checkReceivedMessages(make(ra, 15), make(rb,15), make(rc,15));
-
-        for(JChannel ch: new JChannel[]{a,b,c}) {
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
-            gms.setLevel("warn");
-        }
+        sendMessages(5, a, b, c);
+        checkReceivedMessages(make(ra, 15), make(rb, 15), make(rc, 15));
     }
 
 
@@ -279,10 +291,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
         System.out.println("\n==== Injecting a merge event into A, B, C and D====");
 
-        for(JChannel ch: new JChannel[]{a,b,c,d}) {
-            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
-            gms.setLevel("trace");
-        }
+        enableTRACELogging(a,b,c);
 
         injectMergeEvent(merge_evt,a,b,c,d);
 
@@ -291,6 +300,8 @@ public class OverlappingMergeTest extends ChannelTestBase {
                 break;
             Util.sleep(500);
         }
+
+        disableTRACELogging(a,b,c);
 
         for(JChannel ch: Arrays.asList(a,b,c,d))
             System.out.println(ch.getName() + ": " + ch.getView() + " (coord=" + isCoord(ch) + ")");
@@ -335,9 +346,9 @@ public class OverlappingMergeTest extends ChannelTestBase {
         views.put(c.getAddress(), c.getView());
         // Event merge_evt=new Event(Event.MERGE, views);
 
-        for(JChannel ch: new JChannel[]{a,b,c})
-            ch.getProtocolStack().findProtocol(GMS.class).setLevel("trace");
+        enableTRACELogging(a,b,c);
 
+        System.out.println("\n==== triggering merge solicitation ====:");
         merge.sendMergeSolicitation();
 
         System.out.println("\n==== checking views after merge ====:");
@@ -351,8 +362,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
             Util.sleep(1000);
         }
 
-        for(JChannel ch: new JChannel[]{a,b,c})
-            ch.getProtocolStack().findProtocol(GMS.class).setLevel("warn");
+        disableTRACELogging(a,b,c);
 
         View va=a.getView(), vb=b.getView(), vc=c.getView();
         System.out.println("\nA's view: " + va);
@@ -363,7 +373,33 @@ public class OverlappingMergeTest extends ChannelTestBase {
         assertEquals("C's view is " + vc, 3, vc.size());
     }
 
+    private static void enableTRACELogging(JChannel... channels) {
+        System.out.println("Enabling TRACE debugging for GMS, MERGE2 and Discovery");
+        for(JChannel ch : channels) {
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            if(gms != null) gms.setLevel("trace");
+            MERGE2 merge=(MERGE2)ch.getProtocolStack().findProtocol(MERGE2.class);
+            if(merge != null) merge.setLevel("trace");
+            PING ping=(PING)ch.getProtocolStack().findProtocol(PING.class);
+            if(ping != null) ping.setLevel("trace");
+            TCPPING tcpping=(TCPPING)ch.getProtocolStack().findProtocol(TCPPING.class);
+            if(tcpping != null) tcpping.setLevel("trace");
+        }
+    }
 
+    private static void disableTRACELogging(JChannel... channels) {
+        System.out.println("Disabling TRACE debugging for GMS, MERGE2 and Discovery");
+        for(JChannel ch : channels) {
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            if(gms != null) gms.setLevel("warn");
+            MERGE2 merge=(MERGE2)ch.getProtocolStack().findProtocol(MERGE2.class);
+            if(merge != null) merge.setLevel("warn");
+            PING ping=(PING)ch.getProtocolStack().findProtocol(PING.class);
+            if(ping != null) ping.setLevel("warn");
+            TCPPING tcpping=(TCPPING)ch.getProtocolStack().findProtocol(TCPPING.class);
+            if(tcpping != null) tcpping.setLevel("warn");
+        }
+    }
 
     private static void makeCoordinator(JChannel ch) {
         GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
