@@ -1,6 +1,14 @@
 package org.jgroups.blocks;
 
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
@@ -10,15 +18,14 @@ import org.jgroups.protocols.FRAG2;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.tests.ChannelTestBase;
-import org.jgroups.util.*;
+import org.jgroups.util.FutureListener;
+import org.jgroups.util.NotifyingFuture;
+import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * A collection of tests to test the RpcDispatcher.
@@ -49,6 +56,8 @@ public class RpcDispatcherTest extends ChannelTestBase {
     // specify return values sizes which should work correctly with 64Mb heap
     final static int[] SIZES={10000, 20000, 40000, 80000, 100000, 200000, 400000, 800000,
         1000000, 2000000, 5000000};
+    // timeout (in secs) for large value tests
+    final static int LARGE_VALUE_TIMEOUT = 30;
 
     @BeforeMethod
     protected void setUp() throws Exception {
@@ -516,12 +525,14 @@ public class RpcDispatcherTest extends ChannelTestBase {
      */
     void _testLargeValue(int size) throws Exception {
     	
-    	// 20 second timeout 
-    	final long timeout = 20 * 1000 ;
+    	final long timeout = LARGE_VALUE_TIMEOUT * 1000 ;
     		
         System.out.println("\ntesting with " + size + " bytes");
+        long startTime = System.currentTimeMillis();
         RspList<Object> rsps=disp1.callRemoteMethods(null, "largeReturnValue", new Object[]{size}, new Class[]{int.class},
                                              new RequestOptions(ResponseMode.GET_ALL, timeout));
+        long stopTime = System.currentTimeMillis();
+        System.out.println("test took: " + (stopTime-startTime) + " ms");
         System.out.println("rsps:");
         assert rsps.size() == 3 : "there should be three responses to the RPC call but only " + rsps.size() +
                 " were received: " + rsps;
@@ -553,15 +564,17 @@ public class RpcDispatcherTest extends ChannelTestBase {
      */
     void _testLargeValueUnicastCall(Address dst, int size) throws Exception {
     	
-    	// 20 second timeout
-    	final long timeout = 20 * 1000 ;
+    	final long timeout = LARGE_VALUE_TIMEOUT * 1000 ;
     	
         System.out.println("\ntesting unicast call with " + size + " bytes");
         assertNotNull(dst);
 
+        long startTime = System.currentTimeMillis();
         byte[] val=disp1.callRemoteMethod(dst, "largeReturnValue", new Object[]{size}, new Class[]{int.class},
                                              new RequestOptions(ResponseMode.GET_ALL, timeout));
-        
+        long stopTime = System.currentTimeMillis();
+        System.out.println("test took: " + (stopTime-startTime) + " ms");
+
         // check value is not null, otherwise fail the test
         assertNotNull("return value should be non-null", val);
         System.out.println("rsp: " + val.length + " bytes");
