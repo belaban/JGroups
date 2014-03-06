@@ -30,7 +30,7 @@ public class UnicastLoopbackTest extends ChannelTestBase {
      * @throws TimeoutException
      */
     public void testUnicastMsgsWithLoopback() throws Exception {
-    	final long TIMEOUT = 2 * 10000 ;
+    	final long TIMEOUT = 60 * 1000;
     	final int NUM=1000;
     	long num_msgs_sent_before = 0 ;
     	long num_msgs_sent_after = 0 ;
