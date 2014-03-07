@@ -201,6 +201,12 @@ public class UDP extends TP {
                 catch(NoRouteToHostException e) {
                     mcast_sock.setInterface(mcast_sock.getInterface());
                 }
+                catch(SocketException sock_ex) {
+                }
+                catch(IOException io_ex) { // https://issues.jboss.org/browse/JGRP-1804
+                    if(bind_addr != null)
+                        mcast_sock.setInterface(bind_addr);
+                }
             }
         }
         else if(sock != null)
