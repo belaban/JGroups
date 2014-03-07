@@ -1,16 +1,22 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.View;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast tables<br/>
@@ -192,8 +198,12 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
         public void receive(Message msg) {
             Address dest=msg.getDest();
             boolean mcast=dest == null;
-            if(!mcast)
-                ucasts.add(msg);
+            if(!mcast)  {
+                // JGRP-1805
+                synchronized(OverlappingUnicastMergeTest.class) {
+                    ucasts.add(msg);
+                }
+            }
         }
 
         public void viewAccepted(View new_view) {
