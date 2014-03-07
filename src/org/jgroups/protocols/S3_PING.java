@@ -147,6 +147,7 @@ public class S3_PING extends FILE_PING {
             return;
         String filename=local_addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)local_addr).toStringLong() : local_addr.toString();
         String key=sanitize(clustername) + "/" + sanitize(filename);
+        HttpURLConnection httpConn = null;
         try {
             byte[] buf=Util.objectToByteBuffer(data);
             S3Object val=new S3Object(buf, null);
@@ -154,11 +155,14 @@ public class S3_PING extends FILE_PING {
             if (usingPreSignedUrls()) {
                 Map headers = new TreeMap();
                 headers.put("x-amz-acl", Arrays.asList("public-read"));
-                conn.put(pre_signed_put_url, val, headers).connection.getResponseMessage();
+                httpConn = conn.put(pre_signed_put_url, val, headers).connection;
             } else {
                 Map headers=new TreeMap();
                 headers.put("Content-Type", Arrays.asList("text/plain"));
-                conn.put(location, key, val, headers).connection.getResponseMessage();
+                httpConn = conn.put(location, key, val, headers).connection;
+            }
+            if(!httpConn.getResponseMessage().equals("OK")) {
+               log.error("Failed to write file to S3 bucket - HTTP Response code: (" + httpConn.getResponseCode() + ")");
             }
         }
         catch(Exception e) {
@@ -199,6 +203,12 @@ public class S3_PING extends FILE_PING {
             }
         } else if (pre_signed_put_url != null || pre_signed_delete_url != null) {
             throw new IllegalArgumentException("pre_signed_put_url and pre_signed_delete_url must both be set or both unset");
+        }
+        if (prefix != null && location != null) {
+            throw new IllegalArgumentException("set either prefix or location, but not both");
+        }
+        if (prefix != null && (access_key == null || secret_access_key == null)) {
+            throw new IllegalArgumentException("access_key and secret_access_key must be set when setting prefix");
         }
     }
     
