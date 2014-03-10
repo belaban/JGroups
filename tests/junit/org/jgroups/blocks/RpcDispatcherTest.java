@@ -57,7 +57,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     final static int[] SIZES={10000, 20000, 40000, 80000, 100000, 200000, 400000, 800000,
         1000000, 2000000, 5000000};
     // timeout (in secs) for large value tests
-    final static int LARGE_VALUE_TIMEOUT = 30;
+    final static int LARGE_VALUE_TIMEOUT = 60;
 
     @BeforeMethod
     protected void setUp() throws Exception {
