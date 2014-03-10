@@ -12,10 +12,13 @@ import org.jgroups.util.Util;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
 import java.io.*;
 import java.security.*;
 import java.security.cert.CertificateException;
+import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.List;
@@ -30,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * ENCRYPT layer. Encrypt and decrypt communication in JGroups
- * 
+ *
  * This class can be used in two ways:
  * <ul>
  * <li> Option 1. Configured with a secretKey in a keystore so it can be used at
@@ -99,7 +102,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * requires a suitable authentication scheme as well to make this feature useful
  * as there is nothing to stop the peer rejoining and receiving the new key. A
  * future release will address this issue.
- * 
+ *
  * @author Steve Woodcock
  * @author Bela Ban
  */
@@ -109,7 +112,7 @@ public class ENCRYPT extends Protocol {
     Address local_addr;
     Address keyServerAddr;
     boolean keyServer=false; //used to see whether we are the key server
-    
+
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
     // encryption properties in no supplied key mode
@@ -131,6 +134,12 @@ public class ENCRYPT extends Protocol {
     @Property(name="sym_init", description="Initial key length for matching symmetric algorithm. Default is 128")
     int symInit=128;
 
+    @Property(name="key_algorithm", description="Encryption algorithm to use for generating the encrytped key")
+    String keyAlgorithm=null;
+
+    @Property(name="iv_key", description="IV (Initialization Vector) used to initialize the crpyto algorithm. Defaults to null (no IV)")
+    String iv=null;
+
     @Property(name="change_keys", description="Generate new symmetric keys on every view change. Default is false")
     boolean changeKeysOnViewChange=false;
 
@@ -145,7 +154,6 @@ public class ENCRYPT extends Protocol {
 
     @Property(name="key_password", description="Password for recovering the key. Change the default")
     private String keyPassword=null; // allows to assign keypwd=storepwd if not set (https://issues.jboss.org/browse/JGRP-1375)
-
 
     @Property(name="alias", description="Alias used for recovering the key. Change the default")
     private String alias="mykey"; // JDK default
@@ -171,8 +179,10 @@ public class ENCRYPT extends Protocol {
     // version filed for secret key
     protected byte[] symVersion;
 
-    // dhared secret key to encrypt/decrypt messages
+    // shared secret key to encrypt/decrypt messages
     protected SecretKey secretKey;
+
+    protected IvParameterSpec ivParamSpec;
 
     // map to hold previous keys so we can decrypt some earlier messages if we need to
     final Map<AsciiString,Cipher> keyMap=new WeakHashMap<AsciiString,Cipher>();
@@ -211,6 +221,7 @@ public class ENCRYPT extends Protocol {
     public String    getAsymAlgorithm()     {return asymAlgorithm;}
     public byte[]    getSymVersion()        {return symVersion;}
     public SecretKey getSecretKey()         {return secretKey;}
+    public String    getKeyAlgorithm()      {return keyAlgorithm;}
     public Cipher    getSymDecodingCipher() {return decoding_ciphers[getNextIndex()];}
     public Cipher    getSymEncodingCipher() {return encoding_ciphers[getNextIndex()];}
     public Address   getKeyServerAddr()     {return keyServerAddr;}
@@ -234,6 +245,7 @@ public class ENCRYPT extends Protocol {
 
 
 
+    @Override
     public void init() throws Exception {
         if(keyPassword == null && storePassword != null) {
             keyPassword=storePassword;
@@ -241,6 +253,7 @@ public class ENCRYPT extends Protocol {
         }
         if(keyStoreName == null) {
             initSymKey();
+            initIV();
             initKeyPair();
         }
         else
@@ -262,7 +275,7 @@ public class ENCRYPT extends Protocol {
         decoding_ciphers=new Cipher[cipher_pool_size];
         decoding_locks=new Lock[cipher_pool_size];
 
-        initSymCiphers(symAlgorithm, getSecretKey());
+        initSymCiphers(symAlgorithm, getSecretKey(), ivParamSpec);
     }
 
     /**
@@ -270,7 +283,7 @@ public class ENCRYPT extends Protocol {
      * supplied key must be in a keystore which can be generated using the
      * keystoreGenerator file in demos. The keystore must be on the classpath to
      * find it.
-     * 
+     *
      * @throws KeyStoreException
      * @throws Exception
      * @throws IOException
@@ -332,16 +345,16 @@ public class ENCRYPT extends Protocol {
 
     /**
      * Used to initialise the symmetric key if none is supplied in a keystore.
-     * 
+     *
      * @throws Exception
      */
     public void initSymKey() throws Exception {
         KeyGenerator keyGen=null;
         // see if we have a provider specified
         if(symProvider != null && !symProvider.trim().isEmpty())
-            keyGen=KeyGenerator.getInstance(getAlgorithm(symAlgorithm), symProvider);
+            keyGen=KeyGenerator.getInstance(getAlgorithm(keyAlgorithm), symProvider);
         else
-            keyGen=KeyGenerator.getInstance(getAlgorithm(symAlgorithm));
+            keyGen=KeyGenerator.getInstance(getAlgorithm(keyAlgorithm));
         // generate the key using the defined init properties
         keyGen.init(symInit);
         secretKey=keyGen.generateKey();
@@ -350,25 +363,31 @@ public class ENCRYPT extends Protocol {
         log.debug("symmetric key generated ");
     }
 
+    public void initIV() throws Exception {
+        if(iv != null) {
+            ivParamSpec = new IvParameterSpec(iv.getBytes());
+        }
+    }
+
     /**
      * Initialises the Ciphers for both encryption and decryption using the
      * generated or supplied secret key.
-     * 
+     *
      * @param algorithm
      * @param secret
      * @throws Exception
      */
-    private void initSymCiphers(String algorithm, SecretKey secret) throws Exception {
+    private void initSymCiphers(String algorithm, SecretKey secret, AlgorithmParameterSpec algoParamSpec) throws Exception {
         log.debug("initializing symmetric ciphers (pool size=%d)",cipher_pool_size);
 
         for(int i=0; i < cipher_pool_size; i++) {
             encoding_ciphers[i]=symProvider != null && !symProvider.trim().isEmpty()?
               Cipher.getInstance(algorithm, symProvider) : Cipher.getInstance(algorithm);
-            encoding_ciphers[i].init(Cipher.ENCRYPT_MODE, secret);
+            encoding_ciphers[i].init(Cipher.ENCRYPT_MODE, secret, algoParamSpec);
 
             decoding_ciphers[i]=symProvider != null && !symProvider.trim().isEmpty()?
               Cipher.getInstance(algorithm, symProvider) : Cipher.getInstance(algorithm);
-            decoding_ciphers[i].init(Cipher.DECRYPT_MODE, secret);
+            decoding_ciphers[i].init(Cipher.DECRYPT_MODE, secret, algoParamSpec);
 
             encoding_locks[i]=new ReentrantLock();
             decoding_locks[i]=new ReentrantLock();
@@ -398,7 +417,7 @@ public class ENCRYPT extends Protocol {
 
     /**
      * Generates the public/private key pair from the init params
-     * 
+     *
      * @throws Exception
      */
     public void initKeyPair() throws Exception {
@@ -424,6 +443,7 @@ public class ENCRYPT extends Protocol {
     }
 
 
+    @Override
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
@@ -451,6 +471,7 @@ public class ENCRYPT extends Protocol {
     }
 
 
+    @Override
     public void up(MessageBatch batch) {
         Decrypter decrypter=new Decrypter();
         batch.map(decrypter);
@@ -467,7 +488,7 @@ public class ENCRYPT extends Protocol {
 
         // if view is a bit broken set me as keyserver
         List<Address> members = view.getMembers();
-        if (members == null || members.isEmpty() || members.get(0) == null) { 
+        if (members == null || members.isEmpty() || members.get(0) == null) {
             becomeKeyServer(local_addr, false);
             return;
         }
@@ -487,7 +508,7 @@ public class ENCRYPT extends Protocol {
 			if ( changeKeysOnViewChange || !keyServer) {
                 log.debug("initalizing new ciphers");
 				initSymKey();
-				initSymCiphers(getSymAlgorithm(), getSecretKey());
+				initSymCiphers(getSymAlgorithm(), getSecretKey(), ivParamSpec);
 			}
 
 		} catch (Exception e) {
@@ -503,7 +524,7 @@ public class ENCRYPT extends Protocol {
     /**
      * Handles becoming server - resetting queue settings and setting keyserver
      * address to be local address.
-     * 
+     *
      * @param tmpKeyServer
      */
     private void becomeKeyServer(Address tmpKeyServer, boolean forced) {
@@ -519,11 +540,11 @@ public class ENCRYPT extends Protocol {
      * Sets up the peer for a new keyserver - this is setting queueing to buffer
      * messages until we have a new secret key from the key server and sending a
      * key request to the new keyserver.
-     * 
+     *
      * @param newKeyServer
      */
     private void handleNewKeyServer(Address newKeyServer) {
-    	
+
     	if ( changeKeysOnViewChange || keyServerChanged(newKeyServer)) {
             // start queueing until we have new key
             // to make sure we are not sending with old key
@@ -684,7 +705,7 @@ public class ENCRYPT extends Protocol {
      * so we may have an extra call to the drain methods but this slight expense
      * is better than the alternative of waiting until the next message to
      * trigger the drains which may never happen.
-     * 
+     *
      * @param key
      * @param version
      * @throws Exception
@@ -696,7 +717,7 @@ public class ENCRYPT extends Protocol {
         keyMap.put(new AsciiString(getSymVersion()), getSymDecodingCipher());
 
         setSecretKey(key);
-        initSymCiphers(key.getAlgorithm(), key);
+        initSymCiphers(key.getAlgorithm(), key, ivParamSpec);
         setSymVersion(version);
 
         // drain the up queue
@@ -776,6 +797,7 @@ public class ENCRYPT extends Protocol {
         down_prot.down(new Event(Event.MSG,newMsg));
     }
 
+    @Override
     public Object down(Event evt) {
         switch(evt.getType()) {
 
@@ -897,7 +919,7 @@ public class ENCRYPT extends Protocol {
 
     /**
      * used to reconstitute public key sent in byte form from peer
-     * 
+     *
      * @param encodedKey
      * @return PublicKey
      */
@@ -922,6 +944,7 @@ public class ENCRYPT extends Protocol {
         protected Lock   lock;
         protected Cipher cipher;
 
+        @Override
         public Message visit(Message msg, MessageBatch batch) {
             EncryptHeader hdr;
 
@@ -1017,12 +1040,14 @@ public class ENCRYPT extends Protocol {
             return Util.isFlagSet(type, ENCRYPT_ENTIRE_MSG);
         }
 
+        @Override
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             out.writeShort(version.length);
             out.write(version);
         }
 
+        @Override
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
             short len=in.readShort();
@@ -1030,10 +1055,12 @@ public class ENCRYPT extends Protocol {
             in.readFully(version);
         }
 
+        @Override
         public String toString() {
             return "[type=" + type + " version=\"" + (version != null? version.length + " bytes" : "n/a") + "\"]";
         }
 
+        @Override
         public int size() {
             int retval=Global.BYTE_SIZE + Global.SHORT_SIZE;
             retval+=version.length;
