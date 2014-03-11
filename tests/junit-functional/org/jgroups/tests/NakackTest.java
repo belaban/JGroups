@@ -1,8 +1,23 @@
 
 package org.jgroups.tests;
 
-import org.jgroups.*;
-import org.jgroups.protocols.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.Receiver;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.TimeoutException;
+import org.jgroups.protocols.FRAG2;
+import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.MFC;
+import org.jgroups.protocols.PING;
+import org.jgroups.protocols.SHARED_LOOPBACK;
+import org.jgroups.protocols.UFC;
+import org.jgroups.protocols.UNICAST2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
@@ -12,9 +27,6 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Tests the reliable FIFO (NAKACK) protocol
@@ -52,10 +64,6 @@ public class NakackTest {
 
     // used to wait for signal that all messages received
     static final Object all_msgs_recd=new Object();
-
-
-
-
 
     /**
      * Set up a number of simulator instances wrapping NAKACK
@@ -109,8 +117,8 @@ public class NakackTest {
         // the test fails if:
         // - a seqno is received out of order (not FIFO), or
         // - not all messages are received in time allotted (allMsgsReceived)
-        Assert.assertTrue(allMsgsReceived, "Incorrect number of messages received by the receiver thread");
-        Assert.assertFalse(notFIFO, "Sequenece numbers for a peer not in correct order");
+        Assert.assertTrue(allMsgsReceived, "Incorrect number of messages received by the receiver thread: " + printMessageCounts(channels));
+        Assert.assertFalse(notFIFO, "Sequence numbers for a peer not in correct order");
     }
 
     protected static JChannel createChannel(String name) throws Exception {
@@ -128,7 +136,18 @@ public class NakackTest {
         }).name(name);
     }
 
-   
+    private static String printMessageCounts(JChannel[] channels) {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < channels.length;i++) {
+            String name = channels[i].getName();
+            int count = ((ReceiverPeer)(channels[i].getReceiver())).getNumberOfReceivedMessages();
+            sb.append(name + ": message count = " + count) ;
+            if (i < channels.length-1)
+                sb.append(", ");
+        }
+        return sb.toString();
+    }
 
     /**
      * This method should do the following:
@@ -148,7 +167,7 @@ public class NakackTest {
         /**
          * Receive() is concurrent for different senders, but sequential per sender
          */
-        public void receive(Message msg) {
+        public synchronized void receive(Message msg) {
             // keep track of seqno ordering of messages received
             Address sender=msg.getSrc();
 
