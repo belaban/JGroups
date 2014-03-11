@@ -38,7 +38,7 @@ public class MPerf extends ReceiverAdapter {
 
     protected int                   num_msgs=1000 * 1000;
     protected int                   msg_size=1000;
-    protected int                   num_threads=1;
+    protected int                   num_threads=10;
     protected int                   log_interval=num_msgs / 10; // log every 10%
     protected int                   receive_log_interval=num_msgs / 10;
     protected int                   num_senders=-1; // <= 0: all
