@@ -131,11 +131,11 @@ public class ConfiguratorTest {
         String config="UDP(mcast_addr=ff18:eb72:479f::2:3;oob_thread_pool.max_threads=4;" +
                 "oob_thread_pool.keep_alive_time=5000;max_bundle_size=64000;mcast_send_buf_size=640000;" +
                 "oob_thread_pool.queue_max_size=10;mcast_recv_buf_size=25000000;" +
-                "tos=8;mcast_port=45522;loopback=true;thread_pool.min_threads=2;" +
+                "tos=8;mcast_port=45522;thread_pool.min_threads=2;" +
                 "oob_thread_pool.rejection_policy=Run;thread_pool.max_threads=8;enable_diagnostics=true;" +
                 "thread_naming_pattern=cl;ucast_send_buf_size=640000;ucast_recv_buf_size=20000000;" +
                 "thread_pool.enabled=true;oob_thread_pool.enabled=true;ip_ttl=2;" +
-                "enable_bundling=true;thread_pool.rejection_policy=Run;discard_incompatible_packets=true;" +
+                "thread_pool.rejection_policy=Run;discard_incompatible_packets=true;" +
                 "thread_pool.keep_alive_time=5000;thread_pool.queue_enabled=false;mcast_addr=228.10.10.15;" +
                 "max_bundle_timeout=30;oob_thread_pool.queue_enabled=false;oob_thread_pool.min_threads=2;" +
                 "thread_pool.queue_max_size=100):" +
@@ -147,7 +147,7 @@ public class ConfiguratorTest {
                 "BARRIER:" +
                 "pbcast.NAKACK(use_mcast_xmit=false;retransmit_timeout=300,600,1200,2400,4800;" +
                 "discard_delivered_msgs=true):" +
-                "UNICAST(loopback=false;timeout=300,600,1200,2400,3600):" +
+                "UNICAST(timeout=300,600,1200,2400,3600):" +
                 "pbcast.STABLE(desired_avg_gossip=50000;max_bytes=1000000;stability_delay=1000):" +
                 "pbcast.GMS(print_local_addr=true;view_bundling=true;join_timeout=3000):" +
                 "FC(max_block_time=10000;max_credits=5000000;min_threshold=0.25):" +

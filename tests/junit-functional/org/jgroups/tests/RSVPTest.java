@@ -61,9 +61,7 @@ public class RSVPTest {
 
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
-            SHARED_LOOPBACK shared_loopback=(SHARED_LOOPBACK)new SHARED_LOOPBACK().setValue("enable_bundling", false);
-            // UDP shared_loopback=(UDP)new UDP().setValue("enable_bundling", false);
-            shared_loopback.setLoopback(false);
+            SHARED_LOOPBACK shared_loopback=new SHARED_LOOPBACK();
             shared_loopback.setTimer(timer);
             shared_loopback.setOOBThreadPool(oob_thread_pool);
             shared_loopback.setDefaultThreadPool(thread_pool);
@@ -83,7 +81,6 @@ public class RSVPTest {
                                              .setValue("xmit_table_msgs_per_row",10)
                                              .setValue("conn_expiry_timeout", 10000),
                                            new RSVP().setValue("timeout", 10000).setValue("throw_exception_on_timeout", false),
-                                           // new STABLE().setValue("max_bytes",500000).setValue("desired_avg_gossip", 60000),
                                            new GMS().setValue("print_local_addr",false)
                                              .setValue("leave_timeout",100)
                                              .setValue("log_view_warnings",false)

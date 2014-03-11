@@ -23,11 +23,9 @@ public class UnicastLoopbackTest extends ChannelTestBase {
 
 
     /**
-     * Tests that when UNICAST messages are sent with TP.loopback == true, the following conditions hold:
+     * Tests that when UNICAST messages are sent to self, the following conditions hold:
      * (i) no messages touch the network
      * (ii) all messages are correctly received
-     * 
-     * @throws TimeoutException
      */
     public void testUnicastMsgsWithLoopback() throws Exception {
     	final long TIMEOUT = 60 * 1000;
@@ -42,9 +40,6 @@ public class UnicastLoopbackTest extends ChannelTestBase {
 
     	Address local_addr=channel.getAddress();
 
-    	// set the loopback property on transport
-    	setLoopbackProperty(channel, true) ;
-
     	num_msgs_sent_before = getNumMessagesSentViaNetwork(channel) ;
 
     	// send NUM UNICAST messages to ourself 
@@ -56,7 +51,7 @@ public class UnicastLoopbackTest extends ChannelTestBase {
 
     	num_msgs_sent_after = getNumMessagesSentViaNetwork(channel) ;
 
-    	// when loopback == true, messages should not touch the network
+    	// when sending msgs to self, messages should not touch the network
         System.out.println("num msgs before: " + num_msgs_sent_before + ", num msgs after: " + num_msgs_sent_after);
         assert num_msgs_sent_before <= num_msgs_sent_after;
         assert num_msgs_sent_after < NUM/10;
@@ -88,25 +83,6 @@ public class UnicastLoopbackTest extends ChannelTestBase {
     }
 
 
-    /**
-     * Set the value of the loopback property on the transport layer.
-     * 
-     * @param ch
-     * @param loopback
-     * @throws Exception
-     */
-    private static void setLoopbackProperty(JChannel ch, boolean loopback) throws Exception {
-    	TP transport =ch.getProtocolStack().getTransport();
-    	if (transport == null)
-    		throw new Exception("transport layer is not present - check default stack configuration") ;
-
-    	// check if already set correctly
-    	if ((loopback && transport.isLoopback()) || (!loopback && !transport.isLoopback()))
-    		return ;
-
-    	// otherwise, set it
-    	transport.setLoopback(loopback);
-    }
 
     /**
      * A receiver which waits for all messages to be received and 

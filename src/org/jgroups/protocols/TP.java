@@ -9,11 +9,12 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
-import org.jgroups.util.Bits;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.UUID;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.InterruptedIOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -33,7 +34,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>marshalling and unmarshalling
  * <li>message bundling (handling single messages, and message lists)
  * <li>incoming packet handler
- * <li>loopback
  * </ul>
  * A subclass has to override
  * <ul>
@@ -126,12 +126,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected int port_range=50; // 27-6-2003 bgooren, Only try one port by default
 
   
-    /**
-     * If true, messages sent to self are treated specially: unicast messages are looped back immediately,
-     * multicast messages get a local copy first and - when the real copy arrives - it will be discarded. Useful for
-     * Window media (non)sense
-     */
-    @Property(description="Messages to self are looped back immediately if true")
+    /** If true, messages sent to self are treated specially: unicast messages are looped back immediately,
+     *  multicast messages get a local copy first and - when the real copy arrives - it will be discarded */
+    @Property(description="Messages to self are looped back immediately if true",deprecatedMessage="enabled by default")
     protected boolean loopback=true;
 
     /**
@@ -548,7 +545,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     /** The address (host and port) of this member. Null by default when a shared transport is used */
-    protected Address local_addr=null;
+    protected Address         local_addr;
+    protected PhysicalAddress local_physical_addr;
 
     /** The members of this group (updated when a member joins or leaves). With a shared transport,
      * members contains *all* members from all channels sitting on the shared transport */
@@ -688,6 +686,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         else
             return name + " (singleton=" + singleton_name + ")";
     }
+
+    @ManagedAttribute(description="The address of the channel")
+    public String getLocalAddress() {return local_addr != null? local_addr.toString() : null;}
+
+    @ManagedAttribute(description="The physical address of the channel")
+    public String getLocalPhysicalAddress() {return local_physical_addr != null? local_physical_addr.toString() : null;}
+
+
 
     public void resetStats() {
         num_msgs_sent=num_msgs_received=num_single_msgs_received=num_batches_received=num_bytes_sent=num_bytes_received=0;
@@ -861,8 +867,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public boolean isDefaulThreadPoolEnabled() { return thread_pool_enabled; }
 
-    public boolean isLoopback() {return loopback;}
-    public void setLoopback(boolean b) {loopback=b;}
+    @Deprecated public boolean isLoopback() {return true;}
+    @Deprecated public void setLoopback(boolean b) {}
 
     public ConcurrentMap<AsciiString,Protocol> getUpProtocols() {return up_prots;}
 
@@ -1404,18 +1410,18 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         // Don't send if destination is local address. Instead, switch dst and src and send it up the stack.
-        // If multicast message, loopback a copy directly to us (but still multicast). Once we receive this,
+        // If multicast message, loop back a copy directly to us (but still multicast). Once we receive this,
         // we will discard our own multicast message
         final boolean multicast=dest == null;
-        if(loopback && (multicast || dest.equals(msg.getSrc()))) {
+        if(multicast || dest.equals(msg.getSrc())) {
 
             // we *have* to make a copy, or else up_prot.up() might remove headers from msg which will then *not*
             // be available for marshalling further down (when sending the message)
             final Message copy=msg.copy();
             if(log.isTraceEnabled()) log.trace("%s: looping back message %s", local_addr, copy);
 
-            TpHeader hdr=(TpHeader)msg.getHeader(this.id); // added by the code above *or* by ProtocolAdapter.down()
-            final AsciiString tmp_cluster_name=new AsciiString(hdr.cluster_name);
+            final AsciiString tmp_cluster_name=isSingleton()?
+              new AsciiString(((TpHeader)msg.getHeader(this.id)).cluster_name) : null;
 
             // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
             boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
@@ -1494,7 +1500,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             return;
         }
 
-        if(loopback && multicast && discard_own_mcast) {
+        if(multicast && discard_own_mcast) {
             Address local=is_protocol_adapter? ((ProtocolAdapter)tmp_prot).getAddress() : local_addr;
             if(local != null && local.equals(msg.getSrc()))
                 return;
@@ -1527,7 +1533,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             return;
         }
 
-        if(loopback && batch.multicast() && discard_own_mcast) {
+        if(batch.multicast() && discard_own_mcast) {
             Address local=is_protocol_adapter? ((ProtocolAdapter)tmp_prot).getAddress() : local_addr;
             if(local != null && local.equals(batch.sender()))
                 return;
@@ -1541,6 +1547,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      */
     public void receive(Address sender, byte[] data, int offset, int length) {
         if(data == null) return;
+
+        // drop message from self; it has already been looped back up (https://issues.jboss.org/browse/JGRP-1765)
+        if(local_physical_addr != null && local_physical_addr.equals(sender))
+            return;
 
         byte flags=data[Global.SHORT_SIZE];
         boolean is_message_list=(flags & LIST) == LIST;
@@ -1865,10 +1875,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
         }
 
+        // send to all physical addrs except myself
         for(LazyRemovalCache.Entry<PhysicalAddress> entry: logical_addr_cache.valuesIterator()) {
             try {
-                if(!entry.isRemovable())
-                    sendUnicast(entry.getVal(), buf, offset, length);
+                if(!entry.isRemovable()) {
+                    PhysicalAddress target=entry.getVal();
+                    if(local_physical_addr == null || !local_physical_addr.equals(target))
+                        sendUnicast(target, buf, offset, length);
+                }
             }
             catch(SocketException sock_ex) {
                 log.debug(Util.getMessage("FailureSendingToPhysAddr"), local_addr, entry.getVal(), sock_ex);
@@ -2145,8 +2159,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      */
     protected void registerLocalAddress(Address addr) {
         PhysicalAddress physical_addr=getPhysicalAddress();
-        if(physical_addr != null && addr != null)
+        if(physical_addr != null && addr != null) {
+            local_physical_addr=physical_addr;
             addPhysicalAddressToCache(addr, physical_addr);
+        }
     }
 
     /**

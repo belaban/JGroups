@@ -11,7 +11,6 @@
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          tos="8"
-         loopback="true"
          max_bundle_size="64K"
          max_bundle_timeout="30"
          enable_diagnostics="true"

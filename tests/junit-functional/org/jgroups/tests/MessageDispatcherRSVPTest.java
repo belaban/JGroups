@@ -65,8 +65,7 @@ public class MessageDispatcherRSVPTest {
 
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
-            SHARED_LOOPBACK shared_loopback=(SHARED_LOOPBACK)new SHARED_LOOPBACK().setValue("enable_bundling", false);
-            shared_loopback.setLoopback(false);
+            SHARED_LOOPBACK shared_loopback=new SHARED_LOOPBACK();
             shared_loopback.setTimer(timer);
             shared_loopback.setOOBThreadPool(oob_thread_pool);
             shared_loopback.setDefaultThreadPool(thread_pool);

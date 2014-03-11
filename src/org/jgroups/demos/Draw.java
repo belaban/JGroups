@@ -22,7 +22,7 @@ import java.util.List;
  * @author Bela Ban, Oct 17 2001
  */
 public class Draw extends ReceiverAdapter implements ActionListener, ChannelListener {
-    protected String               cluster_name="draw-cluster";
+    protected String               cluster_name="draw";
     private JChannel               channel=null;
     private int                    member_size=1;
     private JFrame                 mainFrame=null;

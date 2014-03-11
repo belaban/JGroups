@@ -36,7 +36,6 @@ public class MessageBundlingTest extends ChannelTestBase {
     protected void createChannels() throws Exception {
         a=createChannel(true, 2, "A");
         setBundling(a,MAX_BYTES,LATENCY);
-        setLoopback(a,false);
         a.connect("MessageBundlingTest");
         b=createChannel(a, "B");
         r2=new MyReceiver();
@@ -103,8 +102,6 @@ public class MessageBundlingTest extends ChannelTestBase {
 
     public void testLatencyWithMessageBundlingAndLoopback() throws Exception {
         Message tmp=new Message();
-        setLoopback(a, true);
-        setLoopback(b, true);
         r2.setNumExpectedMesssages(1);
         Promise<Integer> promise=new Promise<Integer>();
         r2.setPromise(promise);
@@ -123,8 +120,6 @@ public class MessageBundlingTest extends ChannelTestBase {
 
 
     public void testLatencyWithMessageBundlingAndMaxBytes() throws Exception {
-        setLoopback(a, true);
-        setLoopback(b, true);
         r2.setNumExpectedMesssages(10);
         Promise<Integer> promise=new Promise<Integer>();
         r2.setPromise(promise);
@@ -143,11 +138,6 @@ public class MessageBundlingTest extends ChannelTestBase {
         }
     }
 
-
-
-    protected static void setLoopback(JChannel ch, boolean b) {
-        ch.getProtocolStack().getTransport().setLoopback(b);
-    }
 
 
     private static void setBundling(JChannel ch, int max_bytes, long timeout) {

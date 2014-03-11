@@ -65,7 +65,7 @@ public class MergeTest2 {
 
 
     protected JChannel createChannel(String name, TimeScheduler timer, Executor thread_pool, Executor oob_thread_pool) throws Exception {
-        SHARED_LOOPBACK shared_loopback=(SHARED_LOOPBACK)new SHARED_LOOPBACK().setValue("enable_bundling", false);
+        SHARED_LOOPBACK shared_loopback=(SHARED_LOOPBACK)new SHARED_LOOPBACK();
         shared_loopback.setTimer(timer);
         shared_loopback.setOOBThreadPool(oob_thread_pool);
         shared_loopback.setDefaultThreadPool(thread_pool);

@@ -140,7 +140,7 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
     }
 
     protected JChannel createTunnelChannel(String name) throws Exception {
-        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("enable_bundling",false).setValue("bind_addr", InetAddress.getByName(bind_addr));
+        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("bind_addr", InetAddress.getByName(bind_addr));
         tunnel.setGossipRouterHosts(gossip_router_hosts);
         JChannel ch=Util.createChannel(tunnel,
                                        new PING(),

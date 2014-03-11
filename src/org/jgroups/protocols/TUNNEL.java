@@ -113,9 +113,6 @@ public class TUNNEL extends TP {
         
         stubManager = RouterStubManager.emptyGossipClientStubManager(this);
         sock = getSocketFactory().createDatagramSocket("jgroups.tunnel.ucast_sock", bind_port, bind_addr);
-        
-        // loopback turned on is mandatory
-        loopback = true;
     }
     
     public void destroy() {        

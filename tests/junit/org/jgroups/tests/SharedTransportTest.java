@@ -328,6 +328,33 @@ public class SharedTransportTest extends ChannelTestBase {
     }
 
 
+    public void testMulticasts() throws Exception {
+        a=createSharedChannel(SINGLETON_1, "A");
+        a.setReceiver(r1=new MyReceiver("A"));
+
+        b=createSharedChannel(SINGLETON_1, "B");
+        b.setReceiver(r2=new MyReceiver("B"));
+
+        c=createSharedChannel(SINGLETON_2, "C");
+        c.setReceiver(r3=new MyReceiver("C"));
+
+        a.connect("one");
+        b.connect("two");
+        c.connect("one");
+
+        Util.waitUntilAllChannelsHaveSameSize(10000, 500, b);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a,c);
+
+        b.send(null, "hello world");
+        assertSize(1, r2);
+        assertSize(0, r1, r3);
+
+        a.send(null, "first msg");
+        c.send(null, "second");
+        assertSize(2, r1, r3);
+        assertSize(1, r2);
+    }
+
     
     public void testReCreationWithSurvivingChannel() throws Exception {
 
@@ -403,19 +430,11 @@ public class SharedTransportTest extends ChannelTestBase {
 
         b.send(null, "first");
 
-        // msg delivery is asynchronous, so give members some time to receive the msg (incl retransmission)
-        for(int i=0; i < 20; i++) {
-            if(rec_b.size() == 1 && rec_c.size() == 1 && rec_a.size() == 0)
-                break;
-            Util.sleep(500);
-        }
-
         assertSize(1, rec_b, rec_c);
         assertSize(0, rec_a);
         a.close();
 
         b.send(null, "second");
-        Util.sleep(500);
         assertSize(0, rec_a);
         assertSize(2, rec_b, rec_c);
     }
@@ -498,9 +517,22 @@ public class SharedTransportTest extends ChannelTestBase {
     }
 
     private static void assertSize(int expected, MyReceiver... receivers) {
-        for(MyReceiver recv: receivers) {
-            assertEquals(expected, recv.size());
+        for(int i=0; i < 10; i++) {
+            boolean all_ok=true;
+            for(MyReceiver receiver: receivers) {
+                if(receiver.size() != expected) {
+                    all_ok=false;
+                    break;
+                }
+            }
+            if(all_ok)
+                break;
+            else
+                Util.sleep(500);
         }
+
+        for(MyReceiver recv: receivers)
+            assertEquals(expected, recv.size());
     }
 
     private JChannel createSharedChannel(String singleton_name, String name) throws Exception {
@@ -576,9 +608,7 @@ public class SharedTransportTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            StringBuilder sb=new StringBuilder();
-            sb.append("[" + name + "]: view = " + new_view);
-            System.out.println(sb);
+            System.out.println("[" + name + "]: view = " + new_view);
         }
 
         public String toString() {

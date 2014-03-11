@@ -123,16 +123,6 @@ public class UDP extends TP {
     }
 
 
-    /**
-     * Usually, src addresses are nulled, and the receiver simply sets them to
-     * the address of the sender. However, for multiple addresses on a Windows
-     * loopback device, this doesn't work (see
-     * http://jira.jboss.com/jira/browse/JGRP-79 and the JGroups wiki for
-     * details). This must be the same value for all members of the same group.
-     * Default is true, for performance reasons
-     */
-    // private boolean null_src_addresses=true;
-
 
     public boolean supportsMulticasting() {
         return ip_mcast;
@@ -192,25 +182,28 @@ public class UDP extends TP {
 
     protected void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
         DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
-        if(mcast) {
-            if(mcast_sock != null) {
-                try {
-                    mcast_sock.send(packet);
-                }
-                // solve reconnection issue with Windows (https://jira.jboss.org/browse/JGRP-1254)
-                catch(NoRouteToHostException e) {
-                    mcast_sock.setInterface(mcast_sock.getInterface());
-                }
-                catch(SocketException sock_ex) {
-                }
-                catch(IOException io_ex) { // https://issues.jboss.org/browse/JGRP-1804
-                    if(bind_addr != null)
-                        mcast_sock.setInterface(bind_addr);
-                }
-            }
-        }
-        else if(sock != null)
+        // using the datagram socket to send multicasts or unicasts (https://issues.jboss.org/browse/JGRP-1765)
+        if(sock != null)
             sock.send(packet);
+//        if(mcast) {
+//            if(mcast_sock != null) {
+//                try {
+//                    mcast_sock.send(packet);
+//                }
+//                // solve reconnection issue with Windows (https://jira.jboss.org/browse/JGRP-1254)
+//                catch(NoRouteToHostException e) {
+//                    mcast_sock.setInterface(mcast_sock.getInterface());
+//                }
+//                catch(SocketException sock_ex) {
+//                }
+//                catch(IOException io_ex) { // https://issues.jboss.org/browse/JGRP-1804
+//                    if(bind_addr != null)
+//                        mcast_sock.setInterface(bind_addr);
+//                }
+//            }
+//        }
+//        else if(sock != null)
+//            sock.send(packet);
     }
 
 
@@ -329,12 +322,10 @@ public class UDP extends TP {
 
         // 2. Create socket for receiving unicast UDP packets. The address and port
         //    of this socket will be our local address (local_addr)
-        if(bind_port > 0) {
+        if(bind_port > 0)
             sock=createDatagramSocketWithBindPort();
-        }
-        else {
+        else
             sock=createEphemeralDatagramSocket();
-        }
         if(tos > 0) {
             try {
                 sock.setTrafficClass(tos);
@@ -393,8 +384,7 @@ public class UDP extends TP {
         }
 
         setBufferSizes();
-        if(log.isDebugEnabled())
-            log.debug("socket information:\n" + dumpSocketInfo());
+        log.debug("socket information:\n%s", dumpSocketInfo());
     }
 
 

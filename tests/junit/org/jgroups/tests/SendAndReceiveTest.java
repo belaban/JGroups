@@ -22,7 +22,7 @@ public class SendAndReceiveTest {
     static final int NUM_MSGS=1000;
     static final long TIMEOUT=30000;
 
-    String props1="UDP(bind_addr=127.0.0.1;loopback=true;mcast_port=27000;ip_ttl=1;" +
+    String props1="UDP(bind_addr=127.0.0.1;mcast_port=27000;ip_ttl=1;" +
       "mcast_send_buf_size=64000;mcast_recv_buf_size=640000):" +
       "PING(timeout=2000;num_initial_members=3):" +
       "MERGE2(min_interval=5000;max_interval=10000):" +
@@ -34,7 +34,7 @@ public class SendAndReceiveTest {
       "FRAG2(frag_size=8096):" +
       "pbcast.GMS(join_timeout=5000;print_local_addr=true)";
 
-    String props2="UDP(bind_addr=127.0.0.1;loopback=false;mcast_port=27000;ip_ttl=1;" +
+    String props2="UDP(bind_addr=127.0.0.1;mcast_port=27000;ip_ttl=1;" +
       "mcast_send_buf_size=64000;mcast_recv_buf_size=640000):" +
       "PING(timeout=2000;num_initial_members=3):" +
       "MERGE2(min_interval=5000;max_interval=10000):" +

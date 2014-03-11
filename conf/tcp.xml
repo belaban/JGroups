@@ -9,9 +9,8 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.3.xsd">
     <TCP bind_port="7800"
-         loopback="false"
          recv_buf_size="${tcp.recv_buf_size:5M}"
-         send_buf_size="${tcp.send_buf_size:640K}"
+         send_buf_size="${tcp.send_buf_size:5M}"
          max_bundle_size="64K"
          max_bundle_timeout="30"
          use_send_queues="true"

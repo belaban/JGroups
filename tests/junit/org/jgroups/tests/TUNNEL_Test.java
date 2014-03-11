@@ -252,7 +252,7 @@ public class TUNNEL_Test extends ChannelTestBase{
     }
 
     protected JChannel createTunnelChannel(String name, boolean include_failure_detection) throws Exception {
-        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("enable_bundling",false).setValue("bind_addr", bind_addr);
+        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("bind_addr", bind_addr);
         tunnel.setGossipRouterHosts(gossip_router_hosts);
         List<Protocol> protocols=new ArrayList<Protocol>();
         protocols.addAll(Arrays.asList(tunnel, new PING(), new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000)));
