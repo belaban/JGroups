@@ -451,7 +451,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                 short send_conn_id=entry.send_conn_id;
                 long seqno=entry.sent_msgs_seqno.getAndIncrement();
                 long sleep=10;
-                while(running) {
+                do {
                     try {
                         msg.putHeader(this.id, UnicastHeader.createDataHeader(seqno,send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
                         entry.sent_msgs.add(seqno,msg);  // add *including* UnicastHeader, adds to retransmitter
@@ -466,11 +466,12 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                         sleep=Math.min(5000, sleep*2);
                     }
                 }
+                while(running);
 
                 if(log.isTraceEnabled()) {
                     StringBuilder sb=new StringBuilder();
                     sb.append(local_addr).append(" --> DATA(").append(dst).append(": #").append(seqno).
-                            append(", conn_id=").append(send_conn_id);
+                      append(", conn_id=").append(send_conn_id);
                     if(seqno == DEFAULT_FIRST_SEQNO) sb.append(", first");
                     sb.append(')');
                     log.trace(sb);
