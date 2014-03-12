@@ -139,7 +139,6 @@ public class NakackTest {
      */
     protected class Receiver extends ReceiverAdapter {
         final JChannel               channel;
-        int                          num_mgs_received=0;
         ConcurrentMap<Address, Long> senders=new ConcurrentHashMap<Address, Long>();
 
         public Receiver(JChannel channel) {
@@ -166,7 +165,6 @@ public class NakackTest {
             try {
                 num=(Long)msg.getObject();
                 long received_seqno=num;
-                num_mgs_received++;
 
                 // 1. check if sequence numbers are in sequence
                 if(received_seqno == last_seqno) // correct - update with next expected seqno
@@ -184,11 +182,6 @@ public class NakackTest {
             catch(Exception ex) {
                 System.err.println(ex.toString());
             }
-        }
-
-
-        public int getNumberOfReceivedMessages() {
-            return num_mgs_received;
         }
     }
 
