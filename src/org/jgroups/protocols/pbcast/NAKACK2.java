@@ -730,19 +730,20 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
         msg_id=seqno.incrementAndGet();
         long sleep=10;
-        while(running) {
+        do {
             try {
                 msg.putHeader(this.id, NakAckHeader2.createMessageHeader(msg_id));
                 buf.add(msg_id, msg);
                 break;
             }
             catch(Throwable t) {
-                if(!running)
-                    break;
-                Util.sleep(sleep);
-                sleep=Math.min(5000, sleep*2);
+                if(running) {
+                    Util.sleep(sleep);
+                    sleep=Math.min(5000, sleep*2);
+                }
             }
         }
+        while(running);
 
         // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
         if(log.isTraceEnabled())
