@@ -2722,6 +2722,15 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             return up_prot.up(evt);
         }
 
+        public void up(MessageBatch batch) {
+            Address dest=batch.dest();
+            if(dest != null && local_addr != null && !dest.equals(local_addr)) {
+                log.warn(Util.getMessage("IncorrectDest"), local_addr, "batch", batch.sender(), dest, "n/a");
+                return;
+            }
+            up_prot.up(batch);
+        }
+
         public String getName() {
             return "TP.ProtocolAdapter";
         }
