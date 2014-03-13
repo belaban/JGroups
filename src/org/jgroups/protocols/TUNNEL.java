@@ -233,8 +233,8 @@ public class TUNNEL extends TP {
         }
     }
 
-
-    protected void send(Message msg, Address dest, boolean multicast) throws Exception {
+    @Override
+    protected void send(Message msg, Address dest) throws Exception {
 
         // we don't currently support message bundling in TUNNEL
         TpHeader hdr=(TpHeader)msg.getHeader(this.id);
@@ -243,19 +243,17 @@ public class TUNNEL extends TP {
         String group=cluster_name != null? cluster_name.toString() : null;
 
         ByteArrayDataOutputStream dos=new ByteArrayDataOutputStream((int)(msg.size() + 50));
-        writeMessage(msg, dos, multicast);
+        writeMessage(msg, dos, dest == null);
 
         if(stats) {
             num_msgs_sent++;
             num_bytes_sent+=dos.position();
         }
         List<RouterStub> stubs = stubManager.getStubs();
-        if(multicast) {
+        if(dest == null)
             tunnel_policy.sendToAllMembers(stubs, group, dos.buffer(), 0, dos.position());
-        }
-        else {
+        else
             tunnel_policy.sendToSingleMember(stubs, group, dest, dos.buffer(), 0, dos.position());
-        }
     }
 
 

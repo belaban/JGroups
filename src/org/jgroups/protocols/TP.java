@@ -129,7 +129,17 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** If true, messages sent to self are treated specially: unicast messages are looped back immediately,
      *  multicast messages get a local copy first and - when the real copy arrives - it will be discarded */
     @Property(description="Messages to self are looped back immediately if true",deprecatedMessage="enabled by default")
+    @Deprecated
     protected boolean loopback=true;
+
+    @Property(description="Whether or not to make a copy of a message before looping it back up. Don't use this; might " +
+      "get removed without warning")
+    protected boolean loopback_copy=false;
+
+    @Property(description="Loop back the message on a separate thread or use the current thread. Don't use this; " +
+      "might get removed without warning")
+    protected boolean loopback_separate_thread=true;
+
 
     /**
      * Discard packets with a different version. Usually minor version differences are okay. Setting this property
@@ -1397,11 +1407,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(!isSingleton())
             setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
-        if(log.isTraceEnabled())
-            log.trace("%s: sending msg to %s, src=%s, headers are %s", local_addr, msg.getDest(), msg.getSrc(), msg.printHeaders());
 
-
-        Address dest=msg.getDest();
+        Address dest=msg.getDest(), sender=msg.getSrc();
         if(dest instanceof PhysicalAddress) {
             // We can modify the message because it won't get retransmitted. The only time we have a physical address
             // as dest is when TCPPING sends the initial discovery requests to initial_hosts: this is below UNICAST,
@@ -1409,36 +1416,61 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             msg.dest(null).setFlag(Message.Flag.DONT_BUNDLE);
         }
 
-        // Don't send if destination is local address. Instead, switch dst and src and send it up the stack.
-        // If multicast message, loop back a copy directly to us (but still multicast). Once we receive this,
-        // we will discard our own multicast message
-        final boolean multicast=dest == null;
-        if(multicast || dest.equals(msg.getSrc())) {
+        if(log.isTraceEnabled())
+            log.trace("%s: sending msg to %s, src=%s, headers are %s", local_addr, dest, sender, msg.printHeaders());
 
-            // we *have* to make a copy, or else up_prot.up() might remove headers from msg which will then *not*
-            // be available for marshalling further down (when sending the message)
-            final Message copy=msg.copy();
-            if(log.isTraceEnabled()) log.trace("%s: looping back message %s", local_addr, copy);
+        // Don't send if dest is local address. Instead, send it up the stack. If multicast message, loop back directly
+        // to us (but still multicast). Once we receive this, we discard our own multicast message
+        boolean multicast=dest == null, loop_back=multicast || dest.equals(sender), do_send=multicast || !dest.equals(sender);
 
-            final AsciiString tmp_cluster_name=isSingleton()?
-              new AsciiString(((TpHeader)msg.getHeader(this.id)).cluster_name) : null;
+        if(loopback_separate_thread) {
+            if(loop_back)
+                loopback(msg, multicast);
+            if(do_send)
+                _send(msg, dest);
+        }
+        else {
+            if(do_send)
+                _send(msg, dest);
+            if(loop_back)
+                loopback(msg, multicast);
+        }
+        return null;
+    }
 
-            // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
-            boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
-            Executor pool=internal && internal_thread_pool != null? internal_thread_pool
-              : internal || msg.isFlagSet(Message.Flag.OOB)? oob_thread_pool : thread_pool;
-            pool.execute(new Runnable() {
-                public void run() {
-                    passMessageUp(copy, tmp_cluster_name, false, multicast, false);
-                }
-            });
 
-            if(!multicast)
-                return null;
+
+    /*--------------------------- End of Protocol interface -------------------------- */
+
+
+    /* ------------------------------ Private Methods -------------------------------- */
+
+    protected void loopback(Message msg, final boolean multicast) {
+        final Message copy=loopback_copy? msg.copy() : msg;
+        if(log.isTraceEnabled()) log.trace("%s: looping back message %s", local_addr, copy);
+
+        final AsciiString tmp_cluster_name=isSingleton()?
+          new AsciiString(((TpHeader)msg.getHeader(this.id)).cluster_name) : null;
+
+        if(!loopback_separate_thread) {
+            passMessageUp(copy, tmp_cluster_name, false, multicast, false);
+            return;
         }
 
+        // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
+        boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
+        Executor pool=internal && internal_thread_pool != null? internal_thread_pool
+          : internal || msg.isFlagSet(Message.Flag.OOB)? oob_thread_pool : thread_pool;
+        pool.execute(new Runnable() {
+            public void run() {
+                passMessageUp(copy, tmp_cluster_name, false, multicast, false);
+            }
+        });
+    }
+
+    protected void _send(Message msg, Address dest) {
         try {
-            send(msg, dest, multicast);
+            send(msg, dest);
         }
         catch(InterruptedIOException iex) {
         }
@@ -1453,15 +1485,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             log.error(Util.getMessage("SendFailure"),
                       local_addr, (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
         }
-        return null;
     }
-
-
-
-    /*--------------------------- End of Protocol interface -------------------------- */
-
-
-    /* ------------------------------ Private Methods -------------------------------- */
 
 
 
@@ -1800,7 +1824,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     /** Serializes and sends a message. This method is not reentrant */
-    protected void send(Message msg, Address dest, boolean multicast) throws Exception {
+    protected void send(Message msg, Address dest) throws Exception {
         // bundle all messages, even the ones tagged with DONT_BUNDLE, except if we use the old bundler (DefaultBundler)
         // JIRA: https://issues.jboss.org/browse/JGRP-1737
         boolean bypass_bundling=msg.isFlagSet(Message.Flag.DONT_BUNDLE) &&
@@ -1813,19 +1837,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // we can create between 300'000 - 400'000 output streams and do the marshalling per second,
         // so this is not a bottleneck !
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)(msg.size() + MSG_OVERHEAD)); // version+flag+msg
-        writeMessage(msg, out, multicast);
-        doSend(out.buffer(), 0, out.position(), dest, multicast);
+        writeMessage(msg, out, dest == null);
+        doSend(out.buffer(), 0, out.position(), dest);
         if(stats)
             num_single_msgs_sent++;
     }
 
 
-    protected void doSend(byte[] buf, int offset, int length, Address dest, boolean multicast) throws Exception {
+    protected void doSend(byte[] buf, int offset, int length, Address dest) throws Exception {
         if(stats) {
             num_msgs_sent++;
             num_bytes_sent+=length;
         }
-        if(multicast)
+        if(dest == null)
             sendMulticast(buf, offset, length);
         else
             sendToSingleMember(dest, buf, offset, length);
@@ -2364,13 +2388,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         protected void sendSingleMessage(final Message msg, boolean reset, final ByteArrayDataOutputStream out) {
             Address dest=msg.getDest();
-            boolean multicast=dest == null;
 
             try {
                 if(reset)
                     out.position(0);
-                writeMessage(msg, out, multicast);
-                doSend(out.buffer(), 0, out.position(), dest, multicast);
+                writeMessage(msg, out, dest == null);
+                doSend(out.buffer(), 0, out.position(), dest);
                 if(stats)
                     num_single_msgs_sent++;
             }
@@ -2392,7 +2415,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 if(reset)
                     out.position(0);
                 writeMessageList(dest, src, cluster_name, list, out, dest == null, id); // flushes output stream when done
-                doSend(out.buffer(), 0, out.position(), dest, dest == null);
+                doSend(out.buffer(), 0, out.position(), dest);
             }
             catch(SocketException sock_ex) {
                 log.debug(Util.getMessage("FailureSendingMsgBundle"),local_addr,sock_ex);
