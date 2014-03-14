@@ -472,7 +472,7 @@
             <title>AWS_PING</title>
             <para>
                 This is a protocol written by Meltmedia, which uses the AWS API. It is not part of JGroups, but can be
-                downloaded at <ulink url="https://meltmedia.github.com/jgroups-aws"/>.
+                downloaded at <ulink url="http://meltmedia.github.io/jgroups-aws/"/>.
             </para>
         </section>
 
