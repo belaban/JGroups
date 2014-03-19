@@ -242,15 +242,17 @@ public class Relayer {
             this.channel=ch;
             channel.setName(channel_name);
             channel.setReceiver(this);
-            channel.setAddressGenerator(addr_generator);
+            channel.addAddressGenerator(addr_generator);
             this.cluster_name=cluster_name;
         }
 
         protected void start() throws Exception {
             channel.connect(cluster_name);
+            log.info("%s: joined bridge cluster '%s'", channel.getAddress(), cluster_name);
         }
 
         protected void stop() {
+            log.info("%s: leaving bridge cluster '%s'", channel.getAddress(), channel.getClusterName());
             Util.close(channel);
         }
 

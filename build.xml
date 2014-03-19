@@ -280,7 +280,7 @@
                  author="true"
                  version="true"
                  use="true"
-                 bottom="Copyright &#169; 1998-2012 Bela Ban / Red Hat. All Rights Reserved."
+                 bottom="Copyright &#169; 1998-2014 Bela Ban / Red Hat. All Rights Reserved."
                  useexternalfile="yes"
                  doctitle="JGroups"
                  overview="${src.dir}/org/jgroups/overview.html">

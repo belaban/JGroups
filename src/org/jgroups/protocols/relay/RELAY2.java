@@ -129,7 +129,7 @@ public class RELAY2 extends Protocol {
     public RELAY2 asyncRelayCreation(boolean flag)   {async_relay_creation=flag;   return this;}
 
     public String  site()                            {return site;}
-    public List<String> siteNames()                  {return relayer.getSiteNames();}
+    public List<String> siteNames()                  {return getSites();}
     public String  config()                          {return config;}
     public boolean canBecomeSiteMaster()             {return can_become_site_master;}
     public boolean enableAddressTagging()            {return enable_address_tagging;}
@@ -218,6 +218,10 @@ public class RELAY2 extends Protocol {
         return this;
     }
 
+    public List<String> getSites() {
+        return sites.isEmpty()? Collections.<String>emptyList() : new ArrayList<String>(sites.keySet());
+    }
+
 
     public void init() throws Exception {
         super.init();
@@ -253,19 +257,12 @@ public class RELAY2 extends Protocol {
 
         if(enable_address_tagging) {
             JChannel ch=getProtocolStack().getChannel();
-            final AddressGenerator old_generator=ch.getAddressGenerator();
-            ch.setAddressGenerator(new AddressGenerator() {
+            ch.addAddressGenerator(new AddressGenerator() {
                 public Address generateAddress() {
-                    if(old_generator != null) {
-                        Address addr=old_generator.generateAddress();
-                        if(addr instanceof TopologyUUID)
-                            return new CanBeSiteMasterTopology((TopologyUUID)addr, can_become_site_master);
-                        else if(addr instanceof UUID)
-                            return new CanBeSiteMaster((UUID)addr, can_become_site_master);
-                        log.warn(local_addr + ": address generator is already set (" + old_generator +
-                                   "); will replace it with own generator");
-                    }
-                    return CanBeSiteMaster.randomUUID(can_become_site_master);
+                    ExtendedUUID retval=ExtendedUUID.randomUUID();
+                    if(can_become_site_master)
+                        retval.setFlag(ExtendedUUID.can_become_site_master);
+                    return retval;
                 }
             });
         }
@@ -339,6 +336,8 @@ public class RELAY2 extends Protocol {
                 Address src=msg.getSrc();
                 SiteAddress sender=src instanceof SiteMaster? new SiteMaster(((SiteMaster)src).getSite())
                   : new SiteUUID((UUID)local_addr, UUID.get(local_addr), site);
+                if(local_addr instanceof ExtendedUUID)
+                    ((ExtendedUUID)sender).addContents((ExtendedUUID)local_addr);
 
                 // target is in the same site; we can deliver the message in our local cluster
                 if(target.getSite().equals(site)) {
@@ -393,7 +392,10 @@ public class RELAY2 extends Protocol {
                 if(hdr == null) {
                     // forward a multicast message to all bridges except myself, then pass up
                     if(dest == null && is_site_master && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
+                        Address src=msg.getSrc();
                         Address sender=new SiteUUID((UUID)msg.getSrc(), UUID.get(msg.getSrc()), site);
+                        if(src instanceof ExtendedUUID)
+                            ((SiteUUID)sender).addContents((ExtendedUUID)src);
                         sendToBridges(sender, msg, site);
                     }
                     break; // pass up
@@ -421,7 +423,10 @@ public class RELAY2 extends Protocol {
             if(hdr == null) {
                 // forward a multicast message to all bridges except myself, then pass up
                 if(dest == null && is_site_master && relay_multicasts && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
+                    Address src=msg.getSrc();
                     Address sender=new SiteUUID((UUID)msg.getSrc(), UUID.get(msg.getSrc()), site);
+                    if(src instanceof ExtendedUUID)
+                        ((SiteUUID)sender).addContents((ExtendedUUID)src);
                     sendToBridges(sender, msg, site);
                 }
             }
@@ -444,12 +449,12 @@ public class RELAY2 extends Protocol {
             Relay2Header header=hdr;
 
             if(header.type == Relay2Header.DATA && can_forward_local_cluster) {
-                SiteUUID site_uuid = (SiteUUID)hdr.final_dest;
+                SiteUUID site_uuid=(SiteUUID)hdr.final_dest;
 
                 //  If configured to do so, we want to load-balance these messages,
-                int index = (int)Util.random( members.size() ) - 1;
-                UUID tmp = (UUID)members.get(index);
-                SiteAddress final_dest = new SiteUUID(tmp, site_uuid.getName(), site_uuid.getSite());
+                int index=(int)Util.random( members.size()) -1;
+                UUID tmp=(UUID)members.get(index);
+                SiteAddress final_dest=new SiteUUID(tmp, site_uuid.getName(), site_uuid.getSite());
 
                 // If we select a different address to handle this message, we handle it here.
                 if(!final_dest.equals(hdr.final_dest)) {
@@ -461,11 +466,8 @@ public class RELAY2 extends Protocol {
             handleMessage(header, message);
         }
         else {
-            Message copy=copy(msg);
-            copy.setDest(null); // final_dest is null !
-            copy.setSrc(null);  // we'll use our own address
-            copy.putHeader(id, hdr);
-            down_prot.down(new Event(Event.MSG, copy));            // multicast locally
+            Message copy=copy(msg).dest(null).src(null).putHeader(id, hdr);
+            down_prot.down(new Event(Event.MSG, copy)); // multicast locally
 
             // Don't forward: https://issues.jboss.org/browse/JGRP-1519
             // sendToBridges(msg.getSrc(), buf, from_site, site_id);  // forward to all bridges except self and from
@@ -691,9 +693,9 @@ public class RELAY2 extends Protocol {
         int selected=0;
 
         for(Address member: view) {
-            if((member instanceof CanBeSiteMasterTopology && !((CanBeSiteMasterTopology)member).canBecomeSiteMaster())
-              || ((member instanceof CanBeSiteMaster) && !((CanBeSiteMaster)member).canBecomeSiteMaster()))
+            if(member instanceof ExtendedUUID && !((ExtendedUUID)member).isFlagSet(ExtendedUUID.can_become_site_master))
                 continue;
+
             if(selected++ < max_site_masters)
                 retval.add(member);
         }

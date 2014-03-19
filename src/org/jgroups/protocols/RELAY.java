@@ -86,7 +86,7 @@ public class RELAY extends Protocol {
 
     protected Future<?>        remote_view_fetcher_future;
 
-
+    protected static final byte[] SITE_ID=Util.stringToBytes("site-id");
 
 
     @ManagedOperation
@@ -124,9 +124,9 @@ public class RELAY extends Protocol {
         JChannel channel=getProtocolStack().getChannel();
         if(channel == null)
             throw new IllegalStateException("channel must be set");
-        channel.setAddressGenerator(new AddressGenerator() {
+        channel.addAddressGenerator(new AddressGenerator() {
             public Address generateAddress() {
-                return PayloadUUID.randomUUID(site);
+                return ExtendedUUID.randomUUID().put(SITE_ID, Util.stringToBytes(site));
             }
         });
     }
@@ -186,7 +186,7 @@ public class RELAY extends Protocol {
                 if(hdr != null)
                     return handleUpEvent(msg, hdr);
 
-                if(is_coord && relay && dest == null && !msg.isFlagSet(Message.NO_RELAY)) {
+                if(is_coord && relay && dest == null && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
                     Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
                     try {
                         byte[] buf=Util.streamableToByteBuffer(tmp);
@@ -249,7 +249,7 @@ public class RELAY extends Protocol {
             }
 
             // Leave the messages in the batch: they're going to be forwarded, but we also need to deliver them locally
-            if(is_coord && relay && msg.dest() == null && !msg.isFlagSet(Message.NO_RELAY)) {
+            if(is_coord && relay && msg.dest() == null && !msg.isFlagSet(Message.Flag.NO_RELAY)) {
                 Message tmp=msg.copy(true, Global.BLOCKS_START_ID); // we only copy headers from building blocks
                 try {
                     byte[] buf=Util.streamableToByteBuffer(tmp);
@@ -508,9 +508,10 @@ public class RELAY extends Protocol {
 
     /** Does the payload match the 'site' ID. Checks only unicast destinations (multicast destinations return true) */
     protected boolean isLocal(Address dest) {
-        if(dest instanceof PayloadUUID) {
-            String tmp=((PayloadUUID)dest).getPayload();
-            return tmp != null && tmp.equals(this.site);
+        if(dest instanceof ExtendedUUID) {
+            byte[] tmp=((ExtendedUUID)dest).get(SITE_ID);
+            String str=Util.bytesToString(tmp);
+            return str != null && str.equals(this.site);
         }
         else if(dest instanceof TopologyUUID) {
             String tmp=((TopologyUUID)dest).getSiteId();

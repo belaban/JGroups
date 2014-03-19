@@ -5,10 +5,7 @@ import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.protocols.FORWARD_TO_COORD;
-import org.jgroups.protocols.PING;
-import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.UNICAST3;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.relay.RELAY2;
@@ -84,13 +81,13 @@ public class Relay2RpcDispatcherTest {
     	b.connect(LON_CLUSTER);
     	rpca.start();
     	rpcb.start();
-    	Util.waitUntilAllChannelsHaveSameSize(30000, 500, a, b);
+    	Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a, b);
     	
     	x.connect(SFO_CLUSTER);
     	y.connect(SFO_CLUSTER);
     	rpcx.start();
     	rpcy.start();
-        Util.waitUntilAllChannelsHaveSameSize(30000, 500, x, y);
+        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, x, y);
         
         assert x.getView().size() == 2;
 
@@ -169,6 +166,7 @@ public class Relay2RpcDispatcherTest {
     protected JChannel createNode(String site_name, String node_name) throws Exception {
     	JChannel ch=new JChannel(new SHARED_LOOPBACK(),
     			new PING().setValue("timeout", 300).setValue("num_initial_members", 2),
+                new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),
     			new NAKACK2(),
     			new UNICAST3(),
     			new GMS().setValue("print_local_addr", false),
@@ -186,7 +184,6 @@ public class Relay2RpcDispatcherTest {
     		this.i=i;
     	}
     	public int foo() {
-    		System.out.println("<< foo method invoked on " + ch.getName());
     		return i;}
     	
     	public static long sleep(long timeout) {

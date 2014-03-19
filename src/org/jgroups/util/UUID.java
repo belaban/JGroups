@@ -140,18 +140,11 @@ public class UUID implements Address {
 
     /**
      * Static factory to retrieve a type 4 (pseudo randomly generated) UUID.
-     * The {@code UUID} is generated using a cryptographically strong pseudo
-     * random number generator.
+     * The {@code UUID} is generated using a cryptographically strong pseudo random number generator.
      * @return  A randomly generated {@code UUID}
      */
     public static UUID randomUUID() {
-        SecureRandom ng=numberGenerator;
-        if(ng == null)
-            numberGenerator=ng=new SecureRandom();
-
-        byte[] randomBytes=new byte[16];
-        ng.nextBytes(randomBytes);
-        return new UUID(randomBytes);
+        return new UUID(generateRandomBytes());
     }
 
 
@@ -289,6 +282,17 @@ public class UUID implements Address {
 
     public UUID copy() {
         return new UUID(mostSigBits, leastSigBits);
+    }
+
+
+    protected static byte[] generateRandomBytes() {
+        SecureRandom ng=numberGenerator;
+        if(ng == null)
+            numberGenerator=ng=new SecureRandom();
+
+        byte[] randomBytes=new byte[16];
+        ng.nextBytes(randomBytes);
+        return randomBytes;
     }
 
 

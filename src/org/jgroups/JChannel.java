@@ -41,7 +41,7 @@ public class JChannel extends Channel {
     /*the address of this JChannel instance*/
     protected Address                               local_addr;
 
-    protected AddressGenerator                      address_generator;
+    protected List<AddressGenerator>                address_generators;
 
     protected String                                name;
 
@@ -480,11 +480,23 @@ public class JChannel extends Channel {
     public String getClusterName() {return state == State.CONNECTED? cluster_name : null;}
 
     /**
-     * Returns the current {@link AddressGenerator}, or null if none is set
+     * Returns the first {@link AddressGenerator} in the list, or null if none is set
      * @return
      * @since 2.12
+     * @deprecated Doesn't make any sense as there's list of address generators, will be removed in 4.0
      */
-    public AddressGenerator getAddressGenerator() {return address_generator;}
+    @Deprecated
+    public AddressGenerator getAddressGenerator() {
+        return (address_generators == null || address_generators.isEmpty())? null : address_generators.get(0);
+    }
+
+    /**
+     * @deprecated Use {@link #addAddressGenerator(org.jgroups.stack.AddressGenerator)} instead
+     */
+    @Deprecated
+    public void setAddressGenerator(AddressGenerator address_generator) {
+        addAddressGenerator(address_generator);
+    }
 
     /**
      * Sets the new {@link AddressGenerator}. New addresses will be generated using the new generator. This
@@ -492,7 +504,17 @@ public class JChannel extends Channel {
      * @param address_generator
      * @since 2.12
      */
-    public void setAddressGenerator(AddressGenerator address_generator) {this.address_generator=address_generator;}
+    public void addAddressGenerator(AddressGenerator address_generator) {
+        if(address_generator == null)
+            return;
+        if(address_generators == null)
+            address_generators=new ArrayList<AddressGenerator>(3);
+        address_generators.add(address_generator);
+    }
+
+    public boolean removeAddressGenerator(AddressGenerator address_generator) {
+        return address_generator != null && address_generators != null && address_generators.remove(address_generator);
+    }
 
 
     public void getState(Address target, long timeout) throws Exception {
@@ -881,7 +903,7 @@ public class JChannel extends Channel {
      */
     protected void setAddress() {
         Address old_addr=local_addr;
-        local_addr=address_generator != null? address_generator.generateAddress() : UUID.randomUUID();
+        local_addr=generateAddress();
         if(old_addr != null)
             down(new Event(Event.REMOVE_ADDRESS, old_addr));
         if(name == null || name.isEmpty()) // generate a logical name if not set
@@ -893,6 +915,36 @@ public class JChannel extends Channel {
         down(evt);
         if(up_handler != null)
             up_handler.up(evt);
+    }
+
+    protected Address generateAddress() {
+        if(address_generators == null || address_generators.isEmpty())
+            return UUID.randomUUID();
+        if(address_generators.size() == 1)
+            return address_generators.get(0).generateAddress();
+
+        // at this point we have multiple AddressGenerators installed
+        Address[] addrs=new Address[address_generators.size()];
+        for(int i=0; i < addrs.length; i++)
+            addrs[i]=address_generators.get(i).generateAddress();
+
+        for(int i=0; i < addrs.length; i++) {
+            if(!(addrs[i] instanceof ExtendedUUID)) {
+                log.error("address generator %s does not subclass %s which is required if multiple address generators " +
+                            "are installed, removing it", addrs[i].getClass().getSimpleName(), ExtendedUUID.class.getSimpleName());
+                addrs[i]=null;
+            }
+        }
+        ExtendedUUID uuid=null;
+        for(int i=0; i < addrs.length; i++) { // we only have ExtendedUUIDs in addrs
+            if(addrs[i] != null) {
+                if(uuid == null)
+                    uuid=(ExtendedUUID)addrs[i];
+                else
+                    uuid.addContents((ExtendedUUID)addrs[i]);
+            }
+        }
+        return uuid != null? uuid : UUID.randomUUID();
     }
 
 

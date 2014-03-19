@@ -1,26 +1,23 @@
 package org.jgroups.util;
 
-import org.jgroups.Global;
-
-import java.io.*;
-import java.security.SecureRandom;
-
 /**
  * Subclass of {@link UUID} which adds a string as payload. An instance of this can be fed to
- * {@link org.jgroups.JChannel#setAddressGenerator(org.jgroups.stack.AddressGenerator)}, with the address generator
+ * {@link org.jgroups.JChannel#addAddressGenerator(org.jgroups.stack.AddressGenerator)}, with the address generator
  * creating PayloadUUIDs.
  * @author Bela Ban
+ * @deprecated Use {@link ExtendedUUID} instead. Will get dropped in 4.0.
  */
-public class PayloadUUID extends UUID {
-    private static final long serialVersionUID=-7383508979230850669L;
-    protected String payload;
+@Deprecated
+public class PayloadUUID extends ExtendedUUID {
+    protected static final byte[] PAYLOAD=Util.stringToBytes("payload");
+    private static final long     serialVersionUID=-50118853717142043L;
 
     public PayloadUUID() {
     }
 
     protected PayloadUUID(byte[] data, String payload) {
         super(data);
-        this.payload=payload;
+        put(PAYLOAD, Util.stringToBytes(payload));
     }
 
     public static PayloadUUID randomUUID(String payload) {
@@ -34,65 +31,12 @@ public class PayloadUUID extends UUID {
     }
 
     public String getPayload() {
-        return payload;
+        return Util.bytesToString(get(PAYLOAD));
     }
 
     public void setPayload(String payload) {
-        this.payload=payload;
+        put(PAYLOAD, Util.stringToBytes(payload));
     }
 
-    protected static byte[] generateRandomBytes() {
-        SecureRandom ng=numberGenerator;
-        if(ng == null)
-            numberGenerator=ng=new SecureRandom();
-
-        byte[] randomBytes=new byte[16];
-        ng.nextBytes(randomBytes);
-        return randomBytes;
-    }
-
-    public int size() {
-        int retval=super.size() + Global.BYTE_SIZE;
-        if(payload != null)
-            retval+=payload.length() +2;
-        return retval;
-    }
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-        try {
-            payload=Bits.readString(in);
-        }
-        catch(Exception e) {
-            throw new IOException(e);
-        }
-    }
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-        try {
-            Bits.writeString(payload,out);
-        }
-        catch(Exception e) {
-            throw new IOException(e);
-        }
-    }
-
-    public void writeTo(DataOutput out) throws Exception {
-        super.writeTo(out);
-        Bits.writeString(payload,out);
-    }
-
-    public void readFrom(DataInput in) throws Exception {
-        super.readFrom(in);
-        payload=Bits.readString(in);
-    }
-
-
-    public String toString() {
-        if(print_uuids)
-            return toStringLong() + (payload == null? "" : "(" + payload + ")");
-        return super.toString() + (payload == null? "" : "(" + payload + ")");
-    }
 
 }

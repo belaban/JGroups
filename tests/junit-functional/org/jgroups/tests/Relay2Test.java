@@ -1,10 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.FORWARD_TO_COORD;
-import org.jgroups.protocols.PING;
-import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.UNICAST3;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.relay.RELAY2;
@@ -41,9 +38,8 @@ public class Relay2Test {
      */
     public void testAddRelay2ToAnAlreadyConnectedChannel() throws Exception {
     	// 1- Create and connect a channel.
-		a = new JChannel();
+		a=new JChannel();
 		a.connect(SFO_CLUSTER);
-		
 		System.out.println("Channel " + a.getName() + " is connected. View: " + a.getView());
 		
 		// 3- Add RELAY2 protocol to the already connected channel.
@@ -76,7 +72,7 @@ public class Relay2Test {
     public void testMissingRouteAfterMerge() throws Exception {
         a=createNode(LON, "A", LON_CLUSTER, null);
         b=createNode(LON, "B", LON_CLUSTER, null);
-        Util.waitUntilAllChannelsHaveSameSize(30000, 500, a,b);
+        Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b);
 
         x=createNode(SFO, "X", SFO_CLUSTER, null);
         assert x.getView().size() == 1;
@@ -286,6 +282,7 @@ public class Relay2Test {
                                   Receiver receiver) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
                                  new PING().setValue("timeout", 300).setValue("num_initial_members", 2),
+                                 new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),
                                  new NAKACK2(),
                                  new UNICAST3(),
                                  new GMS().setValue("print_local_addr", false),
@@ -316,6 +313,7 @@ public class Relay2Test {
         return new Protocol[]{
           new SHARED_LOOPBACK(),
           new PING().setValue("timeout", 500).setValue("num_initial_members", 2),
+          new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),
           new NAKACK2(),
           new UNICAST3(),
           new GMS().setValue("print_local_addr", false)

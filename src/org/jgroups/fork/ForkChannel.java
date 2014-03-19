@@ -213,7 +213,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
         throw new UnsupportedOperationException();
     }
 
-    public void setAddressGenerator(AddressGenerator address_generator) {
+    public void addAddressGenerator(AddressGenerator address_generator) {
         log.warn("setting of address generator is not supported by fork-channel; address generator is ignored");
     }
 

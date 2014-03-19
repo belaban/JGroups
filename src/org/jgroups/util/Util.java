@@ -755,6 +755,29 @@ public class Util {
         return Arrays.copyOf(out.buffer(), out.position());
     }
 
+    public static byte[] stringToBytes(String str) {
+        if(str == null) return null;
+        byte[] retval=new byte[str.length()];
+        for(int i=0; i < retval.length; i++)
+            retval[i]=(byte)str.charAt(i);
+        return retval;
+    }
+
+    public static String bytesToString(byte[] bytes) {
+        return bytes != null? new String(bytes) : null;
+    }
+
+    /** Compares 2 byte arrays, elements are treated as unigned */
+    public static int compare(byte[] left, byte[] right) {
+        for(int i=0, j=0; i < left.length && j < right.length; i++,j++) {
+            int a=(left[i] & 0xff);
+            int b=(right[j] & 0xff);
+            if(a != b) {
+                return a - b;
+            }
+        }
+        return left.length - right.length;
+    }
 
     public static void writeView(View view, DataOutput out) throws Exception {
         if(view == null) {

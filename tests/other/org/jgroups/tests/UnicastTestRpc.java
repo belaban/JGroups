@@ -57,7 +57,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
     }
 
 
-    public void init(String props, String name, String cluster_name) throws Exception {
+    public void init(String props, final String name, String cluster_name) throws Exception {
         if(cluster_name != null)
             groupname=cluster_name;
         channel=new JChannel(props);

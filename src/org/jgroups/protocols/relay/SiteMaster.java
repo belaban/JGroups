@@ -2,6 +2,9 @@ package org.jgroups.protocols.relay;
 
 import org.jgroups.Address;
 import org.jgroups.util.UUID;
+import org.jgroups.util.Util;
+
+import java.util.Arrays;
 
 /**
  * Special address with the UUID part being 0: identifies the current (relay) coordinator of a given site. E,g, if we
@@ -11,19 +14,25 @@ import org.jgroups.util.UUID;
  * @since 3.2
  */
 public class SiteMaster extends SiteUUID {
-    private static final long serialVersionUID=-1110144992073882353L;
+    private static final long serialVersionUID=-6147979304449032483L;
 
     public SiteMaster() {
+        setFlag(site_master);
     }
 
     public SiteMaster(String site) {
+        this(Util.stringToBytes(site));
+    }
+
+    public SiteMaster(byte[] site) {
         super(0, 0, null, site);
+        setFlag(site_master);
     }
 
     public int compareTo(Address other) {
         if(other instanceof SiteMaster) {
             SiteMaster tmp=(SiteMaster)other;
-            return site.compareTo(tmp.site);
+            return Util.compare(get(SITE_NAME), tmp.get(SITE_NAME));
         }
         return super.compareTo(other);
     }
@@ -33,14 +42,14 @@ public class SiteMaster extends SiteUUID {
     }
 
     public int hashCode() {
-        return site.hashCode();
+        return Arrays.hashCode(get(SITE_NAME));
     }
 
     public UUID copy() {
-        return new SiteMaster(site);
+        return new SiteMaster(get(SITE_NAME));
     }
 
     public String toString() {
-        return "SiteMaster(" + site + ")";
+        return "SiteMaster(" + getSite() + ")";
     }
 }
