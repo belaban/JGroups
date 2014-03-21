@@ -120,14 +120,14 @@ public class UNICAST_OOB_Test {
         Protocol unicast=unicast_class.newInstance().setValue("xmit_interval",500);
         if(unicast instanceof UNICAST2)
             unicast.setValue("stable_interval", 1000);
-        return new JChannel(new Protocol[] {
+        return new JChannel(
           new SHARED_LOOPBACK(),
-          new PING().setValue("timeout", 300),
+          new SHARED_LOOPBACK_PING(),
           new NAKACK2(),
           new DISCARD(),
           unicast,
-          new GMS()
-        }).name(name);
+          new GMS())
+          .name(name);
     }
 
 

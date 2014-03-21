@@ -11,7 +11,6 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -133,20 +132,15 @@ public class FragTest {
     }
 
     protected static JChannel createChannel() throws Exception {
-        JChannel ch=new JChannel(false);
-        ProtocolStack stack=new ProtocolStack();
-        ch.setProtocolStack(stack);
-        stack.addProtocol(new SHARED_LOOPBACK())
-          .addProtocol(new PING())
-          .addProtocol(new NAKACK2().setValue("use_mcast_xmit", false))
-          .addProtocol(new UNICAST3())
-          .addProtocol(new STABLE().setValue("max_bytes", 50000))
-          .addProtocol(new GMS().setValue("print_local_addr", false))
-          .addProtocol(new UFC())
-          .addProtocol(new MFC())
-          .addProtocol(new FRAG2().setValue("frag_size", FRAG_SIZE));
-        stack.init();
-        return ch;
+        return new JChannel(new SHARED_LOOPBACK(),
+                            new SHARED_LOOPBACK_PING(),
+                            new NAKACK2().setValue("use_mcast_xmit", false),
+                            new UNICAST3(),
+                            new STABLE().setValue("max_bytes", 50000),
+                            new GMS().setValue("print_local_addr", false),
+                            new UFC(),
+                            new MFC(),
+                            new FRAG2().setValue("frag_size", FRAG_SIZE));
     }
 
 

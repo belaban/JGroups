@@ -81,7 +81,7 @@ public class MergeTest3 {
         setMergeIdIn(busy_second, busy_merge_id);
         for(JChannel ch: new JChannel[]{a,b,c,d,e,f}) { // excluding faulty member, as it still discards messages
             assert ch.getView().size() == 3;
-            Discovery ping=(Discovery)ch.getProtocolStack().findProtocol(PING.class);
+            Discovery ping=(Discovery)ch.getProtocolStack().findProtocol(Discovery.class);
             ping.setTimeout(3000);
             DISCARD discard=(DISCARD)ch.getProtocolStack().findProtocol(DISCARD.class);
             discard.setDiscardAll(false);
@@ -161,7 +161,7 @@ public class MergeTest3 {
     protected JChannel createChannel(String name) throws Exception {
         JChannel retval=new JChannel(new SHARED_LOOPBACK(),
                                      new DISCARD().setValue("discard_all",true),
-                                     new PING().setValue("timeout",100),
+                                     new SHARED_LOOPBACK_PING(),
                                      new NAKACK2().setValue("use_mcast_xmit",false)
                                        .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
                                      new UNICAST3(),

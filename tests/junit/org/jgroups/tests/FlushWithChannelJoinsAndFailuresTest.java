@@ -53,7 +53,7 @@ public class FlushWithChannelJoinsAndFailuresTest {
     protected JChannel createChannel(String name) throws Exception {
         Protocol[] protocols={
           new SHARED_LOOPBACK(),
-          new PING().timeout(1000),
+          new SHARED_LOOPBACK_PING(),
           new FD_ALL().setValue("timeout", 3000).setValue("interval", 1000),
           new NAKACK2(),
           new UNICAST3(),

@@ -41,7 +41,7 @@ public class FCTest {
         flow_control_prot.setValue("min_credits", 1000).setValue("max_credits", 10000).setValue("max_block_time", 1000);
 
         ch=new JChannel(new SHARED_LOOPBACK().setValue("thread_pool_rejection_policy", "run"),
-                        new PING(),
+                        new SHARED_LOOPBACK_PING(),
                         new NAKACK2().setValue("use_mcast_xmit", false),
                         new UNICAST3(),
                         new STABLE().setValue("max_bytes", 50000),

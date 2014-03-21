@@ -63,7 +63,7 @@ public class SUPERVISOR_Test {
 
     protected JChannel createChannel(String name) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
-                                 new PING().setValue("timeout", 500),
+                                 new SHARED_LOOPBACK_PING(),
                                  new FD(),
                                  new NAKACK2().setValue("use_mcast_xmit", false),
                                  new UNICAST3(),

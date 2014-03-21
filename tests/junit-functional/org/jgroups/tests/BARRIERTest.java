@@ -16,14 +16,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class BARRIERTest {
-    protected JChannel ch;
-    protected PING     ping_prot;
-    protected BARRIER  barrier_prot;
-    protected TP       tp;
+    protected JChannel  ch;
+    protected Discovery discovery_prot;
+    protected BARRIER   barrier_prot;
+    protected TP        tp;
 
 
     @BeforeMethod void setUp() throws Exception {
-        ch=new JChannel(tp=new SHARED_LOOPBACK(), ping_prot=new PING(), barrier_prot=new BARRIER()).name("A");
+        ch=new JChannel(tp=new SHARED_LOOPBACK(), discovery_prot=new SHARED_LOOPBACK_PING(), barrier_prot=new BARRIER()).name("A");
         ch.connect("BARRIERTest");
     }
 
@@ -42,7 +42,8 @@ public class BARRIERTest {
         ch.setReceiver(receiver);
         ch.down(new Event(Event.CLOSE_BARRIER)); // BARRIER starts discarding messages from now on
         for(int i=0; i < 5; i++) {
-            new Thread() {public void run() {ping_prot.up(createMessage());}}.start();
+            new Thread() {public void run() {
+                discovery_prot.up(createMessage());}}.start();
         }
 
         Util.sleep(2000);
@@ -67,7 +68,8 @@ public class BARRIERTest {
         Thread[] threads=new Thread[2];
         for(int i=1; i <= threads.length; i++) {
             Thread thread=new Thread() {
-                public void run() {ping_prot.up(createMessage());}
+                public void run() {
+                    discovery_prot.up(createMessage());}
             };
             thread.setName("blocker-" + i);
             thread.start();
@@ -91,7 +93,8 @@ public class BARRIERTest {
         Thread[] threads=new Thread[2];
         for(int i=1; i <= threads.length; i++) {
             Thread thread=new Thread() {
-                public void run() {ping_prot.up(createMessage());}
+                public void run() {
+                    discovery_prot.up(createMessage());}
             };
             thread.setName("blocker-" + i);
             thread.start();
@@ -113,7 +116,8 @@ public class BARRIERTest {
 
 
     protected Event createMessage() {
-        return new Event(Event.MSG, new Message(null, ch.getAddress()).putHeader(tp.getId(),new TpHeader("BARRIERTest")));
+        Message msg=new Message(null, ch.getAddress(), null).putHeader(tp.getId(),new TpHeader("BARRIERTest"));
+        return new Event(Event.MSG, msg);
     }
 
     protected void waitUntilNumThreadsAreBlocked(int expected, long timeout, long interval) {

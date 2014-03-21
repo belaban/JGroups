@@ -61,6 +61,7 @@ public class Event {
     public static final int PUNCH_HOLE                         = 106; // arg = Address (member)
     public static final int CLOSE_HOLE                         = 107; // arg = Address (member)
     public static final int GET_VIEW_FROM_COORD                = 108;
+    public static final int GET_PING_DATA                      = 109; // arg = cluster_name
 
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
@@ -147,6 +148,7 @@ public class Event {
             case PUNCH_HOLE:             return "PUNCH_HOLE";
             case CLOSE_HOLE:             return "CLOSE_HOLE";
             case GET_VIEW_FROM_COORD:    return "GET_VIEW_FROM_COORD";
+            case GET_PING_DATA:          return "GET_PING_DATA";
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";

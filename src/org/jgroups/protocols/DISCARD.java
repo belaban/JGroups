@@ -230,8 +230,7 @@ public class DISCARD extends Protocol {
                             if(log.isTraceEnabled()) log.trace("excluding itself");
                         }
                         else {
-                            if(log.isTraceEnabled())
-                                log.trace("dropping message");
+                            log.trace("dropping message");
                             num_down++;
                             return null;
                         }
@@ -252,6 +251,10 @@ public class DISCARD extends Protocol {
                 localAddress=(Address)evt.getArg();
                 if(discard_dialog != null)
                     discard_dialog.setTitle("Discard dialog (" + localAddress + ")");
+                break;
+            case Event.GET_PING_DATA:
+                if(discard_all)
+                    return null;
                 break;
         }
 

@@ -8,7 +8,6 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
 import java.net.InetAddress;
@@ -19,24 +18,20 @@ import java.net.InetAddress;
 public class ProgrammaticChat {
 
     public static void main(String[] args) throws Exception {
-        JChannel ch=new JChannel(false);
-        ProtocolStack stack=new ProtocolStack();
-        ch.setProtocolStack(stack);
-        stack.addProtocol(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")))
-                .addProtocol(new PING())
-                .addProtocol(new MERGE2())
-                .addProtocol(new FD_SOCK())
-                .addProtocol(new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000))
-                .addProtocol(new VERIFY_SUSPECT())
-                .addProtocol(new BARRIER())
-                .addProtocol(new NAKACK2())
-                .addProtocol(new UNICAST3())
-                .addProtocol(new STABLE())
-                .addProtocol(new GMS())
-                .addProtocol(new UFC())
-                .addProtocol(new MFC())
-                .addProtocol(new FRAG2());
-        stack.init();
+        JChannel ch=new JChannel(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")),
+                                 new PING(),
+                                 new MERGE2(),
+                                 new FD_SOCK(),
+                                 new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000),
+                                 new VERIFY_SUSPECT(),
+                                 new BARRIER(),
+                                 new NAKACK2(),
+                                 new UNICAST3(),
+                                 new STABLE(),
+                                 new GMS(),
+                                 new UFC(),
+                                 new MFC(),
+                                 new FRAG2());
 
         ch.setReceiver(new ReceiverAdapter() {
             public void viewAccepted(View new_view) {

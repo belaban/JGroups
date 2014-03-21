@@ -208,18 +208,20 @@ public class ExtendedUUID extends UUID {
             if(key == null)
                 continue;
             byte[] val=values[i];
-            Object obj=null;
-            try {
-                obj=Util.objectFromByteBuffer(val);
-            }
-            catch(Throwable t) {
-            }
-            if(obj == null) {
+            Object obj=val != null && val.length >= Util.MAX_LIST_PRINT_SIZE ? val.length + " bytes" : null;
+            if(val != null && val.length <= Util.MAX_LIST_PRINT_SIZE) {
                 try {
-                    obj=Util.bytesToString(val);
+                    obj=Util.objectFromByteBuffer(val);
                 }
                 catch(Throwable t) {
-                    obj=val != null? val.length + " bytes" : null;
+                }
+                if(obj == null) {
+                    try {
+                        obj=Util.bytesToString(val);
+                    }
+                    catch(Throwable t) {
+                        obj=val != null? val.length + " bytes" : null;
+                    }
                 }
             }
 

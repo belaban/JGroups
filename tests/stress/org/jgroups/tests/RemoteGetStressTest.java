@@ -102,7 +102,7 @@ public class RemoteGetStressTest {
           new SHARED_LOOPBACK().setValue("oob_thread_pool_min_threads", 1)
             .setValue("oob_thread_pool_max_threads", 5)
           .setValue("oob_thread_pool_queue_enabled", false),
-          new PING().timeout(1000),
+          new SHARED_LOOPBACK_PING(),
           new NAKACK2(),
           new UNICAST3(),
           new STABLE(),

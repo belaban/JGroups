@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import org.jgroups.protocols.PING;
 import org.jgroups.protocols.SHARED_LOOPBACK;
+import org.jgroups.protocols.SHARED_LOOPBACK_PING;
 import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
@@ -32,7 +32,7 @@ public class UnicastTestSharedLoopback {
     protected static Protocol[] props() {
         return new Protocol[]{
           new SHARED_LOOPBACK().setValue("bundler_type", "sender-sends").setValue("ignore_dont_bundle", false),
-          new PING(),
+          new SHARED_LOOPBACK_PING(),
           new NAKACK2(),
           new UNICAST3().setValue("conn_expiry_timeout", 0).setValue("conn_close_timeout", 0),
           new STABLE(),

@@ -35,7 +35,7 @@ public class DynamicDiscardTest {
 
         for(int i=0; i < NUM; i++) {
             channels[i]= new JChannel(new SHARED_LOOPBACK(),
-                                      new PING().timeout(1000).numInitialMembers(NUM),
+                                      new SHARED_LOOPBACK_PING(),
                                       new MERGE2(),
                                       new FD().setValue("timeout", 1000).setValue("max_tries", 1),
                                       new NAKACK2(),

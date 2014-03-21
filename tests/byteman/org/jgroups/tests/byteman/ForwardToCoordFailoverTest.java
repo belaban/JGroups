@@ -4,10 +4,7 @@ package org.jgroups.tests.byteman;
 import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jboss.byteman.contrib.bmunit.BMScript;
 import org.jgroups.*;
-import org.jgroups.protocols.FORWARD_TO_COORD;
-import org.jgroups.protocols.PING;
-import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.UNICAST3;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.util.Util;
@@ -154,8 +151,7 @@ public class ForwardToCoordFailoverTest extends BMNGRunner {
 
     protected JChannel createChannel(final String name, final String cluster_name) throws Exception {
         JChannel retval=new JChannel(new SHARED_LOOPBACK(),
-                                     // new DISCARD(),
-                                     new PING().setValue("timeout", 500),
+                                     new SHARED_LOOPBACK_PING(),
                                      new NAKACK2(),
                                      new UNICAST3(),
                                      new GMS(),

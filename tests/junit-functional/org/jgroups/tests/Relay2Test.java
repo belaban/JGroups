@@ -281,7 +281,7 @@ public class Relay2Test {
     protected JChannel createNode(String site_name, String node_name, String cluster_name,
                                   Receiver receiver) throws Exception {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
-                                 new PING().setValue("timeout", 300).setValue("num_initial_members", 2),
+                                 new SHARED_LOOPBACK_PING(),
                                  new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),
                                  new NAKACK2(),
                                  new UNICAST3(),
@@ -312,7 +312,7 @@ public class Relay2Test {
     protected static Protocol[] createBridgeStack() {
         return new Protocol[]{
           new SHARED_LOOPBACK(),
-          new PING().setValue("timeout", 500).setValue("num_initial_members", 2),
+          new SHARED_LOOPBACK_PING(),
           new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),
           new NAKACK2(),
           new UNICAST3(),

@@ -321,7 +321,7 @@ public class TOATest {
     private TOANode createNewChannel(String name) throws Exception {
         JChannel channel = new JChannel(new Protocol[]{
                 new SHARED_LOOPBACK(),
-                new PING().setValue("timeout", 1000),
+                new SHARED_LOOPBACK_PING(),
                 new MERGE3(),
                 new NAKACK2(),
                 new UNICAST3(),

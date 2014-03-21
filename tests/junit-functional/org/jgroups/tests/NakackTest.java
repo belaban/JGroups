@@ -116,7 +116,7 @@ public class NakackTest {
     protected static JChannel createChannel() throws Exception {
         Protocol[] protocols={
           new SHARED_LOOPBACK(),
-          new PING().setValue("timeout", 2000).setValue("num_initial_members", 3),
+          new SHARED_LOOPBACK_PING(),
           new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000),
           new NAKACK2().setValue("use_mcast_xmit", false),
           new UNICAST3(),

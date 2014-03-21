@@ -3,9 +3,14 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.View;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.AsciiString;
+import org.jgroups.util.UUID;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,7 +23,12 @@ import java.util.concurrent.ConcurrentMap;
  * @author Bela Ban
  */
 public class SHARED_LOOPBACK extends TP {
-    private PhysicalAddress physical_addr=null;
+    protected PhysicalAddress  physical_addr;
+
+    @ManagedAttribute(description="The current view",writable=false)
+    protected volatile View    view;
+
+    protected volatile boolean is_server=false;
 
     /** Map of cluster names and address-protocol mappings. Used for routing messages to all or single members */
     private static final ConcurrentMap<AsciiString,Map<Address,SHARED_LOOPBACK>> routing_table=new ConcurrentHashMap<AsciiString,Map<Address,SHARED_LOOPBACK>>();
@@ -27,6 +37,9 @@ public class SHARED_LOOPBACK extends TP {
     public boolean supportsMulticasting() {
         return true; // kind of...
     }
+
+    public View    getView()  {return view;}
+    public boolean isServer() {return is_server;}
 
     public String toString() {
         return "SHARED_LOOPBACK(local address: " + local_addr + ')';
@@ -43,6 +56,7 @@ public class SHARED_LOOPBACK extends TP {
         return sb.toString();
     }
 
+
     public void sendMulticast(byte[] data, int offset, int length) throws Exception {
         Map<Address,SHARED_LOOPBACK> dests=routing_table.get(cluster_name);
         if(dests == null) {
@@ -53,6 +67,8 @@ public class SHARED_LOOPBACK extends TP {
         for(Map.Entry<Address,SHARED_LOOPBACK> entry: dests.entrySet()) {
             Address dest=entry.getKey();
             SHARED_LOOPBACK target=entry.getValue();
+            if(local_addr != null && local_addr.equals(dest))
+                continue; // message was already looped back
             try {
                 target.receive(local_addr, data, offset, length);
             }
@@ -94,6 +110,25 @@ public class SHARED_LOOPBACK extends TP {
         target.receive(local_addr, buf, offset, length);
     }
 
+
+    public static List<PingData> getDiscoveryResponsesFor(String cluster_name) {
+        if(cluster_name == null)
+            return null;
+        Map<Address,SHARED_LOOPBACK> mbrs=routing_table.get(new AsciiString(cluster_name));
+        List<PingData> rsps=new ArrayList<PingData>(mbrs != null? mbrs.size() : 0);
+        if(mbrs != null) {
+            for(Map.Entry<Address,SHARED_LOOPBACK> entry: mbrs.entrySet()) {
+                Address addr=entry.getKey();
+                SHARED_LOOPBACK slp=entry.getValue();
+                View tmp_view=slp.getView();
+                PingData data=new PingData(addr, tmp_view, tmp_view != null? tmp_view.getViewId() : null,
+                                           slp.isServer(), UUID.get(addr), null);
+                rsps.add(data);
+            }
+        }
+        return rsps;
+    }
+
     public String getInfo() {
         return toString();
     }
@@ -120,11 +155,25 @@ public class SHARED_LOOPBACK extends TP {
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
                 break;
+            case Event.BECOME_SERVER: // called after client has joined and is fully working group member
+                is_server=true;
+                break;
+            case Event.VIEW_CHANGE:
+            case Event.TMP_VIEW:
+                view=(View)evt.getArg();
+                break;
+            case Event.GET_PING_DATA:
+                return getDiscoveryResponsesFor((String)evt.getArg()); // don't pass further down
         }
 
         return retval;
     }
 
+    public void stop() {
+        super.stop();
+        is_server=false;
+        unregister(cluster_name, local_addr);
+    }
 
     public void destroy() {
         super.destroy();
@@ -148,9 +197,8 @@ public class SHARED_LOOPBACK extends TP {
         Map<Address,SHARED_LOOPBACK> map=channel_name != null? routing_table.get(channel_name) : null;
         if(map != null) {
             map.remove(local_addr);
-            if(map.isEmpty()) {
+            if(map.isEmpty())
                 routing_table.remove(channel_name);
-            }
         }
     }
 

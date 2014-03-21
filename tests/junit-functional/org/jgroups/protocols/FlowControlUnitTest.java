@@ -109,7 +109,7 @@ public class FlowControlUnitTest {
 
     protected JChannel create(String name) throws Exception {
         return new JChannel(new SHARED_LOOPBACK(),
-                            new PING().timeout(1000),
+                            new SHARED_LOOPBACK_PING().timeout(1000),
                             new NAKACK2(),
                             new UNICAST3(),
                             new STABLE(),

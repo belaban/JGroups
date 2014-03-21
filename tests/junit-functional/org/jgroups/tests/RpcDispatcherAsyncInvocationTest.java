@@ -4,10 +4,7 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.blocks.*;
-import org.jgroups.protocols.PING;
-import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.TP;
-import org.jgroups.protocols.UNICAST3;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.Protocol;
@@ -131,7 +128,7 @@ public class RpcDispatcherAsyncInvocationTest {
         transport.setOOBThreadPoolQueueEnabled(false);
         return new JChannel(new Protocol[]{
           transport,
-          new PING().setValue("timeout", 500),
+          new SHARED_LOOPBACK_PING(),
           new NAKACK2(),
           new UNICAST3(),
           new GMS()

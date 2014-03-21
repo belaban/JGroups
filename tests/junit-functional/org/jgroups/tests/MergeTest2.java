@@ -4,10 +4,7 @@ import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.DISCARD;
-import org.jgroups.protocols.PING;
-import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.UNICAST3;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
@@ -65,7 +62,7 @@ public class MergeTest2 {
 
 
     protected JChannel createChannel(String name, TimeScheduler timer, Executor thread_pool, Executor oob_thread_pool) throws Exception {
-        SHARED_LOOPBACK shared_loopback=(SHARED_LOOPBACK)new SHARED_LOOPBACK();
+        SHARED_LOOPBACK shared_loopback=new SHARED_LOOPBACK();
         shared_loopback.setTimer(timer);
         shared_loopback.setOOBThreadPool(oob_thread_pool);
         shared_loopback.setDefaultThreadPool(thread_pool);
@@ -73,7 +70,7 @@ public class MergeTest2 {
 
         JChannel retval=Util.createChannel(shared_loopback,
                                            new DISCARD().setValue("discard_all",true),
-                                           new PING().setValue("timeout",100),
+                                           new SHARED_LOOPBACK_PING(),
                                            new NAKACK2().setValue("use_mcast_xmit",false)
                                              .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false),
                                            new UNICAST3(),

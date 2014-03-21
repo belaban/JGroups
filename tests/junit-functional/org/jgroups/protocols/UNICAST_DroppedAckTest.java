@@ -72,7 +72,7 @@ public class UNICAST_DroppedAckTest {
     protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
         return new JChannel(new Protocol[] {
           new SHARED_LOOPBACK(),
-          new PING().setValue("timeout", 300),
+          new SHARED_LOOPBACK_PING(),
           new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),
           new NAKACK2(),
           new DISCARD(),

@@ -2,10 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
-import org.jgroups.protocols.FD;
-import org.jgroups.protocols.PING;
-import org.jgroups.protocols.SHARED_LOOPBACK;
-import org.jgroups.protocols.UNICAST3;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.util.Util;
@@ -65,7 +62,7 @@ public class FdMonitorTest {
     
     protected JChannel createChannel(String name) throws Exception {
         JChannel ch=Util.createChannel(new SHARED_LOOPBACK(),
-                                       new PING().setValue("timeout",500).setValue("num_initial_members",2),
+                                       new SHARED_LOOPBACK_PING(),
                                        new FD().setValue("timeout", 1000).setValue("max_tries", 3),
                                        new NAKACK2(),
                                        new UNICAST3(),

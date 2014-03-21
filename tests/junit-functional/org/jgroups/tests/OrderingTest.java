@@ -5,7 +5,6 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -65,32 +64,22 @@ public class OrderingTest {
 
 
     protected static JChannel createChannel() throws Exception {
-        JChannel ch=new JChannel(false);
-        ProtocolStack stack=new ProtocolStack();
-        ch.setProtocolStack(stack);
-        stack.addProtocol(new SHARED_LOOPBACK().setValue("oob_thread_pool_rejection_policy", "run")
-                            .setValue("thread_pool_rejection_policy", "run")
-                            .setValue("thread_pool_queue_max_size", 100000))
-          .addProtocol(new PING())
-          .addProtocol(new MERGE2())
-          .addProtocol(new FD_SOCK())
-          .addProtocol(new VERIFY_SUSPECT())
-          .addProtocol(new BARRIER())
-          .addProtocol(new NAKACK2().setValue("use_mcast_xmit", false).setValue("discard_delivered_msgs", true))
-          .addProtocol(new UNICAST3())
-          .addProtocol(new STABLE().setValue("max_bytes", 50000))
-          .addProtocol(new GMS().setValue("print_local_addr", false))
-          .addProtocol(new UFC().setValue("max_credits", 2000000))
-          .addProtocol(new MFC().setValue("max_credits", 2000000))
-          .addProtocol(new FRAG2());
-        stack.init();
-        return ch;
+        return new JChannel(new SHARED_LOOPBACK().setValue("oob_thread_pool_rejection_policy", "run")
+                              .setValue("thread_pool_rejection_policy", "run")
+                              .setValue("thread_pool_queue_max_size", 100000),
+                            new SHARED_LOOPBACK_PING(),
+                            new MERGE2(),
+                            new FD_SOCK(),
+                            new VERIFY_SUSPECT(),
+                            new BARRIER(),
+                            new NAKACK2().setValue("use_mcast_xmit", false).setValue("discard_delivered_msgs", true),
+                            new UNICAST3(),
+                            new STABLE().setValue("max_bytes", 50000),
+                            new GMS().setValue("print_local_addr", false),
+                            new UFC().setValue("max_credits", 2000000),
+                            new MFC().setValue("max_credits", 2000000),
+                            new FRAG2());
     }
-
-    /*protected static JChannel createChannel() throws Exception {
-        return new JChannel("/home/bela/fast.xml");
-    }*/
-
 
 
     public void testFIFOOrdering() throws Exception {

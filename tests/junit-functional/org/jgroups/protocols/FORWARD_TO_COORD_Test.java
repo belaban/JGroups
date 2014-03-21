@@ -33,8 +33,7 @@ public class FORWARD_TO_COORD_Test {
         for(int i=0; i < NUM; i++) {
             channels[i]=Util.createChannel(new SHARED_LOOPBACK(),
                                            new DISCARD(),
-                                           new PING().setValue("timeout",500).setValue("num_initial_members",NUM)
-                                             .setValue("force_sending_discovery_rsps", true),
+                                           new SHARED_LOOPBACK_PING(),
                                            new NAKACK2().setValue("use_mcast_xmit",false)
                                              .setValue("discard_delivered_msgs",true)
                                              .setValue("log_discard_msgs",true).setValue("log_not_found_msgs",true)
