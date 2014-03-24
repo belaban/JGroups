@@ -1327,7 +1327,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             if(buf != null) {
                 long my_hr=buf.getHighestReceived();
                 if(hr >= 0 && hr > my_hr) {
-                    log.trace("%s: my_highest_rcvd (%) < stability_highest_rcvd (%d): requesting retransmission of %s",
+                    log.trace("%s: my_highest_rcvd (%d) < stability_highest_rcvd (%d): requesting retransmission of %s",
                               local_addr, my_hr, hr, member + "#" + hr);
                     retransmit(hr, hr, member);
                 }
