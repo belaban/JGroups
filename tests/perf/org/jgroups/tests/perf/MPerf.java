@@ -40,7 +40,7 @@ public class MPerf extends ReceiverAdapter {
     protected int                   msg_size=1000;
     protected int                   num_threads=10;
     protected int                   log_interval=num_msgs / 10; // log every 10%
-    protected int                   receive_log_interval=num_msgs / 10;
+    protected int                   receive_log_interval=Math.max(1, num_msgs / 10);
     protected int                   num_senders=-1; // <= 0: all
     protected boolean               oob=false;
 
@@ -465,7 +465,7 @@ public class MPerf extends ReceiverAdapter {
             Util.setField(field,this,attr_value);
             System.out.println(config_change.attr_name + "=" + attr_value);
             log_interval=num_msgs / 10;
-            receive_log_interval=num_msgs * Math.max(1, members.size()) / 10;
+            receive_log_interval=Math.max(1, num_msgs * Math.max(1, members.size()) / 10);
         }
         catch(Exception e) {
             System.err.println("failed applying config change for attr " + attr_name + ": " + e);
@@ -493,7 +493,7 @@ public class MPerf extends ReceiverAdapter {
         final List<Address> mbrs=view.getMembers();
         members.clear();
         members.addAll(mbrs);
-        receive_log_interval=num_msgs * mbrs.size() / 10;
+        receive_log_interval=Math.max(1, num_msgs * mbrs.size() / 10);
 
         // Remove non members from received messages
         received_msgs.keySet().retainAll(mbrs);
