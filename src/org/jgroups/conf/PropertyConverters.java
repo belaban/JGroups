@@ -14,16 +14,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 /**
  * Groups a set of standard PropertyConverter(s) supplied by JGroups.
- * 
+ *
  * <p>
  * Third parties can provide their own converters if such need arises by implementing
  * {@link PropertyConverter} interface and by specifying that converter as converter on a specific
  * Property annotation of a field or a method instance.
- * 
+ *
  * @author Vladimir Blagojevic
  */
 public class PropertyConverters {
@@ -39,7 +41,7 @@ public class PropertyConverters {
             return Util.print(list);
         }
     }
-    
+
     public static class FlushInvoker implements PropertyConverter {
 
 		public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
@@ -55,7 +57,7 @@ public class PropertyConverters {
 		public String toString(Object value) {
 			return value.getClass().getName();
 		}
-    	
+
     }
 
     public static class InitialHosts implements PropertyConverter {
@@ -82,15 +84,15 @@ public class PropertyConverters {
             else
                 return value.getClass().getName();
 		}
-		
+
         private static int getPortRange(Protocol protocol) throws Exception {
             Field f = protocol.getClass().getDeclaredField("port_range") ;
             return ((Integer) Util.getField(f,protocol)).intValue();
 		}
     }
-    
+
     public static class InitialHosts2 implements PropertyConverter {
-    	
+
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String prop_val, boolean check_scope) throws Exception {
 			// port range is 1
             return Util.parseCommaDelimitedHosts2(prop_val, 1);
@@ -114,17 +116,17 @@ public class PropertyConverters {
                 return value.getClass().getName();
         }
     }
-    
+
     public static class BindInterface implements PropertyConverter {
 
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
-       	
+
         	// get the existing bind address - possibly null
         	InetAddress	old_bind_addr = (InetAddress)Configurator.getValueFromProtocol((Protocol)obj, "bind_addr");
-        	
+
         	// apply a bind interface constraint
             InetAddress new_bind_addr = Util.validateBindAddressFromInterface(old_bind_addr, propertyValue);
-            
+
             if (new_bind_addr != null)
             	setBindAddress((Protocol)obj, new_bind_addr) ;
 
@@ -132,17 +134,17 @@ public class PropertyConverters {
             // from @Property processing
             if (propertyValue != null)
             	return propertyValue ;
-            else 
+            else
             	return "" ;
         }
 
-        
+
         private static void setBindAddress(Protocol protocol, InetAddress bind_addr) throws Exception {
             Field f=Util.getField(protocol.getClass(), "bind_addr");
 			Util.setField(f, protocol, bind_addr) ;
 		}
-        
-        
+
+
         // return a String version of the converted value
         public String toString(Object value) {
             return (String) value ;
@@ -176,7 +178,7 @@ public class PropertyConverters {
             return sb.toString();
         }
     }
-    
+
     public static class LongArray implements PropertyConverter {
 
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
@@ -204,6 +206,32 @@ public class PropertyConverters {
             }
             return sb.toString();
         }
+    }
+
+    public static class StringProperties implements PropertyConverter {
+
+        @Override
+        public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
+            return Util.parseCommaDelimitedProps(propertyValue);
+        }
+
+        @Override
+        public String toString(Object value) {
+            if (value == null)
+                return null;
+            Map<String, String> v = (Map<String, String>) value;
+            StringBuilder sb = new StringBuilder();
+            boolean first = true;
+            for(Entry<String, String> entry : v.entrySet()) {
+                if (!first)
+                    sb.append(",");
+                else
+                    first = false;
+                sb.append(entry.getKey()).append("=").append(entry.getValue());
+            }
+            return sb.toString();
+        }
+
     }
 
 

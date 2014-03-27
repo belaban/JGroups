@@ -147,5 +147,9 @@ public class AUTHTest {
         assert !(token2 == header.getToken());
     }
 
+    public void testAuth() {
+       
+       
+    }
 
 }
