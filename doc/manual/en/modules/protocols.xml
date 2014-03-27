@@ -1507,6 +1507,14 @@ keytool -genseckey -alias myKey -keypass changeit -storepass changeit  -keyalg B
                 </para>
                 ${AUTH}
             </section>
+
+            <section id="SASL">
+                <title>SASL</title>
+                <para>
+                    tbd
+                </para>
+                ${SASL}
+            </section>
         </section>
 
 
