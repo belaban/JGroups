@@ -41,7 +41,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected long    conn_expiry_timeout=60000 * 2;
 
     @Property(description="Time (in ms) until a connection marked to be closed will get removed. 0 disables this")
-    protected long    conn_close_timeout=60000;
+    protected long    conn_close_timeout=10000;
 
     @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
     protected int     xmit_table_num_rows=100;
@@ -558,14 +558,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 List<Address> new_members=view.getMembers();
                 Set<Address> non_members=new HashSet<Address>(send_table.keySet());
                 non_members.addAll(recv_table.keySet());
-
                 members=new_members;
                 non_members.removeAll(new_members);
                 if(cache != null)
                     cache.removeAll(new_members);
 
                 if(!non_members.isEmpty()) {
-                    log.trace("%s: removing non members %s", local_addr, non_members);
+                    log.trace("%s: closing connections of non members %s", local_addr, non_members);
                     for(Address non_mbr: non_members)
                         closeConnection(non_mbr);
                 }
@@ -594,8 +593,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /**
      * Removes and resets from connection table (which is already locked). Returns true if member was found,
-     * otherwise false. This method is public only so it can be invoked by unit testing, but should not otherwise be
-     * used ! 
+     * otherwise false. This method is public only so it can be invoked by unit testing, but should not be used !
      */
     public void closeConnection(Address mbr) {
         closeSendConnection(mbr);
@@ -605,7 +603,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     public void closeSendConnection(Address mbr) {
         SenderEntry entry=send_table.get(mbr);
         if(entry != null)
-            entry.state(State.CLOSING).update();
+            entry.state(State.CLOSING);
+    }
+
+    public void closeReceiveConnection(Address mbr) {
+        ReceiverEntry entry=recv_table.get(mbr);
+        if(entry != null)
+            entry.state(State.CLOSING);
     }
 
     protected void removeSendConnection(Address mbr) {
@@ -614,12 +618,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             entry.state(State.CLOSED);
             sendClose(mbr, entry.connId());
         }
-    }
-
-    public void closeReceiveConnection(Address mbr) {
-        ReceiverEntry entry=recv_table.get(mbr);
-        if(entry != null)
-            entry.state(State.CLOSING).update();
     }
 
     protected void removeReceiveConnection(Address mbr) {
@@ -1050,7 +1048,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     @ManagedOperation(description="Removes connections that have been closed for more than conn_close_timeout ms")
-    public void removeExpiredConnections() {
+    public int removeExpiredConnections() {
+        int num_removed=0;
         // remove expired connections from send_table
         for(Map.Entry<Address,SenderEntry> entry: send_table.entrySet()) {
             SenderEntry val=entry.getValue();
@@ -1061,6 +1060,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 log.debug("%s: removing expired connection for %s (%d ms old) from send_table",
                           local_addr, entry.getKey(), age);
                 removeSendConnection(entry.getKey());
+                num_removed++;
             }
         }
 
@@ -1074,8 +1074,10 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 log.debug("%s: removing expired connection for %s (%d ms old) from recv_table",
                           local_addr, entry.getKey(), age);
                 removeReceiveConnection(entry.getKey());
+                num_removed++;
             }
         }
+        return num_removed;
     }
 
 
@@ -1247,7 +1249,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         void        update()              {timestamp.set(getTimestamp());}
         long        age()                 {return getTimestamp() - timestamp.longValue();}
         State       state()               {return state;}
-        Entry       state(State state)    {this.state=state; return this;}
+        Entry       state(State state)    {if(this.state != state) {this.state=state; update();} return this;}
     }
 
     protected final class SenderEntry extends Entry {

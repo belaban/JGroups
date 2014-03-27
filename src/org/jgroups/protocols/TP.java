@@ -318,8 +318,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "be spaced at least who_has_cache_timeout ms apart")
     protected long who_has_cache_timeout=2000;
 
-    @Property(description="Max number of attempts to fetch a physical address (when not in the cache) before giving up")
-    protected int physical_addr_max_fetch_attempts=3;
+    @Property(description="Max number of attempts to fetch a physical address (when not in the cache) before giving up",
+              deprecatedMessage="will be ignored")
+    protected int physical_addr_max_fetch_attempts=1;
 
     @Property(description="Time during which identical warnings about messages from a member with a different version " +
       "will be suppressed. 0 disables this (every warning will be logged). Setting the log level to ERROR also " +
@@ -648,8 +649,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected final Average avg_batch_size=new Average(20);
 
-    protected static final LazyRemovalCache.Printable<Address,PhysicalAddress> print_function=new LazyRemovalCache.Printable<Address,PhysicalAddress>() {
-        public java.lang.String print(final Address logical_addr, final PhysicalAddress physical_addr) {
+    protected static final LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<PhysicalAddress>> print_function
+      =new LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<PhysicalAddress>>() {
+        public String print(final Address logical_addr, final LazyRemovalCache.Entry<PhysicalAddress> entry) {
             StringBuilder sb=new StringBuilder();
             String tmp_logical_name=UUID.get(logical_addr);
             if(tmp_logical_name != null)
@@ -658,7 +660,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 sb.append(((UUID)logical_addr).toStringLong());
             else
                 sb.append(logical_addr);
-            sb.append(": ").append(physical_addr).append("\n");
+            sb.append(": ").append(entry).append("\n");
             return sb.toString();
         }
     };
@@ -999,7 +1001,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @ManagedOperation(description="Dumps the contents of the logical address cache")
     public String printLogicalAddressCache() {
-        return logical_addr_cache.printCache(print_function);
+        return logical_addr_cache.size() + " elements:\n" + logical_addr_cache.printCache(print_function);
     }
 
     @ManagedOperation(description="Prints the contents of the who-has cache")
@@ -1046,9 +1048,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public void init() throws Exception {
         super.init();
-
-        if(physical_addr_max_fetch_attempts < 1)
-            throw new IllegalArgumentException("Property \"physical_addr_max_fetch_attempts\" cannot be less than 1");
 
         // Create the default thread factory
         if(global_thread_factory == null)
@@ -1856,24 +1855,21 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
 
-    protected void sendToSingleMember(Address dest, byte[] buf, int offset, int length) throws Exception {
+    protected void sendToSingleMember(final Address dest, byte[] buf, int offset, int length) throws Exception {
         if(dest instanceof PhysicalAddress) {
             sendUnicast((PhysicalAddress)dest, buf, offset, length);
             return;
         }
 
         PhysicalAddress physical_dest=null;
-        int cnt=1;
-        long sleep_time=20;
-        while((physical_dest=getPhysicalAddressFromCache(dest)) == null && cnt++ <= physical_addr_max_fetch_attempts) {
+        if((physical_dest=getPhysicalAddressFromCache(dest)) == null) {
             if(who_has_cache.addIfAbsentOrExpired(dest)) { // true if address was added
-                Util.sleepRandom(1, 500); // to prevent a discovery flood in large clusters (by staggering requests)
-                if((physical_dest=getPhysicalAddressFromCache(dest)) != null)
-                    break;
-                up(new Event(Event.GET_PHYSICAL_ADDRESS, dest));
+                timer.execute(new Runnable() {
+                    public void run() {
+                        up(new Event(Event.GET_PHYSICAL_ADDRESS, dest));
+                    }
+                });
             }
-            Util.sleep(sleep_time);
-            sleep_time=Math.min(1000, sleep_time *2);
         }
 
         if(physical_dest != null)
@@ -1895,7 +1891,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
             if(do_send) {
                 log.warn(Util.getMessage("NotAllPhysAddrsFound"), local_addr);
-                up(new Event(Event.FIND_INITIAL_MBRS));
+                timer.execute(new Runnable() {
+                    public void run() {
+                        up(new Event(Event.FIND_INITIAL_MBRS));
+                    }
+                });
             }
         }
 

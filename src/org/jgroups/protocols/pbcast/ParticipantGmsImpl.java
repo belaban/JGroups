@@ -60,11 +60,13 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
                 return;
             }
 
-            if(log.isDebugEnabled()) log.debug(gms.local_addr + ": sending LEAVE request to " + coord);
+            log.trace("%s: sending LEAVE request to %s", gms.local_addr, coord);
             sendLeaveMessage(coord, mbr);
             Boolean result=leave_promise.getResult(gms.leave_timeout);
-            if(result != null)
+            if(result != null) {
+                log.trace("%s: got LEAVE response from %s", gms.local_addr, coord);
                 break;
+            }
         }
         gms.becomeClient();
     }

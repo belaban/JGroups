@@ -1,6 +1,6 @@
 package org.jgroups.blocks;
 
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -22,7 +22,7 @@ public class LazyRemovalCache<K,V> {
 
 
     public interface Printable<K,V> {
-        String print(K key,V val);
+        String print(K key, V entry);
     }
 
 
@@ -203,8 +203,7 @@ public class LazyRemovalCache<K,V> {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<K,Entry<V>> entry: map.entrySet()) {
             K key=entry.getKey();
-            V val=entry.getValue().val;
-            sb.append(print_function.print(key, val));
+            sb.append(print_function.print(key, entry.getValue()));
         }
         return sb.toString();
     }
@@ -215,9 +214,8 @@ public class LazyRemovalCache<K,V> {
 
 
     private void checkMaxSizeExceeded() {
-        if(map.size() > max_elements) {
-            removeMarkedElements();
-        }
+        if(map.size() > max_elements)
+            removeMarkedElements(false);
     }
 
     /**

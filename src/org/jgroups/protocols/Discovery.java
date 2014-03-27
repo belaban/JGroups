@@ -288,7 +288,7 @@ public abstract class Discovery extends Protocol {
                     if(physical_addr != null && addr.equals(physical_addr)) // no need to send the request to myself
                         continue;
                     // the message needs to be DONT_BUNDLE, see explanation above
-                    final Message msg=new Message(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
+                    final Message msg=new Message(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
                       .putHeader(this.id, hdr).setBuffer(marshal(data));
                     if(log.isTraceEnabled())
                         log.trace(local_addr + ": sending discovery request to " + msg.getDest());
