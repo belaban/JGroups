@@ -62,7 +62,8 @@ public class Message implements Streamable {
         NO_RELAY(      (short)(1 << 6)),    // bypass relaying (RELAY)
         RSVP(          (short)(1 << 7)),    // ack of a multicast (https://issues.jboss.org/browse/JGRP-1389)
         INTERNAL(      (short)(1 << 8)),    // for internal use by JGroups only, don't use !
-        SKIP_BARRIER(  (short)(1 << 9));    // passing messages through a closed BARRIER
+        SKIP_BARRIER(  (short)(1 << 9)),    // passing messages through a closed BARRIER
+        DONT_LOOPBACK( (short)(1 << 10));   // don't loop back up if this flag is set and it is a multicast message
 
         final short value;
         Flag(short value) {this.value=value;}

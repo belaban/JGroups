@@ -266,12 +266,12 @@ public class TimeSchedulerTest {
             }
             System.out.println("-- added "+ (NUM_A * NUM_B) + " tasks, waiting for termination");
             Util.sleep(1000);
-            for(int i=0; i < 10; i++) {
+            for(int i=0; i < 20; i++) {
                 int size=timer.size();
                 System.out.println(size);
                 if(size == 0)
                     break;
-                Util.sleep(500);
+                Util.sleep(1000);
             }
             assert timer.size() == 0;
         }

@@ -2283,8 +2283,7 @@ java -Djava.net.preferIPv4Stack=true org.jgroups.demos.Draw -props ./nyc.xml -na
         </para>
         <programlisting language="Java">
 Message msg=new Message();
-msg.setFlag(Message.OOB);
-msg.setFlag(Message.NO_FC);
+msg.setFlag(Message.OOB, Message.NO_FC);
         </programlisting>
         <para>
             Here we tag the message to be OOB (out of band) and to bypass flow control.
@@ -2388,6 +2387,28 @@ msg.setFlag(Message.NO_FC);
                         When this flag is set, a message send will block until the receiver (unicast) or receivers
                         (multicast) have acked reception of the message, or until a timeout occurs.
                         See <xref linkend="RsvpSection"/> for details.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>Message.DONT_LOOPBACK</term>
+                <listitem>
+                    <para>
+                        If this flag is set and the message is a multicast message (dest == null), then the transport
+                        by default (1) multicasts the message, (2) loops it back up the stack (on a separate thread) and
+                        (3) discards the multicast when received.
+                    </para>
+                    <para>
+                        When DONT_LOOPBACK is set, the message will be multicast, but it will not be looped back up
+                        the stack. This is useful for example when the sender doesn't want to receive its own
+                        multicast. Contrary to JChannel.setDiscardOwnMessages(), this flag can be set
+                        <emphasis>per message</emphasis> and the processing is done at the transport level rather than
+                        the JChannel level.
+                    </para>
+                    <para>
+                        An example is the Discovery protocol: when sending a discovery request, the sender is only
+                        interested in responses from other members and therefore doesn't need to receive its own
+                        discovery multicast request.
                     </para>
                 </listitem>
             </varlistentry>
