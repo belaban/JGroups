@@ -620,14 +620,8 @@ public abstract class Discovery extends Protocol {
         }
     }
 
-    protected PingData deserialize(final byte[] data) {
-        try {
-            return (PingData)Util.streamableFromByteBuffer(PingData.class, data);
-        }
-        catch(Exception e) {
-            log.error("Error", e);
-            return null;
-        }
+    protected static PingData deserialize(final byte[] data) throws Exception {
+        return (PingData)Util.streamableFromByteBuffer(PingData.class, data);
     }
 
     public static Buffer marshal(PingData data) {

@@ -218,8 +218,21 @@ public class JDBC_PING extends FILE_PING {
             ArrayList<PingData> results = new ArrayList<PingData>();
             while (resultSet.next()) {
                 byte[] bytes = resultSet.getBytes(1);
-                PingData pingData = deserialize(bytes);
-                results.add(pingData);
+                PingData pingData =null;
+                try {
+                    pingData=deserialize(bytes);
+                    results.add(pingData);
+                }
+                catch(Exception e) {
+                    int row=resultSet.getRow();
+                    log.error("%s: failed deserializing row %d: %s; removing it from the table", local_addr, row, e);
+                    try {
+                        resultSet.deleteRow();
+                    }
+                    catch(Throwable t) {
+                        log.error("%s: failed removing row %d: %s; please delete it manually", local_addr, row, e);
+                    }
+                }
             }
             return results;
         } finally {
