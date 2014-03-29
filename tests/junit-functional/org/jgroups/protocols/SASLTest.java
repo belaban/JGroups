@@ -1,17 +1,5 @@
 package org.jgroups.protocols;
 
-import static org.testng.AssertJUnit.assertTrue;
-
-import java.io.IOException;
-
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.NameCallback;
-import javax.security.auth.callback.PasswordCallback;
-import javax.security.auth.callback.UnsupportedCallbackException;
-import javax.security.sasl.AuthorizeCallback;
-import javax.security.sasl.RealmCallback;
-
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.protocols.pbcast.GMS;
@@ -21,13 +9,20 @@ import org.jgroups.stack.Protocol;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import javax.security.auth.callback.*;
+import javax.security.sasl.AuthorizeCallback;
+import javax.security.sasl.RealmCallback;
+import java.io.IOException;
+
+import static org.testng.AssertJUnit.assertTrue;
+
 @Test(groups = Global.FUNCTIONAL, singleThreaded = true)
 public class SASLTest {
     private static final String REALM = "MyRealm";
     private JChannel a;
     private JChannel b;
 
-    private JChannel createChannel(String channelName, String mech, String username) throws Exception {
+    private static JChannel createChannel(String channelName,String mech,String username) throws Exception {
         SASL sasl = new SASL();
         sasl.setMech(mech);
         sasl.setCallbackHandler(new MyCallbackHandler(username));
