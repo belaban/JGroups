@@ -18,10 +18,59 @@ Below is a summary (with links to the detailed description) of the major new fea
 New features
 ============
 
+TimeService
+-----------
+[https://issues.jboss.org/browse/JGRP-1763]
 
-XYZ
-----------------------------------------
-[https://issues.jboss.org/browse/JGRP-XXX]
+New service run as task (every 500 ms by default) that returns the wall clock time at a coarse granularity. Cuts down
+on the number of times System.currentTimeMillis() has to be called. Used e.g. for failure detection (FD_ALL), connection
+reaping (UNICAST2) etc.
+
+
+FD_ALL2: new failure detection protocol without timestamps
+----------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1783]
+
+Same as FD_ALL, but doesn't use timestamps (System.currentTimeMillis()). However, with the introduction of the
+TimeService, perhaps this is moot...
+
+
+ExtendedUUID: add random data to an address
+-------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1750]
+
+ExtendedUUID is a subclass of UUID and has a simple hashmap to add data (in byte[] format), which can be used to
+ship data with an address. Example: can_be_site_master in RELAY2 uses this.
+Also, there can now be multiple AddressGenerators present and add their data to the same address.
+
+
+New SASL based AUTH implementation
+----------------------------------
+[https://issues.jboss.org/browse/JGRP-1729]
+
+Replaces AUTH.
+
+
+Provide ability to start diagnostics via JMX
+--------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1747]
+
+This allows an admin to start diagnostics even though it wasn't configured.
+
+
+More stats in TP
+----------------
+[https://issues.jboss.org/browse/JGRP-1777]
+
+E.g. number of singl messages, number of batches, avg size of batches etc
+
+
+Probe.sh: restrict requests to a certain cluster
+------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1734]
+
+New flag -cluster; servers drop requests with different cluster names.
+
 
 
 
@@ -29,12 +78,119 @@ Optimizations
 =============
 
 
+TP: enable loopback by default
+------------------------------
+[https://issues.jboss.org/browse/JGRP-1765]
+
+Multicast messages or unicast messages to self are always looped back up the stack. By default, this is done on a
+separate thread without making a copy, but this can be configured. When the multicast message is received, it will
+get dropped.
+We now have less work that needs to be done in the thread pool, and don't need to parse our own messages before
+dropping them anyway (unneeded work).
+Caveat: we now send multicast messages via the DatagramSocket (not the MulticastSocket). This causes a problem on MacOS,
+which can be fixed by adding a default mcast route, or by using the default route by bind to the default NIC.
+
+
+New flag DONT_LOOPBACK
+----------------------
+[https://issues.jboss.org/browse/JGRP-1816]
+
+If set, the message will not get looped back. Useful for multicast messages for which we don't need to receive a copy.
+Saves processing costs. Alternative to JChannel.setDiscardOwnMessages().
+
+
+Ignore DONT_BUNDLE and always send *all* messages as bundles
+------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1737]
+
+By default, send all messages (even ones tagged as DONT_BUNDLE) as message bundles. At the receiver, deliver messages
+tagged as DONT_BUNDLE | OOB on a separate thread.
+
+
+TP: sending messages to an unknown physical dest takes too much time
+--------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1815]
+
+Fixed by removing the loop (default: loop 3 times and sleep random [1..500] ms).
+
+
+Processing of OOB messages in UNICAST and NAKACK
+------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1767]
+[https://issues.jboss.org/browse/JGRP-1768]
+
+OOB messages are not added to the table anymore, but a placeholder is used instead (saves memory): all OOB messages
+in the table point to the same dummy instance.
+Also, filters are used to remove messages from the table (more efficient).
+
+
+Internal threads should nto do work stealing
+--------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1732]
+
+Internal threads are now guaranteed not to pass up messages added by different threads and to return immediately
+after delivering their own messages.
+
+
+Avoiding unneeded byte[] buffer allocations
+-------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1774]
+[https://issues.jboss.org/browse/JGRP-1773]
+
+
+Memory-efficient marshalling
+----------------------------
+[https://issues.jboss.org/browse/JGRP-1771]
+
+Replacing ExposedInputStream and ExposedOutputStream
+
+
+AsciiString: memory-efficient version of String
+-----------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1772]
+
+
+Send message batch of 1 as a single message
+-------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1726]
+
+Slightly more efficient than sending a batch of 1.
+
+
+Table: null rows when removing last element
+-------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1770]
+
+Optimization triggering GC more quickly in NAKACK and UNICAST
+
+
+Table: adding a message batch can cause too many resizings
+----------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1769]
+
+Potentially 1 resize per message from the batch. Now 1 potential resizing for the entire batch.
+
+
+Improve perf of ENCRYPT
+-----------------------
+[https://issues.jboss.org/browse/JGRP-1722]
+
 
 
 Bug fixes
 =========
 
 
+TOA: incorrect message delivery
+-------------------------------
+[https://issues.jboss.org/browse/JGRP-1785]
+
+
+S3_PING: incorrect URL
+----------------------
+[https://issues.jboss.org/browse/JGRP-1803]
+
+S3 changes their URL format, so S3_PING had to be changed, too.
 
 
 
