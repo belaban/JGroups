@@ -62,7 +62,7 @@ public class TopologyUUID extends ExtendedUUID {
     }
 
     public String getMachineId() {
-        return Util.bytesToString(get(RACK_ID));
+        return Util.bytesToString(get(MACHINE_ID));
     }
 
     public void setMachineId(String machine_id) {
