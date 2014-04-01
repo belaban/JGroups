@@ -552,6 +552,7 @@ public class UPerf extends ReceiverAdapter {
         String  props=null;
         String  name=null;
         boolean xsite=true;
+        boolean run_event_loop=true;
 
         for(int i=0; i < args.length; i++) {
             if("-props".equals(args[i])) {
@@ -566,6 +567,10 @@ public class UPerf extends ReceiverAdapter {
                 xsite=Boolean.valueOf(args[++i]);
                 continue;
             }
+            if("-nohup".equals(args[i])) {
+                run_event_loop=false;
+                continue;
+            }
             help();
             return;
         }
@@ -574,7 +579,8 @@ public class UPerf extends ReceiverAdapter {
         try {
             test=new UPerf();
             test.init(props, name, xsite);
-            test.eventLoop();
+            if(run_event_loop)
+                test.eventLoop();
         }
         catch(Throwable ex) {
             ex.printStackTrace();
@@ -584,7 +590,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("UPerf [-props <props>] [-name name] [-xsite <true | false>]");
+        System.out.println("UPerf [-props <props>] [-name name] [-xsite <true | false>] [-nohup]");
     }
 
 
