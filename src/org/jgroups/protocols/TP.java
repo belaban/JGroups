@@ -286,7 +286,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected boolean enable_diagnostics=true;
 
     @Property(description="Address for diagnostic probing. Default is 224.0.75.75", 
-    		defaultValueIPv4="224.0.75.75",defaultValueIPv6="ff0e::0:75:75")
+              defaultValueIPv4="224.0.75.75",defaultValueIPv6="ff0e::0:75:75")
     protected InetAddress diagnostics_addr=null;
 
     @Property(converter=PropertyConverters.NetworkInterfaceList.class,
@@ -1339,8 +1339,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                         for(Protocol prot: up_prots.values())
                             if(prot instanceof ProtocolAdapter)
                                 cluster_names.add(((ProtocolAdapter)prot).getClusterName());
-                        for(String cluster_name: cluster_names) {
-                            if(Util.patternMatch(cluster_name_pattern, cluster_name)) {
+                        for(String cname: cluster_names) {
+                            if(Util.patternMatch(cluster_name_pattern, cname)) {
                                 match=true;
                                 break;
                             }
@@ -1750,8 +1750,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 }
 
                 TpHeader hdr=(TpHeader)msg.getHeader(id);
-                AsciiString cluster_name=new AsciiString(hdr.cluster_name);
-                passMessageUp(msg, cluster_name, true, multicast, true);
+                AsciiString cname=new AsciiString(hdr.cluster_name);
+                passMessageUp(msg, cname, true, multicast, true);
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
@@ -1784,8 +1784,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 }
 
                 TpHeader hdr=(TpHeader)msg.getHeader(id);
-                AsciiString cluster_name=new AsciiString(hdr.cluster_name);
-                passMessageUp(msg, cluster_name, true, multicast, true);
+                AsciiString cname=new AsciiString(hdr.cluster_name);
+                passMessageUp(msg, cname, true, multicast, true);
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("PassUpFailure"), t);
@@ -1886,8 +1886,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             long current_time=0;
             boolean do_send=false;
             synchronized(this) {
-                if(last_discovery_request == 0 || (current_time=System.currentTimeMillis()) - last_discovery_request >= 10000) {
-                    last_discovery_request=current_time == 0? System.currentTimeMillis() : current_time;
+                if(last_discovery_request == 0 || (current_time=time_service.timestamp()) - last_discovery_request >= 10000) {
+                    last_discovery_request=current_time == 0? time_service.timestamp() : current_time;
                     do_send=true;
                 }
             }
@@ -2428,10 +2428,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         @GuardedBy("lock") protected void addMessage(Message msg, long size) {
-            byte[] cluster_name=!isSingleton()? TP.this.cluster_name.chars():
+            byte[] cname=!isSingleton()? TP.this.cluster_name.chars():
               ((TpHeader)msg.getHeader(id)).cluster_name;
 
-            SingletonAddress dest=new SingletonAddress(cluster_name, msg.getDest());
+            SingletonAddress dest=new SingletonAddress(cname, msg.getDest());
             List<Message> tmp=msgs.get(dest);
             if(tmp == null) {
                 tmp=new LinkedList<Message>();
@@ -2765,7 +2765,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         public Map<String, String> handleProbe(String... keys) {
-            HashMap<String, String> retval=new HashMap<String, String>();
+            Map<String,String> retval=new HashMap<String, String>();
             retval.put("cluster", getClusterName());
             retval.put("local_addr", local_addr != null? local_addr.toString() : null);
             retval.put("local_addr (UUID)", local_addr instanceof UUID? ((UUID)local_addr).toStringLong() : null);

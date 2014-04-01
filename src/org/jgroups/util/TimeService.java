@@ -27,7 +27,7 @@ public class TimeService  implements Runnable {
     }
 
     public long timestamp() {
-        return timestamp > 0? timestamp : System.currentTimeMillis();
+        return timestamp > 0? timestamp : (timestamp=System.currentTimeMillis());
     }
 
     public long interval() {
