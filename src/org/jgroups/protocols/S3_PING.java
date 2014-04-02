@@ -61,9 +61,9 @@ public class S3_PING extends FILE_PING {
 
         validateProperties();
 
-        conn=new AWSAuthConnection(access_key, secret_access_key);
+        conn=createConnection();
 
-        if(prefix != null && prefix.length() > 0) {
+        if(prefix != null && !prefix.isEmpty()) {
             ListAllMyBucketsResponse bucket_list=conn.listAllMyBuckets(null);
             List buckets=bucket_list.entries;
             if(buckets != null) {
@@ -97,6 +97,10 @@ public class S3_PING extends FILE_PING {
                 remove(group_addr, local_addr);
             }
         });
+    }
+
+    protected AWSAuthConnection createConnection() {
+        return new AWSAuthConnection(access_key, secret_access_key);
     }
 
     protected void createRootDir() {
