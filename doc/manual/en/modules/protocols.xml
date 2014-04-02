@@ -439,6 +439,28 @@
         </section>
 
         <section>
+            <title>GOOGLE_PING</title>
+
+            <para>
+                GOOGLE_PING is a subclass of S3_PING and inherits most of the functionality. The snippet below shows a
+                sample config:
+            </para>
+             <programlisting language="XML">
+&lt;S3_GOOGLE location="jgroups-bucket"
+              access_key="GXXXXXX"
+              secret_access_key="YYYYYY"
+         timeout="2000" num_initial_members="3"/&gt;
+            </programlisting>
+
+            <para>
+                This will use a bucket "jgroups-bucket" or create one if it doesn't exist, then create another folder
+                under it with the cluster name, and finally use 1 object per member in that location for member info.
+            </para>
+
+            ${GOOGLE_PING}
+        </section>
+
+        <section>
             <title>SWIFT_PING</title>
 
             <para>
