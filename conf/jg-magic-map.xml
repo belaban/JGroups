@@ -73,5 +73,6 @@
     <class id="110" name="org.jgroups.blocks.MethodCall"/>
     <class id="111" name="org.jgroups.util.ExtendedUUID"/>
     <class id="112" name="org.jgroups.protocols.SaslHeader"/>
+    <class id="113" name="org.jgroups.protocols.SEQUENCER_UUM$SequencerHeader"/>
 </magic-number-class-mapping>
 
