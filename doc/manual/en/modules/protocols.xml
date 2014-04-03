@@ -450,7 +450,8 @@
                 The snippet below shows a sample config:
             </para>
              <programlisting language="XML">
-&lt;GOOGLE_PING location="jgroups-bucket"
+&lt;GOOGLE_PING
+           location="jgroups-bucket"
            access_key="GXXXXXX"
            secret_access_key="YYYYYY"
            timeout="2000" num_initial_members="3"/&gt;
