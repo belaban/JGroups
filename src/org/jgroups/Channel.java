@@ -425,37 +425,63 @@ public abstract class Channel implements Closeable {
     abstract public boolean flushSupported();
 
    /**
-    * Performs a partial flush in a cluster for flush participants.
+    * Performs the flush of the cluster but only for the specified flush participants.
     * <p/>
-    * All pending messages are flushed out only for the flush participants. The remaining members in
-    * a cluster are not included in the flush. The flush participants should be a proper subset of a
-    * current view.
+    * All pending messages are flushed out but only for the flush participants. The remaining
+    * members in the cluster are not included in the flush. The list of flush participants should be
+    * a proper subset of the current view.
     * <p/>
-    * 
+    * If this flush is not automatically resumed it is an obligation of the application to invoke
+    * the matching {@link #stopFlush(List)} method with the same list of members used in
+    * {@link #startFlush(List, boolean)}.
+    *
     * @param automatic_resume
     *           if true call {@link #stopFlush()} after the flush
     * @see #startFlush(boolean)
+    * @see Util#startFlush(Channel, List, int, long, long)
     */
     abstract public void startFlush(List<Address> flushParticipants, boolean automatic_resume)
                 throws Exception;
 
    /**
-    * Will perform a flush of the system, ie. all pending messages are flushed out of the system and
-    * all members ack their reception. After this call returns, no member will be sending any
+    * Performs the flush of the cluster, ie. all pending application messages are flushed out of the cluster and
+    * all members ack their reception. After this call returns, no member will be allowed to send any
     * messages until {@link #stopFlush()} is called.
     * <p/>
-    * In case of flush collisions, a random sleep time backoff algorithm is employed and the flush
-    * is reattempted for numberOfAttempts. Therefore this method is guaranteed to return after
-    * timeout x numberOfAttempts milliseconds.
-    * 
+    * In the case of flush collisions (another member attempts flush at roughly the same time) start flush will
+    * fail by throwing an Exception. Applications can re-attempt flushing after certain back-off period.
+    * <p/>
+    * JGroups provides a helper random sleep time backoff algorithm for flush using Util class.
+    *
     * @param automatic_resume
     *           if true call {@link #stopFlush()} after the flush
+    *
+    * @see Util#startFlush(Channel, List, int, long, long)
     */
     abstract public void startFlush(boolean automatic_resume) throws Exception;
     
-    abstract public void stopFlush();
+   /**
+    * Stops the current flush of the cluster. Cluster members are unblocked and allowed to send new
+    * and pending messages.
+    *
+    * @see Channel#startFlush(boolean)
+    * @see Channel#startFlush(List, boolean)
+    */
+   abstract public void stopFlush();
     
-    abstract public void stopFlush(List<Address> flushParticipants);
+   /**
+    * Stops the current flush of the cluster for the specified flush participants. Flush
+    * participants are unblocked and allowed to send new and pending messages.
+    * <p>
+    *
+    * It is an obligation of the application to invoke the matching
+    * {@link #startFlush(List, boolean)} method with the same list of members prior to invocation of
+    * this method.
+    *
+    * @param flushParticipants
+    *           the flush participants
+    */
+   abstract public void stopFlush(List<Address> flushParticipants);
 
 
    /**
