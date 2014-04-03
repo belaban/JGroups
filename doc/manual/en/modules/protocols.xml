@@ -442,14 +442,18 @@
             <title>GOOGLE_PING</title>
 
             <para>
-                GOOGLE_PING is a subclass of S3_PING and inherits most of the functionality. The snippet below shows a
-                sample config:
+                GOOGLE_PING is a subclass of S3_PING and inherits most of the functionality. It uses Google Cloud
+                Storage to store information about individual members.
+            </para>
+
+            <para>
+                The snippet below shows a sample config:
             </para>
              <programlisting language="XML">
 &lt;S3_GOOGLE location="jgroups-bucket"
-              access_key="GXXXXXX"
-              secret_access_key="YYYYYY"
-         timeout="2000" num_initial_members="3"/&gt;
+           access_key="GXXXXXX"
+           secret_access_key="YYYYYY"
+           timeout="2000" num_initial_members="3"/&gt;
             </programlisting>
 
             <para>
