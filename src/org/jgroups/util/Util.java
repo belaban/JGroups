@@ -2784,7 +2784,26 @@ public class Util {
             return hostname;
     }
 
-    public static boolean startFlush(Channel c, List<Address> flushParticipants,
+   /**
+    * Performs the flush of the given channel for the specified flush participants and the given
+    * number of attempts along with random sleep time after each such attempt.
+    *
+    *
+    * @param c
+    *           the channel
+    * @param flushParticipants
+    *           the flush participants in this flush attempt
+    * @param numberOfAttempts
+    *           the number of flush attempts
+    * @param randomSleepTimeoutFloor
+    *           the minimum sleep time between attempts in ms
+    * @param randomSleepTimeoutCeiling
+    *           the maximum sleep time between attempts in ms
+    * @return true if channel was flushed successfully, false otherwise
+    *
+    * @see Channel#startFlush(List, boolean)
+    */
+   public static boolean startFlush(Channel c, List<Address> flushParticipants,
             int numberOfAttempts, long randomSleepTimeoutFloor, long randomSleepTimeoutCeiling) {
       int attemptCount = 0;
       while (attemptCount < numberOfAttempts) {
@@ -2799,11 +2818,39 @@ public class Util {
       return false;
     }
 
-    public static boolean startFlush(Channel c, List<Address> flushParticipants) {
+   /**
+    * Performs the flush of the given channel and the specified flush participants 
+    *
+    *
+    * @param c
+    *           the channel
+    * @param flushParticipants
+    *           the flush participants in this flush attempt
+    *
+    * @see Channel#startFlush(List, boolean)
+    */
+   public static boolean startFlush(Channel c, List<Address> flushParticipants) {
     	return startFlush(c,flushParticipants,4,1000,5000);
     }
 
-    public static boolean startFlush(Channel c, int numberOfAttempts, long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
+   /**
+    * Performs the flush of the given channel within the specfied number of attempts along with random
+    * sleep time after each such attempt.
+    *
+    *
+    * @param c
+    *           the channel
+    * @param numberOfAttempts
+    *           the number of flush attempts
+    * @param randomSleepTimeoutFloor
+    *           the minimum sleep time between attempts in ms
+    * @param randomSleepTimeoutCeiling
+    *           the maximum sleep time between attempts in ms
+    * @return true if channel was flushed successfully, false otherwise
+    *
+    * @see Channel#startFlush(boolean)
+    */
+   public static boolean startFlush(Channel c, int numberOfAttempts, long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
         int attemptCount = 0;
         while(attemptCount < numberOfAttempts){
             try{
@@ -2817,7 +2864,17 @@ public class Util {
         return false;
     }
 
-    public static boolean startFlush(Channel c) {
+   /**
+    * Performs the flush of the given channel
+    *
+    *
+    * @param c
+    *           the channel
+    * @return true if channel was flushed successfully, false otherwise
+    *
+    * @see Channel#startFlush(boolean)
+    */
+   public static boolean startFlush(Channel c) {
     	return startFlush(c,4,1000,5000);
     }
 
