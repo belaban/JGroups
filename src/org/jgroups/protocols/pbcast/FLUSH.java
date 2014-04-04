@@ -260,56 +260,56 @@ public class FLUSH extends Protocol {
      */
 
     public Object down(Event evt) {
-        switch (evt.getType()) {
-            case Event.MSG:
-                if(bypass)
-                    break;
-                Message msg = (Message) evt.getArg();
-                Address dest = msg.getDest();
-                if (dest == null) { // mcasts
-                    FlushHeader fh = (FlushHeader) msg.getHeader(this.id);
-                    if (fh != null && fh.type == FlushHeader.FLUSH_BYPASS) {
-                        return down_prot.down(evt);
-                    } else {
-                        blockMessageDuringFlush();
-                    }
-                } else {
-                    // unicasts are irrelevant in virtual synchrony, let them through
-                    return down_prot.down(evt);
-                }
-                break;
+        if(!bypass){
+           switch (evt.getType()) {
+               case Event.MSG:
+                   Message msg = (Message) evt.getArg();
+                   Address dest = msg.getDest();
+                   if (dest == null) { // mcasts
+                       FlushHeader fh = (FlushHeader) msg.getHeader(this.id);
+                       if (fh != null && fh.type == FlushHeader.FLUSH_BYPASS) {
+                           return down_prot.down(evt);
+                       } else {
+                           blockMessageDuringFlush();
+                       }
+                   } else {
+                       // unicasts are irrelevant in virtual synchrony, let them through
+                       return down_prot.down(evt);
+                   }
+                   break;
 
-            case Event.CONNECT:
-            case Event.CONNECT_USE_FLUSH:                                
-                return handleConnect(evt,true);
-                
-            case Event.CONNECT_WITH_STATE_TRANSFER:            
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
-                return handleConnect(evt, false);
-                
-            case Event.SUSPEND:
-                startFlush(evt);
-                return null;
-             
-            // only for testing, see FLUSH#testFlushWithCrashedFlushCoordinator    
-            case Event.SUSPEND_BUT_FAIL: 
-                if (!flushInProgress.get()) {
-                    flush_promise.reset();
-                    ArrayList<Address> flushParticipants = null;
-                    synchronized (sharedLock) {
-                        flushParticipants = new ArrayList<Address>(currentView.getMembers());
-                    }
-                    onSuspend(flushParticipants);
-                }
-                break;
+               case Event.CONNECT:
+               case Event.CONNECT_USE_FLUSH:
+                   return handleConnect(evt,true);
 
-            case Event.RESUME:
-                onResume(evt);
-                return null;
+               case Event.CONNECT_WITH_STATE_TRANSFER:
+               case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                   return handleConnect(evt, false);
 
-            case Event.SET_LOCAL_ADDRESS:
-                localAddress = (Address) evt.getArg();
-                break;
+               case Event.SUSPEND:
+                   startFlush(evt);
+                   return null;
+
+               // only for testing, see FLUSH#testFlushWithCrashedFlushCoordinator
+               case Event.SUSPEND_BUT_FAIL:
+                   if (!flushInProgress.get()) {
+                       flush_promise.reset();
+                       ArrayList<Address> flushParticipants = null;
+                       synchronized (sharedLock) {
+                           flushParticipants = new ArrayList<Address>(currentView.getMembers());
+                       }
+                       onSuspend(flushParticipants);
+                   }
+                   break;
+
+               case Event.RESUME:
+                   onResume(evt);
+                   return null;
+
+               case Event.SET_LOCAL_ADDRESS:
+                   localAddress = (Address) evt.getArg();
+                   break;
+           }
         }
         return down_prot.down(evt);
     }
@@ -360,132 +360,131 @@ public class FLUSH extends Protocol {
     }
 
     public Object up(Event evt) {
-        switch (evt.getType()) {
-            case Event.MSG:
-                if(bypass)
-                    break;
-                Message msg = (Message) evt.getArg();
-                final FlushHeader fh = (FlushHeader) msg.getHeader(this.id);
-                if (fh != null) {
-                    final Tuple<Collection<? extends Address>,Digest> tuple=readParticipantsAndDigest(msg.getRawBuffer(),
-                                                                                                      msg.getOffset(),
-                                                                                                      msg.getLength());
-                    switch (fh.type) {
-                        case FlushHeader.FLUSH_BYPASS:
-                            return up_prot.up(evt);
-                        case FlushHeader.START_FLUSH:
+        if(!bypass){
+           switch (evt.getType()) {
+               case Event.MSG:
+                   Message msg = (Message) evt.getArg();
+                   final FlushHeader fh = (FlushHeader) msg.getHeader(this.id);
+                   if (fh != null) {
+                       final Tuple<Collection<? extends Address>,Digest> tuple=readParticipantsAndDigest(msg.getRawBuffer(),
+                                                                                                         msg.getOffset(),
+                                                                                                         msg.getLength());
+                       switch (fh.type) {
+                           case FlushHeader.FLUSH_BYPASS:
+                               return up_prot.up(evt);
+                           case FlushHeader.START_FLUSH:
 
-                            Collection<? extends Address> fp = tuple.getVal1();
-                            boolean amIParticipant = (fp != null && fp.contains(localAddress))
-                              || msg.getSrc().equals(localAddress);
-                            if (amIParticipant) {
-                                handleStartFlush(msg, fh);
-                            } else {
-                                if (log.isDebugEnabled())
-                                    log.debug(localAddress + ": received START_FLUSH but I'm not flush participant, not responding");
-                            }
-                            break;
-                        case FlushHeader.FLUSH_RECONCILE:
-                            handleFlushReconcile(msg);
-                            break;
-                        case FlushHeader.FLUSH_RECONCILE_OK:
-                            onFlushReconcileOK(msg);
-                            break;
-                        case FlushHeader.STOP_FLUSH:
-                            onStopFlush();
-                            break;
-                        case FlushHeader.ABORT_FLUSH:
-                            Collection<? extends Address> flushParticipants = tuple.getVal1();
-                            boolean participant = flushParticipants != null && flushParticipants.contains(localAddress);
-                            if (log.isDebugEnabled()) {
-                               log.debug(localAddress + ": received ABORT_FLUSH from flush coordinator " + msg.getSrc()
-                                           + ",  am I flush participant=" + participant);
-                            }
-                            if (participant)
-                               resetForNextFlush();                                
-                            break;
-                        case FlushHeader.FLUSH_NOT_COMPLETED:
-                            if (log.isDebugEnabled()) {
-                                log.debug(localAddress + ": received FLUSH_NOT_COMPLETED from " + msg.getSrc());
-                            }
-                            boolean flushCollision = false;
-                            synchronized (sharedLock) {
-                                flushNotCompletedMap.add(msg.getSrc());
-                                flushCollision = !flushCompletedMap.isEmpty();
-                                if (flushCollision) {
-                                    flushNotCompletedMap.clear();
-                                    flushCompletedMap.clear();
-                                }
-                            }
+                               Collection<? extends Address> fp = tuple.getVal1();
+                               boolean amIParticipant = (fp != null && fp.contains(localAddress))
+                                 || msg.getSrc().equals(localAddress);
+                               if (amIParticipant) {
+                                   handleStartFlush(msg, fh);
+                               } else {
+                                   if (log.isDebugEnabled())
+                                       log.debug(localAddress + ": received START_FLUSH but I'm not flush participant, not responding");
+                               }
+                               break;
+                           case FlushHeader.FLUSH_RECONCILE:
+                               handleFlushReconcile(msg);
+                               break;
+                           case FlushHeader.FLUSH_RECONCILE_OK:
+                               onFlushReconcileOK(msg);
+                               break;
+                           case FlushHeader.STOP_FLUSH:
+                               onStopFlush();
+                               break;
+                           case FlushHeader.ABORT_FLUSH:
+                               Collection<? extends Address> flushParticipants = tuple.getVal1();
+                               boolean participant = flushParticipants != null && flushParticipants.contains(localAddress);
+                               if (log.isDebugEnabled()) {
+                                  log.debug(localAddress + ": received ABORT_FLUSH from flush coordinator " + msg.getSrc()
+                                              + ",  am I flush participant=" + participant);
+                               }
+                               if (participant)
+                                  resetForNextFlush();
+                               break;
+                           case FlushHeader.FLUSH_NOT_COMPLETED:
+                               if (log.isDebugEnabled()) {
+                                   log.debug(localAddress + ": received FLUSH_NOT_COMPLETED from " + msg.getSrc());
+                               }
+                               boolean flushCollision = false;
+                               synchronized (sharedLock) {
+                                   flushNotCompletedMap.add(msg.getSrc());
+                                   flushCollision = !flushCompletedMap.isEmpty();
+                                   if (flushCollision) {
+                                       flushNotCompletedMap.clear();
+                                       flushCompletedMap.clear();
+                                   }
+                               }
 
-                            if (log.isDebugEnabled())
-                                log.debug(localAddress + ": received FLUSH_NOT_COMPLETED from " + msg.getSrc() +
-                                            " collision=" + flushCollision);
+                               if (log.isDebugEnabled())
+                                   log.debug(localAddress + ": received FLUSH_NOT_COMPLETED from " + msg.getSrc() +
+                                               " collision=" + flushCollision);
 
-                            // reject flush if we have at least one OK and at least one FAIL
-                            if (flushCollision) {
-                                Runnable r = new Runnable() {
-                                    public void run() {                                        
-                                        rejectFlush(tuple.getVal1(), fh.viewID);
-                                    }
-                                };
-                                new Thread(r).start();
-                            }
-                            // however, flush should fail/retry as soon as one FAIL is received
-                            flush_promise.setResult(new FlushStartResult(Boolean.FALSE, new Exception("Flush failed for " + msg.getSrc())));
-                            break;
+                               // reject flush if we have at least one OK and at least one FAIL
+                               if (flushCollision) {
+                                   Runnable r = new Runnable() {
+                                       public void run() {
+                                           rejectFlush(tuple.getVal1(), fh.viewID);
+                                       }
+                                   };
+                                   new Thread(r).start();
+                               }
+                               // however, flush should fail/retry as soon as one FAIL is received
+                               flush_promise.setResult(new FlushStartResult(Boolean.FALSE, new Exception("Flush failed for " + msg.getSrc())));
+                               break;
 
-                        case FlushHeader.FLUSH_COMPLETED:
-                            if (isCurrentFlushMessage(fh))
-                                onFlushCompleted(msg.getSrc(), msg, fh);
-                            break;
-                    }
-                    return null; // do not pass FLUSH msg up
-                } else {
-                    // http://jira.jboss.com/jira/browse/JGRP-575: for processing of application messages after we join,
-                    // lets wait for STOP_FLUSH to complete before we start allowing message up
-                    if (msg.getDest() != null)
-                        return up_prot.up(evt); // allow unicasts to pass, virtual synchrony only applies to multicasts
-                }
-                break;
+                           case FlushHeader.FLUSH_COMPLETED:
+                               if (isCurrentFlushMessage(fh))
+                                   onFlushCompleted(msg.getSrc(), msg, fh);
+                               break;
+                       }
+                       return null; // do not pass FLUSH msg up
+                   } else {
+                       // http://jira.jboss.com/jira/browse/JGRP-575: for processing of application messages after we join,
+                       // lets wait for STOP_FLUSH to complete before we start allowing message up
+                       if (msg.getDest() != null)
+                           return up_prot.up(evt); // allow unicasts to pass, virtual synchrony only applies to multicasts
+                   }
+                   break;
 
-            case Event.VIEW_CHANGE:
-                // JGRP-618: FLUSH coordinator transfer reorders block/unblock/view events in applications (TCP stack only)
-                up_prot.up(evt);
-                View newView = (View) evt.getArg();
-                boolean coordinatorLeft = onViewChange(newView);
-                boolean singletonMember = newView.size() == 1 && newView.containsMember(localAddress);
-                boolean isThisOurFirstView = viewCounter.addAndGet(1) == 1;
-                // if this is channel's first view and its the only member of the group - no flush
-                // was run but the channel application should still receive BLOCK,VIEW,UNBLOCK
+               case Event.VIEW_CHANGE:
+                   // JGRP-618: FLUSH coordinator transfer reorders block/unblock/view events in applications (TCP stack only)
+                   up_prot.up(evt);
+                   View newView = (View) evt.getArg();
+                   boolean coordinatorLeft = onViewChange(newView);
+                   boolean singletonMember = newView.size() == 1 && newView.containsMember(localAddress);
+                   boolean isThisOurFirstView = viewCounter.addAndGet(1) == 1;
+                   // if this is channel's first view and its the only member of the group - no flush
+                   // was run but the channel application should still receive BLOCK,VIEW,UNBLOCK
 
-                // also if coordinator of flush left each member should run stopFlush individually.
-                if ((isThisOurFirstView && singletonMember) || coordinatorLeft)
-                    onStopFlush();
-                return null;
+                   // also if coordinator of flush left each member should run stopFlush individually.
+                   if ((isThisOurFirstView && singletonMember) || coordinatorLeft)
+                       onStopFlush();
+                   return null;
 
-            case Event.TMP_VIEW:             
-                View tmpView = (View) evt.getArg();
-                if (!tmpView.containsMember(localAddress))
-                    onViewChange(tmpView);
-                break;
+               case Event.TMP_VIEW:
+                   View tmpView = (View) evt.getArg();
+                   if (!tmpView.containsMember(localAddress))
+                       onViewChange(tmpView);
+                   break;
 
-            case Event.SUSPECT:
-                onSuspect((Address) evt.getArg());
-                break;
+               case Event.SUSPECT:
+                   onSuspect((Address) evt.getArg());
+                   break;
 
-            case Event.SUSPEND:
-                startFlush(evt);
-                return null;
+               case Event.SUSPEND:
+                   startFlush(evt);
+                   return null;
 
-            case Event.RESUME:
-                onResume(evt);
-                return null;
-            case Event.UNBLOCK:                
-                flush_unblock_promise.setResult(Boolean.TRUE);
-                break;
+               case Event.RESUME:
+                   onResume(evt);
+                   return null;
+               case Event.UNBLOCK:
+                   flush_unblock_promise.setResult(Boolean.TRUE);
+                   break;
+           }
         }
-
         return up_prot.up(evt);
     }
 
