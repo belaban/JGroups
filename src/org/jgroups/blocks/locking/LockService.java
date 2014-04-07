@@ -88,7 +88,7 @@ public class LockService {
      */
     protected class LockImpl implements Lock {
         protected final String name;
-        protected final AtomicReference<Thread> holder = new AtomicReference<Thread>();
+        protected final AtomicReference<Thread> holder=new AtomicReference<Thread>();
 
         public LockImpl(String name) {
             this.name=name;
@@ -130,7 +130,8 @@ public class LockService {
          */
         public boolean tryLock() {
             Boolean retval=(Boolean)ch.down(new Event(Event.LOCK, new LockInfo(name, true, false, false, 0, TimeUnit.MILLISECONDS)));
-            holder.set(retval? Thread.currentThread() : null);
+            if(retval != null && retval)
+                holder.set(Thread.currentThread());
             return retval;
         }
 
@@ -148,7 +149,8 @@ public class LockService {
             Boolean retval=(Boolean)ch.down(new Event(Event.LOCK, new LockInfo(name, true, true, true, time, unit)));
             if(Thread.currentThread().isInterrupted())
                 throw new InterruptedException();
-            holder.set(retval? Thread.currentThread() : null);
+            if(retval != null && retval)
+                holder.set(Thread.currentThread());
             return retval;
         }
 
@@ -159,7 +161,7 @@ public class LockService {
          */
         public void unlock() {
             ch.down(new Event(Event.UNLOCK, new LockInfo(name, false, false, false, 0, TimeUnit.MILLISECONDS)));
-            holder.set(null);
+            holder.compareAndSet(Thread.currentThread(), null); // only set if the current thread is actually the holder
         }
 
         /**
