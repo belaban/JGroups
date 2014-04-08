@@ -311,9 +311,9 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
         // if local delivery is off, then we should not wait for the message from the local member.
         // therefore remove it from the membership
         Channel tmp=channel;
-        if(tmp != null && tmp.getDiscardOwnMessages()) {
+        if((tmp != null && tmp.getDiscardOwnMessages()) || msg.isFlagSet(Message.Flag.DONT_LOOPBACK)) {
             if(local_addr == null)
-                local_addr=tmp.getAddress();
+                local_addr=tmp != null? tmp.getAddress() : null;
             if(local_addr != null)
                 real_dests.remove(local_addr);
         }

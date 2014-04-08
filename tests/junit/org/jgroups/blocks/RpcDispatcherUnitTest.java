@@ -1,10 +1,7 @@
 package org.jgroups.blocks;
 
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.View;
-import org.jgroups.Address;
+import org.jgroups.*;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.*;
 import org.testng.annotations.*;
@@ -97,6 +94,24 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
     public void testInvocationWithExclusionOfSelf() throws Exception {
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 5000).setExclusionList(a1);
         RspList rsps=d1.callRemoteMethods(null, "foo", null, null, options);
+        Util.sleep(500);
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.size() == 2;
+        assert rsps.containsKey(a2) && rsps.containsKey(a3);
+        assert !o1.wasCalled() && o2.wasCalled() && o3.wasCalled();
+    }
+
+    /** Invoke a method on all but myself and use DONT_LOOPBACK */
+    public void testInvocationWithExclusionOfSelfWithDontLoopback() throws Exception {
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 5000).setFlags(Message.Flag.DONT_LOOPBACK);
+        RspList rsps=d1.callRemoteMethods(null, "foo", null, null, options);
+        Util.sleep(500);
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.size() == 2;
+        assert rsps.containsKey(a2) && rsps.containsKey(a3);
+        assert !o1.wasCalled() && o2.wasCalled() && o3.wasCalled();
+
+        rsps=d1.callRemoteMethods(Arrays.asList(a1,a2,a3), "foo", null, null, options);
         Util.sleep(500);
         System.out.println("rsps:\n" + rsps);
         assert rsps.size() == 2;
