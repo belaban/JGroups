@@ -775,6 +775,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     if(msg_to_deliver.isFlagSet(Message.Flag.OOB) && !msg_to_deliver.setTransientFlagIfAbsent(Message.OOB_DELIVERED))
                         continue;
 
+                    if(msg_to_deliver.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK)
+                      && local_addr != null && local_addr.equals(msg.getSrc()))
+                        continue;
+
                     //msg_to_deliver.removeHeader(getName()); // Changed by bela Jan 29 2003: not needed (see above)
                     try {
                         if(log.isTraceEnabled()) {

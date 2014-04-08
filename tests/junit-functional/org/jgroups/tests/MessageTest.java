@@ -31,7 +31,7 @@ public class MessageTest {
 
     public static void testFlags() {
         Message m1=new Message();
-        assert !(m1.isFlagSet(Message.Flag.OOB));
+        assert !m1.isFlagSet(Message.Flag.OOB);
         assert m1.getFlags() == 0;
 
         m1.setFlag((Message.Flag[])null);
@@ -46,9 +46,9 @@ public class MessageTest {
         msg.setFlag((Message.Flag[])null);
         assert msg.getFlags() == 0;
 
-        msg.setFlag(Message.Flag.OOB, Message.NO_FC, null, Message.Flag.DONT_BUNDLE);
+        msg.setFlag(Message.Flag.OOB,Message.Flag.NO_FC, null, Message.Flag.DONT_BUNDLE);
         assert msg.isFlagSet(Message.Flag.OOB);
-        assert msg.isFlagSet(Message.NO_FC);
+        assert msg.isFlagSet(Message.Flag.NO_FC);
         assert msg.isFlagSet(Message.Flag.DONT_BUNDLE);
     }
 
@@ -64,7 +64,7 @@ public class MessageTest {
 
     public static void testFlags3() {
         Message msg=new Message();
-        assert msg.isFlagSet(Message.Flag.OOB) == false;
+        assert !msg.isFlagSet(Message.Flag.OOB);
         msg.setFlag(Message.Flag.OOB);
         assert msg.isFlagSet(Message.Flag.OOB);
         msg.setFlag(Message.Flag.OOB);
@@ -77,9 +77,9 @@ public class MessageTest {
         msg.setFlag(Message.Flag.OOB);
         assert msg.isFlagSet(Message.Flag.OOB);
         msg.clearFlag(Message.Flag.OOB);
-        assert msg.isFlagSet(Message.Flag.OOB) == false;
+        assert !msg.isFlagSet(Message.Flag.OOB);
         msg.clearFlag(Message.Flag.OOB);
-        assert msg.isFlagSet(Message.Flag.OOB) == false;
+        assert !msg.isFlagSet(Message.Flag.OOB);
         msg.setFlag(Message.Flag.OOB);
         assert msg.isFlagSet(Message.Flag.OOB);
     }
@@ -88,26 +88,26 @@ public class MessageTest {
     public static void testClearFlags2() {
         Message msg=new Message();
         msg.setFlag(Message.Flag.OOB);
-        msg.setFlag(Message.NO_FC);
-        assert msg.isFlagSet(Message.Flag.DONT_BUNDLE) == false;
+        msg.setFlag(Message.Flag.NO_FC);
+        assert !msg.isFlagSet(Message.Flag.DONT_BUNDLE);
         assert msg.isFlagSet(Message.Flag.OOB);
-        assert msg.isFlagSet(Message.NO_FC);
+        assert msg.isFlagSet(Message.Flag.NO_FC);
 
         msg.clearFlag(Message.Flag.OOB);
-        assert msg.isFlagSet(Message.Flag.OOB) == false;
+        assert !msg.isFlagSet(Message.Flag.OOB);
         msg.setFlag(Message.Flag.DONT_BUNDLE);
         assert msg.isFlagSet(Message.Flag.DONT_BUNDLE);
-        assert msg.isFlagSet(Message.NO_FC);
-        msg.clearFlag(Message.NO_FC);
-        assert msg.isFlagSet(Message.NO_FC) == false;
-        msg.clearFlag(Message.NO_FC);
-        assert msg.isFlagSet(Message.NO_FC) == false;
+        assert msg.isFlagSet(Message.Flag.NO_FC);
+        msg.clearFlag(Message.Flag.NO_FC);
+        assert !msg.isFlagSet(Message.Flag.NO_FC);
+        msg.clearFlag(Message.Flag.NO_FC);
+        assert !msg.isFlagSet(Message.Flag.NO_FC);
         msg.clearFlag(Message.Flag.DONT_BUNDLE);
         msg.clearFlag(Message.Flag.OOB);
         assert msg.getFlags() == 0;
-        assert msg.isFlagSet(Message.Flag.OOB) == false;
-        assert msg.isFlagSet(Message.Flag.DONT_BUNDLE) == false;
-        assert msg.isFlagSet(Message.NO_FC) == false;
+        assert !msg.isFlagSet(Message.Flag.OOB);
+        assert !msg.isFlagSet(Message.Flag.DONT_BUNDLE);
+        assert !msg.isFlagSet(Message.Flag.NO_FC);
         msg.setFlag(Message.Flag.DONT_BUNDLE);
         assert msg.isFlagSet(Message.Flag.DONT_BUNDLE);
         msg.setFlag(Message.Flag.DONT_BUNDLE);

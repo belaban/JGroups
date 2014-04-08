@@ -33,6 +33,8 @@ public class RequestOptions {
     /** The flags set in the message in which a request is sent */
     protected short         flags; // Message.Flag.OOB, Message.Flag.DONT_BUNDLE etc
 
+    protected short         transient_flags;
+
     /** A list of members which should be excluded from a call */
     protected Address[]     exclusion_list;
 
@@ -73,6 +75,7 @@ public class RequestOptions {
         this.rsp_filter=opts.rsp_filter;
         this.scope=opts.scope;
         this.flags=opts.flags;
+        this.transient_flags=opts.transient_flags;
         this.exclusion_list=opts.exclusion_list;
     }
 
@@ -138,9 +141,13 @@ public class RequestOptions {
         return flags;
     }
 
+    public short getTransientFlags() {return transient_flags;}
+
     public boolean isFlagSet(Message.Flag flag) {
         return flag != null && ((flags & flag.value()) == flag.value());
     }
+
+    public boolean isTransientFlagSet(Message.TransientFlag flag) {return flag != null && ((transient_flags & flag.value()) == flag.value());}
 
     public RequestOptions setFlags(Message.Flag ... flags) {
         if(flags != null)
@@ -150,11 +157,27 @@ public class RequestOptions {
         return this;
     }
 
+    public RequestOptions setTransientFlags(Message.TransientFlag ... flags) {
+        if(flags != null)
+            for(Message.TransientFlag flag: flags)
+                if(flag != null)
+                    this.transient_flags |= flag.value();
+        return this;
+    }
+
     public RequestOptions clearFlags(Message.Flag ... flags) {
         if(flags != null)
             for(Message.Flag flag: flags)
                 if(flag != null)
                     this.flags &= ~flag.value();
+        return this;
+    }
+
+    public RequestOptions clearTransientFlags(Message.TransientFlag ... flags) {
+        if(flags != null)
+            for(Message.TransientFlag flag: flags)
+                if(flag != null)
+                    this.transient_flags &= ~flag.value();
         return this;
     }
 
@@ -188,7 +211,10 @@ public class RequestOptions {
             if(use_anycast_addresses)
                 sb.append(" (using AnycastAddress)");
         }
-        sb.append(", flags=" + Message.flagsToString(flags));
+        if(flags > 0)
+            sb.append(", flags=" + Message.flagsToString(flags));
+        if(transient_flags > 0)
+            sb.append(", transient_flags=" + Message.transientFlagsToString(transient_flags));
         if(scope > 0)
             sb.append(", scope=" + scope);
         if(exclusion_list != null)

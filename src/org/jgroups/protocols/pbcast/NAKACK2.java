@@ -133,11 +133,12 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected static final Message         DUMMY_OOB_MSG=new Message(false).setFlag(Message.Flag.OOB);
 
     // Accepts messages which are (1) non-null, (2) no DUMMY_OOB_MSGs and (3) not OOB_DELIVERED
-    protected static final Filter<Message> no_dummy_and_no_oob_delivered_msgs=new Filter<Message>() {
+    protected final Filter<Message> no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs=new Filter<Message>() {
         public boolean accept(Message msg) {
             return msg != null
               && msg != DUMMY_OOB_MSG
-              && (!msg.isFlagSet(Message.Flag.OOB) || msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED));
+              && (!msg.isFlagSet(Message.Flag.OOB) || msg.setTransientFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
+              && !(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK) && local_addr != null && local_addr.equals(msg.getSrc()));
         }
     };
 
@@ -845,7 +846,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             while(true) {
                 // We're removing as many msgs as possible and set processing to false (if null) *atomically* (wrt to add())
                 // Don't include DUMMY and OOB_DELIVERED messages in the removed set
-                List<Message> msgs=buf.removeMany(processing, remove_msgs, max_msg_batch_size, no_dummy_and_no_oob_delivered_msgs);
+                List<Message> msgs=buf.removeMany(processing, remove_msgs, max_msg_batch_size,
+                                                  no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs);
                 if(msgs == null || msgs.isEmpty()) {
                     released_processing=true;
                     if(rebroadcasting)

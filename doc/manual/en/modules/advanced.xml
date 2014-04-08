@@ -2410,6 +2410,10 @@ msg.setFlag(Message.OOB, Message.NO_FC);
                         interested in responses from other members and therefore doesn't need to receive its own
                         discovery multicast request.
                     </para>
+                    <para>
+                        Note that this is a <emphasis>transient flag</emphasis>, so Message.isTransientFlagSet(..) has
+                        to be used instead of Message.isFlagSet(..
+                    </para>
                 </listitem>
             </varlistentry>
         </variablelist>
