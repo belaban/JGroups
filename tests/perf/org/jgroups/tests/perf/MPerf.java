@@ -270,7 +270,7 @@ public class MPerf extends ReceiverAdapter {
                 // can screw this up, that's why we check for correct order only when we
                 // only have 1 sender thread
                 // This is *different* from NAKACK{2} order, which is correct
-                handleData(msg.getSrc(),msg.getLength(),hdr.seqno, num_threads == 1 && !oob);
+                handleData(msg.getSrc(), hdr.seqno, num_threads == 1 && !oob);
                 break;
 
             case MPerfHeader.START_SENDING:
@@ -392,9 +392,7 @@ public class MPerf extends ReceiverAdapter {
         }
     }
 
-    protected void handleData(Address src, int length, long seqno, boolean check_order) {
-        if(length == 0)
-            return;
+    protected void handleData(Address src, long seqno, boolean check_order) {
         Stats result=received_msgs.get(src);
         if(result == null) {
             result=new Stats();
