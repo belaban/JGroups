@@ -11,7 +11,7 @@
     <TCP bind_port="7800"/>
     <TCPPING initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
              port_range="1"/>
-    <MERGE2/>
+    <MERGE3/>
     <FD_SOCK/>
     <FD/>
     <VERIFY_SUSPECT/>

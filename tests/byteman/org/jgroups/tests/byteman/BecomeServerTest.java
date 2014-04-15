@@ -84,10 +84,10 @@ public class BecomeServerTest extends BMNGRunner {
 
     protected JChannel createChannel(String name) throws Exception {
         JChannel ch=Util.createChannel(new SHARED_LOOPBACK(),
-                                       new PING().setValue("timeout", 500).setValue("num_initial_members", 2),
+                                       new PING(),
                                        new NAKACK2().setValue("become_server_queue_size", 10),
                                        new UNICAST3(),
-                                       new GMS().setValue("print_local_addr", false));
+                                       new GMS().setValue("print_local_addr", false).setValue("join_timeout", 500));
         ch.setName(name);
         return ch;
     }

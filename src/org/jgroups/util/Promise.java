@@ -114,7 +114,7 @@ public class Promise<T> {
 
 
     public String toString() {
-        return "hasResult=" + Boolean.valueOf(hasResult) + ", result=" + result;
+        return "hasResult=" + hasResult + ", result=" + result;
     }
 
 

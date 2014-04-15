@@ -393,7 +393,7 @@ public class UPerf extends ReceiverAdapter {
             this.num_msgs_sent=num_msgs_sent;
             this.dests.addAll(dests);
             this.num_msgs_to_send=num_msgs_to_send;
-            PRINT=num_msgs_to_send / 10;
+            PRINT=Math.max(num_msgs_to_send / 10, 10);
             setName("Invoker-" + COUNTER.getAndIncrement());
         }
 

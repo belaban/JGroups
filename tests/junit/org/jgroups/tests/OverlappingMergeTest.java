@@ -1,12 +1,8 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.Discovery;
-import org.jgroups.protocols.MERGE2;
-import org.jgroups.protocols.pbcast.CoordGmsImpl;
-import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.protocols.*;
+import org.jgroups.protocols.pbcast.*;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Tuple;
@@ -72,7 +68,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
      * are executed:
      * <ol>
      * <li/>Group is {A,B,C}, A is the coordinator
-     * <li/>MERGE2 is removed from all members
+     * <li/>MERGE3 is removed from all members
      * <li/>VERIFY_SUSPECT is removed from all members
      * <li/>Everyone sends 5 unicast messages to everyone else
      * <li/>Everyone sends 5 multicasts
@@ -164,8 +160,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
      * <ol>
      * <li/>Group is {A,B,C}
      * <li/>Install view {A,C} in A and {A,B,C} in B and C
-     * <li/>Try to initiate a merge. This should FAIL until https://jira.jboss.org/jira/browse/JGRP-937 has
-     *      been implemented: B and C's MERGE2 protocols will never send out merge requests as they see A as coord 
+     * <li/>Try to initiate a merge.
      * </ol>
      */
     @Test
@@ -308,13 +303,17 @@ public class OverlappingMergeTest extends ChannelTestBase {
      * C: A|7 {A,B,C}
      */
     public void testSameCreatorDifferentIDs() throws Exception {
-        MERGE2 merge=(MERGE2)a.getProtocolStack().findProtocol(MERGE2.class);
-        if(merge == null) {
-            merge=new MERGE2();
-            a.getProtocolStack().insertProtocol(merge,ProtocolStack.ABOVE,Discovery.class);
-            merge.init();
-            merge.down(new Event(Event.SET_LOCAL_ADDRESS, a.getAddress()));
+        for(JChannel ch: new JChannel[]{a,b,c}) {
+            MERGE3 merge_prot=(MERGE3)ch.getProtocolStack().findProtocol(MERGE3.class);
+            if(merge_prot == null) {
+                merge_prot=new MERGE3();
+                ch.getProtocolStack().insertProtocol(merge_prot, ProtocolStack.ABOVE, Discovery.class);
+                merge_prot.init();
+                merge_prot.down(new Event(Event.SET_LOCAL_ADDRESS, ch.getAddress()));
+                merge_prot.setValue("check_interval", 2000);
+            }
         }
+
         View view=View.create(a.getAddress(), 5, a.getAddress());
         injectView(view, a);
 
@@ -338,7 +337,15 @@ public class OverlappingMergeTest extends ChannelTestBase {
         for(JChannel ch: new JChannel[]{a,b,c})
             ch.getProtocolStack().findProtocol(GMS.class).setLevel("trace");
 
-        merge.sendMergeSolicitation();
+        for(JChannel ch: new JChannel[]{a,b,c}) {
+            MERGE3 merge_prot=(MERGE3)ch.getProtocolStack().findProtocol(MERGE3.class);
+            if(merge_prot != null)
+                merge_prot.sendInfo();
+        }
+
+        Util.sleep(500);
+        MERGE3 merge_prot=(MERGE3)a.getProtocolStack().findProtocol(MERGE3.class);
+        merge_prot.checkInconsistencies();
 
         System.out.println("\n==== checking views after merge ====:");
         for(int i=0; i < 20; i++) {
@@ -504,7 +511,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
     private static void modifyConfigs(JChannel ... channels) throws Exception {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
-            stack.removeProtocols("MERGE2","MERGE3","FD_SOCK","FD","FD_ALL","FC","MFC","UFC","VERIFY_SUSPECT", "STATE_TRANSFER");
+            stack.removeProtocols("MERGE3","FD_SOCK","FD","FD_ALL","FC","MFC","UFC","VERIFY_SUSPECT", "STATE_TRANSFER");
             NAKACK2 nak=(NAKACK2)stack.findProtocol(NAKACK2.class);
             if(nak != null)
                 nak.setLogDiscardMessages(false);

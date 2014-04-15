@@ -36,7 +36,7 @@ public class DynamicDiscardTest {
         for(int i=0; i < NUM; i++) {
             channels[i]= new JChannel(new SHARED_LOOPBACK(),
                                       new SHARED_LOOPBACK_PING(),
-                                      new MERGE2(),
+                                      new MERGE3(),
                                       new FD().setValue("timeout", 1000).setValue("max_tries", 1),
                                       new NAKACK2(),
                                       new UNICAST3(),
@@ -59,7 +59,7 @@ public class DynamicDiscardTest {
 
         // send a RSVP message
         Message msg = new Message(null, "message2");
-        msg.setFlag(Message.RSVP, Message.Flag.OOB);
+        msg.setFlag(Message.Flag.RSVP, Message.Flag.OOB);
         RspList<Object> rsps = dispatchers[0].castMessage(null, msg, RequestOptions.SYNC().setTimeout(5000));
 
         Rsp<Object> objectRsp = rsps.get(channels[1].getAddress());

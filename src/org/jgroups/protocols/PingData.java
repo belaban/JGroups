@@ -9,6 +9,7 @@ import org.jgroups.util.Util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -17,87 +18,89 @@ import java.util.Collection;
  * @author Bela Ban
  */
 public class PingData implements SizeStreamable {
-    protected Address sender=null;  // the sender of this PingData
-    protected View    view=null;    // only sent with merge-triggered discovery response (if ViewIds differ)
-    protected ViewId  view_id=null; // only sent with GMS-triggered discovery response
-    protected boolean is_server=false;
-    protected String  logical_name=null;
-    protected Collection<PhysicalAddress> physical_addrs=null;
+    protected Address                       sender;  // the sender of this PingData
+    protected byte                          flags;   // used to mark as server and/or coordinator
+    protected String                        logical_name;
+    protected PhysicalAddress               physical_addr;
+    protected Collection<? extends Address> mbrs; // list of members to find, sent with discovery request (can be null)
+
+    protected static final byte is_coord  = 1;
+    protected static final byte is_server = 1<< 1;
 
 
     public PingData() {
     }
 
-    public PingData(Address sender, View view, boolean is_server) {
+    public PingData(Address sender, boolean is_server) {
         this.sender=sender;
-        this.view=view;
-        this.is_server=is_server;
+        server(is_server);
     }
 
-
+    /** @deprecated Use the constructor wityh a single PhysicalAddress instead */
+    @Deprecated
     public PingData(Address sender, View view, boolean is_server,
                     String logical_name, Collection<PhysicalAddress> physical_addrs) {
-        this(sender, view, is_server);
+        this(sender, is_server);
         this.logical_name=logical_name;
-        if(physical_addrs != null)
-            this.physical_addrs=new ArrayList<PhysicalAddress>(physical_addrs);
+        if(physical_addrs != null && !physical_addrs.isEmpty())
+            this.physical_addr=physical_addrs.iterator().next();
+    }
+
+    public PingData(Address sender, boolean is_server, String logical_name, PhysicalAddress physical_addr) {
+        this(sender, is_server);
+        this.logical_name=logical_name;
+        this.physical_addr=physical_addr;
     }
 
 
+    /** @deprecated Use the constructor with a single PhysicalAddress instead */
+    @Deprecated
     public PingData(Address sender, View view, ViewId view_id, boolean is_server,
                     String logical_name, Collection<PhysicalAddress> physical_addrs) {
-        this(sender, view, is_server, logical_name, physical_addrs);
-        this.view_id=view_id;
+        this(sender, is_server, logical_name, (physical_addrs == null || physical_addrs.isEmpty())? null : physical_addrs.iterator().next());
     }
 
+
+    public PingData coord(boolean c) {
+        if(c) {
+            flags=Util.setFlag(flags, is_coord);
+            flags=Util.setFlag(flags, is_server); // coord has to be a server
+        }
+        else
+            flags=Util.clearFlags(flags, is_coord);
+        return this;
+    }
+
+    public PingData server(boolean c) {
+        if(c)
+            flags=Util.setFlag(flags, is_server);
+        else
+            flags=Util.clearFlags(flags, is_server);
+        return this;
+    }
 
     public boolean isCoord() {
-        Address coord_addr=getCoordAddress();
-        return is_server && sender != null && coord_addr != null && sender.equals(coord_addr);
+        return Util.isFlagSet(flags, is_coord);
     }
     
-    public boolean hasCoord(){
-        Address coord_addr=getCoordAddress();
-        return is_server && sender != null && coord_addr != null;
+    public boolean isServer() {
+        return Util.isFlagSet(flags, is_server) || Util.isFlagSet(flags, is_coord); // a coord is always a server
     }
 
     public Address getAddress() {
         return sender;
     }
 
-    public Address getCoordAddress() {
-        if(view_id != null)
-            return view_id.getCreator();
-        return view != null? view.getViewId().getCreator() : null;
-    }
-
-    public Collection<Address> getMembers() {
-        return view != null? view.getMembers() : null;
-    }
-
-    public View getView() {
-        return view;
-    }
-
-    public void setView(View view) {
-        this.view=view;
-    }
-
-    public ViewId getViewId() {return view_id;}
-
-    public void setViewId(ViewId view_id) {this.view_id=view_id;}
-
-    public boolean isServer() {
-        return is_server;
-    }
-
     public String getLogicalName() {
         return logical_name;
     }
 
-    public Collection<PhysicalAddress> getPhysicalAddrs() {
-        return physical_addrs;
-    }
+    @Deprecated
+    public Collection<PhysicalAddress>   getPhysicalAddrs()                       {return Arrays.asList(physical_addr);}
+    public PhysicalAddress               getPhysicalAddr()                        {return physical_addr;}
+    public PingData                      mbrs(Collection<? extends Address> mbrs) {this.mbrs=mbrs; return this;}
+    public Collection<? extends Address> mbrs()                                   {return mbrs;}
+
 
     public boolean equals(Object obj) {
         if(!(obj instanceof PingData))
@@ -118,62 +121,46 @@ public class PingData implements SizeStreamable {
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append(sender);
-        sb.append(", " + printViewId());
-        sb.append(", is_server=").append(is_server).append(", is_coord=" + isCoord());
         if(logical_name != null)
-            sb.append(", logical_name=").append(logical_name);
-        if(physical_addrs != null && !physical_addrs.isEmpty())
-            sb.append(", physical_addrs=").append(Util.printListWithDelimiter(physical_addrs, ", "));
+            sb.append(", name=").append(logical_name);
+        if(physical_addr != null)
+            sb.append(", addr=").append(physical_addr);
+        if(isCoord())
+            sb.append(", coord");
+        else if(isServer())
+            sb.append(", server");
+        if(mbrs != null)
+            sb.append(", mbrs=" + mbrs.size());
         return sb.toString();
-    }
-
-    public String printViewId() {
-        StringBuilder sb=new StringBuilder();
-        sb.append("view_id=");
-        if(view_id != null)
-            sb.append(view_id);
-        else {
-            if(view != null) {
-                sb.append(view.getViewId()).append(" (");
-                if(view.size() > 10)
-                    sb.append(view.size() + " mbrs");
-                else
-                    sb.append(view);
-                sb.append(")");
-            }
-        }
-        return sb.toString();
-    }
-
-    public void writeTo(DataOutput outstream) throws Exception {
-        Util.writeAddress(sender, outstream);
-        Util.writeView(view, outstream);
-        Util.writeViewId(view_id, outstream);
-        outstream.writeBoolean(is_server);
-        Bits.writeString(logical_name,outstream);
-        Util.writeAddresses(physical_addrs, outstream);
-    }
-
-    @SuppressWarnings("unchecked")
-    public void readFrom(DataInput instream) throws Exception {
-        sender=Util.readAddress(instream);
-        view=Util.readView(instream);
-        view_id=Util.readViewId(instream);
-        is_server=instream.readBoolean();
-        logical_name=Bits.readString(instream);
-        physical_addrs=(Collection<PhysicalAddress>)Util.readAddresses(instream, ArrayList.class);
     }
 
     public int size() {
         int retval=Global.BYTE_SIZE; // for is_server
         retval+=Util.size(sender);
-        retval+=Util.size(view);
-        retval+=Util.size(view_id);
         retval+=Global.BYTE_SIZE;     // presence byte for logical_name
         if(logical_name != null)
             retval+=logical_name.length() +2;
-        retval+=Util.size(physical_addrs);
-
+        retval+=Util.size(physical_addr);
+        retval+=Util.size(mbrs);
         return retval;
     }
+
+    public void writeTo(DataOutput outstream) throws Exception {
+        Util.writeAddress(sender, outstream);
+        outstream.writeByte(flags);
+        Bits.writeString(logical_name,outstream);
+        Util.writeAddress(physical_addr,outstream);
+        Util.writeAddresses(mbrs, outstream);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void readFrom(DataInput instream) throws Exception {
+        sender=Util.readAddress(instream);
+        flags=instream.readByte();
+        logical_name=Bits.readString(instream);
+        physical_addr=(PhysicalAddress)Util.readAddress(instream);
+        mbrs=Util.readAddresses(instream, ArrayList.class);
+    }
+
+
 }

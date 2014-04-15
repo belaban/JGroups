@@ -8,7 +8,7 @@ import org.jgroups.protocols.BasicTCP;
 import org.jgroups.protocols.TCPPING;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.UDP;
-import org.jgroups.stack.IpAddress;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
@@ -36,15 +36,12 @@ public class SharedTransportTest extends ChannelTestBase {
     static final String SINGLETON_1="singleton-1", SINGLETON_2="singleton-2";
 
 
-    @AfterMethod
-    protected void tearDown() throws Exception {
-        Util.close(c,b,a);
-        r1=r2=r3=null;
-    }
+    @AfterMethod protected void tearDown() throws Exception {Util.close(c,b,a);}
 
 
     public void testCreationNonSharedTransport() throws Exception {
         a=createChannel(true, 1, "A");
+        changeGMSTimeout(500, a);
         a.connect("SharedTransportTest.testCreationNonSharedTransport");
         View view=a.getView();
         System.out.println("view = " + view);
@@ -54,8 +51,8 @@ public class SharedTransportTest extends ChannelTestBase {
 
     public void testCreationOfDuplicateCluster() throws Exception {
         a=createSharedChannel(SINGLETON_1, "A");
-        // makeUnique(a, 2);
         b=createSharedChannel(SINGLETON_1, "B");
+        changeGMSTimeout(1000,a,b);
         a.connect("x");
         try {
             b.connect("x");
@@ -72,7 +69,7 @@ public class SharedTransportTest extends ChannelTestBase {
         b=createSharedChannel(SINGLETON_2, "B");
         a.setReceiver(new MyReceiver(SINGLETON_1));
         b.setReceiver(new MyReceiver(SINGLETON_2));
-
+        changeGMSTimeout(1000,a,b);
         a.connect("x");
         b.connect("x");
         Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b);
@@ -84,7 +81,7 @@ public class SharedTransportTest extends ChannelTestBase {
         b=createSharedChannel(SINGLETON_1, "B");
         a.setReceiver(new MyReceiver("first-channel"));
         b.setReceiver(new MyReceiver("second-channel"));
-
+        changeGMSTimeout(1000,a,b);
         a.connect("x");
         b.connect("y");
 
@@ -111,7 +108,7 @@ public class SharedTransportTest extends ChannelTestBase {
         a.setReceiver(r1);
         b.setReceiver(r2);
         c.setReceiver(r3);
-
+        changeGMSTimeout(1000,a,b,c);
         a.connect("cluster-1");
         c.connect("cluster-1");
         Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,c);
@@ -155,7 +152,7 @@ public class SharedTransportTest extends ChannelTestBase {
         a=createSharedChannel(SINGLETON_1, "A");
         r1=new MyReceiver("A::" + SINGLETON_1);
         a.setReceiver(r1);
-
+        changeGMSTimeout(1000,a);
         a.connect("cluster-X");
         a.send(new Message(null, null, "msg-1"));
 
@@ -178,7 +175,7 @@ public class SharedTransportTest extends ChannelTestBase {
         b=createChannel();
         a.setReceiver(new MyReceiver("first-channel"));
         b.setReceiver(new MyReceiver("second-channel"));
-
+        changeGMSTimeout(1000,a,b);
         a.connect("x");
         b.connect("x");
         Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b);
@@ -188,6 +185,7 @@ public class SharedTransportTest extends ChannelTestBase {
     public void testCreationOfDifferentCluster() throws Exception {
         a=createSharedChannel(SINGLETON_1, "A");
         b=createSharedChannel(SINGLETON_2, "B");
+        changeGMSTimeout(1000,a,b);
         a.connect("x");
         b.connect("x");
         Util.waitUntilAllChannelsHaveSameSize(30000, 1000, a,b);
@@ -207,7 +205,7 @@ public class SharedTransportTest extends ChannelTestBase {
         c=createSharedChannel(SINGLETON_1, "C");
         r3=new MyReceiver("c");
         c.setReceiver(r3);
-
+        changeGMSTimeout(1000,a,b,c);
         a.connect("A");
         b.connect("B");
         c.connect("C");
@@ -264,10 +262,12 @@ public class SharedTransportTest extends ChannelTestBase {
     public void testSimpleReCreation() throws Exception {
         a=createSharedChannel(SINGLETON_1, "A");
         a.setReceiver(new MyReceiver("A"));
+        changeGMSTimeout(1000,a);
         a.connect("A");
         a.disconnect();
         b=createSharedChannel(SINGLETON_1, "B");
         b.setReceiver(new MyReceiver("A'"));
+        changeGMSTimeout(1000,b);
         b.connect("A");
     }
 
@@ -283,11 +283,11 @@ public class SharedTransportTest extends ChannelTestBase {
         a=createSharedChannel(SINGLETON_1, "A");
         a.setReceiver(new MyReceiver("A"));
         a.connect("A");
-
+        changeGMSTimeout(1000,a);
         b=createSharedChannel(SINGLETON_1, "B");
         b.setReceiver(new MyReceiver("B"));
         b.connect("B");
-
+        changeGMSTimeout(1000,b);
         b.close();
         a.close();
     }
@@ -297,14 +297,17 @@ public class SharedTransportTest extends ChannelTestBase {
     public void test2ChannelsCreationFollowedByDeletion() throws Exception {
         a=createSharedChannel(SINGLETON_1, "A");
         a.setReceiver(new MyReceiver("A"));
+        changeGMSTimeout(1000,a);
         a.connect("A");
 
         b=createSharedChannel(SINGLETON_2, "B");
         b.setReceiver(new MyReceiver("B"));
+        changeGMSTimeout(1000,b);
         b.connect("A");
 
         c=createSharedChannel(SINGLETON_2, "C");
         c.setReceiver(new MyReceiver("C"));
+        changeGMSTimeout(1000,c);
         c.connect("B");
 
         c.send(null, "hello world from C");
@@ -352,7 +355,7 @@ public class SharedTransportTest extends ChannelTestBase {
 
         c=createSharedChannel(SINGLETON_2, "C");
         c.setReceiver(r3=new MyReceiver("C"));
-
+        changeGMSTimeout(1000,a,b,c);
         a.connect("one");
         b.connect("two");
         c.connect("one");
@@ -377,11 +380,13 @@ public class SharedTransportTest extends ChannelTestBase {
         System.out.println("-- creating A");
         a=createSharedChannel(SINGLETON_1, "A");
         a.setReceiver(new MyReceiver("A"));
+        changeGMSTimeout(1000,a);
         a.connect("A");
 
         System.out.println("-- creating B");
         b=createSharedChannel(SINGLETON_1, "B");
         b.setReceiver(new MyReceiver("B"));
+        changeGMSTimeout(1000,b);
         b.connect("B");
 
         System.out.println("-- disconnecting A");
@@ -401,6 +406,7 @@ public class SharedTransportTest extends ChannelTestBase {
     public void testShutdownOfTimer() throws Exception {
         a=createSharedChannel(SINGLETON_1, "A");
         b=createSharedChannel(SINGLETON_1, "B");
+        changeGMSTimeout(1000,a,b);
         a.connect("x");
         b.connect("y");
         TimeScheduler timer1=a.getProtocolStack().getTransport().getTimer();
@@ -431,6 +437,7 @@ public class SharedTransportTest extends ChannelTestBase {
         a=createSharedChannel(SINGLETON_1, "A");
         a.setName("A");
         a.setReceiver(rec_a);
+        changeGMSTimeout(1000,a);
         a.connect("one");
 
         b=createSharedChannel(SINGLETON_1, "B");
@@ -473,7 +480,7 @@ public class SharedTransportTest extends ChannelTestBase {
        c=createSharedChannel(SINGLETON_1, "C");
        r3=new MyReceiver("c");
        c.setReceiver(r3);
-       
+        changeGMSTimeout(1000,a,b,c);
        CountDownLatch startLatch = new CountDownLatch(1);
        CountDownLatch finishLatch = new CountDownLatch(3);
        
@@ -587,7 +594,7 @@ public class SharedTransportTest extends ChannelTestBase {
                 initial_hosts.add(bind_addr + "[" + port + "]");
             }
             String tmp=Util.printListWithDelimiter(initial_hosts, ",");
-            List<IpAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 1) ;
+            List<PhysicalAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 1) ;
             ((TCPPING)ping).setInitialHosts(init_hosts) ;
         }
         else {
@@ -595,6 +602,13 @@ public class SharedTransportTest extends ChannelTestBase {
         }
     }
 
+
+    protected static void changeGMSTimeout(long timeout, JChannel ... channels) {
+        for(JChannel ch: channels) {
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            gms.joinTimeout(timeout);
+        }
+    }
 
 
     private static class MyReceiver extends ReceiverAdapter {

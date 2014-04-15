@@ -4,7 +4,6 @@ import org.jgroups.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
@@ -216,8 +215,8 @@ public class ChannelTestBase {
                     initial_hosts.add(bind_addr + "[" + port + "]");
                 }
                 String tmp = Util.printListWithDelimiter(initial_hosts, ",", 2000, false);
-                List<IpAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 0);
-                ((TCPPING) ping).setInitialHosts(init_hosts);
+                List<PhysicalAddress> init_hosts = Util.parseCommaDelimitedHosts(tmp, 0);
+                ((TCPPING)ping).setInitialHosts(init_hosts);
             } else {
                 throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
             }

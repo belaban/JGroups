@@ -1,20 +1,22 @@
 package org.jgroups.protocols;
 
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.Responses;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -28,8 +30,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * somewhere above this protocol (typically in the GMS protocol).<p>
  * This protocol works as follows:
  * <ul>
- * <li>If coordinator: periodically retrieve the initial membership (using the FIND_INITIAL_MBRS event provided e.g.
- *     by PING or TCPPING protocols. This list contains {coord,addr} pairs.
+ * <li>If coordinator: periodically multicast a discovery message. Everyone (or (if configured) only the coords) reply
+ * with their current view. Based on the received views:
  * <li>If there is more than 1 coordinator:
  *     <ol>
  *     <li>Get all coordinators
@@ -40,31 +42,38 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * <p>
  *
- * Requires: FIND_INITIAL_MBRS event from below<br>
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
+ * @deprecated Use {@link org.jgroups.protocols.MERGE3} instead, as it causes less traffic, especially for large clusters
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
+@Deprecated
 public class MERGE2 extends Protocol {
     
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
     @Property(description="Minimum time in ms between runs to discover other clusters")
-    protected long min_interval=5000;
+    protected long                    min_interval=5000;
     
     @Property(description="Maximum time in ms between runs to discover other clusters")
-    protected long max_interval=20000;
+    protected long                    max_interval=20000;
 
     @Property(description="Number of inconsistent  views with only 1 coord after a MERGE event is sent up")
-    protected int inconsistent_view_threshold=1;
+    protected int                     inconsistent_view_threshold=1;
 
     @Property(description="When receiving a multicast message, checks if the sender is member of the cluster. " +
       "If not, initiates a merge. Generates a lot of traffic for large clusters when there is a lot of merging")
-    protected boolean merge_fast=true;
+    protected boolean                 merge_fast=true;
 
     @Property(description="The delay (in milliseconds) after which a merge fast execution is started")
-    protected long merge_fast_delay=1000;
+    protected long                    merge_fast_delay=1000;
+
+    @Property(description="Always sends a discovery response, no matter what",writable=true)
+    protected boolean                 force_sending_discovery_rsps=true;
+
+    @Property(description="Time (in ms) to wait for all discovery responses")
+    protected long                    discovery_timeout=5000;
 
     /* ---------------------------------------------- JMX -------------------------------------------------------- */
     @ManagedAttribute(writable=false, description="whether or not a merge task is currently running " +
@@ -75,25 +84,30 @@ public class MERGE2 extends Protocol {
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    protected Address local_addr=null;
-
-    protected View view;
-
-    protected final Set<Address> members=new HashSet<Address>();
-
-    protected final Set<Address> merge_candidates=new CopyOnWriteArraySet<Address>();
-    
+    protected Address                 local_addr;
+    protected volatile View           view;
+    protected final Set<Address>      members=new HashSet<Address>();
+    protected final Set<Address>      merge_candidates=new CopyOnWriteArraySet<Address>();
     protected final FindSubgroupsTask task=new FindSubgroupsTask();
-    
-    protected volatile boolean is_coord=false;
-    
-    protected TimeScheduler timer;
+    @ManagedAttribute(description="Whether this member is the current coordinator")
+    protected volatile boolean        is_coord=false;
+    protected volatile Address        current_coord;
+    protected TimeScheduler           timer;
 
     @ManagedAttribute(description="Number of inconsistent 1-coord views until a MERGE event is sent up the stack")
-    protected int num_inconsistent_views=0;
+    protected int                     num_inconsistent_views;
 
     @ManagedAttribute(description="Number of times a MERGE event was sent up the stack")
-    protected int num_merge_events=0;
+    protected int                     num_merge_events;
+
+    protected final Map<Address,View> views=new ConcurrentHashMap<Address,View>();
+    protected final Lock              discovery_lock=new ReentrantLock();
+    protected final Condition         discovery_cond=discovery_lock.newCondition();
+    protected volatile boolean        fetching_done=false;
+
+    protected boolean                 transport_supports_multicasting=true;
+    protected String                  cluster_name;
+
 
 
     public void init() throws Exception {
@@ -105,7 +119,8 @@ public class MERGE2 extends Protocol {
             throw new Exception("min_interval and max_interval have to be > 0");            
         
         if(max_interval <= min_interval)
-            throw new Exception ("max_interval has to be greater than min_interval");        
+            throw new Exception ("max_interval has to be greater than min_interval");
+        transport_supports_multicasting=getTransport().supportsMulticasting();
     }
 
     public long getMinInterval() {
@@ -129,19 +144,33 @@ public class MERGE2 extends Protocol {
         return retval instanceof Boolean && (Boolean)retval;
     }
 
-    public List<Integer> requiredDownServices() {
-        return Arrays.asList(Event.FIND_INITIAL_MBRS, Event.FIND_ALL_VIEWS);
-    }
-
     /** Discovers members and detects whether we have multiple coordinator. If so, kicks off a merge */
     @ManagedOperation
     public void sendMergeSolicitation() {
         task.findAndNotify();
     }
 
+    @ManagedAttribute(description="The address of the current coordinator")
+    public String getCurrentCoord() {return current_coord != null? current_coord.toString() : "n/a";}
+
     @ManagedOperation public void startMergeTask() {task.start();}
     
     @ManagedOperation public void stopMergeTask() {task.stop();}
+
+    @ManagedOperation(description="Fetches all views")
+    public String fetchAllViews() {
+        try {
+            task.fetchViews();
+            StringBuilder sb=new StringBuilder();
+            for(Map.Entry<Address,View> entry: views.entrySet())
+                sb.append(entry.getKey() + ": " + entry.getValue() + "\n");
+            return sb.toString();
+        }
+        catch(Throwable e) {
+            return null;
+        }
+    }
+
 
     public void stop() {
         is_coord=false;
@@ -152,7 +181,14 @@ public class MERGE2 extends Protocol {
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-        
+
+            case Event.CONNECT:
+            case Event.CONNECT_USE_FLUSH:
+            case Event.CONNECT_WITH_STATE_TRANSFER:
+            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                cluster_name=(String)evt.getArg();
+                return down_prot.down(evt);
+
             case Event.VIEW_CHANGE:
                 Object ret=down_prot.down(evt);
                 view=(View)evt.getArg();
@@ -164,8 +200,9 @@ public class MERGE2 extends Protocol {
                 members.clear();
                 members.addAll(mbrs);
                 merge_candidates.removeAll(members);
-                Address coord=mbrs.isEmpty()? null : mbrs.get(0);
-                if(coord != null && coord.equals(local_addr)) {
+
+                current_coord=mbrs.isEmpty()? null : mbrs.get(0);
+                if(current_coord != null && current_coord.equals(local_addr)) {
                     is_coord=true;
                     task.start(); // start task if we became coordinator (doesn't start if already running)
                 }
@@ -189,30 +226,39 @@ public class MERGE2 extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                if(!merge_fast)
-                    break;
                 Message msg=(Message)evt.getArg();
-                Address dest=msg.getDest();
-                if(dest != null)
+                MergeHeader hdr=(MergeHeader)msg.getHeader(id);
+                if(hdr == null) {
+                    if(merge_fast)
+                        mergeFast(msg.dest(), msg.src());
                     break;
-                final Address sender=msg.getSrc();
-                if(!members.contains(sender) && merge_candidates.add(sender)) {
-                    timer.schedule(new Runnable() {
-                        public void run() {
-                            if(!members.contains(sender))
-                                task.findAndNotify();
-                        }
-                    }, merge_fast_delay, TimeUnit.MILLISECONDS);
                 }
-                break;
+                else {
+                    handle(hdr, msg.src());
+                    return null;
+                }
         }
         return up_prot.up(evt);
     }
 
 
     public void up(MessageBatch batch) {
-        if(merge_fast && batch.dest() == null) {
-            final Address sender=batch.sender();
+        for(Message msg: batch) {
+            MergeHeader hdr=(MergeHeader)msg.getHeader(id);
+            if(hdr != null) {
+                batch.remove(msg);
+                handle(hdr, batch.sender());
+            }
+        }
+        if(!batch.isEmpty()) {
+            if(merge_fast)
+                mergeFast(batch.dest(), batch.sender());
+            up_prot.up(batch);
+        }
+    }
+
+    protected void mergeFast(final Address dest, final Address sender) {
+        if(dest == null) {
             if(!members.contains(sender) && merge_candidates.add(sender)) {
                 timer.schedule(new Runnable() {
                     public void run() {
@@ -222,9 +268,49 @@ public class MERGE2 extends Protocol {
                 }, merge_fast_delay, TimeUnit.MILLISECONDS);
             }
         }
-        if(!batch.isEmpty())
-            up_prot.up(batch);
     }
+
+
+    protected void handle(MergeHeader hdr, Address sender) {
+        switch(hdr.type) {
+            case 1: // request
+                boolean send_discovery_rsp=force_sending_discovery_rsps || is_coord
+                  || current_coord == null || current_coord.equals(sender);
+                if(!send_discovery_rsp) {
+                    log.trace("%s: suppressing discovery response as I'm not a coordinator and the " +
+                                "discovery request was not sent by a coordinator", local_addr);
+                    return;
+                }
+                if(isMergeRunning()) {
+                    log.trace("%s: suppressing discovery response as a merge is in progress", local_addr);
+                    return;
+                }
+
+                if(view != null) {
+                    Message msg=new Message(sender).putHeader(id,new MergeHeader(MergeHeader.RSP,view));
+                    down_prot.down(new Event(Event.MSG, msg));
+                }
+                break;
+            case 2: // response
+                View rsp_view=hdr.view;
+                if(rsp_view != null && !fetching_done) {
+                    views.put(sender,rsp_view);
+                    List<View> diff_views=Util.detectDifferentViews(views);
+                    if(diff_views.size() > 1) {
+                        discovery_lock.lock();
+                        try {
+                            fetching_done=true;
+                            discovery_cond.signalAll();
+                        }
+                        finally {
+                            discovery_lock.unlock();
+                        }
+                    }
+                }
+                break;
+        }
+    }
+
 
     /**
      * Task periodically executing (if role is coordinator). Gets the initial membership and determines
@@ -233,8 +319,9 @@ public class MERGE2 extends Protocol {
      */
     protected class FindSubgroupsTask {
         @GuardedBy("this")
-        private Future<?> future;
-        private Lock      lock=new ReentrantLock();
+        protected Future<?>  future;
+        protected final Lock lock=new ReentrantLock();
+
 
         public synchronized void start() {
             if(future == null || future.isDone()) {
@@ -273,6 +360,9 @@ public class MERGE2 extends Protocol {
                 try {
                     _findAndNotify();
                 }
+                catch(InterruptedException iex) {
+
+                }
                 catch(Throwable t) {
                     log.error("FindSubgroupsTask failed", t);
                 }
@@ -282,19 +372,16 @@ public class MERGE2 extends Protocol {
             }
         }
 
-        protected void _findAndNotify() {
-            List<PingData> discovery_rsps=findAllViews();
+        protected void _findAndNotify() throws InterruptedException {
+            fetchViews();
 
             if(log.isTraceEnabled()) {
                 StringBuilder sb=new StringBuilder();
                 sb.append(local_addr + ": discovery results:\n");
-                for(PingData data: discovery_rsps)
-                    sb.append("[" + data.getAddress() + "]: " + data.printViewId()).append("\n");
+                for(Map.Entry<Address,View> entry: views.entrySet())
+                    sb.append("[" + entry.getKey() + "]: " + entry.getValue().getViewId()).append("\n");
                 log.trace(sb);
             }
-
-            // Create a map of senders and the views they sent
-            Map<Address,View> views=getViews(discovery_rsps);
 
             // A list of different views
             List<View> different_views=Util.detectDifferentViews(views);
@@ -305,10 +392,9 @@ public class MERGE2 extends Protocol {
             Collection<Address> merge_participants=Util.determineMergeParticipants(views);
             if(merge_participants.size() == 1) {
                 if(num_inconsistent_views < inconsistent_view_threshold) {
-                    if(log.isDebugEnabled())
-                        log.debug(local_addr + ": dropping MERGE for inconsistent views " + Util.printViews(different_views) +
-                                    " as inconsistent view threshold (" + inconsistent_view_threshold +
-                                    ") has not yet been reached (" + num_inconsistent_views + ")");
+                    log.debug("%s: dropping MERGE for inconsistent views (%s) as inconsistent view threshold (%d) " +
+                                "has not yet been reached (%d)",
+                              local_addr, Util.printViews(different_views), inconsistent_view_threshold, num_inconsistent_views);
                     num_inconsistent_views++;
                     return;
                 }
@@ -323,8 +409,8 @@ public class MERGE2 extends Protocol {
                 sb.append(local_addr + " found different views : " + Util.printViews(different_views) +
                         "; sending up MERGE event with merge participants " + merge_participants + ".\n");
                 sb.append("Discovery results:\n");
-                for(PingData data: discovery_rsps)
-                    sb.append("[" + data.getAddress() + "]: coord=" + data.getCoordAddress()).append("\n");
+                for(Map.Entry<Address,View> entry: views.entrySet())
+                    sb.append("[" + entry.getKey() + "]: coord=" + entry.getValue().getCreator()).append("\n");
                 log.debug(sb.toString());
             }
             Event evt=new Event(Event.MERGE, views);
@@ -337,6 +423,47 @@ public class MERGE2 extends Protocol {
             }
         }
 
+        /** Fetches views from members in the cluster. Returns when either discovery_timeout ms have elapsed or
+         * more than 1 different view has been found */
+        protected void fetchViews() throws InterruptedException {
+            views.clear();
+            views.put(local_addr,view);
+            fetching_done=false;
+
+            if(transport_supports_multicasting) {
+                Message discovery_req=new Message(null).putHeader(id, new MergeHeader(MergeHeader.REQ, null))
+                  .setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
+                down_prot.down(new Event(Event.MSG, discovery_req));
+                return;
+            }
+
+            Responses rsps=(Responses)down_prot.down(Event.FIND_MBRS_EVT);
+            rsps.waitFor(discovery_timeout); // return immediately if done
+            if(rsps.isEmpty())
+                return;
+
+            log.trace("discovery protocol returned %d responses: %s", rsps.size(), rsps);
+            for(PingData rsp: rsps) {
+                PhysicalAddress addr=rsp.getPhysicalAddr();
+                if(addr == null) continue;
+                Message discovery_req=new Message(addr).putHeader(id, new MergeHeader(MergeHeader.REQ, null))
+                  .setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
+                down_prot.down(new Event(Event.MSG, discovery_req));
+            }
+
+            long wait_time;
+            final long target_time=System.nanoTime() + TimeUnit.NANOSECONDS.convert(discovery_timeout, TimeUnit.MILLISECONDS); // ns
+            discovery_lock.lock();
+            try {
+                while(!fetching_done && (wait_time=target_time - System.nanoTime()) > 0)
+                    discovery_cond.await(wait_time,TimeUnit.NANOSECONDS);
+            }
+            finally {
+                fetching_done=true;
+                discovery_lock.unlock();
+            }
+        }
+
 
         /**
          * Returns a random value within [min_interval - max_interval]
@@ -344,37 +471,40 @@ public class MERGE2 extends Protocol {
         protected long computeInterval() {
             return min_interval + Util.random(max_interval - min_interval);
         }
-
-        /** Returns a list of PingData with only the view from members around the cluster */
-        @SuppressWarnings("unchecked")
-        protected List<PingData> findAllViews() {
-            List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.FIND_ALL_VIEWS));
-            if(retval == null) return Collections.emptyList();
-            if(is_coord && local_addr != null) {
-                PingData tmp=new PingData(local_addr, view, true);
-                //let's make sure that we add ourself as a coordinator
-                if(!retval.contains(tmp))
-                    retval.add(tmp);
-            } 
-            return retval;
-        }
-
-
-
-        public Map<Address,View> getViews(List<PingData> initial_mbrs) {
-            Map<Address,View> retval=new HashMap<Address,View>();
-            for(PingData response: initial_mbrs) {
-                if(!response.isServer())
-                    continue;
-                Address sender=response.getAddress();
-                View view=response.getView();
-                if(sender == null || view == null)
-                    continue;
-                retval.put(sender,view);
-            }
-            return retval;
-        }
-
-
     }
+
+
+    protected static class MergeHeader extends Header {
+        protected byte    type=1; // 1 == req, 2 == rsp
+        protected View    view;
+        protected static final byte REQ=1;
+        protected static final byte RSP=2;
+
+        public MergeHeader() {
+        }
+
+        public MergeHeader(byte type, View view) {
+            this.type=type;
+            this.view=view;
+        }
+
+        public String toString() {
+            return (type==1? "req" : "rsp") + ", view=" + view;
+        }
+
+        public int size() {
+            return Global.BYTE_SIZE + Util.size(view);
+        }
+
+        public void writeTo(DataOutput out) throws Exception {
+            out.writeByte(type);
+            Util.writeView(view, out);
+        }
+
+        public void readFrom(DataInput in) throws Exception {
+            type=in.readByte();
+            view=Util.readView(in);
+        }
+    }
+
 }

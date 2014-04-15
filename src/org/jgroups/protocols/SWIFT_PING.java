@@ -6,6 +6,7 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
 import org.w3c.dom.Document;
 
@@ -70,7 +71,7 @@ public class SWIFT_PING extends FILE_PING {
         Runtime.getRuntime().addShutdownHook(new Thread() {
 
             public void run() {
-                remove(group_addr, local_addr);
+                remove(cluster_name, local_addr);
             }
         });
 
@@ -111,19 +112,21 @@ public class SWIFT_PING extends FILE_PING {
     }
 
     @Override
-    protected List<PingData> readAll(String clustername) {
-        List<PingData> pingDataList = new ArrayList<PingData>();
+    protected void readAll(List<Address> members, String clustername, Responses responses) {
         try {
             List<String> objects = swiftClient.listObjects(container);
             for (String object : objects) {
                 byte[] bytes = swiftClient.readObject(container, object);
-                PingData pingData = (PingData) Util.objectFromByteBuffer(bytes);
-                pingDataList.add(pingData);
+                PingData data = (PingData) Util.objectFromByteBuffer(bytes);
+                if(members != null && !members.contains(data.getAddress()))
+                    continue;
+                responses.addResponse(data, true);
+                if(local_addr != null && !local_addr.equals(data.getAddress()))
+                    addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
             }
         } catch (Exception e) {
             log.error("Error unmarhsalling object", e);
         }
-        return pingDataList;
     }
 
     @Override

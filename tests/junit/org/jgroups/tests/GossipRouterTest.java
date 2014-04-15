@@ -65,7 +65,6 @@ public class GossipRouterTest {
      * - Now first node should be able to connect and first and second node should be able to merge into a group
      * - SUCCESS: a view of 2
      */
-    @Test
     public void testLateStart() throws Exception {
         final Lock lock=new ReentrantLock();
         final Condition cond=lock.newCondition();
@@ -89,7 +88,7 @@ public class GossipRouterTest {
         long target_time=System.currentTimeMillis() + 40000;
         lock.lock();
         try {
-            while(System.currentTimeMillis() < target_time && done.get() == false) {
+            while(System.currentTimeMillis() < target_time && !done.get()) {
                 cond.await(1000, TimeUnit.MILLISECONDS);
             }
         }
@@ -109,13 +108,14 @@ public class GossipRouterTest {
     }
 
     protected JChannel createTunnelChannel(String name, boolean include_failure_detection) throws Exception {
-        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("bind_addr", bind_addr);
+        TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("bind_addr", bind_addr).setValue("reconnect_interval", 1000);
         tunnel.setGossipRouterHosts(gossip_router_hosts);
         List<Protocol> protocols=new ArrayList<Protocol>();
-        protocols.addAll(Arrays.asList(tunnel,new PING(),new MERGE2().setValue("min_interval",1000).setValue("max_interval",3000)));
+        protocols.addAll(Arrays.asList(tunnel,new PING(),new MERGE3().setValue("min_interval",1000).setValue("max_interval",3000)));
         if(include_failure_detection)
             protocols.addAll(Arrays.asList(new FD().setValue("timeout", 2000).setValue("max_tries", 2), new VERIFY_SUSPECT()));
-        protocols.addAll(Arrays.asList(new NAKACK2().setValue("use_mcast_xmit", false), new UNICAST3(), new STABLE(), new GMS()));
+        protocols.addAll(Arrays.asList(new NAKACK2().setValue("use_mcast_xmit", false), new UNICAST3(), new STABLE(),
+                                       new GMS().joinTimeout(10)));
         JChannel ch=new JChannel(protocols);
         if(name != null)
             ch.setName(name);

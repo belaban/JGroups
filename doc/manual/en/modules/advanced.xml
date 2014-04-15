@@ -174,7 +174,7 @@
 
     &lt;PING timeout="2000"
             num_initial_members="3"/&gt;
-    &lt;MERGE2 max_interval="30000"
+    &lt;MERGE3 max_interval="30000"
             min_interval="10000"/&gt;
     &lt;FD_SOCK/&gt;
     &lt;FD_ALL/&gt;
@@ -227,7 +227,7 @@
             </varlistentry>
 
             <varlistentry>
-                <term>MERGE2</term>
+                <term>MERGE3</term>
                 <listitem>
                     <para>Will merge sub-clusters back into one cluster, kicks in after a network partition healed.</para>
                 </listitem>
@@ -1350,7 +1350,7 @@ c2.connect("second-cluster");
         </para>
         <para>
             This means, that if during the partition, some clients access {A,B,C}, and others {D,E}, then we end up
-            with different states in both subclusters. When a partition heals, the merge protocol (e.g. MERGE2) will
+            with different states in both subclusters. When a partition heals, the merge protocol (e.g. MERGE3) will
             notify A and D that there were 2 subclusters and merge them back into {A,B,C,D,E}, with A being the new
             coordinator and D ceasing to be coordinator.
         </para>

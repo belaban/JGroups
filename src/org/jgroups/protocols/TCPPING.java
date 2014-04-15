@@ -7,8 +7,9 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
+import org.jgroups.util.Responses;
+import org.jgroups.util.Tuple;
 
 import java.util.*;
 
@@ -34,7 +35,7 @@ public class TCPPING extends Discovery {
     @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership",
         converter=PropertyConverters.InitialHosts.class, dependsUpon="port_range",
             systemProperty=Global.TCPPING_INITIAL_HOSTS)
-    private List<IpAddress> initial_hosts=Collections.EMPTY_LIST;
+    private List<PhysicalAddress> initial_hosts=Collections.emptyList();
 
     @Property(description="max number of hosts to keep beyond the ones in initial_hosts")
     protected int max_dynamic_hosts=2000;
@@ -62,11 +63,11 @@ public class TCPPING extends Discovery {
      * @return List<Address> list of initial hosts. This variable is only set after the channel has been created and
      * set Properties() has been called
      */
-    public List<IpAddress> getInitialHosts() {
+    public List<PhysicalAddress> getInitialHosts() {
         return initial_hosts;
     }
 
-    public void setInitialHosts(List<IpAddress> initial_hosts) {
+    public void setInitialHosts(List<PhysicalAddress> initial_hosts) {
         this.initial_hosts=initial_hosts;
     }
 
@@ -98,16 +99,6 @@ public class TCPPING extends Discovery {
         dynamic_hosts=new BoundedList<PhysicalAddress>(max_dynamic_hosts);
     }
 
-    public Collection<PhysicalAddress> fetchClusterMembers(String cluster_name) {
-        Set<PhysicalAddress> combined_target_members=new HashSet<PhysicalAddress>(initial_hosts);
-        combined_target_members.addAll(dynamic_hosts);
-        return combined_target_members;
-    }
-
-    public boolean sendDiscoveryRequestsInParallel() {
-        return true;
-    }
-
     public Object down(Event evt) {
         Object retval=super.down(evt);
         switch(evt.getType()) {
@@ -119,17 +110,52 @@ public class TCPPING extends Discovery {
                     }
                 }
                 break;
+            case Event.SET_PHYSICAL_ADDRESS:
+                Tuple<Address,PhysicalAddress> tuple=(Tuple<Address,PhysicalAddress>)evt.getArg();
+                PhysicalAddress physical_addr=tuple.getVal2();
+                if(physical_addr != null && !initial_hosts.contains(physical_addr))
+                    dynamic_hosts.addIfAbsent(physical_addr);
+                break;
         }
         return retval;
     }
 
-    public void discoveryRequestReceived(Address sender, String logical_name, Collection<PhysicalAddress> physical_addrs) {
-        super.discoveryRequestReceived(sender, logical_name, physical_addrs);
-        if(physical_addrs != null) {
-            for(PhysicalAddress addr: physical_addrs) {
-                if(!initial_hosts.contains(addr))
-                    dynamic_hosts.addIfAbsent(addr);
-            }
+    public void discoveryRequestReceived(Address sender, String logical_name, PhysicalAddress physical_addr) {
+        super.discoveryRequestReceived(sender, logical_name, physical_addr);
+        if(physical_addr != null) {
+            if(!initial_hosts.contains(physical_addr))
+                dynamic_hosts.addIfAbsent(physical_addr);
+        }
+    }
+
+    @Override
+    public void findMembers(List<Address> members, boolean initial_discovery, Responses responses) {
+        PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+
+        // https://issues.jboss.org/browse/JGRP-1670
+        PingData data=new PingData(local_addr, false, org.jgroups.util.UUID.get(local_addr), physical_addr);
+        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name);
+
+        Set<PhysicalAddress> cluster_members=new HashSet<PhysicalAddress>(initial_hosts);
+        cluster_members.addAll(dynamic_hosts);
+
+        if(use_disk_cache) {
+            // this only makes sense if we have PDC below us
+            Collection<PhysicalAddress> list=(Collection<PhysicalAddress>)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESSES));
+            if(list != null)
+                for(PhysicalAddress phys_addr: list)
+                    if(!cluster_members.contains(phys_addr))
+                        cluster_members.add(phys_addr);
+        }
+
+        for(final PhysicalAddress addr: cluster_members) {
+            if(physical_addr != null && addr.equals(physical_addr)) // no need to send the request to myself
+                continue;
+            // the message needs to be DONT_BUNDLE, see explanation above
+            final Message msg=new Message(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
+              .putHeader(this.id,hdr).setBuffer(marshal(data));
+            log.trace("%s: sending discovery request to %s", local_addr, msg.getDest());
+            down_prot.down(new Event(Event.MSG, msg));
         }
     }
 }

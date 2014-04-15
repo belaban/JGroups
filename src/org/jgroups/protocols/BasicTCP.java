@@ -6,6 +6,7 @@ import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
+import org.jgroups.util.AsciiString;
 
 import java.net.InetAddress;
 import java.util.Collection;
@@ -101,8 +102,18 @@ public abstract class BasicTCP extends TP {
     }
 
 
-    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
-        sendToAllPhysicalAddresses(data, offset, length);
+    public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {
+        if(!isSingleton())
+            sendToMembers(members, data, offset, length);
+        else {
+            Collection<Address> mbrs=members;
+            if(cluster_name != null && up_prots != null) {
+                ProtocolAdapter prot_ad=(ProtocolAdapter)up_prots.get(cluster_name);
+                if(prot_ad != null)
+                    mbrs=prot_ad.getMembers();
+            }
+            sendToMembers(mbrs, data, offset, length);
+        }
     }
 
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {

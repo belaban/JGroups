@@ -8,6 +8,7 @@ import org.jgroups.View;
 import org.jgroups.protocols.PingData;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Promise;
+import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
 
 import java.util.*;
@@ -63,7 +64,7 @@ public class ClientGmsImpl extends GmsImpl {
      *
      * @param mbr Our own address (assigned through SET_LOCAL_ADDRESS)
      */
-    protected void joinInternal(Address mbr, boolean joinWithStateTransfer,boolean useFlushIfPresent) {
+    protected void joinInternal(Address mbr, boolean joinWithStateTransfer, boolean useFlushIfPresent) {
         JoinRsp rsp=null;
         Address coord=null;
         long join_attempts=0;
@@ -72,28 +73,31 @@ public class ClientGmsImpl extends GmsImpl {
         join_promise.reset();
         while(!leaving) {
             if(rsp == null && !join_promise.hasResult()) { // null responses means that the discovery was cancelled
-                List<PingData> responses=findInitialMembers(join_promise);
-                if (responses == null)
-                    // gray: we've seen this NPE here.  not sure of the cases but wanted to add more debugging info
-                    throw new NullPointerException("responses returned by findInitialMembers for " + join_promise + " is null");
+                long start=System.currentTimeMillis();
+                Responses responses=(Responses)gms.getDownProtocol().down(Event.FIND_INITIAL_MBRS_EVT);
+                if(responses == null)
+                    throw new NullPointerException("responses returned by findMembers() is null");
 
                 // Sept 2008 (bela): break if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
                 // Reverted above change again - bela June 2012, see https://github.com/belaban/JGroups/pull/29
                 if(join_promise.hasResult()) {
-                    rsp=join_promise.getResult(gms.join_timeout); // clears the result
+                    rsp=join_promise.getResult(1); // clears the result
                     if(rsp != null)
                         continue;
                 }
+                responses.waitFor(gms.join_timeout);
+                responses.done();
+                long diff=System.currentTimeMillis() - start;
                 if(responses.isEmpty()) {
-                    log.trace("%s: no initial members discovered: creating cluster as first member", gms.local_addr);
+                    log.trace("%s: no members discovered after %d ms: creating cluster as first member", gms.local_addr, diff);
                     becomeSingletonMember(mbr);
                     return;
                 }
-                log.trace("%s: initial_mbrs are %s", gms.local_addr, print(responses));
+                log.trace("%s: discovery took %d ms, members: %s", gms.local_addr, diff, responses);
 
                 coord=determineCoord(responses);
                 if(coord == null) { // e.g. because we have all clients only
-                    if(gms.handle_concurrent_startup == false) {
+                    if(!gms.handle_concurrent_startup) {
                         log.trace("handle_concurrent_startup is false; ignoring responses of initial clients");
                         becomeSingletonMember(mbr);
                         return;
@@ -144,7 +148,7 @@ public class ClientGmsImpl extends GmsImpl {
                 continue;
             }
 
-            log.trace("%s: JOIN-RSP=%s [size=%d]\n\n", gms.local_addr, rsp.getView(), rsp.getView().size());
+            log.trace("%s: JOIN-RSP=%s\n\n", gms.local_addr, rsp.getView());
             if(!installView(rsp.getView(), rsp.getDigest())) {
                 log.error("%s: view installation failed, retrying to join cluster", gms.local_addr);
                 rsp=null;
@@ -195,10 +199,10 @@ public class ClientGmsImpl extends GmsImpl {
         return true;
     }
 
-
+/*
     @SuppressWarnings("unchecked")
-    private List<PingData> findInitialMembers(Promise<JoinRsp> promise) {
-        List<PingData> responses=(List<PingData>)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS, promise));
+    private List<PingData> findInitialMembers() {
+        List<PingData> responses=(List<PingData>)gms.getDownProtocol().down(Event.FIND_INITIAL_MBRS_EVT);
         if(responses != null) {
             for(Iterator<PingData> iter=responses.iterator(); iter.hasNext();) {
                 Address address=iter.next().getAddress();
@@ -207,8 +211,7 @@ public class ClientGmsImpl extends GmsImpl {
             }
         }
         return responses;
-    }
-
+    }*/
 
 
     /**
@@ -235,6 +238,13 @@ public class ClientGmsImpl extends GmsImpl {
         return sb.toString();
     }
 
+    protected static String print(Responses rsps) {
+        StringBuilder sb=new StringBuilder();
+        for(PingData rsp: rsps)
+            sb.append(rsp.getAddress() + " ");
+        return sb.toString();
+    }
+
     void sendJoinMessage(Address coord, Address mbr,boolean joinWithTransfer, boolean useFlushIfPresent) {
         Message msg=new Message(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
         GMS.GmsHeader hdr=joinWithTransfer? new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER, mbr,useFlushIfPresent)
@@ -247,23 +257,24 @@ public class ClientGmsImpl extends GmsImpl {
      The coordinator is determined by a majority vote. If there are an equal number of votes for
      more than 1 candidate, we determine the winner randomly.
      */
-    private Address determineCoord(List<PingData> mbrs) {
+    private Address determineCoord(Iterable<PingData> mbrs) {
         int count, most_votes;
         Address winner=null, tmp;
 
-        if(mbrs == null || mbrs.size() < 1)
+        if(mbrs == null)
             return null;
 
         Map<Address,Integer> votes=new HashMap<Address,Integer>(5);
 
         // count *all* the votes (unlike the 2000 election)
         for(PingData mbr: mbrs) {
-            if(mbr.hasCoord()) {
-                if(!votes.containsKey(mbr.getCoordAddress()))
-                    votes.put(mbr.getCoordAddress(), 1);
+            if(mbr.isCoord()) {
+                Address coord=mbr.getAddress();
+                if(!votes.containsKey(coord))
+                    votes.put(coord, 1);
                 else {
-                    count=votes.get(mbr.getCoordAddress());
-                    votes.put(mbr.getCoordAddress(), count + 1);
+                    count=votes.get(coord);
+                    votes.put(coord, count + 1);
                 }
             }
         }

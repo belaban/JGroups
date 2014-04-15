@@ -2,20 +2,21 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.logging.Log;
-import org.jgroups.protocols.*;
+import org.jgroups.protocols.DISCARD;
+import org.jgroups.protocols.SHARED_LOOPBACK;
+import org.jgroups.protocols.SHARED_LOOPBACK_PING;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.*;
+import org.jgroups.util.MergeId;
+import org.jgroups.util.MutableDigest;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.net.InetAddress;
 import java.util.*;
 
 
@@ -81,8 +82,8 @@ public class MergeTest3 {
         setMergeIdIn(busy_second, busy_merge_id);
         for(JChannel ch: new JChannel[]{a,b,c,d,e,f}) { // excluding faulty member, as it still discards messages
             assert ch.getView().size() == 3;
-            Discovery ping=(Discovery)ch.getProtocolStack().findProtocol(Discovery.class);
-            ping.setTimeout(3000);
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            gms.setJoinTimeout(3000);
             DISCARD discard=(DISCARD)ch.getProtocolStack().findProtocol(DISCARD.class);
             discard.setDiscardAll(false);
         }
@@ -167,6 +168,7 @@ public class MergeTest3 {
                                      new UNICAST3(),
                                      new STABLE().setValue("max_bytes",50000),
                                      new GMS().setValue("print_local_addr",false)
+                                       .setValue("join_timeout", 1)
                                        .setValue("leave_timeout",100)
                                        .setValue("merge_timeout",5000)
                                        .setValue("log_view_warnings",false)
@@ -239,16 +241,6 @@ public class MergeTest3 {
     }
 
 
-    protected static class MyDiagnosticsHandler extends DiagnosticsHandler {
-
-        protected MyDiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port, Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
-            super(diagnostics_addr,diagnostics_port,log,socket_factory,thread_factory);
-        }
-
-        public void start() throws IOException {super.start();}
-        public void stop() {}
-        public void destroy() {super.stop();}
-    }
 
     @Test(enabled=false)
     public static void main(String[] args) throws Exception {

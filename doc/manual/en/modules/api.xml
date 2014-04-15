@@ -591,7 +591,7 @@ channel.send(msg);
 
     &lt;PING timeout="2000"
             num_initial_members="3"/&gt;
-    &lt;MERGE2 max_interval="30000"
+    &lt;MERGE3 max_interval="30000"
             min_interval="10000"/&gt;
     &lt;FD_SOCK/&gt;
     &lt;FD_ALL/&gt;
@@ -673,7 +673,7 @@ public class ProgrammaticChat {
         stack.addProtocol(new UDP().setValue("bind_addr",
                                               InetAddress.getByName("192.168.1.5")))
                 .addProtocol(new PING())
-                .addProtocol(new MERGE2())
+                .addProtocol(new MERGE3())
                 .addProtocol(new FD_SOCK())
                 .addProtocol(new FD_ALL().setValue("timeout", 12000)
                                          .setValue("interval", 3000))

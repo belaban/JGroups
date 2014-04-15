@@ -10,7 +10,6 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.util.TimeScheduler;
 
 import java.net.InetAddress;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -116,8 +115,7 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
                     String logical_name = org.jgroups.util.UUID.get(logicalAddress);
                     PhysicalAddress physical_addr = (PhysicalAddress) owner.down(new Event(
                       Event.GET_PHYSICAL_ADDRESS, logicalAddress));
-                    List<PhysicalAddress> physical_addrs = Arrays.asList(physical_addr);
-                    stub.connect(channelName, logicalAddress, logical_name, physical_addrs);
+                    stub.connect(channelName, logicalAddress, logical_name, physical_addr);
                     if (log.isTraceEnabled()) log.trace("Reconnected " + stub);
                 } catch (Throwable ex) {
                     if (log.isWarnEnabled())

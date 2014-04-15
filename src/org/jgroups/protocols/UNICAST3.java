@@ -668,7 +668,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         SenderEntry entry=send_table.remove(mbr);
         if(entry != null) {
             entry.state(State.CLOSED);
-            sendClose(mbr, entry.connId());
+            if(members.contains(mbr))
+                sendClose(mbr, entry.connId());
         }
     }
 

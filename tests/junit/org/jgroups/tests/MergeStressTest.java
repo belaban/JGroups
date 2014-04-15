@@ -3,7 +3,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.FD_SOCK;
-import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.MERGE3;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
@@ -104,9 +104,9 @@ public class MergeStressTest extends ChannelTestBase {
 
     private static void modifyStack(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        Protocol prot=stack.findProtocol(MERGE2.class);
+        Protocol prot=stack.findProtocol(MERGE3.class);
         if(prot != null) {
-            MERGE2 merge=(MERGE2)prot;
+            MERGE3 merge=(MERGE3)prot;
             merge.setMinInterval(3000);
             merge.setMaxInterval(5000);
         }
@@ -131,7 +131,7 @@ public class MergeStressTest extends ChannelTestBase {
         private final Channel ch;
         private Address my_addr=null;
         private View current_view;
-        private Thread thread;
+        private final Thread thread;
         private int num_members=0;
 
         public MyThread(int i,Channel ch) {

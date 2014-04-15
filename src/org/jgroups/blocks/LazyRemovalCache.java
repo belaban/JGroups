@@ -16,8 +16,7 @@ public class LazyRemovalCache<K,V> {
     private final ConcurrentMap<K, Entry<V>> map=Util.createConcurrentMap();
 
     /** Max number of elements, if exceeded, we remove all elements marked as removable and older than max_age ms */
-    private final int max_elements;
-
+    private final int  max_elements;
     private final long max_age;
 
 
@@ -149,6 +148,10 @@ public class LazyRemovalCache<K,V> {
         }
 
         checkMaxSizeExceeded();
+    }
+
+    public Set<K> keySet() {
+        return map.keySet();
     }
 
     public Set<V> values() {

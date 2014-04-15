@@ -4,7 +4,7 @@
     <UDP bind_addr="localhost"
          bind_port="47000"/>
     <PING            />
-    <MERGE2         />
+    <MERGE3         />
     <FD             />
     <VERIFY_SUSPECT />
     <pbcast.NAKACK2 />

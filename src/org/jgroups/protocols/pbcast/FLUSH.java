@@ -782,7 +782,7 @@ public class FLUSH extends Protocol {
                     log.debug(localAddress + ": received START_FLUSH, but not sending BLOCK up");
             }
 
-            Digest digest = (Digest) down_prot.down(new Event(Event.GET_DIGEST));
+            Digest digest = (Digest) down_prot.down(Event.GET_DIGEST_EVT);
             Message start_msg = new Message(flushStarter)
               .putHeader(this.id, new FlushHeader(FlushHeader.FLUSH_COMPLETED, fh.viewID))
               .setBuffer(marshal(tuple.getVal1(),digest));
@@ -930,7 +930,7 @@ public class FLUSH extends Protocol {
                         + ", flushOkSet " + flushCompletedMap + ", flushMembers " + flushMembers);
         }
         if (flushOkCompleted) {
-            Digest digest = (Digest) down_prot.down(new Event(Event.GET_DIGEST));
+            Digest digest = (Digest) down_prot.down(Event.GET_DIGEST_EVT);
             m.putHeader(this.id, new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID)).setBuffer(marshal(null, digest));
             down_prot.down(new Event(Event.MSG, m));
 

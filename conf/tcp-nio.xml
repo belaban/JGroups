@@ -1,0 +1,35 @@
+
+<!--
+    TCP based stack, with flow control and message bundling. This is usually used when IP
+    multicasting cannot be used in a network, e.g. because it is disabled (routers discard multicast).
+    Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
+    -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]".
+    author: Bela Ban
+-->
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+    <TCP_NIO
+            bind_port="7800"
+            use_send_queues="true"
+            sock_conn_timeout="300"
+            reader_threads="3"
+            writer_threads="3"
+            processor_threads="0"
+            processor_minThreads="0"
+            processor_maxThreads="0"
+            processor_queueSize="100"
+            processor_keepAliveTime="9223372036854775807"/>
+    <TCPPING initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"/>
+    <MERGE3/>
+    <FD_SOCK/>
+    <FD/>
+    <VERIFY_SUSPECT/>
+    <pbcast.NAKACK2 use_mcast_xmit="false"/>
+    <UNICAST3/>
+    <pbcast.STABLE/>
+    <pbcast.GMS/>
+    <MFC/>
+    <FRAG2/>
+    <pbcast.STATE_TRANSFER />
+</config>

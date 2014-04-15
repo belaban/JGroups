@@ -2,7 +2,6 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.Discovery;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -22,7 +21,7 @@ import java.util.List;
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class JoinTest extends ChannelTestBase {
-    JChannel a, b;
+    protected JChannel a, b;
 
     @BeforeMethod
     void setUp() throws Exception {
@@ -36,7 +35,6 @@ public class JoinTest extends ChannelTestBase {
         Util.close(b,a);
     }
 
-    @Test
     public void testSingleJoin() throws Exception {
         a.connect("JoinTest");
         View v=a.getView();
@@ -48,7 +46,6 @@ public class JoinTest extends ChannelTestBase {
     /**
      * Tests that immediately after a connect(), a getView() returns the correct view
      */
-    @Test
     public void testJoinsOnTwoChannels() throws Exception {
         a.connect("JoinTest");
         b.connect("JoinTest");
@@ -65,7 +62,6 @@ public class JoinTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testJoinsOnTwoChannelsAndSend() throws Exception {
         a.connect("JoinTest");
         b.connect("JoinTest");
@@ -104,61 +100,47 @@ public class JoinTest extends ChannelTestBase {
      * started another discovery. Tests whether the discovery process is cancelled correctly.
      * http://jira.jboss.com/jira/browse/JGRP-621
      */
-    @Test
     public void testDelayedJoinResponse() throws Exception {
         final long JOIN_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
-        final long DISCOVERY_TIMEOUT=5000;
         final long TOLERANCE=1000;
 
-        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
+        _testDelayedJoinResponse(JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
     }
 
-    @Test
     public void testDelayedJoinResponse2() throws Exception {
         final long JOIN_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
-        final long DISCOVERY_TIMEOUT=5000;
         final long TOLERANCE=1000;
 
-        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
+        _testDelayedJoinResponse(JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
     }
 
     @Test
     public void testDelayedJoinResponse3() throws Exception {
         final long JOIN_TIMEOUT=5000, DELAY_JOIN_REQ=4000;
-        final long DISCOVERY_TIMEOUT=5000;
         final long TOLERANCE=1000;
 
-        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
+        _testDelayedJoinResponse(JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
     }
 
 
-    @Test
     public void testDelayedJoinResponse4() throws Exception {
         final long JOIN_TIMEOUT=1000, DELAY_JOIN_REQ=4000;
-        final long DISCOVERY_TIMEOUT=2000;
         final long TOLERANCE=1000;
 
-        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
+        _testDelayedJoinResponse(JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
     }
 
 
 
-    void _testDelayedJoinResponse(long discovery_timeout, long join_timeout,
-                                  long delay_join_req, long tolerance) throws Exception {
+    void _testDelayedJoinResponse(long join_timeout, long delay_join_req, long tolerance) throws Exception {
         a.connect("JoinTest");
         b.connect("JoinTest");
 
         ProtocolStack stack=b.getProtocolStack();
         GMS gms=(GMS)stack.findProtocol(GMS.class);
-        if(gms != null) {
+        if(gms != null)
             gms.setJoinTimeout(join_timeout);
-        }
 
-        Discovery discovery=(Discovery)stack.findProtocol(Discovery.class);        
-        if(discovery != null) {
-            discovery.setNumInitialMembers(10);
-            discovery.setTimeout(discovery_timeout);
-        }
 
         stack=a.getProtocolStack();
         DELAY_JOIN_REQ delay=new DELAY_JOIN_REQ().delay(delay_join_req);
@@ -169,7 +151,7 @@ public class JoinTest extends ChannelTestBase {
         b.connect("JoinTest-2");
         stop=System.currentTimeMillis();
         long join_time=stop-start;
-        long tolerated_join_time=discovery_timeout + delay_join_req + tolerance; // 1 sec more is okay (garbage collection etc)
+        long tolerated_join_time=join_timeout + delay_join_req + tolerance; // 1 sec more is okay (garbage collection etc)
         System.out.println(new Date() + ": joining of c2 took " + join_time + " ms (should have taken not more than "+tolerated_join_time +" ms)");
         assert join_time <= tolerated_join_time : "join time (" + join_time + ") was > tolerated join time (" + tolerated_join_time + ")";
     }

@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.annotations.Property;
+import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
@@ -91,57 +92,76 @@ public class S3_PING extends FILE_PING {
         if(!conn.checkBucketExists(location)) {
             conn.createBucket(location, AWSAuthConnection.LOCATION_DEFAULT, null).connection.getResponseMessage();
         }
-
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                remove(group_addr, local_addr);
-            }
-        });
     }
 
     protected AWSAuthConnection createConnection() {
         return new AWSAuthConnection(access_key, secret_access_key);
     }
 
+    @Override
     protected void createRootDir() {
         ; // do *not* create root file system (don't remove !)
     }
 
-    protected List<PingData> readAll(String clustername) {
+    @Override
+    protected void readAll(List<Address> members, String clustername, Responses responses) {
         if(clustername == null)
-            return null;
+            return;
 
-        List<PingData> retval=new ArrayList<PingData>();
         try {
             if (usingPreSignedUrls()) {
                 PreSignedUrlParser parsedPut = new PreSignedUrlParser(pre_signed_put_url);
                 clustername = parsedPut.getPrefix();
             }
-            ListBucketResponse rsp=conn.listBucket(location, sanitize(clustername), null, null, null);
+
+            clustername=sanitize(clustername);
+            if(members != null && !members.isEmpty()) { // only fetch info for given members
+                readSelectedMembers(members, clustername, responses);
+                return;
+            }
+
+            ListBucketResponse rsp=conn.listBucket(location, clustername, null, null, null);
             if(rsp.entries != null) {
                 for(Iterator<ListEntry> it=rsp.entries.iterator(); it.hasNext();) {
                     ListEntry key=it.next();
                     GetResponse val=conn.get(location, key.key, null);
-                    if(val.object != null) {
-                        byte[] buf=val.object.data;
-                        if(buf != null && buf.length > 0) {
-                            try {
-                                PingData data=(PingData)Util.objectFromByteBuffer(buf);
-                                retval.add(data);
-                            }
-                            catch(Throwable e) {
-                                log.error("failed marshalling buffer to address", e);
-                            }
-                        }
-                    }
+                    readResponse(val, responses);
                 }
             }
-
-            return retval;
         }
         catch(IOException ex) {
             log.error("failed reading addresses", ex);
-            return retval;
+        }
+    }
+
+    protected void readSelectedMembers(List<Address> members, String clustername, Responses responses) {
+        for(Address mbr: members) {
+            String filename=addressAsString(mbr);
+            String key=clustername + "/" + sanitize(filename);
+            try {
+                GetResponse val=conn.get(location, key, null);
+                readResponse(val, responses);
+            }
+            catch(IOException e) {
+                log.error("failed reading address", e);
+            }
+        }
+    }
+
+
+    protected void readResponse(GetResponse rsp, Responses responses) {
+        if(rsp.object == null)
+            return;
+        byte[] buf=rsp.object.data;
+        if(buf != null && buf.length > 0) {
+            try {
+                PingData data=(PingData)Util.objectFromByteBuffer(buf);
+                responses.addResponse(data, false);
+                addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
+            }
+            catch(Throwable e) {
+                log.error("failed marshalling buffer to address", e);
+            }
         }
     }
 
@@ -149,7 +169,7 @@ public class S3_PING extends FILE_PING {
     protected void writeToFile(PingData data, String clustername) {
         if(clustername == null || data == null)
             return;
-        String filename=local_addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)local_addr).toStringLong() : local_addr.toString();
+        String filename=addressAsString(local_addr);
         String key=sanitize(clustername) + "/" + sanitize(filename);
         HttpURLConnection httpConn = null;
         try {

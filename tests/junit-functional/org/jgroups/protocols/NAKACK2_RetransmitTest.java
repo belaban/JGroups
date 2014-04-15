@@ -6,10 +6,7 @@ import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.Digest;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.SeqnoList;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -132,7 +129,7 @@ public class NAKACK2_RetransmitTest {
         public void               clear() {xmit_requests.clear();}
         public void               init() throws Exception {}
         public boolean            supportsMulticasting() {return true;}
-        public void               sendMulticast(byte[] data, int offset, int length) throws Exception {}
+        public void               sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {}
         public void               sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
         public String             getInfo() {return null;}
         protected PhysicalAddress getPhysicalAddress() {return null;}

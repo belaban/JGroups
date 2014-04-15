@@ -7,15 +7,16 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.*;
-import org.jgroups.util.*;
+import org.jgroups.util.AsciiString;
+import org.jgroups.util.ByteArrayDataOutputStream;
+import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -65,8 +66,10 @@ public class TUNNEL extends TP {
    public TUNNEL() {
    }
 
+    /** We can simply send a message with dest == null and the GossipRouter will take care of routing it to all
+     * members in the cluster */
     public boolean supportsMulticasting() {
-        return false;
+        return true;
     }
 
     @Property(description="A comma-separated list of GossipRouter hosts, e.g. HostA[12001],HostB[12001]")
@@ -108,8 +111,9 @@ public class TUNNEL extends TP {
         if (isSingleton())
             throw new Exception("TUNNEL and shared transport mode are not supported!");
 
-        if (log.isDebugEnabled())
-            log.debug("GossipRouters are:" + gossip_router_hosts.toString());
+        if(gossip_router_hosts.isEmpty())
+            throw new IllegalStateException("gossip_router_hosts needs to contain at least one address of a GossipRouter");
+        log.debug("GossipRouters are:" + gossip_router_hosts.toString());
         
         stubManager = RouterStubManager.emptyGossipClientStubManager(this);
         sock = getSocketFactory().createDatagramSocket("jgroups.tunnel.ucast_sock", bind_port, bind_addr);
@@ -142,10 +146,9 @@ public class TUNNEL extends TP {
                  stub.setTcpNoDelay(tcp_nodelay);           
               }  
              PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local));
-             List<PhysicalAddress> physical_addrs=Arrays.asList(physical_addr);
              String logical_name=org.jgroups.util.UUID.get(local);
              List<RouterStub> stubs = stubManager.getStubs();
-             tunnel_policy.connect(stubs, group, local, logical_name, physical_addrs);
+             tunnel_policy.connect(stubs, group, local, logical_name, physical_addr);
             break;
 
          case Event.DISCONNECT:
@@ -257,7 +260,7 @@ public class TUNNEL extends TP {
     }
 
 
-    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
+    public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {
         throw new UnsupportedOperationException("sendMulticast() should not get called on TUNNEL");
     }
 
@@ -278,7 +281,7 @@ public class TUNNEL extends TP {
    }
 
    public interface TUNNELPolicy {
-      public void connect(List<RouterStub> stubs, String group, Address addr, String logical_name, List<PhysicalAddress> phys_addrs);
+      public void connect(List<RouterStub> stubs, String group, Address addr, String logical_name, PhysicalAddress phys_addr);
 
       public void sendToAllMembers(List<RouterStub> stubs, String group, byte[] data, int offset, int length) throws Exception;
 
@@ -335,10 +338,10 @@ public class TUNNEL extends TP {
                      + " accepted a message for dest " + dest);
       }
 
-       public void connect(List<RouterStub> stubs, String group, Address addr, String logical_name, List<PhysicalAddress> phys_addrs) {
+       public void connect(List<RouterStub> stubs, String group, Address addr, String logical_name, PhysicalAddress phys_addr) {
            for (RouterStub stub : stubs) {
                try {
-                   stub.connect(group, addr, logical_name, phys_addrs);
+                   stub.connect(group, addr, logical_name, phys_addr);
                }
                catch (Exception e) {
                    if (log.isWarnEnabled())

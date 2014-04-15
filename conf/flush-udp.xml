@@ -8,7 +8,7 @@
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
     <UDP/>
     <PING/>
-    <MERGE2/>
+    <MERGE3/>
     <FD_SOCK/>
     <FD_ALL/>
     <VERIFY_SUSPECT/>

@@ -59,7 +59,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
      * are executed:
      * <ol>
      * <li/>Group is {A,B,C}, A is the coordinator
-     * <li/>MERGE2 is removed from all members
+     * <li/>MERGE3 is removed from all members
      * <li/>VERIFY_SUSPECT is removed from all members
      * <li/>Everyone sends 5 unicast messages to everyone else
      * <li/>A VIEW(B,C) is injected into B and C
@@ -172,7 +172,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
     private static void modifyConfigs(JChannel ... channels) throws Exception {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
-            stack.removeProtocols("MERGE2", "VERIFY_SUSPECT", "FC");
+            stack.removeProtocols("MERGE3", "VERIFY_SUSPECT", "FC");
         }
     }
 

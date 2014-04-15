@@ -9,7 +9,6 @@
         xmlns="urn:org:jgroups"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
 
-
     <UDP mcast_addr="${jgroups.udp.mcast_addr:239.9.9.9}"
          mcast_port="${jgroups.udp.mcast_port:45588}"
          tos="8"
@@ -21,6 +20,7 @@
          max_bundle_timeout="30"
          enable_diagnostics="true"
          thread_naming_pattern="cl"
+         logical_addr_cache_max_size="1000"
 
          timer_type="new3"
          timer.min_threads="4"
@@ -43,9 +43,7 @@
          oob_thread_pool.keep_alive_time="5000"
          oob_thread_pool.rejection_policy="discard"/>
 
-    <PING timeout="5000"
-          num_initial_members="100"
-          break_on_coord_rsp="true" />
+    <PING break_on_coord_rsp="true" />
     <MERGE3 max_interval="30000"
             min_interval="10000"/>
     <FD_SOCK/>

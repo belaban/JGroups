@@ -267,7 +267,7 @@ public class SequencerFailoverTest extends BMNGRunner {
     /** Removes FD, FD_ALL, MERGEX protocols, sets SEQUENCER.threshold=0 */
     protected void adjustConfiguration(JChannel ... channels) {
         for(JChannel ch: channels) {
-            ch.getProtocolStack().removeProtocol(FD_ALL.class,FD.class,MERGE2.class,MERGE3.class, VERIFY_SUSPECT.class);
+            ch.getProtocolStack().removeProtocol(FD_ALL.class,FD.class,MERGE3.class, VERIFY_SUSPECT.class);
             SEQUENCER seq=(SEQUENCER)ch.getProtocolStack().findProtocol(SEQUENCER.class);
             seq.setThreshold(0); // permanent ack-mode
         }

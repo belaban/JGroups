@@ -3,12 +3,15 @@
 package org.jgroups.demos;
 
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.JChannel;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.View;
 
 import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.util.Vector;
+import java.util.ArrayList;
 
 
 
@@ -19,13 +22,13 @@ import java.util.Vector;
  * New members can be started; all existing members will update their graphical appearance to reflect
  * the new membership. When the coordinator itself is killed, another one will take over (the next in rank).<p>
  * A nice demo is to start a number of Topology instances at the same time. All of them will be blue (all are
- * coordinators since they don't find each other). Then the MERGE2 protocol sets in and only one will retain
+ * coordinators since they don't find each other). Then the MERGE3 protocol sets in and only one will retain
  * its coordinator role.
  * @todo Needs to be ported to Swing.
  * @author Bela Ban
  */
 public class Topology extends Frame implements WindowListener {
-    private final Vector members=new Vector();
+    private final java.util.List<Address> members=new ArrayList<Address>();
     private final Font myFont;
     private final FontMetrics fm;
     private final Color node_color=new Color(250, 220, 100);
@@ -46,14 +49,14 @@ public class Topology extends Frame implements WindowListener {
     }
 
 
-    public void addNode(Object member) {
-        Object tmp;
+    public void addNode(Address member) {
+        Address tmp;
         for(int i=0; i < members.size(); i++) {
-            tmp=members.elementAt(i);
+            tmp=members.get(i);
             if(member.equals(tmp))
                 return;
         }
-        members.addElement(member);
+        members.add(member);
         repaint();
     }
 
@@ -61,9 +64,9 @@ public class Topology extends Frame implements WindowListener {
     public void removeNode(Object member) {
         Object tmp;
         for(int i=0; i < members.size(); i++) {
-            tmp=members.elementAt(i);
+            tmp=members.get(i);
             if(member.equals(tmp)) {
-                members.removeElement(members.elementAt(i));
+                members.remove(members.get(i));
                 break;
             }
         }
@@ -106,7 +109,7 @@ public class Topology extends Frame implements WindowListener {
         g.setFont(myFont);
 
         for(int i=0; i < members.size(); i++) {
-            label=members.elementAt(i).toString();
+            label=members.get(i).toString();
             drawNode(g, x, y, label, NormalStyle);
             y+=50;
         }
@@ -139,6 +142,7 @@ public class Topology extends Frame implements WindowListener {
 
     public void windowClosing(WindowEvent e) {
         setVisible(false);
+        dispose();
         channel.close();
     }
 
@@ -166,8 +170,8 @@ public class Topology extends Frame implements WindowListener {
             }
 
             public void setInternalState(java.util.List<Address> mbrs) {
-                members.removeAllElements();
-                for(Address mbr: mbrs)
+                members.clear();
+                for(Address mbr : mbrs)
                     addNode(mbr);
                 coordinator=mbrs.size() <= 1 || (mbrs.size() > 1 && mbrs.iterator().next().equals(my_addr));
                 repaint();

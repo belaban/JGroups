@@ -2,13 +2,12 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.annotations.Property;
+import org.jgroups.util.Responses;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -194,34 +193,32 @@ public class JDBC_PING extends FILE_PING {
     }
 
     @Override
-    protected List<PingData> readAll(String clustername) {
+    protected void readAll(List<Address> members, String clustername, Responses responses) {
         final Connection connection = getConnection();
         if (connection != null) {
             try {
-                return readAll(connection, clustername);
+                readAll(connection, members, clustername, responses);
             } catch (SQLException e) {
                 log.error("Error reading JDBC_PING table", e);
-                return Collections.emptyList();
             } finally {
                 closeConnection(connection);
             }
-        } else {
-            return Collections.emptyList();
         }
     }
 
-    protected List<PingData> readAll(Connection connection, String clustername) throws SQLException {
+    protected void readAll(Connection connection, List<Address> members, String clustername, Responses rsps) throws SQLException {
         PreparedStatement ps = connection.prepareStatement(select_all_pingdata_sql);
         try {
             ps.setString(1, clustername);
             ResultSet resultSet = ps.executeQuery();
-            ArrayList<PingData> results = new ArrayList<PingData>();
             while (resultSet.next()) {
                 byte[] bytes = resultSet.getBytes(1);
-                PingData pingData =null;
+                PingData data =null;
                 try {
-                    pingData=deserialize(bytes);
-                    results.add(pingData);
+                    data=deserialize(bytes);
+                    if(members != null && !members.contains(data.getAddress()))
+                        continue;
+                    rsps.addResponse(data, false);
                 }
                 catch(Exception e) {
                     int row=resultSet.getRow();
@@ -233,8 +230,9 @@ public class JDBC_PING extends FILE_PING {
                         log.error("%s: failed removing row %d: %s; please delete it manually", local_addr, row, e);
                     }
                 }
+                if(local_addr != null && !local_addr.equals(data.getAddress()))
+                    addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
             }
-            return results;
         } finally {
             ps.close();
         }
@@ -311,7 +309,7 @@ public class JDBC_PING extends FILE_PING {
     
     protected void deleteSelf() throws SQLException {
         final String ownAddress = addressAsString(local_addr);
-        delete(group_addr, ownAddress);
+        delete(cluster_name, ownAddress);
     }
 
     

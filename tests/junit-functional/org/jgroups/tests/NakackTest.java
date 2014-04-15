@@ -117,7 +117,7 @@ public class NakackTest {
         Protocol[] protocols={
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
-          new MERGE2().setValue("min_interval", 1000).setValue("max_interval", 3000),
+          new MERGE3().setValue("min_interval", 1000).setValue("max_interval", 3000),
           new NAKACK2().setValue("use_mcast_xmit", false),
           new UNICAST3(),
           new STABLE().setValue("max_bytes", 50000),

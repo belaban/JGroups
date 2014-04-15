@@ -68,7 +68,7 @@ public class OrderingTest {
                               .setValue("thread_pool_rejection_policy", "run")
                               .setValue("thread_pool_queue_max_size", 100000),
                             new SHARED_LOOPBACK_PING(),
-                            new MERGE2(),
+                            new MERGE3(),
                             new FD_SOCK(),
                             new VERIFY_SUSPECT(),
                             new BARRIER(),

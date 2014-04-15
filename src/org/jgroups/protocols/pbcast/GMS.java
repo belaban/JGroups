@@ -47,7 +47,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
     @Property(description="Join timeout")
-    protected long join_timeout=5000;
+    protected long join_timeout=3000;
 
     @Property(description="Leave timeout")
     protected long leave_timeout=1000;
@@ -56,7 +56,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected long merge_timeout=5000; // time to wait for all MERGE_RSPS
 
     @Property(description="Number of join attempts before we give up and become a singleton. Zero means 'never give up'.")
-    protected long max_join_attempts=0;
+    protected long max_join_attempts=10;
 
     @Property(description="Print local address of this member after connect. Default is true")
     protected boolean print_local_addr=true;
@@ -195,6 +195,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public int getNumMembers() {return members.size();}
     public long getJoinTimeout() {return join_timeout;}
     public void setJoinTimeout(long t) {join_timeout=t;}
+    public GMS joinTimeout(long timeout) {this.join_timeout=timeout; return this;}
     public long getMergeTimeout() {return merge_timeout;}
     public void setMergeTimeout(long timeout) {merge_timeout=timeout;}
     public long getMaxJoinAttempts() {return max_join_attempts;}
@@ -354,7 +355,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
     public List<Integer> requiredDownServices() {
-        return Arrays.asList(Event.GET_DIGEST, Event.SET_DIGEST, Event.FIND_INITIAL_MBRS, Event.FIND_ALL_VIEWS);
+        return Arrays.asList(Event.GET_DIGEST, Event.SET_DIGEST, Event.FIND_INITIAL_MBRS, Event.FIND_MBRS);
     }
 
     public List<Integer> providedDownServices() {

@@ -27,7 +27,7 @@ public class ReplicatedTree extends ReceiverAdapter {
     public static final String SEPARATOR="/";
     final static int INDENT=4;
     Node root=new Node(SEPARATOR, SEPARATOR, null, null);
-    final Vector<ReplicatedTreeListener> listeners=new Vector<ReplicatedTreeListener>();
+    final List<ReplicatedTreeListener> listeners=new ArrayList<ReplicatedTreeListener>();
     JChannel channel=null;
     String groupname="ReplicatedTree-Group";
     final List<Address> members=new ArrayList<Address>();
@@ -138,12 +138,12 @@ public class ReplicatedTree extends ReceiverAdapter {
 
     public void addReplicatedTreeListener(ReplicatedTreeListener listener) {
         if(!listeners.contains(listener))
-            listeners.addElement(listener);
+            listeners.add(listener);
     }
 
 
     public void removeReplicatedTreeListener(ReplicatedTreeListener listener) {
-        listeners.removeElement(listener);
+        listeners.remove(listener);
     }
 
 
@@ -173,7 +173,7 @@ public class ReplicatedTree extends ReceiverAdapter {
 
 		//Changes done by <aos>
 		//if true, propagate action to the group
-        if(send_message == true) {
+        if(send_message) {
             if(channel == null) {
                 if(log.isErrorEnabled()) log.error("channel is null, cannot broadcast PUT request");
                 return;
@@ -211,7 +211,7 @@ public class ReplicatedTree extends ReceiverAdapter {
 
         //Changes done by <aos>
         //if true, propagate action to the group
-        if(send_message == true) {
+        if(send_message) {
 
             if(channel == null) {
                 if(log.isErrorEnabled()) log.error("channel is null, cannot broadcast PUT request");
@@ -245,7 +245,7 @@ public class ReplicatedTree extends ReceiverAdapter {
         }
 		//Changes done by <aos>
 		//if true, propagate action to the group
-        if(send_message == true) {
+        if(send_message) {
             if(channel == null) {
                 if(log.isErrorEnabled()) log.error("channel is null, cannot broadcast REMOVE request");
                 return;
@@ -276,7 +276,7 @@ public class ReplicatedTree extends ReceiverAdapter {
         }
 		//Changes done by <aos>
 		//if true, propagate action to the group
-        if(send_message == true) {
+        if(send_message) {
             if(channel == null) {
                 if(log.isErrorEnabled()) log.error("channel is null, cannot broadcast REMOVE request");
                 return;
@@ -390,7 +390,7 @@ public class ReplicatedTree extends ReceiverAdapter {
         Map children;
 
         children=root.getChildren();
-        if(children != null && children.size() > 0) {
+        if(children != null && !children.isEmpty()) {
             Collection nodes=children.values();
             for(Iterator it=nodes.iterator(); it.hasNext();) {
                 ((Node)it.next()).print(sb, indent);
@@ -571,10 +571,6 @@ public class ReplicatedTree extends ReceiverAdapter {
 
     public void viewAccepted(View new_view) {
         List<Address> new_mbrs=new_view.getMembers();
-
-        // todo: if MergeView, fetch and reconcile state from coordinator
-        // actually maybe this is best left up to the application ? we just notify them and let the appl handle it ?
-
         if(new_mbrs != null) {
             notifyViewChange(new_view);
             members.clear();
@@ -605,7 +601,7 @@ public class ReplicatedTree extends ReceiverAdapter {
         String name;
         StringBuilder sb=null;
 
-        if(fqn == null || fqn.equals(SEPARATOR) || "".equals(fqn))
+        if(fqn == null || fqn.equals(SEPARATOR) || fqn != null && fqn.isEmpty())
             return curr;
 
         sb=new StringBuilder();
@@ -639,7 +635,7 @@ public class ReplicatedTree extends ReceiverAdapter {
         Node n=findParentNode(fqn, sh, false);
         String child_name=sh.getValue();
 
-        if(fqn == null || fqn.equals(SEPARATOR) || "".equals(fqn))
+        if(fqn == null || fqn.equals(SEPARATOR) || fqn != null && fqn.isEmpty())
             return root;
 
         if(n == null || child_name == null)
@@ -651,22 +647,22 @@ public class ReplicatedTree extends ReceiverAdapter {
 
     void notifyNodeAdded(String fqn) {
         for(int i=0; i < listeners.size(); i++)
-            listeners.elementAt(i).nodeAdded(fqn);
+            listeners.get(i).nodeAdded(fqn);
     }
 
     void notifyNodeRemoved(String fqn) {
         for(int i=0; i < listeners.size(); i++)
-            listeners.elementAt(i).nodeRemoved(fqn);
+            listeners.get(i).nodeRemoved(fqn);
     }
 
     void notifyNodeModified(String fqn) {
         for(int i=0; i < listeners.size(); i++)
-            listeners.elementAt(i).nodeModified(fqn);
+            listeners.get(i).nodeModified(fqn);
     }
 
     void notifyViewChange(View v) {
         for(int i=0; i < listeners.size(); i++)
-            listeners.elementAt(i).viewChange(v);
+            listeners.get(i).viewChange(v);
     }
 
     /** Generates NodeAdded notifications for all nodes of the tree. This is called whenever the tree is
@@ -757,7 +753,7 @@ public class ReplicatedTree extends ReceiverAdapter {
 
             if(child_name == null) return null;
             if(children == null) children=new TreeMap<String,Node>();
-            child=(Node)children.get(child_name);
+            child=children.get(child_name);
             if(child != null)
                 child.setData(key, value);
             else {
@@ -769,7 +765,7 @@ public class ReplicatedTree extends ReceiverAdapter {
 
 
         Node getChild(String child_name) {
-            return child_name == null? null : children == null? null : (Node)children.get(child_name);
+            return child_name == null? null : children == null? null : children.get(child_name);
         }
 
         Map<String,Node> getChildren() {
@@ -921,26 +917,9 @@ public class ReplicatedTree extends ReceiverAdapter {
 
 
     public static void main(String[] args) {
-
-
         ReplicatedTree tree=null;
         HashMap m=new HashMap();
-        String props;
-
-        props="UDP(mcast_addr=224.0.0.36;mcast_port=55566;ip_ttl=32;" +
-                "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-                "PING(timeout=2000;num_initial_members=3):" +
-                "MERGE2(min_interval=5000;max_interval=10000):" +
-                "FD_SOCK:" +
-                "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.STABLE(desired_avg_gossip=20000):" +
-                "pbcast.NAKACK(retransmit_timeout=600,1200,2400,4800):" +
-                "UNICAST(timeout=5000):" +
-                "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
-                "pbcast.GMS(join_timeout=5000;" +
-                "print_local_addr=true):" +
-                "pbcast.STATE_TRANSFER";
-        // "PERF(details=true)";
+        String props=null;
 
         try {
 
@@ -955,14 +934,15 @@ public class ReplicatedTree extends ReceiverAdapter {
             tree.put("/a/b1/chat5", null);
             System.out.println(tree);
             m.put("name", "Bela Ban");
-            m.put("age", new Integer(36));
+            m.put("age",36);
             m.put("cube", "240-17");
             tree.put("/a/b/c", m);
             System.out.println("info for for \"/a/b/c\" is " + tree.print("/a/b/c"));
-            tree.put("/a/b/c", "age", new Integer(37));
+            tree.put("/a/b/c", "age",37);
             System.out.println("info for for \"/a/b/c\" is " + tree.print("/a/b/c"));
             tree.remove("/a/b");
             System.out.println(tree);
+            tree.stop();
         }
         catch(Exception ex) {
             System.err.println(ex);

@@ -92,7 +92,7 @@ public class ProgrammaticApiTest {
     static Protocol[] createProtocols() {
         return new Protocol[] {
                 new PING(),
-                new MERGE2(),
+                new MERGE3(),
                 new FD_SOCK(),
                 new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000),
                 new VERIFY_SUSPECT(),

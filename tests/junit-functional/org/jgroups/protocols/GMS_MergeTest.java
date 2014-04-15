@@ -40,8 +40,8 @@ public class GMS_MergeTest {
 
     protected static Protocol[] modify(Protocol[] retval) {
         for(Protocol prot: retval) {
-            if(prot instanceof Discovery)
-                ((Discovery)prot).setTimeout(1000);
+            if(prot instanceof GMS)
+                ((GMS)prot).setJoinTimeout(1000);
             if(prot instanceof STABLE)
                 prot.setValue("stability_delay", 200);
             if(prot instanceof NAKACK2) {

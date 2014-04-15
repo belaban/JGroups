@@ -140,7 +140,7 @@ public class ConfiguratorTest {
                 "max_bundle_timeout=30;oob_thread_pool.queue_enabled=false;oob_thread_pool.min_threads=2;" +
                 "thread_pool.queue_max_size=100):" +
                 "PING(num_initial_members=3;timeout=2000):" +
-                "MERGE2(min_interval=5000;max_interval=10000):" +
+                "MERGE3(min_interval=5000;max_interval=10000):" +
                 "FD_SOCK:" +
                 "FD(max_tries=3;timeout=2000):" +
                 "VERIFY_SUSPECT(timeout=1500):" +
@@ -158,7 +158,7 @@ public class ConfiguratorTest {
         System.out.println("config:\n" + ret);
         Assert.assertEquals(14, ret.size());
 
-        config="UDP(mcast_addr=ff18:eb72:479f::2:3;mcast_port=2453):pbcast.FD:FRAG(frag_size=2292):FD_ALL(s=22;d=33):MERGE2(a=22)";
+        config="UDP(mcast_addr=ff18:eb72:479f::2:3;mcast_port=2453):pbcast.FD:FRAG(frag_size=2292):FD_ALL(s=22;d=33):MERGE3(a=22)";
         ret=Configurator.parseConfigurations(config);
         System.out.println("config:\n" + ret);
         Assert.assertEquals(5, ret.size());

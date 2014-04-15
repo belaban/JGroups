@@ -7,13 +7,15 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.PingData;
 import org.jgroups.protocols.TUNNEL.StubReceiver;
+import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.net.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketException;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -157,11 +159,11 @@ public class RouterStub implements Comparable<RouterStub> {
      * Register this process with the router under <code>group</code>.
      * @param group The name of the group under which to register
      */
-    public void connect(String group, Address addr, String logical_name, List<PhysicalAddress> phys_addrs) throws Exception {
+    public void connect(String group, Address addr, String logical_name, PhysicalAddress phys_addr) throws Exception {
         lock.lock();
         try {
             _doConnect();
-            GossipData request=new GossipData(GossipRouter.CONNECT, group, addr, logical_name, phys_addrs);
+            GossipData request=new GossipData(GossipRouter.CONNECT, group, addr, logical_name, phys_addr);
             request.writeTo(output);
             output.flush();
             byte result = input.readByte();
@@ -209,9 +211,7 @@ public class RouterStub implements Comparable<RouterStub> {
                 connectionStateChanged(ConnectionStatus.CONNECTION_ESTABLISHED);
             }
             catch(Exception e) {
-                Util.close(sock);
-                Util.close(input);
-                Util.close(output);
+                Util.close(sock, input, output);
                 connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
                 throw new Exception("Could not connect to " + getGossipRouterAddress() , e);
             }
@@ -284,8 +284,7 @@ public class RouterStub implements Comparable<RouterStub> {
     }
 
 
-    public List<PingData> getMembers(final String group) throws Exception {
-        List<PingData> retval=new ArrayList<PingData>();
+    public void getMembers(final String group, Responses rsps) throws Exception {
         lock.lock();
         try {
             if(!isConnected() || input == null) throw new Exception ("not connected");
@@ -301,10 +300,9 @@ public class RouterStub implements Comparable<RouterStub> {
             for(int i=0; i < num_rsps; i++) {
                 PingData rsp=new PingData();
                 rsp.readFrom(input);
-                retval.add(rsp);
+                rsps.addResponse(rsp, false);
             }
-            return retval;
-        }       
+        }
         catch(Exception e) {           
             connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
             throw new Exception("Connection to " + getGossipRouterAddress() + " broken. Could not send GOSSIP_GET request", e);

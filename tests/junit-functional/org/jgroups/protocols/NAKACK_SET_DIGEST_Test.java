@@ -34,7 +34,7 @@ public class NAKACK_SET_DIGEST_Test {
 
         TP transport=new TP() {
             public boolean supportsMulticasting() {return false;}
-            public void sendMulticast(byte[] data, int offset, int length) throws Exception {}
+            public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {}
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
             public String getInfo() {return null;}
             public Object down(Event evt) {return null;}
@@ -57,14 +57,14 @@ public class NAKACK_SET_DIGEST_Test {
 
         System.out.println("setting d2:");
         nak.down(new Event(Event.SET_DIGEST, d2));
-        Digest digest=(Digest)nak.down(new Event(Event.GET_DIGEST));
+        Digest digest=(Digest)nak.down(Event.GET_DIGEST_EVT);
         System.out.println("digest = " + digest);
         assert digest.capacity() == 3;
         assert digest.containsAll(a, b, c);
 
         System.out.println("setting d1:");
         nak.down(new Event(Event.SET_DIGEST, d1));
-        digest=(Digest)nak.down(new Event(Event.GET_DIGEST));
+        digest=(Digest)nak.down(Event.GET_DIGEST_EVT);
         System.out.println("digest = " + digest);
         assert digest.capacity() == 3; // https://jira.jboss.org/jira/browse/JGRP-1060
         assert digest.containsAll(a, b, c);

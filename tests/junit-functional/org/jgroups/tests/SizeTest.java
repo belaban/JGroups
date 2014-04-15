@@ -41,53 +41,26 @@ public class SizeTest {
         _testSize(new PingHeader(PingHeader.GET_MBRS_REQ).clusterName("bla"));
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP));
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP).clusterName(null));
+        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP).clusterName("cluster"));
     }
  
 
     public static void testPingData() throws Exception {
         PingData data;
-        final Address own=org.jgroups.util.UUID.randomUUID();
-        final Address coord=org.jgroups.util.UUID.randomUUID();
-        final PhysicalAddress physical_addr_1=new IpAddress("127.0.0.1", 7500);
-        final PhysicalAddress physical_addr_2=new IpAddress("192.168.1.5", 6000);
-        final PhysicalAddress physical_addr_3=new IpAddress("192.134.2.1", 6655);
-        final Address self=Util.createRandomAddress();
+        final Address a=Util.createRandomAddress("A");
+        final PhysicalAddress physical_addr=new IpAddress("127.0.0.1", 7500);
 
-        data=new PingData(null, null, false);
+        data=new PingData(null, false);
         _testSize(data);
 
-        data=new PingData(own, View.create(coord, 22, coord, Util.createRandomAddress()), false);
+        data=new PingData(a, true);
         _testSize(data);
 
-        data=new PingData(null, null, false, "node-1", null);
+        data=new PingData(a, true, "A", physical_addr).coord(true);
         _testSize(data);
 
-        data=new PingData(own, View.create(coord, 22, coord), false, "node-1", null);
-        _testSize(data);
-
-        data=new PingData(own, View.create(coord, 22, coord), false, "node-1", new ArrayList<PhysicalAddress>(7));
-        _testSize(data);
-
-        data=new PingData(null, null, false, "node-1", new ArrayList<PhysicalAddress>(7));
-        _testSize(data);
-
-        List<PhysicalAddress> list=new ArrayList<PhysicalAddress>();
-        list.add(physical_addr_1);
-        list.add(physical_addr_2);
-        list.add(physical_addr_3);
-        data=new PingData(null, null, false, "node-1", list);
-        _testSize(data);
-
-        list.clear();
-        list.add(new IpAddress("127.0.0.1", 7500));
-        data=new PingData(null, null, false, "node-1", list);
-        _testSize(data);
-
-        View view=View.create(coord, 322649, coord, own, UUID.randomUUID());
-        data.setView(view);
-        _testSize(data);
-
-         data=new PingData(self, View.create(self, 1, self), true, "logical-name", null);
+        data=new PingData(a, true, "A", physical_addr).coord(true)
+          .mbrs(Arrays.asList(Util.createRandomAddress("A"), Util.createRandomAddress("B")));
         _testSize(data);
     }
 
@@ -109,32 +82,22 @@ public class SizeTest {
         UUID.add(coord, "coord");
 
         final PhysicalAddress physical_addr_1=new IpAddress("127.0.0.1", 7500);
-        final PhysicalAddress physical_addr_2=new IpAddress("192.168.1.5", 6000);
-        final PhysicalAddress physical_addr_3=new IpAddress("192.134.2.1", 6655);
 
         _testSize(new GossipData());
 
         data=new GossipData((byte)1);
         _testSize(data);
 
-        data=new GossipData((byte)1, "DemoCluster", own, (List<Address>)null, null);
+        data=new GossipData((byte)1, "DemoCluster", own, (List<Address>)null, (PhysicalAddress)null);
         _testSize(data);
 
-        data=new GossipData((byte)1, "DemoCluster", own, Arrays.asList(own, coord), null);
+        data=new GossipData((byte)1, "DemoCluster", own, Arrays.asList(own, coord), (PhysicalAddress)null);
         _testSize(data);
 
-        data=new GossipData((byte)1, "DemoCluster", own, Arrays.asList(own, coord),
-                            Arrays.asList(physical_addr_1, physical_addr_2, physical_addr_3));
+        data=new GossipData((byte)1, "DemoCluster", own, Arrays.asList(own, coord), physical_addr_1);
         _testSize(data);
 
-        List<PhysicalAddress> list=new ArrayList<PhysicalAddress>();
-        list.add(physical_addr_1);
-        list.add(physical_addr_2);
-        list.add(physical_addr_3);
-        data=new GossipData((byte)1, "DemoCluster", own, Arrays.asList(own, coord), list); 
-        _testSize(data);
-
-        data=new GossipData((byte)1, "demo", own, "logical_name", null);
+        data=new GossipData((byte)1, "demo", own, "logical_name", (PhysicalAddress)null);
         _testSize(data);
 
         data=new GossipData((byte)1, "demo", own, new byte[]{'b', 'e', 'l', 'a'});
@@ -220,7 +183,7 @@ public class SizeTest {
 
         // check that IpAddress is correctly sized in FD_SOCK.FdHeader
         hdr = new FD_SOCK.FdHeader(FD_SOCK.FdHeader.I_HAVE_SOCK, new IpAddress("127.0.0.1", 4567), 
-				   new IpAddress("127.0.0.1", 4567));
+                                   new IpAddress("127.0.0.1", 4567));
         _testSize(hdr) ;
     }
 
@@ -549,8 +512,7 @@ public class SizeTest {
         String logical_name="A";
         hdr=MERGE3.MergeHeader.createInfo(view_id, logical_name, null);
         _testSize(hdr);
-        List<PhysicalAddress> physical_addr=new ArrayList<PhysicalAddress>();
-        physical_addr.add(new IpAddress(5002));
+        PhysicalAddress physical_addr=new IpAddress(5002);
         hdr=MERGE3.MergeHeader.createInfo(view_id, logical_name, physical_addr);
         _testSize(hdr);
         hdr=MERGE3.MergeHeader.createViewRequest();

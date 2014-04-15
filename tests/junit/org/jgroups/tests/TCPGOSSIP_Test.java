@@ -184,11 +184,11 @@ public class TCPGOSSIP_Test {
         JChannel ch=new JChannel(new TCP().setValue("use_send_queues",true)
                                    .setValue("sock_conn_timeout",300).setValue("bind_addr", bind_addr),
                                  gossip,
-                                 new MERGE2().setValue("min_interval",1000).setValue("max_interval",3000),
+                                 new MERGE3().setValue("min_interval",1000).setValue("max_interval",3000),
                                  new FD().setValue("timeout",2000).setValue("max_tries",2),
                                  new VERIFY_SUSPECT(),
                                  new NAKACK2().setValue("use_mcast_xmit",false),
-                                 new UNICAST3(),new STABLE(),new GMS());
+                                 new UNICAST3(), new STABLE(), new GMS().joinTimeout(1000));
         if(name != null)
             ch.setName(name);
         return ch;

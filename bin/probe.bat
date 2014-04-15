@@ -4,14 +4,4 @@ REM Discovers all UDP-based members running on a certain mcast address (use -hel
 REM Probe [-help] [-addr <addr>] [-port <port>] [-ttl <ttl>] [-timeout <timeout>]
 
 
-set CLASSPATH=..\classes
-
-set LIB=..\lib
-
-set LIBS=%LIB%\log4j.jar;
-
-
-set CP=%CLASSPATH%;%LIBS%
-
-
-java -cp %CP% org.jgroups.tests.Probe %*
+jgroups.bat org.jgroups.tests.Probe %*

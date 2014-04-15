@@ -291,7 +291,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
             try {
                 punchHoleFor(requester);
                 closeBarrierAndSuspendStable();
-                digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST));
+                digest=(Digest)down_prot.down(Event.GET_DIGEST_EVT);
             }
             catch(Throwable t) {
                 sendException(requester, t);

@@ -1,14 +1,17 @@
 package org.jgroups.protocols;
 
 
+import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.AsciiString;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.Collection;
 import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
@@ -165,12 +168,22 @@ public class UDP extends TP {
         return sb.toString();
     }
 
-    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
+    public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {
         if(ip_mcast && mcast_addr != null) {
             _send(mcast_addr.getIpAddress(), mcast_addr.getPort(), true, data, offset, length);
         }
         else {
-            sendToAllPhysicalAddresses(data, offset, length);
+            if(!isSingleton())
+                sendToMembers(members, data, offset, length);
+            else {
+                Collection<Address> mbrs=members;
+                if(cluster_name != null && up_prots != null) {
+                    ProtocolAdapter prot_ad=(ProtocolAdapter)up_prots.get(cluster_name);
+                    if(prot_ad != null)
+                        mbrs=prot_ad.getMembers();
+                }
+                sendToMembers(mbrs, data, offset, length);
+            }
         }
     }
 
@@ -184,25 +197,6 @@ public class UDP extends TP {
         // using the datagram socket to send multicasts or unicasts (https://issues.jboss.org/browse/JGRP-1765)
         if(sock != null)
             sock.send(packet);
-//        if(mcast) {
-//            if(mcast_sock != null) {
-//                try {
-//                    mcast_sock.send(packet);
-//                }
-//                // solve reconnection issue with Windows (https://jira.jboss.org/browse/JGRP-1254)
-//                catch(NoRouteToHostException e) {
-//                    mcast_sock.setInterface(mcast_sock.getInterface());
-//                }
-//                catch(SocketException sock_ex) {
-//                }
-//                catch(IOException io_ex) { // https://issues.jboss.org/browse/JGRP-1804
-//                    if(bind_addr != null)
-//                        mcast_sock.setInterface(bind_addr);
-//                }
-//            }
-//        }
-//        else if(sock != null)
-//            sock.send(packet);
     }
 
 
@@ -226,22 +220,12 @@ public class UDP extends TP {
             destroySockets();
             throw ex;
         }
-        ucast_receiver=new PacketReceiver(sock,
-                                          "unicast receiver",
-                                          new Runnable() {
-                                              public void run() {
-                                                  closeUnicastSocket();
-                                              }
-                                          });
+        ucast_receiver=new PacketReceiver(sock, "unicast receiver",
+                                          new Runnable() {public void run() {closeUnicastSocket();}});
 
         if(ip_mcast)
-            mcast_receiver=new PacketReceiver(mcast_sock,
-                                              "multicast receiver",
-                                              new Runnable() {
-                                                  public void run() {
-                                                      closeMulticastSocket();
-                                                  }
-                                              });
+            mcast_receiver=new PacketReceiver(mcast_sock, "multicast receiver",
+                                              new Runnable() {public void run() {closeMulticastSocket();}});
     }
 
 

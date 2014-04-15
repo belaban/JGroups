@@ -1,0 +1,135 @@
+
+Optimizations for cloud based discovery stores
+==============================================
+Author: Bela Ban, 2014
+JIRA: https://issues.jboss.org/browse/JGRP-1841
+
+Goals
+-----
+- Reduce the number of discovery calls to the cloud store (HTTP/REST based, potentially slow and charged per call/volume)
+  - Use of a single file for all members rather than 1 file per member
+    - Reading a single file is faster than having to read N files
+    - We used ~35 bytes / member in Google Cloud Store, so for 1000 nodes this could be ~35-50 KB
+- Fast startup via bootstrap file: contains UUIDs, logical names and IP addresses:ports of all members
+
+Members file
+------------
+- Located under <location>/<clustername>
+- Named after the coordinator: '<UUID of coord>.list'
+- If we have multiple coordinators (e.g. on a partition), multiple x.list files may exist
+- Structure: <Logical name> <UUID> <IP address>:<port> <coord>
+  - Entries are separated by white space (this accommodates IPv6 addresses, too)
+  - Example:
+       A                                      1  192.168.1.5:7800                T
+       B   0a6c59fc-7ee0-acd2-2d4b-cf7dd59adb97  192.168.1.5:4569                F
+       C                                      2  fe80::21b:21ff:fe07:a3b0:4500   T
+    (The last semicolon separates the IP address from the port, so the port is 4500)
+  - This is just an example; usually all addresses would either be IPv4 or IPv6, but not mixed.
+
+Overview
+--------
+- When a new member starts, it reads the members list and adds all of the information to its local cache,
+  then sends a JOIN request to the coordinator (which is marked with a T in the file)
+- When the coordinator changes, the new coordinator writes the file again, marking itself with a T.
+  The old coord removes its file.
+- When a member joins which is not listed, it multicasts its information (UUID, logical name and IP address:port) to
+  all members
+  - When the coord receives this message, it adds the new member to the members file. New joiners then have this info
+    available when reading the file
+- When the information for a given member P is not available, the information is fetched from the coordinator (or
+  from the cloud store)
+
+
+Scenarios:
+----------
+
+
+Initial start with bootstrap file
+---------------------------------
+- The idea is that all members that are going to be started are listed in a bootstap file (see above)
+  - The name of the bootstrap file would be the first coord's UUID, e.g. "1.list".
+  - Since all of the information for all members is listed, a new member doesn't need to run discovery as the
+    information of all members is already present in its local cache
+- The bootstrap file can be generated: e.g. after starting 1000 hosts in a cloud, all IP addresses can be fetched
+  - Example (Google Compute Engine): gcutil listinstances
+- Now members are started according to the order in the bootstrap file
+  - For each member,
+    - TP.bind_port is set
+    - The logical name is set: JChannel.name(String logical_name)
+    - The UUID is set
+      - This can be done via an AddressGenerator seeded with the *initial* UUID (e.g. 3)
+      - After setting the initial UUID, subsequent UUIDs are *random* as UUIDs cannot be reused (e.g. on channel
+        disconnect and subsequent reconnect)
+- When a new joiner doesn't find its information in the file, it multicasts its information and the coord adds it to
+  the members file (see section below on new member not in members file)
+- When a new joiner finds multiple members files (e.g. in a partition, see below), it reads all of them and picks a
+  random coordinator from all of the coordinators found. (Alternative: pick a random file and only add that info)
+- When a new member starts up, reads the members file and finds that it itself is the coordinator, it adds the
+  information on the members to its local cache, but returns an empty Responses object so the node becomes
+  a singleton member (and therefore coordinator)
+
+
+Initial start without bootstrap file
+------------------------------------
+- When a member P starts and doesn't find a members file, if it turns out to become the coordinator,
+  it creates a new file P.list (where P is the UUID) and adds its own information
+- When P does find a members file, the next steps are the same as above (initial start with bootstrap file)
+
+
+Coordinator change
+------------------
+- If we have {A,B,C,D}, and A crashes or leaves, and B becomes the new coordinator, then
+  - A removes A.list (including info on A,B,C,D) by means of a shutdown hook (kill -9 requires manual cleanup)
+    or handling of a graceful leave
+  - B creates B.list (including B,C,D) and marks itself as coordinator
+- If a coordinator A ceases to be coordinator in a MergeView (someone else became coord, e.g. after a partition healed)
+  - A does *not* remove A.list (B will do this, see below in merge handling)
+- This is different from a partition (split), see below (partition and merge)
+
+
+Member leaves or crashes
+------------------------
+- When P leaves (P is not a coord, otherwise go to coordinator change above), the current coord (A)
+  writes a new A.list excluding P
+
+
+New member P is not in members file
+-----------------------------------
+- P multicasts (IP multicast if UDP is used or N-1 unicasts if TCP is used) an INFO message containing its
+  UUID, logical name and IP address:port
+
+
+Reception of INFO message from P
+--------------------------------
+- Everyone adds P's information to their local caches
+- If the current member A is the coord:
+  - If P was not in the local cache -> write A.list including P
+
+
+Information for target P is not in local cache
+----------------------------------------------
+- When a message is to be sent to P and P is not in the local cache, the information for P is fetched from the
+  current coordinator (A).
+  - Alternative: read it from the members file ? Advantage is that we can read the entire file and thus
+    possibly suppress further fetches from the coord for other missing members.
+
+
+Partition and subsequent merge
+------------------------------
+- Say we have {A,B,C,X,Y,Z}. A is the coordinator and A.list contains information on A,B,C,X,Y,Z
+- Then we have 2 partitions {A,B,C} and {X,Y,Z}
+- A removes information on X,Y,Z from A.list. (Same as if X,Y,Z left, see above).
+- X (the new coord of the {X,Y,Z} partition) creates X.list and adds information on X,Y,Z
+- Both MERGE2 and MERGE3 need to read all *.list files, e.g. A.list and X.list to see if partitions exist
+
+
+Merge of {A,B,C}, {M,N,O} and {X,Y,Z}
+-------------------------------------
+- A is the new coordinator of the merged group, M and X are the old coordinators
+- A reads M.list and X.list and merges the contents back into A.list, then deletes M.list and X.list
+- Everyone clears the 'removable' flag from their cache entries for all members in the merge-view
+  (done automatically by TP's view change handling)
+- When target members are not in the local cache, they can be fetched either from the coord or via reading
+  the members file (see members not in member list above)
+
+

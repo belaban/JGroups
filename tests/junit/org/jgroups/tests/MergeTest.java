@@ -2,7 +2,6 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
-import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.MERGE3;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
@@ -93,7 +92,7 @@ public class MergeTest extends ChannelTestBase {
             if(nakack != null)
                 nakack.setLogDiscardMessages(false);
 
-            stack.removeProtocol(MERGE2.class,MERGE3.class);
+            stack.removeProtocol(MERGE3.class);
 
             tmp.connect(cluster_name);
             retval[i]=tmp;

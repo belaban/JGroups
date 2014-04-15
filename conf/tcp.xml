@@ -38,11 +38,10 @@
          oob_thread_pool.queue_max_size="100"
          oob_thread_pool.rejection_policy="discard"/>
                          
-    <TCPPING timeout="3000"
+    <TCPPING async_discovery="true"
              initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
-             port_range="1"
-             num_initial_members="10"/>
-    <MERGE2  min_interval="10000"
+             port_range="1"/>
+    <MERGE3  min_interval="10000"
              max_interval="30000"/>
     <FD_SOCK/>
     <FD timeout="3000" max_tries="3" />
@@ -53,8 +52,7 @@
     <UNICAST3 />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="4M"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="3000"
-
+    <pbcast.GMS print_local_addr="true" join_timeout="2000"
                 view_bundling="true"/>
     <MFC max_credits="2M"
          min_threshold="0.4"/>

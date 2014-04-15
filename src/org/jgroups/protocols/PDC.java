@@ -67,9 +67,8 @@ public class PDC extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.GET_PHYSICAL_ADDRESS:
-                Address logical_addr=(Address)evt.getArg();
                 Object addr=down_prot.down(evt);
-                return addr != null? addr : cache.get(logical_addr);
+                return addr != null? addr : cache.get((Address)evt.getArg());
 
             case Event.GET_PHYSICAL_ADDRESSES:
                 Collection<PhysicalAddress> addrs=(Collection<PhysicalAddress>)down_prot.down(evt);

@@ -28,7 +28,7 @@ public class SHARED_LOOPBACK extends TP {
     @ManagedAttribute(description="The current view",writable=false)
     protected volatile View    view;
 
-    protected volatile boolean is_server=false;
+    protected volatile boolean is_server=false, is_coord=false;
 
     /** Map of cluster names and address-protocol mappings. Used for routing messages to all or single members */
     private static final ConcurrentMap<AsciiString,Map<Address,SHARED_LOOPBACK>> routing_table=new ConcurrentHashMap<AsciiString,Map<Address,SHARED_LOOPBACK>>();
@@ -40,6 +40,7 @@ public class SHARED_LOOPBACK extends TP {
 
     public View    getView()  {return view;}
     public boolean isServer() {return is_server;}
+    public boolean isCoord()  {return is_coord;}
 
     public String toString() {
         return "SHARED_LOOPBACK(local address: " + local_addr + ')';
@@ -57,11 +58,11 @@ public class SHARED_LOOPBACK extends TP {
     }
 
 
-    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
-        Map<Address,SHARED_LOOPBACK> dests=routing_table.get(cluster_name);
+    public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {
+        Map<Address,SHARED_LOOPBACK> dests=routing_table.get(this.cluster_name);
         if(dests == null) {
             if(log.isTraceEnabled())
-                log.trace("no destination found for " + cluster_name);
+                log.trace("no destination found for " + this.cluster_name);
             return;
         }
         for(Map.Entry<Address,SHARED_LOOPBACK> entry: dests.entrySet()) {
@@ -79,32 +80,18 @@ public class SHARED_LOOPBACK extends TP {
     }
 
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-        Map<Address,SHARED_LOOPBACK> dests=routing_table.get(cluster_name);
-        if(dests == null) {
-            if(log.isTraceEnabled())
-                log.trace("no destination found for " + cluster_name);
-            return;
-        }
-        SHARED_LOOPBACK target=dests.get(dest);
-        if(target == null) {
-            if(log.isTraceEnabled())
-                log.trace("destination address " + dest + " not found");
-            return;
-        }
-        target.receive(local_addr, data, offset, length);
+        sendToSingleMember(dest, data, offset, length);
     }
 
     protected void sendToSingleMember(Address dest, byte[] buf, int offset, int length) throws Exception {
         Map<Address,SHARED_LOOPBACK> dests=routing_table.get(cluster_name);
         if(dests == null) {
-            if(log.isTraceEnabled())
-                log.trace("no destination found for " + cluster_name);
+            log.trace("no destination found for " + cluster_name);
             return;
         }
         SHARED_LOOPBACK target=dests.get(dest);
         if(target == null) {
-            if(log.isTraceEnabled())
-                log.trace("destination address " + dest + " not found");
+            log.trace("destination address " + dest + " not found");
             return;
         }
         target.receive(local_addr, buf, offset, length);
@@ -120,9 +107,7 @@ public class SHARED_LOOPBACK extends TP {
             for(Map.Entry<Address,SHARED_LOOPBACK> entry: mbrs.entrySet()) {
                 Address addr=entry.getKey();
                 SHARED_LOOPBACK slp=entry.getValue();
-                View tmp_view=slp.getView();
-                PingData data=new PingData(addr, tmp_view, tmp_view != null? tmp_view.getViewId() : null,
-                                           slp.isServer(), UUID.get(addr), null);
+                PingData data=new PingData(addr, slp.isServer(), UUID.get(addr), null).coord(slp.isCoord());
                 rsps.add(data);
             }
         }
@@ -161,6 +146,8 @@ public class SHARED_LOOPBACK extends TP {
             case Event.VIEW_CHANGE:
             case Event.TMP_VIEW:
                 view=(View)evt.getArg();
+                Address[] mbrs=((View)evt.getArg()).getMembersRaw();
+                is_coord=local_addr != null && mbrs != null && mbrs.length > 0 && local_addr.equals(mbrs[0]);
                 break;
             case Event.GET_PING_DATA:
                 return getDiscoveryResponsesFor((String)evt.getArg()); // don't pass further down
@@ -171,7 +158,7 @@ public class SHARED_LOOPBACK extends TP {
 
     public void stop() {
         super.stop();
-        is_server=false;
+        is_server=is_coord=false;
         unregister(cluster_name, local_addr);
     }
 

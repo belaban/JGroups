@@ -16,4 +16,4 @@ set LOG=-Dlog4j.configuration=file:c:\log4j.properties
 
 set FLAGS=-Djava.net.preferIPv4Stack=true -Djgroups.bind_addr=192.168.1.5 -Djgroups.tcpping.initial_hosts=127.0.0.1[7800]
 
-java -Ddisable_canonicalization=false -classpath %CP% %LOG% %VMFLAGS% %FLAGS% -Dcom.sun.management.jmxremote -Dresolve.dns=false org.jgroups.%*
+java -Ddisable_canonicalization=false -classpath %CP% %LOG% %VMFLAGS% %FLAGS% -Dcom.sun.management.jmxremote -Dresolve.dns=false %*

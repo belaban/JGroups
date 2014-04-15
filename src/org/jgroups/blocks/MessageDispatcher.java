@@ -273,7 +273,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
                                                                  RequestOptions options,
                                                                  FutureListener<RspList<T>> listener) throws Exception {
         GroupRequest<T> req=cast(dests,msg,options,false, listener);
-        return req != null? req : new NullFuture<RspList>(new RspList());
+        return req != null? req : new NullFuture<RspList<T>>(new RspList<T>());
     }
 
     /**

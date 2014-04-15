@@ -14,8 +14,8 @@ public class Event {
     public static final int SET_LOCAL_ADDRESS                  =  8;  // arg = Address
     public static final int SUSPECT                            =  9;  // arg = Address of suspected member
     public static final int BLOCK                              = 10;  // arg = null (used by FLUSH)
-    public static final int FIND_INITIAL_MBRS                  = 12;  // arg = JoinPromise (or null (merge2))
-    public static final int FIND_ALL_VIEWS                     = 13;  // arg = JoinPromise (or null (merge2))
+    public static final int FIND_MBRS                          = 11;  // arg = List<Address> (can be null) -> Responses
+    public static final int FIND_INITIAL_MBRS                  = 12;  // arg = null -> Responses
     public static final int MERGE                              = 14;  // arg = Map<Address,View>
     public static final int TMP_VIEW                           = 15;  // arg = View
     public static final int BECOME_SERVER                      = 16;  // sent when client has joined group
@@ -23,7 +23,7 @@ public class Event {
     public static final int GET_STATE                          = 19;  // arg = StateTransferInfo
     public static final int GET_STATE_OK                       = 20;  // arg = StateTransferInfo
     public static final int STABLE                             = 30;  // arg = long[] (stable seqnos for mbrs)
-    public static final int GET_DIGEST                         = 39;  //
+    public static final int GET_DIGEST                         = 39;  // arg= address (or null)
     public static final int SET_DIGEST                         = 41;  // arg = Digest
     public static final int OVERWRITE_DIGEST                   = 42;  // arg = Digest
     public static final int UNSUSPECT                          = 51;  // arg = Address (of unsuspected member)
@@ -63,8 +63,15 @@ public class Event {
     public static final int GET_VIEW_FROM_COORD                = 108;
     public static final int GET_PING_DATA                      = 109; // arg = cluster_name
 
-
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
+
+
+
+    public static final Event GET_DIGEST_EVT        = new Event(Event.GET_DIGEST);
+    public static final Event FIND_INITIAL_MBRS_EVT = new Event(Event.FIND_INITIAL_MBRS);
+    public static final Event FIND_MBRS_EVT         = new Event(Event.FIND_MBRS);
+
+
 
 
     private final int    type;       // type of event
@@ -101,8 +108,8 @@ public class Event {
             case SET_LOCAL_ADDRESS:	     return "SET_LOCAL_ADDRESS";
             case SUSPECT:                return "SUSPECT";
             case BLOCK:	                 return "BLOCK";
+            case FIND_MBRS:              return "FIND_MBRS";
             case FIND_INITIAL_MBRS:	     return "FIND_INITIAL_MBRS";
-            case FIND_ALL_VIEWS:         return "FIND_ALL_VIEWS";
             case TMP_VIEW:	             return "TMP_VIEW";
             case BECOME_SERVER:	         return "BECOME_SERVER";
             case GET_APPLSTATE:          return "GET_APPLSTATE";
@@ -155,8 +162,6 @@ public class Event {
 
         }
     }
-
-    public static final Event GET_DIGEST_EVT        = new Event(Event.GET_DIGEST);
 
     public String toString() {
         StringBuilder ret=new StringBuilder(64);

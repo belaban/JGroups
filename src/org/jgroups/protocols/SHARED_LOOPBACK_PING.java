@@ -1,12 +1,10 @@
 package org.jgroups.protocols;
 
+import org.jgroups.Address;
 import org.jgroups.Event;
-import org.jgroups.PhysicalAddress;
-import org.jgroups.ViewId;
-import org.jgroups.protocols.pbcast.JoinRsp;
-import org.jgroups.util.Promise;
+import org.jgroups.util.Responses;
 
-import java.util.*;
+import java.util.List;
 
 
 /**
@@ -30,17 +28,17 @@ public class SHARED_LOOPBACK_PING extends Discovery {
         return true;
     }
 
-    public Collection<PhysicalAddress> fetchClusterMembers(String cluster_name) {
-        return null;  // multicast the discovery request
+
+    @Override
+    public void findMembers(List<Address> members, boolean initial_discovery, Responses responses) {
+        num_discovery_requests++;
+        List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.GET_PING_DATA, cluster_name));
+        if(retval != null)
+            for(PingData data: retval) {
+                if(!data.getAddress().equals(local_addr))
+                    responses.addResponse(data, false);
+            }
+        responses.done(); // so waitFor() doesn't block at all
     }
 
-    public boolean sendDiscoveryRequestsInParallel() {
-        return false; // there's just 1 multicast message; no need to send it on a separate thread
-    }
-
-
-    protected List<PingData> findMembers(Promise<JoinRsp> promise, int num_expected_rsps, boolean break_on_coord, ViewId view_id) {
-        List<PingData> retval=(List<PingData>)down_prot.down(new Event(Event.GET_PING_DATA,group_addr));
-        return retval != null? retval : new ArrayList<PingData>(0);
-    }
 }

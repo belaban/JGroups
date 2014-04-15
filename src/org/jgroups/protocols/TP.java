@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * </ul>
  * A subclass has to override
  * <ul>
- * <li>{@link #sendMulticast(byte[], int, int)}
+ * <li>{@link #sendMulticast(org.jgroups.util.AsciiString, byte[], int, int)}
  * <li>{@link #sendUnicast(org.jgroups.PhysicalAddress, byte[], int, int)}
  * <li>{@link #init()}
  * <li>{@link #start()}: subclasses <em>must</em> call super.start() <em>after</em> they initialize themselves
@@ -94,8 +94,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected int external_port=0;
 
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
-    		description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr",
-            exposeAsManagedAttribute=false)
+              description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr",
+              exposeAsManagedAttribute=false)
     protected String bind_interface_str=null;
     
     @Property(description="If true, the transport should use all available interfaces to receive multicast messages")
@@ -1020,12 +1020,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /**
      * Send to all members in the group. UDP would use an IP multicast message, whereas TCP would send N
      * messages, one for each member
+     * @param cluster_name The name of the cluster. Null if not a shared transport
      * @param data The data to be sent. This is not a copy, so don't modify it
      * @param offset
      * @param length
      * @throws Exception
      */
-    public abstract void sendMulticast(byte[] data, int offset, int length) throws Exception;
+    public abstract void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception;
 
     /**
      * Send a unicast to 1 member. Note that the destination address is a *physical*, not a logical address
@@ -1373,7 +1374,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return singleton_name;
     }
 
-      public boolean isSingleton(){
+    public boolean isSingleton() {
           return singleton_name != null;
       }
 
@@ -1423,6 +1424,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // to us (but still multicast). Once we receive this, we discard our own multicast message
         boolean multicast=dest == null, do_send=multicast || !dest.equals(sender),
           loop_back=(multicast || dest.equals(sender)) && !msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+
+        if(dest instanceof PhysicalAddress) {
+            if(dest.equals(local_physical_addr)) {
+                loop_back=true;
+                do_send=false;
+            }
+        }
 
         if(loopback_separate_thread) {
             if(loop_back)
@@ -1734,10 +1742,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
                 if(!multicast) {
                     Address dest=msg.getDest(), target=local_addr;
-                    if(dest != null && target != null && !dest.equals(target)) {
-                        log.warn(Util.getMessage("IncorrectDest"), local_addr, "message", msg.getSrc(), dest, msg.printHeaders());
+                    if(dest != null && target != null && !dest.equals(target))
                         return;
-                    }
                 }
 
                 if(payload_offset >= 0)
@@ -1771,10 +1777,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             try {
                 if(!multicast) {
                     Address dest=msg.getDest(), target=local_addr;
-                    if(dest != null && target != null && !dest.equals(target)) {
-                        log.warn(Util.getMessage("IncorrectDest"), local_addr, "message", msg.getSrc(), dest, msg.printHeaders());
+                    if(target != null && !dest.equals(target))
                         return;
-                    }
                 }
 
                 if(stats) {
@@ -1813,10 +1817,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
             if(!batch.multicast()) {
                 Address dest=batch.dest(), target=local_addr;
-                if(dest != null && target != null && !dest.equals(target)) {
-                    log.warn(Util.getMessage("IncorrectDest"), local_addr, "batch",  batch.sender(), dest, "n/a");
+                if(dest != null && target != null && !dest.equals(target))
                     return;
-                }
             }
 
             passBatchUp(batch, true, true);
@@ -1839,19 +1841,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // so this is not a bottleneck !
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)(msg.size() + MSG_OVERHEAD)); // version+flag+msg
         writeMessage(msg, out, dest == null);
-        doSend(out.buffer(), 0, out.position(), dest);
+        doSend(getClusterName(msg), out.buffer(), 0, out.position(), dest);
         if(stats)
             num_single_msgs_sent++;
     }
 
 
-    protected void doSend(byte[] buf, int offset, int length, Address dest) throws Exception {
+    protected void doSend(AsciiString cluster_name, byte[] buf, int offset, int length, Address dest) throws Exception {
         if(stats) {
             num_msgs_sent++;
             num_bytes_sent+=length;
         }
         if(dest == null)
-            sendMulticast(buf, offset, length);
+            sendMulticast(cluster_name, buf, offset, length);
         else
             sendToSingleMember(dest, buf, offset, length);
     }
@@ -1863,59 +1865,94 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             return;
         }
 
-        PhysicalAddress physical_dest=null;
-        if((physical_dest=getPhysicalAddressFromCache(dest)) == null) {
-            if(who_has_cache.addIfAbsentOrExpired(dest)) { // true if address was added
-                timer.execute(new Runnable() {
-                    public void run() {
-                        up(new Event(Event.GET_PHYSICAL_ADDRESS, dest));
-                    }
-                });
-            }
+        PhysicalAddress physical_dest;
+        if((physical_dest=getPhysicalAddressFromCache(dest)) != null) {
+            sendUnicast(physical_dest,buf,offset,length);
+            return;
         }
 
-        if(physical_dest != null)
-            sendUnicast(physical_dest, buf, offset, length);
-        else if(log.isWarnEnabled())
-            log.warn(Util.getMessage("PhysicalAddrMissing"), local_addr, dest);
+        if(who_has_cache.addIfAbsentOrExpired(dest)) { // true if address was added
+            // FIND_MBRS must return quickly
+            Responses responses=(Responses)up(new Event(Event.FIND_MBRS, Arrays.asList(dest)));
+            try {
+                for(PingData data : responses) {
+                    if(data.getAddress() != null && data.getAddress().equals(dest)) {
+                        if((physical_dest=data.getPhysicalAddr()) != null) {
+                            sendUnicast(physical_dest, buf, offset, length);
+                            return;
+                        }
+                    }
+                }
+            }
+            finally {
+                responses.done();
+            }
+        }
+        log.warn(Util.getMessage("PhysicalAddrMissing"), local_addr, dest);
     }
 
 
-    protected void sendToAllPhysicalAddresses(byte[] buf, int offset, int length) throws Exception {
-        if(!logical_addr_cache.containsKeys(members)) {
-            long current_time=0;
-            boolean do_send=false;
-            synchronized(this) {
-                if(last_discovery_request == 0 || (current_time=time_service.timestamp()) - last_discovery_request >= 10000) {
-                    last_discovery_request=current_time == 0? time_service.timestamp() : current_time;
-                    do_send=true;
-                }
-            }
-            if(do_send) {
-                log.warn(Util.getMessage("NotAllPhysAddrsFound"), local_addr);
-                timer.execute(new Runnable() {
-                    public void run() {
-                        up(new Event(Event.FIND_INITIAL_MBRS));
-                    }
-                });
-            }
-        }
 
-        // send to all physical addrs except myself
-        for(LazyRemovalCache.Entry<PhysicalAddress> entry: logical_addr_cache.valuesIterator()) {
+    /** Fetches the physical addrs for mbrs and sends the msg to each physical address. Asks discovery for missing
+     * members' physical addresses if needed */
+    protected void sendToMembers(Collection<Address> mbrs, byte[] buf, int offset, int length) throws Exception {
+        List<Address> missing=null;
+        for(Address mbr: mbrs) {
+            PhysicalAddress target=logical_addr_cache.get(mbr);
+            if(target == null) {
+                if(missing == null)
+                    missing=new ArrayList<Address>(mbrs.size());
+                missing.add(mbr);
+                continue;
+            }
+
             try {
-                if(!entry.isRemovable()) {
-                    PhysicalAddress target=entry.getVal();
-                    if(local_physical_addr == null || !local_physical_addr.equals(target))
-                        sendUnicast(target, buf, offset, length);
-                }
+                if(local_physical_addr == null || !local_physical_addr.equals(target))
+                    sendUnicast(target, buf, offset, length);
             }
             catch(SocketException sock_ex) {
-                log.debug(Util.getMessage("FailureSendingToPhysAddr"), local_addr, entry.getVal(), sock_ex);
+                log.debug(Util.getMessage("FailureSendingToPhysAddr"), local_addr, mbr, sock_ex);
             }
             catch(Throwable t) {
-                log.error(Util.getMessage("FailureSendingToPhysAddr"), local_addr, entry.getVal(), t);
+                log.error(Util.getMessage("FailureSendingToPhysAddr"), local_addr, mbr, t);
             }
+        }
+        if(missing != null)
+            fetchPhysicalAddrs(missing);
+    }
+
+
+    protected void fetchPhysicalAddrs(List<Address> missing) {
+        long current_time=0;
+        boolean do_send=false;
+        synchronized(this) {
+            if(last_discovery_request == 0 || (current_time=time_service.timestamp()) - last_discovery_request >= 10000) {
+                last_discovery_request=current_time == 0? time_service.timestamp() : current_time;
+                do_send=true;
+            }
+        }
+        if(do_send) {
+            missing.removeAll(logical_addr_cache.keySet());
+            if(!missing.isEmpty()) {  // FIND_MBRS either returns immediately or is processed in a separate thread
+                Responses rsps=(Responses)up(new Event(Event.FIND_MBRS, missing));
+                rsps.done();
+            }
+        }
+    }
+
+    protected AsciiString getClusterName(Message msg) {
+        if(msg == null || !isSingleton())
+            return null;
+        TpHeader hdr=(TpHeader)msg.getHeader(id);
+        return hdr != null? new AsciiString(hdr.cluster_name) : null;
+    }
+
+    protected void setPingData(PingData data) {
+        if(data.getAddress() != null) {
+            if(data.getPhysicalAddr() != null)
+                addPhysicalAddressToCache(data.getAddress(),data.getPhysicalAddr());
+            if(data.getLogicalName() != null)
+                UUID.add(data.getAddress(), data.getLogicalName());
         }
     }
 
@@ -2187,7 +2224,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         PhysicalAddress physical_addr=getPhysicalAddress();
         if(physical_addr != null && addr != null) {
             local_physical_addr=physical_addr;
-            addPhysicalAddressToCache(addr, physical_addr);
+            addPhysicalAddressToCache(addr,physical_addr);
         }
     }
 
@@ -2314,6 +2351,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     /** Clears the cache. <em>Do not use, this is only for unit testing !</em> */
+    @ManagedOperation(description="Clears the logical address cache; only used for testing")
     public void clearLogicalAddressCache() {
         logical_addr_cache.clear(true);
         fetchLocalAddresses();
@@ -2395,7 +2433,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 if(reset)
                     out.position(0);
                 writeMessage(msg, out, dest == null);
-                doSend(out.buffer(), 0, out.position(), dest);
+                doSend(getClusterName(msg), out.buffer(), 0, out.position(), dest);
                 if(stats)
                     num_single_msgs_sent++;
             }
@@ -2417,7 +2455,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 if(reset)
                     out.position(0);
                 writeMessageList(dest, src, cluster_name, list, out, dest == null, id); // flushes output stream when done
-                doSend(out.buffer(), 0, out.position(), dest);
+                doSend(isSingleton()? new AsciiString(cluster_name) : null, out.buffer(), 0, out.position(), dest);
             }
             catch(SocketException sock_ex) {
                 log.debug(Util.getMessage("FailureSendingMsgBundle"),local_addr,sock_ex);
@@ -2673,9 +2711,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             return transport_id;
         }
 
-        public Set<Address> getMembers() {
-            return Collections.unmodifiableSet(members);
-        }
+        public Set<Address> getMembers() {return members;}
 
         public ThreadFactory getThreadFactory() {
             return factory;
@@ -2739,20 +2775,16 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(evt.getType() == Event.MSG) {
                 Message msg=(Message)evt.getArg();
                 Address dest=msg.getDest();
-                if(dest != null && local_addr != null && !dest.equals(local_addr)) {
-                    log.warn(Util.getMessage("IncorrectDest"), local_addr, "message", msg.getSrc(), dest, msg.printHeaders());
+                if(dest != null && local_addr != null && !dest.equals(local_addr))
                     return null;
-                }
             }
             return up_prot.up(evt);
         }
 
         public void up(MessageBatch batch) {
             Address dest=batch.dest();
-            if(dest != null && local_addr != null && !dest.equals(local_addr)) {
-                log.warn(Util.getMessage("IncorrectDest"), local_addr, "batch", batch.sender(), dest, "n/a");
+            if(dest != null && local_addr != null && !dest.equals(local_addr))
                 return;
-            }
             up_prot.up(batch);
         }
 

@@ -19,7 +19,7 @@ import java.util.concurrent.Executor;
  * point-to-point transports such as TCP - we can avoid the N-1 issue: when A sends a multicast message to 10
  * members, it needs to send it 9 times. With daisy chaining, it sends it 1 time, and in the next round, can already
  * send another message. This leads to much better throughput, see the ref in the JIRA.<p/>
- * Should be inserted just above MERGE2, in TCP based configurations.
+ * Should be inserted just above MERGE3, in TCP based configurations.
  * JIRA: https://jira.jboss.org/browse/JGRP-1021
  * @author Bela Ban
  * @since 2.11

@@ -20,9 +20,9 @@ public class ProgrammaticChat {
     public static void main(String[] args) throws Exception {
         JChannel ch=new JChannel(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")),
                                  new PING(),
-                                 new MERGE2(),
+                                 new MERGE3(),
                                  new FD_SOCK(),
-                                 new FD_ALL().setValue("timeout", 12000).setValue("interval", 3000),
+                                 new FD_ALL(),
                                  new VERIFY_SUSPECT(),
                                  new BARRIER(),
                                  new NAKACK2(),
