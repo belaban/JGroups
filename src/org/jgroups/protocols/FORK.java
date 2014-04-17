@@ -7,6 +7,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.fork.ForkConfig;
 import org.jgroups.fork.ForkProtocol;
@@ -17,10 +18,10 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -117,7 +118,9 @@ public class FORK extends Protocol {
 
 
     protected void createForkStacks(String config, boolean replace_existing) throws Exception {
-        InputStream in=new FileInputStream(config);
+        InputStream in=getForkStream(config);
+        if(in == null)
+            throw new FileNotFoundException("fork stacks config " + config + " not found");
         Map<String,List<ProtocolConfiguration>> protocols=ForkConfig.parse(in);
         for(Map.Entry<String,List<ProtocolConfiguration>> entry: protocols.entrySet()) {
             String fork_stack_id=entry.getKey();
@@ -184,6 +187,32 @@ public class FORK extends Protocol {
      * the protocols in a list, from bottom to top */
     protected static List<Protocol> createProtocols(ProtocolStack stack, List<ProtocolConfiguration> protocol_configs) throws Exception {
         return Configurator.createProtocols(protocol_configs,stack);
+    }
+
+    public static InputStream getForkStream(String config) throws IOException {
+        InputStream configStream = null;
+
+        try {
+            configStream=new FileInputStream(config);
+        }
+        catch(FileNotFoundException fnfe) {
+        }
+        catch(AccessControlException access_ex) { // fixes http://jira.jboss.com/jira/browse/JGRP-94
+        }
+
+        // Check to see if the properties string is a URL.
+        if(configStream == null) {
+            try {
+                configStream=new URL(config).openStream();
+            }
+            catch (MalformedURLException mre) {
+            }
+        }
+
+        // Check to see if the properties string is the name of a resource, e.g. udp.xml.
+        if(configStream == null)
+            configStream=Util.getResourceAsStream(config, ConfiguratorFactory.class);
+        return configStream;
     }
 
 
