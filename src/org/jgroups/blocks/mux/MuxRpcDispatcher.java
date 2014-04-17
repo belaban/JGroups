@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.blocks.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.FutureListener;
+import org.jgroups.util.RspList;
 
 import java.util.Collection;
 
@@ -89,7 +90,7 @@ public class MuxRpcDispatcher extends RpcDispatcher {
 
     @Override
     protected <T> GroupRequest<T> cast(Collection<Address> dests, Message msg, RequestOptions options,
-                                       boolean blockForResults, FutureListener<T> listener) throws Exception {
+                                       boolean blockForResults, FutureListener<RspList<T>> listener) throws Exception {
         RspFilter filter = options.getRspFilter();
         return super.cast(dests, msg, options.setRspFilter(NoMuxHandlerRspFilter.createInstance(filter)), blockForResults, listener);
     }

@@ -77,7 +77,9 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
     }
 
 
-
+    public MessageDispatcher(Channel channel, RequestHandler req_handler) {
+        this(channel, null, null, req_handler);
+    }
 
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler) {
         this(channel, l, l2);
@@ -269,7 +271,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
     public <T> NotifyingFuture<RspList<T>> castMessageWithFuture(final Collection<Address> dests,
                                                                  Message msg,
                                                                  RequestOptions options,
-                                                                 FutureListener<T> listener) throws Exception {
+                                                                 FutureListener<RspList<T>> listener) throws Exception {
         GroupRequest<T> req=cast(dests,msg,options,false, listener);
         return req != null? req : new NullFuture<RspList>(new RspList());
     }
@@ -291,7 +293,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
 
 
     protected <T> GroupRequest<T> cast(final Collection<Address> dests, Message msg, RequestOptions options,
-                                       boolean block_for_results, FutureListener<T> listener) throws Exception {
+                                       boolean block_for_results, FutureListener<RspList<T>> listener) throws Exception {
         if(msg.getDest() != null && !(msg.getDest() instanceof AnycastAddress))
             throw new IllegalArgumentException("message destination is non-null, cannot send message");
 

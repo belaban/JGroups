@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.blocks.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.FutureListener;
+import org.jgroups.util.RspList;
 
 import java.util.Collection;
 
@@ -48,9 +49,8 @@ public class MuxMessageDispatcher extends MessageDispatcher {
 
     @Override
     protected RequestCorrelator createRequestCorrelator(Protocol transport, RequestHandler handler, Address localAddr) {
-        // We can't set the scope of the request correlator here
-        // since this method is called from start() triggered in the
-        // MessageDispatcher constructor, when this.scope is not yet defined
+        // We can't set the scope of the request correlator here since this method is called from start()
+        // triggered in the MessageDispatcher constructor, when this.scope is not yet defined
         return new MuxRequestCorrelator(scope_id, transport, handler, localAddr);
     }
 
@@ -74,7 +74,7 @@ public class MuxMessageDispatcher extends MessageDispatcher {
 
     @Override
     protected <T> GroupRequest<T> cast(Collection<Address> dests, Message msg, RequestOptions options,
-                                       boolean blockForResults, FutureListener<T> listener) throws Exception {
+                                       boolean blockForResults, FutureListener<RspList<T>> listener) throws Exception {
         RspFilter filter = options.getRspFilter();
         return super.cast(dests, msg, options.setRspFilter(NoMuxHandlerRspFilter.createInstance(filter)), blockForResults, listener);
     }
