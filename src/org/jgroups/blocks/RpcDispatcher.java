@@ -176,7 +176,7 @@ public class RpcDispatcher extends MessageDispatcher {
     public <T> NotifyingFuture<RspList<T>> callRemoteMethodsWithFuture(Collection<Address> dests,
                                                                        MethodCall method_call,
                                                                        RequestOptions options,
-                                                                       FutureListener<T> listener) throws Exception {
+                                                                       FutureListener<RspList<T>> listener) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
             if(log.isTraceEnabled())
                 log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
