@@ -1,10 +1,7 @@
 package org.jgroups.protocols.relay;
 
 import org.jgroups.*;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.protocols.FORWARD_TO_COORD;
 import org.jgroups.protocols.relay.config.RelayConfig;
@@ -12,6 +9,7 @@ import org.jgroups.stack.AddressGenerator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
+import org.w3c.dom.Node;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -27,6 +25,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Bela Ban
  * @since 3.2
  */
+@XmlInclude(schema="relay.xsd",type=XmlInclude.Type.IMPORT,namespace="urn:jgroups:relay:1.0",alias="relay")
+@XmlElement(name="RelayConfiguration",type="relay:RelayConfigurationType")
 @MBean(description="RELAY2 protocol")
 public class RELAY2 extends Protocol {
 
@@ -293,6 +293,10 @@ public class RELAY2 extends Protocol {
         finally {
             Util.close(input);
         }
+    }
+
+    public void parse(Node node) throws Exception {
+        RelayConfig.parse(node, sites);
     }
 
     @ManagedOperation(description="Prints the contents of the routing table. " +

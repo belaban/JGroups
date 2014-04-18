@@ -2,10 +2,13 @@ package org.jgroups.util;
 
 import org.jgroups.Version;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.XmlElement;
+import org.jgroups.annotations.XmlInclude;
 import org.jgroups.stack.Protocol;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -25,15 +28,19 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Iterates over all concrete Protocol classes and creates XML schema used for validation of
- * configuration files.
+ * Iterates over all concrete Protocol classes and creates XML schema used for validation of configuration files.
  * 
  * https://jira.jboss.org/jira/browse/JGRP-448
  * 
  * @author Vladimir Blagojevic
+ * @author Bela Ban
  * 
  */
 public class XMLSchemaGenerator {
+
+    protected static final String PROT_PACKAGE="org.jgroups.protocols";
+
+    protected static final String[] PACKAGES={"", "pbcast", "tom", "relay", "rules"};
 
     public static void main(String[] args) {
 
@@ -49,17 +56,16 @@ public class XMLSchemaGenerator {
             }
         }
 
-        File f = new File(outputDir, "JGroups-" + Version.major + "." + Version.minor + ".xsd");
+        File f = new File(outputDir, "jgroups-" + Version.major + "." + Version.minor + ".xsd");
         try {
             FileWriter fw = new FileWriter(f, false);
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             DOMImplementation impl = builder.getDOMImplementation();
-            Document xmldoc = impl.createDocument("http://www.w3.org/2001/XMLSchema", "xs:schema",
-                                                  null);
+            Document xmldoc = impl.createDocument("http://www.w3.org/2001/XMLSchema", "xs:schema", null);
             xmldoc.getDocumentElement().setAttribute("targetNamespace", "urn:org:jgroups");
-            xmldoc.getDocumentElement().setAttribute("xmlns:tns", "urn:org:jgroups");
             xmldoc.getDocumentElement().setAttribute("elementFormDefault", "qualified");
+            xmldoc.getDocumentElement().setAttribute("attributeFormDefault", "qualified");
 
             Element complexType = xmldoc.createElement("xs:complexType");
             complexType.setAttribute("name", "ConfigType");
@@ -69,34 +75,11 @@ public class XMLSchemaGenerator {
             allType.setAttribute("maxOccurs", "unbounded");
             complexType.appendChild(allType);
 
-            Set<Class<?>> classes = getClasses("org.jgroups.protocols", Protocol.class);
-            for (Class<?> clazz : classes) {
-                classToXML(xmldoc, allType, clazz, "");
-            }
-            classes = getClasses("org.jgroups.protocols.pbcast", Protocol.class);
-            for (Class<?> clazz : classes) {
-                classToXML(xmldoc, allType, clazz, "pbcast.");
-            }
-
-            classes = getClasses("org.jgroups.protocols.tom", Protocol.class);
-            for (Class<?> clazz : classes) {
-                classToXML(xmldoc, allType, clazz, "tom.");
-            }
-
-            classes = getClasses("org.jgroups.protocols.relay", Protocol.class);
-            for (Class<?> clazz : classes) {
-                classToXML(xmldoc, allType, clazz, "relay.");
-            }
-
-            classes = getClasses("org.jgroups.protocols.rules", Protocol.class);
-            for (Class<?> clazz : classes) {
-                classToXML(xmldoc, allType, clazz, "rules.");
-            }
-
+            generateProtocolSchema(xmldoc, allType, PACKAGES);
 
             Element xsElement = xmldoc.createElement("xs:element");
             xsElement.setAttribute("name", "config");
-            xsElement.setAttribute("type", "tns:ConfigType");
+            xsElement.setAttribute("type", "ConfigType");
             xmldoc.getDocumentElement().appendChild(xsElement);
 
             DOMSource domSource = new DOMSource(xmldoc);
@@ -115,7 +98,17 @@ public class XMLSchemaGenerator {
         }
     }
 
-    private static Set<Class<?>> getClasses(String packageName, Class<?> assignableFrom)
+    protected static void generateProtocolSchema(Document xmldoc, Element parent, String... suffixes) throws Exception {
+        for(String suffix: suffixes) {
+            String package_name=PROT_PACKAGE + (suffix == null || suffix.isEmpty()? "" : "." + suffix);
+            Set<Class<?>> classes=getClasses(Protocol.class, package_name);
+            for (Class<?> clazz : classes)
+                classToXML(xmldoc, parent, clazz, package_name);
+        }
+    }
+
+
+    private static Set<Class<?>> getClasses(Class<?> assignableFrom, String packageName)
       throws IOException, ClassNotFoundException {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         Set<Class<?>> classes = new HashSet<Class<?>>();
@@ -139,25 +132,65 @@ public class XMLSchemaGenerator {
 
     private static void classToXML(Document xmldoc, Element parent, Class<?> clazz,
                                    String preAppendToSimpleClassName) throws Exception {
+        int mods=clazz.getModifiers();
+        boolean isConcreteClass=!Modifier.isAbstract(mods);
+        boolean is_public=Modifier.isPublic(mods);
+        boolean generate=is_public && isConcreteClass && !clazz.isAnonymousClass();
 
-        boolean isConcreteClass = (clazz.getModifiers() & Modifier.ABSTRACT) == 0;
-        if (isConcreteClass && !clazz.isAnonymousClass()) {
-            parent.appendChild(createXMLTree(xmldoc, clazz, preAppendToSimpleClassName));
+        if(!generate)
+            return;
+
+        XmlInclude incl=Util.getAnnotation(clazz, XmlInclude.class);
+        if(incl != null) {
+            String[] schemas=incl.schema();
+            if(schemas != null) {
+                for(String schema: schemas) {
+                    Element incl_el=xmldoc.createElement(incl.type() == XmlInclude.Type.IMPORT? "xs:import" : "xs:include");
+                    if(incl.namespace() != null && !incl.namespace().isEmpty())
+                        incl_el.setAttribute("namespace",incl.namespace());
+                    incl_el.setAttribute("schemaLocation", schema);
+
+                    Node first_child=xmldoc.getDocumentElement().getFirstChild();
+                    if(first_child == null)
+                        xmldoc.getDocumentElement().appendChild(incl_el);
+                    else
+                        xmldoc.getDocumentElement().insertBefore(incl_el, first_child);
+                }
+            }
+            if(incl.alias() != null && !incl.alias().isEmpty())
+                xmldoc.getDocumentElement().setAttribute("xmlns:" + incl.alias(), incl.namespace());
         }
+
+        parent.appendChild(createXMLTree(xmldoc, clazz, preAppendToSimpleClassName));
     }
 
-    private static Element createXMLTree(Document xmldoc, Class<?> clazz,
-                                         String preAppendToSimpleClassName) throws Exception {
+    private static Element createXMLTree(Document xmldoc, Class<?> clazz, String pkgname) throws Exception {
 
         Element classElement = xmldoc.createElement("xs:element");
-        String elementName = preAppendToSimpleClassName + clazz.getSimpleName();
+        String elementName = pkgname + "." + clazz.getSimpleName();
         if(elementName == null || elementName.isEmpty()) {
             throw new IllegalArgumentException("Cannot create empty attribute name for element xs:element, class is " + clazz);
         }
+
+        elementName=elementName.replace(PROT_PACKAGE + ".", "");
+
         classElement.setAttribute("name",elementName);
 
         Element complexType = xmldoc.createElement("xs:complexType");
         classElement.appendChild(complexType);
+
+        XmlElement el=Util.getAnnotation(clazz, XmlElement.class);
+        if(el != null) {
+            Element choice=xmldoc.createElement("xs:choice");
+            choice.setAttribute("minOccurs", "0");
+            choice.setAttribute("maxOccurs", "unbounded");
+            complexType.appendChild(choice);
+            Element tmp=xmldoc.createElement("xs:element");
+            tmp.setAttribute("name", el.name());
+            tmp.setAttribute("type", el.type());
+            choice.appendChild(tmp);
+        }
+
 
         // iterate fields
         for (Class<?> clazzInLoop = clazz; clazzInLoop != null; clazzInLoop = clazzInLoop.getSuperclass()) {
@@ -181,7 +214,6 @@ public class XMLSchemaGenerator {
                     // xs:string since we do not know where users are going to use
                     // replacement tokens in configuration files. Therefore, the type becomes
                     // indeterminate.
-                    // attributeElement.setAttribute("type", fieldToXMLSchemaAttributeType(field));
                     attributeElement.setAttribute("type", "xs:string");
                     complexType.appendChild(attributeElement);
 

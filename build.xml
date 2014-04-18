@@ -230,7 +230,7 @@
              basedir="${compile.dir}"
              manifest="${conf.dir}/MANIFEST.MF"
              includes="org/jgroups/**">
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml, jg-messages*.properties" excludes="*-service.xml"/>
+            <fileset dir="${conf.dir}" includes="*.xsd, *.xml, jg-messages*.properties"/>
             <fileset dir="${compile.dir}/schema">
                 <include name="*.xsd"/>
             </fileset>
@@ -329,6 +329,9 @@
         <echo message="manual.up-to-data=${manual.up-to-date}"/>
     </target>
 
+    <target name="make-schema" description="Creates XML schema for this version of JGroups"
+            depends="create-schema">
+    </target>
 
 	<target name="create-schema" description="Creates XML schema for this version of JGroups">
 		<delete dir="${compile.dir}/schema" failonerror="false"/>
@@ -336,7 +339,18 @@
 		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath">
 			<arg line="-o ${compile.dir}/schema"/>
 		</java>
-	</target>
+        <copy todir="${compile.dir}/schema">
+            <fileset dir="${conf.dir}">
+                <include name="*.xsd"/>
+            </fileset>
+        </copy>
+        <copy todir="${compile.dir}/schema">
+            <fileset dir="${compile.dir}/schema">
+                <include name="jgroups*.xsd"/>
+            </fileset>
+            <globmapper from="jgroups*.xsd" to="jgroups.xsd"/>
+        </copy>
+    </target>
 
 
     <target name="clean"

@@ -550,7 +550,7 @@ channel.send(msg);
             <programlisting language="XML">
 &lt;config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd"&gt;
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd"&gt;
     &lt;UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          tos="8"

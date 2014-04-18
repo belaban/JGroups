@@ -3,9 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolConfiguration;
@@ -18,6 +16,7 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Bits;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
+import org.w3c.dom.Node;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -36,6 +35,8 @@ import java.util.concurrent.ConcurrentMap;
  * @author Bela Ban
  * @since  3.4
  */
+@XmlInclude(schema="fork-stacks.xsd",type=XmlInclude.Type.IMPORT,namespace="fork",alias="fork")
+@XmlElement(name="fork-stacks",type="fork:ForkStacksType")
 @MBean(description="Implementation of FORK protocol")
 public class FORK extends Protocol {
     public static short ID=ClassConfigurator.getProtocolId(FORK.class);
@@ -123,6 +124,10 @@ public class FORK extends Protocol {
         if(in == null)
             throw new FileNotFoundException("fork stacks config " + config + " not found");
         Map<String,List<ProtocolConfiguration>> protocols=ForkConfig.parse(in);
+        createForkStacks(protocols, replace_existing);
+    }
+
+    protected void createForkStacks(Map<String,List<ProtocolConfiguration>> protocols, boolean replace_existing) throws Exception {
         for(Map.Entry<String,List<ProtocolConfiguration>> entry: protocols.entrySet()) {
             String fork_stack_id=entry.getKey();
             if(get(fork_stack_id) != null && !replace_existing)
@@ -134,6 +139,10 @@ public class FORK extends Protocol {
         }
     }
 
+    public void parse(Node node) throws Exception {
+        Map<String,List<ProtocolConfiguration>> protocols=ForkConfig.parse(node);
+        createForkStacks(protocols, false);
+    }
 
     /**
      * Creates a new fork-stack from protocols and adds it into the hashmap of fork-stack (key is fork_stack_id).

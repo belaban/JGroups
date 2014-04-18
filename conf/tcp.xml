@@ -5,9 +5,9 @@
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
     author: Bela Ban
 -->
-<config xmlns="urn:org:jgroups"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.3.xsd">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="urn:org:jgroups"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
     <TCP bind_port="7800"
          recv_buf_size="${tcp.recv_buf_size:5M}"
          send_buf_size="${tcp.send_buf_size:5M}"

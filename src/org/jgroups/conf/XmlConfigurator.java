@@ -220,8 +220,17 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             }
             ProtocolConfiguration cfg=new ProtocolConfiguration(protocol, params);
             prot_data.add(cfg);
-        }
 
+            // store protocol-specific configuration (if available); this will be passed to the protocol on
+            // creation to to parse
+            NodeList subnodes=node.getChildNodes();
+            for(int j=0; j < subnodes.getLength(); j++) {
+                Node subnode=subnodes.item(j);
+                if(subnode.getNodeType() != Node.ELEMENT_NODE)
+                    continue;
+                cfg.addSubtree(subnode);
+            }
+        }
         return prot_data;
     }
 

@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 
 
-<fork-stacks xmlns="fork-stacks">
+<fork-stacks xmlns="fork" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="fork fork-stacks.xsd">
 
     <fork-stack id="counter">
         <config>
@@ -10,11 +11,11 @@
         </config>
     </fork-stack>
 
-   <fork-stack id="locking">
-       <config>
-           <CENTRAL_LOCK num_backups="2"/>
-       </config>
-   </fork-stack>
+    <fork-stack id="locking">
+        <config>
+            <CENTRAL_LOCK num_backups="2"/>
+        </config>
+    </fork-stack>
 
 
 </fork-stacks>

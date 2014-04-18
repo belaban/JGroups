@@ -32,6 +32,10 @@ public class ForkConfig {
         DocumentBuilder builder=factory.newDocumentBuilder();
         Document document=builder.parse(input);
         Element root=document.getDocumentElement();
+        return parse(root);
+    }
+
+    public static Map<String,List<ProtocolConfiguration>> parse(Node root) throws Exception {
         match(FORK_STACKS, root.getNodeName(), true);
         NodeList children=root.getChildNodes();
         if(children == null || children.getLength() == 0)

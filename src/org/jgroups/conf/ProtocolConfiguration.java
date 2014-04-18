@@ -3,10 +3,9 @@ package org.jgroups.conf;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
+import org.w3c.dom.Node;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -15,11 +14,12 @@ import java.util.Map;
  * @author Bela Ban
  */
 public class ProtocolConfiguration {
-    private final String protocol_name;
-    private String properties_str;
+    private final String              protocol_name;
+    private String                    properties_str;
     private final Map<String, String> properties=new HashMap<String, String>();
-    public static final String protocol_prefix="org.jgroups.protocols";
-    public static final Log log=LogFactory.getLog(ProtocolConfiguration.class);
+    private List<Node>                subtrees; // roots to DOM elements, passed to protocol on creation
+    public static final String        protocol_prefix="org.jgroups.protocols";
+    public static final Log           log=LogFactory.getLog(ProtocolConfiguration.class);
 
 
     /**
@@ -54,6 +54,18 @@ public class ProtocolConfiguration {
             this.properties.putAll(properties);
             properties_str=propertiesToString();
         }
+    }
+
+    public void addSubtree(Node node){
+        if(node == null)
+            return;
+        if(subtrees == null)
+            subtrees=new ArrayList<Node>();
+        subtrees.add(node);
+    }
+
+    public List<Node> getSubtrees() {
+        return subtrees;
     }
 
     public String getProtocolName() {
@@ -173,7 +185,7 @@ public class ProtocolConfiguration {
         int index=0;
 
         /* "in_port=5555;out_port=6666" */
-        if(properties_str.length() > 0) {
+        if(!properties_str.isEmpty()) {
             String[] components=properties_str.split(";");
             for(String property : components) {
                 String name, value;

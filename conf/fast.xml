@@ -7,9 +7,9 @@
   Author: Bela Ban
 -->
 
-<config xmlns="urn:org:jgroups"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.3.xsd">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="urn:org:jgroups"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          ip_ttl="0"

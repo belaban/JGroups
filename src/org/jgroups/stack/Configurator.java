@@ -15,6 +15,7 @@ import org.jgroups.util.AsciiString;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
+import org.w3c.dom.Node;
 
 import java.io.IOException;
 import java.io.PushbackReader;
@@ -457,6 +458,13 @@ public class Configurator {
 
             if(!properties.isEmpty())
                 throw new IllegalArgumentException(String.format(Util.getMessage("ConfigurationError"), protocol_name, properties));
+
+            // if we have protocol-specific XML configuration, pass it to the protocol
+            List<Node> subtrees=config.getSubtrees();
+            if(subtrees != null) {
+                for(Node node: subtrees)
+                    retval.parse(node);
+            }
         }
         catch(InstantiationException inst_ex) {
             throw new InstantiationException(String.format(Util.getMessage("ProtocolCreateError"), protocol_name, inst_ex.getLocalizedMessage()));
@@ -474,7 +482,7 @@ public class Configurator {
         Set<Short> ids=new HashSet<Short>();
         for(Protocol protocol: protocols) {
             short id=protocol.getId();
-            if(id > 0 && ids.add(id) == false)
+            if(id > 0 && !ids.add(id))
                 throw new Exception("Protocol ID " + id + " (name=" + protocol.getName() +
                         ") is duplicate; protocol IDs have to be unique");
         }

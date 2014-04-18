@@ -17,6 +17,7 @@ import org.jgroups.util.MessageBatch;
 import org.jgroups.util.SocketFactory;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
+import org.w3c.dom.Node;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -134,6 +135,10 @@ public abstract class Protocol {
      * @return
      */
     protected List<Object> getConfigurableObjects() {return null;}
+
+    /** Called by the XML parser when subelements are found in the configuration of a protocol. This allows
+     * a protocol to define protocol-specific information and to parse it */
+    public void parse(Node node) throws Exception {;}
 
     /** Returns the protocol IDs of all protocols above this one (excluding the current protocol) */
     public short[] getIdsAbove() {

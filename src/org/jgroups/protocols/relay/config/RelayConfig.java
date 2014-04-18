@@ -42,6 +42,10 @@ public class RelayConfig {
         DocumentBuilder builder=factory.newDocumentBuilder();
         Document document=builder.parse(input);
         Element root=document.getDocumentElement();
+        parse(root, map);
+    }
+
+    public static void parse(Node root, final Map<String,SiteConfig> map) throws Exception {
         match(RELAY_CONFIG, root.getNodeName(), true);
         NodeList children=root.getChildNodes();
         if(children == null || children.getLength() == 0)
