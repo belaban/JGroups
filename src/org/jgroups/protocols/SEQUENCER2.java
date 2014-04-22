@@ -2,6 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Bela Ban
  * @edited Andrei Palade
  */
+@Experimental
 @MBean(description="Implementation of total order protocol using a sequencer (unicast-unicast-multicast)")
 public class SEQUENCER2 extends Protocol {
     protected Address                           local_addr;
