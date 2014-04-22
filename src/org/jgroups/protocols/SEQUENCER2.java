@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @edited Andrei Palade
  */
 @MBean(description="Implementation of total order protocol using a sequencer (unicast-unicast-multicast)")
-public class SEQUENCER_UUM extends Protocol {
+public class SEQUENCER2 extends Protocol {
     protected Address                           local_addr;
     protected volatile Address                  coord;
     protected volatile View                     view;

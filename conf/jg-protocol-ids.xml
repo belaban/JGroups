@@ -64,7 +64,7 @@
     <class id="67" name="org.jgroups.protocols.SHARED_LOOPBACK_PING"/>
     <class id="68" name="org.jgroups.protocols.SASL"/>
     <class id="69" name="org.jgroups.protocols.GOOGLE_PING"/>
-    <class id="70" name="org.jgroups.protocols.SEQUENCER_UUM"/>
+    <class id="70" name="org.jgroups.protocols.SEQUENCER2"/>
 
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
