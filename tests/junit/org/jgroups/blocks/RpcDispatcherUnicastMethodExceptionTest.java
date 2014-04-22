@@ -8,6 +8,8 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.InvocationTargetException;
+
 /**
  * @author Bela Ban
  */
@@ -49,6 +51,8 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
         throw new Throwable("this is an exception");
     }
 
+    static Throwable returnException() {return new IllegalArgumentException("this is actually right");}
+
 
     public void testMethodWithoutException() throws Exception {
         Object retval=disp.callRemoteMethod(channel.getAddress(), "foo", null, null,
@@ -58,32 +62,61 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     }
 
 
-    @Test(expectedExceptions=TimeoutException.class)
+    public void testMethodReturningException() throws Exception {
+        Object retval=disp.callRemoteMethod(channel.getAddress(),"returnException",null,null,RequestOptions.SYNC());
+        System.out.println("retval: " + retval);
+        assertNotNull(retval);
+        assert retval instanceof IllegalArgumentException;
+    }
+
+
+    // @Test(expectedExceptions=InvocationTargetException.class)
     public void testMethodWithException() throws Exception {
-        Object retval=disp.callRemoteMethod(channel.getAddress(), "bar", null, null,
-                                            new RequestOptions(ResponseMode.GET_ALL, 5000));
-        System.out.println("retval: " + retval);
+        try {
+            disp.callRemoteMethod(channel.getAddress(),"bar",null,null,RequestOptions.SYNC());
+            assert false: "method should have thrown an exception";
+        }
+        catch(Exception ex) {
+            assert ex instanceof InvocationTargetException;
+            Throwable cause=ex.getCause();
+            assert cause instanceof TimeoutException;
+        }
     }
 
-    @Test(expectedExceptions=IllegalArgumentException.class)
+    // @Test(expectedExceptions=IllegalArgumentException.class)
     public void testMethodWithException2() throws Exception {
-        Object retval=disp.callRemoteMethod(channel.getAddress(), "foobar", null, null,
-                                            new RequestOptions(ResponseMode.GET_ALL, 5000));
-        System.out.println("retval: " + retval);
+        try {
+            disp.callRemoteMethod(channel.getAddress(),"foobar",null,null,RequestOptions.SYNC());
+        }
+        catch(Throwable t) {
+            System.out.println("t = " + t);
+            assert t instanceof InvocationTargetException;
+            assert t.getCause() instanceof IllegalArgumentException;
+        }
     }
 
-    @Test(expectedExceptions=AssertionError.class)
+    // @Test(expectedExceptions=AssertionError.class)
     public void testMethodWithError() throws Exception {
-        Object retval=disp.callRemoteMethod(channel.getAddress(), "foofoobar", null, null,
-                                            new RequestOptions(ResponseMode.GET_ALL, 5000));
-        System.out.println("retval: " + retval);
+        try {
+            disp.callRemoteMethod(channel.getAddress(),"foofoobar",null,null,RequestOptions.SYNC());
+        }
+        catch(Throwable t) {
+            System.out.println("t = " + t);
+            assert t instanceof InvocationTargetException;
+            assert t.getCause() instanceof AssertionError;
+        }
     }
 
-    @Test(expectedExceptions=Throwable.class)
+    // @Test(expectedExceptions=Throwable.class)
     public void testMethodWithThrowable() throws Exception {
-        Object retval=disp.callRemoteMethod(channel.getAddress(), "fooWithThrowable", null, null,
-                                            new RequestOptions(ResponseMode.GET_ALL, 5000));
-        System.out.println("retval: " + retval);
+        try {
+            disp.callRemoteMethod(channel.getAddress(),"fooWithThrowable",null,null,RequestOptions.SYNC());
+        }
+        catch(Throwable t) {
+            System.out.println("t = " + t);
+            assert t instanceof InvocationTargetException;
+            assert t.getCause() instanceof Throwable;
+        }
     }
 
 
