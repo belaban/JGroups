@@ -56,7 +56,7 @@ public class Relay2Test {
 		RELAY2 ar=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class);
 		assert ar != null;
 		
-		waitUntilRoute(SFO, true, 2000, 500, a);
+		waitUntilRoute(SFO, true, 10000, 500, a);
 		
 		assert !ar.printRoutes().equals("n/a (not site master)") : "This member should be site master";
 		
