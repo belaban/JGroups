@@ -64,6 +64,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
                        boolean create_fork_if_absent, int position, Class<? extends Protocol> neighbor,
                        Protocol ... protocols) throws Exception {
 
+        super(false);
         if(main_channel == null)    throw new IllegalArgumentException("main channel cannot be null");
         if(fork_stack_id == null)   throw new IllegalArgumentException("fork_stack_id cannot be null");
         if(fork_channel_id == null) throw new IllegalArgumentException("fork_channel_id cannot be null");
