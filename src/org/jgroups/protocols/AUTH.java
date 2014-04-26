@@ -7,6 +7,7 @@ import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.XmlAttribute;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.auth.X509Token;
 import org.jgroups.conf.ClassConfigurator;
@@ -25,6 +26,16 @@ import java.util.List;
  * @author Chris Mills
  * @author Bela Ban
  */
+@XmlAttribute(attrs={
+  "auth_value",                                                         // SimpleToken, MD5Token, X509Token
+  "fixed_members_value", "fixed_members_seperator",                     // FixedMembershipToken
+  "block_time",                                                         // DemoToken
+  "client_principal_name", "client_password", "service_principal_name", // Krb5Token
+  "token_hash",                                                         // MD5Token
+  "match_string", "match_ip_address", "match_logical_name",             // RegexMembership
+  "keystore_type", "cert_alias", "keystore_path", "cipher_type",
+  "cert_password", "keystore_password"                                  // X509Token
+})
 @MBean(description="Provides authentication of joiners, to prevent un-authorized joining of a cluster")
 public class AUTH extends Protocol {
 

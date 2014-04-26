@@ -2890,6 +2890,15 @@ public class Util {
         return retval;
     }
 
+    public static <A extends Annotation> A getAnnotation(Class<?> clazz, Class<A> annotationClass) {
+        for(Class<?> curr=clazz; curr != null; curr=curr.getSuperclass()) {
+            A ann=curr.getAnnotation(annotationClass);
+            if(ann != null)
+                return ann;
+        }
+        return null;
+    }
+
     public static Field getField(final Class clazz, String field_name) {
         if(clazz == null || field_name == null)
             return null;
