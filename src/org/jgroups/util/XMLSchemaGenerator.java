@@ -2,6 +2,7 @@ package org.jgroups.util;
 
 import org.jgroups.Version;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.XmlAttribute;
 import org.jgroups.annotations.XmlElement;
 import org.jgroups.annotations.XmlInclude;
 import org.jgroups.stack.Protocol;
@@ -24,6 +25,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -179,6 +181,7 @@ public class XMLSchemaGenerator {
         Element complexType = xmldoc.createElement("xs:complexType");
         classElement.appendChild(complexType);
 
+        // the protocol has its own subtree
         XmlElement el=Util.getAnnotation(clazz, XmlElement.class);
         if(el != null) {
             Element choice=xmldoc.createElement("xs:choice");
@@ -189,6 +192,20 @@ public class XMLSchemaGenerator {
             tmp.setAttribute("name", el.name());
             tmp.setAttribute("type", el.type());
             choice.appendChild(tmp);
+        }
+
+        XmlAttribute xml_attr=Util.getAnnotation(clazz, XmlAttribute.class);
+        if(xml_attr != null) {
+            String[] attrs=xml_attr.attrs();
+            if(attrs != null && attrs.length > 0) {
+                Set<String> set=new HashSet<String>(Arrays.asList(attrs)); // to weed out dupes
+                for(String attr: set) {
+                    Element attributeElement = xmldoc.createElement("xs:attribute");
+                    attributeElement.setAttribute("name", attr);
+                    attributeElement.setAttribute("type", "xs:string");
+                    complexType.appendChild(attributeElement);
+                }
+            }
         }
 
 
