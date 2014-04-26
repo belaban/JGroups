@@ -462,7 +462,7 @@
 
     <target name="stack-independent" depends="postcompile,define-testng-task" description="Runs stack-independent tests">
         <mkdir dir="${tmp.dir}/test-results/xml/stack-independent"/>
-        <runtest suitename="ind"
+        <runtest suitename="stack-independent"
                  groups="stack-independent"
                  parallel="${parallel.classes}"
                  threadcount="1" />
@@ -508,7 +508,7 @@
 
     <target name="time-sensitive" depends="postcompile,define-testng-task" description="Runs time-sensitive tests">
         <mkdir dir="${tmp.dir}/test-results/xml/time-sensitive"/>
-        <runtest suitename="sensitive"
+        <runtest suitename="time-sensitive"
                  groups="time-sensitive"
                  parallel="${parallel.classes}"
                  threadcount="1" />
