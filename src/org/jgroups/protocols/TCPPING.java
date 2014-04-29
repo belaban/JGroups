@@ -37,7 +37,7 @@ public class TCPPING extends Discovery {
     private List<IpAddress> initial_hosts=Collections.EMPTY_LIST;
 
     @Property(description="max number of hosts to keep beyond the ones in initial_hosts")
-    protected int max_dynamic_hosts=100;
+    protected int max_dynamic_hosts=2000;
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     /**
