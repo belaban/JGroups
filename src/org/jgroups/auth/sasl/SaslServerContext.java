@@ -6,10 +6,14 @@ import org.jgroups.protocols.SASL;
 import org.jgroups.protocols.SaslHeader;
 import org.jgroups.protocols.SaslHeader.Type;
 
+import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
+
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -18,8 +22,21 @@ public class SaslServerContext implements SaslContext {
     SaslServer server;
     CountDownLatch latch = new CountDownLatch(1);
 
-    public SaslServerContext(String mech, Address local_addr, CallbackHandler callback_handler, Map<String, String> props) throws SaslException {
-        server = Sasl.createSaslServer(mech, "jgroups", local_addr.toString(), props, callback_handler);
+    public SaslServerContext(final String mech, final String serverName, final CallbackHandler callback_handler, final Map<String, String> props, final Subject subject) throws SaslException {
+        if (subject != null) {
+            try {
+                server = Subject.doAs(subject, new PrivilegedExceptionAction<SaslServer>() {
+                    @Override
+                    public SaslServer run() throws Exception {
+                        return Sasl.createSaslServer(mech, "jgroups", serverName, props, callback_handler);
+                    }
+                });
+            } catch (PrivilegedActionException e) {
+                throw (SaslException)e.getCause(); // The createSaslServer will only throw this type of exception
+            }
+        } else {
+            server = Sasl.createSaslServer(mech, "jgroups", serverName, props, callback_handler);
+        }
     }
 
     @Override
