@@ -1,7 +1,10 @@
 package org.jgroups.auth.sasl;
 
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.Map;
 
+import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslClient;
@@ -17,9 +20,22 @@ public class SaslClientContext implements SaslContext {
     private static final byte[] EMPTY_CHALLENGE = new byte[0];
     SaslClient client;
 
-    public SaslClientContext(String mech, Address local_addr, CallbackHandler callback_handler, Map<String, String> props) throws SaslException {
-        client = Sasl.createSaslClient(new String[] { mech }, null, "jgroups", local_addr.toString(), props,
-                callback_handler);
+    public SaslClientContext(final String mech, final String server_name, final CallbackHandler callback_handler, final Map<String, String> props, final Subject subject) throws SaslException {
+        if (subject != null) {
+            try {
+                client = Subject.doAs(subject, new PrivilegedExceptionAction<SaslClient>() {
+
+                    @Override
+                    public SaslClient run() throws Exception {
+                        return Sasl.createSaslClient(new String[] { mech }, null, "jgroups", server_name, props, callback_handler);
+                    }
+                });
+            } catch (PrivilegedActionException e) {
+                throw (SaslException)e.getCause(); // The createSaslServer will only throw this type of exception
+            }
+        } else {
+            client = Sasl.createSaslClient(new String[] { mech }, null, "jgroups", server_name, props, callback_handler);
+        }
     }
 
     @Override
