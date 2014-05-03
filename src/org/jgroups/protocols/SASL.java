@@ -3,7 +3,9 @@ package org.jgroups.protocols;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.login.LoginContext;
 import javax.security.sasl.SaslException;
 
 import org.jgroups.Address;
@@ -11,6 +13,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
+import org.jgroups.auth.sasl.SaslClientCallbackHandler;
 import org.jgroups.auth.sasl.SaslClientContext;
 import org.jgroups.auth.sasl.SaslContext;
 import org.jgroups.auth.sasl.SaslServerContext;
@@ -32,21 +35,34 @@ public class SASL extends Protocol {
     public static final short GMS_ID = ClassConfigurator.getProtocolId(GMS.class);
     public static final short SASL_ID = ClassConfigurator.getProtocolId(SASL.class);
 
+    @Property(name = "login_module_name", description = "The name of the JAAS login module to use to obtain a subject for creating the SASL client and server (optional). Only required by some SASL mechs (e.g. GSSAPI)")
+    protected String login_module_name;
+
+    @Property(name = "client_name", description = "The name used to obtain the client subject from the JAAS login module (optional). Only required by some SASL mechs (e.g. GSSAPI)")
+    protected String client_name;
+
+    @Property(name = "client_password", description = "The password used to obtain the client subject from the JAAS login module (optional). Only required by some SASL mechs (e.g. GSSAPI)")
+    protected String client_password;
+
     @Property(name = "mech", description = "The name of the mech to require for authentication. Can be any mech supported by your local SASL provider. The JDK comes standard with CRAM-MD5, DIGEST-MD5, GSSAPI, NTLM")
     protected String mech;
 
     @Property(name = "sasl_props", description = "Properties specific to the chosen mech", converter = PropertyConverters.StringProperties.class)
     protected Map<String, String> sasl_props = new HashMap<String, String>();
 
+    @Property(name = "server_name", description = "The fully qualified server name")
+    protected String server_name;
+
     @Property(name = "timeout", description = "How long to wait (in ms) for a response to a challenge")
     protected long timeout = 5000;
 
     protected CallbackHandler callback_handler;
 
+    protected Subject client_subject;
+    protected Subject server_subject;
+
     protected Address local_addr;
     protected final Map<Address, SaslContext> sasl_context = new HashMap<Address, SaslContext>();
-
-
 
     public SASL() {
         name = this.getClass().getSimpleName();
@@ -69,6 +85,14 @@ public class SASL extends Protocol {
         this.callback_handler = callback_handler;
     }
 
+    public void setLoginModuleName(String login_module_name) {
+        this.login_module_name = login_module_name;
+    }
+
+    public String getLoginModulename() {
+        return login_module_name;
+    }
+
     public void setMech(String mech) {
         this.mech = mech;
     }
@@ -83,6 +107,30 @@ public class SASL extends Protocol {
 
     public Map<String, String> getSaslProps() {
         return sasl_props;
+    }
+
+    public void setClientSubject(Subject client_subject) {
+        this.client_subject = client_subject;
+    }
+
+    public Subject getClientSubject() {
+        return client_subject;
+    }
+
+    public void setServerSubject(Subject server_subject) {
+        this.server_subject = server_subject;
+    }
+
+    public Subject getServerSubject() {
+        return server_subject;
+    }
+
+    public void setServerName(String server_name) {
+        this.server_name = server_name;
+    }
+
+    public String getServerName(String server_name) {
+        return server_name;
     }
 
     public void setTimeout(long timeout) {
@@ -100,6 +148,16 @@ public class SASL extends Protocol {
     @Override
     public void init() throws Exception {
         super.init();
+        if (server_subject == null && login_module_name != null) {
+            LoginContext lc = new LoginContext(login_module_name);
+            lc.login();
+            server_subject = lc.getSubject();
+        }
+        if (client_subject == null && login_module_name != null) {
+            LoginContext lc = new LoginContext(login_module_name, new SaslClientCallbackHandler(client_name, client_password.toCharArray()));
+            lc.login();
+            client_subject = lc.getSubject();
+        }
     }
 
     @Override
@@ -226,10 +284,10 @@ public class SASL extends Protocol {
                 SaslClientContext ctx = null;
                 Address remoteAddress = msg.getDest();
                 try {
-                    ctx = new SaslClientContext(mech, remoteAddress, callback_handler, sasl_props);
+                    ctx = new SaslClientContext(mech, server_name != null ? server_name : remoteAddress.toString(), callback_handler, sasl_props, client_subject);
                     sasl_context.put(remoteAddress, ctx);
                     ctx.addHeader(msg, null);
-                } catch (SaslException e) {
+                } catch (Exception e) {
                     if (ctx != null) {
                         disposeContext(remoteAddress);
                     }
@@ -256,7 +314,7 @@ public class SASL extends Protocol {
             Address remoteAddress = msg.getSrc();
             SaslServerContext ctx = null;
             try {
-                ctx = new SaslServerContext(mech, local_addr, callback_handler, sasl_props);
+                ctx = new SaslServerContext(mech, server_name != null ? server_name : local_addr.toString(), callback_handler, sasl_props, server_subject);
                 sasl_context.put(remoteAddress, ctx);
                 this.getDownProtocol().down(new Event(Event.MSG, ctx.nextMessage(remoteAddress, saslHeader)));
                 ctx.awaitCompletion(timeout);
