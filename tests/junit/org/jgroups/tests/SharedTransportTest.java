@@ -212,10 +212,16 @@ public class SharedTransportTest extends ChannelTestBase {
         b.connect("B");
         c.connect("C");
 
-        a.send(null, "message from a");
-        b.send(null, "message from b");
-        c.send(null, "message from c");
-        Util.sleep(500);
+        a.send(null, "message from A");
+        b.send(null, "message from B");
+        c.send(null, "message from C");
+
+        for(int i=0; i < 60; i++) {
+            if(r1.size() == 1 && r2.size() == 1 && r3.size() == 1)
+                break;
+            Util.sleep(500);
+        }
+
         assert r1.size() == 1;
         assert r2.size() == 1;
         assert r3.size() == 1;
@@ -225,9 +231,14 @@ public class SharedTransportTest extends ChannelTestBase {
 
         b.disconnect();
         System.out.println("\n");
-        a.send(null, "message from a");
-        c.send(null, "message from c");
-        Util.sleep(500);
+        a.send(null, "message from A");
+        c.send(null, "message from C");
+        for(int i=0; i < 60; i++) {
+            if(r1.size() == 1 && r3.size() == 1)
+                break;
+            Util.sleep(500);
+        }
+
         assert r1.size() == 1 : "size should be 1 but is " + r1.size();
         assert r3.size() == 1 : "size should be 1 but is " + r3.size();
         r1.clear();
@@ -236,7 +247,11 @@ public class SharedTransportTest extends ChannelTestBase {
         c.disconnect();
         System.out.println("\n");
         a.send(null, "message from a");
-        Util.sleep(500);
+        for(int i=0; i < 60; i++) {
+            if(r1.size() == 1)
+                break;
+            Util.sleep(500);
+        }
         assert r1.size() == 1;
     }
 
