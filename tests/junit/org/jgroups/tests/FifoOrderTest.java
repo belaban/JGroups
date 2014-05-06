@@ -1,14 +1,19 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.TP;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -17,90 +22,81 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class FifoOrderTest extends ChannelTestBase {    
-    JChannel ch1, ch2, ch3;
+    JChannel       a, b, c;
+    CountDownLatch latch;
     final static int NUM=25, EXPECTED=NUM * 3;
-    final static long SLEEPTIME=100;
-    CyclicBarrier barrier;
+    final static long SLEEPTIME=50;
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        barrier=new CyclicBarrier(4);
-        ch1=createChannel(true,3, "A");
-        ch2=createChannel(ch1,    "B");
-        ch3=createChannel(ch1,    "C");
+        latch=new CountDownLatch(1);
+        a=createChannel(true,3, "A");
+        b=createChannel(a,    "B");
+        c=createChannel(a,    "C");
     }
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        Util.close(ch3, ch2, ch1);
-        barrier.reset();
+        Util.close(c,b,a);
     }
 
 
-    @Test
     public void testFifoDelivery() throws Exception {
         long start, stop, diff;
-        modifyDefaultThreadPool(ch1);
-        modifyDefaultThreadPool(ch2);
-        modifyDefaultThreadPool(ch3);
 
         MyReceiver r1=new MyReceiver("R1"), r2=new MyReceiver("R2"), r3=new MyReceiver("R3");
-        ch1.setReceiver(r1); ch2.setReceiver(r2); ch3.setReceiver(r3);
+        a.setReceiver(r1); b.setReceiver(r2); c.setReceiver(r3);
 
-        ch1.connect("FifoOrderTest");
-        ch2.connect("FifoOrderTest");
-        ch3.connect("FifoOrderTest");
-        View v=ch3.getView();
-        assert v.size() == 3 : "view is " + v;
+        a.connect("FifoOrderTest");
+        b.connect("FifoOrderTest");
+        c.connect("FifoOrderTest");
+        Util.waitUntilAllChannelsHaveSameSize(10000, 1000, a,b,c);
 
-        new Thread(new Sender(ch1)) {}.start();
-        new Thread(new Sender(ch2)) {}.start();
-        new Thread(new Sender(ch3)) {}.start();
-        barrier.await(); // start senders
+        new Thread(new Sender(a)) {}.start();
+        new Thread(new Sender(b)) {}.start();
+        new Thread(new Sender(c)) {}.start();
+        Util.sleep(500);
+        latch.countDown(); // start senders
+
         start=System.currentTimeMillis();
-
-        Exception ex=null;
-
-        try {
-            System.out.println("waiting for all messages to be received");
-            barrier.await((long)(EXPECTED * SLEEPTIME * 1.5), TimeUnit.MILLISECONDS); // wait for all receivers
+        for(int i=0; i < 60; i++) {
+            System.out.println("r1: " + r1.size() + ", r2: " + r2.size() + ", r3: " + r3.size());
+            if(r1.size() == EXPECTED && r2.size() == EXPECTED && r3.size() == EXPECTED)
+                break;
+            Util.sleep(500);
         }
-        catch(java.util.concurrent.TimeoutException e) {
-            ex=e;
-        }
-
-
         stop=System.currentTimeMillis();
         diff=stop - start;
 
         System.out.println("Total time: " + diff + " ms\n");
+        assert r1.size() == EXPECTED;
+        assert r2.size() == EXPECTED;
+        assert r3.size() == EXPECTED;
 
         checkFIFO(r1);
         checkFIFO(r2);
         checkFIFO(r3);
-        if(ex != null)
-            throw ex;
     }
 
-    private void checkFIFO(MyReceiver r) {
+    private static void checkFIFO(MyReceiver r) {
         Map<Address,List<Integer>> map=r.getMessages();
 
         boolean fifo=true;
         List<Address> incorrect_receivers=new LinkedList<Address>();
         System.out.println("Checking FIFO for " + r.getName() + ":");
-        for(Address addr: map.keySet()) {
-            List<Integer> list=map.get(addr);
-            print(addr, list);
+        for(Map.Entry<Address,List<Integer>> addressListEntry : map.entrySet()) {
+            List<Integer> list=addressListEntry.getValue();
+            print(addressListEntry.getKey(), list);
             if(!verifyFIFO(list)) {
                 fifo=false;
-                incorrect_receivers.add(addr);
+                incorrect_receivers.add(addressListEntry.getKey());
             }
         }
         System.out.print("\n");
 
         if(!fifo)
-            assert false : "The following receivers didn't receive all messages in FIFO order: " + incorrect_receivers;
+            assert false : "the following receivers didn't receive all messages in FIFO order: " + incorrect_receivers;
     }
 
 
@@ -120,17 +116,6 @@ public class FifoOrderTest extends ChannelTestBase {
 
 
 
-    private static void modifyDefaultThreadPool(JChannel ch1) {
-        TP transport=ch1.getProtocolStack().getTransport();
-        ThreadPoolExecutor default_pool=(ThreadPoolExecutor)transport.getDefaultThreadPool();
-        if(default_pool != null) {
-            default_pool.setCorePoolSize(1);
-            default_pool.setMaximumPoolSize(100);
-        }
-        transport.setThreadPoolQueueEnabled(false);
-    }
-
-
     private class Sender implements Runnable {
         final Channel ch;
         final Address local_addr;
@@ -143,14 +128,14 @@ public class FifoOrderTest extends ChannelTestBase {
         public void run() {
             Message msg;
             try {
-                barrier.await();
+                latch.await(30,TimeUnit.SECONDS);
             }
             catch(Throwable t) {
                 return;
             }
 
             for(int i=1; i <= NUM; i++) {
-                msg=new Message(null, null, new Integer(i));
+                msg=new Message(null, i);
                 try {                    
                     ch.send(msg);
                 }
@@ -162,24 +147,9 @@ public class FifoOrderTest extends ChannelTestBase {
     }
 
 
-    private class Pair<K,V> {
-        K key;
-        V val;
-
-        public Pair(K key, V val) {
-            this.key=key;
-            this.val=val;
-        }
-
-        public String toString() {
-            return key + "::" + val;
-        }
-    }
-
-    private class MyReceiver extends ReceiverAdapter {
-        String name;
+    protected static class MyReceiver extends ReceiverAdapter {
+        final String name;
         final ConcurrentMap<Address,List<Integer>> msgs=new ConcurrentHashMap<Address,List<Integer>>();
-
         AtomicInteger count=new AtomicInteger(0);
 
         public MyReceiver(String name) {
@@ -199,23 +169,14 @@ public class FifoOrderTest extends ChannelTestBase {
             }
             Integer num=(Integer)msg.getObject();
             list.add(num); // no concurrent access: FIFO per sender ! (No need to synchronize on list)
-
-            if(count.incrementAndGet() >= EXPECTED) {
-                System.out.println("[" + name + "]: received all messages (" + count.get() + ")");
-                try {
-                    barrier.await();
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
+            count.incrementAndGet();
         }
 
         public ConcurrentMap<Address,List<Integer>> getMessages() {return msgs;}
-
         public String getName() {
             return name;
         }
+        public int size() {return count.get();}
     }
 
 
