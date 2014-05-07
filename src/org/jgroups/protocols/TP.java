@@ -1216,8 +1216,9 @@ public abstract class TP extends Protocol {
             
             for(DiagnosticsHandler.ProbeHandler handler: preregistered_probe_handlers)
                 diag_handler.registerProbeHandler(handler);
-            preregistered_probe_handlers.clear();
         }
+
+        preregistered_probe_handlers.clear();
 
         if(bundler_type.startsWith("new")) {
             if(bundler_type.endsWith("new2"))
