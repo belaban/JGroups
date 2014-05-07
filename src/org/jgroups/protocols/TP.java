@@ -1223,8 +1223,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(timer == null)
             throw new Exception("timer is null");
 
-        if(enable_diagnostics)
-            startDiagnostics();
+        startDiagnostics();
 
         if(bundler == null) {
             if(bundler_type.startsWith("sender-sends-with-timer") || bundler_type.startsWith("old")) {
@@ -1276,11 +1275,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     protected void startDiagnostics() throws Exception {
-        diag_handler.registerProbeHandler(this);
-        diag_handler.start();
-        for(DiagnosticsHandler.ProbeHandler handler: preregistered_probe_handlers)
-            diag_handler.registerProbeHandler(handler);
-        preregistered_probe_handlers.clear();
+        if(enable_diagnostics) {
+            diag_handler.registerProbeHandler(this);
+            diag_handler.start();
+            for(DiagnosticsHandler.ProbeHandler handler : preregistered_probe_handlers)
+                diag_handler.registerProbeHandler(handler);
+        }
+        preregistered_probe_handlers.clear(); // https://issues.jboss.org/browse/JGRP-1834
     }
 
     protected void stopDiagnostics() {
