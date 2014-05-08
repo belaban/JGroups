@@ -113,6 +113,9 @@ public class RSVP extends Protocol {
                         log.trace(local_addr + ": " + hdr.typeToString() + " --> " + target);
                     retval=down_prot.down(evt);
 
+                    if(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK))
+                        entry.ack(local_addr);
+
                     // 4. Block on AckCollector
                     entry.block(timeout);
                 }

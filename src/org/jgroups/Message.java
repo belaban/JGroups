@@ -3,11 +3,10 @@ package org.jgroups;
 
 
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.util.*;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.util.Map;
 
 /**
@@ -41,8 +40,6 @@ public class Message implements Streamable {
     protected volatile short   flags;
 
     protected volatile byte    transient_flags; // transient_flags is neither marshalled nor copied
-
-    protected static final Log log=LogFactory.getLog(Message.class);
 
 
 
@@ -400,7 +397,7 @@ public class Message implements Streamable {
         if(flags != null)
             for(TransientFlag flag: flags)
                 if(flag != null)
-                    transient_flags |= flag.value();
+                    transient_flags|=flag.value();
         return this;
     }
 
@@ -947,7 +944,6 @@ public class Message implements Streamable {
     protected static Headers createHeaders(Headers m) {
         return new Headers(m);
     }
-
 
     /* ------------------------------- End of Private methods ---------------------------- */
 

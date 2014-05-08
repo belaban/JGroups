@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
+import org.jgroups.Message;
 import org.jgroups.util.*;
 import org.testng.annotations.Test;
 
@@ -15,6 +16,12 @@ import java.util.concurrent.CountDownLatch;
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class TableTest {
 
+    protected static final Filter<Message> dont_loopback_filter=new Filter<Message>() {
+        public boolean accept(Message msg) {
+            return msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+        }
+    };
+    
     public static void testCreation() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
         System.out.println("table = " + table);
@@ -96,8 +103,6 @@ public class TableTest {
         assertCapacity(table.capacity(), 3, 10);
         assertIndices(table, 0, 0, 29);
     }
-
-
 
 
     public static void testAdditionList() {
@@ -321,60 +326,115 @@ public class TableTest {
 
 
     /**
-        * Creates a table and fills it to capacity. Then starts a number of adder threads, each trying to add a
-        * seqno, blocking until there is more space. Each adder will block until the remover removes elements, so the
-        * adder threads get unblocked and can then add their elements to the buffer.
-        */
-       public void testConcurrentAddAndRemove() throws Exception {
-           final int NUM=5;
-           final Table<Integer> buf=new Table<Integer>(3, 10, 0);
-           for(int i=1; i <= 10; i++)
-               buf.add(i, i); // fill the buffer, add() will block now
+     * Creates a table and fills it to capacity. Then starts a number of adder threads, each trying to add a
+     * seqno, blocking until there is more space. Each adder will block until the remover removes elements, so the
+     * adder threads get unblocked and can then add their elements to the buffer.
+     */
+    public void testConcurrentAddAndRemove() throws Exception {
+        final int NUM=5;
+        final Table<Integer> buf=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 10; i++)
+            buf.add(i, i); // fill the buffer, add() will block now
 
-           CountDownLatch latch=new CountDownLatch(1);
-           Adder[] adders=new Adder[NUM];
-           for(int i=0; i < adders.length; i++) {
-               adders[i]=new Adder(latch, i+11, buf);
-               adders[i].start();
-           }
+        CountDownLatch latch=new CountDownLatch(1);
+        Adder[] adders=new Adder[NUM];
+        for(int i=0; i < adders.length; i++) {
+            adders[i]=new Adder(latch, i+11, buf);
+            adders[i].start();
+        }
 
-           System.out.println("releasing threads");
-           latch.countDown();
-           System.out.print("waiting for threads to be done: ");
+        System.out.println("releasing threads");
+        latch.countDown();
+        System.out.print("waiting for threads to be done: ");
 
-           Thread remover=new Thread("Remover") {
-               public void run() {
-                   Util.sleep(2000);
-                   List<Integer> list=buf.removeMany(true, 5);
-                   System.out.println("\nremover: removed = " + list);
-               }
-           };
-           remover.start();
+        Thread remover=new Thread("Remover") {
+            public void run() {
+                Util.sleep(2000);
+                List<Integer> list=buf.removeMany(true, 5);
+                System.out.println("\nremover: removed = " + list);
+            }
+        };
+        remover.start();
 
-           for(Adder adder: adders) {
-               try {
-                   adder.join();
-               }
-               catch(InterruptedException e) {
-                   e.printStackTrace();
-               }
-           }
+        for(Adder adder: adders) {
+            try {
+                adder.join();
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
-           remover.join();
+        remover.join();
 
-           System.out.println("OK");
-           System.out.println("buf = " + buf);
-           assert buf.size() == 10;
-           assertIndices(buf, 5, 5, 15);
+        System.out.println("OK");
+        System.out.println("buf = " + buf);
+        assert buf.size() == 10;
+        assertIndices(buf, 5, 5, 15);
 
-           List<Integer> list=buf.removeMany(true, 0);
-           System.out.println("removed = " + list);
-           assert list.size() == 10;
-           for(int i=6; i <=15; i++)
-               assert list.contains(i);
-           assertIndices(buf, 15, 15, 15);
-       }
+        List<Integer> list=buf.removeMany(true, 0);
+        System.out.println("removed = " + list);
+        assert list.size() == 10;
+        for(int i=6; i <=15; i++)
+            assert list.contains(i);
+        assertIndices(buf, 15, 15, 15);
+    }
 
+    public void testAddAndRemove() {
+        Table<Message> table=new Table<Message>(3, 10, 0);
+        table.add(1, msg(1));
+        table.add(2, msg(2));
+        assert table.getHighestDeliverable() == 2;
+        table.removeMany(true, 10);
+        assert table.getHighestDelivered() == 2;
+        table.add(3, msg(3));
+        assert table.getHighestReceived() == 3;
+
+        table.add(4, msg(4, true), dont_loopback_filter);
+        assert table.getHighestDelivered() == 2;
+        assert table.getHighestDeliverable() == 4;
+        table.removeMany(false, 10);
+        assert table.getHighestDelivered() == 4;
+
+        table.add(5, msg(5, true),dont_loopback_filter);
+        table.add(6, msg(6, true),dont_loopback_filter);
+        assert table.getHighestDelivered() == 6;
+    }
+
+    public void testAddAndRemove2() {
+        Table<Message> table=new Table<Message>(3, 10, 0);
+        for(int i=1; i <=10; i++)
+            table.add(i, msg(i, true), dont_loopback_filter);
+        assert table.getHighestDelivered() == 10;
+        assert table.getHighestReceived() == 10;
+        assert table.getHighestDeliverable() == 10;
+        table.purge(10);
+        assert table.getHighestDelivered() == 10;
+        assert table.getHighestReceived() == 10;
+        assert table.getHighestDeliverable() == 10;
+        assert table.getLow() == 10;
+    }
+
+
+    public void testAddAndRemove3() {
+        Table<Message> table=new Table<Message>(3, 10, 3);
+        table.add(5, msg(5, true), dont_loopback_filter);
+        table.add(6, msg(6, true), dont_loopback_filter);
+        table.add(4, msg(4, true), dont_loopback_filter);
+        assert table.getHighestReceived() == 6;
+        assert table.getHighestDeliverable() == 6;
+        assert table.getHighestDelivered() == 6;
+    }
+
+    public void testAddAndRemove4() {
+        Table<Message> table=new Table<Message>(3, 10, 3);
+        table.add(7, msg(7, true), dont_loopback_filter);
+        table.add(6, msg(6, true), dont_loopback_filter);
+        table.add(4, msg(4, true), dont_loopback_filter);
+        assert table.getHighestReceived() == 7;
+        assert table.getHighestDeliverable() == 4;
+        assert table.getHighestDelivered() == 4;
+    }
 
 
     public void testIndex() {
@@ -1213,6 +1273,14 @@ public class TableTest {
         assertCapacity(table.capacity(), table.getNumRows(), 10);
     }
 
+
+    protected Message msg(int num) {return new Message(null, num);}
+    protected Message msg(int num, boolean set_dont_loopback) {
+        Message msg=msg(num);
+        if(set_dont_loopback)
+            msg.setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
+        return msg;
+    }
 
     protected static void assertCapacity(int actual_capacity, int num_rows, int elements_per_row) {
         int actual_elements_per_row=Util.getNextHigherPowerOfTwo(elements_per_row);

@@ -1424,7 +1424,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         boolean multicast=dest == null, do_send=multicast || !dest.equals(sender),
           loop_back=(multicast || dest.equals(sender)) && !msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
 
-
         if(loopback_separate_thread) {
             if(loop_back)
                 loopback(msg, multicast);

@@ -105,6 +105,26 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
         assert !o1.wasCalled() && o2.wasCalled() && o3.wasCalled();
     }
 
+    public void testInvocationWithExclusionOfSelfUsingDontLoopback() throws Exception {
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 5000).setTransientFlags(Message.TransientFlag.DONT_LOOPBACK);
+        RspList rsps=d1.callRemoteMethods(null, "foo", null, null, options);
+        Util.sleep(500);
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.size() == 2;
+        assert rsps.containsKey(a2) && rsps.containsKey(a3);
+        assert !o1.wasCalled() && o2.wasCalled() && o3.wasCalled();
+    }
+
+    public void testInvocationWithExclusionOfSelfUsingDontLoopbackAnycasting() throws Exception {
+        RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 5000).setTransientFlags(Message.TransientFlag.DONT_LOOPBACK);
+        RspList<Object> rsps=d1.callRemoteMethods(null, "foo", null, null, options.setAnycasting(true));
+        Util.sleep(500);
+        System.out.println("rsps:\n" + rsps);
+        assert rsps.size() == 2;
+        assert rsps.containsKey(a2) && rsps.containsKey(a3);
+        assert !o1.wasCalled() && o2.wasCalled() && o3.wasCalled();
+    }
+
     /** Invoke a method on all but myself and use DONT_LOOPBACK */
     public void testInvocationWithExclusionOfSelfWithDontLoopback() throws Exception {
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 5000).setTransientFlags(Message.TransientFlag.DONT_LOOPBACK);

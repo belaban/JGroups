@@ -165,6 +165,8 @@ public class RequestCorrelator {
                 for(Address mbr: dest_mbrs) {
                     Message copy=msg.copy(true);
                     copy.setDest(mbr);
+                    if(!mbr.equals(local_addr) && copy.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK))
+                        copy.clearTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
                     transport.down(new Event(Event.MSG, copy));
                 }
             }

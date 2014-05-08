@@ -124,6 +124,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         public boolean accept(Message msg) {return msg != null && msg.hashCode() != DUMMY_OOB_MSG.hashCode();}
     };
 
+    protected static final Filter<Message> dont_loopback_filter=new Filter<Message>() {
+        public boolean accept(Message msg) {
+            return msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+        }
+    };
+
 
     public void setMaxMessageBatchSize(int size) {
         if(size >= 1)
@@ -521,15 +527,19 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 if(entry.state() == State.CLOSING)
                     entry.state(State.OPEN);
 
+                boolean dont_loopback_set=msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK)
+                  && dst.equals(local_addr);
                 short send_conn_id=entry.connId();
                 long seqno=entry.sent_msgs_seqno.getAndIncrement();
                 long sleep=10;
                 do {
                     try {
                         msg.putHeader(this.id,Header.createDataHeader(seqno,send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
-                        entry.sent_msgs.add(seqno,msg);  // add *including* UnicastHeader, adds to retransmitter
+                        entry.sent_msgs.add(seqno, msg, dont_loopback_set? dont_loopback_filter : null);  // add *including* UnicastHeader, adds to retransmitter
                         if(conn_expiry_timeout > 0)
                             entry.update();
+                        if(dont_loopback_set)
+                            entry.sent_msgs.purge(entry.sent_msgs.getHighestDeliverable());
                         break;
                     }
                     catch(Throwable t) {
@@ -706,7 +716,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(oob && msg.isFlagSet(Message.Flag.INTERNAL)) {
             // If there are other msgs, tell the regular thread pool to handle them (https://issues.jboss.org/browse/JGRP-1732)
             final AtomicBoolean processing=win.getProcessing();
-            if(!win.isEmpty() && !processing.get() && seqno < win.getHighestReceived()) {
+            if(!win.isEmpty() && !processing.get() /* && seqno < win.getHighestReceived() */) { // commented to handle hd == hr !
                 Executor pool=getTransport().getDefaultThreadPool();
                 pool.execute(new Runnable() {
                     public void run() {

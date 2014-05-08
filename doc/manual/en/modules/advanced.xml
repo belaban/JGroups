@@ -2414,6 +2414,12 @@ msg.setFlag(Message.OOB, Message.NO_FC);
                         Note that this is a <emphasis>transient flag</emphasis>, so Message.isTransientFlagSet(..) has
                         to be used instead of Message.isFlagSet(..
                     </para>
+                    <note>
+                        <para>
+                            Note that DONT_LOOPBACK does not make any sense for <emphasis>unicast</emphasis> messages,
+                            as the sender of a message sent to itself will never receive it.
+                        </para>
+                    </note>
                 </listitem>
             </varlistentry>
         </variablelist>

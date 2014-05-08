@@ -190,7 +190,25 @@ public class Table<T> {
     public boolean add(long seqno, T element) {
         lock.lock();
         try {
-            return _add(seqno, element, true);
+            return _add(seqno, element, true, null);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Adds an element if the element at the given index is null. Returns true if no element existed at the given index,
+     * else returns false and doesn't set the element.
+     * @param seqno
+     * @param element
+     * @param remove_filter If not null, a filter used to remove all consecutive messages passing the filter
+     * @return True if the element at the computed index was null, else false
+     */
+    public boolean add(long seqno, T element, Filter<T> remove_filter) {
+        lock.lock();
+        try {
+            return _add(seqno, element, true, remove_filter);
         }
         finally {
             lock.unlock();
@@ -240,7 +258,7 @@ public class Table<T> {
                 Tuple<Long,T> tuple=it.next();
                 long seqno=tuple.getVal1();
                 T element=const_value != null? const_value : tuple.getVal2();
-                if(_add(seqno, element, false))
+                if(_add(seqno, element, false, null))
                     added=true;
                 else if(remove_added_elements)
                     it.remove();
@@ -488,7 +506,7 @@ public class Table<T> {
         }
     }
 
-    protected boolean _add(long seqno, T element, boolean check_if_resize_needed) {
+    protected boolean _add(long seqno, T element, boolean check_if_resize_needed, Filter<T> remove_filter) {
         if(seqno <= hd)
             return false;
 
@@ -505,6 +523,8 @@ public class Table<T> {
             size++;
             if(seqno > hr)
                 hr=seqno;
+            if(remove_filter != null && hd +1 == seqno)
+                forEach(hd+1, hr, new RemoverOnAdd(remove_filter));
             return true;
         }
         return false;
@@ -764,6 +784,26 @@ public class Table<T> {
             return false;
         }
     }
+
+    protected class RemoverOnAdd implements Visitor<T> {
+        protected final Filter<T> filter;
+
+        public RemoverOnAdd(Filter<T> remover) {
+            filter=remover;
+        }
+
+        @GuardedBy("lock")
+        public boolean visit(long seqno, T element, int row, int column) {
+            if(element == null || !filter.accept(element))
+                return false;
+            if(seqno > hd)
+                hd=seqno;
+            size=Math.max(size-1, 0); // cannot be < 0 (well that would be a bug, but let's have this 2nd line of defense !)
+            return true;
+        }
+    }
+
+
 
     protected class Dump implements Visitor<T> {
         protected final StringBuilder sb=new StringBuilder();

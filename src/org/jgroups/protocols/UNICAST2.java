@@ -139,6 +139,11 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected Future<?>                 connection_reaper; // closes idle connections
 
+    protected static final Filter<Message> dont_loopback_filter=new Filter<Message>() {
+        public boolean accept(Message msg) {
+            return msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+        }
+    };
 
     @Deprecated
     public int[] getTimeout() {return timeout;}
@@ -515,15 +520,19 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     }
                 }
 
+                boolean dont_loopback_set=msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK)
+                  && dst.equals(local_addr);
                 short send_conn_id=entry.send_conn_id;
                 long seqno=entry.sent_msgs_seqno.getAndIncrement();
                 long sleep=10;
                 do {
                     try {
                         msg.putHeader(this.id, Unicast2Header.createDataHeader(seqno, send_conn_id, seqno == DEFAULT_FIRST_SEQNO));
-                        entry.sent_msgs.add(seqno,msg);  // add *including* UnicastHeader, adds to retransmitter
+                        entry.sent_msgs.add(seqno,msg, dont_loopback_set? dont_loopback_filter : null);  // add *including* UnicastHeader, adds to retransmitter
                         if(conn_expiry_timeout > 0)
                             entry.update();
+                        if(dont_loopback_set)
+                            entry.sent_msgs.purge(entry.sent_msgs.getHighestDeliverable());
                         break;
                     }
                     catch(Throwable t) {

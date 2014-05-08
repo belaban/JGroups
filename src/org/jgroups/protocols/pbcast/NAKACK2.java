@@ -142,6 +142,12 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
     };
 
+    protected static final Filter<Message> dont_loopback_filter=new Filter<Message>() {
+        public boolean accept(Message msg) {
+            return msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
+        }
+    };
+
 
     @ManagedAttribute(description="Number of retransmit requests received")
     protected final AtomicLong xmit_reqs_received=new AtomicLong(0);
@@ -726,15 +732,16 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         if(buf == null) // discard message if there is no entry for local_addr
             return;
 
-        if(msg.getSrc() == null)
-            msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
+        if(msg.src() == null)
+            msg.src(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
 
+        boolean dont_loopback_set=msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
         msg_id=seqno.incrementAndGet();
         long sleep=10;
         do {
             try {
                 msg.putHeader(this.id, NakAckHeader2.createMessageHeader(msg_id));
-                buf.add(msg_id, msg);
+                buf.add(msg_id, msg, dont_loopback_set? dont_loopback_filter : null);
                 break;
             }
             catch(Throwable t) {

@@ -1,6 +1,7 @@
 
 package org.jgroups.tests;
 
+import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.Message;
@@ -112,6 +113,24 @@ public class MessageTest {
         assert msg.isFlagSet(Message.Flag.DONT_BUNDLE);
         msg.setFlag(Message.Flag.DONT_BUNDLE);
         assert msg.isFlagSet(Message.Flag.DONT_BUNDLE);
+    }
+
+    public void testDontLoopback() {
+        final Address DEST=Util.createRandomAddress("A");
+        Message msg=new Message(null).setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
+
+        msg.dest(null); // OK
+        msg.setDest(null);
+
+        msg.dest(DEST);
+
+        msg.clearTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
+        msg.dest(DEST); // OK
+        msg.setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
+        msg.setTransientFlagIfAbsent(Message.TransientFlag.DONT_LOOPBACK);
+
+        short flags=(short)(Message.TransientFlag.DONT_LOOPBACK.value() + Message.TransientFlag.OOB_DELIVERED.value());
+        msg.setTransientFlag(flags);
     }
 
 

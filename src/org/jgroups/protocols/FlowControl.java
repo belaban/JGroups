@@ -102,6 +102,8 @@ public abstract class FlowControl extends Protocol {
      */
     protected final Map<Address,Credit> received=Util.createConcurrentMap();
 
+    protected Address local_addr;
+
 
     /** Whether FlowControl is still running, this is set to false when the protocol terminates (on stop()) */
     protected volatile boolean running=true;
@@ -321,7 +323,16 @@ public abstract class FlowControl extends Protocol {
                 if(length == 0)
                     break;
 
-                return handleDownMessage(evt, msg, dest, length);
+                Object retval=handleDownMessage(evt, msg, dest, length);
+
+                // if the message is DONT_LOOPBACK, we will not receive it, therefore the credit
+                // check needs to be done now
+                if(msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK)) {
+                    long new_credits=adjustCredit(received, local_addr, length);
+                    if(new_credits > 0)
+                        sendCredit(local_addr, new_credits);
+                }
+                return retval;
 
             case Event.CONFIG:
                 handleConfigEvent((Map<String,Object>)evt.getArg()); 
@@ -329,6 +340,10 @@ public abstract class FlowControl extends Protocol {
             
             case Event.VIEW_CHANGE:
                 handleViewChange(((View)evt.getArg()).getMembers());
+                break;
+
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
                 break;
         }
         return down_prot.down(evt); // this could potentially use the lower protocol's thread which may block

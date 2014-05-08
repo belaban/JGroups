@@ -509,13 +509,14 @@ public class MPerf extends ReceiverAdapter {
     
     protected void sendMessages() {
         final AtomicInteger num_msgs_sent=new AtomicInteger(0); // all threads will increment this
+        final AtomicInteger actually_sent=new AtomicInteger(0); // incremented *after* sending a message
         final AtomicLong    seqno=new AtomicLong(1); // monotonically increasing seqno, to be used by all threads
         final Sender[]      senders=new Sender[num_threads];
         final CyclicBarrier barrier=new CyclicBarrier(num_threads +1);
         final byte[]        payload=new byte[msg_size];
 
         for(int i=0; i < num_threads; i++) {
-            senders[i]=new Sender(barrier, num_msgs_sent, seqno, payload);
+            senders[i]=new Sender(barrier, num_msgs_sent, actually_sent, seqno, payload);
             senders[i].setName("sender-" + i);
             senders[i].start();
         }
@@ -544,13 +545,15 @@ public class MPerf extends ReceiverAdapter {
     
     protected class Sender extends Thread {
         protected final CyclicBarrier barrier;
-        protected final AtomicInteger num_msgs_sent;
+        protected final AtomicInteger num_msgs_sent, actually_sent;
         protected final AtomicLong    seqno;
         protected final byte[]        payload;
 
-        protected Sender(CyclicBarrier barrier, AtomicInteger num_msgs_sent, AtomicLong seqno, byte[] payload) {
+        protected Sender(CyclicBarrier barrier, AtomicInteger num_msgs_sent, AtomicInteger actually_sent,
+                         AtomicLong seqno, byte[] payload) {
             this.barrier=barrier;
             this.num_msgs_sent=num_msgs_sent;
+            this.actually_sent=actually_sent;
             this.seqno=seqno;
             this.payload=payload;
         }
@@ -576,6 +579,10 @@ public class MPerf extends ReceiverAdapter {
                     channel.send(msg);
                     if(tmp % log_interval == 0)
                         System.out.println("++ sent " + tmp);
+
+                    // if we used num_msgs_sent, we might have thread T3 which reaches the condition below, but
+                    // actually didn't send the *last* message !
+                    tmp=actually_sent.incrementAndGet(); // reuse tmp
                     if(tmp == num_msgs) // last message, send SENDING_DONE message
                         send(null, null, MPerfHeader.SENDING_DONE, Message.Flag.RSVP);
                 }
