@@ -73,9 +73,9 @@ public class MFC extends FlowControl {
         return credits.getNumBlockings();
     }
 
-    @ManagedAttribute(description="Total time (ms) spent in flow control block")
-    public long getTotalTimeBlocked() {
-        return credits.getTotalBlockTime();
+    @ManagedAttribute(description="Average time blocked (in ms) in flow control when trying to send a message")
+    public double getAverageTimeBlocked() {
+        return credits.getAverageBlockTime();
     }
 
     protected boolean handleMulticastMessage() {
@@ -91,6 +91,11 @@ public class MFC extends FlowControl {
     public void stop() {
         super.stop();
         credits.clear();
+    }
+
+    public void resetStats() {
+        super.resetStats();
+        credits.reset();
     }
 
     protected Object handleDownMessage(final Event evt, final Message msg, Address dest, int length) {

@@ -9,6 +9,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Average;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
@@ -141,8 +142,6 @@ public abstract class FlowControl extends Protocol {
         this.min_credits=min_credits;
     }
 
-    public abstract int getNumberOfBlockings();
-
     public long getMaxBlockTime() {
         return max_block_time;
     }
@@ -201,15 +200,10 @@ public abstract class FlowControl extends Protocol {
         }
         return sb.toString();
     }
-    
 
-    public abstract long getTotalTimeBlocked();
+    public abstract int getNumberOfBlockings();
 
-    @ManagedAttribute(description="Average time spent in a flow control block")
-    public double getAverageTimeBlocked() {
-        long number_of_blockings=getNumberOfBlockings();
-        return number_of_blockings == 0? 0.0 : getTotalTimeBlocked() / (double)number_of_blockings;
-    }
+    public abstract double getAverageTimeBlocked();
 
     @ManagedAttribute(description="Number of credit requests received")
     public int getNumberOfCreditRequestsReceived() {
@@ -521,7 +515,7 @@ public abstract class FlowControl extends Protocol {
         // add members not in membership to received and sent hashmap (with full credits)
         for(Address addr: mbrs) {
             if(!received.containsKey(addr))
-                received.put(addr, new Credit(max_credits));
+                received.put(addr, new Credit(max_credits, null));
         }
         // remove members that left
         for(Iterator<Address> it=received.keySet().iterator(); it.hasNext();) {
@@ -544,16 +538,18 @@ public abstract class FlowControl extends Protocol {
 
 
     protected class Credit {
-        protected long credits_left;
-        protected int  num_blockings=0;
-        protected long total_blocking_time=0;
-        protected long last_credit_request=0;
+        protected long          credits_left;
+        protected int           num_blockings;
+        protected long          last_credit_request;
+        protected final Average avg_blockings;
 
         
-        protected Credit(long credits) {
+        protected Credit(long credits, Average avg_blockings) {
             this.credits_left=credits;
+            this.avg_blockings=avg_blockings;
         }
 
+        public void reset() {num_blockings=0; if(avg_blockings != null) avg_blockings.clear();}
 
         protected synchronized boolean decrementIfEnoughCredits(long credits, long timeout) {
             if(decrement(credits))
@@ -562,15 +558,16 @@ public abstract class FlowControl extends Protocol {
             if(timeout <= 0)
                 return false;
 
-            long start=System.currentTimeMillis();
+            long start=avg_blockings != null? System.nanoTime() : 0;
             try {
                 this.wait(timeout);
             }
             catch(InterruptedException e) {
             }
             finally {
-                total_blocking_time+=System.currentTimeMillis() - start;
                 num_blockings++;
+                if(avg_blockings != null)
+                    avg_blockings.add(System.nanoTime() - start);
             }
 
             return decrement(credits);
@@ -612,8 +609,6 @@ public abstract class FlowControl extends Protocol {
         }
 
         protected int getNumBlockings() {return num_blockings;}
-
-        protected long getTotalBlockingTime() {return total_blocking_time;}
 
         protected synchronized long get() {return credits_left;}
 

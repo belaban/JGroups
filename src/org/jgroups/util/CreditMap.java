@@ -19,11 +19,11 @@ public class CreditMap {
     @GuardedBy("lock")
     protected final Map<Address,Long> credits=new HashMap<Address,Long>();
     protected long                    min_credits;
-    protected long                    accumulated_credits=0;
+    protected long                    accumulated_credits;
     protected final Lock              lock=new ReentrantLock();
     protected final Condition         credits_available=lock.newCondition();
-    protected int                     num_blockings=0;
-    protected long                    total_block_time=0; // in ns
+    protected int                     num_blockings;
+    protected final Average           avg_block_time=new Average(50); // in ns
 
 
     public CreditMap(long max_credits) {
@@ -31,21 +31,10 @@ public class CreditMap {
         min_credits=max_credits;
     }
 
-    public long getAccumulatedCredits() {
-        return accumulated_credits;
-    }
-
-    public long getMinCredits() {
-        return min_credits;
-    }
-
-    public int getNumBlockings() {
-        return num_blockings;
-    }
-
-    public long getTotalBlockTime() {
-        return TimeUnit.MILLISECONDS.convert(total_block_time, TimeUnit.NANOSECONDS);
-    }
+    public long   getAccumulatedCredits() {return accumulated_credits;}
+    public long   getMinCredits()         {return min_credits;}
+    public int    getNumBlockings()       {return num_blockings;}
+    public double getAverageBlockTime()   {return avg_block_time.getAverage() / 1000000.0;} // in ms
 
     public Set<Address> keys() {
         lock.lock();
@@ -159,8 +148,8 @@ public class CreditMap {
             catch(InterruptedException e) {
             }
             finally {
-                total_block_time+=System.nanoTime() - start;
                 num_blockings++;
+                avg_block_time.add(System.nanoTime() - start);
             }
             
             return decrement(credits);
@@ -216,9 +205,20 @@ public class CreditMap {
         lock.lock();
         try {
             num_blockings=0;
-            total_block_time=0;
+            avg_block_time.clear();
             credits.clear();
             credits_available.signalAll();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    public void reset() {
+        lock.lock();
+        try {
+            num_blockings=0;
+            avg_block_time.clear();
         }
         finally {
             lock.unlock();

@@ -6,6 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.util.Average;
 import org.jgroups.util.Util;
 
 import java.util.Iterator;
@@ -40,6 +41,8 @@ public class UFC extends FlowControl {
      * the number of credits is decremented by the message size
      */
     protected final Map<Address,Credit> sent=Util.createConcurrentMap();
+
+    protected final Average             avg_block_time=new Average(50); // in ns
 
 
 
@@ -81,12 +84,9 @@ public class UFC extends FlowControl {
         return retval;
     }
 
-    @ManagedAttribute(description="Total time (ms) spent in flow control block")
-    public long getTotalTimeBlocked() {
-        long retval=0;
-        for(Credit cred: sent.values())
-            retval+=cred.getTotalBlockingTime();
-        return retval;
+    @ManagedAttribute(description="Average time blocked (in ms) in flow control when trying to send a message")
+    public double getAverageTimeBlocked() {
+        return avg_block_time.getAverage() / 1000000.0;
     }
 
     public void init() throws Exception {
@@ -102,8 +102,13 @@ public class UFC extends FlowControl {
             cred.set(max_credits);
     }
 
+    public void resetStats() {
+        super.resetStats();
+        avg_block_time.clear();
+        for(Credit cred: sent.values())
+            cred.reset();
 
-
+    }
 
     protected Object handleDownMessage(final Event evt, final Message msg, Address dest, int length) {
         if(dest == null) { // 2nd line of defense, not really needed
@@ -138,7 +143,7 @@ public class UFC extends FlowControl {
         // add members not in membership to received and sent hashmap (with full credits)
         for(Address addr: mbrs) {
             if(!sent.containsKey(addr))
-                sent.put(addr, new Credit(max_credits));
+                sent.put(addr, new Credit(max_credits, avg_block_time));
         }
 
         // remove members that left
