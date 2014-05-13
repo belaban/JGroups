@@ -5,6 +5,7 @@ import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
+import org.jgroups.protocols.UNICAST3;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
@@ -64,7 +65,7 @@ public class UnicastTest {
         int c;
 
         while(true) {
-            System.out.print("[1] Send msgs [2] Print view [3] Print conns [4] Trash conn [5] Trash all conns" +
+            System.out.print("[1] Send msgs [2] Print view [3] Print conns [5] Trash all conns" +
                     "\n[6] Set sender threads (" + num_threads + ") [7] Set num msgs (" + num_msgs + ") " +
                     "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
                     "\n[o] Toggle OOB (" + oob + ") [b] Toggle dont_bundle (" + dont_bundle + ")\n[q] Quit\n");
@@ -81,9 +82,6 @@ public class UnicastTest {
                 break;
             case '3':
                 printConnections();
-                break;
-            case '4':
-                removeConnection();
                 break;
             case '5':
                 removeAllConnections();
@@ -120,18 +118,10 @@ public class UnicastTest {
             System.out.println(((UNICAST)prot).printConnections());
         else if(prot instanceof UNICAST2)
             System.out.println(((UNICAST2)prot).printConnections());
+        else if(prot instanceof UNICAST3)
+            System.out.println(((UNICAST3)prot).printConnections());
     }
 
-    protected void removeConnection() {
-        Address member=getReceiver();
-        if(member != null) {
-            Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
-            if(prot instanceof UNICAST)
-                ((UNICAST)prot).removeConnection(member);
-            else if(prot instanceof UNICAST2)
-                ((UNICAST2)prot).removeConnection(member);
-        }
-    }
 
     protected void removeAllConnections() {
         Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
@@ -139,6 +129,8 @@ public class UnicastTest {
             ((UNICAST)prot).removeAllConnections();
         else if(prot instanceof UNICAST2)
             ((UNICAST2)prot).removeAllConnections();
+        else if(prot instanceof UNICAST3)
+            ((UNICAST3)prot).removeAllConnections();
     }
 
 

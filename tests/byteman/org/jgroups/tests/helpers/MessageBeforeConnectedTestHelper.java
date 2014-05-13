@@ -30,7 +30,7 @@ public class MessageBeforeConnectedTestHelper extends Helper {
 
         new Thread() {
             public void run() {
-                unicast.up(new Event(Event.MSG, msg));
+                unicast.down(new Event(Event.MSG, msg));
             }
         }.start();
     }

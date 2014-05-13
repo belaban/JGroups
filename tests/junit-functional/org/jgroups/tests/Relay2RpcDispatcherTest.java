@@ -88,7 +88,8 @@ public class Relay2RpcDispatcherTest {
     	rpcx.start();
     	rpcy.start();
         Util.waitUntilAllChannelsHaveSameSize(30000, 1000, x, y);
-        
+
+        assert a.getView().size() == 2;
         assert x.getView().size() == 2;
 
         RELAY2 ar=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class);
@@ -121,12 +122,11 @@ public class Relay2RpcDispatcherTest {
         b.send(sm_sfo, 0);
         checkMsgDelivery(xl);
         
-        System.out.println("B: sending message to all");
+        System.out.println("B: sending message to all members in both sites");
         b.send(null, 0);
         checkMsgDelivery(xl, yl, al, bl);
         
         MethodCall call=new MethodCall(ServerObject.class.getMethod("foo"));
-        
         System.out.println("B: call foo method on A");
         Object rsp = rpcb.callRemoteMethod(a.getAddress(), call, new RequestOptions(ResponseMode.GET_ALL,5000));
         System.out.println("RSP is: " + rsp );
@@ -136,9 +136,11 @@ public class Relay2RpcDispatcherTest {
         rsp = rpcb.callRemoteMethod(sm_sfo, call, new RequestOptions(ResponseMode.GET_ALL,15000));
         System.out.println("RSP is: " + rsp );
         
-        System.out.println("B: call foo method on all members dest = null");
+        System.out.println("B: call foo method on all members in site LON");
         RspList<Integer> rsps = rpcb.callRemoteMethods(null, call, new RequestOptions(ResponseMode.GET_ALL,5000));
         System.out.println("RSPs are: \n" + rsps);
+        assert rsps.size() == 2;
+        assert rsps.containsKey(a.getAddress()) && rsps.containsKey(b.getAddress());
         
         View bridge_view=xr.getBridgeView(BRIDGE_CLUSTER);
         System.out.println("bridge_view = " + bridge_view);

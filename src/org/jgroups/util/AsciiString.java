@@ -15,7 +15,7 @@ public class AsciiString implements Comparable<AsciiString> {
     }
 
     public AsciiString(String str) {
-        int length=str.length();
+        int length=str != null? str.length() : 0;
         this.val=new byte[length];
         for(int i=0; i < length; i++)
             val[i]=(byte)str.charAt(i);

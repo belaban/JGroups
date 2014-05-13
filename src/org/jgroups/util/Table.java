@@ -445,7 +445,8 @@ public class Table<T> {
             if(seqno > low)
                 low=seqno;
             if(force) {
-                low=hd=seqno;
+                if(seqno > hd)
+                    low=hd=seqno;
                 size=computeSize();
             }
             num_purges++;

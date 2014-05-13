@@ -37,32 +37,32 @@ public class Relay2Test {
      * Test that RELAY2 can be added to an already connected channel.
      */
     public void testAddRelay2ToAnAlreadyConnectedChannel() throws Exception {
-    	// 1- Create and connect a channel.
-		a=new JChannel();
-		a.connect(SFO_CLUSTER);
-		System.out.println("Channel " + a.getName() + " is connected. View: " + a.getView());
-		
-		// 3- Add RELAY2 protocol to the already connected channel.
-		RELAY2 relayToInject = createRELAY2(SFO);
+        // 1- Create and connect a channel.
+        a=new JChannel();
+        a.connect(SFO_CLUSTER);
+        System.out.println("Channel " + a.getName() + " is connected. View: " + a.getView());
+
+        // 3- Add RELAY2 protocol to the already connected channel.
+        RELAY2 relayToInject = createRELAY2(SFO);
         // Util.setField(Util.getField(relayToInject.getClass(), "local_addr"), relayToInject, a.getAddress());
 
-		a.getProtocolStack().insertProtocolAtTop(relayToInject);
+        a.getProtocolStack().insertProtocolAtTop(relayToInject);
         relayToInject.down(new Event(Event.SET_LOCAL_ADDRESS, a.getAddress()));
         relayToInject.setProtocolStack(a.getProtocolStack());
-		relayToInject.configure();
+        relayToInject.configure();
         relayToInject.handleView(a.getView());
-		
-		// 4- Check RELAY2 presence.
-		RELAY2 ar=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class);
-		assert ar != null;
-		
-		waitUntilRoute(SFO, true, 10000, 500, a);
-		
-		assert !ar.printRoutes().equals("n/a (not site master)") : "This member should be site master";
-		
-		Relayer.Route route=getRoute(a, SFO);
-		System.out.println("Route at sfo to sfo: " + route);
-		assert route != null;
+
+        // 4- Check RELAY2 presence.
+        RELAY2 ar=(RELAY2)a.getProtocolStack().findProtocol(RELAY2.class);
+        assert ar != null;
+
+        waitUntilRoute(SFO, true, 10000, 500, a);
+
+        assert !ar.printRoutes().equals("n/a (not site master)") : "This member should be site master";
+
+        Relayer.Route route=getRoute(a, SFO);
+        System.out.println("Route at sfo to sfo: " + route);
+        assert route != null;
     }
     
     /**

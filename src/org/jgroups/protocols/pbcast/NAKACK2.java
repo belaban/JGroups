@@ -618,10 +618,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
             final Message msg=it.next();
-            if(msg == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))
-                continue;
-            NakAckHeader2 hdr=(NakAckHeader2)msg.getHeader(id);
-            if(hdr == null)
+            NakAckHeader2 hdr;
+            if(msg == null || msg.isFlagSet(Message.Flag.NO_RELIABILITY) || (hdr=(NakAckHeader2)msg.getHeader(id)) == null)
                 continue;
             it.remove(); // remove the message from the batch, so it won't be passed up the stack
 
