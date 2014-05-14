@@ -8,6 +8,7 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Bela Ban
@@ -52,6 +53,15 @@ public class PropertyConvertersTest {
         assert str.equals("lo") || str.equals("lo0");
     }
 
+    public static void testStringProperties() throws Exception {
+        PropertyConverter c = new PropertyConverters.StringProperties();
+
+        String value = "com.sun.security.sasl.digest.realm=MyRealm,qop=true";
+        Map<String, String> map = (Map<String, String>) c.convert(null, Map.class, "props", value, false);
+        assert map.size() == 2;
+        assert map.get("qop").equals("true");
+        assert map.get("com.sun.security.sasl.digest.realm").equals("MyRealm");
+    }
 
     private static void check(Protocol protocol, Class<?> type, String prop, Object result, PropertyConverter converter) throws Exception {
         Object tmp=converter.convert(protocol, type, "bela", prop, false);

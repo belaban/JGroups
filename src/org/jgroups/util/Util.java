@@ -20,6 +20,7 @@ import org.jgroups.stack.ProtocolStack;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
+
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
@@ -327,20 +328,20 @@ public class Util {
         SCOPE.ScopeHeader hdr=(SCOPE.ScopeHeader)msg.getHeader(Global.SCOPE_ID);
         return hdr != null? hdr.getScope() : 0;
     }
-    
+
    public static byte[] createAuthenticationDigest(String passcode, long t1, double q1) throws IOException,
             NoSuchAlgorithmException {
       ByteArrayOutputStream baos = new ByteArrayOutputStream(128);
       DataOutputStream out = new DataOutputStream(baos);
       byte[] digest = createDigest(passcode, t1, q1);
       out.writeLong(t1);
-      out.writeDouble(q1);      
+      out.writeDouble(q1);
       out.writeInt(digest.length);
       out.write(digest);
       out.flush();
       return baos.toByteArray();
    }
-   
+
     public static byte[] createDigest(String passcode, long t1, double q1)
       throws IOException, NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA");
@@ -434,12 +435,12 @@ public class Util {
         ProtocolStack stack=ch.getProtocolStack();
         TP transport=stack.getTransport();
         stack.insertProtocol(discard,  ProtocolStack.ABOVE, transport.getClass());
-        
+
         //abruptly shutdown FD_SOCK just as in real life when member gets killed non gracefully
         FD_SOCK fd = (FD_SOCK) ch.getProtocolStack().findProtocol(FD_SOCK.class);
         if(fd != null)
             fd.stopServerSocket(false);
-        
+
         View view=ch.getView();
         if (view != null) {
             ViewId vid = view.getViewId();
@@ -540,7 +541,7 @@ public class Util {
 
     /**
      * Serializes/Streams an object into a byte buffer.
-     * The object has to implement interface Serializable or Externalizable or Streamable. 
+     * The object has to implement interface Serializable or Externalizable or Streamable.
      */
     public static byte[] objectToByteBuffer(Object obj) throws Exception {
         if(obj == null)
@@ -1207,7 +1208,7 @@ public class Util {
         int len=in.readInt();
         if(len == -1)
             return readGenericStreamable(in);
-        
+
         byte[] buf=new byte[len];
         in.readFully(buf, 0, len);
         return objectFromByteBuffer(buf);
@@ -2618,7 +2619,7 @@ public class Util {
         return null;
     }
 
-    /** Returns the next min(N,list.size()) elements after obj */ 
+    /** Returns the next min(N,list.size()) elements after obj */
     public static <T> List<T> pickNext(List<T> list, T obj, int num) {
         List<T> retval=new ArrayList<T>();
         if(list == null || list.size() < 2)
@@ -3227,6 +3228,16 @@ public class Util {
          return tmp;
      }
 
+    public static Map<String, String> parseCommaDelimitedProps(String s) {
+        Map<String, String> props = new HashMap<String, String>();
+        Pattern p = Pattern.compile("\\s*([^=\\s]+)\\s*=\\s*([^=\\s,]+)\\s*,?"); //Pattern.compile("\\s*([^=\\s]+)\\s*=\\s([^=\\s]+)\\s*,?");
+        Matcher matcher = p.matcher(s);
+        while(matcher.find()) {
+            props.put(matcher.group(1), matcher.group(2));
+        }
+        return props;
+    }
+
 
     public static String parseString(ByteBuffer buf) {
         return parseString(buf, true);
@@ -3621,7 +3632,7 @@ public class Util {
                 String type=mcast_addr != null ? mcast_addr instanceof Inet4Address? "IPv4" : "IPv6" : "n/a";
                 sb.append("could not bind to " + mcast_addr + " (" + type + " address)");
                 sb.append("; make sure your mcast_addr is of the same type as the preferred IP stack (IPv4 or IPv6)");
-                sb.append(" by checking the value of the system properties java.net.preferIPv4Stack and java.net.preferIPv6Addresses.");                
+                sb.append(" by checking the value of the system properties java.net.preferIPv4Stack and java.net.preferIPv6Addresses.");
                 sb.append("\nWill ignore mcast_addr, but this may lead to cross talking " +
                         "(see http://www.jboss.org/community/docs/DOC-9469 for details). ");
                 sb.append("\nException was: " + ex);
@@ -3637,16 +3648,16 @@ public class Util {
 
     /**
      * Method used by PropertyConverters.BindInterface to check that a bind_address is
-     * consistent with a specified interface 
-     * 
+     * consistent with a specified interface
+     *
      * Idea:
      * 1. We are passed a bind_addr, which may be null
-     * 2. If non-null, check that bind_addr is on bind_interface - if not, throw exception, 
+     * 2. If non-null, check that bind_addr is on bind_interface - if not, throw exception,
      * otherwise, return the original bind_addr
      * 3. If null, get first non-loopback address on bind_interface, using stack preference to
      * get the IP version. If no non-loopback address, then just return null (i.e. the
      * bind_interface did not influence the decision).
-     * 
+     *
      */
     public static InetAddress validateBindAddressFromInterface(InetAddress bind_addr, String bind_interface_str) throws UnknownHostException, SocketException {
     	NetworkInterface bind_intf=null;
@@ -3657,10 +3668,10 @@ public class Util {
     	// 1. if bind_interface_str is null, or empty, no constraint on bind_addr
     	if (bind_interface_str == null || bind_interface_str.trim().length() == 0)
     		return bind_addr;
-    	
-    	// 2. get the preferred IP version for the JVM - it will be IPv4 or IPv6 
+
+    	// 2. get the preferred IP version for the JVM - it will be IPv4 or IPv6
     	StackType ip_version = getIpStackType();
-    	
+
     	// 3. if bind_interface_str specified, get interface and check that it has correct version
     	bind_intf=NetworkInterface.getByName(bind_interface_str);
     	if(bind_intf != null) {
@@ -3687,7 +3698,7 @@ public class Util {
     			InetAddress address = (InetAddress) addresses.nextElement() ;
 
     			// check if address is on interface
-    			if (bind_addr.equals(address)) { 
+    			if (bind_addr.equals(address)) {
     				hasAddress = true ;
     				break ;
     			}
@@ -3699,7 +3710,7 @@ public class Util {
     		}
 
     	}
-    	// 4. if only interface is specified, get first non-loopback address on that interface, 
+    	// 4. if only interface is specified, get first non-loopback address on that interface,
     	else {
     		bind_addr = getAddress(bind_intf, AddressScope.NON_LOOPBACK) ;
     	}
@@ -3712,7 +3723,7 @@ public class Util {
     	if(bind_addr != null && NetworkInterface.getByInetAddress(bind_addr) == null) {
     		throw new UnknownHostException("Invalid bind address " + bind_addr);
     	}
-    	
+
     	// if bind_addr == null, we have tried to obtain a bind_addr but were not successful
     	// in such a case, return the original value of null so the default will be applied
 
@@ -3727,7 +3738,7 @@ public class Util {
     public static boolean checkForHp() {
        return checkForPresence("os.name", "hp");
     }
- 
+
     public static boolean checkForSolaris() {
         return checkForPresence("os.name", "sun");
     }
@@ -3925,13 +3936,13 @@ public class Util {
         return null ;
     }
 
-    
+
 
 
     /**
-     * A function to check if an interface supports an IP version (i.e has addresses 
+     * A function to check if an interface supports an IP version (i.e has addresses
      * defined for that IP version).
-     * 
+     *
      * @param intf
      * @return
      */
@@ -3956,8 +3967,8 @@ public class Util {
             throw new UnknownHostException("network interface " + intf + " not found") ;
         }
         return supportsVersion ;
-    }         
-        
+    }
+
     public static StackType getIpStackType() {
        return ip_stack_type;
     }
@@ -3999,7 +4010,7 @@ public class Util {
 		}
 		return StackType.Unknown;
     }
-    
+
 
 
 	public static boolean isStackAvailable(boolean ipv4) {
@@ -4009,8 +4020,8 @@ public class Util {
                 return true;
         return false;
     }
-    
-	
+
+
     public static List<NetworkInterface> getAllAvailableInterfaces() throws SocketException {
         List<NetworkInterface> retval=new ArrayList<NetworkInterface>(10);
         NetworkInterface intf;
@@ -4039,7 +4050,7 @@ public class Util {
         catch(SocketException e) {
             e.printStackTrace();
         }
-        
+
         return retval;
     }
 
@@ -4053,7 +4064,7 @@ public class Util {
         }
         throw new BindException("[" + prot_name + "] " + bind_addr + " is not a valid address on any local network interface");
     }
-    
+
 
 
     /**
