@@ -94,11 +94,14 @@ public class DiagnosticsHandler implements Runnable {
     }
 
     public void stop() {
+        Thread tmp=thread;
+        thread=null;
         if(diag_sock != null)
             socket_factory.close(diag_sock);
-        if(thread != null){
-            try{
-                thread.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
+
+        if(tmp != null) {
+            try {
+                tmp.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
             }
             catch(InterruptedException e){
                 Thread.currentThread().interrupt(); // set interrupt flag

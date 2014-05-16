@@ -633,6 +633,8 @@ public class UDP extends TP {
         }
 
         public synchronized void stop() {
+            Thread tmp=thread;
+            thread=null;
             try {
                 close_strategy.run();
             }
@@ -642,9 +644,7 @@ public class UDP extends TP {
                 Util.close(receiver_socket); // second line of defense
             }
 
-            if(thread != null && thread.isAlive()) {
-                Thread tmp=thread;
-                thread=null;
+            if(tmp != null && tmp.isAlive()) {
                 tmp.interrupt();
                 try {
                     tmp.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
@@ -653,7 +653,6 @@ public class UDP extends TP {
                     Thread.currentThread().interrupt(); // set interrupt flag again
                 }
             }
-            thread=null;
         }
 
 
