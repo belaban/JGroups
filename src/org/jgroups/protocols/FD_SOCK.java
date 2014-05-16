@@ -197,6 +197,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
     public void stop() {
+        pingable_mbrs.clear();
         stopPingerThread();
         stopServerSocket(true); // graceful close
         bcast_task.removeAll();
@@ -338,15 +339,12 @@ public class FD_SOCK extends Protocol implements Runnable {
                 log.debug("%s: VIEW_CHANGE received: %s", local_addr, new_mbrs);
 
                 if(new_mbrs.size() > 1) {
-                    if(isPingerThreadRunning()) {
-                        Address tmp_ping_dest=determinePingDest();
-                        boolean hasNewPingDest = ping_dest != null && tmp_ping_dest != null && !ping_dest.equals(tmp_ping_dest);
-                        if(hasNewPingDest) {
-                            interruptPingerThread(); // allows the thread to use the new socket
-                        }
+                    Address tmp_ping_dest=determinePingDest();
+                    boolean hasNewPingDest = tmp_ping_dest != null && !tmp_ping_dest.equals(ping_dest);
+                    if(hasNewPingDest) {
+                        interruptPingerThread(false); // allows the thread to use the new socket
+                        startPingerThread(); // in case it wasn't running; only starts if not yet running
                     }
-                    else
-                        startPingerThread(); // only starts if not yet running
                 }
                 else {
                     ping_dest=null;
@@ -388,7 +386,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
 
         log.trace("%s: pinger_thread started", local_addr);
-        while(isPingerThreadRunning()) {
+        while(pingable_mbrs != null && !pingable_mbrs.isEmpty()) {
             regular_sock_close=false;
             ping_dest=determinePingDest(); // gets the neighbor to our right
 
@@ -443,8 +441,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
     protected synchronized boolean isPingerThreadRunning() {
-        final Thread tmp=pinger_thread;
-        return tmp != null && tmp.isAlive() && !tmp.isInterrupted();
+        return pinger_thread != null;
     }
 
 
@@ -512,21 +509,25 @@ public class FD_SOCK extends Protocol implements Runnable {
      * running under Linux. This should be tested under Windows. (Solaris 8 and JDK 1.3.1 definitely works).<p>
      * Oct 29 2001 (bela): completely removed Thread.interrupt(), but used socket close on all OSs. This makes this
      * code portable and we don't have to check for OSs.<p/>
-     * Does *not* need to be synchronized on pinger_mutex because the caller (down()) already has the mutex acquired
      */
-    protected void interruptPingerThread() {
+    protected synchronized void interruptPingerThread(boolean sendTerminationSignal) {
         if(isPingerThreadRunning()) {
             regular_sock_close=true;
-            // sendPingInterrupt();  // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
+            if (sendTerminationSignal) {
+                sendPingTermination();  // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
+            }
             teardownPingSocket(); // will wake up the pinger thread. less elegant than Thread.interrupt(), but does the job
         }
     }
 
     protected synchronized void stopPingerThread() {
+        ping_addr_promise.setResult(null);
+        get_cache_promise.setResult(null);
+
+        interruptPingerThread(true);
+
         if(pinger_thread != null) {
-            regular_sock_close=true;
             try {
-                pinger_thread.interrupt();
                 pinger_thread.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
             }
             catch(InterruptedException ignored) {
@@ -535,11 +536,6 @@ public class FD_SOCK extends Protocol implements Runnable {
             pinger_thread=null;
         }
 
-        ping_addr_promise.setResult(null);
-        get_cache_promise.setResult(null);
-
-        sendPingTermination(); // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
-        teardownPingSocket();
     }
 
     // PATCH: send something so the connection handler can exit
