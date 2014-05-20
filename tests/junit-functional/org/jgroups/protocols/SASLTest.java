@@ -30,7 +30,8 @@ public class SASLTest {
     private JChannel createChannel(String channelName, String mech, String username) throws Exception {
         SASL sasl = new SASL();
         sasl.setMech(mech);
-        sasl.setCallbackHandler(new MyCallbackHandler(username));
+        sasl.setClientCallbackHandler(new MyCallbackHandler(username));
+        sasl.setServerCallbackHandler(new MyCallbackHandler(username));
         sasl.setTimeout(5000);
         sasl.sasl_props.put("com.sun.security.sasl.digest.realm", REALM);
         return new JChannel(
