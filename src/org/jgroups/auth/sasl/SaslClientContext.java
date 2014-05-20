@@ -19,11 +19,13 @@ import org.jgroups.protocols.SaslHeader.Type;
 public class SaslClientContext implements SaslContext {
     private static final byte[] EMPTY_CHALLENGE = new byte[0];
     SaslClient client;
+    Subject subject;
 
     public SaslClientContext(final String mech, final String server_name, final CallbackHandler callback_handler, final Map<String, String> props, final Subject subject) throws SaslException {
-        if (subject != null) {
+        this.subject = subject;
+        if (this.subject != null) {
             try {
-                client = Subject.doAs(subject, new PrivilegedExceptionAction<SaslClient>() {
+                client = Subject.doAs(this.subject, new PrivilegedExceptionAction<SaslClient>() {
 
                     @Override
                     public SaslClient run() throws Exception {
@@ -81,12 +83,12 @@ public class SaslClientContext implements SaslContext {
         byte[] response;
         if (payload == null) {
             if (client.hasInitialResponse()) {
-                response = client.evaluateChallenge(EMPTY_CHALLENGE);
+                response = evaluateChallenge(EMPTY_CHALLENGE);
             } else {
                 response = EMPTY_CHALLENGE;
             }
         } else {
-            response = client.evaluateChallenge(payload);
+            response = evaluateChallenge(payload);
         }
         if (response != null) {
             return msg.putHeader(SASL.SASL_ID, new SaslHeader(Type.RESPONSE, response));
@@ -94,4 +96,26 @@ public class SaslClientContext implements SaslContext {
             return null;
         }
     }
+
+    private byte[] evaluateChallenge(final byte[] challenge) throws SaslException {
+        if (subject != null) {
+           try {
+              return Subject.doAs(subject, new PrivilegedExceptionAction<byte[]>() {
+                 @Override
+                 public byte[] run() throws Exception {
+                    return client.evaluateChallenge(challenge);
+                 }
+              });
+           } catch (PrivilegedActionException e) {
+              Throwable cause = e.getCause();
+              if (cause instanceof SaslException) {
+                 throw (SaslException)cause;
+              } else {
+                 throw new RuntimeException(cause);
+              }
+           }
+        } else {
+           return client.evaluateChallenge(challenge);
+        }
+     }
 }
