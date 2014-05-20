@@ -21,11 +21,13 @@ import java.util.concurrent.TimeUnit;
 public class SaslServerContext implements SaslContext {
     SaslServer server;
     CountDownLatch latch = new CountDownLatch(1);
+    Subject subject;
 
     public SaslServerContext(final String mech, final String serverName, final CallbackHandler callback_handler, final Map<String, String> props, final Subject subject) throws SaslException {
-        if (subject != null) {
+        this.subject = subject;
+        if (this.subject != null) {
             try {
-                server = Subject.doAs(subject, new PrivilegedExceptionAction<SaslServer>() {
+                server = Subject.doAs(this.subject, new PrivilegedExceptionAction<SaslServer>() {
                     @Override
                     public SaslServer run() throws Exception {
                         return Sasl.createSaslServer(mech, "jgroups", serverName, props, callback_handler);
