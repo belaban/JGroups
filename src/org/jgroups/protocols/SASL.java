@@ -38,10 +38,10 @@ public class SASL extends Protocol {
     @Property(name = "login_module_name", description = "The name of the JAAS login module to use to obtain a subject for creating the SASL client and server (optional). Only required by some SASL mechs (e.g. GSSAPI)")
     protected String login_module_name;
 
-    @Property(name = "client_name", description = "The name used to obtain the client subject from the JAAS login module (optional). Only required by some SASL mechs (e.g. GSSAPI)")
+    @Property(name = "client_name", description = "The name to use when a node is acting as a client (i.e. it is not the coordinator. Will also be used to obtain the subject if using a JAAS login module")
     protected String client_name;
 
-    @Property(name = "client_password", description = "The password used to obtain the client subject from the JAAS login module (optional). Only required by some SASL mechs (e.g. GSSAPI)")
+    @Property(name = "client_password", description = "The password to use when a node is acting as a client (i.e. it is not the coordinator. Will also be used to obtain the subject if using a JAAS login module")
     protected String client_password;
 
     @Property(name = "mech", description = "The name of the mech to require for authentication. Can be any mech supported by your local SASL provider. The JDK comes standard with CRAM-MD5, DIGEST-MD5, GSSAPI, NTLM")
@@ -56,7 +56,11 @@ public class SASL extends Protocol {
     @Property(name = "timeout", description = "How long to wait (in ms) for a response to a challenge")
     protected long timeout = 5000;
 
-    protected CallbackHandler callback_handler;
+    @Property(name = "client_callback_handler", description = "The CallbackHandler to use when a node acts as a client (i.e. it is not the coordinator")
+    protected CallbackHandler client_callback_handler;
+
+    @Property(name = "server_callback_handler", description = "The CallbackHandler to use when a node acts as a server (i.e. it is the coordinator")
+    protected CallbackHandler server_callback_handler;
 
     protected Subject client_subject;
     protected Subject server_subject;
@@ -68,21 +72,38 @@ public class SASL extends Protocol {
         name = this.getClass().getSimpleName();
     }
 
-    @Property(name = "callback_handler_class")
-    public void setCallbackHandlerClass(String handlerClass) throws Exception {
-        callback_handler = Class.forName(handlerClass).asSubclass(CallbackHandler.class).newInstance();
+    @Property(name = "client_callback_handler_class")
+    public void setClientCallbackHandlerClass(String handlerClass) throws Exception {
+        client_callback_handler = Class.forName(handlerClass).asSubclass(CallbackHandler.class).newInstance();
     }
 
-    public String getCallbackHandlerClass() {
-        return callback_handler != null ? callback_handler.getClass().getName() : null;
+    public String getClientCallbackHandlerClass() {
+        return client_callback_handler != null ? client_callback_handler.getClass().getName() : null;
     }
 
-    public CallbackHandler getCallbackHandler() {
-        return callback_handler;
+    public CallbackHandler getClientCallbackHandler() {
+        return client_callback_handler;
     }
 
-    public void setCallbackHandler(CallbackHandler callback_handler) {
-        this.callback_handler = callback_handler;
+    public void setClientCallbackHandler(CallbackHandler client_callback_handler) {
+        this.client_callback_handler = client_callback_handler;
+    }
+
+    @Property(name = "server_callback_handler_class")
+    public void setServerCallbackHandlerClass(String handlerClass) throws Exception {
+        server_callback_handler = Class.forName(handlerClass).asSubclass(CallbackHandler.class).newInstance();
+    }
+
+    public String getServerCallbackHandlerClass() {
+        return server_callback_handler != null ? server_callback_handler.getClass().getName() : null;
+    }
+
+    public CallbackHandler getServerCallbackHandler() {
+        return server_callback_handler;
+    }
+
+    public void setServerCallbackHandler(CallbackHandler server_callback_handler) {
+        this.server_callback_handler = server_callback_handler;
     }
 
     public void setLoginModuleName(String login_module_name) {
@@ -148,6 +169,9 @@ public class SASL extends Protocol {
     @Override
     public void init() throws Exception {
         super.init();
+        if (client_callback_handler == null) {
+            client_callback_handler = new SaslClientCallbackHandler(client_name, client_password.toCharArray());
+        }
         if (server_subject == null && login_module_name != null) {
             LoginContext lc = new LoginContext(login_module_name);
             lc.login();
@@ -284,7 +308,7 @@ public class SASL extends Protocol {
                 SaslClientContext ctx = null;
                 Address remoteAddress = msg.getDest();
                 try {
-                    ctx = new SaslClientContext(mech, server_name != null ? server_name : remoteAddress.toString(), callback_handler, sasl_props, client_subject);
+                    ctx = new SaslClientContext(mech, server_name != null ? server_name : remoteAddress.toString(), client_callback_handler, sasl_props, client_subject);
                     sasl_context.put(remoteAddress, ctx);
                     ctx.addHeader(msg, null);
                 } catch (Exception e) {
@@ -314,13 +338,13 @@ public class SASL extends Protocol {
             Address remoteAddress = msg.getSrc();
             SaslServerContext ctx = null;
             try {
-                ctx = new SaslServerContext(mech, server_name != null ? server_name : local_addr.toString(), callback_handler, sasl_props, server_subject);
+                ctx = new SaslServerContext(mech, server_name != null ? server_name : local_addr.toString(), server_callback_handler, sasl_props, server_subject);
                 sasl_context.put(remoteAddress, ctx);
                 this.getDownProtocol().down(new Event(Event.MSG, ctx.nextMessage(remoteAddress, saslHeader)));
                 ctx.awaitCompletion(timeout);
                 if (ctx.isSuccessful()) {
                     if (log.isDebugEnabled()) {
-                        log.debug("Authorization successful for %s", ctx.getAuthorizationID());
+                        log.debug("Authentication successful for %s", ctx.getAuthorizationID());
                     }
                     return true;
                 } else {

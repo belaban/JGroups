@@ -2663,6 +2663,9 @@ public class Util {
      }
 
     public static Map<String, String> parseCommaDelimitedProps(String s) {
+        if (s == null) {
+            return null;
+        }
         Map<String, String> props = new HashMap<String, String>();
         Pattern p = Pattern.compile("\\s*([^=\\s]+)\\s*=\\s*([^=\\s,]+)\\s*,?"); //Pattern.compile("\\s*([^=\\s]+)\\s*=\\s([^=\\s]+)\\s*,?");
         Matcher matcher = p.matcher(s);
@@ -2930,7 +2933,6 @@ public class Util {
     public static <K,V> ConcurrentMap<K,V> createConcurrentMap() {
         return new ConcurrentHashMap<K,V>(CCHM_INITIAL_CAPACITY, CCHM_LOAD_FACTOR, CCHM_CONCURRENCY_LEVEL);
     }
-
 
     public static ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr, int start_port) {
         ServerSocket ret=null;
