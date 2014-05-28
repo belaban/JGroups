@@ -63,7 +63,12 @@ public class AUTH extends Protocol {
 
     public AUTH() {name="AUTH";}
 
-   
+    private volatile boolean authenticateCoord = false;
+    
+   @Property(name="authenticate_coord")
+   public void setAuthCoord( boolean authenticateCoord) {
+	   this.authenticateCoord = authenticateCoord;
+   }
 
     @Property(name="auth_class")
     public void setAuthClass(String class_name) throws Exception {
@@ -174,10 +179,18 @@ public class AUTH extends Protocol {
 
 
 
-    protected static boolean needsAuthentication(GMS.GmsHeader hdr) {
-        return hdr.getType() == GMS.GmsHeader.JOIN_REQ
-          || hdr.getType() == GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER
-          || hdr.getType() == GMS.GmsHeader.MERGE_REQ;
+    protected boolean needsAuthentication(GMS.GmsHeader hdr) {
+    	switch(hdr.getType()) {
+        case GMS.GmsHeader.JOIN_REQ:
+        case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
+        case GMS.GmsHeader.MERGE_REQ:
+            return true;
+        case GMS.GmsHeader.JOIN_RSP:
+        case GMS.GmsHeader.MERGE_RSP:
+        	return this.authenticateCoord;
+        default:
+            return false;
+            }
     }
 
 
@@ -188,18 +201,17 @@ public class AUTH extends Protocol {
      * @return true if the message should be passed up, or else false
      */
     protected boolean handleAuthHeader(GMS.GmsHeader gms_hdr, AuthHeader auth_hdr, Message msg) {
-        switch(gms_hdr.getType()) {
-            case GMS.GmsHeader.JOIN_REQ:
-            case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
-            case GMS.GmsHeader.MERGE_REQ:
-                if(this.auth_token.authenticate(auth_hdr.getToken(), msg))
-                    return true; //  authentication passed, send message up the stack
+    	if ( needsAuthentication(gms_hdr)) {
+            if(this.auth_token.authenticate(auth_hdr.getToken(), msg)) {
+                return true; //  authentication passed, send message up the stack
+            } else {
                 log.warn("failed to validate AuthHeader token from " + msg.getSrc() + ", token: " + auth_token);
                 sendRejectionMessage(gms_hdr.getType(), msg.getSrc(), "authentication failed");
                 return false;
-            default:
-                return true; // pass up
-        }
+            }
+    	} else {
+    		return true;
+    	}
     }
 
 
