@@ -211,7 +211,8 @@ public class RouterStub implements Comparable<RouterStub> {
                 connectionStateChanged(ConnectionStatus.CONNECTION_ESTABLISHED);
             }
             catch(Exception e) {
-                Util.close(sock, input, output);
+                Util.close(sock);
+                Util.close(input, output);
                 connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
                 throw new Exception("Could not connect to " + getGossipRouterAddress() , e);
             }

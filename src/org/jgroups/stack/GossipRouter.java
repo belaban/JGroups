@@ -628,7 +628,8 @@ public class GossipRouter {
 
         void close() {
             if(active.compareAndSet(true, false)) {
-                Util.close(input, output, sock);
+                Util.close(input, output);
+                Util.close(sock);
                 for(Address addr: logical_addrs)
                     removeEntry(null, addr);
             }
