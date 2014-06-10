@@ -74,7 +74,7 @@ public class FORK extends Protocol {
                 if(hdr.fork_stack_id == null)
                     throw new IllegalArgumentException("header has a null fork_stack_id");
                 Protocol bottom_prot=get(hdr.fork_stack_id);
-                return bottom_prot.up(evt);
+                return bottom_prot != null? bottom_prot.up(evt) : null;
 
             case Event.VIEW_CHANGE:
                 for(Protocol bottom: fork_stacks.values())
@@ -105,6 +105,8 @@ public class FORK extends Protocol {
             String fork_stack_id=entry.getKey();
             List<Message> list=entry.getValue();
             Protocol bottom_prot=get(fork_stack_id);
+            if(bottom_prot == null)
+                continue;
             MessageBatch mb=new MessageBatch(batch.dest(), batch.sender(), batch.clusterName(), batch.multicast(), list);
             try {
                 bottom_prot.up(mb);
