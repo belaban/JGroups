@@ -177,8 +177,9 @@ public class SASL extends Protocol {
         super.init();
         saslServerFactory = SaslUtils.getSaslServerFactory(mech, sasl_props);
         saslClientFactory = SaslUtils.getSaslClientFactory(mech, sasl_props);
-        if (client_callback_handler == null) {
-            client_callback_handler = new SaslClientCallbackHandler(client_name, client_password.toCharArray());
+        char[] client_password_chars = client_password == null ? new char[]{} : client_password.toCharArray();
+        if (client_callback_handler == null && client_password != null) {
+            client_callback_handler = new SaslClientCallbackHandler(client_name, client_password_chars);
         }
         if (server_subject == null && login_module_name != null) {
             LoginContext lc = new LoginContext(login_module_name);
@@ -186,7 +187,7 @@ public class SASL extends Protocol {
             server_subject = lc.getSubject();
         }
         if (client_subject == null && login_module_name != null) {
-            LoginContext lc = new LoginContext(login_module_name, new SaslClientCallbackHandler(client_name, client_password.toCharArray()));
+            LoginContext lc = new LoginContext(login_module_name, new SaslClientCallbackHandler(client_name, client_password_chars));
             lc.login();
             client_subject = lc.getSubject();
         }
