@@ -184,63 +184,33 @@ public class Relay2Test {
     }
 
 
-
-
-
-    /**
-     * Tests that queued messages are forwarded successfully. The scenario is:
-     * <ul>
-     *     <li>Node A in site LON, node X in site SFO</li>
-     *     <li>Node X is brought down (gracefully)</li>
-     *     <li>Node A sends a few unicast messages to the site master of SFO (queued)</li>
-     *     <li>Node X is started again</li>
-     *     <li>The queued messages on A should be forwarded to the site master of SFO</li>
-     * </ul>
-     * https://issues.jboss.org/browse/JGRP-1528
-     */
-    /*public void testQueueingAndForwarding() throws Exception {
-        MyReceiver rx=new MyReceiver();
+    public void testCoordinatorShutdown() throws Exception {
         a=createNode(LON, "A", LON_CLUSTER, null);
-        x=createNode(SFO, "X", SFO_CLUSTER, rx);
+        b=createNode(LON, "B", LON_CLUSTER, null);
+        x=createNode(SFO, "X", SFO_CLUSTER, null);
+        y=createNode(SFO, "Y", SFO_CLUSTER, null);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 100, a, b);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 100, x, y);
+        waitForBridgeView(2, 20000, 100, a, x); // A and X are site masters
 
-        System.out.println("A: waiting for site SFO to be UP");
-        waitUntilRoute(SFO, true, 20000, 500, a);
+        long start=System.currentTimeMillis();
+        a.close();
+        long time=System.currentTimeMillis()-start;
+        System.out.println("A took " + time + " ms");
 
-        Address sm_sfo=new SiteMaster(SFO);
-        System.out.println("A: sending message 0 to the site master of SFO");
-        a.send(sm_sfo, 0);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 100, b);
+        waitForBridgeView(2, 20000, 100, b, x); // B and X are now site masters
 
-        List<Integer> list=rx.getList();
-        for(int i=0; i < 20; i++) {
-            if(!list.isEmpty())
-                break;
-            Util.sleep(500);
-        }
-        System.out.println("list = " + list);
-        assert list.size() == 1 && list.get(0) == 0;
-        rx.clear();
+        long start2=System.currentTimeMillis();
+        b.close();
+        long time2=System.currentTimeMillis() - start2;
+        System.out.println("B took " + time2 + " ms");
 
-        x.disconnect();
-        System.out.println("Waiting for site SFO to be UNKNOWN");
-        waitUntilRoute(SFO, false, 20000, 500, a);
+        waitForBridgeView(1, 20000, 100, x);
 
-        System.out.println("A: sending 5 messages to site SFO - they should all get queued");
-        for(int i=1; i <= 5; i++)
-            a.send(sm_sfo, i);
+        Util.close(x,y);
+    }
 
-        System.out.println("Starting X again; the queued messages should now get re-sent from A to X");
-        x.connect(SFO_CLUSTER);
-
-        for(int i=0; i < 20; i++) {
-            if(list.size() == 5)
-                break;
-            Util.sleep(500);
-        }
-        System.out.println("list = " + list);
-        assert list.size() == 5 : "list should be 5 but is: " + list;
-        for(int i=1; i <= 5; i++)
-            assert list.contains(i);
-    }*/
 
 
     /**
@@ -298,7 +268,7 @@ public class Relay2Test {
 
 
     protected RELAY2 createRELAY2(String site_name) {
-        RELAY2 relay=new RELAY2().site(site_name).enableAddressTagging(false).asyncRelayCreation(true);
+        RELAY2 relay=new RELAY2().site(site_name).enableAddressTagging(false).asyncRelayCreation(false);
 
         RelayConfig.SiteConfig lon_cfg=new RelayConfig.SiteConfig(LON),
           sfo_cfg=new RelayConfig.SiteConfig(SFO);
