@@ -1240,6 +1240,31 @@ public class Util {
         return retval;
     }
 
+    /** Returns whitespace-separated strings from the input stream, or null if the end of the stream has been reached */
+    public static String readToken(InputStream in) {
+        StringBuilder sb=new StringBuilder();
+        boolean first=true;
+        int ch;
+        while(true) {
+            try {
+                ch=in.read();
+                if(ch == -1)
+                    return sb.length() > 0? sb.toString() : null;
+                if(Character.isWhitespace(ch)) {
+                    if(first)
+                        continue;
+                    break;
+                }
+                sb.append((char)ch);
+                first=false;
+            }
+            catch(IOException e) {
+                break;
+            }
+        }
+        return sb.toString();
+    }
+
 
     public static String readStringFromStdin(String message) throws Exception {
         System.out.print(message);

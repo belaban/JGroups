@@ -300,10 +300,8 @@ public abstract class Discovery extends Protocol {
                     case PingHeader.GET_MBRS_RSP:
                         // add physical address (if available) to transport's cache
                         if(data != null) {
-                            addDiscoveryResponseToCaches(logical_addr, data.getLogicalName(), data.getPhysicalAddr());
                             log.trace("%s: received GET_MBRS_RSP from %s: %s", local_addr, msg.src(), data);
-                            boolean overwrite=logical_addr != null && logical_addr.equals(msg.src());
-                            addResponse(data, overwrite);
+                            handleDiscoveryResponse(data, msg.src());
                         }
                         return null;
 
@@ -319,6 +317,14 @@ public abstract class Discovery extends Protocol {
         return up_prot.up(evt);
     }
 
+
+    protected void handleDiscoveryResponse(PingData data, Address sender) {
+        // add physical address (if available) to transport's cache
+        Address logical_addr=data.getAddress() != null? data.getAddress() : sender;
+        addDiscoveryResponseToCaches(logical_addr, data.getLogicalName(), data.getPhysicalAddr());
+        boolean overwrite=logical_addr != null && logical_addr.equals(sender);
+        addResponse(data, overwrite);
+    }
 
 
     @SuppressWarnings("unchecked")
@@ -391,11 +397,14 @@ public abstract class Discovery extends Protocol {
     }
 
 
-    protected void addDiscoveryResponseToCaches(Address mbr, String logical_name, PhysicalAddress physical_addr) {
-        if(mbr != null && logical_name != null)
+    protected boolean addDiscoveryResponseToCaches(Address mbr, String logical_name, PhysicalAddress physical_addr) {
+        if(mbr == null)
+            return false;
+        if(logical_name != null)
             UUID.add(mbr, logical_name);
-        if(mbr != null && physical_addr != null)
-            down(new Event(Event.SET_PHYSICAL_ADDRESS,new Tuple<Address,PhysicalAddress>(mbr, physical_addr)));
+        if(physical_addr != null)
+            return (Boolean)down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(mbr, physical_addr)));
+        return false;
     }
 
     /**
@@ -454,6 +463,14 @@ public abstract class Discovery extends Protocol {
 
         log.trace("%s: received GET_MBRS_REQ from %s, sending response %s", local_addr, sender, data);
         down_prot.down(new Event(Event.MSG, rsp_msg));
+    }
+
+    protected static String addressAsString(Address address) {
+        if(address == null)
+            return "";
+        if(address instanceof UUID)
+            return ((UUID) address).toStringLong();
+        return address.toString();
     }
 
     protected boolean isCoord(Address member) {return member.equals(current_coord);}

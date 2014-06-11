@@ -54,7 +54,6 @@ public class SWIFT_PING extends FILE_PING {
 
     @Override
     public void init() throws Exception {
-
         Utils.validateNotEmpty(auth_url, "auth_url");
         Utils.validateNotEmpty(auth_type, "auth_type");
         Utils.validateNotEmpty(username, "username");
@@ -68,13 +67,6 @@ public class SWIFT_PING extends FILE_PING {
         // Authenticate now to record credential
         swiftClient.authenticate();
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-
-            public void run() {
-                remove(cluster_name, local_addr);
-            }
-        });
-
         super.init();
     }
 
@@ -83,7 +75,7 @@ public class SWIFT_PING extends FILE_PING {
         AUTH_TYPE authType = AUTH_TYPE.getByConfigName(auth_type);
         if (authType == null) {
             throw new IllegalArgumentException("Invalid 'auth_type' : "
-                    + auth_type);
+                                                 + auth_type);
         }
 
         URL authUrl = new URL(auth_url);
@@ -91,7 +83,7 @@ public class SWIFT_PING extends FILE_PING {
         switch (authType) {
             case KEYSTONE_V_2_0:
                 authenticator = new Keystone_V_2_0_Auth(tenant, authUrl, username,
-                        password);
+                                                        password);
                 break;
 
             default:
@@ -102,12 +94,11 @@ public class SWIFT_PING extends FILE_PING {
     }
 
     @Override
-    protected void remove(String clustername, Address addr) {
-        String fileName = clustername + "/" + addressAsString(addr);
+    protected void createRootDir() {
         try {
-            swiftClient.deleteObject(container, fileName);
+            swiftClient.createContainer(container);
         } catch (Exception e) {
-            log.error("failure removing data", e);
+            log.error("failure creating container", e);
         }
     }
 
@@ -115,40 +106,53 @@ public class SWIFT_PING extends FILE_PING {
     protected void readAll(List<Address> members, String clustername, Responses responses) {
         try {
             List<String> objects = swiftClient.listObjects(container);
-            for (String object : objects) {
+            for(String object: objects) {
+                List<PingData> list=null;
                 byte[] bytes = swiftClient.readObject(container, object);
-                PingData data = (PingData) Util.objectFromByteBuffer(bytes);
-                if(members != null && !members.contains(data.getAddress()))
+                if((list=read(new ByteArrayInputStream(bytes))) == null) {
+                    log.warn("failed reading " + object);
                     continue;
-                responses.addResponse(data, true);
-                if(local_addr != null && !local_addr.equals(data.getAddress()))
-                    addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
+                }
+                for(PingData data: list) {
+                    if(members == null || members.contains(data.getAddress()))
+                        responses.addResponse(data, true);
+                    if(local_addr != null && !local_addr.equals(data.getAddress()))
+                        addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
+                }
             }
+
         } catch (Exception e) {
-            log.error("Error unmarhsalling object", e);
+            log.error("Error unmarshalling object", e);
         }
     }
 
     @Override
-    protected void writeToFile(PingData data, String clustername) {
+    protected void write(List<PingData> list, String clustername) {
         try {
-            String filename = clustername + "/" + addressAsString(local_addr);
-            swiftClient.createObject(container, filename,
-                    Util.objectToByteBuffer(data));
+            String filename = clustername + "/" + addressToFilename(local_addr);
+            ByteArrayOutputStream out=new ByteArrayOutputStream(4096);
+            write(list, out);
+            byte[] data=out.toByteArray();
+            swiftClient.createObject(container, filename, data);
         } catch (Exception e) {
             log.error("Error marshalling object", e);
         }
     }
 
-    @Override
-    protected void createRootDir() {
-        try {
 
-            swiftClient.createContainer(container);
+    @Override
+    protected void remove(String clustername, Address addr) {
+        String fileName = clustername + "/" + addressToFilename(addr);
+        try {
+            swiftClient.deleteObject(container, fileName);
         } catch (Exception e) {
-            log.error("failure creating container", e);
+            log.error("failure removing data", e);
         }
     }
+
+
+
+
 
     private static class HttpHeaders {
 

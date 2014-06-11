@@ -61,8 +61,8 @@ public class UDP extends TP {
     protected int tos=8; // valid values: 2, 4, 8 (default), 16
 
     @Property(name="mcast_addr", description="The multicast address used for sending and receiving packets. Default is 228.8.8.8",
-    		defaultValueIPv4="228.8.8.8", defaultValueIPv6="ff0e::8:8:8",
-            systemProperty=Global.UDP_MCAST_ADDR,writable=false)
+              defaultValueIPv4="228.8.8.8", defaultValueIPv6="ff0e::8:8:8",
+              systemProperty=Global.UDP_MCAST_ADDR,writable=false)
     protected InetAddress mcast_group_addr=null;
 
     @Property(description="The multicast port used for sending and receiving packets. Default is 7600",
@@ -285,20 +285,20 @@ public class UDP extends TP {
 //            if(interfaces != null && interfaces.length > 0)
 //                bind_addr=interfaces[0];
 //        }
-    	// RA 14 Sep 09: These lines were never called as bind_addr always returned a non-null value             	
+        // RA 14 Sep 09: These lines were never called as bind_addr always returned a non-null value
 //        if(bind_addr == null && !use_local_host) {
 //            bind_addr=Util.getFirstNonLoopbackAddress();
 //        }
 //        if(bind_addr == null)
 //            bind_addr=InetAddress.getLocalHost();
-    	
-    	if(bind_addr == null)
-    		throw new IllegalArgumentException("bind_addr cannot be null") ;
 
-//    	RA: 16 Sep 09: need to resolve the use of use_local_host 
-//    	if(bind_addr != null && !bind_addr.isLoopbackAddress() && use_local_host) {
-//    		throw new IllegalArgumentException("must use use localhost as a bind address") ;
-//    	}
+        if(bind_addr == null)
+            throw new IllegalArgumentException("bind_addr cannot be null") ;
+
+//      RA: 16 Sep 09: need to resolve the use of use_local_host
+//      if(bind_addr != null && !bind_addr.isLoopbackAddress() && use_local_host) {
+//        throw new IllegalArgumentException("must use use localhost as a bind address") ;
+//      }
 
         if(log.isDebugEnabled()) log.debug("sockets will use interface " + bind_addr.getHostAddress());
 

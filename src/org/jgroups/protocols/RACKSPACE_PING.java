@@ -56,54 +56,60 @@ public class RACKSPACE_PING extends FILE_PING {
         URL authURL = new URL(region.equals("UK") ? UKService : USService);
         rackspaceClient = new RackspaceClient(authURL, username, apiKey);
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                remove(cluster_name, local_addr);
-            }
-        });
-
         super.init();
 
     }
 
-    @Override
-    protected void remove(String clustername, Address addr) {
-        String fileName = clustername + "/" + addressAsString(addr);
-        rackspaceClient.deleteObject(container, fileName);
-    }
-
-    @Override
-    protected void readAll(List<Address> members, String clustername, Responses responses) {
-        try {
-            List<String> objects = rackspaceClient.listObjects(container);
-            for (String object : objects) {
-                byte[] bytes = rackspaceClient.readObject(container, object);
-                PingData data = (PingData) Util.objectFromByteBuffer(bytes);
-                if(members != null && !members.contains(data.getAddress()))
-                    continue;
-                responses.addResponse(data, false);
-                if(local_addr != null && !local_addr.equals(data.getAddress()))
-                    addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
-            }
-        } catch (Exception e) {
-            log.error("Error unmarhsalling object", e);
-        }
-    }
-
-    @Override
-    protected void writeToFile(PingData data, String clustername) {
-        try {
-            String filename = clustername + "/" + addressAsString(local_addr);
-            rackspaceClient.createObject(container, filename, Util.objectToByteBuffer(data));
-        } catch (Exception e) {
-            log.error("Error marshalling object", e);
-        }
-    }
 
     @Override
     protected void createRootDir() {
         rackspaceClient.authenticate();
         rackspaceClient.createContainer(container);
+    }
+
+
+    @Override
+    protected void readAll(List<Address> members, String clustername, Responses responses) {
+        try {
+            List<String> objects = rackspaceClient.listObjects(container);
+            for(String object: objects) {
+                List<PingData> list=null;
+                byte[] bytes = rackspaceClient.readObject(container, object);
+                if((list=read(new ByteArrayInputStream(bytes))) == null) {
+                    log.warn("failed reading " + object);
+                    continue;
+                }
+                for(PingData data: list) {
+                    if(members == null || members.contains(data.getAddress()))
+                        responses.addResponse(data, true);
+                    if(local_addr != null && !local_addr.equals(data.getAddress()))
+                        addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
+                }
+            }
+
+        } catch (Exception e) {
+            log.error("Error unmarshalling object", e);
+        }
+    }
+
+    @Override
+    protected void write(List<PingData> list, String clustername) {
+        try {
+            String filename = clustername + "/" + addressToFilename(local_addr);
+            ByteArrayOutputStream out=new ByteArrayOutputStream(4096);
+            write(list, out);
+            byte[] data=out.toByteArray();
+            rackspaceClient.createObject(container, filename, data);
+        } catch (Exception e) {
+            log.error("Error marshalling object", e);
+        }
+    }
+
+
+    @Override
+    protected void remove(String clustername, Address addr) {
+        String fileName = clustername + "/" + addressToFilename(addr);
+        rackspaceClient.deleteObject(container, fileName);
     }
 
 

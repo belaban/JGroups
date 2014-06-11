@@ -1,8 +1,12 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.PhysicalAddress;
+import org.jgroups.View;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Responses;
+import org.jgroups.util.UUID;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -30,7 +34,7 @@ import java.util.List;
  * @author Sanne Grinovero
  * @since 2.12
  */
-public class JDBC_PING extends FILE_PING {
+public class JDBC_PING extends Discovery {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
@@ -79,17 +83,22 @@ public class JDBC_PING extends FILE_PING {
 
     private DataSource dataSourceFromJNDI = null;
 
+    public boolean isDynamic() {return true;}
+
     @Override
     public void init() throws Exception {
         super.init();
         verifyconfigurationParameters();
-        if (stringIsEmpty(datasource_jndi_name)) {
+        if (stringIsEmpty(datasource_jndi_name))
             loadDriver();
-        }
-        else {
+        else
             dataSourceFromJNDI = getDataSourceFromJNDI(datasource_jndi_name.trim());
-        }
         attemptSchemaInitialization();
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                remove(cluster_name, local_addr);
+            }
+        });
     }
 
     @Override
@@ -102,87 +111,71 @@ public class JDBC_PING extends FILE_PING {
         super.stop();
     }
 
-    protected void attemptSchemaInitialization() {
-        if (stringIsEmpty(initialize_sql)) {
-            log.debug("Table creation step skipped: initialize_sql property is missing");
-            return;
+    public Object down(Event evt) {
+        switch(evt.getType()) {
+            case Event.VIEW_CHANGE:
+                View old_view=view;
+                boolean previous_coord=is_coord;
+                Object retval=super.down(evt);
+                View new_view=(View)evt.getArg();
+                handleView(new_view, old_view, previous_coord != is_coord);
+                return retval;
         }
-        Connection connection = getConnection();
+        return super.down(evt);
+    }
+
+    public void findMembers(final List<Address> members, final boolean initial_discovery, Responses responses) {
+        readAll(members, cluster_name, responses);
+        writeOwnInformation();
+    }
+
+
+    // remove all files which are not from the current members
+    protected void handleView(View new_view, View old_view, boolean coord_changed) {
+        if(is_coord && old_view != null && new_view != null) {
+            Address[][] diff=View.diff(old_view, new_view);
+            Address[] left_mbrs=diff[1];
+            for(Address left_mbr: left_mbrs)
+                if(left_mbr != null && !new_view.containsMember(left_mbr))
+                    remove(cluster_name, left_mbr);
+        }
+        if(coord_changed)
+            writeOwnInformation();
+    }
+
+    /** Write my own UUID,logical name and physical address to a file */
+    protected void writeOwnInformation() {
+        PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS,local_addr));
+        PingData data=new PingData(local_addr, is_server, UUID.get(local_addr), physical_addr).coord(is_coord);
+        writeToDB(data, cluster_name); // write my own data to file
+    }
+
+    //It's possible that multiple threads in the same cluster node invoke this concurrently;
+    //Since delete and insert operations are not atomic
+    //(and there is no SQL standard way to do this without introducing a transaction)
+    //we need the synchronization or risk a duplicate insertion on same primary key.
+    //This synchronization should not be a performance problem as this is just a Discovery protocol.
+    //Many SQL dialects have some "insert or update" expression, but that would need
+    //additional configuration and testing on each database. See JGRP-1440
+    protected synchronized void writeToDB(PingData data, String clustername) {
+        final String ownAddress = addressAsString(data.getAddress());
+        final Connection connection = getConnection();
         if (connection != null) {
             try {
-                try {
-                    PreparedStatement preparedStatement =
-                        connection.prepareStatement(initialize_sql);
-                    preparedStatement.execute();
-                    log.debug("Table created for JDBC_PING Discovery Protocol");
-                } catch (SQLException e) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Could not execute initialize_sql statement; not necessarily an error.", e);
-                    }
-                    else {
-                        if(log.isDebugEnabled())
-                            log.debug("Could not execute initialize_sql statement; not necessarily an error, we always attempt to create the schema. " +
-                                       "To suppress this message, set initialize_sql to an empty value. Cause:" + e.getMessage());
-                    }
-                }
-            } finally {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    log.error("Error closing connection", e);
-                }
-            }
-        }
-    }
-
-    protected void loadDriver() {
-        if (stringIsEmpty(connection_driver)) {
-            return;
-        }
-        if (log.isDebugEnabled()) {
-            log.debug("Registering JDBC Driver named '" + connection_driver + "'");
-        }
-        try {
-            Class.forName(connection_driver);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("JDBC Driver required for JDBC_PING "
-                        + "protocol could not be loaded: '" + connection_driver + "'");
-        }
-    }
-
-    protected Connection getConnection() {
-        if (dataSourceFromJNDI == null) {
-            Connection connection;
-            try {
-                connection = DriverManager.getConnection(
-                            connection_url, connection_username, connection_password);
+                delete(connection, clustername, ownAddress);
+                insert(connection, data, clustername, ownAddress);
             } catch (SQLException e) {
-                log.error("Could not open connection to database", e);
-                return null;
+                log.error("Error updating JDBC_PING table", e);
+            } finally {
+                closeConnection(connection);
             }
-            if (connection == null) {
-                log.error("Received null connection from the DriverManager!");
-            }
-            return connection;
         }
         else {
-            try {
-                return dataSourceFromJNDI.getConnection();
-            } catch (SQLException e) {
-                log.error("Could not open connection to database", e);
-                return null;
-            }
+            log.error("Failed to store PingData in database");
         }
     }
 
-    @Override
-    protected void createRootDir() {
-        // No-Op to prevent file creations from super.init().
-        // TODO refactor this class and FILE_PING to have a common parent?
-        // would also be nice to remove unwanted configuration properties which where inherited.
-    }
 
-    @Override
     protected void remove(String clustername, Address addr) {
         final String addressAsString = addressAsString(addr);
         try {
@@ -192,7 +185,6 @@ public class JDBC_PING extends FILE_PING {
         }
     }
 
-    @Override
     protected void readAll(List<Address> members, String clustername, Responses responses) {
         final Connection connection = getConnection();
         if (connection != null) {
@@ -238,31 +230,71 @@ public class JDBC_PING extends FILE_PING {
         }
     }
 
-    //It's possible that multiple threads in the same cluster node invoke this concurrently;
-    //Since delete and insert operations are not atomic
-    //(and there is no SQL standard way to do this without introducing a transaction)
-    //we need the synchronization or risk a duplicate insertion on same primary key.
-    //This synchronization should not be a performance problem as this is just a Discovery protocol.
-    //Many SQL dialects have some "insert or update" expression, but that would need
-    //additional configuration and testing on each database. See JGRP-1440
-    @Override
-    protected synchronized void writeToFile(PingData data, String clustername) {
-        final String ownAddress = addressAsString(data.getAddress());
-        final Connection connection = getConnection();
-        if (connection != null) {
+
+    protected void attemptSchemaInitialization() {
+        if(stringIsEmpty(initialize_sql)) {
+            log.debug("Table creation step skipped: initialize_sql property is missing");
+            return;
+        }
+        Connection connection=getConnection();
+        if(connection == null)
+            return;
+
+        try {
+            connection.prepareStatement(initialize_sql).execute();
+            log.debug("Table created for JDBC_PING Discovery Protocol");
+        }
+        catch(SQLException e) {
+            log.debug("Could not execute initialize_sql statement; not necessarily an error, we always attempt to create the schema. " +
+                        "To suppress this message, set initialize_sql to an empty value. Cause: %s", e.getMessage());
+        }
+        finally {
             try {
-                delete(connection, clustername, ownAddress);
-                insert(connection, data, clustername, ownAddress);
-            } catch (SQLException e) {
-                log.error("Error updating JDBC_PING table", e);
-            } finally {
-                closeConnection(connection);
+                connection.close();
+            }
+            catch(SQLException e) {
+                log.error("Error closing connection", e);
             }
         }
-        else {
-            log.error("Failed to store PingData in database");
+    }
+
+    protected void loadDriver() {
+        if (stringIsEmpty(connection_driver))
+            return;
+        log.debug("Registering JDBC Driver named '%s'", connection_driver);
+        try {
+            Class.forName(connection_driver);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("JDBC Driver required for JDBC_PING "
+                        + "protocol could not be loaded: '" + connection_driver + "'");
         }
     }
+
+    protected Connection getConnection() {
+        if (dataSourceFromJNDI == null) {
+            Connection connection;
+            try {
+                connection = DriverManager.getConnection(connection_url, connection_username, connection_password);
+            } catch (SQLException e) {
+                log.error("Could not open connection to database", e);
+                return null;
+            }
+            if (connection == null) {
+                log.error("Received null connection from the DriverManager!");
+            }
+            return connection;
+        }
+        else {
+            try {
+                return dataSourceFromJNDI.getConnection();
+            } catch (SQLException e) {
+                log.error("Could not open connection to database", e);
+                return null;
+            }
+        }
+    }
+
+
 
     protected synchronized void insert(Connection connection, PingData data, String clustername, String address) throws SQLException {
         final byte[] serializedPingData = serializeWithoutView(data);
@@ -272,8 +304,7 @@ public class JDBC_PING extends FILE_PING {
             ps.setString(2, clustername);
             ps.setBytes(3, serializedPingData);
             ps.executeUpdate();
-            if (log.isDebugEnabled())
-                log.debug("Registered " + address + " for clustername " + clustername + " into database.");
+            log.debug("Registered %s for clustername %s into database", address, clustername);
         } finally {
             ps.close();
         }
@@ -285,8 +316,7 @@ public class JDBC_PING extends FILE_PING {
             ps.setString(1, addressToDelete);
             ps.setString(2, clustername);
             ps.executeUpdate();
-            if (log.isDebugEnabled())
-                log.debug("Removed " + addressToDelete + " for clustername " + clustername + " from database.");
+            log.debug("Removed %s for clustername %s from database", addressToDelete, clustername);
         } finally {
             ps.close();
         }
@@ -335,10 +365,7 @@ public class JDBC_PING extends FILE_PING {
                             "JNDI name " + name + " was found but is not a DataSource");
             } else {
                 dataSource = (DataSource) wathever;
-                if (log.isDebugEnabled()) {
-                    log.debug(
-                            "Datasource found via JNDI lookup via name: '"+ name + "'.");
-                }
+                log.debug("Datasource found via JNDI lookup via name: '%s'", name);
                 return dataSource;
             }
         } catch (NamingException e) {
@@ -357,17 +384,15 @@ public class JDBC_PING extends FILE_PING {
     
     protected void verifyconfigurationParameters() {
         if (stringIsEmpty(this.connection_url) ||
-                    stringIsEmpty(this.connection_driver) ||
-                    stringIsEmpty(this.connection_url) ||
-                    stringIsEmpty(this.connection_username) ) {
+          stringIsEmpty(this.connection_driver) ||
+          stringIsEmpty(this.connection_username) ) {
             if (stringIsEmpty(this.datasource_jndi_name)) {
                 throw new IllegalArgumentException("Either the 4 configuration properties starting with 'connection_' or the datasource_jndi_name must be set");
             }
         }
         if (stringNotEmpty(this.connection_url) ||
-                    stringNotEmpty(this.connection_driver) ||
-                    stringNotEmpty(this.connection_url) ||
-                    stringNotEmpty(this.connection_username) ) {
+          stringNotEmpty(this.connection_driver) ||
+          stringNotEmpty(this.connection_username) ) {
             if (stringNotEmpty(this.datasource_jndi_name)) {
                 throw new IllegalArgumentException("When using the 'datasource_jndi_name' configuration property, all properties starting with 'connection_' must not be set");
             }
@@ -384,11 +409,11 @@ public class JDBC_PING extends FILE_PING {
     }
     
     private static final boolean stringIsEmpty(final String value) {
-        return value == null || value.trim().length() == 0;
+        return value == null || value.trim().isEmpty();
     }
     
     private static final boolean stringNotEmpty(final String value) {
-        return value != null && value.trim().length() >= 0;
+        return !stringIsEmpty(value);
     }
 
 }

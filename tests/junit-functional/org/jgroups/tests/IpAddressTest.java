@@ -10,12 +10,13 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class IpAddressTest {
@@ -47,6 +48,19 @@ public class IpAddressTest {
         c=b;
     }
 
+    public void testConstructor() throws Exception {
+        IpAddress tmp=new IpAddress("192.168.1.5:7800");
+        assert tmp.getPort() == 7800;
+        assert tmp.getIpAddress().equals(InetAddress.getByName("192.168.1.5"));
+
+        tmp=new IpAddress("10.1.2.3");
+        assert tmp.getPort() == 0;
+        assert tmp.getIpAddress().equals(InetAddress.getByName("10.1.2.3"));
+
+        tmp=new IpAddress("fe80::21b:21ff:fe07:a3b0:6000");
+        assert tmp.getPort() == 6000;
+        assert tmp.getIpAddress().equals(InetAddress.getByName("fe80::21b:21ff:fe07:a3b0"));
+    }
 
     public static void testUnknownAddress() {
         try {
@@ -85,12 +99,12 @@ public class IpAddressTest {
         Assert.assertEquals(x1, x2);
         Assert.assertEquals(x3, x1);
 
-        HashSet<Address> s=new HashSet<Address>();
+        Set<Address> s=new HashSet<Address>();
         Collections.addAll(s, x1, x2, x3);
         System.out.println("s=" + s);
         Assert.assertEquals(1, s.size());
 
-        HashMap<Address,String> m=new HashMap<Address,String>();
+        Map<Address,String> m=new HashMap<Address,String>();
         m.put(x1, "Bela");
         m.put(x2, "Michelle");
         m.put(x3, "Nicole");
@@ -185,11 +199,8 @@ public class IpAddressTest {
 
 
 
-
-
     public static void testIPv6WithStreamable() throws Exception {
-        InetAddress tmp=Util.getNonLoopbackAddress();
-        IpAddress ip=new IpAddress(tmp, 5555);
+        IpAddress ip=new IpAddress("fe80:0:0:0:21b:21ff:fe07:a3b0", 5555);
 
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         DataOutputStream      dos=new DataOutputStream(bos);
@@ -197,7 +208,7 @@ public class IpAddressTest {
         ByteArrayInputStream  bis=null;
         DataInputStream       dis;
 
-        System.out.println("-- address is " + tmp);
+        System.out.println("-- address is " + ip);
 
         ip.writeTo(dos);
         buf=bos.toByteArray();

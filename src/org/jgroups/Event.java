@@ -42,8 +42,8 @@ public class Event {
     public static final int REBROADCAST				           = 78;  // arg = Digest
     public static final int CONNECT_WITH_STATE_TRANSFER        = 80;  // arg = cluster name (string)
     public static final int GET_PHYSICAL_ADDRESS               = 87;  // arg = Address --> PhysicalAddress
-    public static final int GET_LOGICAL_PHYSICAL_MAPPINGS      = 88;  // arg = null --> Map<Address,PhysicalAddress>
-    public static final int SET_PHYSICAL_ADDRESS               = 89;  // arg = Tuple<Address,PhysicalAddress>
+    public static final int GET_LOGICAL_PHYSICAL_MAPPINGS      = 88;  // arg = boolean --> Map<Address,PhysicalAddress>
+    public static final int SET_PHYSICAL_ADDRESS               = 89;  // arg = Tuple<Address,PhysicalAddress> --> boolean
     public static final int REMOVE_ADDRESS                     = 90;  // arg = Address
     public static final int GET_LOCAL_ADDRESS                  = 91;  // arg = null --> UUID (local_addr)
     public static final int CONNECT_USE_FLUSH			       = 92;

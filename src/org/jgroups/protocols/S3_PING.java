@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Responses;
-import org.jgroups.util.Util;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -13,10 +12,7 @@ import org.xml.sax.helpers.XMLReaderFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -37,19 +33,22 @@ import static java.lang.String.valueOf;
 public class S3_PING extends FILE_PING {
 
     @Property(description="The access key to AWS (S3)",exposeAsManagedAttribute=false)
-    protected String access_key=null;
+    protected String access_key;
 
     @Property(description="The secret access key to AWS (S3)",exposeAsManagedAttribute=false)
-    protected String secret_access_key=null;
+    protected String secret_access_key;
 
     @Property(description="When non-null, we set location to prefix-UUID")
-    protected String prefix=null;
+    protected String  prefix;
 
     @Property(description="When non-null, we use this pre-signed URL for PUTs",exposeAsManagedAttribute=false)
-    protected String pre_signed_put_url=null;
+    protected String pre_signed_put_url;
 
     @Property(description="When non-null, we use this pre-signed URL for DELETEs",exposeAsManagedAttribute=false)
-    protected String pre_signed_delete_url=null;
+    protected String pre_signed_delete_url;
+
+    @Property(description="Skip the code which checks if a bucket exists in initialization")
+    protected boolean skip_bucket_existence_check=false;
 
     protected AWSAuthConnection conn=null;
 
@@ -57,8 +56,6 @@ public class S3_PING extends FILE_PING {
   
     public void init() throws Exception {
         super.init();
-        //if(access_key == null || secret_access_key == null)
-          //  throw new IllegalArgumentException("access_key and secret_access_key must be non-null");
 
         validateProperties();
 
@@ -89,7 +86,7 @@ public class S3_PING extends FILE_PING {
             location = parsedPut.getBucket();
         }
 
-        if(!conn.checkBucketExists(location)) {
+        if(!skip_bucket_existence_check && !conn.checkBucketExists(location)) {
             conn.createBucket(location, AWSAuthConnection.LOCATION_DEFAULT, null).connection.getResponseMessage();
         }
     }
@@ -115,17 +112,12 @@ public class S3_PING extends FILE_PING {
             }
 
             clustername=sanitize(clustername);
-            if(members != null && !members.isEmpty()) { // only fetch info for given members
-                readSelectedMembers(members, clustername, responses);
-                return;
-            }
-
             ListBucketResponse rsp=conn.listBucket(location, clustername, null, null, null);
             if(rsp.entries != null) {
                 for(Iterator<ListEntry> it=rsp.entries.iterator(); it.hasNext();) {
                     ListEntry key=it.next();
                     GetResponse val=conn.get(location, key.key, null);
-                    readResponse(val, responses);
+                    readResponse(val, members, responses);
                 }
             }
         }
@@ -134,47 +126,40 @@ public class S3_PING extends FILE_PING {
         }
     }
 
-    protected void readSelectedMembers(List<Address> members, String clustername, Responses responses) {
-        for(Address mbr: members) {
-            String filename=addressAsString(mbr);
-            String key=clustername + "/" + sanitize(filename);
-            try {
-                GetResponse val=conn.get(location, key, null);
-                readResponse(val, responses);
-            }
-            catch(IOException e) {
-                log.error("failed reading address", e);
-            }
-        }
-    }
 
-
-    protected void readResponse(GetResponse rsp, Responses responses) {
+    protected void readResponse(GetResponse rsp, List<Address> mbrs, Responses responses) {
         if(rsp.object == null)
             return;
         byte[] buf=rsp.object.data;
+        List<PingData> list;
         if(buf != null && buf.length > 0) {
             try {
-                PingData data=(PingData)Util.objectFromByteBuffer(buf);
-                responses.addResponse(data, false);
-                addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
+                list=read(new ByteArrayInputStream(buf));
+                for(PingData data: list) {
+                    if(mbrs == null || mbrs.contains(data.getAddress()))
+                        responses.addResponse(data, true);
+                    if(local_addr != null && !local_addr.equals(data.getAddress()))
+                        addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
+                }
             }
             catch(Throwable e) {
-                log.error("failed marshalling buffer to address", e);
+                log.error("failed unmarshalling response", e);
             }
         }
     }
 
 
-    protected void writeToFile(PingData data, String clustername) {
-        if(clustername == null || data == null)
-            return;
-        String filename=addressAsString(local_addr);
+
+    @Override
+    protected void write(List<PingData> list, String clustername) {
+        String filename=addressToFilename(local_addr);
         String key=sanitize(clustername) + "/" + sanitize(filename);
         HttpURLConnection httpConn = null;
         try {
-            byte[] buf=Util.objectToByteBuffer(data);
-            S3Object val=new S3Object(buf, null);
+            ByteArrayOutputStream out=new ByteArrayOutputStream(4096);
+            write(list, out);
+            byte[] data=out.toByteArray();
+            S3Object val=new S3Object(data, null);
 
             if (usingPreSignedUrls()) {
                 Map headers = new TreeMap();
@@ -186,11 +171,10 @@ public class S3_PING extends FILE_PING {
                 httpConn = conn.put(location, key, val, headers).connection;
             }
             if(!httpConn.getResponseMessage().equals("OK")) {
-               log.error("Failed to write file to S3 bucket - HTTP Response code: (" + httpConn.getResponseCode() + ")");
+                log.error("Failed to write file to S3 bucket - HTTP Response code: (" + httpConn.getResponseCode() + ")");
             }
-        }
-        catch(Exception e) {
-            log.error("failed marshalling " + data + " to buffer", e);
+        } catch (Exception e) {
+            log.error("Error marshalling object", e);
         }
     }
 
@@ -198,7 +182,7 @@ public class S3_PING extends FILE_PING {
     protected void remove(String clustername, Address addr) {
         if(clustername == null || addr == null)
             return;
-        String filename=addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)addr).toStringLong() : addr.toString();
+        String filename=addressToFilename(addr);//  addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)addr).toStringLong() : addr.toString();
         String key=sanitize(clustername) + "/" + sanitize(filename);
         try {
             Map headers=new TreeMap();

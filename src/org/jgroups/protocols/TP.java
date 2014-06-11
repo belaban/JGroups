@@ -786,6 +786,16 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             ((ThreadPoolExecutor)oob_thread_pool).setThreadFactory(factory);
     }
 
+    public Executor getInternalThreadPool() {
+        return internal_thread_pool;
+    }
+
+    public void setInternalThreadPool(Executor internal_thread_pool) {
+        if(this.internal_thread_pool != null)
+            shutdownThreadPool(this.internal_thread_pool);
+        this.internal_thread_pool=internal_thread_pool;
+    }
+
     public ThreadFactory getInternalThreadPoolThreadFactory() {
         return internal_thread_factory;
     }
@@ -1897,6 +1907,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * members' physical addresses if needed */
     protected void sendToMembers(Collection<Address> mbrs, byte[] buf, int offset, int length) throws Exception {
         List<Address> missing=null;
+
+        if(mbrs == null || mbrs.isEmpty())
+            mbrs=logical_addr_cache.keySet();
+
         for(Address mbr: mbrs) {
             PhysicalAddress target=logical_addr_cache.get(mbr);
             if(target == null) {
@@ -2195,12 +2209,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 return getAllPhysicalAddressesFromCache();
 
             case Event.GET_LOGICAL_PHYSICAL_MAPPINGS:
-                return logical_addr_cache.contents();
+                Object arg=evt.getArg();
+                boolean skip_removed_values=arg instanceof Boolean && (Boolean)arg;
+                return logical_addr_cache.contents(skip_removed_values);
 
             case Event.SET_PHYSICAL_ADDRESS:
                 Tuple<Address,PhysicalAddress> tuple=(Tuple<Address,PhysicalAddress>)evt.getArg();
-                addPhysicalAddressToCache(tuple.getVal1(), tuple.getVal2());
-                break;
+                return addPhysicalAddressToCache(tuple.getVal1(), tuple.getVal2());
 
             case Event.REMOVE_ADDRESS:
                 removeLogicalAddressFromCache((Address)evt.getArg());
@@ -2330,9 +2345,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
 
-    protected void addPhysicalAddressToCache(Address logical_addr, PhysicalAddress physical_addr) {
+    protected boolean addPhysicalAddressToCache(Address logical_addr, PhysicalAddress physical_addr) {
         if(logical_addr != null && physical_addr != null)
-            logical_addr_cache.add(logical_addr, physical_addr);
+            return logical_addr_cache.add(logical_addr, physical_addr);
+        return false;
     }
 
     protected PhysicalAddress getPhysicalAddressFromCache(Address logical_addr) {

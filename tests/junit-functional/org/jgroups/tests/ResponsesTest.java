@@ -16,8 +16,8 @@ import org.testng.annotations.Test;
 @Test(groups=Global.FUNCTIONAL)
 public class ResponsesTest {
     protected static final int NUM=10;
-    protected static final String[]          names=new String[NUM];
-    protected static final Address[]         addrs=new Address[NUM];
+    protected static final String[] names=new String[NUM];
+    protected static final Address[] addrs=new Address[NUM];
     protected static final PhysicalAddress[] phys_addrs=new PhysicalAddress[NUM];
 
     static {
@@ -34,7 +34,7 @@ public class ResponsesTest {
         System.out.println("rsps = " + rsps);
         assert !rsps.isDone();
         for(int i=0; i < 5; i++)
-            rsps.addResponse(new PingData(addrs[i], true,names[i],phys_addrs[i]), false);
+            rsps.addResponse(new PingData(addrs[i], true, names[i], phys_addrs[i]), false);
         System.out.println("rsps = " + rsps);
         assert !rsps.isDone();
         assert !rsps.waitFor(500);
@@ -44,20 +44,31 @@ public class ResponsesTest {
         assert !rsps.containsResponseFrom(addrs[5]);
 
         for(int i=0; i < 5; i++)
-            rsps.addResponse(new PingData(addrs[i], true,names[i],phys_addrs[i]), false);
+            rsps.addResponse(new PingData(addrs[i], true, names[i], phys_addrs[i]), false);
         System.out.println("rsps = " + rsps);
         assert !rsps.isDone() && rsps.size() == 5;
 
         for(int i=0; i < 5; i++)
-            rsps.addResponse(new PingData(addrs[i], true,names[i],phys_addrs[i]), true);
+            rsps.addResponse(new PingData(addrs[i], true, names[i], phys_addrs[i]), true);
         System.out.println("rsps = " + rsps);
         assert !rsps.isDone() && rsps.size() == 5;
 
         for(int i=5; i < 10; i++)
-            rsps.addResponse(new PingData(addrs[i], true,names[i],phys_addrs[i]), false);
+            rsps.addResponse(new PingData(addrs[i], true, names[i], phys_addrs[i]), false);
         System.out.println("rsps = " + rsps);
         assert rsps.isDone() && rsps.size() == 10;
         assert rsps.waitFor(60000);
+    }
+
+    public void testContainsResponse() {
+        Responses rsps=new Responses(10, true);
+        assert !rsps.isDone();
+        for(int i=0; i<5;i++)
+            rsps.addResponse(new PingData(addrs[i], true,names[i], phys_addrs[i]), false);
+        System.out.println("rsps = "+rsps);
+        assert rsps.containsResponseFrom(addrs[3]);
+        PingData rsp=rsps.findResponseFrom(addrs[3]);
+        assert rsp != null && rsp.getAddress().equals(addrs[3]);
     }
 
     public void testResize() throws Exception {
@@ -83,6 +94,19 @@ public class ResponsesTest {
         assert rsps.isDone();
     }
 
+    public void testClear() {
+        Responses rsps=new Responses(10, true);
+        System.out.println("rsps = " + rsps);
+        for(int i=0; i < 5; i++)
+            rsps.addResponse(new PingData(addrs[i], true,names[i],phys_addrs[i]), false);
+        System.out.println("rsps = " + rsps);
+        assert rsps.size() == 5;
+        assert !rsps.isDone();
+        rsps.clear();
+        System.out.println("rsps = " + rsps);
+        assert rsps.isEmpty();
+        assert rsps.isDone();
+    }
 
     public void testWaitFor() throws Exception {
         final Responses rsps=new Responses(5, true);

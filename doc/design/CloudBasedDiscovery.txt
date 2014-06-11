@@ -10,7 +10,8 @@ Goals
   - Use of a single file for all members rather than 1 file per member
     - Reading a single file is faster than having to read N files
     - We used ~35 bytes / member in Google Cloud Store, so for 1000 nodes this could be ~35-50 KB
-- Fast startup via bootstrap file: contains UUIDs, logical names and IP addresses:ports of all members
+- Optional fast startup via bootstrap file: contains UUIDs, logical names and IP addresses:ports of all members
+- The members file should be user-readable (not binary); users should also be able to modify / generate it
 
 Members file
 ------------
@@ -22,7 +23,7 @@ Members file
   - Example:
        A                                      1  192.168.1.5:7800                T
        B   0a6c59fc-7ee0-acd2-2d4b-cf7dd59adb97  192.168.1.5:4569                F
-       C                                      2  fe80::21b:21ff:fe07:a3b0:4500   T
+       C                                      2  fe80::21b:21ff:fe07:a3b0:4500   F
     (The last semicolon separates the IP address from the port, so the port is 4500)
   - This is just an example; usually all addresses would either be IPv4 or IPv6, but not mixed.
 
@@ -30,8 +31,8 @@ Overview
 --------
 - When a new member starts, it reads the members list and adds all of the information to its local cache,
   then sends a JOIN request to the coordinator (which is marked with a T in the file)
-- When the coordinator changes, the new coordinator writes the file again, marking itself with a T.
-  The old coord removes its file.
+- When the coordinator A changes, the new coordinator B writes the B.list file, marking itself with a T.
+  The old coord removes its A.list file.
 - When a member joins which is not listed, it multicasts its information (UUID, logical name and IP address:port) to
   all members
   - When the coord receives this message, it adds the new member to the members file. New joiners then have this info
@@ -71,9 +72,8 @@ Initial start with bootstrap file
 
 Initial start without bootstrap file
 ------------------------------------
-- When a member P starts and doesn't find a members file, if it turns out to become the coordinator,
+- When a member P starts and doesn't find a members file, it turns out to become the coordinator,
   it creates a new file P.list (where P is the UUID) and adds its own information
-- When P does find a members file, the next steps are the same as above (initial start with bootstrap file)
 
 
 Coordinator change
@@ -89,18 +89,20 @@ Coordinator change
 
 Member leaves or crashes
 ------------------------
-- When P leaves (P is not a coord, otherwise go to coordinator change above), the current coord (A)
-  writes a new A.list excluding P
+- When B leaves (B is not a coord, otherwise go to coordinator change above), the current coord (A)
+  writes a new A.list excluding B.
+  - CHANGED: we don't do anything (saving us a write when members leave). When the logical address cache fills up,
+    next time a member joins we'll write the cleaned cache anyway
 
 
 New member P is not in members file
 -----------------------------------
-- P multicasts (IP multicast if UDP is used or N-1 unicasts if TCP is used) an INFO message containing its
+- P multicasts (IP multicast if UDP is used or N-1 unicasts if TCP is used) a GET_MBRS_RSP message containing its
   UUID, logical name and IP address:port
 
 
-Reception of INFO message from P
---------------------------------
+Reception of GET_MBRS_RSP message from P
+----------------------------------------
 - Everyone adds P's information to their local caches
 - If the current member A is the coord:
   - If P was not in the local cache -> write A.list including P
@@ -133,3 +135,9 @@ Merge of {A,B,C}, {M,N,O} and {X,Y,Z}
   the members file (see members not in member list above)
 
 
+Issues
+------
+- Do we need to support subclasses of UUID (e.g. ExtendedUUID) ?
+  --> Probably yes: we actually only need the UUIDs as *keys* for the physical addrs in the caches, so it doesn't matter
+      that we strip ExtendedUUIDs down to UUIDs as they're only used for lookup purposes anyway. The UUIDs sent with
+      the messages (e.g. sender) are not changed, so this should not have any adverse effect.

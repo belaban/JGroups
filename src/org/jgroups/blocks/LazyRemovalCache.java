@@ -1,6 +1,6 @@
 package org.jgroups.blocks;
 
-import org.jgroups.util.*;
+import org.jgroups.util.Util;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -34,10 +34,12 @@ public class LazyRemovalCache<K,V> {
         this.max_age=max_age;
     }
 
-    public void add(K key, V val) {
+    public boolean add(K key, V val) {
+        boolean added=false;
         if(key != null && val != null)
-            map.put(key, new Entry<V>(val)); // overwrite existing element (new timestamp, and possible removable mark erased)
+            added=map.put(key, new Entry<V>(val)) == null; // overwrite existing element (new timestamp, and possible removable mark erased)
         checkMaxSizeExceeded();
+        return added;
     }
 
     public boolean containsKey(K key) {
@@ -184,9 +186,17 @@ public class LazyRemovalCache<K,V> {
     }
 
     public Map<K,V> contents() {
+        return contents(false);
+    }
+
+    public Map<K,V> contents(boolean skip_removed_values) {
         Map<K,V> retval=new HashMap<K,V>();
-        for(Map.Entry<K,Entry<V>> entry: map.entrySet())
+        for(Map.Entry<K,Entry<V>> entry: map.entrySet()) {
+            Entry<V> val=entry.getValue();
+            if(val.isRemovable() && skip_removed_values)
+                continue;
             retval.put(entry.getKey(), entry.getValue().val);
+        }
         return retval;
     }
 

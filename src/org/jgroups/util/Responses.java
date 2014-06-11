@@ -51,6 +51,16 @@ public class Responses implements Iterable<PingData> {
         try {return _done();} finally {lock.unlock();}
     }
 
+    public Responses clear() {
+        lock.lock();
+        try {
+            index=0;
+            return _done();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
 
     public void addResponse(PingData rsp, boolean overwrite) {
         if(rsp == null)
@@ -87,6 +97,15 @@ public class Responses implements Iterable<PingData> {
                 return true;
         }
         return false;
+    }
+
+    public PingData findResponseFrom(Address mbr) {
+        if(mbr == null) return null;
+        for(int i=0; i < index; i++) {
+            if(ping_rsps[i] != null && mbr.equals(ping_rsps[i].getAddress()))
+                return ping_rsps[i];
+        }
+        return null;
     }
 
     @Deprecated

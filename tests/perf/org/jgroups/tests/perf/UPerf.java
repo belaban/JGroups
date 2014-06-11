@@ -7,6 +7,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.SiteMaster;
+import org.jgroups.stack.AddressGenerator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -78,8 +79,10 @@ public class UPerf extends ReceiverAdapter {
     }
 
 
-    public void init(String props, String name, boolean xsite) throws Throwable {
+    public void init(String props, String name, boolean xsite, AddressGenerator generator) throws Throwable {
         channel=new JChannel(props);
+        if(generator != null)
+            channel.addAddressGenerator(generator);
         if(name != null)
             channel.setName(name);
         disp=new RpcDispatcher(channel, null, this, this);
@@ -550,11 +553,13 @@ public class UPerf extends ReceiverAdapter {
 
 
 
+
     public static void main(String[] args) {
         String  props=null;
         String  name=null;
         boolean xsite=true;
         boolean run_event_loop=true;
+        AddressGenerator addr_generator=null;
 
         for(int i=0; i < args.length; i++) {
             if("-props".equals(args[i])) {
@@ -573,6 +578,10 @@ public class UPerf extends ReceiverAdapter {
                 run_event_loop=false;
                 continue;
             }
+            if("-uuid".equals(args[i])) {
+                addr_generator=new OneTimeAddressGenerator(Long.valueOf(args[++i]));
+                continue;
+            }
             help();
             return;
         }
@@ -580,7 +589,7 @@ public class UPerf extends ReceiverAdapter {
         UPerf test=null;
         try {
             test=new UPerf();
-            test.init(props, name, xsite);
+            test.init(props, name, xsite, addr_generator);
             if(run_event_loop)
                 test.eventLoop();
         }
@@ -592,7 +601,8 @@ public class UPerf extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("UPerf [-props <props>] [-name name] [-xsite <true | false>] [-nohup]");
+        System.out.println("UPerf [-props <props>] [-name name] [-xsite <true | false>] " +
+                             "[-nohup] [-uuid <UUID>]");
     }
 
 

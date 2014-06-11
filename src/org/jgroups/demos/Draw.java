@@ -5,6 +5,8 @@ package org.jgroups.demos;
 
 import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.stack.AddressGenerator;
+import org.jgroups.util.OneTimeAddressGenerator;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
@@ -43,7 +45,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
 
     public Draw(String props, boolean no_channel, boolean jmx, boolean use_state, long state_timeout,
-                boolean use_unicasts, String name, boolean send_own_state_on_merge) throws Exception {
+                boolean use_unicasts, String name, boolean send_own_state_on_merge, AddressGenerator gen) throws Exception {
         this.no_channel=no_channel;
         this.jmx=jmx;
         this.use_state=use_state;
@@ -53,6 +55,8 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
             return;
 
         channel=new JChannel(props);
+        if(gen != null)
+            channel.addAddressGenerator(gen);
         if(name != null)
             channel.setName(name);
         channel.setReceiver(this);
@@ -97,6 +101,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         boolean          use_unicasts=false;
         String           name=null;
         boolean          send_own_state_on_merge=true;
+        AddressGenerator generator=null;
 
         for(int i=0; i < args.length; i++) {
             if("-help".equals(args[i])) {
@@ -143,13 +148,18 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
                 send_own_state_on_merge=Boolean.getBoolean(args[++i]);
                 continue;
             }
+            if("-uuid".equals(args[i])) {
+                generator=new OneTimeAddressGenerator(Long.valueOf(args[++i]));
+                continue;
+            }
 
             help();
             return;
         }
 
         try {
-            draw=new Draw(props, no_channel, jmx, use_state, state_timeout, use_unicasts, name, send_own_state_on_merge);
+            draw=new Draw(props, no_channel, jmx, use_state, state_timeout, use_unicasts, name,
+                          send_own_state_on_merge, generator);
             if(group_name != null)
                 draw.setClusterName(group_name);
             draw.go();
@@ -164,7 +174,8 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
     static void help() {
         System.out.println("\nDraw [-help] [-no_channel] [-props <protocol stack definition>]" +
                 " [-clustername <name>] [-state] [-timeout <state timeout>] [-use_unicasts] " +
-                "[-bind_addr <addr>] [-jmx <true | false>] [-name <logical name>] [-send_own_state_on_merge true|false]");
+                "[-bind_addr <addr>] [-jmx <true | false>] [-name <logical name>] [-send_own_state_on_merge true|false] " +
+                             "[-uuid <UUID>]");
         System.out.println("-no_channel: doesn't use JGroups at all, any drawing will be relected on the " +
                 "whiteboard directly");
         System.out.println("-props: argument can be an old-style protocol stack specification, or it can be " +

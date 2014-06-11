@@ -1,18 +1,13 @@
 
 package org.jgroups.stack;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.net.Inet6Address;
+import java.net.*;
 
 
 /**
@@ -21,12 +16,10 @@ import java.net.Inet6Address;
  * @author Bela Ban
  */
 public class IpAddress implements PhysicalAddress {
-    private static final long       serialVersionUID=5877146630213185651L;
+    private static final long       serialVersionUID=-1818672332115113291L;
     private InetAddress             ip_addr;
     private int                     port;
-    protected static final Log      log=LogFactory.getLog(IpAddress.class);
     static boolean                  resolve_dns;
-    protected int                   size=-1;
 
     static {
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
@@ -44,6 +37,17 @@ public class IpAddress implements PhysicalAddress {
 
     // Used only by Externalization
     public IpAddress() {
+    }
+
+    /** e.g. 192.168.1.5:7800 */
+    public IpAddress(String addr_port) throws Exception {
+        int index=addr_port.lastIndexOf(':');
+        if(index == -1)
+            ip_addr=InetAddress.getByName(addr_port);
+        else {
+            ip_addr=InetAddress.getByName(addr_port.substring(0, index));
+            port=Integer.valueOf(addr_port.substring(index+1));
+        }
     }
 
     public IpAddress(String i, int p) throws UnknownHostException {
@@ -72,7 +76,6 @@ public class IpAddress implements PhysicalAddress {
                 ip_addr=InetAddress.getByName(null);
             }
             catch(UnknownHostException e) {
-                log.error("exception: " + e);
             }
         }
     }
@@ -227,16 +230,12 @@ public class IpAddress implements PhysicalAddress {
     }
 
     public int size() {
-        if(size >= 0)
-            return size;
         // length (1 bytes) + 4 bytes for port
         int tmp_size=Global.BYTE_SIZE+ Global.SHORT_SIZE;
         if(ip_addr != null) {
-            tmp_size+=ip_addr.getAddress().length; // 4 bytes for IPv4
-            if(ip_addr instanceof Inet6Address)
-                tmp_size+=Global.INT_SIZE;
+            // 4 bytes for IPv4, 20 for IPv6 (16 + 4 for scope-id)
+            tmp_size+=(ip_addr instanceof Inet4Address)? 4 : 20;
         }
-        size=tmp_size;
         return tmp_size;
     }
 
