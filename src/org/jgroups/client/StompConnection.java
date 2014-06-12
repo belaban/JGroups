@@ -122,9 +122,11 @@ public class StompConnection implements Runnable {
         sb.append("\n");
 
         try {
-            out.write(sb.toString().getBytes());
-            out.write(STOMP.NULL_BYTE);
-            out.flush();
+            synchronized(this) {
+                out.write(sb.toString().getBytes());
+                out.write(STOMP.NULL_BYTE);
+                out.flush();
+            }
         }
         catch(IOException ex) {
             log.error("failed to send connect message:", ex);
@@ -148,9 +150,11 @@ public class StompConnection implements Runnable {
         sb.append("\n");
 
         try {
-            out.write(sb.toString().getBytes());
-            out.write(STOMP.NULL_BYTE);
-            out.flush();
+            synchronized(this) {
+                out.write(sb.toString().getBytes());
+                out.write(STOMP.NULL_BYTE);
+                out.flush();
+            }
         }
         catch(IOException ex) {
             log.error("failed subscribing to " + destination + ": ", ex);
@@ -174,9 +178,11 @@ public class StompConnection implements Runnable {
         sb.append("\n");
 
         try {
-            out.write(sb.toString().getBytes());
-            out.write(STOMP.NULL_BYTE);
-            out.flush();
+            synchronized(this) {
+                out.write(sb.toString().getBytes());
+                out.write(STOMP.NULL_BYTE);
+                out.flush();
+            }
         }
         catch(IOException ex) {
             log.error("failed unsubscribing from " + destination + ": ", ex);
@@ -197,11 +203,13 @@ public class StompConnection implements Runnable {
         sb.append("\n");
 
         try {
-            out.write(sb.toString().getBytes());
-            if(buf != null)
-                out.write(buf, offset, length);
-            out.write(STOMP.NULL_BYTE);
-            out.flush();
+            synchronized(this) {
+                out.write(sb.toString().getBytes());
+                if(buf != null)
+                    out.write(buf, offset, length);
+                out.write(STOMP.NULL_BYTE);
+                out.flush();
+            }
         }
         catch (IOException e) {
             log.error("failed sending message to " + destination + ": ", e);
@@ -330,10 +338,12 @@ public class StompConnection implements Runnable {
     public void connect() throws IOException{
         for (String dest : server_destinations) {
             try {
-                connectToDestination(dest);
-                sendConnect();
+                synchronized(this) {
+                    connectToDestination(dest);
+                    sendConnect();
+                }
                 for(String subscription: subscriptions) {
-                     sendSubscribe(subscription);
+                    sendSubscribe(subscription);
                 }
 
                 log.info("Connected to " + dest);
