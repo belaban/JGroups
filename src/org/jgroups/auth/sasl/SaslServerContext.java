@@ -75,7 +75,7 @@ public class SaslServerContext implements SaslContext {
             latch.countDown();
         }
         if (challenge != null) {
-            return message.putHeader(SASL.SASL_ID, new SaslHeader(Type.RESPONSE, challenge));
+            return message.putHeader(SASL.SASL_ID, new SaslHeader(Type.CHALLENGE, challenge));
         } else {
             return null;
         }
