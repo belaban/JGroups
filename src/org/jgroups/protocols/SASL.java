@@ -177,8 +177,9 @@ public class SASL extends Protocol {
         super.init();
         saslServerFactory = SaslUtils.getSaslServerFactory(mech, sasl_props);
         saslClientFactory = SaslUtils.getSaslClientFactory(mech, sasl_props);
-        if (client_callback_handler == null) {
-            client_callback_handler = new SaslClientCallbackHandler(client_name, client_password.toCharArray());
+        char[] client_password_chars = client_password == null ? new char[]{} : client_password.toCharArray();
+        if (client_callback_handler == null && client_password != null) {
+            client_callback_handler = new SaslClientCallbackHandler(client_name, client_password_chars);
         }
         if (server_subject == null && login_module_name != null) {
             LoginContext lc = new LoginContext(login_module_name);
@@ -186,7 +187,7 @@ public class SASL extends Protocol {
             server_subject = lc.getSubject();
         }
         if (client_subject == null && login_module_name != null) {
-            LoginContext lc = new LoginContext(login_module_name, new SaslClientCallbackHandler(client_name, client_password.toCharArray()));
+            LoginContext lc = new LoginContext(login_module_name, new SaslClientCallbackHandler(client_name, client_password_chars));
             lc.login();
             client_subject = lc.getSubject();
         }
@@ -234,16 +235,24 @@ public class SASL extends Protocol {
                     try {
                         if (log.isTraceEnabled())
                             log.trace("%s: received CHALLENGE from %s", getAddress(), remoteAddress);
+                        // the response computed can be null if the challenge-response cycle has ended
                         Message response = saslContext.nextMessage(remoteAddress, saslHeader);
-                        if (log.isTraceEnabled())
-                            log.trace("%s: sending RESPONSE to %s", getAddress(), remoteAddress);
-                        down_prot.down(new Event(Event.MSG, response));
+                        if (response != null) {
+                            if (log.isTraceEnabled())
+                                log.trace("%s: sending RESPONSE to %s", getAddress(), remoteAddress);
+                            down_prot.down(new Event(Event.MSG, response));
+                        } else {
+                            if (!saslContext.isSuccessful()) {
+                                throw new SaslException("computed response is null but challenge-response cycle not complete!");
+                            }
+                            if (log.isTraceEnabled())
+                                log.trace("%s: authentication complete from %s", getAddress(), remoteAddress);
+                        }
                     } catch (SaslException e) {
                         disposeContext(remoteAddress);
                         if (log.isWarnEnabled()) {
                             log.warn("failed to validate CHALLENGE from " + remoteAddress + ", token", e);
                         }
-                        sendRejectionMessage(gmsHeader.getType(), remoteAddress, "authentication failed");
                     }
                     break;
                 case RESPONSE:
@@ -251,12 +260,16 @@ public class SASL extends Protocol {
                         if (log.isTraceEnabled())
                             log.trace("%s: received RESPONSE from %s", getAddress(), remoteAddress);
                         Message challenge = saslContext.nextMessage(remoteAddress, saslHeader);
+                        // the challenge computed can be null if the challenge-response cycle has ended
                         if (challenge != null) {
                             if (log.isTraceEnabled())
                                 log.trace("%s: sending CHALLENGE to %s", getAddress(), remoteAddress);
 
                             down_prot.down(new Event(Event.MSG, challenge));
                         } else {
+                            if (!saslContext.isSuccessful()) {
+                                throw new SaslException("computed challenge is null but challenge-response cycle not complete!");
+                            }
                             if (log.isTraceEnabled())
                                 log.trace("%s: authentication complete from %s", getAddress(), remoteAddress);
                         }
@@ -271,7 +284,6 @@ public class SASL extends Protocol {
                 return null;
             }
         }
-
         return up_prot.up(evt);
     }
 
