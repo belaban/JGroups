@@ -12,7 +12,7 @@ import java.util.Collection;
  */
 public class RequestOptions {
     /** The mode of a request. Defined in {@link ResponseMode} e.g. GET_NONE, GET_ALL */
-    protected ResponseMode  mode=ResponseMode.GET_NONE;
+    protected ResponseMode  mode=ResponseMode.GET_ALL;
 
     /** The max time (in ms) for a blocking call. 0 blocks until all responses have been received (if mode = GET_ALL) */
     protected long          timeout; // used when mode != GET_NONE

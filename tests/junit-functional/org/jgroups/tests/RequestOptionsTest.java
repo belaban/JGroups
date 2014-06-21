@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
 public class RequestOptionsTest {
     protected JChannel channel;
     protected RequestOptions reqOpt = new RequestOptions(ResponseMode.GET_ALL, 5000);
-    protected static final String simple_props="SHARED_LOOPBACK:PING(timeout=1000):" +
+    protected static final String simple_props="SHARED_LOOPBACK:PING:" +
       "pbcast.NAKACK(log_discard_msgs=false;log_not_found_msgs=false)" +
       ":UNICAST:pbcast.STABLE(stability_delay=200):pbcast.GMS:MFC:UFC:FRAG2";
 
