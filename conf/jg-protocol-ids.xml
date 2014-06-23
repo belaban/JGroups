@@ -61,7 +61,6 @@
     <class id="65" name="org.jgroups.protocols.FORK"/>
     <class id="68" name="org.jgroups.protocols.SASL"/>
 
-    <class id="70" name="org.jgroups.protocols.SEQUENCER2"/>
     <class id="71" name="org.jgroups.protocols.MERGE2"/>
     <class id="72" name="org.jgroups.protocols.FD_PING2"/>
 
