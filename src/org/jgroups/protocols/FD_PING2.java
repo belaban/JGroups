@@ -46,9 +46,9 @@ public class FD_PING2 extends Protocol {
     @Property(description="Max time (in ms) that a liveness check for a single host can take")
     protected long                                       check_timeout=3000;
 
-    @Property(description="Uses TimeService to get the current time rather than System.currentTimeMillis. Might get " +
-      "removed soon, don't use !")
-    protected boolean                                    use_time_service=true;
+    //@Property(description="Uses TimeService to get the current time rather than System.currentTimeMillis. Might get " +
+      //"removed soon, don't use !")
+    //protected boolean                                    use_time_service=true;
 
     @ManagedAttribute(description="Number of liveness checks")
     protected int                                        num_liveness_checks;
@@ -80,7 +80,7 @@ public class FD_PING2 extends Protocol {
     /** Timer used to run the ping task on */
     protected TimeScheduler                              timer;
 
-    protected TimeService                                time_service;
+    // protected TimeService                                time_service;
 
     protected Future<?>                                  ping_task_future;
 
@@ -146,7 +146,7 @@ public class FD_PING2 extends Protocol {
         timer=getTransport().getTimer();
         if(timer == null)
             throw new Exception("timer not set");
-        time_service=getTransport().getTimeService();
+        /*time_service=getTransport().getTimeService();
         if(time_service == null)
             log.warn("%s: time service is not available, using System.currentTimeMillis() instead", local_addr);
         else {
@@ -155,7 +155,7 @@ public class FD_PING2 extends Protocol {
                          local_addr, time_service.interval(), timeout);
                 use_time_service=false;
             }
-        }
+        }*/
         suspected_mbrs.clear();
         has_suspected_mbrs=false;
     }
@@ -345,8 +345,8 @@ public class FD_PING2 extends Protocol {
         return ts != null? getTimestamp() - ts : -1;
     }
 
-    protected long getTimestamp() {
-        return use_time_service && time_service != null? time_service.timestamp() : System.currentTimeMillis();
+    protected static long getTimestamp() {
+        return System.currentTimeMillis();
     }
 
 
