@@ -9,6 +9,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -57,7 +58,7 @@ public class FD_ALL extends Protocol {
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     // Map of addresses and timestamps of last updates
-    protected final Map<Address, Long>               timestamps=Util.createConcurrentMap();
+    protected final ConcurrentMap<Address, Long>     timestamps=Util.createConcurrentMap();
 
     protected Address                                local_addr;
     
@@ -296,6 +297,11 @@ public class FD_ALL extends Protocol {
             timestamps.put(sender, getTimestamp());
     }
 
+    protected void addIfAbsent(Address mbr) {
+        if(mbr != null && !mbr.equals(local_addr))
+            timestamps.putIfAbsent(mbr, getTimestamp());
+    }
+
     protected long getTimestamp() {
         return use_time_service && time_service != null? time_service.timestamp() : System.currentTimeMillis();
     }
@@ -312,8 +318,8 @@ public class FD_ALL extends Protocol {
             timestamps.keySet().retainAll(mbrs);
         }
 
-        for(Address member: mbrs)
-            update(member);
+        for(Address member: mbrs) // JGRP-1856
+            addIfAbsent(member);
 
         if(mbrs.size() > 1) {
             startHeartbeatSender();
