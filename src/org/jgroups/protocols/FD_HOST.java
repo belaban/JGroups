@@ -235,8 +235,10 @@ public class FD_HOST extends Protocol {
 
         if(is_pinger)
             startPingerTask();
-        else
+        else {
             stopPingerTask();
+            timestamps.clear();
+        }
     }
 
 
