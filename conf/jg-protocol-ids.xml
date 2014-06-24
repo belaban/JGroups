@@ -61,6 +61,9 @@
     <class id="65" name="org.jgroups.protocols.FORK"/>
     <class id="68" name="org.jgroups.protocols.SASL"/>
 
+    <class id="71" name="org.jgroups.protocols.MERGE2"/>
+    <class id="72" name="org.jgroups.protocols.FD_HOST"/>
+
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
     <class id="201" name="org.jgroups.blocks.mux.MuxRequestCorrelator"/>
