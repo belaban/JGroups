@@ -18,6 +18,7 @@ import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -82,7 +83,7 @@ public class FD_HOST extends Protocol {
     protected final Map<InetAddress,List<Address>>       hosts=new HashMap<InetAddress,List<Address>>();
 
     // Map of hosts and timestamps of last updates
-    protected final Map<InetAddress, Long>               timestamps=new ConcurrentHashMap<InetAddress,Long>();
+    protected final ConcurrentMap<InetAddress, Long>     timestamps=new ConcurrentHashMap<InetAddress,Long>();
 
     /** Timer used to run the ping task on */
     protected TimeScheduler                              timer;
@@ -208,9 +209,10 @@ public class FD_HOST extends Protocol {
         boolean is_pinger=false;
         members.clear();
         members.addAll(view_mbrs);
+        Collection<InetAddress> current_hosts=null;
         synchronized(hosts) {
             hosts.clear();
-            for(Address mbr: view) {
+            for(Address mbr: view_mbrs) {
                 InetAddress key=getHostFor(mbr);
                 if(key == null)
                     continue;
@@ -220,12 +222,16 @@ public class FD_HOST extends Protocol {
                 mbrs.add(mbr);
             }
             is_pinger=isPinger(local_addr);
+            current_hosts=new ArrayList<InetAddress>(hosts.keySet());
         }
 
         if(suspected_mbrs.retainAll(view.getMembers()))
             has_suspected_mbrs=!suspected_mbrs.isEmpty();
 
-        timestamps.keySet().removeAll(hosts.keySet());
+        timestamps.keySet().retainAll(current_hosts);
+        current_hosts.remove(local_host);
+        for(InetAddress host: current_hosts)
+            timestamps.putIfAbsent(host, getTimestamp());
 
         if(is_pinger)
             startPingerTask();
@@ -347,9 +353,10 @@ public class FD_HOST extends Protocol {
         timestamps.put(host, getTimestamp());
     }
 
+    /** Returns the age (in secs) of the given host */
     protected long getAgeOf(InetAddress host) {
         Long ts=timestamps.get(host);
-        return ts != null? getTimestamp() - ts : -1;
+        return ts != null? (getTimestamp() - ts) / 1000 : -1;
     }
 
     protected long getTimestamp() {
@@ -380,7 +387,7 @@ public class FD_HOST extends Protocol {
                     if(is_alive)
                         updateTimestampFor(target);
                     else
-                        log.trace("%s: %s is not alive (age=%d secs)", local_addr, target, getAgeOf(target) / 1000);
+                        log.trace("%s: %s is not alive (age=%d secs)", local_addr, target, getAgeOf(target));
                 }
                 catch(Exception e) {
                     log.error("%s: ping command failed: %s", local_addr, e);
