@@ -45,7 +45,7 @@ public class SWIFT_PING extends FILE_PING {
     @Property(description = "Username")
     protected String username = null;
 
-    @Property(description = "Password")
+    @Property(description = "Password",exposeAsManagedAttribute=false)
     protected String password = null;
 
     @Property(description = "Name of the root container")

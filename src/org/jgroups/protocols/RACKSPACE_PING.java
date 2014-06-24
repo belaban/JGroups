@@ -31,7 +31,7 @@ public class RACKSPACE_PING extends FILE_PING {
     @Property(description = "Rackspace username")
     protected String username = null;
 
-    @Property(description = "Rackspace API access key")
+    @Property(description = "Rackspace API access key",exposeAsManagedAttribute=false)
     protected String apiKey = null;
 
     @Property(description = "Rackspace region, either UK or US")

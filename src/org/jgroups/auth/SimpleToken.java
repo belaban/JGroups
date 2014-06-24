@@ -24,7 +24,7 @@ import java.io.DataOutput;
  */
 public class SimpleToken extends AuthToken {
 
-    @Property
+    @Property(exposeAsManagedAttribute=false)
     private String auth_value = null;
 
     public SimpleToken() { // need an empty constructor

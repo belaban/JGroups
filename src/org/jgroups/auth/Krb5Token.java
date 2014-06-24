@@ -29,7 +29,7 @@ public class Krb5Token extends AuthToken {
     private static final Krb5TokenUtils kerb5Utils = new Krb5TokenUtils();
 
     @Property protected String client_principal_name;
-    @Property protected String client_password;
+    @Property(exposeAsManagedAttribute=false) protected String client_password;
     @Property protected String service_principal_name;
         
     private Subject subject;

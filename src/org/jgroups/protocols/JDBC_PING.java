@@ -41,7 +41,7 @@ public class JDBC_PING extends FILE_PING {
     @Property(description = "The JDBC connection username", writable = false)
     protected String connection_username = null;
 
-    @Property(description = "The JDBC connection password", writable = false)
+    @Property(description = "The JDBC connection password", writable = false,exposeAsManagedAttribute=false)
     protected String connection_password = null;
 
     @Property(description = "The JDBC connection driver name", writable = false)

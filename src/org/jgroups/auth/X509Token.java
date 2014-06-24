@@ -62,7 +62,7 @@ public class X509Token extends AuthToken {
     @Property
     protected String keystore_path = null;
 
-    @Property
+    @Property(exposeAsManagedAttribute=false)
     protected String auth_value = null;
 
     @Property
@@ -81,12 +81,12 @@ public class X509Token extends AuthToken {
         // need an empty constructor
     }
 
-    @Property(name = "cert_password")
+    @Property(name = "cert_password",exposeAsManagedAttribute=false)
     public void setCertPassword(String pwd) {
         this.cert_password = pwd.toCharArray();
     }
 
-    @Property(name = "keystore_password")
+    @Property(name = "keystore_password",exposeAsManagedAttribute=false)
     public void setKeyStorePassword(String pwd) {
         this.keystore_password = pwd.toCharArray();
         if (cert_password == null)

@@ -26,7 +26,7 @@ import java.io.DataOutput;
  */
 public class MD5Token extends AuthToken {
 
-    @Property
+    @Property(exposeAsManagedAttribute=false)
     private String auth_value = null;
 
     @Property(name = "token_hash")
