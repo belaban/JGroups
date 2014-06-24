@@ -741,6 +741,90 @@
  
         </section>
 
+        <section>
+            <title>FD_HOST</title>
+            <para>
+                To detect the crash or freeze of entire hosts and all of the cluster members running on them, FD_HOST
+                can be used. It is not meant to be used in isolation, as it doesn't detect crashed members on the
+                local host, but in conjunction with other failure detection protocols, such as FD_ALL or FD_SOCK.
+            </para>
+            <para>
+                FD_HOST can be used when we have multiple cluster members running on a physical box. For example,
+                if we have members {A,B,C,D} running on host 1 and {M,N,O,P} running on host 2, and host 1 is
+                powered down, then A, B, C and D are suspected and removed from the cluster together, typically
+                in one view change.
+            </para>
+            <para>
+                By default, FD_HOST uses InetAddress.isReachable() to perform liveness checking of other hosts, but
+                if property cmd is set, then any script or command can be used. FD_HOST will launch the command and
+                pass the IP address ot the host to be checked as argument. Example: cmd="ping -c 3".
+            </para>
+            <para>
+                A typical failure detection configuration would look like this:
+            </para>
+            <programlisting language="xml">
+...
+&lt;FD_SOCK/&gt;
+&lt;FD_ALL timeout="60000" interval="20000"/&gt;
+&lt;FD_HOST interval="10000" timeout="35000" /&gt;
+...
+            </programlisting>
+            <para>
+                If we have members {A,B,C} on host 192.168.1.3, {M,N,O} on 192.168.1.4 and {X,Y,Z} on 192.168.1.5, then
+                the behavior is as follows:
+            </para>
+
+            <table frame="all">
+                <title>Failure detection behavior</title>
+                <tgroup cols="2" colsep="1" rowsep="1">
+                    <colspec align="left"/>
+                    <thead>
+                        <row>
+                            <entry align="center">Scenario</entry>
+                            <entry align="center">Behavior</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>Any member (say O) crashes</entry>
+                            <entry>
+                                FD_SOCK detects this immediately (as the TCP socket was closed). O is suspected and
+                                removed
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>Member Y hangs</entry>
+                            <entry>
+                                FD_ALL starts missing heartbeats from Y (note that host 192.168.1.5 is up) and suspects
+                                Y after 60 seconds. Y is removed from the view.
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>Host 192.168.1.3 is shutdown (shutdown -h now)</entry>
+                            <entry>
+                                Since this is a graceful shutdown, the OS closes all sockets. FD_SOCK therefore
+                                suspects A, B and C and removes them from the view immediately.
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>The power supply to host 192.168.1.3 is cut, or 192.168.1.3 panicked</entry>
+                            <entry>
+                                FD_HOST detects that 192.168.1.3 is not alive and suspects A, B and C after ~35 to 45s.
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>Member N leaves</entry>
+                            <entry>
+                                Since this is a graceful leave, none of the failure detection protocols kick in
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+
+            ${FD_HOST}
+        </section>
+
 
 
         <section>
