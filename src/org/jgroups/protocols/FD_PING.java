@@ -15,8 +15,10 @@ import java.io.InputStreamReader;
  * taking 1 argument; the host name of the host to be pinged. Property 'cmd' determines the program to be executed
  * (use a fully qualified name if the program is not on the path).
  * @author Bela Ban
+ * @deprecated Use {@link org.jgroups.protocols.FD_HOST} instead. Will be removed in 4.0.
  */
 @Unsupported
+@Deprecated
 public class FD_PING extends FD {
     /** Command (script or executable) to ping a host: a return value of 0 means success, anything else is a failure.
      * The only argument passed to cmd is the host's address (symbolic name or dotted-decimal IP address) */

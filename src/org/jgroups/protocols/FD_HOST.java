@@ -23,19 +23,26 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Failure detection protocol which detects the crash or hanging of entire hosts and suspects all cluster members
- * on those hosts. This protocol would typically be used when multiple cluster members are running on the same box.
+ * on those hosts. By default InetAddress.isReachable() is used, but any script/command can be used for liveness checks
+ * by defining the 'cmd' property.
+ * <p/>
+ * FD_HOST does <em>not</em> detect the crash or hanging of single members on the local host, but only checks liveness
+ * of all other hosts in a cluster. Therefore it is meant to be used together with other failure detection protocols,
+ * e.g. {@link org.jgroups.protocols.FD_ALL} and {@link org.jgroups.protocols.FD_SOCK}.
+ * <p/>
+ * This protocol would typically be used when multiple cluster members are running on the same physical box.
  * <p/>
  * JIRA:  https://issues.jboss.org/browse/JGRP-1855
  * @author  Bela Ban
- * @version 3.5
+ * @version 3.5, 3.4.5
  */
 @MBean(description="Failure detection protocol which detects crashes or hangs of entire hosts and suspects " +
   "all cluster members on those hosts")
-public class FD_PING2 extends Protocol {
+public class FD_HOST extends Protocol {
 
     @Property(description="The command used to check a given host for liveness. Example: \"ping\". " +
       "If null, InetAddress.isReachable() will be used by default")
-    protected String                                     cmd=null;
+    protected String                                     cmd;
 
     @Property(description="Max time (in ms) after which a host is suspected if it failed all liveness checks")
     protected long                                       timeout=60000;
@@ -86,7 +93,7 @@ public class FD_PING2 extends Protocol {
 
 
 
-    public FD_PING2 pingCommand(PingCommand cmd) {this.ping_command=cmd; return this;}
+    public FD_HOST pingCommand(PingCommand cmd) {this.ping_command=cmd; return this;}
 
     public void resetStats() {
         num_suspect_events=num_liveness_checks=0;
