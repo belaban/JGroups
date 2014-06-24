@@ -140,14 +140,17 @@ public class ENCRYPT extends Protocol {
     @Property(name="key_store_name", description="File on classpath that contains keystore repository")
     String keyStoreName;
 
-    @Property(name="store_password", description="Password used to check the integrity/unlock the keystore. Change the default")
+    @Property(name="store_password",
+              description="Password used to check the integrity/unlock the keystore. Change the default",
+              exposeAsManagedAttribute=false)
     private String storePassword="changeit"; //JDK default
 
-    @Property(name="key_password", description="Password for recovering the key. Change the default")
+    @Property(name="key_password", description="Password for recovering the key. Change the default",
+              exposeAsManagedAttribute=false)
     private String keyPassword=null; // allows to assign keypwd=storepwd if not set (https://issues.jboss.org/browse/JGRP-1375)
 
 
-    @Property(name="alias", description="Alias used for recovering the key. Change the default")
+    @Property(name="alias", description="Alias used for recovering the key. Change the default",exposeAsManagedAttribute=false)
     private String alias="mykey"; // JDK default
 
     @Property(description="Number of ciphers in the pool to parallelize encrypt and decrypt requests",writable=false)
