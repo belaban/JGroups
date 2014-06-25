@@ -115,7 +115,7 @@ public final class SaslUtils {
         while (saslFactories.hasNext()) {
             SaslServerFactory saslFactory = saslFactories.next();
             for (String supportedMech : saslFactory.getMechanismNames(props)) {
-                if (mech.equals(supportedMech)) {
+                if (supportedMech.equals(mech)) {
                     return saslFactory;
                 }
             }
