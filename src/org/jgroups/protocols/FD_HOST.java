@@ -381,8 +381,6 @@ public class FD_HOST extends Protocol {
             }
             targets.remove(local_host);
 
-            long current_time=getTimestamp();
-
             // 1. Ping each host
             for(InetAddress target: targets) {
                 try {
@@ -399,6 +397,7 @@ public class FD_HOST extends Protocol {
             }
 
             // 2. Check timestamps
+            long current_time=getTimestamp();
             for(Map.Entry<InetAddress,Long> entry: timestamps.entrySet()) {
                 InetAddress host=entry.getKey();
                 long timestamp=entry.getValue();
