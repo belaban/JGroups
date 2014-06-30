@@ -115,7 +115,7 @@ public class SWIFT_PING extends FILE_PING {
                 }
                 for(PingData data: list) {
                     if(members == null || members.contains(data.getAddress()))
-                        responses.addResponse(data, true);
+                        responses.addResponse(data, data.isCoord());
                     if(local_addr != null && !local_addr.equals(data.getAddress()))
                         addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
                 }
