@@ -35,12 +35,20 @@ public class Promise<T> {
      * @throws TimeoutException If a timeout occurred (implies that timeout > 0)
      */
     public T getResultWithTimeout(long timeout) throws TimeoutException {
+        return getResultWithTimeout(timeout, false);
+    }
+
+    public T getResultWithTimeout(long timeout, boolean reset) throws TimeoutException {
         lock.lock();
         try {
             return _getResultWithTimeout(timeout);
         }
         finally {
             cond.signalAll();
+            if(reset) {
+                result=null;
+                hasResult=false;
+            }
             lock.unlock();
         }
     }
@@ -60,8 +68,12 @@ public class Promise<T> {
      * @return T
      */
     public T getResult(long timeout) {
+        return getResult(timeout, false);
+    }
+
+    public T getResult(long timeout, boolean reset) {
         try {
-            return getResultWithTimeout(timeout);
+            return getResultWithTimeout(timeout, reset);
         }
         catch(TimeoutException e) {
             return null;

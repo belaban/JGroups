@@ -137,7 +137,7 @@ public class S3_PING extends FILE_PING {
                 list=read(new ByteArrayInputStream(buf));
                 for(PingData data: list) {
                     if(mbrs == null || mbrs.contains(data.getAddress()))
-                        responses.addResponse(data, true);
+                        responses.addResponse(data, data.isCoord());
                     if(local_addr != null && !local_addr.equals(data.getAddress()))
                         addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
                 }

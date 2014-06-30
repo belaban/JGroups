@@ -69,6 +69,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
      * To everybody else: don't change it to false !
      */
     @Property(description="Temporary switch. Default is true and should not be changed")
+    @Deprecated
     protected boolean handle_concurrent_startup=true;
 
     /**

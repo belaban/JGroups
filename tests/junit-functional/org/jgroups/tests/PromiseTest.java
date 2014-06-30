@@ -31,6 +31,16 @@ public class PromiseTest {
         Assert.assertEquals(Boolean.TRUE, result);
     }
 
+    public static void testGetResultWithReset() {
+        final Promise<Integer> p=new Promise<Integer>();
+        p.setResult(22);
+        assert p.getResult() == 22;
+        assert p.getResult(1, true) == 22;
+        assert !p.hasResult();
+        assert p.getResult(1) == null;
+    }
+
+
     public static final void testRepeatedGet() {
         final Promise<Integer> p=new Promise<Integer>();
         p.setResult(10);
@@ -102,6 +112,15 @@ public class PromiseTest {
         Resetter resetter=new Resetter(p, 2000);
         resetter.start();
         Object result=p.getResultWithTimeout(5000);
+        System.out.println("result = " + result);
+        assert result == null;
+    }
+
+    public static void testReset2() {
+        final Promise p=new Promise();
+        Resetter resetter=new Resetter(p, 2000);
+        resetter.start();
+        Object result=p.getResultWithTimeout(5000, true);
         System.out.println("result = " + result);
         assert result == null;
     }

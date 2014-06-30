@@ -25,7 +25,7 @@ import java.util.*;
  * @version $Revision: 1.78 $
  */
 public class ClientGmsImpl extends GmsImpl {
-    private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
+    protected final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
 
 
     public ClientGmsImpl(GMS g) {
@@ -65,103 +65,62 @@ public class ClientGmsImpl extends GmsImpl {
      * @param mbr Our own address (assigned through SET_LOCAL_ADDRESS)
      */
     protected void joinInternal(Address mbr, boolean joinWithStateTransfer, boolean useFlushIfPresent) {
-        JoinRsp rsp=null;
-        Address coord=null;
-        long join_attempts=0;
-
+        long          join_attempts=0;
         leaving=false;
         join_promise.reset();
         while(!leaving) {
-            if(rsp == null && !join_promise.hasResult()) { // null responses means that the discovery was cancelled
-                long start=System.currentTimeMillis();
-                Responses responses=(Responses)gms.getDownProtocol().down(Event.FIND_INITIAL_MBRS_EVT);
-                if(responses == null)
-                    throw new NullPointerException("responses returned by findMembers() is null");
+            if(installViewIfValidJoinRsp(join_promise, false))
+                return;
 
-                // Sept 2008 (bela): break if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
-                // Reverted above change again - bela June 2012, see https://github.com/belaban/JGroups/pull/29
-                if(join_promise.hasResult()) {
-                    rsp=join_promise.getResult(1); // clears the result
-                    if(rsp != null)
-                        continue;
-                }
-                responses.waitFor(gms.join_timeout);
-                responses.done();
-                long diff=System.currentTimeMillis() - start;
-                if(responses.isEmpty()) {
-                    log.trace("%s: no members discovered after %d ms: creating cluster as first member", gms.local_addr, diff);
-                    becomeSingletonMember(mbr);
+            long start=System.currentTimeMillis();
+            Responses responses=(Responses)gms.getDownProtocol().down(Event.FIND_INITIAL_MBRS_EVT);
+
+            // Sept 2008 (bela): break if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
+            if(installViewIfValidJoinRsp(join_promise, false))
+                return;
+
+            responses.waitFor(gms.join_timeout);
+            responses.done();
+            long diff=System.currentTimeMillis() - start;
+            if(responses.isEmpty()) {
+                log.trace("%s: no members discovered after %d ms: creating cluster as first member", gms.local_addr, diff);
+                becomeSingletonMember(mbr);
+                return;
+            }
+            log.trace("%s: discovery took %d ms, members: %s", gms.local_addr, diff, responses);
+
+            List<Address> coords=getCoords(responses);
+
+            // We didn't get any coord responses; all responses were clients. If I'm the first of the sorted clients
+            // I'll become coordinator. The others will wait and then retry the discovery and join process
+            if(coords == null) { // e.g. because we have all clients only
+                if(firstOfAllClients(mbr, responses))
                     return;
-                }
-                log.trace("%s: discovery took %d ms, members: %s", gms.local_addr, diff, responses);
+                continue;
+            }
 
-                coord=determineCoord(responses);
-                if(coord == null) { // e.g. because we have all clients only
-                    if(!gms.handle_concurrent_startup) {
-                        log.trace("handle_concurrent_startup is false; ignoring responses of initial clients");
-                        becomeSingletonMember(mbr);
-                        return;
-                    }
+            if(coords.size() > 1)
+                log.debug("%s: found multiple coords: %s", gms.local_addr, coords);
 
-                    log.trace("%s: could not determine coordinator from responses %s", gms.local_addr, responses);
-
-                    // so the member to become singleton member (and thus coord) is the first of all clients
-                    SortedSet<Address> clients=new TreeSet<Address>(); // sorted
-                    clients.add(mbr); // add myself again (was removed by findInitialMembers())
-                    for(PingData response: responses)
-                        clients.add(response.getAddress());
-
-                    log.trace("%s: clients to choose new coord from are: %s", gms.local_addr, clients);
-                    Address new_coord=clients.first();
-                    if(new_coord.equals(mbr)) {
-                        log.trace("%s: I (%s) am the first of the clients, will become coordinator", gms.local_addr, mbr);
-                        becomeSingletonMember(mbr);
-                        return;
-                    }
-                    log.trace("%s: I (%s) am not the first of the clients, waiting for another client to become coordinator",
-                              gms.local_addr, mbr);
-                    Util.sleep(500);
-                    continue;
-                }
-
+            join_attempts++;
+            for(Address coord: coords) {
                 log.debug("%s: sending JOIN(%s) to %s", gms.local_addr, mbr, coord);
                 sendJoinMessage(coord, mbr, joinWithStateTransfer, useFlushIfPresent);
-            }
-
-            if(rsp == null)
-                rsp=join_promise.getResult(gms.join_timeout);
-            if(rsp == null) {
-                join_attempts++;
+                if(installViewIfValidJoinRsp(join_promise, true))
+                    return;
                 log.warn("%s: JOIN(%s) sent to %s timed out (after %d ms), on try %d",
                          gms.local_addr, mbr, coord, gms.join_timeout, join_attempts);
-
-                if(gms.max_join_attempts != 0 && join_attempts >= gms.max_join_attempts) {
-                    log.warn("%s: too many JOIN attempts (%d): becoming singleton", gms.local_addr, join_attempts);
-                    becomeSingletonMember(mbr);
-                    return;
-                }
-                continue;
             }
 
-            if(!isJoinResponseValid(rsp)) {
-                rsp=null;
-                continue;
+            if(gms.max_join_attempts != 0 && join_attempts >= gms.max_join_attempts) {
+                log.warn("%s: too many JOIN attempts (%d): becoming singleton", gms.local_addr, join_attempts);
+                becomeSingletonMember(mbr);
+                return;
             }
-
-            log.trace("%s: JOIN-RSP=%s\n\n", gms.local_addr, rsp.getView());
-            if(!installView(rsp.getView(), rsp.getDigest())) {
-                log.error("%s: view installation failed, retrying to join cluster", gms.local_addr);
-                rsp=null;
-                continue;
-            }
-
-            // send VIEW_ACK to sender of view
-            Message view_ack=new Message(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
-              .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK));
-            gms.getDownProtocol().down(new Event(Event.MSG, view_ack));
-            return;
         }
     }
+
+
 
 
     public void leave(Address mbr) {
@@ -176,6 +135,50 @@ public class ClientGmsImpl extends GmsImpl {
 
 
     /* --------------------------- Private Methods ------------------------------------ */
+
+    // Installs a new view and sends an ack if (1) the join rsp is not null, (2) it is valid and (3) the view
+    // installation is successful. If true is returned, the JOIN process can be terminated, else it needs to
+    // go through discovery and JOIN-REQ again in a next iteration
+    protected boolean installViewIfValidJoinRsp(final Promise<JoinRsp> join_promise, boolean block_for_rsp) {
+        boolean success=false;
+        JoinRsp rsp=null;
+        try {
+            if(join_promise.hasResult())
+                rsp=join_promise.getResult(1, true);
+            else if(block_for_rsp)
+                rsp=join_promise.getResult(gms.join_timeout, true);
+
+            return success=rsp != null && isJoinResponseValid(rsp) && installView(rsp.getView(), rsp.getDigest());
+        }
+        finally {
+            if(success)
+                sendViewAck(rsp.getView().getCreator());
+        }
+    }
+
+    /** Handles the case where no coord responses were received. Returns true if we became the coord
+     * (caller needs to terminate the join() call), or false when the caller needs to continue */
+    protected boolean firstOfAllClients(final Address joiner, final Responses rsps) {
+        log.trace("%s: could not determine coordinator from rsps %s", gms.local_addr, rsps);
+
+        // so the member to become singleton member (and thus coord) is the first of all clients
+        SortedSet<Address> clients=new TreeSet<Address>();
+        clients.add(joiner); // add myself again (was removed by findInitialMembers())
+        for(PingData response: rsps)
+            clients.add(response.getAddress());
+
+        log.trace("%s: clients to choose new coord from are: %s", gms.local_addr, clients);
+        Address new_coord=clients.first();
+        if(new_coord.equals(joiner)) {
+            log.trace("%s: I (%s) am the first of the clients, will become coordinator", gms.local_addr, joiner);
+            becomeSingletonMember(joiner);
+            return true;
+        }
+        log.trace("%s: I (%s) am not the first of the clients, waiting for another client to become coordinator",
+                  gms.local_addr, joiner);
+        Util.sleep(500);
+        return false;
+    }
 
     protected boolean isJoinResponseValid(final JoinRsp rsp) {
         if(rsp.getFailReason() != null)
@@ -199,19 +202,6 @@ public class ClientGmsImpl extends GmsImpl {
         return true;
     }
 
-/*
-    @SuppressWarnings("unchecked")
-    private List<PingData> findInitialMembers() {
-        List<PingData> responses=(List<PingData>)gms.getDownProtocol().down(Event.FIND_INITIAL_MBRS_EVT);
-        if(responses != null) {
-            for(Iterator<PingData> iter=responses.iterator(); iter.hasNext();) {
-                Address address=iter.next().getAddress();
-                if(address != null && address.equals(gms.local_addr))
-                    iter.remove();
-            }
-        }
-        return responses;
-    }*/
 
 
     /**
@@ -253,54 +243,27 @@ public class ClientGmsImpl extends GmsImpl {
         gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 
-    /**
-     The coordinator is determined by a majority vote. If there are an equal number of votes for
-     more than 1 candidate, we determine the winner randomly.
-     */
-    private Address determineCoord(Iterable<PingData> mbrs) {
-        int count, most_votes;
-        Address winner=null, tmp;
+    void sendViewAck(Address coord) {
+        Message view_ack=new Message(coord).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+          .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK));
+        gms.getDownProtocol().down(new Event(Event.MSG, view_ack)); // send VIEW_ACK to sender of view
+    }
 
+    /** Returns all members whose PingData is flagged as coordinator */
+    private static List<Address> getCoords(Iterable<PingData> mbrs) {
         if(mbrs == null)
             return null;
 
-        Map<Address,Integer> votes=new HashMap<Address,Integer>(5);
-
-        // count *all* the votes (unlike the 2000 election)
+        List<Address> coords=null;
         for(PingData mbr: mbrs) {
             if(mbr.isCoord()) {
-                Address coord=mbr.getAddress();
-                if(!votes.containsKey(coord))
-                    votes.put(coord, 1);
-                else {
-                    count=votes.get(coord);
-                    votes.put(coord, count + 1);
-                }
+                if(coords == null)
+                    coords=new ArrayList<Address>();
+                if(!coords.contains(mbr.getAddress()))
+                    coords.add(mbr.getAddress());
             }
         }
-        // we have seen members say someone else is coordinator but they disagree
-        for(PingData mbr: mbrs) {
-            // remove members who don't agree with the election (Florida)
-            if (votes.containsKey(mbr.getAddress()) && (!mbr.isCoord()))
-                votes.remove(mbr.getAddress());
-        }
-
-        if(votes.size() > 1)
-            log.warn("there was more than 1 candidate for coordinator %s: ", votes);
-
-        // determine who got the most votes
-        most_votes=0;
-        for(Map.Entry<Address,Integer> entry: votes.entrySet()) {
-            tmp=entry.getKey();
-            count=entry.getValue();
-            if(count > most_votes) {
-                winner=tmp;
-                // fixed July 15 2003 (patch submitted by Darren Hobbs, patch-id=771418)
-                most_votes=count;
-            }
-        }
-        votes.clear();
-        return winner;
+        return coords;
     }
 
 
@@ -315,6 +278,7 @@ public class ClientGmsImpl extends GmsImpl {
 
         gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
         gms.getDownProtocol().down(new Event(Event.BECOME_SERVER));
-        log.debug("created cluster (first member). My view is %s, impl is %s", gms.getViewId(), gms.getImpl().getClass().getName());
+        log.debug("%s: created cluster (first member). My view is %s, impl is %s",
+                  gms.getLocalAddress(), gms.getViewId(), gms.getImpl().getClass().getName());
     }
 }
