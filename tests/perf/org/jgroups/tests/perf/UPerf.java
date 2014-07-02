@@ -5,6 +5,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.protocols.TP;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.stack.AddressGenerator;
@@ -79,12 +80,18 @@ public class UPerf extends ReceiverAdapter {
     }
 
 
-    public void init(String props, String name, boolean xsite, AddressGenerator generator) throws Throwable {
+    public void init(String props, String name, boolean xsite, AddressGenerator generator, int bind_port) throws Throwable {
         channel=new JChannel(props);
         if(generator != null)
             channel.addAddressGenerator(generator);
         if(name != null)
             channel.setName(name);
+
+        if(bind_port > 0) {
+            TP transport=channel.getProtocolStack().getTransport();
+            transport.setBindPort(bind_port);
+        }
+
         disp=new RpcDispatcher(channel, null, this, this);
         disp.setMethodLookup(new MethodLookup() {
             public Method findMethod(short id) {
@@ -560,6 +567,7 @@ public class UPerf extends ReceiverAdapter {
         boolean xsite=true;
         boolean run_event_loop=true;
         AddressGenerator addr_generator=null;
+        int port=0;
 
         for(int i=0; i < args.length; i++) {
             if("-props".equals(args[i])) {
@@ -582,6 +590,10 @@ public class UPerf extends ReceiverAdapter {
                 addr_generator=new OneTimeAddressGenerator(Long.valueOf(args[++i]));
                 continue;
             }
+            if("-port".equals(args[i])) {
+                port=Integer.valueOf(args[++i]);
+                continue;
+            }
             help();
             return;
         }
@@ -589,7 +601,7 @@ public class UPerf extends ReceiverAdapter {
         UPerf test=null;
         try {
             test=new UPerf();
-            test.init(props, name, xsite, addr_generator);
+            test.init(props, name, xsite, addr_generator, port);
             if(run_event_loop)
                 test.eventLoop();
         }
@@ -602,7 +614,7 @@ public class UPerf extends ReceiverAdapter {
 
     static void help() {
         System.out.println("UPerf [-props <props>] [-name name] [-xsite <true | false>] " +
-                             "[-nohup] [-uuid <UUID>]");
+                             "[-nohup] [-uuid <UUID>] [-port <bind port>]");
     }
 
 
