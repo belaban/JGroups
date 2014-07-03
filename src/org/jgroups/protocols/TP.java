@@ -114,9 +114,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="Max number of elements in the logical address cache before eviction starts")
     protected int logical_addr_cache_max_size=2000;
 
-    @Property(description="Time (in ms) after which entries in the logical address cache marked as removable are removed")
+    @Property(description="Time (in ms) after which entries in the logical address cache marked as removable " +
+      "can be removed. 0 never removes any entries (not recommended)")
     protected long logical_addr_cache_expiration=120000;
 
+    @Property(description="Interval (in ms) at which the reaper task scans logical_addr_cache and removes entries " +
+      "marked as removable. 0 disables reaping.")
+    protected long logical_addr_cache_reaper_interval=60000;
 
     /** The port to which the transport binds. 0 means to bind to any (ephemeral) port */
     @Property(description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port",writable=false)
@@ -377,6 +381,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(bundler instanceof TransferQueueBundler)
             return ((TransferQueueBundler)bundler).getBufferSize();
         return 0;
+    }
+
+    @ManagedAttribute(description="Is the logical_addr_cache reaper task running")
+    public boolean isLogicalAddressCacheReaperRunning() {
+        return logical_addr_cache_reaper != null && !logical_addr_cache_reaper.isDone();
     }
 
     @ManagedAttribute(description="Returns the average batch size of received batches")
@@ -1184,9 +1193,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         logical_addr_cache=new LazyRemovalCache<Address,PhysicalAddress>(logical_addr_cache_max_size, logical_addr_cache_expiration);
         
-        if(logical_addr_cache_reaper == null || logical_addr_cache_reaper.isDone()) {
-            if(logical_addr_cache_expiration <= 0)
-                throw new IllegalArgumentException("logical_addr_cache_expiration has to be > 0");
+        if(logical_addr_cache_reaper_interval > 0 && (logical_addr_cache_reaper == null || logical_addr_cache_reaper.isDone())) {
             logical_addr_cache_reaper=timer.scheduleWithFixedDelay(new Runnable() {
                 public void run() {
                     evictLogicalAddressCache();
@@ -1195,7 +1202,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 public String toString() {
                     return TP.this.getClass().getSimpleName() + ": LogicalAddressCacheReaper (interval=" + logical_addr_cache_expiration + " ms)";
                 }
-            }, logical_addr_cache_expiration, logical_addr_cache_expiration, TimeUnit.MILLISECONDS);
+            }, logical_addr_cache_reaper_interval, logical_addr_cache_reaper_interval, TimeUnit.MILLISECONDS);
         }
     }
 
