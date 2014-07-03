@@ -6,7 +6,6 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Responses;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
@@ -42,8 +41,6 @@ public class FILE_PING extends Discovery {
 
     @ManagedAttribute(description="Number of reads from the file system or cloud store")
     protected int reads;
-
-    protected static final byte[] WHITESPACE=" \t".getBytes();
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -212,38 +209,12 @@ public class FILE_PING extends Discovery {
         return read(new FileInputStream(file));
     }
 
-
+    @Override
     protected List<PingData> read(InputStream in) throws Exception {
-        List<PingData> retval=null;
         try {
-            while(true) {
-                String name_str=Util.readToken(in);
-                String uuid_str=Util.readToken(in);
-                String addr_str=Util.readToken(in);
-                String coord_str=Util.readToken(in);
-                if(name_str == null || uuid_str == null || addr_str == null || coord_str == null)
-                    break;
-
-                UUID uuid=null;
-                try {
-                    long tmp=Long.valueOf(uuid_str);
-                    uuid=new UUID(0, tmp);
-                }
-                catch(Throwable t) {
-                    uuid=UUID.fromString(uuid_str);
-                }
-
-                PhysicalAddress phys_addr=new IpAddress(addr_str);
-                boolean is_coordinator=coord_str.trim().equals("T") || coord_str.trim().equals("t");
-
-                if(retval == null)
-                    retval=new ArrayList<PingData>();
-                retval.add(new PingData(uuid, true, name_str, phys_addr).coord(is_coordinator));
-            }
-            return retval;
+            return super.read(in);
         }
         finally {
-            Util.close(in);
             reads++;
         }
     }
@@ -284,26 +255,9 @@ public class FILE_PING extends Discovery {
 
     protected void write(List<PingData> list, OutputStream out) throws Exception {
         try {
-            for(PingData data: list) {
-                String  logical_name=data.getLogicalName();
-                Address addr=data.getAddress();
-                PhysicalAddress phys_addr=data.getPhysicalAddr();
-                if(logical_name == null || addr == null || phys_addr == null)
-                    continue;
-                out.write(logical_name.getBytes());
-                out.write(WHITESPACE);
-
-                out.write(addressAsString(addr).getBytes());
-                out.write(WHITESPACE);
-
-                out.write(phys_addr.toString().getBytes());
-                out.write(WHITESPACE);
-
-                out.write(data.isCoord()? "T\n".getBytes() : "F\n".getBytes());
-            }
+            super.write(list, out);
         }
         finally {
-            Util.close(out);
             writes++;
         }
     }

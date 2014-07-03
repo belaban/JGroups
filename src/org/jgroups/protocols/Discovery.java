@@ -5,10 +5,15 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.ConfiguratorFactory;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -107,6 +112,7 @@ public abstract class Discovery extends Protocol {
     protected final Map<Long,Responses>  ping_responses=new HashMap<Long,Responses>();
     @ManagedAttribute(description="Whether the transport supports multicasting")
     protected boolean                    transport_supports_multicasting=true;
+    protected static final byte[]        WHITESPACE=" \t".getBytes();
 
 
 
@@ -234,6 +240,33 @@ public abstract class Discovery extends Protocol {
         return sb.toString();
     }
 
+
+    @ManagedOperation(description="Reads logical-physical address mappings and logical name mappings from a " +
+      "file (or URL) and adds them to the local caches")
+    public void addToCache(String filename) throws Exception {
+        InputStream in=ConfiguratorFactory.getConfigStream(filename);
+        List<PingData> list=read(in);
+        if(list != null) {
+            for(PingData data: list)
+                addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
+        }
+    }
+
+    @ManagedOperation(description="Reads data from local caches and dumps them to a file")
+    public void dumpCache(String output_filename) throws Exception {
+        Map<Address,PhysicalAddress> cache_contents=
+          (Map<Address,PhysicalAddress>)down_prot.down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS, false));
+
+        List<PingData> list=new ArrayList<PingData>(cache_contents.size());
+        for(Map.Entry<Address,PhysicalAddress> entry: cache_contents.entrySet()) {
+            Address         addr=entry.getKey();
+            PhysicalAddress phys_addr=entry.getValue();
+            PingData data=new PingData(addr, true, UUID.get(addr), phys_addr).coord(addr.equals(local_addr));
+            list.add(data);
+        }
+        OutputStream out=new FileOutputStream(output_filename);
+        write(list, out);
+    }
 
     @SuppressWarnings("unchecked")
     public Object up(Event evt) {
@@ -382,6 +415,65 @@ public abstract class Discovery extends Protocol {
 
 
     /* -------------------------- Private methods ---------------------------- */
+
+    protected List<PingData> read(InputStream in) throws Exception {
+        List<PingData> retval=null;
+        try {
+            while(true) {
+                String name_str=Util.readToken(in);
+                String uuid_str=Util.readToken(in);
+                String addr_str=Util.readToken(in);
+                String coord_str=Util.readToken(in);
+                if(name_str == null || uuid_str == null || addr_str == null || coord_str == null)
+                    break;
+
+                UUID uuid=null;
+                try {
+                    long tmp=Long.valueOf(uuid_str);
+                    uuid=new UUID(0, tmp);
+                }
+                catch(Throwable t) {
+                    uuid=UUID.fromString(uuid_str);
+                }
+
+                PhysicalAddress phys_addr=new IpAddress(addr_str);
+                boolean is_coordinator=coord_str.trim().equals("T") || coord_str.trim().equals("t");
+
+                if(retval == null)
+                    retval=new ArrayList<PingData>();
+                retval.add(new PingData(uuid, true, name_str, phys_addr).coord(is_coordinator));
+            }
+            return retval;
+        }
+        finally {
+            Util.close(in);
+        }
+    }
+
+    protected void write(List<PingData> list, OutputStream out) throws Exception {
+        try {
+            for(PingData data: list) {
+                String  logical_name=data.getLogicalName();
+                Address addr=data.getAddress();
+                PhysicalAddress phys_addr=data.getPhysicalAddr();
+                if(logical_name == null || addr == null || phys_addr == null)
+                    continue;
+                out.write(logical_name.getBytes());
+                out.write(WHITESPACE);
+
+                out.write(addressAsString(addr).getBytes());
+                out.write(WHITESPACE);
+
+                out.write(phys_addr.toString().getBytes());
+                out.write(WHITESPACE);
+
+                out.write(data.isCoord()? "T\n".getBytes() : "F\n".getBytes());
+            }
+        }
+        finally {
+            Util.close(out);
+        }
+    }
 
     protected void addResponse(PingData rsp, boolean overwrite) {
         synchronized(ping_responses) {
