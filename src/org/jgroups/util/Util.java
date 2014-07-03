@@ -2282,38 +2282,30 @@ public class Util {
      * @return Class, or null on failure.
      */
     public static Class loadClass(String classname,Class clazz) throws ClassNotFoundException {
-        ClassLoader loader;
-
-        // https://issues.jboss.org/browse/JGRP-1762: load the classloader from the defining class first
-        if(clazz != null) {
-            try {
-                loader=clazz.getClassLoader();
-                if(loader != null)
-                    return loader.loadClass(classname);
-            }
-            catch(Throwable t) {
-            }
-        }
-
-        try {
-            loader=Thread.currentThread().getContextClassLoader();
-            if(loader != null)
-                return loader.loadClass(classname);
-        }
-        catch(Throwable t) {
-        }
-
-        try {
-            loader=ClassLoader.getSystemClassLoader();
-            if(loader != null)
-                return loader.loadClass(classname);
-        }
-        catch(Throwable t) {
-        }
-
-        throw new ClassNotFoundException(classname);
+        return loadClass(classname, clazz.getClassLoader());
     }
 
+    /**
+     * Tries to load the class from the preferred loader.  If not successful, tries to 
+     * load the class from the current thread's context class loader or system class loader.
+     * @param classname Desired class name.
+     * @param preferredLoader The preferred class loader
+     * @return the loaded class.
+     * @throws ClassNotFoundException if the class could not be loaded by any loader
+     */
+    public static Class<?> loadClass(String classname, ClassLoader preferredLoader) throws ClassNotFoundException {
+        ClassNotFoundException exception = null;
+        for (ClassLoader loader: Arrays.asList(preferredLoader, Thread.currentThread().getContextClassLoader(), ClassLoader.getSystemClassLoader())) {
+            try {
+                return loader.loadClass(classname);
+            } catch (ClassNotFoundException e) {
+                if (exception == null) {
+                    exception = e;
+                }
+            }
+        }
+        throw exception;
+    }
 
     public static Field[] getAllDeclaredFields(final Class clazz) {
         return getAllDeclaredFieldsWithAnnotations(clazz);
