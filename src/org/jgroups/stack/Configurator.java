@@ -423,7 +423,7 @@ public class Configurator {
 
         if(clazz == null) {
             try {
-                clazz=Util.loadClass(protocol_name, stack.getClass());
+                clazz=Util.loadClass(protocol_name, config.getClassLoader());
             }
             catch(ClassNotFoundException e) {
             }
