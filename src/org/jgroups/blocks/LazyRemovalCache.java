@@ -83,7 +83,7 @@ public class LazyRemovalCache<K,V> {
         else {
             Entry<V> entry=map.get(key);
             if(entry != null)
-                entry.removable=true;
+                entry.setRemovable(true);
         }
         checkMaxSizeExceeded();
     }
@@ -101,7 +101,7 @@ public class LazyRemovalCache<K,V> {
             for(K key: keys) {
                 Entry<V> entry=map.get(key);
                 if(entry != null)
-                    entry.removable=true;
+                    entry.setRemovable(true);
             }
         }
         checkMaxSizeExceeded();
@@ -116,7 +116,7 @@ public class LazyRemovalCache<K,V> {
                 if(val != null) {
                     Entry<V> tmp=entry.getValue();
                     if(tmp != null)
-                        tmp.removable=true;
+                        tmp.setRemovable(true);
                 }
             }
         }
@@ -136,7 +136,7 @@ public class LazyRemovalCache<K,V> {
                 if(!keys.contains(entry.getKey())) {
                     Entry<V> val=entry.getValue();
                     if(val != null)
-                        val.removable=true;
+                        val.setRemovable(true);
                 }
             }
         }
@@ -145,7 +145,7 @@ public class LazyRemovalCache<K,V> {
         for(K key: keys) {
             Entry<V> val=map.get(key);
             if(val != null && val.removable)
-                val.removable=false;
+                val.setRemovable(false);
         }
 
         checkMaxSizeExceeded();
@@ -247,7 +247,7 @@ public class LazyRemovalCache<K,V> {
 
     public static class Entry<V> {
         protected final V    val;
-        protected final long timestamp=System.currentTimeMillis();
+        protected long       timestamp=System.currentTimeMillis();
         protected boolean    removable=false;
 
         public Entry(V val) {
@@ -256,6 +256,13 @@ public class LazyRemovalCache<K,V> {
 
         public boolean isRemovable() {
             return removable;
+        }
+
+        public void setRemovable(boolean flag) {
+            if(this.removable != flag) {
+                this.removable=flag;
+                timestamp=System.currentTimeMillis();
+            }
         }
 
         public long getTimestamp() {

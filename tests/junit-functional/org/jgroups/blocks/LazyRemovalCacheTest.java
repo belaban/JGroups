@@ -1,5 +1,6 @@
 package org.jgroups.blocks;
 
+import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
@@ -111,23 +112,24 @@ public class LazyRemovalCacheTest {
 
 
     public static void testRemovalOnExceedingMaxSizeAndMaxTime() {
-        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<UUID, String>(2, 1000);
-        UUID u1=UUID.randomUUID(), u2=UUID.randomUUID(), u3=UUID.randomUUID(), u4=UUID.randomUUID();
-        cache.add(u1, "u1"); cache.add(u2, "u2");
+        LazyRemovalCache<Address, String> cache=new LazyRemovalCache<Address, String>(2, 1000);
+        Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B"),
+          c=Util.createRandomAddress("C"), d=Util.createRandomAddress("D");
+        cache.add(a, "A"); cache.add(b, "B");
         assert cache.size() == 2;
-        cache.add(u3, "u3"); cache.add(u4, "u4");
+        cache.add(c, "C"); cache.add(d, "D");
         System.out.println("cache = " + cache);
         assert cache.size() == 4;
 
-        cache.remove(u3);
+        cache.remove(c);
         System.out.println("cache = " + cache);
         assert cache.size() == 4;
 
-        cache.remove(u1);
+        cache.remove(a);
         System.out.println("cache = " + cache);
         assert cache.size() == 4;
 
-        cache.remove(u4);
+        cache.remove(d);
         System.out.println("cache = " + cache);
         assert cache.size() == 4;
 
@@ -135,9 +137,8 @@ public class LazyRemovalCacheTest {
         System.out.println("cache = " + cache);
         assert cache.size() == 4;
 
-        System.out.println("sleeping for 1 sec");
         Util.sleep(1100);
-        cache.remove(u4);
+        cache.remove(d);
         System.out.println("cache = " + cache);
         assert cache.size() == 1;
     }
