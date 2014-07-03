@@ -15,6 +15,7 @@ import java.util.*;
  */
 public class ProtocolConfiguration {
     private final String              protocol_name;
+    private final ClassLoader         loader;
     private String                    properties_str;
     private final Map<String, String> properties=new HashMap<String, String>();
     private List<Node>                subtrees; // roots to DOM elements, passed to protocol on creation
@@ -46,10 +47,16 @@ public class ProtocolConfiguration {
             }
         }
         parsePropertiesString(properties);
+        this.loader = ProtocolConfiguration.class.getClassLoader();
     }
 
     public ProtocolConfiguration(String protocol_name, Map<String,String> properties) {
+        this(protocol_name, properties, ProtocolConfiguration.class.getClassLoader());
+    }
+
+    public ProtocolConfiguration(String protocol_name, Map<String,String> properties, ClassLoader loader) {
         this.protocol_name=protocol_name;
+        this.loader = loader;
         if(!properties.isEmpty()) {
             this.properties.putAll(properties);
             properties_str=propertiesToString();
@@ -70,6 +77,10 @@ public class ProtocolConfiguration {
 
     public String getProtocolName() {
         return protocol_name;
+    }
+
+    public ClassLoader getClassLoader() {
+        return this.loader;
     }
 
     public Map<String, String> getProperties() {
