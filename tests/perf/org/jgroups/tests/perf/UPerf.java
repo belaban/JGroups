@@ -57,7 +57,7 @@ public class UPerf extends ReceiverAdapter {
     private static final short SET                   =  4;
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
-    private byte[] GET_RSP=new byte[msg_size];
+    private byte[] BUFFER=new byte[msg_size];
     static NumberFormat f;
 
     static {
@@ -159,10 +159,10 @@ public class UPerf extends ReceiverAdapter {
     // =================================== callbacks ======================================
 
     public Results startTest() throws Throwable {
-
+        BUFFER=new byte[msg_size];
         addSiteMastersToMembers();
 
-        System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) + ", sync=" + sync +
+        System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(BUFFER.length) + ", sync=" + sync +
                              ", oob=" + oob + ", msg_bundling=" + msg_bundling + ", use_anycast_addrs=" + use_anycast_addrs);
         int total_gets=0, total_puts=0;
         final AtomicInteger num_msgs_sent=new AtomicInteger(0);
@@ -198,12 +198,11 @@ public class UPerf extends ReceiverAdapter {
     }
 
     public byte[] get(long key) {
-        return GET_RSP;
+        return BUFFER;
     }
 
 
     public void put(long key, byte[] val) {
-        
     }
 
     public Config getConfig() {
@@ -325,7 +324,7 @@ public class UPerf extends ReceiverAdapter {
             System.out.println(mbr + ": " + result);
         }
         double total_reqs_sec=total_reqs / ( total_time/ 1000.0);
-        double throughput=total_reqs_sec * msg_size;
+        double throughput=total_reqs_sec * BUFFER.length;
         double ms_per_req=total_time / (double)total_reqs;
         Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         System.out.println("\n");
@@ -413,8 +412,7 @@ public class UPerf extends ReceiverAdapter {
 
 
         public void run() {
-            final byte[] buf=new byte[msg_size];
-            Object[] put_args={0, buf};
+            Object[] put_args={0, BUFFER};
             Object[] get_args={0};
             MethodCall get_call=new MethodCall(GET, get_args);
             MethodCall put_call=new MethodCall(PUT, put_args);
