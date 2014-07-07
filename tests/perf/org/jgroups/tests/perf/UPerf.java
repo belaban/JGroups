@@ -443,8 +443,13 @@ public class UPerf extends ReceiverAdapter {
                 try {
                     if(get) { // sync GET
                         Address target=pickTarget();
-                        get_args[0]=i;
-                        disp.callRemoteMethod(target, get_call, get_options);
+                        if(target != null && target.equals(local_addr)) {
+                            get(1);
+                        }
+                        else {
+                            get_args[0]=i;
+                            disp.callRemoteMethod(target, get_call, get_options);
+                        }
                         num_gets++;
                     }
                     else {    // sync or async (based on value of 'sync') PUT
@@ -467,9 +472,10 @@ public class UPerf extends ReceiverAdapter {
         }
 
         private Address pickTarget() {
-            int index=dests.indexOf(local_addr);
-            int new_index=(index +1) % dests.size();
-            return dests.get(new_index);
+            return Util.pickRandomElement(dests);
+            // int index=dests.indexOf(local_addr);
+            // int new_index=(index +1) % dests.size();
+            // return dests.get(new_index);
         }
 
         private Collection<Address> pickAnycastTargets() {
