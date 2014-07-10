@@ -5,6 +5,8 @@ import org.jgroups.util.SuppressCache;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+
 /**
  * Tests SuppressCache
  * @author Bela Ban
@@ -42,5 +44,19 @@ public class SuppressCacheTest {
 
         val=cache.putIfAbsent("Bela", 5000);
         assert val == null;
+    }
+
+
+    public void testNullKey() {
+        SuppressCache<String> cache=new SuppressCache<String>();
+        cache.putIfAbsent(null, 10);
+
+        cache.removeAll(Arrays.asList("Bela", "Michi"));
+        Util.sleep(500);
+        cache.removeExpired(10);
+
+        System.out.println("cache = " + cache);
+
+
     }
 }

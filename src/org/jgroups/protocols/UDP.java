@@ -2,11 +2,15 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.Address;
+import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.AsciiString;
+import org.jgroups.util.SuppressLog;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
@@ -92,6 +96,10 @@ public class UDP extends TP {
       "multicast packets). IP multicast packets send on a host P will therefore not be received by anyone on P. Use with caution.")
     protected boolean disable_loopback=false;
 
+    @Property(description="Suppresses warnings on Mac OS (for now) about not enough buffer space when sending " +
+      "a datagram packet")
+    protected long suppress_time_out_of_buffer_space=60000;
+
 
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
@@ -119,10 +127,13 @@ public class UDP extends TP {
     /** Runnable to receive unicast packets */
     protected PacketReceiver  ucast_receiver=null;
 
-    protected static final boolean is_android;
+    protected SuppressLog<InetAddress> suppress_log_out_of_buffer_space;
+
+    protected static final boolean is_android, is_mac;
 
     static  {
         is_android=Util.checkForAndroid();
+        is_mac=Util.checkForMac();
     }
 
 
@@ -162,6 +173,17 @@ public class UDP extends TP {
                                                  "packet size of " + Global.MAX_DATAGRAM_PACKET_SIZE);
     }
 
+    @ManagedAttribute(description="Number of messages dropped when sending because of insufficient buffer space")
+    public int getDroppedMessage() {
+        return suppress_log_out_of_buffer_space != null? suppress_log_out_of_buffer_space.getCache().size() : 0;
+    }
+
+    @ManagedOperation(description="Clears the cache for dropped messages")
+    public void clearDroppedMessagesCache() {
+        if(suppress_log_out_of_buffer_space != null)
+            suppress_log_out_of_buffer_space.getCache().clear();
+    }
+
     public String getInfo() {
         StringBuilder sb=new StringBuilder();
         sb.append("group_addr=").append(mcast_group_addr.getHostName()).append(':').append(mcast_port).append("\n");
@@ -195,8 +217,18 @@ public class UDP extends TP {
     protected void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
         DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
         // using the datagram socket to send multicasts or unicasts (https://issues.jboss.org/browse/JGRP-1765)
-        if(sock != null)
-            sock.send(packet);
+        if(sock != null) {
+            try {
+                sock.send(packet);
+            }
+            catch(IOException ex) {
+                if(suppress_log_out_of_buffer_space != null)
+                    suppress_log_out_of_buffer_space.log(SuppressLog.Level.warn, dest, suppress_time_out_of_buffer_space,
+                                                         local_addr, dest == null? "cluster" : dest, ex);
+                else
+                    throw ex;
+            }
+        }
     }
 
 
@@ -206,7 +238,23 @@ public class UDP extends TP {
 
     /*------------------------------ Protocol interface ------------------------------ */
 
+    @Override
+    protected Object handleDownEvent(Event evt) {
+        Object retval=super.handleDownEvent(evt);
+        switch(evt.getType()) {
+            case Event.VIEW_CHANGE:
+                if(suppress_log_out_of_buffer_space != null)
+                    suppress_log_out_of_buffer_space.removeExpired(suppress_time_out_of_buffer_space);
+                break;
+        }
+        return retval;
+    }
 
+    public void init() throws Exception {
+        super.init();
+        if(is_mac && suppress_time_out_of_buffer_space > 0)
+            suppress_log_out_of_buffer_space=new SuppressLog<InetAddress>(log, "FailureSendingToPhysAddr", "SuppressMsg");
+    }
 
     /**
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads

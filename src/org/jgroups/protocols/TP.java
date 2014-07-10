@@ -57,7 +57,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected static final byte    MULTICAST=2; // message is a multicast (versus a unicast) message when set
     protected static final int     MSG_OFFSET=Global.SHORT_SIZE + Global.BYTE_SIZE*2; // offset for flags for single msgs
     protected static final int     MSG_OVERHEAD=Global.SHORT_SIZE + Global.BYTE_SIZE; // version + flags
-    protected static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
+    protected static final boolean can_bind_to_mcast_addr;
     protected static final String  BUNDLE_MSG="%s: sending %d msgs (%d bytes (%.2f of max_bundle_size) to %d dests(s): %s";
 
     protected static NumberFormat f;
@@ -65,7 +65,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     static {
         can_bind_to_mcast_addr=(Util.checkForLinux() && !Util.checkForAndroid())
           || Util.checkForSolaris()
-          || Util.checkForHp();
+          || Util.checkForHp()
+          || Util.checkForMac();
         f=NumberFormat.getNumberInstance();
         f.setGroupingUsed(false);
         f.setMaximumFractionDigits(2);
