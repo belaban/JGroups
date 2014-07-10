@@ -310,6 +310,8 @@ public class OverlappingMergeTest extends ChannelTestBase {
                 ch.getProtocolStack().insertProtocol(merge_prot, ProtocolStack.ABOVE, Discovery.class);
                 merge_prot.init();
                 merge_prot.down(new Event(Event.SET_LOCAL_ADDRESS, ch.getAddress()));
+                merge_prot.setMinInterval(2000);
+                merge_prot.setMaxInterval(5000);
                 merge_prot.setValue("check_interval", 2000);
             }
         }
@@ -337,22 +339,23 @@ public class OverlappingMergeTest extends ChannelTestBase {
         for(JChannel ch: new JChannel[]{a,b,c})
             ch.getProtocolStack().findProtocol(GMS.class).setLevel("trace");
 
-        for(JChannel ch: new JChannel[]{a,b,c}) {
-            MERGE3 merge_prot=(MERGE3)ch.getProtocolStack().findProtocol(MERGE3.class);
-            if(merge_prot != null)
-                merge_prot.sendInfo();
-        }
-
-        Util.sleep(500);
-        MERGE3 merge_prot=(MERGE3)a.getProtocolStack().findProtocol(MERGE3.class);
-        merge_prot.checkInconsistencies();
-
         System.out.println("\n==== checking views after merge ====:");
         for(int i=0; i < 20; i++) {
             if(a.getView().size() == 3 && b.getView().size() == 3 && c.getView().size() == 3) {
                 System.out.println("views are correct: all views have a size of 3");
                 break;
             }
+
+            for(JChannel ch: new JChannel[]{a,b,c}) {
+                MERGE3 merge_prot=(MERGE3)ch.getProtocolStack().findProtocol(MERGE3.class);
+                if(merge_prot != null)
+                    merge_prot.sendInfo();
+            }
+
+            Util.sleep(500);
+            MERGE3 merge_prot=(MERGE3)a.getProtocolStack().findProtocol(MERGE3.class);
+            merge_prot.checkInconsistencies();
+
             System.out.print(".");
             runStableProtocol(a,b,c);
             Util.sleep(1000);
