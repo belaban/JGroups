@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class SuppressCache<T> {
     protected final ConcurrentMap<T,Value> map=new ConcurrentHashMap<T,Value>();
+    protected final T NULL_KEY=(T)new Object();
 
 
     /**
@@ -27,7 +28,7 @@ public class SuppressCache<T> {
      */
     public Value putIfAbsent(T key, long expiry_time) {
         if(key == null)
-            return null;
+            key=NULL_KEY;
         Value val=map.get(key);
         if(val == null) {
             val=new Value();

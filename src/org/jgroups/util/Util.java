@@ -3180,6 +3180,8 @@ public class Util {
         return contains("java.vm.vendor","android");
     }
 
+    public static boolean checkForMac() {return checkForPresence("os.name", "mac");}
+
     private static boolean checkForPresence(String key,String value) {
         try {
             String tmp=System.getProperty(key);

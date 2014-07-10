@@ -266,16 +266,22 @@ public class SequencerMergeTest {
         }
 
         public List<String> getList() {
-            return list;
+            synchronized(list) {
+                return new ArrayList(list);
+            }
         }
 
         public void receive(Message msg) {
-            list.add(msg.getObject().toString());
+            synchronized(list) {
+                list.add(msg.getObject().toString());
+            }
         }
 
         public void viewAccepted(View view) {
             String tmp="V" + view.getViewId().getId();
-            list.add(tmp);
+            synchronized(list) {
+                list.add(tmp);
+            }
         }
     }
 
