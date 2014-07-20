@@ -1508,7 +1508,7 @@
 
             <para>
                 JGroups provides protocols to encrypt cluster traffic (ENCRYPT), and to make sure that only
-                authorized members can join a cluster (AUTH).
+                authorized members can join a cluster (AUTH and SASL).
             </para>
 
             <section id="ENCRYPT">
@@ -1622,7 +1622,42 @@ keytool -genseckey -alias myKey -keypass changeit -storepass changeit  -keyalg B
             <section id="SASL">
                 <title>SASL</title>
                 <para>
-                    tbd
+                    SASL is an alternative to the AUTH protocol which provides a layer of authentication to JGroups by allowing the
+                    use of one of the SASL mechanisms made available by the JDK. SASL sits below the GMS
+                    protocol and listens for JOIN / MERGE REQUEST messages.  When a JOIN / MERGE REQUEST is received it tries to find
+                    a SaslHeader object which contains the initial response required by the chosen SASL mech. This initiates a sequence
+                    of challenge/response messages which, if successful, culminates in allowing the new node to join the cluster. The actual
+                    validation logic required by the SASL mech must be provided by the user in the form of a standard javax.security.auth.CallbackHandler
+                    implementation.
+                </para>
+                <para>
+                    When authentication is successful, the message is simply passed up the stack to the GMS protocol.
+                    When it fails, the SASL protocol creates a JOIN / MERGE RESPONSE message with a failure string and passes
+                    it back down the stack.  This failure string informs the client of the reason for failure.
+                    Clients will then fail to join the group and will throw a SecurityException.
+                    If this error string is null then authentication is considered to have passed.
+                </para>
+                <para>
+                    SASL can be (minimally) configured as follows:
+                </para>
+                <programlisting language="XML">
+&lt;config ... &gt;
+    &lt;UDP /&gt;
+    &lt;PING /&gt;
+    &lt;pbcast.NAKACK /&gt;
+    &lt;UNICAST3 /&gt;
+    &lt;pbcast.STABLE /&gt;
+    &lt;SASL mech="DIGEST-MD5" 
+        client_callback_handler="org.example.ClientCallbackHandler" 
+        server_callback_handler="org.example.ServerCallbackHandler"/&gt;
+    &lt;pbcast.GMS /&gt;
+    
+&lt;/config&gt;
+                </programlisting>
+                <para>
+                    The <literal>mech</literal> property specifies the SASL mech you want to use, as defined by RFC-4422. You will also need to provide two 
+                    callback handlers, one used when the node is running as coordinator (<literal>server_callback_handler</literal>) and one used in all other 
+                    cases (<literal>client_callback_handler</literal>). Refer to the JDK's SASL reference guide for more details: <ulink url="http://docs.oracle.com/javase/7/docs/technotes/guides/security/sasl/sasl-refguide.html"/> 
                 </para>
                 ${SASL}
             </section>
