@@ -477,8 +477,12 @@ public class Util {
         return objectFromByteBuffer(buffer,0,buffer.length);
     }
 
-
     public static Object objectFromByteBuffer(byte[] buffer,int offset,int length) throws Exception {
+        return objectFromByteBuffer(buffer, offset, length, null);
+    }
+
+
+    public static Object objectFromByteBuffer(byte[] buffer,int offset,int length, ClassLoader loader) throws Exception {
         if(buffer == null) return null;
         Object retval=null;
         byte type=buffer[offset];
@@ -488,11 +492,11 @@ public class Util {
                 return null;
             case TYPE_STREAMABLE:
                 DataInput in=new ByteArrayDataInputStream(buffer,offset + 1,length - 1);
-                retval=readGenericStreamable(in);
+                retval=readGenericStreamable(in, loader);
                 break;
             case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
                 InputStream in_stream=new ByteArrayInputStream(buffer,offset + 1,length - 1);
-                in=new ObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
+                in=new ObjectInputStreamWithClassloader(in_stream, loader);
                 try {
                     retval=((ObjectInputStream)in).readObject();
                 }
@@ -680,8 +684,11 @@ public class Util {
         }
     }
 
-
     public static Object objectFromStream(DataInput in) throws Exception {
+        return objectFromStream(in, null);
+    }
+
+    public static Object objectFromStream(DataInput in, ClassLoader loader) throws Exception {
         if(in == null) return null;
         Object retval=null;
         byte b=in.readByte();
@@ -690,12 +697,12 @@ public class Util {
             case TYPE_NULL:
                 return null;
             case TYPE_STREAMABLE:
-                retval=readGenericStreamable(in);
+                retval=readGenericStreamable(in, loader);
                 break;
             case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
-                ObjectInputStream tmp=new ObjectInputStream(in instanceof ByteArrayDataInputStream?
-                                                              new org.jgroups.util.InputStreamAdapter((ByteArrayDataInputStream)in) :
-                                                              (InputStream)in);
+                InputStream is=in instanceof ByteArrayDataInputStream?
+                  new org.jgroups.util.InputStreamAdapter((ByteArrayDataInputStream)in) : (InputStream)in;
+                ObjectInputStream tmp=new ObjectInputStreamWithClassloader(is, loader);
                 try {
                     retval=tmp.readObject();
                 }
@@ -1115,8 +1122,11 @@ public class Util {
         obj.writeTo(out); // write the contents
     }
 
-
     public static Streamable readGenericStreamable(DataInput in) throws Exception {
+        return readGenericStreamable(in, null);
+    }
+
+    public static Streamable readGenericStreamable(DataInput in, ClassLoader loader) throws Exception {
         Streamable retval=null;
         int b=in.readByte();
         if(b == 0)
@@ -1132,7 +1142,7 @@ public class Util {
         }
         else {
             String classname=in.readUTF();
-            clazz=ClassConfigurator.get(classname);
+            clazz=ClassConfigurator.get(classname, loader);
         }
 
         retval=(Streamable)clazz.newInstance();
