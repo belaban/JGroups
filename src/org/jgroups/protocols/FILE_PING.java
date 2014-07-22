@@ -210,7 +210,7 @@ public class FILE_PING extends Discovery {
     }
 
     @Override
-    protected List<PingData> read(InputStream in) throws Exception {
+    protected List<PingData> read(InputStream in) {
         try {
             return super.read(in);
         }

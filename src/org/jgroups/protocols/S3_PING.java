@@ -116,8 +116,13 @@ public class S3_PING extends FILE_PING {
             if(rsp.entries != null) {
                 for(Iterator<ListEntry> it=rsp.entries.iterator(); it.hasNext();) {
                     ListEntry key=it.next();
-                    GetResponse val=conn.get(location, key.key, null);
-                    readResponse(val, members, responses);
+                    try {
+                        GetResponse val=conn.get(location, key.key, null);
+                        readResponse(val, members, responses);
+                    }
+                    catch(Throwable t) {
+                        log.error("failed reading key %s: %s", key.key, t);
+                    }
                 }
             }
         }
@@ -135,11 +140,13 @@ public class S3_PING extends FILE_PING {
         if(buf != null && buf.length > 0) {
             try {
                 list=read(new ByteArrayInputStream(buf));
-                for(PingData data: list) {
-                    if(mbrs == null || mbrs.contains(data.getAddress()))
-                        responses.addResponse(data, data.isCoord());
-                    if(local_addr != null && !local_addr.equals(data.getAddress()))
-                        addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
+                if(list != null) {
+                    for(PingData data : list) {
+                        if(mbrs == null || mbrs.contains(data.getAddress()))
+                            responses.addResponse(data, data.isCoord());
+                        if(local_addr != null && !local_addr.equals(data.getAddress()))
+                            addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
+                    }
                 }
             }
             catch(Throwable e) {

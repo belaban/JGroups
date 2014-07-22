@@ -246,10 +246,9 @@ public abstract class Discovery extends Protocol {
     public void addToCache(String filename) throws Exception {
         InputStream in=ConfiguratorFactory.getConfigStream(filename);
         List<PingData> list=read(in);
-        if(list != null) {
+        if(list != null)
             for(PingData data: list)
                 addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
-        }
     }
 
     @ManagedOperation(description="Reads data from local caches and dumps them to a file")
@@ -416,32 +415,37 @@ public abstract class Discovery extends Protocol {
 
     /* -------------------------- Private methods ---------------------------- */
 
-    protected List<PingData> read(InputStream in) throws Exception {
+    protected List<PingData> read(InputStream in) {
         List<PingData> retval=null;
         try {
             while(true) {
-                String name_str=Util.readToken(in);
-                String uuid_str=Util.readToken(in);
-                String addr_str=Util.readToken(in);
-                String coord_str=Util.readToken(in);
-                if(name_str == null || uuid_str == null || addr_str == null || coord_str == null)
-                    break;
-
-                UUID uuid=null;
                 try {
-                    long tmp=Long.valueOf(uuid_str);
-                    uuid=new UUID(0, tmp);
+                    String name_str=Util.readToken(in);
+                    String uuid_str=Util.readToken(in);
+                    String addr_str=Util.readToken(in);
+                    String coord_str=Util.readToken(in);
+                    if(name_str == null || uuid_str == null || addr_str == null || coord_str == null)
+                        break;
+
+                    UUID uuid=null;
+                    try {
+                        long tmp=Long.valueOf(uuid_str);
+                        uuid=new UUID(0, tmp);
+                    }
+                    catch(Throwable t) {
+                        uuid=UUID.fromString(uuid_str);
+                    }
+
+                    PhysicalAddress phys_addr=new IpAddress(addr_str);
+                    boolean is_coordinator=coord_str.trim().equals("T") || coord_str.trim().equals("t");
+
+                    if(retval == null)
+                        retval=new ArrayList<PingData>();
+                    retval.add(new PingData(uuid, true, name_str, phys_addr).coord(is_coordinator));
                 }
                 catch(Throwable t) {
-                    uuid=UUID.fromString(uuid_str);
+                    log.error("failed reading line of input stream", t);
                 }
-
-                PhysicalAddress phys_addr=new IpAddress(addr_str);
-                boolean is_coordinator=coord_str.trim().equals("T") || coord_str.trim().equals("t");
-
-                if(retval == null)
-                    retval=new ArrayList<PingData>();
-                retval.add(new PingData(uuid, true, name_str, phys_addr).coord(is_coordinator));
             }
             return retval;
         }
