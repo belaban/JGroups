@@ -94,7 +94,7 @@ public class FD_ALL extends Protocol {
     @ManagedAttribute(description="Member address")
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     @ManagedAttribute(description="Lists members of a cluster")
-    public String getMembers() {return members.toString();}
+    public String getMembers() {return Util.printListWithDelimiter(members, ",");}
     @ManagedAttribute(description="Currently suspected members")
     public String getSuspectedMembers() {return suspected_mbrs.toString();}
     public int getHeartbeatsSent() {return num_heartbeats_sent;}
