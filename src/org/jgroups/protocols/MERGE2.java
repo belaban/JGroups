@@ -427,7 +427,9 @@ public class MERGE2 extends Protocol {
          * more than 1 different view has been found */
         protected void fetchViews() throws InterruptedException {
             views.clear();
-            views.put(local_addr,view);
+            View tmp_view=view;
+            if(tmp_view != null)
+                views.put(local_addr, tmp_view);
             fetching_done=false;
 
             if(transport_supports_multicasting) {
