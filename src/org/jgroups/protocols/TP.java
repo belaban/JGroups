@@ -1891,7 +1891,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(who_has_cache.addIfAbsentOrExpired(dest)) { // true if address was added
             // FIND_MBRS must return quickly
-            Responses responses=(Responses)up(new Event(Event.FIND_MBRS, Arrays.asList(dest)));
+            Responses responses=fetchResponsesFromDiscoveryProtocol(Arrays.asList(dest));
             try {
                 for(PingData data : responses) {
                     if(data.getAddress() != null && data.getAddress().equals(dest)) {
@@ -1956,10 +1956,28 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(do_send) {
             missing.removeAll(logical_addr_cache.keySet());
             if(!missing.isEmpty()) {  // FIND_MBRS either returns immediately or is processed in a separate thread
-                Responses rsps=(Responses)up(new Event(Event.FIND_MBRS, missing));
+                Responses rsps=fetchResponsesFromDiscoveryProtocol(missing);
                 rsps.done();
             }
         }
+    }
+
+    protected Responses fetchResponsesFromDiscoveryProtocol(List<Address> missing) {
+        if(!isSingleton())
+            return (Responses)up_prot.up(new Event(Event.FIND_MBRS, missing));
+        int size=missing == null? 16 : missing.size();
+        final Responses rsps=new Responses(size, false, size);
+        Collection<Protocol> prots=up_prots.values();
+        if(prots != null) {
+            for(Protocol prot: prots) {
+                Responses tmp_rsp=(Responses)prot.up(new Event(Event.FIND_MBRS, missing));
+                if(tmp_rsp != null) {
+                    for(PingData data: tmp_rsp)
+                        rsps.addResponse(data, true);
+                }
+            }
+        }
+        return rsps;
     }
 
     protected AsciiString getClusterName(Message msg) {
