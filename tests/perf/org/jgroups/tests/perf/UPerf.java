@@ -35,6 +35,8 @@ public class UPerf extends ReceiverAdapter {
     protected final List<Address>  members=new ArrayList<Address>();
     protected volatile View        view;
     protected final List<Address>  site_masters=new ArrayList<Address>();
+    protected volatile boolean     looping=true;
+    protected Thread               event_loop_thread;
 
 
     // ============ configurable properties ==================
@@ -55,6 +57,7 @@ public class UPerf extends ReceiverAdapter {
     private static final short PUT                   =  2;
     private static final short GET_CONFIG            =  3;
     private static final short SET                   =  4;
+    private static final short QUIT_ALL              =  5;
 
     private final AtomicInteger COUNTER=new AtomicInteger(1);
     private byte[] BUFFER=new byte[msg_size];
@@ -67,6 +70,7 @@ public class UPerf extends ReceiverAdapter {
             METHODS[PUT]                   = UPerf.class.getMethod("put", long.class, byte[].class);
             METHODS[GET_CONFIG]            = UPerf.class.getMethod("getConfig");
             METHODS[SET]                   = UPerf.class.getMethod("set", String.class, Object.class);
+            METHODS[QUIT_ALL]              = UPerf.class.getMethod("quitAll");
 
             ClassConfigurator.add((short)11000, Results.class);
             f=NumberFormat.getNumberInstance();
@@ -140,6 +144,30 @@ public class UPerf extends ReceiverAdapter {
         Util.close(channel);
     }
 
+    protected void startEventThread() {
+        event_loop_thread=new Thread("EventLoop") {
+            public void run() {
+                try {
+                    eventLoop();
+                }
+                catch(Throwable ex) {
+                    ex.printStackTrace();
+                    UPerf.this.stop();
+                }
+            }
+        };
+        event_loop_thread.setDaemon(true);
+        event_loop_thread.start();
+    }
+
+    protected void stopEventThread() {
+        Thread tmp=event_loop_thread;
+        looping=false;
+        if(tmp != null)
+            tmp.interrupt();
+        Util.close(channel);
+    }
+
     public void viewAccepted(View new_view) {
         this.view=new_view;
         System.out.println("** view: " + new_view);
@@ -186,6 +214,12 @@ public class UPerf extends ReceiverAdapter {
         return new Results(total_gets, total_puts, total_time);
     }
 
+    public void quitAll() {
+        Util.sleepRandom(10, 10000);
+        System.out.println("-- received quitAll(): shutting down");
+        stopEventThread();
+    }
+
 
     public void set(String field_name, Object value) {
         Field field=Util.getField(this.getClass(),field_name);
@@ -230,7 +264,7 @@ public class UPerf extends ReceiverAdapter {
 
         addSiteMastersToMembers();
 
-        while(true) {
+        while(looping) {
             c=Util.keyPress("[1] Send msgs [2] Print view" +
                               "\n[6] Set sender threads (" + num_threads + ") [7] Set num msgs (" + num_msgs + ") " +
                               "[8] Set msg size (" + Util.printBytes(msg_size) + ")" +
@@ -239,7 +273,7 @@ public class UPerf extends ReceiverAdapter {
                               ") [r] Set read percentage (" + f.format(read_percentage) + ") [g] get_before_put (" + get_before_put + ") " +
                               "\n[a] Toggle use_anycast_addrs (" + use_anycast_addrs + ") [b] Toggle msg_bundling (" +
                               (msg_bundling? "on" : "off") + ")" +
-                              "\n[q] Quit\n");
+                              "\n[q] Quit [X] quit all\n");
             switch(c) {
                 case -1:
                     break;
@@ -286,6 +320,16 @@ public class UPerf extends ReceiverAdapter {
                 case 'q':
                     channel.close();
                     return;
+                case 'X':
+                    try {
+                        RequestOptions options=new RequestOptions(ResponseMode.GET_NONE, 0).setExclusionList(local_addr);
+                        options.setFlags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
+                        disp.callRemoteMethods(null, new MethodCall(QUIT_ALL), options);
+                    }
+                    catch(Throwable t) {
+                        System.err.println("Calling quitAll() failed: " + t);
+                    }
+                    break;
                 case '\n':
                 case '\r':
                     break;
@@ -347,9 +391,9 @@ public class UPerf extends ReceiverAdapter {
 
     int getAnycastCount() throws Exception {
         int tmp=Util.readIntFromStdin("Anycast count: ");
-        View view=channel.getView();
-        if(tmp > view.size()) {
-            System.err.println("anycast count must be smaller or equal to the view size (" + view + ")\n");
+        View tmp_view=channel.getView();
+        if(tmp > tmp_view.size()) {
+            System.err.println("anycast count must be smaller or equal to the view size (" + tmp_view + ")\n");
             return -1;
         }
         return tmp;
@@ -607,7 +651,7 @@ public class UPerf extends ReceiverAdapter {
             test=new UPerf();
             test.init(props, name, xsite, addr_generator, port);
             if(run_event_loop)
-                test.eventLoop();
+                test.startEventThread();
         }
         catch(Throwable ex) {
             ex.printStackTrace();
