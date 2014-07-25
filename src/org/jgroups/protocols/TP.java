@@ -1901,12 +1901,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                         }
                     }
                 }
+                log.warn(Util.getMessage("PhysicalAddrMissing"), local_addr, dest);
             }
             finally {
                 responses.done();
             }
         }
-        log.warn(Util.getMessage("PhysicalAddrMissing"), local_addr, dest);
     }
 
 
