@@ -134,7 +134,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     @ManagedAttribute(description="Member address")
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     @ManagedAttribute(description="List of cluster members")
-    public String getMembers() {return members.toString();}
+    public String getMembers() {return Util.printListWithDelimiter(members, ",");}
     @ManagedAttribute(description="List of pingable members of a cluster")
     public String getPingableMembers() {return pingable_mbrs.toString();}
     @ManagedAttribute(description="Ping destination")
