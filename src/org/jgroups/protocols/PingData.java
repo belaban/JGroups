@@ -24,8 +24,8 @@ public class PingData implements SizeStreamable {
     protected PhysicalAddress               physical_addr;
     protected Collection<? extends Address> mbrs; // list of members to find, sent with discovery request (can be null)
 
-    protected static final byte is_coord  = 1;
-    protected static final byte is_server = 1<< 1;
+    protected static final byte is_server = 1;
+    protected static final byte is_coord  = 1 << 1;
 
 
     public PingData() {

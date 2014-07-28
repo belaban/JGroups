@@ -98,7 +98,7 @@ public class FILE_PING extends Discovery {
             PingData data=responses.findResponseFrom(local_addr);
             // the logical addr *and* IP address:port have to match
             if(data != null && data.getPhysicalAddr().equals(phys_addr)) {
-                if(data.isCoord())
+                if(data.isCoord() && initial_discovery)
                     responses.clear();
                 else
                     ; // use case #1 if we have predefined files: most members join but are not coord

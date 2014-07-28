@@ -362,6 +362,7 @@ public class MERGE3 extends Protocol {
 
             Responses rsps=(Responses)down_prot.down(Event.FIND_MBRS_EVT);
             rsps.waitFor(discovery_timeout); // return immediately if done
+            rsps.done();
             if(rsps.isEmpty())
                 return;
 
