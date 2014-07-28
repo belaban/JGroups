@@ -2,6 +2,8 @@
 package org.jgroups;
 
 
+import org.jgroups.util.Util;
+
 import java.util.*;
 
 /**
@@ -242,7 +244,7 @@ public class Membership {
 
     public String toString() {
         synchronized(members) {
-            return members.toString();
+            return Util.printListWithDelimiter(members, ",");
         }
     }
 
