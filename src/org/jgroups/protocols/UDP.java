@@ -451,6 +451,9 @@ public class UDP extends TP {
             catch(SocketException socket_ex) {
                 // Vladimir May 30th 2007
                 // special handling for Linux 2.6 kernel which sometimes throws BindException while we probe for a random port
+                if(log.isTraceEnabled()) {
+                    log.trace(String.format("failed to create ephemeral port: %d on %s", localPort, bind_addr), socket_ex);
+                }
                 localPort++;
                 continue;
             }
