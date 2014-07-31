@@ -298,9 +298,9 @@ public class JChannel extends Channel {
     
     /**
      * Connects this channel to a group and gets a state from a specified state provider.<p/>
-     * This method invokes <code>connect()<code> and then <code>getState<code>.<p/>
+     * This method invokes <code>connect()</code> and then <code>getState</code>.<p/>
      * If the FLUSH protocol is in the channel's stack definition, only one flush round is executed for both connecting and
-     * fetching the state rather than two flushes if we invoke <code>connect<code> and <code>getState<code> in succession.
+     * fetching the state rather than two flushes if we invoke <code>connect</code> and <code>getState</code> in succession.
      * <p/>
      * If the channel is already connected, an error message will be printed to the error log.
      * If the channel is closed a ChannelClosed exception will be thrown.
