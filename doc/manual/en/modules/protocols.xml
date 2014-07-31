@@ -323,7 +323,7 @@
                 FILE_PING can be used instead of GossipRouter in cases where no external process is desired.
             </para>
 
-			${PING}
+			${FILE_PING}
         </section>
         
         <section>
