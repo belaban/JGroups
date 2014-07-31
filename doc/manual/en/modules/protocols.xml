@@ -242,6 +242,39 @@
                 <literal>break_on_coord_rsp="true"</literal> will return as soon as we have a response from a coordinator.
             </para>
             ${Discovery}
+
+            <section id="DiscoveryAndCaches">
+                <title>Discovery and local caches</title>
+                <para>
+                    Besides finding the current coordinator in order to send a JOIN request to it, discovery also
+                    fetches information about members and adds it to its local caches. This information includes
+                    the logical name, UUID and IP address/port of each member. When discovery responses are received,
+                    the information in it will be added to the local caches.
+                </para>
+                <para>
+                    Since 3.5 it is possible to define this information in a single file, with each line providing
+                    information about one member. The file contents look like this:
+                </para>
+                <screen>
+m1.1 1 10.240.78.26:7800   T
+m2.1 2 10.240.122.252:7800 F
+m3.1 3 10.240.199.15:7800  F</screen>
+                <para>
+                    This file defines information about 3 members m1.1, m2.1 and m3.1. The first element ("m1.1") is the
+                    logical name. Next comes the UUID (1), followed by the IP address and port (10.240.78.26:7800).
+                    T means that the member is the current coordinator.
+                </para>
+                <para>
+                    Methods dumpCache() can be used to write the current contents of any member to a file (in the above
+                    format) and addToCache() can be used to add the contents of a file to any member. These operations
+                    can for example be invoked via JMX or probe.sh.
+                </para>
+                <para>
+                    Refer to the section on FILE_PING for more information on how to use these files to speed up
+                    the discovery process.
+                </para>
+            </section>
+
         </section>
 
 
