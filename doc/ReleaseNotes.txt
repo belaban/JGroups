@@ -28,6 +28,13 @@ Same as FD_ALL, but doesn't use timestamps (System.currentTimeMillis()). However
 TimeService, perhaps this is moot...
 
 
+FD_HOST: failure detection protocol which detects failure of entire hosts
+-------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1855]
+
+Detects crash of host H and suspects all members running on H.
+
+
 ExtendedUUID: add random data to an address
 -------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1750]
@@ -41,7 +48,7 @@ New SASL based AUTH implementation
 ----------------------------------
 [https://issues.jboss.org/browse/JGRP-1729]
 
-Replaces AUTH.
+Alternative to current AUTH plugins (e.g. MD5, X509)
 
 
 Provide ability to start diagnostics via JMX
@@ -63,6 +70,48 @@ Probe.sh: restrict requests to a certain cluster
 [https://issues.jboss.org/browse/JGRP-1734]
 
 New flag -cluster; servers drop requests with different cluster names.
+
+
+GOOGLE_PING: new discovery protocol for Google Compute Engine and large cluster tests on GCE
+--------------------------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1818]
+[https://issues.jboss.org/browse/JGRP-1754]
+
+New discovery protocol using Google Cloud Store; large cluster tests on GCE
+
+
+SHARED_LOOPBACK_PING: discovery protocol used with SHARED_LOOPBACK
+-------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1809]
+
+This discovery protocol always and immediately discovers all members which are running on a SHARED_LOOPBACK transport.
+Used for tests running on SHARED_LOOPBACK; speeds up unit tests.
+
+
+SEQUENCER2: re-implementation of SEQUENCER (experimental)
+---------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1818]
+
+Seqnos are given out by the coord; members do the sending and retransmission themselves. More work needed.
+
+
+Inline configuration
+--------------------
+[https://issues.jboss.org/browse/JGRP-1841]
+
+Some protocols (FORK, RELAY2) can now define their configuration inline instead of having to refer to
+external files, e.g.:
+
+<FORK>
+  <fork-stacks xmlns="fork-stacks">
+      <fork-stack id="counter">
+          <config>
+              <COUNTER bypass_bundling="true"/>
+              <COMPRESS/>
+          </config>
+      </fork-stack>
+  </fork-stacks>
+</FORK>
 
 
 
@@ -117,7 +166,15 @@ in the table point to the same dummy instance.
 Also, filters are used to remove messages from the table (more efficient).
 
 
-Internal threads should nto do work stealing
+UNICAST3: send and receive table merged for self
+------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1836]
+
+Messages from P to P are stored in *one* table (send-table), the receive-table for P has been removed. This requires
+less processing (no ACKs need to be sent) and uses less memory.
+
+
+Internal threads should noo do work stealing
 --------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1732]
 
@@ -135,12 +192,15 @@ Memory-efficient marshalling
 ----------------------------
 [https://issues.jboss.org/browse/JGRP-1771]
 
-Replacing ExposedInputStream and ExposedOutputStream
+Replacing ExposedInputStream and ExposedOutputStream with alternative classes that use less memory
 
 
 AsciiString: memory-efficient version of String
 -----------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1772]
+
+Used internally, uses less memory than java.lang.String and accommodates only ASCII chars (1 byte == 1 char);
+multi-byte strings are capped to single byte strings
 
 
 Send message batch of 1 as a single message
@@ -164,14 +224,43 @@ Table: adding a message batch can cause too many resizings
 Potentially 1 resize per message from the batch. Now 1 potential resizing for the entire batch.
 
 
+FD_ALL: multiple suspicions may lead to extended life for other suspected members
+---------------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1856]
+
+When a few members are suspected at the same time, but only a subset are excluded, the non-excluded members get their
+timestamps reset, so they extend their life by another timeout ms, which unnecessarily extends their life.
+
+
+
 Improve perf of ENCRYPT
 -----------------------
 [https://issues.jboss.org/browse/JGRP-1722]
 
 
+Optimizations to file-based (cloud store) discovery protocols
+-------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1826]
+[https://issues.jboss.org/browse/JGRP-1841]
+[https://issues.jboss.org/browse/JGRP-1857]
+
+Instead of using file or cloud stores to discover the physical addresses of members in order to send them
+discovery requests, store the information directly in the files/cloud. This reduces the need to send discovery
+requests and receive discovery responses: all the information needed about all members (UUIDs, logical names and
+IP addresses/ports) are read directly from files / the cloud.
+
+Added the ability to dump the member information to a file and add contents from a file to the local caches.
+
+
+
+
 
 Bug fixes
 =========
+
+Concurrent modification of message headers may lead to message not getting sent
+-------------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1752]
 
 
 TOA: incorrect message delivery
@@ -196,5 +285,5 @@ The complete list of features and bug fixes can be found at http://jira.jboss.co
 
 
 Bela Ban, Kreuzlingen, Switzerland
-June 2014
+Sept 2014
 
