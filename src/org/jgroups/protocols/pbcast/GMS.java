@@ -1029,10 +1029,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 if(print_local_addr) {
                     PhysicalAddress physical_addr=print_physical_addrs?
                             (PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)) : null;
-                    System.out.println("\n-------------------------------------------------------------------\n" +
+                            
+                    log.info("\n" +
                             "GMS: address=" + local_addr + ", cluster=" + evt.getArg() +
                             (physical_addr != null? ", physical address=" + physical_addr : "") +
-                            "\n-------------------------------------------------------------------");
+                            "\n");
                 }
                 else {
                     if(log.isDebugEnabled()) {
