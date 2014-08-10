@@ -232,6 +232,20 @@
                             </tasks>
                         </configuration>
                     </execution>
+                    <!-- Run the tests via ant -->
+                    <execution>
+                        <phase>test</phase>
+                        <configuration>
+                            <tasks unless="maven.test.skip">
+                                <ant antfile="${basedir}/build.xml" target="all-tests">
+                                    <property name="build.compiler" value="extJavac"/>
+                                </ant>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
                 </executions>
             </plugin>
             <!-- Make sure we generate src jars too -->
@@ -288,27 +302,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <!-- Run the tests via ant -->
-            <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>test</phase>
-                        <configuration>
-                            <tasks unless="maven.test.skip">
-                                <ant antfile="${basedir}/build.xml" target="all-tests">
-                                    <property name="build.compiler" value="extJavac"/>
-                                </ant>
-                            </tasks>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
         </plugins>
         <pluginManagement>
             <plugins>
