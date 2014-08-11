@@ -726,8 +726,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void registerProbeHandler(DiagnosticsHandler.ProbeHandler handler) {
         if(diag_handler != null)
             diag_handler.registerProbeHandler(handler);
-        else
-            preregistered_probe_handlers.add(handler);
+        else {
+            synchronized(preregistered_probe_handlers) {
+                preregistered_probe_handlers.add(handler);
+            }
+        }
     }
 
     public void unregisterProbeHandler(DiagnosticsHandler.ProbeHandler handler) {
@@ -1297,16 +1300,22 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(enable_diagnostics) {
             diag_handler.registerProbeHandler(this);
             diag_handler.start();
-            for(DiagnosticsHandler.ProbeHandler handler : preregistered_probe_handlers)
-                diag_handler.registerProbeHandler(handler);
+            synchronized(preregistered_probe_handlers) {
+                for(DiagnosticsHandler.ProbeHandler handler : preregistered_probe_handlers)
+                    diag_handler.registerProbeHandler(handler);
+            }
         }
-        preregistered_probe_handlers.clear(); // https://issues.jboss.org/browse/JGRP-1834
+        synchronized(preregistered_probe_handlers) {
+            preregistered_probe_handlers.clear(); // https://issues.jboss.org/browse/JGRP-1834
+        }
     }
 
     protected void stopDiagnostics() {
         diag_handler.unregisterProbeHandler(this);
         diag_handler.stop();
-        preregistered_probe_handlers.clear();
+        synchronized(preregistered_probe_handlers) {
+            preregistered_probe_handlers.clear();
+        }
     }
 
 
