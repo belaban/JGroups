@@ -12,4 +12,7 @@ jgroups.udp.ip_ttl=5
 # use true for IPv6 and false for IPv4 
 jgroups.useIPv6=false
 
+# Override for manual and tutorial generation
+asciidoctor-style=./asciidoctor.css
+
 

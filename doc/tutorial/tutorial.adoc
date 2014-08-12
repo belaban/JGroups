@@ -1,0 +1,31 @@
+The JGroups tutorial
+====================
+:author: Bela Ban <belaban@yahoo.com>
+:toc:
+:icons:
+:homepage: http://www.jgroups.org
+:source-highlighter: pygments
+
+Copyright Red Hat 1998 - 2015
+
+This document is licensed under the
+http://creativecommons.org/licenses/by-sa/3.0/us/legalcode["Creative Commons Attribution-ShareAlike (CC-BY-SA) 3.0"]
+license.
+
+
+.About the tutorial
+This is a short tutorial on how to install JGroups and write a simple application. The goal is to show how to
+configure JGroups and how to write a simple application showing the major methods of the API.
+
+Bela Ban, Kreuzlingen, Switzerland, August 2014
+
+// Push titles down one level.
+//:leveloffset: 1
+
+include::installation.adoc["Installation"]
+
+include::sampleapp.adoc["Sample application"]
+
+// Return to normal title levels.
+//:leveloffset: 0
+

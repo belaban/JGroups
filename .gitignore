@@ -7,7 +7,6 @@
 .factorypath
 .settings/
 .idea/
-.idea
 .DS_Store
 classes/
 build.properties
@@ -16,8 +15,9 @@ atlassian*
 keystore/
 tmp/
 bla*.java
-doc/manual/target
-doc/tutorial/target
+doc/manual/build/*
+doc/manual/*.tmp
+doc/tutorial/build/*
 conf/MANIFEST.MF
 target/
 lib/
