@@ -15,9 +15,11 @@ atlassian*
 keystore/
 tmp/
 bla*.java
+doc/manual/*.css
 doc/manual/build/*
 doc/manual/*.tmp
 doc/tutorial/build/*
+doc/tutorial/*.css
 conf/MANIFEST.MF
 target/
 lib/

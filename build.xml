@@ -312,6 +312,13 @@
     <target name="manual" description="Generates the manual (AsciiDoc --> HTML)"
             depends="check-manual,compile" unless="manual.up-to-date">
         <echo message="Building manual from asciidoc ..."/>
+
+        <copy todir="${manual.dir}/">
+            <fileset dir="${doc.dir}/stylesheets">
+                <include name="*.css"/>
+            </fileset>
+        </copy>
+
         <prot-properties-to-doc protocols-file="${protocols.adoc}" installation-file="${installation.adoc}"/>
         <run-asciidoc dir="${manual.dir}" input="manual.adoc"/>
 
@@ -332,6 +339,13 @@
     <target name="tutorial" description="Generates the tutorial (AsciiDoc --> HTML)"
             depends="check-tutorial" unless="tutorial.up-to-date">
         <echo message="Building tutorial from asciidoc ..."/>
+
+        <copy todir="${tutorial.dir}/">
+            <fileset dir="${doc.dir}/stylesheets">
+                <include name="*.css"/>
+            </fileset>
+        </copy>
+
         <run-asciidoc dir="${tutorial.dir}" input="tutorial.adoc"/>
 
         <copy todir="${tutorial.dir}/build/code">
@@ -413,8 +427,14 @@
         <delete dir="${manual.dir}/build"/>
         <delete dir="${tutorial.dir}/build"/>
         <delete>
+            <fileset dir="${tutorial.dir}" defaultexcludes="no">
+                <include name="*.css"/>
+            </fileset>
+        </delete>
+        <delete>
             <fileset dir="${manual.dir}" defaultexcludes="no">
                 <include name="*.adoc.tmp"/>
+                <include name="*.css"/>
             </fileset>
         </delete>
         <delete dir="${root.dir}/schema" failonerror="false"/>
