@@ -35,7 +35,7 @@ import java.util.Map;
  * <li> param ip_mcast - (boolean) flag whether to use IP multicast; default is
  * true.
  * <li> param ip_ttl - the default time-to-live for multicast packets sent out
- * on this socket; default is 32.
+ * on this socket; default is 8.
  * <li> param use_packet_handler - boolean, defaults to false. If set, the mcast
  * and ucast receiver threads just put the datagram's payload (a byte buffer)
  * into a queue, from where a separate thread will dequeue and handle them
