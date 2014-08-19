@@ -54,7 +54,7 @@ public interface MessageListener {
 }
 ----
 
-Method `receive()` is be called whenever a message is received. The `getState()` and `setState()` methods are used to
+Method `receive()` is called whenever a message is received. The `getState()` and `setState()` methods are used to
 fetch and set the group state (e.g. when joining). Refer to <<StateTransfer,State transfer>> for a discussion of
 state transfer.
 
