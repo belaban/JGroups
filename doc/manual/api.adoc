@@ -68,20 +68,19 @@ or a block event is received, the corresponding method of the class implementing
 [source,java]
 ----
 public interface MembershipListener {
-    public void viewAccepted(View new_view);
-    public void suspect(Object suspected_mbr);
-    public void block();
-    public void unblock();
+    void viewAccepted(View new_view);
+    void suspect(Object suspected_mbr);
+    void block();
+    void unblock();
 }
 ----
 
 Oftentimes the only callback that needs to be implemented will be
-viewAccepted() which notifies the receiver that a new member has joined the
-group or that an existing member has left or crashed. The suspect()
+`viewAccepted()` which notifies the receiver that a new member has joined the
+group or that an existing member has left or crashed. The `suspect()`
 callback is invoked by JGroups whenever a member if suspected of having crashed, but not yet excluded
-
 footnote:[It could be that the member is suspected falsely, in which case the next view would still contain the
-suspected member (there is no unsuspect() method]
+suspected member (there is no unsuspect() method].
 
 
 The `block()` method is called to notify the member that it will soon be blocked
@@ -125,13 +124,13 @@ ReceiverAdapter looks as follows:
 [source,java]
 ----
 public class ReceiverAdapter implements Receiver {
-    public void receive(Message msg) {}
-    public void getState(OutputStream output) throws Exception {}
-    public void setState(InputStream input) throws Exception {}
-    public void viewAccepted(View view) {}
-    public void suspect(Address mbr) {}
-    public void block() {}
-    public void unblock() {}
+    void receive(Message msg) {}
+    void getState(OutputStream output) throws Exception {}
+    void setState(InputStream input) throws Exception {}
+    void viewAccepted(View view) {}
+    void suspect(Address mbr) {}
+    void block() {}
+    void unblock() {}
 }
 ----
 

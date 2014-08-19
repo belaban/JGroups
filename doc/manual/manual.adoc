@@ -8,6 +8,8 @@ Reliable group communication with JGroups
 :icons:
 :homepage: http://www.jgroups.org
 :source-highlighter: pygments
+:imagesdir: ./images
+:iconsdir: ./images/icons
 
 Copyright Red Hat 1998 - 2015
 
@@ -42,7 +44,7 @@ especially the Virtual Synchrony model. At the time they were
 working on their third generation group communication prototype,
 called Ensemble. Ensemble followed Horus (written in C by Robbert
 VanRenesse), which followed ISIS (written by Ken Birman, also in
-C). Ensemble was written in OCaml, developed at INRIA, and is a
+C). Ensemble was written in OCaml, developed at INRIA, which is a
 functional language and related to ML. I never liked the OCaml
 language, which in my opinion has a hideous syntax. Therefore I
 never got warm with Ensemble either.
@@ -62,7 +64,7 @@ developed in the first place: portability.
 Therefore I started writing a simple framework (now JChannel), which would allow me to treat Ensemble as just another
 group communication transport, which could be replaced at any time by a pure Java solution. And soon I found myself
 working on a pure Java implementation of the group communication transport (now: ProtocolStack).
-I figured that a pure Java implementation would have a much bigger impact that something written in Ensemble.
+I figured that a pure Java implementation would have a much bigger impact than something written in Ensemble.
 In the end I didn't spend much time writing scientific papers that nobody would read anyway (I guess I'm not a good
 scientist, at least not a theoretical one), but rather code for JGroups, which could have a much bigger impact. For me,
 knowing that real-life projects/products are using JGroups is much more satisfactory than having a paper accepted at a
