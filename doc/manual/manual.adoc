@@ -3,7 +3,7 @@
 Reliable group communication with JGroups
 =========================================
 :author: Bela Ban <belaban@yahoo.com>
-:toc:
+:toc2:
 :toclevels: 3
 :icons:
 :homepage: http://www.jgroups.org
