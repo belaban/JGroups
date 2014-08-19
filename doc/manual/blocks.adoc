@@ -64,10 +64,10 @@ options related to the call, e.g. a timeout, whether the call should block or no
 The various options are:
               
 * Response mode: this determines whether the call is blocking and - if yes - how long it should block. The modes are:
-** `GET_ALL`: block until responses from all members (minus the suspected ones) have been received.
-** `GET_NONE`: wait for none. This makes the call non-blocking
-** `GET_FIRST`: block until the first response (from anyone) has been received
-** `GET_MAJORITY`: block until a majority of members have responded
+  `GET_ALL`:: Block until responses from all members (minus the suspected ones) have been received.
+  `GET_NONE`:: Wait for none. This makes the call non-blocking
+  `GET_FIRST`:: Block until the first response (from anyone) has been received
+  `GET_MAJORITY`:: Block until a majority of members have responded
 * Timeout: number of milliseconds we're willing to block. If the call hasn't terminated after the
   timeout elapsed, a TimeoutException will be thrown. A timeout of 0 means to wait forever. The
   timeout is ignored if the call is non-blocking (mode=`GET_NONE`)
@@ -96,7 +96,7 @@ An example of how to use RequestOptions is:
 ----
 RpcDispatcher disp;
 RequestOptions opts=new RequestOptions(Request.GET_ALL)
-                    .setFlags(Message.NO_FC).setFlags(Message.DONT_BUNDLE);
+                    .setFlags(Message.NO_FC, Message.DONT_BUNDLE);
 Object val=disp.callRemoteMethod(target, method_call, opts);
 ----
 
@@ -156,13 +156,13 @@ which contains all responses (not all methods shown):
 [source,java]
 ----
 public class RspList<T> implements Map<Address,Rsp> {
-    public boolean isReceived(Address sender);
-    public int     numSuspectedMembers();
-    public List<T> getResults();
+    public boolean       isReceived(Address sender);
+    public int           numSuspectedMembers();
+    public List<T>       getResults();
     public List<Address> getSuspectedMembers();
-    public boolean isSuspected(Address sender);
-    public Object  get(Address sender);
-    public int     size();
+    public boolean       isSuspected(Address sender);
+    public Object        get(Address sender);
+    public int           size();
 }
 ----
 

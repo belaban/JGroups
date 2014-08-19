@@ -8,7 +8,6 @@ Reliable group communication with JGroups
 :icons:
 :homepage: http://www.jgroups.org
 :source-highlighter: pygments
-:imagesdir: ./images
 :iconsdir: ./images/icons
 
 Copyright Red Hat 1998 - 2015
