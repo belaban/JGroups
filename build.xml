@@ -301,13 +301,7 @@
     <target name="docs" description="Builds all html and pdf docs" depends="manual,tutorial">
     </target>
 
-<!--    <target name="manual" description="Builds all html and pdf docs"
-            depends="check-manual,compile" unless="manual.up-to-date">
-        <echo message="Building manual from docbook ..."/>
-        <prot-properties-to-doc input="${protocols.xml}"/>
-        <run-maven dir="${manual.dir}"/>
-        <touch file="${manual.dir}/target/${timestamp}"/>
-    </target>-->
+
 
     <target name="manual" description="Generates the manual (AsciiDoc --> HTML)"
             depends="check-manual,compile" unless="manual.up-to-date">
@@ -324,7 +318,7 @@
 
         <copy todir="${manual.dir}/build/images">
             <fileset dir="${manual.dir}/images">
-                <include name="*"/>
+                <include name="**/*"/>
             </fileset>
         </copy>
         <copy todir="${manual.dir}/build">
