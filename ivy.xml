@@ -12,8 +12,6 @@
         <dependency org="log4j"                    name="log4j"           rev="1.2.14"/>
         <dependency org="org.apache.logging.log4j" name="log4j-api"       rev="2.0"/>
         <dependency org="org.apache.logging.log4j" name="log4j-core"      rev="2.0"/>
-        <dependency org="xalan"                    name="serializer"      rev="2.7.1"/>
-        <dependency org="xalan"                    name="xalan"           rev="2.7.1"/>
         <dependency org="org.testng"               name="testng"          rev="6.8.7"/>
         <dependency org="com.beust"                name="jcommander"      rev="1.5"/>
     </dependencies>
