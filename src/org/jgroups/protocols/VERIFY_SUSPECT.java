@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
@@ -63,7 +64,14 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
     // a list of suspects, ordered by time when a SUSPECT event needs to be sent up
     protected final DelayQueue<Entry> suspects=new DelayQueue<Entry>();
-    
+
+    @ManagedAttribute(description = "List of currently suspected members")
+    public String getSuspects() {
+        synchronized (suspects) {
+            return suspects.toString();
+        }
+    }
+
     protected Thread timer=null;
     
     
