@@ -68,9 +68,6 @@ public class Table<T> {
 
 
 
-/*    public interface SeqnoExtractor<T> {
-        long extract(T element);
-    }*/
 
     public interface Visitor<T> {
         /**
@@ -619,7 +616,13 @@ public class Table<T> {
 
     /** Returns the number of null elements in the range [hd+1 .. hr-1] excluding hd and hr */
     public int getNumMissing() {
-        return (int)(hr-hd-size);
+        lock.lock();
+        try {
+            return (int)(hr - hd - size);
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
 
@@ -691,6 +694,9 @@ public class Table<T> {
 
 
     /** Computes and returns the row index for seqno. The caller must hold the lock. */
+    // Note that seqno-offset is never > Integer.MAX_VALUE and thus doesn't overflow into a negative long,
+    // as offset is always adjusted in resize() or compact(). Even if it was negative, callers of computeRow() will
+    // ignore the result or throw an ArrayIndexOutOfBound exception
     @GuardedBy("lock")
     protected int computeRow(long seqno) {
         int diff=(int)(seqno-offset);
@@ -700,16 +706,15 @@ public class Table<T> {
 
 
     /** Computes and returns the index within a row for seqno */
+    // Note that seqno-offset is never > Integer.MAX_VALUE and thus doesn't overflow into a negative long,
+    // as offset is always adjusted in resize() or compact(). Even if it was negative, callers of computeIndex() will
+    // ignore the result or throw an ArrayIndexOutOfBound exception
     @GuardedBy("lock")
     protected int computeIndex(long seqno) {
         int diff=(int)(seqno - offset);
         if(diff < 0)
             return diff;
-
-        // return diff % elements_per_row
-
-        // same as mod, but (apparently, I'm told) more efficient
-        return diff & (elements_per_row - 1);
+        return diff & (elements_per_row - 1); // same as mod, but (apparently, I'm told) more efficient
     }
 
     protected class Counter implements Visitor<T> {
