@@ -1250,6 +1250,16 @@ public class TableTest {
 
         table.purge(15, true);
         assertIndices(table, 20,20, 30);
+
+        table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 30; i++)
+            table.add(i, i);
+        System.out.println("table = " + table);
+        table.purge(20, true);
+        assertIndices(table, 20, 20, 30);
+
+        table.purge(15, false);
+        assertIndices(table, 20,20, 30);
     }
 
 
