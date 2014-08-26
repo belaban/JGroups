@@ -418,6 +418,8 @@ public class Table<T> {
     public void purge(long seqno, boolean force) {
         lock.lock();
         try {
+            if(seqno <= low)
+                return;
             if(force) {
                 if(seqno > hr)
                     seqno=hr;
