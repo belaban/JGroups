@@ -1,6 +1,5 @@
 package org.jgroups.protocols;
 
-import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 
 /**
@@ -11,7 +10,6 @@ import org.jgroups.annotations.Property;
  * @author Bela Ban
  * @since 3.5
  */
-@Experimental
 public class GOOGLE_PING extends S3_PING {
 
     @Property(description="The name of the Google Cloud Storage server")
