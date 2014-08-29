@@ -1,0 +1,54 @@
+
+UNICAST3: syncing a receiver with a sender
+==========================================
+Author: Bela Ban
+Date:   Sept 2014
+JIRA:   https://issues.jboss.org/browse/JGRP-1875
+
+
+Issue
+-----
+When we have sender A and receiver B, and B removes A from its view, but not vice versa (asymmetric split),
+then B will close its receive window for A (but A will keep its send window for B).
+Setting a conn_close_timeout in UNICAST3 mitigates this (contrary to UNICAST2, which immediately closes the window),
+but this scenario can still happen, even in UNICAST3.
+
+When the network heals, and B receives messages from A again, the GET-FIRST-SEQNO protocol starts,
+asking A for the lowest seqno and for retransmission of missing messages.
+
+There are 2 deficiencies with GET-FIRST-SEQNO:
+- It generates a lot of traffic (see https://issues.jboss.org/browse/JGRP-1874 for details)
+- A delayed STABLE (or ACK) message sent by B to A can cause A to purge messages that haven't yet been seen by B
+  (see https://issues.jboss.org/browse/JGRP-1875)
+
+The goals are therefore:
+#1 Reduce traffic needed by a receiver to sync its receive window (JGRP-1874)
+#2 Make syncing of the receiver reliable, so that JGRP-1873 doesn't happen (leading to endless retransmissions)
+#3 Expose #2 as a JMX operation, so it can be triggered by an admin if JGRP-1873 occurs. Note that this should not be
+   the case, but we can nevertheless provide this as a second line of defense
+
+
+Solution
+--------
+The solution is to implement a SYNC protocol between receiver and sender (replacing SEND-GET-FIRST) that will
+(1) reduce traffic and (2) make sure that sender and receiver end up with the same lowest seqno after the sync.
+
+
+Design
+------
+- When receiver B receives a message from sender A and it doesn't have a receive window for A, or A's connection ID
+  (conn-id) sent with the message and the conn-id of the receive window don't match, B sends a SYNC to A
+- On reception of SYNC, A:
+    - Creates a new conn-id, sets it in its send window
+    - Starts discarding STABLE or ACK messages from B
+    - Sends a SYNC-OK(low,conn-id) to B
+        - The reason for the new conn-id is that a delayed STABLE or ACK message from B will be discarded by A as the
+          conn-ids don't match
+- On reception of SYNC-OK at B:
+    - B creates a new receive window with conn-id and low, or adjusts conn-id and low in the existing window
+    - B sends a SYNC-ACK to A
+- On reception of SYNC-ACK by A:
+    - A stops discarding STABLE or ACK messages from B
+- Reception of SYNC-OK and SYNC-ACK are bounded by a timeout: it it kicks in, the SYNC protocol is stopped
+- Since messages sent are unreliable, the re-sending of the SYNC, SYNC-OK and SYNC-ACK messages is handled by the
+  retransmission task (depending on the state in the Sender- or ReceiverEntry)
