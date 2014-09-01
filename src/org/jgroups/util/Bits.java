@@ -184,6 +184,14 @@ public class Bits {
      * @param out the output stream
      */
     public static void writeInt(int num, DataOutput out) throws IOException {
+        if(num == 0) {
+            out.write(0);
+            return;
+        }
+        final byte bytes_needed=bytesRequiredFor(num);
+        out.write(bytes_needed);
+        for(int i=0; i < bytes_needed; i++)
+            out.write(getByteAt(num, i));
     }
 
 
@@ -202,7 +210,12 @@ public class Bits {
      * @return the int read from the input stream
      */
     public static int readInt(DataInput in) throws IOException {
-        return 0;
+        byte len=in.readByte();
+        if(len == 0)
+            return 0;
+        byte[] buf=new byte[len];
+        in.readFully(buf, 0, len);
+        return makeInt(buf, 0, len);
     }
 
 
@@ -212,7 +225,7 @@ public class Bits {
      * @return the number of bytes needed to variable-length encode num
      */
     public static int size(int num) {
-        return 0;
+        return (byte)(num == 0? 1 : bytesRequiredFor(num) +1);
     }
 
 
@@ -240,7 +253,7 @@ public class Bits {
             out.write(0);
             return;
         }
-        final byte bytes_needed=bytesRequiredForLong(num);
+        final byte bytes_needed=bytesRequiredFor(num);
         out.write(bytes_needed);
         for(int i=0; i < bytes_needed; i++)
             out.write(getByteAt(num, i));
@@ -279,7 +292,7 @@ public class Bits {
      * @return the number of bytes needed to variable-length encode num
      */
     public static int size(long num) {
-        return (byte)(num == 0? 1 : bytesRequiredForLong(num) +1);
+        return (byte)(num == 0? 1 : bytesRequiredFor(num) +1);
     }
 
 
@@ -324,7 +337,7 @@ public class Bits {
         long delta=hr - hd;
 
         // encode highest_delivered followed by delta
-        byte bytes_for_hd=bytesRequiredForLong(hd), bytes_for_delta=bytesRequiredForLong(delta);
+        byte bytes_for_hd=bytesRequiredFor(hd), bytes_for_delta=bytesRequiredFor(delta);
         byte bytes_needed=encodeLength(bytes_for_hd, bytes_for_delta);
         out.write(bytes_needed);
 
@@ -376,7 +389,7 @@ public class Bits {
         if(hd == 0 && hr == 0)
             return 1;
 
-        byte num_bytes_for_hd=bytesRequiredForLong(hd), num_bytes_for_delta=bytesRequiredForLong(hr - hd);
+        byte num_bytes_for_hd=bytesRequiredFor(hd), num_bytes_for_delta=bytesRequiredFor(hr - hd);
         return (byte)(num_bytes_for_hd + num_bytes_for_delta + 1);
     }
 
@@ -385,6 +398,15 @@ public class Bits {
         for(int i=0; i < bytes_to_read; i++) {
             byte b=buf[offset + i];
             retval |= ((long)b & 0xff) << (i * 8);
+        }
+        return retval;
+    }
+
+    public static int makeInt(byte[] buf, int offset, int bytes_to_read) {
+        int retval=0;
+        for(int i=0; i < bytes_to_read; i++) {
+            byte b=buf[offset + i];
+            retval |= ((int)b & 0xff) << (i * 8);
         }
         return retval;
     }
@@ -648,7 +670,7 @@ public class Bits {
         return new byte[]{(byte)((len & 0xff) >> 4),(byte)(len & ~0xf0)}; // 0xf0 is the first nibble set (11110000)
     }
 
-    protected static byte bytesRequiredForLong(long number) {
+    protected static byte bytesRequiredFor(long number) {
         if(number >> 56 != 0) return 8;
         if(number >> 48 != 0) return 7;
         if(number >> 40 != 0) return 6;
@@ -656,7 +678,13 @@ public class Bits {
         if(number >> 24 != 0) return 4;
         if(number >> 16 != 0) return 3;
         if(number >>  8 != 0) return 2;
-        if(number != 0) return 1;
+        return 1;
+    }
+
+    protected static byte bytesRequiredFor(int number) {
+        if(number >> 24 != 0) return 4;
+        if(number >> 16 != 0) return 3;
+        if(number >>  8 != 0) return 2;
         return 1;
     }
 

@@ -136,6 +136,22 @@ public class UNICAST_ConnectionTests {
         sendAndCheck(a, b_addr, 10, r2);
     }
 
+    @Test(dataProvider="configProvider")
+    public void testBRemovingUnilaterally(Class<? extends Protocol> unicast) throws Exception {
+        if(!unicast.equals(UNICAST3.class))
+            return; // only tested for UNICAST3
+
+        setup(unicast, null);
+        sendAndCheck(a, b_addr, 10, r2);
+
+        // now remove connection on A unilaterally
+        System.out.println("==== Removing the connection on B");
+        removeConnection(u2, a_addr, true);
+
+        // then send messages from A to B
+        sendAndCheck(a, b_addr, 10, r2);
+    }
+
 
     /**
      * Scenario #6 (A closes the connection unilaterally (B keeps it open), then reopens it and sends messages,
@@ -278,10 +294,14 @@ public class UNICAST_ConnectionTests {
         }
         System.out.println("list = " + print(list));
         int size=list.size();
-        assert size == num : "list has " + size + " elements: " + list;
+        assert size == num : "list has " + size + " elements (expected " + num + "): " + list;
     }
 
     protected void removeConnection(Protocol prot, Address target) {
+        removeConnection(prot, target, false);
+    }
+
+    protected void removeConnection(Protocol prot, Address target, boolean remove) {
         if(prot instanceof UNICAST) {
             UNICAST unicast=(UNICAST)prot;
             unicast.removeConnection(target);
@@ -292,7 +312,10 @@ public class UNICAST_ConnectionTests {
         }
         else if(prot instanceof UNICAST3) {
             UNICAST3 unicast=(UNICAST3)prot;
-            unicast.closeConnection(target);
+            if(remove)
+                unicast.removeReceiveConnection(target);
+            else
+                unicast.closeConnection(target);
         }
         else
             throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST, UNICAST2 or UNICAST3");

@@ -249,6 +249,34 @@ public class SizeTest {
         _testMarshalling(hdr);
     }
 
+    public static void testUnicast3Header() throws Exception {
+        UNICAST3.Header hdr=UNICAST3.Header.createDataHeader(322649, (short)127, false);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST3.Header.createDataHeader(322649, Short.MAX_VALUE, false);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST3.Header.createDataHeader(322649, (short)(Short.MAX_VALUE -10), true);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        for(long timestamp: new int[]{0, 100, Integer.MAX_VALUE -1, Integer.MAX_VALUE, Integer.MAX_VALUE +100}) {
+            hdr=UNICAST3.Header.createSendFirstSeqnoHeader((int)timestamp);
+            _testSize(hdr);
+            _testMarshalling(hdr);
+        }
+
+        hdr=UNICAST3.Header.createAckHeader(322649, (short)2, 500600);
+        _testSize(hdr);
+        _testMarshalling(hdr);
+
+        hdr=UNICAST3.Header.createXmitReqHeader();
+        _testSize(hdr);
+        _testMarshalling(hdr);
+    }
+
 
     public static void testStableHeader() throws Exception {
         org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
@@ -872,6 +900,17 @@ public class SizeTest {
         assert hdr.getHighSeqno() == hdr2.getHighSeqno();
         assert hdr.getConnId()    == hdr2.getConnId();
         assert hdr.isFirst()      == hdr2.isFirst();
+    }
+
+    private static void _testMarshalling(UNICAST3.Header hdr) throws Exception {
+        byte[] buf=Util.streamableToByteBuffer(hdr);
+        UNICAST3.Header hdr2=(UNICAST3.Header)Util.streamableFromByteBuffer(UNICAST3.Header.class, buf);
+
+        assert hdr.type()       == hdr2.type();
+        assert hdr.seqno()      == hdr2.seqno();
+        assert hdr.connId()     == hdr2.connId();
+        assert hdr.first()      == hdr2.first();
+        assert hdr.timestamp()  == hdr.timestamp();
     }
 
     private static void _testSize(Digest digest) throws Exception {
