@@ -12,7 +12,10 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -423,7 +426,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
         if(rsp.wasUnreachable())
             throw new UnreachableException(dest);
         if(!rsp.wasReceived() && !req.responseReceived())
-            throw new TimeoutException("timeout sending message to " + dest + ", request: " + req.toString());
+            throw new TimeoutException("timeout waiting for response from " + dest + ", request: " + req.toString());
         return rsp.getValue();
     }
 
