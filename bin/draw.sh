@@ -1,6 +1,3 @@
 #!/bin/bash
-
-
-
-jgroups.sh org.jgroups.demos.Draw $*
+`dirname $0`/jgroups.sh org.jgroups.demos.Draw $*
 
