@@ -16,7 +16,7 @@ import java.io.*;
 public class BitsTest {
 
     public void testWriteAndReadLong() throws Exception {
-        long[] values={-100, -1, 0, 1, 2, 4, 8, 9, 250, 260, Short.MAX_VALUE, Integer.MIN_VALUE, 322649,
+        long[] values={Long.MIN_VALUE, -322649, -100, -1, 0, 1, 2, 4, 8, 9, 250, 260, Short.MAX_VALUE, Integer.MIN_VALUE, 322649,
           Integer.MAX_VALUE, (long)Integer.MAX_VALUE + 100, Long.MAX_VALUE - 10, Long.MAX_VALUE};
         for(long val: values) {
             byte[] buf=marshall(val);
@@ -28,11 +28,36 @@ public class BitsTest {
         }
     }
 
-    public static void testSize() {
+    public void testWriteAndReadInt() throws Exception {
+        int[] values={Integer.MIN_VALUE, -322649, -100, -1, 0, 1, 2, 4, 8, 9, 250, 260, Short.MAX_VALUE, 322649, Integer.MAX_VALUE};
+        for(int val: values) {
+            byte[] buf=marshall(val);
+            int new_val=unmarshalInt(buf);
+            System.out.println(val + " --> " + new_val);
+            assert val == new_val;
+            int size=Bits.size(val);
+            assert size == buf.length;
+        }
+    }
+
+
+    public static void testSizeLong() {
         int[] shifts={0, 1, 2, 4, 7, 8, 15, 16, 17, 23, 24, 25, 31, 32, 33, 39, 40, 41, 47, 48, 49, 55, 56};
         assert Bits.size((long)0) == 1;
         for(int shift: shifts) {
             long num=((long)1) << shift;
+            int size=Bits.size(num);
+            System.out.println(num + " needs " + size + " bytes");
+            int num_bytes_required=(shift / 8) +2;
+            assert size == num_bytes_required;
+        }
+    }
+
+    public static void testSizeInt() {
+        int[] shifts={0, 1, 2, 4, 7, 8, 15, 16, 17, 23, 24};
+        assert Bits.size(0) == 1;
+        for(int shift: shifts) {
+            int num=1 << shift;
             int size=Bits.size(num);
             System.out.println(num + " needs " + size + " bytes");
             int num_bytes_required=(shift / 8) +2;
@@ -91,6 +116,13 @@ public class BitsTest {
         return output.toByteArray();
     }
 
+    protected static byte[] marshall(int val) throws Exception {
+        ByteArrayOutputStream output=new ByteArrayOutputStream();
+        DataOutput out=new DataOutputStream(output);
+        Bits.writeInt(val, out);
+        return output.toByteArray();
+    }
+
     protected static byte[] marshall(long[] vals) throws Exception {
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutput out=new DataOutputStream(output);
@@ -100,6 +132,10 @@ public class BitsTest {
 
     protected static long unmarshal(byte[] buf) throws Exception {
         return Bits.readLong(createInputStream(buf));
+    }
+
+    protected static int unmarshalInt(byte[] buf) throws Exception {
+        return Bits.readInt(createInputStream(buf));
     }
 
     protected static long[] unmarshalLongSeq(byte[] buf) throws Exception {
