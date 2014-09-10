@@ -4,10 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Responses;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -16,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -102,7 +98,7 @@ public class MERGE2 extends Protocol {
 
     protected final Map<Address,View> views=new ConcurrentHashMap<Address,View>();
     protected final Lock              discovery_lock=new ReentrantLock();
-    protected final Condition         discovery_cond=discovery_lock.newCondition();
+    protected final CondVar           discovery_cond=new CondVar(discovery_lock);
     protected volatile boolean        fetching_done=false;
 
     protected boolean                 transport_supports_multicasting=true;
@@ -300,7 +296,7 @@ public class MERGE2 extends Protocol {
                         discovery_lock.lock();
                         try {
                             fetching_done=true;
-                            discovery_cond.signalAll();
+                            discovery_cond.signal(true);
                         }
                         finally {
                             discovery_lock.unlock();
@@ -317,7 +313,7 @@ public class MERGE2 extends Protocol {
      * whether there are subgroups (multiple coordinators for the same group). If yes, it sends a MERGE event
      * with the list of the coordinators up the stack
      */
-    protected class FindSubgroupsTask {
+    protected class FindSubgroupsTask implements Condition {
         @GuardedBy("this")
         protected Future<?>  future;
         protected final Lock lock=new ReentrantLock();
@@ -351,6 +347,8 @@ public class MERGE2 extends Protocol {
         public synchronized boolean isRunning() {
             return future != null && !future.isDone();
         }
+
+        public boolean isMet() {return fetching_done;}
 
 
         public void findAndNotify() {
@@ -453,16 +451,11 @@ public class MERGE2 extends Protocol {
                 down_prot.down(new Event(Event.MSG, discovery_req));
             }
 
-            long wait_time;
-            final long target_time=System.nanoTime() + TimeUnit.NANOSECONDS.convert(discovery_timeout, TimeUnit.MILLISECONDS); // ns
-            discovery_lock.lock();
             try {
-                while(!fetching_done && (wait_time=target_time - System.nanoTime()) > 0)
-                    discovery_cond.await(wait_time,TimeUnit.NANOSECONDS);
+                discovery_cond.waitFor(this, discovery_timeout, TimeUnit.MILLISECONDS);
             }
             finally {
                 fetching_done=true;
-                discovery_lock.unlock();
             }
         }
 

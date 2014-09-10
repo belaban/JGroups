@@ -31,7 +31,7 @@ public class TCPConnectionMap {
     protected final Address       local_addr; // bind_addr + port of srv_sock
     protected final ServerSocket  srv_sock;
     protected Receiver            recvr;
-    protected final long          conn_expire_time;
+    protected final long          conn_expire_time;  // ns
     protected Log                 log=LogFactory.getLog(getClass());
     protected int                 recv_buf_size=120000;
     protected int                 send_buf_size=60000;
@@ -89,7 +89,7 @@ public class TCPConnectionMap {
         this.mapper = new Mapper(f,reaper_interval);
         this.recvr=r;
         this.bind_addr=bind_addr;
-        this.conn_expire_time = conn_expire_time;
+        this.conn_expire_time = TimeUnit.NANOSECONDS.convert(conn_expire_time, TimeUnit.MILLISECONDS);
         if(socket_factory != null)
             this.socket_factory=socket_factory;
         this.srv_sock=Util.createServerSocket(this.socket_factory, service_name, bind_addr, srv_port, max_port);
@@ -133,7 +133,6 @@ public class TCPConnectionMap {
     public boolean          connectionEstablishedTo(Address addr)   {return mapper.connectionEstablishedTo(addr);}
     public String           printConnections()                      {return mapper.printConnections();}
     public void             retainAll(Collection<Address> members)  {mapper.retainAll(members);}
-    public long             getConnectionExpiryTimeout()            {return conn_expire_time;}
     public int              getSenderQueueSize()                    {return send_queue_size;}
     public TCPConnectionMap log(Log new_log)                        {this.log=new_log; return this;}
 
@@ -359,7 +358,7 @@ public class TCPConnectionMap {
         protected DataOutputStream       out;
         protected DataInputStream        in;
         protected Address                peer_addr; // address of the 'other end' of the connection
-        protected long                   last_access=getTimestamp(); // last time a message was sent or received
+        protected long                   last_access=getTimestamp(); // last time a message was sent or received (ns)
         protected Sender                 sender;
         protected Receiver               receiver;
 
@@ -383,7 +382,7 @@ public class TCPConnectionMap {
         }
 
         protected long getTimestamp() {
-            return time_service != null? time_service.timestamp() : System.currentTimeMillis();
+            return time_service != null? time_service.timestamp() : System.nanoTime();
         }
 
         protected Address getPeerAddress() {
@@ -695,7 +694,7 @@ public class TCPConnectionMap {
                            + ':'
                            + tmp_sock.getPort()
                            + "> ("
-                           + ((getTimestamp() - last_access) / 1000)
+                           + TimeUnit.SECONDS.convert(getTimestamp() - last_access, TimeUnit.NANOSECONDS)
                            + " secs old) [" + (isOpen()? "open]" : "closed]"));
             }
             tmp_sock=null;
@@ -704,7 +703,7 @@ public class TCPConnectionMap {
         }
 
         public boolean isExpired(long now) {
-            return getConnectionExpiryTimeout() > 0 && now - last_access >= getConnectionExpiryTimeout();
+            return conn_expire_time > 0 && now - last_access >= conn_expire_time;
         }
         
         public boolean isConnected() {

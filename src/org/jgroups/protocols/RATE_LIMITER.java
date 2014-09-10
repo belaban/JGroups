@@ -13,7 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Protocol which sends at most max_bytes in time_period milliseconds. Can be used instead of a flow control protocol,
- * e.g. FC or SFC (same position in the stack)
+ * e.g. UFC or MFC (same position in the stack)
  * @author Bela Ban
  */
 @Experimental
@@ -36,7 +36,7 @@ public class RATE_LIMITER extends Protocol {
     protected long num_bytes_sent_in_period=0L;
 
     @GuardedBy("lock")
-    protected long end_of_current_period=0L; // ns
+    protected long current_period_start; // time (ns) at which the current period was started
 
     protected final Lock lock=new ReentrantLock();
 
@@ -118,14 +118,13 @@ public class RATE_LIMITER extends Protocol {
 
                 if(num_bytes_sent_in_period + len > max_bytes) { // size exceeded
                     long current_time=System.nanoTime();
-                    if(current_time < end_of_current_period) {
-                        long block_time=end_of_current_period - current_time;
+                    long block_time=time_period_ns - (current_time - current_period_start);
+                    if(block_time > 0) {
                         LockSupport.parkNanos(block_time);
                         num_blockings++;
                         total_block_time+=block_time;
-                        current_time=end_of_current_period; // more or less, avoid having to call nanoTime() again
                     }
-                    end_of_current_period=current_time + time_period_ns; // start a new time period
+                    current_period_start=block_time > 0? current_time + block_time : System.nanoTime();
                     num_bytes_sent_in_period=0;
                 }
             }

@@ -221,7 +221,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
                     for(Iterator<Entry<Address,V>> it=conns.entrySet().iterator();it.hasNext();) {
                         Entry<Address,V> entry=it.next();
                         V c=entry.getValue();
-                        if(c.isExpired(System.currentTimeMillis())) {
+                        if(c.isExpired(System.nanoTime())) {
                             Util.close(c);
                             it.remove();                           
                         }

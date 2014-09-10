@@ -1389,7 +1389,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected abstract class Entry {
         protected final Table<Message>  msgs; // stores sent or received messages
         protected final short           conn_id;
-        protected final AtomicLong      timestamp=new AtomicLong(0);
+        protected final AtomicLong      timestamp=new AtomicLong(0); // ns
         protected volatile State        state=State.OPEN;
 
         protected Entry(short conn_id, Table<Message> msgs) {
@@ -1400,9 +1400,10 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
         short       connId()              {return conn_id;}
         void        update()              {timestamp.set(getTimestamp());}
-        long        age()                 {return getTimestamp() - timestamp.longValue();}
         State       state()               {return state;}
         Entry       state(State state)    {if(this.state != state) {this.state=state; update();} return this;}
+        /** Returns the age of the entry in ms */
+        long        age()                 {return TimeUnit.MILLISECONDS.convert(getTimestamp() - timestamp.longValue(), TimeUnit.NANOSECONDS);}
     }
 
     protected final class SenderEntry extends Entry {

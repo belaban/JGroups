@@ -25,7 +25,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * time, and are executed together.
  *
  * @author Bela Ban
+ * @deprecated Use {@link org.jgroups.util.TimeScheduler3} instead
  */
+@Deprecated
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
     private final ThreadPoolExecutor pool;
 

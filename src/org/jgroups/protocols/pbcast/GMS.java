@@ -1623,12 +1623,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
 
         public void run() {
-            long end_time, wait_time;
+            long start_time, wait_time;  // ns
+            long timeout=TimeUnit.NANOSECONDS.convert(max_bundling_time, TimeUnit.MILLISECONDS);
             List<Request> requests=new LinkedList<Request>();
             while(Thread.currentThread().equals(thread) && !suspended) {
                 try {
                     boolean keepGoing=false;
-                    end_time=System.currentTimeMillis() + max_bundling_time;
+                    start_time=System.nanoTime();
                     do {
                         Request firstRequest=(Request)queue.remove(INTERVAL); // throws a TimeoutException if it runs into timeout
                         requests.add(firstRequest);
@@ -1639,13 +1640,15 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                             keepGoing=view_bundling && firstRequest.canBeProcessedTogether(nextReq);
                         }
                         else {
-                            wait_time=end_time - System.currentTimeMillis();
-                            if(wait_time > 0 && firstRequest.canBeProcessedTogether(firstRequest)) // JGRP-1438
-                                queue.waitUntilClosed(wait_time); // misnomer: waits until element has been added or q closed
+                            wait_time=timeout - (System.nanoTime() - start_time);
+                            if(wait_time > 0 && firstRequest.canBeProcessedTogether(firstRequest)) { // JGRP-1438
+                                long wait_time_ms=TimeUnit.MILLISECONDS.convert(wait_time, TimeUnit.NANOSECONDS);
+                                queue.waitUntilClosed(wait_time_ms); // misnomer: waits until element has been added or q closed
+                            }
                             keepGoing=queue.size() > 0 && firstRequest.canBeProcessedTogether((Request)queue.peek());
                         }
                     }
-                    while(keepGoing && System.currentTimeMillis() < end_time);
+                    while(keepGoing && timeout - (System.nanoTime() - start_time) > 0);
 
                     try {
                         process(requests);

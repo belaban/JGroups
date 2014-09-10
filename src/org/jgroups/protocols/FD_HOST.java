@@ -82,7 +82,7 @@ public class FD_HOST extends Protocol {
      of a suspected host */
     protected final Map<InetAddress,List<Address>>       hosts=new HashMap<InetAddress,List<Address>>();
 
-    // Map of hosts and timestamps of last updates
+    // Map of hosts and timestamps of last updates (ns)
     protected final ConcurrentMap<InetAddress, Long>     timestamps=new ConcurrentHashMap<InetAddress,Long>();
 
     /** Timer used to run the ping task on */
@@ -273,7 +273,7 @@ public class FD_HOST extends Protocol {
     /** Called by ping task; will result in all members of host getting suspected */
     protected void suspect(InetAddress host) {
         List<Address> suspects;
-        suspect_history.add(new Tuple<InetAddress,Long>(host, getTimestamp()));
+        suspect_history.add(new Tuple<InetAddress,Long>(host, System.currentTimeMillis())); // we need wall clock time here
         synchronized(hosts) {
             List<Address> tmp=hosts.get(host);
             suspects=tmp != null? new ArrayList<Address>(tmp) : null;
@@ -346,7 +346,7 @@ public class FD_HOST extends Protocol {
         long current_time=getTimestamp();
         for(Map.Entry<InetAddress,Long> entry: timestamps.entrySet()) {
             sb.append(entry.getKey()).append(": ");
-            sb.append((current_time - entry.getValue())/1000).append(" secs old\n");
+            sb.append(TimeUnit.SECONDS.convert(current_time - entry.getValue(), TimeUnit.NANOSECONDS)).append(" secs old\n");
         }
         return sb.toString();
     }
@@ -358,11 +358,11 @@ public class FD_HOST extends Protocol {
     /** Returns the age (in secs) of the given host */
     protected long getAgeOf(InetAddress host) {
         Long ts=timestamps.get(host);
-        return ts != null? (getTimestamp() - ts) / 1000 : -1;
+        return ts != null? TimeUnit.SECONDS.convert(getTimestamp() - ts, TimeUnit.NANOSECONDS) : -1;
     }
 
     protected long getTimestamp() {
-        return use_time_service && time_service != null? time_service.timestamp() : System.currentTimeMillis();
+        return use_time_service && time_service != null? time_service.timestamp() : System.nanoTime();
     }
 
 
@@ -401,7 +401,8 @@ public class FD_HOST extends Protocol {
             for(Map.Entry<InetAddress,Long> entry: timestamps.entrySet()) {
                 InetAddress host=entry.getKey();
                 long timestamp=entry.getValue();
-                if(current_time - timestamp >= timeout)
+                long diff=TimeUnit.MILLISECONDS.convert(current_time - timestamp, TimeUnit.NANOSECONDS);
+                if(diff >= timeout)
                     suspect(host);
             }
         }

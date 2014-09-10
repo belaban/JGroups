@@ -676,10 +676,12 @@ abstract public class Locking extends Protocol {
                 log.debug("unlocked \"%s\" because owner %s left", lock_name, tmp);
             }
 
-            for(Iterator<Request> it=queue.iterator(); it.hasNext();) {
-                Request req=it.next();
-                if(!members.contains(req.owner.getAddress()))
-                    it.remove();
+            synchronized(queue) {
+                for(Iterator<Request> it=queue.iterator(); it.hasNext(); ) {
+                    Request req=it.next();
+                    if(!members.contains(req.owner.getAddress()))
+                        it.remove();
+                }
             }
             
             for(Iterator<Owner> it=condition.queue.iterator(); it.hasNext();) {
@@ -693,10 +695,12 @@ abstract public class Locking extends Protocol {
 
 
         protected void addToQueue(Request req) {
-            if(queue.isEmpty()) {
-                if(req.type == Type.GRANT_LOCK)
-                    queue.add(req);
-                return; // RELEASE_LOCK is discarded on an empty queue
+            synchronized(queue) {
+                if(queue.isEmpty()) {
+                    if(req.type == Type.GRANT_LOCK)
+                        queue.add(req);
+                    return; // RELEASE_LOCK is discarded on an empty queue
+                }
             }
 
             // at this point the queue is not empty
@@ -704,8 +708,10 @@ abstract public class Locking extends Protocol {
 
                 // If there is already a lock request from the same owner, discard the new lock request
                 case GRANT_LOCK:
-                    if(!isRequestPresent(Type.GRANT_LOCK, req.owner))
-                        queue.add(req);
+                    synchronized(queue) {
+                        if(!isRequestPresent(Type.GRANT_LOCK, req.owner))
+                            queue.add(req);
+                    }
                     break;
 
                 case RELEASE_LOCK:
@@ -717,7 +723,7 @@ abstract public class Locking extends Protocol {
         }
 
         /** Checks if a certain request from a given owner is already in the queue */
-        protected boolean isRequestPresent(Type type, Owner owner) {
+        protected boolean isRequestPresent(Type type, Owner owner) { // holds lock on queue
             for(Request req: queue)
                 if(req.type == type && req.owner.equals(owner))
                     return true;
@@ -725,19 +731,26 @@ abstract public class Locking extends Protocol {
         }
 
         protected void removeRequest(Type type, Owner owner) {
-            for(Iterator<Request> it=queue.iterator(); it.hasNext();) {
-                Request req=it.next();
-                if(req.type == type && req.owner.equals(owner))
-                    it.remove();
+            synchronized(queue) {
+                for(Iterator<Request> it=queue.iterator(); it.hasNext(); ) {
+                    Request req=it.next();
+                    if(req.type == type && req.owner.equals(owner))
+                        it.remove();
+                }
             }
         }
 
+        protected Request getNextRequest() {
+            synchronized(queue) {
+                return !queue.isEmpty()? queue.remove(0) : null;
+            }
+        }
 
         protected Response processQueue() {
             if(current_owner != null)
                 return null;
-            while(!queue.isEmpty()) {
-                Request req=queue.remove(0);
+            Request req;
+            while((req=getNextRequest()) != null) {
                 if(req.type == Type.GRANT_LOCK) {
                     setOwner(req.owner);
                     return new Response(Type.LOCK_GRANTED, req.owner, req.lock_name, req.lock_id);
@@ -760,15 +773,21 @@ abstract public class Locking extends Protocol {
             }
         }
 
-        public boolean isEmpty() {return queue.isEmpty();}
+        public boolean isEmpty() {
+            synchronized(queue) {
+                return queue.isEmpty();
+            }
+        }
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
             sb.append(current_owner);
-            if(!queue.isEmpty()) {
-                sb.append(", queue: ");
-                for(Request req: queue) {
-                    sb.append(req.toStringShort()).append(" ");
+            synchronized(queue) {
+                if(!queue.isEmpty()) {
+                    sb.append(", queue: ");
+                    for(Request req : queue) {
+                        sb.append(req.toStringShort()).append(" ");
+                    }
                 }
             }
             return sb.toString();
@@ -962,26 +981,30 @@ abstract public class Locking extends Protocol {
                     owner=getOwner();
                 sendGrantLockRequest(name, lock_id, owner, timeout, true);
 
-                long target_time=use_timeout? System.currentTimeMillis() + timeout : 0;
                 boolean interrupted = false;
                 while(!acquired && !denied) {
                     if(use_timeout) {
-                        long wait_time=target_time - System.currentTimeMillis();
-                        if(wait_time <= 0)
-                            break;
-                        else {
-                            this.timeout=wait_time;
+                        long timeout_ns=TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS),
+                          wait_time=timeout_ns,
+                          start=System.nanoTime();
+
+                        while(wait_time > 0 && !acquired && !denied) {
                             try {
-                                this.wait(wait_time);
+                                this.wait(TimeUnit.MILLISECONDS.convert(wait_time, TimeUnit.NANOSECONDS));
                             }
-                            catch (InterruptedException e) {
-                                if (!acquired && !denied) {
-                                    _unlock(true);
-                                    throw e;
-                                }
-                                interrupted = true;
+                            catch(InterruptedException e) {
+                                //if (!acquired && !denied) {
+                                  //  _unlock(true);
+                                    //throw e;
+                                //}
+                                interrupted=true;
+                            }
+                            finally {
+                                wait_time=timeout_ns - (System.nanoTime() - start);
+                                this.timeout=TimeUnit.MILLISECONDS.convert(wait_time, TimeUnit.NANOSECONDS);
                             }
                         }
+                        break;
                     }
                     else {
                         try {
@@ -1142,26 +1165,21 @@ abstract public class Locking extends Protocol {
 
         @Override
         public long awaitNanos(long nanosTimeout) throws InterruptedException {
-            long beforeLock;
             InterruptedException ex = null;
             try {
-                beforeLock = await(nanosTimeout) + System.nanoTime();
+                return await(nanosTimeout);
             }
             catch (InterruptedException e) {
                 ex = e;
                 throw ex;
             }
             finally {
-                lock.lock();
+                lock.lock(); // contract mandates we need to re-acquire the lock (see overridden method)
                 
-                // If we are throwing an InterruptedException
-                // then clear the interrupt state as well.
-                if (ex != null) {
+                // If we are throwing an InterruptedException then clear the interrupt state as well
+                if (ex != null)
                     Thread.interrupted();
-                }
             }
-            
-            return beforeLock - System.nanoTime();
         }
 
         /**
@@ -1172,8 +1190,7 @@ abstract public class Locking extends Protocol {
          * For more information please see {@link System#nanoTime()}
          */
         @Override
-        public boolean await(long time, TimeUnit unit)
-                throws InterruptedException {
+        public boolean await(long time, TimeUnit unit) throws InterruptedException {
             return awaitNanos(unit.toNanos(time)) > 0;
         }
 
@@ -1222,10 +1239,11 @@ abstract public class Locking extends Protocol {
             // we won't think we were signaled immediately
             signaled.set(false);
         }
-        
+
+        // Return the estimated time to wait (in ns), can be negative
         protected long await(long nanoSeconds) throws InterruptedException {
-            long target_nano=System.nanoTime() + nanoSeconds;
-            
+            long start=System.nanoTime();
+
             if(!signaled.get()) {
                 // We release the lock at the same time as waiting on the
                 // condition
@@ -1234,7 +1252,8 @@ abstract public class Locking extends Protocol {
                 
                 boolean interrupted = false;
                 while(!signaled.get()) {
-                    long wait_nano=target_nano - System.nanoTime();
+                    long wait_nano=nanoSeconds - (System.nanoTime() - start);
+
                     // If we waited max time break out
                     if(wait_nano > 0) {
                         parker.set(Thread.currentThread());
@@ -1268,7 +1287,7 @@ abstract public class Locking extends Protocol {
             if (!signaled.getAndSet(false)) {
                 sendDeleteAwaitConditionRequest(lock.name, lock.owner);
             }
-            return target_nano - System.nanoTime();
+            return nanoSeconds - (System.nanoTime() - start);
         }
 
         @Override

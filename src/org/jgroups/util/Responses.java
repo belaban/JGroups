@@ -6,7 +6,6 @@ import org.jgroups.protocols.PingData;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -16,11 +15,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  * @since  3.5
  */
-public class Responses implements Iterable<PingData> {
+public class Responses implements Iterable<PingData>, org.jgroups.util.Condition {
     protected PingData[]        ping_rsps;
     protected int               index;
     protected final Lock        lock=new ReentrantLock();
-    protected final Condition   cond=lock.newCondition();
+    protected final CondVar     cond=new CondVar(lock);
     protected final int         num_expected_rsps;
     protected final boolean     break_on_coord_rsp;
     @GuardedBy("lock")
@@ -39,6 +38,11 @@ public class Responses implements Iterable<PingData> {
         this.num_expected_rsps=num_expected_rsps;
         this.break_on_coord_rsp=break_on_coord_rsp;
         ping_rsps=new PingData[Math.max(5, initial_capacity)];
+    }
+
+
+    public boolean isMet() {
+        return isDone();
     }
 
     public boolean isDone() {
@@ -122,23 +126,7 @@ public class Responses implements Iterable<PingData> {
 
 
     public boolean waitFor(long timeout) {
-        long wait_time;
-        final long target_time=System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS); // ns
-
-        lock.lock();
-        try {
-            while(!done && (wait_time=target_time - System.nanoTime()) > 0) {
-                try {
-                    cond.await(wait_time,TimeUnit.NANOSECONDS);
-                }
-                catch(InterruptedException e) {
-                }
-            }
-            return done;
-        }
-        finally {
-            lock.unlock();
-        }
+        return cond.waitFor(this, timeout, TimeUnit.MILLISECONDS);
     }
 
     public Iterator<PingData> iterator() {
@@ -169,7 +157,7 @@ public class Responses implements Iterable<PingData> {
     @GuardedBy("lock") protected Responses _done() {
         if(!done) {
             done=true;
-            cond.signalAll();
+            cond.signal(true);
         }
         return this;
     }
@@ -228,6 +216,7 @@ public class Responses implements Iterable<PingData> {
     protected static int newLength(int length) {
         return length > 1000? (int)(length * 1.1) : Math.max(5, length * 2);
     }
+
 
 
     protected static class PingDataIterator implements Iterator<PingData> {

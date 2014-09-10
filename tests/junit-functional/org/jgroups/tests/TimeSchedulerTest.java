@@ -31,8 +31,12 @@ public class TimeSchedulerTest {
 
     @DataProvider(name="createTimer")
     Object[][] createTimer() {
-        return Util.createTimer();
+        return new Object[][]{
+          {new TimeScheduler3()}
+        };
     }
+
+
 
 
     @Test(dataProvider="createTimer")

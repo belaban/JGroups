@@ -215,7 +215,7 @@ public abstract class Discovery extends Protocol {
         int size=members != null? members.size() : 16;
         final Responses rsps=new Responses(size, initial_discovery && break_on_coord_rsp, size);
         synchronized(ping_responses) {
-            ping_responses.put(System.currentTimeMillis(), rsps);
+            ping_responses.put(System.nanoTime(), rsps);
         }
         if(async || async_discovery) {
             timer.execute(new Runnable() {
@@ -486,7 +486,7 @@ public abstract class Discovery extends Protocol {
                 long timestamp=entry.getKey();
                 Responses rsps=entry.getValue();
                 rsps.addResponse(rsp, overwrite);
-                if(rsps.isDone() || System.currentTimeMillis() - timestamp > discovery_rsp_expiry_time)
+                if(rsps.isDone() || TimeUnit.MILLISECONDS.convert(System.nanoTime() - timestamp, TimeUnit.NANOSECONDS) > discovery_rsp_expiry_time)
                     it.remove();
             }
         }

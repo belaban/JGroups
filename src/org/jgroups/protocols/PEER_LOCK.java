@@ -31,6 +31,7 @@ import java.util.Map;
  * @since 2.12
  * @see Locking
  * @see CENTRAL_LOCK
+ * @deprecated Use {@link org.jgroups.protocols.CENTRAL_LOCK} instead
  */
 public class PEER_LOCK extends Locking {
 

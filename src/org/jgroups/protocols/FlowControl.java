@@ -13,7 +13,11 @@ import org.jgroups.util.Average;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -43,7 +47,7 @@ public abstract class FlowControl extends Protocol {
      * Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
      * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to wait forever.
      */
-    @Property(description="Max time (in milliseconds) to block. Default is 5000 msec")
+    @Property(description="Max time (in ms) to block")
     protected long max_block_time=5000;
 
     /**
@@ -555,7 +559,7 @@ public abstract class FlowControl extends Protocol {
     protected class Credit {
         protected long          credits_left;
         protected int           num_blockings;
-        protected long          last_credit_request;
+        protected long          last_credit_request; // ns
         protected final Average avg_blockings;
 
         
@@ -615,8 +619,9 @@ public abstract class FlowControl extends Protocol {
         }
 
         protected synchronized boolean needToSendCreditRequest() {
-            long current_time=System.currentTimeMillis();
-            if(current_time - last_credit_request >= max_block_time) {
+            long current_time=System.nanoTime();
+            // will most likely send a request the first time (last_credit_request is 0), unless nanoTime() is negative
+            if(current_time - last_credit_request >= TimeUnit.NANOSECONDS.convert(max_block_time, TimeUnit.MILLISECONDS)) {
                 last_credit_request=current_time;
                 return true;
             }

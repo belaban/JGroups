@@ -77,7 +77,7 @@ public class UnicastRequest<T> extends Request {
                 corr.done(req_id);
         }
         finally {
-            completed.signalAll(); // wakes up execute()
+            cond.signal(true); // wakes up execute()
             lock.unlock();
         }
         checkCompletion(this);
@@ -105,7 +105,7 @@ public class UnicastRequest<T> extends Request {
             done=true;
             if(corr != null)
                 corr.done(req_id);
-            completed.signalAll();
+            cond.signal(true);
         }
         finally {
             lock.unlock();
@@ -129,7 +129,7 @@ public class UnicastRequest<T> extends Request {
             done=true;
             if(corr != null)
                 corr.done(req_id);
-            completed.signalAll();
+            cond.signal(true);
         }
         finally {
             lock.unlock();
@@ -154,7 +154,7 @@ public class UnicastRequest<T> extends Request {
                 done=true;
                 if(corr != null)
                     corr.done(req_id);
-                completed.signalAll();
+                cond.signal(true);
             }
         }
         finally {
@@ -174,7 +174,7 @@ public class UnicastRequest<T> extends Request {
             done=true;
             if(corr != null)
                 corr.done(req_id);
-            completed.signalAll();
+            cond.signal(true);
         }
         finally {
             lock.unlock();

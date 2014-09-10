@@ -30,9 +30,13 @@ fi;
 JG_FLAGS="-Djgroups.bind_addr=$IP_ADDR -Djboss.tcpping.initial_hosts=$IP_ADDR[7800]"
 JG_FLAGS="$JG_FLAGS -Djava.net.preferIPv4Stack=true"
 FLAGS="-server -Xmx600M -Xms600M"
-FLAGS="$FLAGS -XX:CompileThreshold=10000 -XX:+AggressiveHeap -XX:ThreadStackSize=64K -XX:SurvivorRatio=8"
+FLAGS="$FLAGS -XX:CompileThreshold=10000 -XX:ThreadStackSize=64K -XX:SurvivorRatio=8"
 FLAGS="$FLAGS -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=15"
 FLAGS="$FLAGS -Xshare:off"
+# FLAGS="$FLAGS -XX:+UseStringDeduplication" ## JDK 8u20
+#GC="-XX:+UseG1GC" ## use at least JDK 8
+GC="-XX:+UseParNewGC -XX:+UseConcMarkSweepGC" ## concurrent mark and sweep (CMS) collector
+
 # JMX="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7777 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
 JMX="-Dcom.sun.management.jmxremote"
 #EXPERIMENTAL="-XX:+UseFastAccessorMethods -XX:+UseTLAB"
@@ -48,5 +52,5 @@ EXPERIMENTAL="$EXPERIMENTAL -XX:+EliminateLocks -XX:+UseBiasedLocking"
 #DEBUG="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5000"
 #JMC="-XX:+UnlockCommercialFeatures -XX:+FlightRecorder"
 
-java -cp $CP $DEBUG $LOG $JG_FLAGS $FLAGS $EXPERIMENTAL $JMX $JMC  $*
+java -cp $CP $DEBUG $LOG $GC $JG_FLAGS $FLAGS $EXPERIMENTAL $JMX $JMC  $*
 

@@ -12,6 +12,7 @@ import org.jgroups.util.Tuple;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -46,7 +47,7 @@ public class MFC extends FlowControl {
 
     
     /** Last time a credit request was sent. Used to prevent credit request storms */
-    protected long last_credit_request=0;
+    protected long last_credit_request; // ns
 
    
 
@@ -123,10 +124,10 @@ public class MFC extends FlowControl {
 
 
     protected synchronized boolean needToSendCreditRequest() {
-        long curr_time=System.currentTimeMillis();
-        long wait_time=curr_time - last_credit_request;
-        if(wait_time >= max_block_time) {
-            last_credit_request=curr_time;
+        long current_time=System.nanoTime();
+        // will most likely send a request the first time (last_credit_request is 0), unless nanoTime() is negative
+        if(current_time - last_credit_request >= TimeUnit.NANOSECONDS.convert(max_block_time, TimeUnit.MILLISECONDS)) {
+            last_credit_request=current_time;
             return true;
         }
         return false;

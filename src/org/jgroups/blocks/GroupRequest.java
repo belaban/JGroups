@@ -136,7 +136,7 @@ public class GroupRequest<T> extends Request {
 
             done=responsesComplete() || (rsp_filter != null && !rsp_filter.needMoreResponses());
             if(responseReceived || done)
-                completed.signalAll(); // wakes up execute()
+                cond.signal(true); // wakes up execute()
             if(done && corr != null)
                 corr.done(req_id);
         }
@@ -167,7 +167,7 @@ public class GroupRequest<T> extends Request {
                 try {
                     if(!(rsp.wasReceived() || rsp.wasUnreachable()))
                         num_received++;
-                    completed.signalAll();
+                    cond.signal(true);
                 }
                 finally {
                     lock.unlock();
@@ -196,7 +196,7 @@ public class GroupRequest<T> extends Request {
                         try {
                             if(!(rsp.wasReceived() || rsp.wasSuspected()))
                                 num_received++;
-                            completed.signalAll();
+                            cond.signal(true);
                         }
                         finally {
                             lock.unlock();
@@ -252,7 +252,7 @@ public class GroupRequest<T> extends Request {
                 }
             }
             if(changed)
-                completed.signalAll();
+                cond.signal(true);
         }
         finally {
             lock.unlock();
@@ -276,7 +276,7 @@ public class GroupRequest<T> extends Request {
                 }
             }
             if(changed) {
-                completed.signalAll();
+                cond.signal(true);
             }
         }
         finally {

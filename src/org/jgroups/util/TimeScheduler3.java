@@ -234,9 +234,10 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
     }
 
 
-    protected static class Task implements Runnable, Delayed, Future {
-        protected final Runnable   runnable;       // the task to execute
-        protected long             execution_time; // time (in ns) at which the task should be executed
+    public static class Task implements Runnable, Delayed, Future {
+        protected final Runnable   runnable;      // the task to execute
+        protected long             creation_time; // time (in ns) at which the task was created
+        protected long             delay;         // time (in ns) after which the task should execute
         protected volatile boolean cancelled;
         protected volatile boolean done;
 
@@ -245,7 +246,8 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         }
 
         public Task(Runnable runnable, long initial_delay, TimeUnit unit) {
-            this.execution_time=System.nanoTime() + TimeUnit.NANOSECONDS.convert(initial_delay, unit);
+            this.creation_time=System.nanoTime();
+            this.delay=TimeUnit.NANOSECONDS.convert(initial_delay, unit);
             this.runnable=runnable;
             if(runnable == null)
                 throw new IllegalArgumentException("runnable cannot be null");
@@ -254,12 +256,13 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         public Runnable getRunnable() {return runnable;}
 
         public int compareTo(Delayed o) {
-            Task other=(Task)o;
-            return execution_time < other.execution_time? -1 : execution_time > other.execution_time? 1 : 0;
+            long my_delay=getDelay(TimeUnit.NANOSECONDS), other_delay=o.getDelay(TimeUnit.NANOSECONDS);
+            return Long.compare(my_delay, other_delay);
         }
 
         public long getDelay(TimeUnit unit) {
-            long remaining_time=execution_time - System.nanoTime(); // time until execution, can be negative when already elapsed
+            // time (in ns) until execution, can be negative when already elapsed
+            long remaining_time=delay - (System.nanoTime() - creation_time);
             return unit.convert(remaining_time, TimeUnit.NANOSECONDS);
         }
 
@@ -297,13 +300,16 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
 
     /** Tasks which runs more than once, either dynamic, fixed-rate or fixed-delay, until cancelled */
     protected class RecurringTask extends Task {
-        protected final long     delay;
         protected final TaskType type;
+        protected final long     period; // ns
+        protected final long     initial_delay; // ns
+        protected int            cnt=1; // number of invocations (for fixed rate invocations)
 
         public RecurringTask(Runnable runnable, TaskType type, long initial_delay, long delay, TimeUnit unit) {
             super(runnable, initial_delay, unit);
-            this.delay=TimeUnit.NANOSECONDS.convert(delay, unit);
+            this.initial_delay=TimeUnit.NANOSECONDS.convert(initial_delay, TimeUnit.MILLISECONDS);
             this.type=type;
+            period=TimeUnit.NANOSECONDS.convert(delay, unit);
             if(type == TaskType.dynamic && !(runnable instanceof TimeScheduler.Task))
                 throw new IllegalArgumentException("Need to provide a TimeScheduler.Task as runnable when type is dynamic");
         }
@@ -325,13 +331,15 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
                         done=true;
                         return;
                     }
-                    execution_time=System.nanoTime() + next_interval;
+                    creation_time=System.nanoTime();
+                    delay=next_interval;
                     break;
                 case fixed_rate:
-                    execution_time+=delay;
+                    delay=initial_delay + cnt++ * period;
                     break;
                 case fixed_delay:
-                    execution_time=System.nanoTime() + delay;
+                    creation_time=System.nanoTime();
+                    delay=period;
                     break;
             }
             add(this); // schedule this task again

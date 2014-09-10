@@ -73,7 +73,7 @@ public class FD extends Protocol {
     
     protected Address                    local_addr;
     
-    protected volatile long              last_ack=System.currentTimeMillis();
+    protected volatile long              last_ack=System.nanoTime();
     
     protected final AtomicInteger        num_tries=new AtomicInteger(1);
 
@@ -183,7 +183,7 @@ public class FD extends Protocol {
     @GuardedBy("lock")
     protected void startMonitor() {
         if(monitor_future == null || monitor_future.isDone()) {
-            last_ack=System.currentTimeMillis();  // start from scratch
+            last_ack=System.nanoTime();  // start from scratch
             monitor_future=timer.scheduleWithFixedDelay(new Monitor(), timeout, timeout, TimeUnit.MILLISECONDS);
             num_tries.set(1);
         }
@@ -330,7 +330,7 @@ public class FD extends Protocol {
 
     protected void updateTimestamp(Address sender) {
         if(sender != null && sender.equals(ping_dest)) {
-            last_ack=System.currentTimeMillis();
+            last_ack=System.nanoTime();
             num_tries.set(1);
         }
     }
@@ -354,7 +354,7 @@ public class FD extends Protocol {
         ping_dest=getPingDest(pingable_mbrs);
         if(Util.different(old_ping_dest, ping_dest)) {
             num_tries.set(1);
-            last_ack=System.currentTimeMillis();
+            last_ack=System.nanoTime();
         }
     }
 
@@ -446,7 +446,8 @@ public class FD extends Protocol {
             // 2. If the time of the last heartbeat is > timeout and max_tries heartbeat messages have not been
             //    received, then broadcast a SUSPECT message. Will be handled by coordinator, which may install
             //    a new view
-            long not_heard_from=System.currentTimeMillis() - last_ack; // time in msecs we haven't heard from ping_dest
+            // time in msecs we haven't heard from ping_dest
+            long not_heard_from=TimeUnit.MILLISECONDS.convert(System.nanoTime() - last_ack, TimeUnit.NANOSECONDS);
             // quick & dirty fix: increase timeout by 500 ms to allow for latency (bela June 27 2003)
             if(not_heard_from > timeout + 500) { // no heartbeat ack for more than timeout msecs
                 int tmp_tries=num_tries.get();

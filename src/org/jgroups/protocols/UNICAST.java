@@ -38,7 +38,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
+ * @deprecated Will be removed in 4.0
  */
+@Deprecated
 @MBean(description="Reliable unicast layer")
 public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
     public static final long DEFAULT_FIRST_SEQNO=Global.DEFAULT_FIRST_UNICAST_SEQNO;

@@ -7,13 +7,13 @@ import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.util.CondVar;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.NotifyingFuture;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author Bela Ban
  */
-public abstract class Request implements RspCollector, NotifyingFuture {
+public abstract class Request implements RspCollector, NotifyingFuture, org.jgroups.util.Condition {
     protected static final Log        log=LogFactory.getLog(Request.class);
 
     /** To generate unique request IDs (see getRequestId()) */
@@ -32,7 +32,7 @@ public abstract class Request implements RspCollector, NotifyingFuture {
     protected final Lock              lock=new ReentrantLock();
 
     /** Is set as soon as the request has received all required responses */
-    protected final Condition         completed=lock.newCondition();
+    protected final CondVar           cond=new CondVar(lock);
 
     protected final Message           request_msg;
     protected final RequestCorrelator corr;         // either use RequestCorrelator or ...
@@ -104,6 +104,10 @@ public abstract class Request implements RspCollector, NotifyingFuture {
 
     public abstract void siteUnreachable(String site);
 
+    public boolean isMet() {
+        return responsesComplete();
+    }
+
     protected abstract boolean responsesComplete();
 
 
@@ -125,7 +129,7 @@ public abstract class Request implements RspCollector, NotifyingFuture {
             done=true;
             if(corr != null)
                 corr.done(req_id);
-            completed.signalAll();
+            cond.signal(true);
             return retval;
         }
         finally {
@@ -173,58 +177,22 @@ public abstract class Request implements RspCollector, NotifyingFuture {
     /** This method runs with lock locked (called by <code>execute()</code>). */
     @GuardedBy("lock")
     protected boolean responsesComplete(final long timeout) throws InterruptedException {
-        if(timeout <= 0) {
-            while(!done) { /* Wait for responses: */
-                if(responsesComplete()) {
-                    if(corr != null)
-                        corr.done(req_id);
-                    return true;
-                }
-                completed.await();
-            }
+        try {
+            return waitForResults(timeout);
         }
-        else {
-            long wait_time=TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-            long target_time=System.nanoTime() + wait_time;
-            while(wait_time > 0 && !done) { /* Wait for responses: */
-                if(responsesComplete()) {
-                    if(corr != null)
-                        corr.done(req_id);
-                    return true;
-                }
-                wait_time=target_time - System.nanoTime();
-                if(wait_time > 0) {
-                    completed.await(wait_time, TimeUnit.NANOSECONDS);
-                }
-            }
+        finally {
             if(corr != null)
                 corr.done(req_id);
         }
-        return responsesComplete();
     }
 
     @GuardedBy("lock")
     protected boolean waitForResults(final long timeout)  {
         if(timeout <= 0) {
-            while(true) { /* Wait for responses: */
-                if(responsesComplete())
-                    return true;
-                try {completed.await();} catch(Exception e) {}
-            }
+            cond.waitFor(this);
+            return true;
         }
-        else {
-            long wait_time=TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-            long target_time=System.nanoTime() + wait_time;
-            while(wait_time > 0) { /* Wait for responses: */
-                if(responsesComplete())
-                    return true;
-                wait_time=target_time - System.nanoTime();
-                if(wait_time > 0) {
-                    try {completed.await(wait_time, TimeUnit.NANOSECONDS);} catch(Exception e) {}
-                }
-            }
-            return false;
-        }
+        return cond.waitFor(this, timeout, TimeUnit.MILLISECONDS);
     }
 
 

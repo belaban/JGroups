@@ -4,7 +4,6 @@ package org.jgroups.util;
 import org.jgroups.TimeoutException;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -14,20 +13,21 @@ import java.util.concurrent.locks.ReentrantLock;
  * for the result at a later time, or immediately and it may block or not. Both the caller and responder have to
  * know the promise.<p/>
  * When the result is available, {@link #hasResult()} will always return true and {@link #getResult()} will return the
- * same result. In order to block for a different result, {@link #reset()} has to be called first.
+ * result. In order to block for a different result, {@link #reset()} has to be called first.
  * @author Bela Ban
  */
-public class Promise<T> {
-    private final Lock        lock=new ReentrantLock();
-    private final Condition   cond=lock.newCondition();
-    private T                 result=null;
-    private volatile boolean  hasResult=false;
+public class Promise<T> implements org.jgroups.util.Condition {
+    protected final Lock        lock=new ReentrantLock();
+    protected final CondVar     cond=new CondVar(lock);
+    protected T                 result;
+    protected volatile boolean  hasResult=false; // condition
 
-    
-    public Lock      getLock() {return lock;}
-    public Condition getCond() {return cond;}
 
+    public boolean isMet() {
+        return hasResult();
+    }
     
+
     /**
      * Blocks until a result is available, or timeout milliseconds have elapsed
      * @param timeout in ms
@@ -35,20 +35,21 @@ public class Promise<T> {
      * @throws TimeoutException If a timeout occurred (implies that timeout > 0)
      */
     public T getResultWithTimeout(long timeout) throws TimeoutException {
-        return getResultWithTimeout(timeout, false);
+        return _getResultWithTimeout(timeout);
     }
 
     public T getResultWithTimeout(long timeout, boolean reset) throws TimeoutException {
+        if(!reset)
+            return _getResultWithTimeout(timeout);
+
+        // the lock is acquired because we want to get the result and reset the promise in the same lock scope; if we had
+        // to re-acquire the lock for reset(), some other thread could possibly set a new result before reset() is called !
         lock.lock();
         try {
             return _getResultWithTimeout(timeout);
         }
         finally {
-            cond.signalAll();
-            if(reset) {
-                result=null;
-                hasResult=false;
-            }
+            reset();
             lock.unlock();
         }
     }
@@ -101,7 +102,7 @@ public class Promise<T> {
         try {
             result=obj;
             hasResult=true;
-            cond.signalAll();
+            cond.signal(true);
         }
         finally {
             lock.unlock();
@@ -117,7 +118,7 @@ public class Promise<T> {
         try {
             result=null;
             hasResult=false;
-            cond.signalAll();
+            cond.signal(true);
         }
         finally {
             lock.unlock();
@@ -139,23 +140,10 @@ public class Promise<T> {
      * @throws TimeoutException If a timeout occurred (implies that timeout > 0)
      */
     protected T _getResultWithTimeout(final long timeout) throws TimeoutException {
-        if(timeout <= 0) {
-            while(!hasResult) { /* Wait for responses: */
-                try {cond.await();} catch(Exception e) {}
-            }
-        }
-        else {
-            long wait_time=TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-            final long target_time=System.nanoTime() + wait_time;
-            while(wait_time > 0 && !hasResult) { /* Wait for responses: */
-                wait_time=target_time - System.nanoTime();
-                if(wait_time > 0) {
-                    try {cond.await(wait_time, TimeUnit.NANOSECONDS);} catch(Exception e) {}
-                }
-            }
-            if(!hasResult && wait_time <= 0)
-                throw new TimeoutException();
-        }
+        if(timeout <= 0)
+            cond.waitFor(this);
+        else if(!cond.waitFor(this, timeout, TimeUnit.MILLISECONDS))
+            throw new TimeoutException();
         return result;
     }
 

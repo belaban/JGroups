@@ -26,7 +26,7 @@ public class UnicastTest {
     protected JChannel             channel;
     protected final MyReceiver     receiver=new MyReceiver();
     protected long                 sleep_time=0;
-    protected boolean              busy_sleep=false, oob=false, dont_bundle=false;
+    protected boolean              oob=false, dont_bundle=false;
     protected int                  num_threads=1;
     protected int                  num_msgs=100000, msg_size=1000;
 
@@ -34,17 +34,16 @@ public class UnicastTest {
     protected static final byte    DATA  = 2; // | length (int) | data (byte[]) |
 
 
-    public void init(Protocol[] props, long sleep_time, boolean busy_sleep, String name) throws Exception {
-        _init(new JChannel(props), sleep_time, busy_sleep, name);
+    public void init(Protocol[] props, long sleep_time, String name) throws Exception {
+        _init(new JChannel(props), sleep_time, name);
     }
 
-    public void init(String props, long sleep_time, boolean busy_sleep, String name) throws Exception {
-        _init(new JChannel(props), sleep_time, busy_sleep, name);
+    public void init(String props, long sleep_time, String name) throws Exception {
+        _init(new JChannel(props), sleep_time, name);
     }
 
-    protected void _init(JChannel ch, long sleep_time, boolean busy_sleep, String name) throws Exception {
+    protected void _init(JChannel ch, long sleep_time, String name) throws Exception {
         this.sleep_time=sleep_time;
-        this.busy_sleep=busy_sleep;
         channel=ch;
         if(name != null)
             channel.setName(name);
@@ -220,7 +219,6 @@ public class UnicastTest {
 
     public static void main(String[] args) {
         long sleep_time=0;
-        boolean busy_sleep=false;
         String props=null;
         String name=null;
 
@@ -234,10 +232,6 @@ public class UnicastTest {
                 sleep_time=Long.parseLong(args[++i]);
                 continue;
             }
-            if("-busy_sleep".equals(args[i])) {
-                busy_sleep=true;
-                continue;
-            }
             if("-name".equals(args[i])) {
                 name=args[++i];
                 continue;
@@ -249,7 +243,7 @@ public class UnicastTest {
 
         try {
             UnicastTest test=new UnicastTest();
-            test.init(props, sleep_time, busy_sleep, name);
+            test.init(props, sleep_time, name);
             test.eventLoop();
         }
         catch(Exception ex) {
@@ -258,8 +252,7 @@ public class UnicastTest {
     }
 
     static void help() {
-        System.out.println("UnicastTest [-help] [-props <props>] [-sleep <time in ms between msg sends] " +
-                             "[-busy-sleep] [-name name]");
+        System.out.println("UnicastTest [-help] [-props <props>] [-sleep <time in ms between msg sends] [-name name]");
     }
 
 
@@ -288,7 +281,7 @@ public class UnicastTest {
                         System.out.println("-- sent " + i);
                     channel.send(msg);
                     if(sleep_time > 0)
-                        Util.sleep(sleep_time, busy_sleep);
+                        Util.sleep(sleep_time);
                 }
                 catch(Exception e) {
                     e.printStackTrace();

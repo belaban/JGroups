@@ -105,8 +105,9 @@ public interface TimeScheduler {
     
     /**
      * Schedule a task for execution at varying intervals. After execution, the task will get rescheduled after
-     * {@link org.jgroups.util.TimeScheduler.Task#nextInterval()} milliseconds. The task is never done until
-     * nextInterval() return a value <= 0 or the task is cancelled.
+     * {@link org.jgroups.util.TimeScheduler.Task#nextInterval()} milliseconds. This is delay-based and not
+     * rate-based.
+     * The task is never done until nextInterval() return a value <= 0 or the task is cancelled.
      * @param task the task to execute
      */
     public Future<?> scheduleWithDynamicInterval(Task task);

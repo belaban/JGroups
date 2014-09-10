@@ -4,19 +4,18 @@ import org.jgroups.Address;
 import org.jgroups.annotations.GuardedBy;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.TimeUnit;
 
-/** Similar to AckCollector, but collects responses, not just acks. Null is not a valid key.
+/** Similar to AckCollector, but collects responses from cluster members, not just acks. Null is not a valid key.
  * @author Bela Ban
  */
-public class ResponseCollector<T> {
+public class ResponseCollector<T> implements org.jgroups.util.Condition {
     @GuardedBy("lock")
     private final Map<Address,T> responses;
     private final Lock           lock=new ReentrantLock(false);
-    private final Condition      cond=lock.newCondition();
+    private final CondVar        cond=new CondVar(lock);
 
 
     /**
@@ -44,7 +43,7 @@ public class ResponseCollector<T> {
         try {
             if(responses.containsKey(member)) {
                 responses.put(member, data);
-                cond.signalAll();
+                cond.signal(true);
             }
         }
         finally {
@@ -57,8 +56,8 @@ public class ResponseCollector<T> {
             return;
         lock.lock();
         try {
-            responses.remove(member);
-            cond.signalAll();
+            if(responses.remove(member) != null)
+                cond.signal(true);
         }
         finally {
             lock.unlock();
@@ -72,7 +71,7 @@ public class ResponseCollector<T> {
         try {
             for(Address member: members)
                 responses.remove(member);
-            cond.signalAll();
+            cond.signal(true);
         }
         finally {
             lock.unlock();
@@ -85,7 +84,7 @@ public class ResponseCollector<T> {
         lock.lock();
         try {
             if(responses.keySet().retainAll(members))
-                cond.signalAll();
+                cond.signal(true);
         }
         finally {
             lock.unlock();
@@ -93,16 +92,11 @@ public class ResponseCollector<T> {
     }
 
     public void suspect(Address member) {
-        if(member == null)
-            return;
-        lock.lock();
-        try {
-            if(responses.remove(member) != null)
-                cond.signalAll();
-        }
-        finally {
-            lock.unlock();
-        }
+        remove(member);
+    }
+
+    public boolean isMet() {
+        return hasAllResponses();
     }
 
     public boolean hasAllResponses() {
@@ -181,26 +175,7 @@ public class ResponseCollector<T> {
         if(timeout <= 0)
             timeout=2000L;
 
-        lock.lock();
-        try {
-            final long end_time=System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-            while(!hasAllResponses()) {
-                long wait_time=end_time - System.nanoTime();
-                if(wait_time <= 0)
-                    return false;
-                try {
-                    cond.await(wait_time, TimeUnit.NANOSECONDS);
-                }
-                catch(InterruptedException e) {
-                    Thread.currentThread().interrupt(); // set interrupt flag again
-                    return false;
-                }
-            }
-            return true;
-        }
-        finally {
-            lock.unlock();
-        }
+        return cond.waitFor(this, timeout, TimeUnit.MILLISECONDS);
     }
 
     public void reset() {
@@ -215,7 +190,7 @@ public class ResponseCollector<T> {
                 for(Address mbr: members)
                     responses.put(mbr, null);
             }
-            cond.signalAll();
+            cond.signal(true);
         }
         finally {
             lock.unlock();
@@ -230,7 +205,7 @@ public class ResponseCollector<T> {
                 for(Address mbr: members)
                     responses.put(mbr, null);
             }
-            cond.signalAll();
+            cond.signal(true);
         }
         finally {
             lock.unlock();
@@ -244,4 +219,6 @@ public class ResponseCollector<T> {
         sb.append(responses).append(", complete=").append(hasAllResponses());
         return sb.toString();
     }
+
+
 }

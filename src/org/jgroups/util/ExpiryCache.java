@@ -33,8 +33,9 @@ public class ExpiryCache<K> {
     public boolean addIfAbsentOrExpired(K key) {
         Long val=map.get(key);
         if(val == null)
-            return map.putIfAbsent(key, System.nanoTime() + timeout) == null;
-        return hasExpired(val) && map.replace(key, val, System.nanoTime() + timeout);
+            return map.putIfAbsent(key, System.nanoTime()) == null;
+        long current_time=System.nanoTime();
+        return hasExpired(val, current_time) && map.replace(key, val, current_time);
     }
 
     public boolean contains(K key) {
@@ -43,7 +44,7 @@ public class ExpiryCache<K> {
 
     public boolean hasExpired(K key) {
         Long val=map.get(key);
-        return val == null || hasExpired(val);
+        return val == null || hasExpired(val, System.nanoTime());
     }
 
     public void remove(K key) {
@@ -60,7 +61,7 @@ public class ExpiryCache<K> {
         long current_time=System.nanoTime();
         for(Map.Entry<K,Long> entry: map.entrySet()) {
             Long val=entry.getValue();
-            if(val == null || current_time >= val) {
+            if(val == null || hasExpired(val, current_time)) {
                 map.remove(entry.getKey());
                 removed++;
             }
@@ -80,24 +81,20 @@ public class ExpiryCache<K> {
         StringBuilder sb=new StringBuilder();
         long current_time=System.nanoTime();
         for(Map.Entry<K,Long> entry: map.entrySet()) {
-            sb.append(entry.getKey()).append(": ");
-            long val=entry.getValue(); // expiry time in ns
-            long diff=val - current_time;
-            long diff_ms=TimeUnit.MILLISECONDS.convert(diff, TimeUnit.NANOSECONDS);
-            if(diff <= 0) { // expired
-
-                sb.append("(expired ").append(Math.abs(diff_ms)).append(" ms ago)");
-            }
-            else { // not expired
-                sb.append("(expiring in ").append(diff_ms).append(" ms)");
-            }
+            sb.append(entry.getKey()).append(": (age: ");
+            long val=entry.getValue(); // timestamp in ns
+            long age=TimeUnit.MILLISECONDS.convert(current_time - val, TimeUnit.NANOSECONDS); // ms
+            if(age< 1000L)
+                sb.append(age).append(" ms)");
+            else
+                sb.append(TimeUnit.SECONDS.convert(age, TimeUnit.MILLISECONDS)).append(" secs");
             sb.append("\n");
         }
         return sb.toString();
     }
 
 
-    protected static boolean hasExpired(long val) {
-        return System.nanoTime() >= val;
+    protected boolean hasExpired(long val, long current_time) {
+        return current_time - val > timeout;
     }
 }

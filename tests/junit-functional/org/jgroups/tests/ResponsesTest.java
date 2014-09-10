@@ -149,6 +149,12 @@ public class ResponsesTest {
         assert rsps.size() == 3;
     }
 
+    public void testWaitForOnDone() {
+        final Responses rsps=new Responses(5, true).done();
+        boolean done=rsps.waitFor(500);
+        assert done;
+    }
+
     public void testIterator() throws Exception {
         Responses rsps=new Responses(10, true);
         for(int i=0; i < 5; i++)

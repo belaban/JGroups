@@ -57,7 +57,7 @@ public class FD_ALL extends Protocol {
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    // Map of addresses and timestamps of last updates
+    // Map of addresses and timestamps of last updates (ns)
     protected final ConcurrentMap<Address, Long>     timestamps=Util.createConcurrentMap();
 
     protected Address                                local_addr;
@@ -303,7 +303,7 @@ public class FD_ALL extends Protocol {
     }
 
     protected long getTimestamp() {
-        return use_time_service && time_service != null? time_service.timestamp() : System.currentTimeMillis();
+        return use_time_service && time_service != null? time_service.timestamp() : System.nanoTime();
     }
 
 
@@ -339,7 +339,7 @@ public class FD_ALL extends Protocol {
         for(Iterator<Entry<Address,Long>> it=timestamps.entrySet().iterator(); it.hasNext();) {
             Entry<Address,Long> entry=it.next();
             sb.append(entry.getKey()).append(": ");
-            sb.append((current_time - entry.getValue())/1000).append(" secs old\n");
+            sb.append(TimeUnit.SECONDS.convert (current_time - entry.getValue(), TimeUnit.NANOSECONDS)).append(" secs old\n");
         }
         return sb.toString();
     }
@@ -353,7 +353,7 @@ public class FD_ALL extends Protocol {
         final List<Address> eligible_mbrs=new ArrayList<Address>();
         synchronized(this) {
             for(Address suspect: suspects) {
-                suspect_history.add(new Tuple<Address,Long>(suspect, getTimestamp()));
+                suspect_history.add(new Tuple<Address,Long>(suspect, System.currentTimeMillis())); // need wall clock time
                 suspected_mbrs.add(suspect);
             }
             eligible_mbrs.addAll(members);
@@ -365,8 +365,7 @@ public class FD_ALL extends Protocol {
         if(local_addr != null && !eligible_mbrs.isEmpty()) {
             Address first=eligible_mbrs.get(0);
             if(local_addr.equals(first)) {
-                if(log.isDebugEnabled())
-                    log.debug("suspecting " + suspected_mbrs);
+                log.debug("suspecting " + suspected_mbrs);
                 for(Address suspect: suspects) {
                     up_prot.up(new Event(Event.SUSPECT, suspect));
                     down_prot.down(new Event(Event.SUSPECT, suspect));
@@ -434,10 +433,9 @@ public class FD_ALL extends Protocol {
                     it.remove();
                     continue;
                 }
-                diff=current_time - val;
+                diff=TimeUnit.MILLISECONDS.convert(current_time - val, TimeUnit.NANOSECONDS);
                 if(diff > timeout) {
-                    if(log.isDebugEnabled())
-                        log.debug("haven't received a heartbeat from " + key + " for " + diff +
+                    log.debug("haven't received a heartbeat from " + key + " for " + diff +
                                 " ms, adding it to suspect list");
                     suspects.add(key);
                 }

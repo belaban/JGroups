@@ -59,6 +59,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected static final int     MSG_OVERHEAD=Global.SHORT_SIZE + Global.BYTE_SIZE; // version + flags
     protected static final boolean can_bind_to_mcast_addr;
     protected static final String  BUNDLE_MSG="%s: sending %d msgs (%d bytes (%.2f of max_bundle_size) to %d dests(s): %s";
+    protected static final long    MIN_WAIT_BETWEEN_DISCOVERIES=TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);  // ns
 
     protected static NumberFormat f;
 
@@ -652,7 +653,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      */
     protected LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache;
 
-    // last time we sent a discovery request
+    // last time (in ns) we sent a discovery request
     protected long last_discovery_request=0;
 
     Future<?> logical_addr_cache_reaper;
@@ -1957,7 +1958,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         long current_time=0;
         boolean do_send=false;
         synchronized(this) {
-            if(last_discovery_request == 0 || (current_time=time_service.timestamp()) - last_discovery_request >= 10000) {
+            if(last_discovery_request == 0 ||
+              (current_time=time_service.timestamp()) - last_discovery_request >= MIN_WAIT_BETWEEN_DISCOVERIES) {
                 last_discovery_request=current_time == 0? time_service.timestamp() : current_time;
                 do_send=true;
             }

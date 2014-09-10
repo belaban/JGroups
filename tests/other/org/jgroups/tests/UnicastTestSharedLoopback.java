@@ -19,10 +19,10 @@ public class UnicastTestSharedLoopback {
 
 
         UnicastTest a=new UnicastTest();
-        a.init(props(), 0, false, "A");
+        a.init(props(), 0, "A");
 
         UnicastTest b=new UnicastTest();
-        b.init(props(), 0, false, "B");
+        b.init(props(), 0, "B");
 
 
         a.eventLoop();

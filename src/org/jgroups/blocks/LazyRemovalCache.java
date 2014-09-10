@@ -4,6 +4,7 @@ import org.jgroups.util.Util;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Cache which doesn't remove elements on remove(), removeAll() or retainAll(), but only removes elements when a
@@ -17,7 +18,7 @@ public class LazyRemovalCache<K,V> {
 
     /** Max number of elements, if exceeded, we remove all elements marked as removable and older than max_age ms */
     private final int  max_elements;
-    private final long max_age;
+    private final long max_age; // ns
 
 
     public interface Printable<K,V> {
@@ -29,9 +30,15 @@ public class LazyRemovalCache<K,V> {
         this(200, 5000L);
     }
 
+    /**
+     * Creates a new instance
+     * @param max_elements The max number of elements in the cache
+     * @param max_age The max age (in ms) an entry can have before it is considered expired (and can be removed on
+     *                the next sweep)
+     */
     public LazyRemovalCache(int max_elements, long max_age) {
         this.max_elements=max_elements;
-        this.max_age=max_age;
+        this.max_age=TimeUnit.NANOSECONDS.convert(max_age, TimeUnit.MILLISECONDS);
     }
 
     public boolean add(K key, V val) {
@@ -236,13 +243,13 @@ public class LazyRemovalCache<K,V> {
      * @param force If set to true, all elements marked as 'removable' will get removed, regardless of expiration
      */
     public void removeMarkedElements(boolean force) {
-        long curr_time=System.currentTimeMillis();
+        long curr_time=System.nanoTime();
         for(Iterator<Map.Entry<K,Entry<V>>> it=map.entrySet().iterator(); it.hasNext();) {
             Map.Entry<K, Entry<V>> entry=it.next();
             Entry<V> tmp=entry.getValue();
             if(tmp == null)
                 continue;
-            if(tmp.removable && ((curr_time - tmp.timestamp) >= max_age || force)) {
+            if(tmp.removable && (force || (curr_time - tmp.timestamp) >= max_age)) {
                 it.remove();
             }
         }
@@ -258,7 +265,7 @@ public class LazyRemovalCache<K,V> {
 
     public static class Entry<V> {
         protected final V    val;
-        protected long       timestamp=System.currentTimeMillis();
+        protected long       timestamp=System.nanoTime();
         protected boolean    removable=false;
 
         public Entry(V val) {
@@ -272,12 +279,8 @@ public class LazyRemovalCache<K,V> {
         public void setRemovable(boolean flag) {
             if(this.removable != flag) {
                 this.removable=flag;
-                timestamp=System.currentTimeMillis();
+                timestamp=System.nanoTime();
             }
-        }
-
-        public long getTimestamp() {
-            return timestamp;
         }
 
         public V getVal() {
@@ -285,7 +288,14 @@ public class LazyRemovalCache<K,V> {
         }
 
         public String toString() {
-            return val + " (" + (System.currentTimeMillis() - timestamp) + "ms old" + (removable? ", removable" : "") + ")";
+            StringBuilder sb=new StringBuilder(val.toString()).append(" (");
+            long age=TimeUnit.MILLISECONDS.convert(System.nanoTime() - timestamp, TimeUnit.NANOSECONDS);
+            if(age < 1000)
+                sb.append(age).append(" ms");
+            else
+                sb.append(TimeUnit.SECONDS.convert(age, TimeUnit.MILLISECONDS)).append(" secs");
+            sb.append(" old").append((removable? ", removable" : "")).append(")");
+            return sb.toString();
         }
     }
 }

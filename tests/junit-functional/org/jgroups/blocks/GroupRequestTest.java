@@ -71,9 +71,9 @@ public class GroupRequestTest {
 
 
     public void testGetFirstWithResponseFilter() throws Exception {
-        Object[] responses={new Message(null,a, new Long(1)),
-          new Message(null,b, new Long(2)),
-          new Message(null,c, new Long(3))};
+        Object[] responses={new Message(null,a, (long)1),
+          new Message(null,b, (long)2),
+          new Message(null,c, (long)3)};
         MyCorrelator corr=new MyCorrelator(true, responses, 500);
         dests.add(c);
         GroupRequest<Long> req=new GroupRequest<Long>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_FIRST, 0));
@@ -81,7 +81,7 @@ public class GroupRequestTest {
             int num_rsps=0;
 
             public boolean isAcceptable(Object response, Address sender) {
-                boolean retval=response instanceof Long && ((Long)response).longValue() == 2L;
+                boolean retval=response instanceof Long && (Long)response == 2L;
                 System.out.println("-- received " + response + " from " + sender + ": " + (retval? "OK" : "NOTOK"));
                 if(retval)
                     num_rsps++;
@@ -104,9 +104,9 @@ public class GroupRequestTest {
 
 
     public void testGetAllWithResponseFilter() throws Exception {
-        Object[] responses={new Message(null,a, new Long(1)),
-          new Message(null,b, new Long(2)),
-          new Message(null,c, new Long(3))};
+        Object[] responses={new Message(null,a, (long)1),
+          new Message(null,b, (long)2),
+          new Message(null,c, (long)3)};
         MyCorrelator corr=new MyCorrelator(true, responses, 500);
         dests.add(c);
         GroupRequest<Long> req=new GroupRequest<Long>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
@@ -115,7 +115,7 @@ public class GroupRequestTest {
 
             public boolean isAcceptable(Object response, Address sender) {
                 boolean retval=response instanceof Long &&
-                        (((Long)response).longValue() == 1L || ((Long)response).longValue() == 2L);
+                        ((Long)response == 1L || (Long)response == 2L);
                 System.out.println("-- received " + response + " from " + sender + ": " + (retval? "OK" : "NOTOK"));
                 if(retval)
                     num_rsps++;
@@ -298,7 +298,7 @@ public class GroupRequestTest {
             Address addr = Util.createRandomAddress();
             dests.add(addr);
             // how long does this simulated destination take to execute? the sum is just less than the total timeout
-            responses[i] = new Message(null, addr, new Long(i));
+            responses[i] = new Message(null, addr, (long)i);
         }
         
         MyCorrelator corr = new MyCorrelator(async, responses, delay);
@@ -317,7 +317,7 @@ public class GroupRequestTest {
 
 
     private void _testMessageReception(boolean async) throws Exception {
-        Object[] responses={new Message(null,a, new Long(1)),new Message(null,b, new Long(2))};
+        Object[] responses={new Message(null,a, (long)1),new Message(null,b, (long)2)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
         GroupRequest<Object> req=new GroupRequest<Object>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         corr.setGroupRequest(req);
@@ -336,9 +336,9 @@ public class GroupRequestTest {
         new_dests.add(a);
         new_dests.add(b);
         new_dests.add(a);
-        Object[] responses={new Message(null,a, new Long(1)),
+        Object[] responses={new Message(null,a, (long)1),
           new View(Util.createRandomAddress(), 322649, new_dests),
-          new Message(null,b, new Long(2))};
+          new Message(null,b, (long)2)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
         GroupRequest<Long> req=new GroupRequest<Long>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));
         corr.setGroupRequest(req);
@@ -354,7 +354,7 @@ public class GroupRequestTest {
     private void _testMessageReceptionWithViewChangeMemberLeft(boolean async) throws Exception {
         List<Address> new_dests=new ArrayList<Address>();
         new_dests.add(b);
-        Object[] responses={new Message(null,b, new Long(1)),
+        Object[] responses={new Message(null,b, (long)1),
           new View(Util.createRandomAddress(), 322649, new_dests)};
         MyCorrelator corr=new MyCorrelator(async, responses, 0);
         GroupRequest<Object> req=new GroupRequest<Object>(new Message(), corr, dests, new RequestOptions(ResponseMode.GET_ALL, 0));

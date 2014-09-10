@@ -32,7 +32,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
+ * @deprecated Will be removed in 4.0
  */
+@Deprecated
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, DiagnosticsHandler.ProbeHandler {
     private static final int NUM_REBROADCAST_MSGS=3;

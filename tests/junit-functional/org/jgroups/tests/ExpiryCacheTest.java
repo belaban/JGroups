@@ -13,7 +13,7 @@ import org.testng.annotations.Test;
 public class ExpiryCacheTest {
 
     public void testAdd() {
-        ExpiryCache<String> cache=new ExpiryCache<String>(2000);
+        ExpiryCache<String> cache=new ExpiryCache<String>(10000);
         boolean added=add(cache, "Bela");
         assert added;
 

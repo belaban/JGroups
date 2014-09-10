@@ -1418,25 +1418,6 @@ public class Util {
         }
     }
 
-    /**
-     * On most UNIX systems, the minimum sleep time is 10-20ms. Even if we specify sleep(1), the thread will
-     * sleep for at least 10-20ms. On Windows, sleep() seems to be implemented as a busy sleep, that is the
-     * thread never relinquishes control and therefore the sleep(x) is exactly x ms long.
-     */
-    public static void sleep(long msecs,boolean busy_sleep) {
-        if(!busy_sleep) {
-            sleep(msecs);
-            return;
-        }
-
-        long start=System.currentTimeMillis();
-        long stop=start + msecs;
-
-        while(stop > start) {
-            start=System.currentTimeMillis();
-        }
-    }
-
 
     public static int keyPress(String msg) {
         System.out.println(msg);
