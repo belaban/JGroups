@@ -40,7 +40,7 @@
     <class id="44" name="org.jgroups.protocols.MFC"/>
     <class id="45" name="org.jgroups.protocols.UFC"/>
     <class id="46" name="org.jgroups.protocols.JDBC_PING"/>
-    <class id="47" name="org.jgroups.protocols.STOMP"/>
+    <class id="47" name="org.jgroups.protocols.STOMP"/>d
     <class id="48" name="org.jgroups.protocols.PRIO"/>
     <class id="49" name="org.jgroups.protocols.BPING"/>
     <class id="50" name="org.jgroups.protocols.CENTRAL_LOCK"/>
@@ -58,8 +58,8 @@
     <class id="62" name="org.jgroups.protocols.PDC"/>
     <class id="63" name="org.jgroups.protocols.rules.SUPERVISOR"/>
     <class id="64" name="org.jgroups.protocols.UNICAST3"/>
-    <class id="66" name="org.jgroups.protocols.PERF"/>
-    <class id="67" name="org.jgroups.protocols.SHARED_LOOPBACK_PING"/>
+    <!--<class id="66" name="org.jgroups.protocols.PERF"/>-->
+    <!--<class id="67" name="org.jgroups.protocols.SHARED_LOOPBACK_PING"/>-->
     <class id="68" name="org.jgroups.protocols.SASL"/>
 
     <class id="71" name="org.jgroups.protocols.MERGE2"/>
