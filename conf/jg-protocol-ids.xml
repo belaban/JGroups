@@ -58,7 +58,8 @@
     <class id="62" name="org.jgroups.protocols.PDC"/>
     <class id="63" name="org.jgroups.protocols.rules.SUPERVISOR"/>
     <class id="64" name="org.jgroups.protocols.UNICAST3"/>
-    <class id="65" name="org.jgroups.protocols.FORK"/>
+    <class id="66" name="org.jgroups.protocols.PERF"/>
+    <class id="67" name="org.jgroups.protocols.SHARED_LOOPBACK_PING"/>
     <class id="68" name="org.jgroups.protocols.SASL"/>
 
     <class id="71" name="org.jgroups.protocols.MERGE2"/>
@@ -68,6 +69,9 @@
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
     <class id="201" name="org.jgroups.blocks.mux.MuxRequestCorrelator"/>
     <class id="202" name="org.jgroups.tests.perf.MPerf"/>
+
+    <!-- FORK needs to have an ID > 200 in order for RELAY2 to copy it -->
+    <class id="203" name="org.jgroups.protocols.FORK"/>
 
     <!-- User-defined protocols should use IDs >= 1000 -->
 
