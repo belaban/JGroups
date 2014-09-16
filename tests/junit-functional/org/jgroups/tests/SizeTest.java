@@ -262,7 +262,7 @@ public class SizeTest {
         _testSize(hdr);
         _testMarshalling(hdr);
 
-        for(long timestamp: new int[]{0, 100, Integer.MAX_VALUE -1, Integer.MAX_VALUE, Integer.MAX_VALUE +100}) {
+        for(long timestamp: new long[]{0, 100, Long.MAX_VALUE -1, Long.MAX_VALUE, Long.MAX_VALUE +100}) {
             hdr=UNICAST3.Header.createSendFirstSeqnoHeader((int)timestamp);
             _testSize(hdr);
             _testMarshalling(hdr);
