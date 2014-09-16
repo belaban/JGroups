@@ -205,12 +205,13 @@ public class JDBC_PING extends Discovery {
             ResultSet resultSet = ps.executeQuery();
             while (resultSet.next()) {
                 byte[] bytes = resultSet.getBytes(1);
-                PingData data =null;
                 try {
-                    data=deserialize(bytes);
-                    if(members != null && !members.contains(data.getAddress()))
+                    PingData data=deserialize(bytes);
+                    if(data == null || (members != null && !members.contains(data.getAddress())))
                         continue;
                     rsps.addResponse(data, false);
+                    if(local_addr != null && !local_addr.equals(data.getAddress()))
+                        addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
                 }
                 catch(Exception e) {
                     int row=resultSet.getRow();
@@ -222,8 +223,6 @@ public class JDBC_PING extends Discovery {
                         log.error("%s: failed removing row %d: %s; please delete it manually", local_addr, row, e);
                     }
                 }
-                if(local_addr != null && !local_addr.equals(data.getAddress()))
-                    addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
             }
         } finally {
             ps.close();
