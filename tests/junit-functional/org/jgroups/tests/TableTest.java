@@ -796,13 +796,39 @@ public class TableTest {
 
     public static void testGetMissing() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);
+
+        SeqnoList missing=table.getMissing();
+        assert missing == null;
+
         for(int num: Arrays.asList(2,4,6,8))
             table.add(num, num);
         System.out.println("table = " + table);
-        SeqnoList missing=table.getMissing();
+        missing=table.getMissing();
         System.out.println("missing=" + missing);
         assert missing.size() == 4;
         assert table.getNumMissing() == 4;
+    }
+
+    public static void testGetMissingWithOffset() {
+        Table<Integer> table=new Table<Integer>(3, 10, 300000);
+
+        SeqnoList missing=table.getMissing();
+        assert missing == null;
+
+        for(int num: Arrays.asList(300002,300004,300006,300008))
+            table.add(num, num);
+        System.out.println("table = " + table);
+        missing=table.getMissing();
+        System.out.println("missing=" + missing);
+        assert missing.size() == 4;
+        assert table.getNumMissing() == 4;
+
+        table.add(300001,300001);
+        table.removeMany(true, 2);
+        missing=table.getMissing();
+        System.out.println("missing=" + missing);
+        assert missing.size() == 3;
+        assert table.getNumMissing() == 3;
     }
 
     public static void testGetMissing2() {
@@ -866,6 +892,22 @@ public class TableTest {
         assert missing.size() == 5;
         assert buf.getNumMissing() == missing.size();
     }
+
+    public void testGetMissingWithMaxSize() {
+        Table<Integer> buf=new Table<Integer>(3, 10, 0);
+
+        for(int i=1; i <= 50; i++) {
+            if(i % 2 == 0)
+                buf.add(i,i);
+        }
+        assert buf.getNumMissing() == 25;
+        SeqnoList missing=buf.getMissing();
+        assert missing.size() == 25;
+
+        missing=buf.getMissing(10);
+        assert missing.size() == 10;
+    }
+
 
 
     public static void testGetMissingLast() {
@@ -939,6 +981,27 @@ public class TableTest {
         System.out.println("highest delivered=" + hd + ", highest deliverable=" + highest_deliverable);
         assert hd == 8;
         assert highest_deliverable == 8;
+    }
+
+    public void testGetHighestDeliverable2() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 10; i++)
+            table.add(i,i);
+        System.out.println("table = " + table);
+        table.removeMany(true, 20);
+        long highest_deliverable=table.getHighestDeliverable();
+        assert highest_deliverable == 10;
+        assert table.getHighestDelivered() == highest_deliverable;
+    }
+
+    public void testGetHighestDeliverable3() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 10; i++)
+            table.add(i,i);
+        System.out.println("table = " + table);
+        table.removeMany(true, 9);
+        long highest_deliverable=table.getHighestDeliverable();
+        assert highest_deliverable == 10;
     }
 
     public static void testMassAddition() {

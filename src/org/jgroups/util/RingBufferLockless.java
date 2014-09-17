@@ -323,7 +323,7 @@ public class RingBufferLockless<T> implements Iterable<T> {
         for(long i=tmp_hd+1; i <= tmp_hr; i++) {
             if(buf.get(index(i)) == null) {
                 if(missing == null)
-                    missing=new SeqnoList();
+                    missing=new SeqnoList((int)(tmp_hr-tmp_hd), hd);
                 long end=i;
                 while(buf.get(index(end+1)) == null && end <= tmp_hr)
                     end++;

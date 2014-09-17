@@ -78,6 +78,10 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @Property(description="Min time (in ms) to elapse for successive SEND_FIRST_SEQNO messages to be sent to the same sender")
     protected long    sync_min_interval=2000;
 
+    @Property(description="Max number of messages to ask for in a retransmit request. 0 disables this and uses " +
+      "the max bundle size in the transport")
+    protected int     max_xmit_req_size;
+
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
@@ -370,6 +374,16 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(time_service == null)
             throw new IllegalStateException("time service from transport is null");
         last_sync_sent=new ExpiryCache<Address>(sync_min_interval);
+
+        // max bundle size (minus overhead) divided by <long size> times bits per long
+        int estimated_max_msgs_in_xmit_req=(getTransport().getMaxBundleSize() -50) * Global.LONG_SIZE;
+        int old_max_xmit_size=max_xmit_req_size;
+        if(max_xmit_req_size <= 0)
+            max_xmit_req_size=estimated_max_msgs_in_xmit_req;
+        else
+            max_xmit_req_size=Math.min(max_xmit_req_size, estimated_max_msgs_in_xmit_req);
+        if(old_max_xmit_size != max_xmit_req_size)
+            log.trace("%s: set max_xmit_req_size from %d to %d", local_addr, old_max_xmit_size, max_xmit_req_size);
     }
 
     public void start() throws Exception {
@@ -1501,7 +1515,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 sendAck(target, win.getHighestDeliverable(), val.connId());
 
             // receiver: retransmit missing messages
-            if(win != null && win.getNumMissing() > 0 && (missing=win.getMissing()) != null) { // getNumMissing() is fast
+            if(win != null && win.getNumMissing() > 0 && (missing=win.getMissing(max_xmit_req_size)) != null) { // getNumMissing() is fast
                 long highest=missing.getLast();
                 Long prev_seqno=xmit_task_map.get(target);
                 if(prev_seqno == null)
@@ -1510,7 +1524,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                     missing.removeHigherThan(prev_seqno); // we only retransmit the 'previous batch'
                     if(highest > prev_seqno)
                         xmit_task_map.put(target, highest);
-                    if(missing.size() > 0)
+                    if(!missing.isEmpty())
                         retransmit(missing, target);
                 }
             }

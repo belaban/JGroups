@@ -21,7 +21,7 @@ import java.util.List;
  * @since 3.3
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
-public class NAKACK2_RetransmitTest {
+public class NAKACK2_RetransmissionTest {
     protected static final short ID=ClassConfigurator.getProtocolId(NAKACK2.class);
     protected static final Address A=Util.createRandomAddress("A"), B=Util.createRandomAddress("B");
     protected static final View    view=View.create(A, 1, A, B);

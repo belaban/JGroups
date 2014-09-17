@@ -1,9 +1,6 @@
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -120,6 +117,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @Property(description="Time during which identical warnings about messages from a non member will be suppressed. " +
       "0 disables this (every warning will be logged). Setting the log level to ERROR also disables this.")
     protected long suppress_time_non_member_warnings=60000;
+
+    @Property(description="Max number of messages to ask for in a retransmit request. 0 disables this and uses " +
+      "the max bundle size in the transport")
+    protected int  max_xmit_req_size;
 
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
@@ -389,17 +390,15 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
 
         TP transport=getTransport();
-        if(transport != null) {
-            transport.registerProbeHandler(this);
-            if(!transport.supportsMulticasting()) {
-                if(use_mcast_xmit) {
-                    log.warn(Util.getMessage("NoMulticastTransport"), "use_mcast_xmit", transport.getName(), "use_mcast_xmit");
-                    use_mcast_xmit=false;
-                }
-                if(use_mcast_xmit_req) {
-                    log.warn(Util.getMessage("NoMulticastTransport"), "use_mcast_xmit_req", transport.getName(), "use_mcast_xmit_req");
-                    use_mcast_xmit_req=false;
-                }
+        transport.registerProbeHandler(this);
+        if(!transport.supportsMulticasting()) {
+            if(use_mcast_xmit) {
+                log.warn(Util.getMessage("NoMulticastTransport"), "use_mcast_xmit", transport.getName(), "use_mcast_xmit");
+                use_mcast_xmit=false;
+            }
+            if(use_mcast_xmit_req) {
+                log.warn(Util.getMessage("NoMulticastTransport"), "use_mcast_xmit_req", transport.getName(), "use_mcast_xmit_req");
+                use_mcast_xmit_req=false;
             }
         }
 
@@ -408,6 +407,16 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
         if(suppress_time_non_member_warnings > 0)
             suppress_log_non_member=new SuppressLog<Address>(log, "MsgDroppedNak", "SuppressMsg");
+
+        // max bundle size (minus overhead) divided by <long size> times bits per long
+        int estimated_max_msgs_in_xmit_req=(transport.getMaxBundleSize() -50) * Global.LONG_SIZE;
+        int old_max_xmit_size=max_xmit_req_size;
+        if(max_xmit_req_size <= 0)
+            max_xmit_req_size=estimated_max_msgs_in_xmit_req;
+        else
+            max_xmit_req_size=Math.min(max_xmit_req_size, estimated_max_msgs_in_xmit_req);
+        if(old_max_xmit_size != max_xmit_req_size)
+            log.trace("%s: set max_xmit_req_size from %d to %d", local_addr, old_max_xmit_size, max_xmit_req_size);
     }
 
 
@@ -1366,7 +1375,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
 
     protected void retransmit(long first_seqno, long last_seqno, final Address sender, boolean multicast_xmit_request) {
-        retransmit(new SeqnoList(first_seqno,last_seqno),sender,multicast_xmit_request);
+        SeqnoList list=new SeqnoList((int)(last_seqno - first_seqno +1), first_seqno).add(first_seqno, last_seqno);
+        retransmit(list,sender,multicast_xmit_request);
     }
 
     protected void retransmit(SeqnoList missing_msgs, final Address sender, boolean multicast_xmit_request) {
@@ -1437,7 +1447,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             Address target=entry.getKey(); // target to send retransmit requests to
             Table<Message> buf=entry.getValue();
 
-            if(buf != null && buf.getNumMissing() > 0 && (missing=buf.getMissing()) != null) { // getNumMissing() is fast
+            if(buf != null && buf.getNumMissing() > 0 && (missing=buf.getMissing(max_xmit_req_size)) != null) { // getNumMissing() is fast
                 long highest=missing.getLast();
                 Long prev_seqno=xmit_task_map.get(target);
                 if(prev_seqno == null) {
@@ -1447,7 +1457,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     missing.removeHigherThan(prev_seqno); // we only retransmit the 'previous batch'
                     if(highest > prev_seqno)
                         xmit_task_map.put(target, highest);
-                    if(missing.size() > 0)
+                    if(!missing.isEmpty())
                         retransmit(missing, target, false);
                 }
             }

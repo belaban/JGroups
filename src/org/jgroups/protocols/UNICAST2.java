@@ -1455,7 +1455,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     missing.removeHigherThan(prev_seqno); // we only retransmit the 'previous batch'
                     if(highest > prev_seqno)
                         xmit_task_map.put(target, highest);
-                    if(missing.size() > 0)
+                    if(!missing.isEmpty())
                         retransmit(missing, target);
                 }
             }

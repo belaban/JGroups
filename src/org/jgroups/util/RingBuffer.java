@@ -326,7 +326,7 @@ public class RingBuffer<T> implements Iterable<T> {
         for(long i=tmp_hd+1; i <= tmp_hr; i++) {
             if(buf[index(i)] == null) {
                 if(missing == null)
-                    missing=new SeqnoList();
+                    missing=new SeqnoList((int)(hr-hd), hd);
                 long end=i;
                 while(buf[index(end+1)] == null && end <= tmp_hr)
                     end++;

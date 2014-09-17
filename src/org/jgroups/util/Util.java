@@ -245,7 +245,7 @@ public class Util {
           new UNICAST3(),
           new STABLE(),
           new GMS().joinTimeout(1000),
-          new FRAG2().fragSize(8000),
+          new FRAG2().fragSize(8000)
         };
 
         if(additional_protocols == null)

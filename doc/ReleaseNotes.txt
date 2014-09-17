@@ -19,7 +19,15 @@ New features
 Optimizations
 =============
 
+Limit the max size of retransmission requests
+---------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1868]
 
+When we have a retransmission request in UNICAST3 or NAKACK2 for a large number of messages, then the size of the
+retransmit message may become larger than what the transport can handle, and is therefore dropped. This leads to endless
+retransmissions.
+The fix here is to retransmit only the oldest N messages such that the retransmit message doesn't exceed the max
+bundling size of the transport and to use a bitmap to identify missing messages to be retransmitted.
 
 
 

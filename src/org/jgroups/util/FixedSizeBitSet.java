@@ -12,17 +12,18 @@ public class FixedSizeBitSet {
      * BitSets are packed into arrays of "words."  Currently a word is a long, which consists of 64 bits, requiring
      * 6 address bits. The choice of word size is determined purely by performance concerns.
      */
-    private final static int ADDRESS_BITS_PER_WORD=6;
-    private final static int BITS_PER_WORD=1 << ADDRESS_BITS_PER_WORD;
+    protected final static int  ADDRESS_BITS_PER_WORD=6;
+    protected final static int  BITS_PER_WORD=1 << ADDRESS_BITS_PER_WORD;
 
     /* Used to shift left or right for a partial word mask */
-    private static final long WORD_MASK=0xffffffffffffffffL;
+    protected static final long WORD_MASK=0xffffffffffffffffL;
 
-    private final long[] words;
-    private final int size;
+    protected       long[]      words;
+    protected       int         size;
 
 
-
+    public FixedSizeBitSet() {
+    }
 
     /**
      * Creates a bit set whose initial size is the range <code>0</code> through
@@ -56,6 +57,41 @@ public class FixedSizeBitSet {
         return !already_set;
     }
 
+    /**
+     * Sets the bits from the specified {@code from} (inclusive) to the
+     * specified {@code to} (inclusive) to {@code true}.
+     *
+     * @param  from index of the first bit to be set
+     * @param  to index of the last bit to be set
+     * @throws IndexOutOfBoundsException if {@code from} is negative, or {@code to} is negative, or {@code from} is
+     *         larger than {@code to}
+     */
+    public void set(int from, int to) {
+        if(from < 0 || to < 0 || to < from || to >= size)
+            throw new IndexOutOfBoundsException("from=" + from + ", to=" + to);
+
+        // Increase capacity if necessary
+        int startWordIndex = wordIndex(from);
+        int endWordIndex   = wordIndex(to);
+
+        long firstWordMask = WORD_MASK << from;
+        long lastWordMask  = WORD_MASK >>> -(to+1);
+        if (startWordIndex == endWordIndex) {
+            // Case 1: One word
+            words[startWordIndex] |= (firstWordMask & lastWordMask);
+        } else {
+            // Case 2: Multiple words
+            // Handle first word
+            words[startWordIndex] |= firstWordMask;
+
+            // Handle intermediate words, if any
+            for (int i = startWordIndex+1; i < endWordIndex; i++)
+                words[i] = WORD_MASK;
+
+            // Handle last word (restores invariants)
+            words[endWordIndex] |= lastWordMask;
+        }
+    }
    
 
     /**
@@ -71,6 +107,41 @@ public class FixedSizeBitSet {
         words[wordIndex]&=~(1L << index);
     }
 
+
+    /**
+     * Sets the bits from the specified {@code from} (inclusive) to the
+     * specified {@code to} (inclusive) to {@code false}.
+     *
+     * @param  from index of the first bit to be cleared
+     * @param  to index of the last bit to be cleared
+     * @throws IndexOutOfBoundsException if {@code from} is negative, or {@code to} is negative,
+     *         or {@code from} is larger than {@code to}
+     */
+    public void clear(int from, int to) {
+        if(from < 0 || to < 0 || to < from || to >= size)
+            throw new IndexOutOfBoundsException("from=" + from + ", to=" + to);
+
+        int startWordIndex = wordIndex(from);
+        int endWordIndex = wordIndex(to);
+
+        long firstWordMask = WORD_MASK << from;
+        long lastWordMask  = WORD_MASK >>> -(to+1);
+        if (startWordIndex == endWordIndex) {
+            // Case 1: One word
+            words[startWordIndex] &= ~(firstWordMask & lastWordMask);
+        } else {
+            // Case 2: Multiple words
+            // Handle first word
+            words[startWordIndex] &= ~firstWordMask;
+
+            // Handle intermediate words, if any
+            for (int i = startWordIndex+1; i < endWordIndex; i++)
+                words[i] = 0;
+
+            // Handle last word
+            words[endWordIndex] &= ~lastWordMask;
+        }
+    }
 
 
     /**
@@ -155,7 +226,31 @@ public class FixedSizeBitSet {
     }
 
 
+    /**
+     * Returns the index of the nearest bit that is set to {@code true}
+     * that occurs on or before the specified starting index.
+     * If no such bit exists, or if {@code -1} is given as the
+     * starting index, then {@code -1} is returned.
+     * @param  from the index to start checking from (inclusive)
+     * @return the index of the previous set bit, or {@code -1} if there is no such bit
+     * @throws IndexOutOfBoundsException if the specified index is less than {@code -1}
+     */
+    public int previousSetBit(int from) {
+        if(from < 0 || from >= size)
+            throw new IndexOutOfBoundsException("index: " + from);
 
+        int u = wordIndex(from);
+
+        long word = words[u] & (WORD_MASK >>> -(from+1));
+
+        while (true) {
+            if (word != 0)
+                return (u+1) * BITS_PER_WORD - 1 - Long.numberOfLeadingZeros(word);
+            if (u-- == 0)
+                return -1;
+            word = words[u];
+        }
+    }
 
 
     /**
@@ -183,7 +278,7 @@ public class FixedSizeBitSet {
             return;
 
         int startWordIndex = wordIndex(fromIndex);
-        int endWordIndex   = wordIndex(toIndex - 1);
+        int endWordIndex   = wordIndex(toIndex);
 
         long firstWordMask = WORD_MASK << fromIndex;
         long lastWordMask  = WORD_MASK >>> -toIndex;
@@ -228,29 +323,37 @@ public class FixedSizeBitSet {
      * @return a string representation of this bit set.
      */
     public String toString() {
-        int numBits=(words.length > 128)?
-                cardinality() : words.length * BITS_PER_WORD;
-        StringBuilder b=new StringBuilder(6 * numBits + 2);
-        b.append('{');
+        if(cardinality() == 0)
+            return "{}";
+        StringBuilder sb=new StringBuilder("(").append(cardinality()).append("): {");
 
-        int i=nextSetBit(0);
-        if(i != -1) {
-            b.append(i);
-            for(i=nextSetBit(i + 1); i >= 0; i=nextSetBit(i + 1)) {
-                int endOfRun=nextClearBit(i);
-                do {
-                    b.append(", ").append(i);
-                }
-                while(++i < endOfRun);
+        boolean first=true;
+        int num=Util.MAX_LIST_PRINT_SIZE;
+        for(int i=nextSetBit(0); i >= 0; i=nextSetBit(i + 1)) {
+            int endOfRun=nextClearBit(i);
+            if(first)
+                first=false;
+            else
+                sb.append(", ");
+
+            if(endOfRun != -1 && endOfRun-1 != i) {
+                sb.append(i).append('-').append(endOfRun-1);
+                i=endOfRun;
+            }
+            else
+                sb.append(i);
+            if(--num <= 0) {
+                sb.append(", ... ");
+                break;
             }
         }
 
-        b.append('}');
-        return b.toString();
+        sb.append('}');
+        return sb.toString();
     }
 
 
-    private static int wordIndex(int bitIndex) {
+    protected static int wordIndex(int bitIndex) {
         return bitIndex >> ADDRESS_BITS_PER_WORD;
     }
     

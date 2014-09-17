@@ -6,7 +6,6 @@ import org.jgroups.protocols.pbcast.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ArrayIterator;
-import org.jgroups.util.SeqnoList;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
@@ -206,15 +205,6 @@ public class StateTransferTest extends ChannelTestBase {
         return (Long)Util.getField(field, hdr);
     }
 
-    protected String printMissingElements(Map<Integer,String> map) {
-        Set<Integer> keys=map.keySet();
-        SeqnoList list=new SeqnoList();
-        for(int i=0; i < MSG_SEND_COUNT * APP_COUNT; i++) {
-            if(!keys.contains(i))
-                list.add(i);
-        }
-        return list.toString();
-    }
 
     protected void replaceStateTransferProtocolWith(JChannel ch, Class<?> state_transfer_class) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();

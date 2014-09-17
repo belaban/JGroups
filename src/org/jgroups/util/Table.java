@@ -488,6 +488,8 @@ public class Table<T> {
      */
     @GuardedBy("lock")
     public void forEach(long from, long to, Visitor<T> visitor) {
+        if(from > to)
+            return;
         int row=computeRow(from), column=computeIndex(from);
         int distance=(int)(to - from +1);
         T[] current_row=row+1 > matrix.length? null : matrix[row];
@@ -630,13 +632,29 @@ public class Table<T> {
 
     /**
      * Returns a list of missing (= null) elements
-     * @return
+     * @return A SeqnoList of missing messages, or null if no messages are missing
      */
     public SeqnoList getMissing() {
+       return getMissing(0);
+    }
+
+    /**
+     * Returns a list of missing messages
+     * @param max_msgs If > 0, the max number of missing messages to be returned (oldest first), else no limit
+     * @return A SeqnoList of missing messages, or null if no messages are missing
+     */
+    public SeqnoList getMissing(int max_msgs) {
         lock.lock();
         try {
-            Missing missing=new Missing();
-            forEach(hd+1, hr, missing);
+            if(size == 0)
+                return null;
+            long start_seqno=getHighestDeliverable() +1;
+            int capacity=(int)(hr - start_seqno);
+            int max_size=max_msgs > 0? Math.min(max_msgs, capacity) : capacity;
+            if(max_size <= 0)
+                return null;
+            Missing missing=new Missing(start_seqno, capacity, max_size);
+            forEach(start_seqno, hr-1, missing);
             return missing.getMissingElements();
         }
         finally {
@@ -832,7 +850,7 @@ public class Table<T> {
         }
     }
 
-    protected class Missing implements Visitor<T> {
+  /*  protected class Missing implements Visitor<T> {
         protected SeqnoList missing_elements;
         protected long      last_missing=-1; // last missing seqno
 
@@ -864,7 +882,30 @@ public class Table<T> {
             }
             return true;
         }
+    }*/
+
+    protected class Missing implements Visitor<T> {
+        protected final SeqnoList missing_elements;
+        protected final int       max_num_msgs;
+        protected int             num_msgs;
+
+        protected Missing(long start, int capacity, int max_number_of_msgs) {
+            missing_elements=new SeqnoList(capacity, start);
+            this.max_num_msgs=max_number_of_msgs;
+        }
+
+        protected SeqnoList getMissingElements() {return missing_elements;}
+
+        public boolean visit(long seqno, T element, int row, int column) {
+            if(element == null) {
+                if(++num_msgs > max_num_msgs)
+                    return false;
+                missing_elements.add(seqno);
+            }
+            return true;
+        }
     }
+
 
     protected class HighestDeliverable implements Visitor<T> {
         protected long highest_deliverable=-1;
