@@ -235,7 +235,7 @@
              basedir="${compile.dir}"
              manifest="${conf.dir}/MANIFEST.MF"
              includes="org/jgroups/**">
-            <fileset dir="${conf.dir}" includes="*.xsd, *.xml, jg-messages*.properties"/>
+            <fileset dir="${conf.dir}" includes="*.xml, jg-messages*.properties"/>
             <fileset dir="${compile.dir}/schema">
                 <include name="*.xsd"/>
             </fileset>
