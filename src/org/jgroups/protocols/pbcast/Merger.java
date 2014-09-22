@@ -354,7 +354,7 @@ public class Merger {
                           gms.local_addr, max_wait_time, current_mbrs);
         }
 
-        ArrayList<Address> valid_rsps=new ArrayList<Address>(current_mbrs);
+        List<Address> valid_rsps=new ArrayList<Address>(current_mbrs);
         valid_rsps.removeAll(digest_collector.getMissing());
 
         Address[] tmp=new Address[valid_rsps.size()];
@@ -504,11 +504,13 @@ public class Merger {
      * sends this merged view/digest to all subgroup coordinators; each coordinator will install it in their
      * subgroup.
      */
-    class MergeTask implements Runnable {
-        private Thread thread=null;
+    protected class MergeTask implements Runnable {
+        protected Thread thread=null;
 
         /** List of all subpartition coordinators and their members */
-        private final ConcurrentMap<Address,Collection<Address>> coords=Util.createConcurrentMap(8, 0.75f, 8);
+        protected final ConcurrentMap<Address,Collection<Address>> coords=Util.createConcurrentMap(8, 0.75f, 8);
+        protected final Set<View>                                  subviews=new HashSet<View>();
+
 
         /**
          * @param views Guaranteed to be non-null and to have >= 2 members, or else this thread would not be started
@@ -518,6 +520,7 @@ public class Merger {
                 return;
 
             this.coords.clear();
+            subviews.addAll(views.values());
 
             // now remove all members which don't have us in their view, so RPCs won't block (e.g. FLUSH)
             // https://jira.jboss.org/browse/JGRP-1061
@@ -625,7 +628,7 @@ public class Merger {
 
             /* 4. Combine all views and digests into 1 View/1 Digest */
             List<MergeData> merge_data=new ArrayList<MergeData>(merge_rsps.getResults().values());
-            MergeData combined_merge_data=consolidateMergeData(merge_data);
+            MergeData combined_merge_data=consolidateMergeData(merge_data, new ArrayList<View>(subviews));
             if(combined_merge_data == null)
                 throw new Exception("could not consolidate merge");
 
@@ -696,11 +699,11 @@ public class Merger {
          * After merging all members into a Membership and subsequent sorting, the first member of the sorted membership
          * will be the new coordinator. This method has a lock on merge_rsps.
          * @param merge_rsps A list of MergeData items. Elements with merge_rejected=true were removed before. Is guaranteed
-         *          not to be null and to contain at least 1 member.
+         *          not to be null and to contain at least 1 member
+         * @param subviews Contains a list of Views, each View is a subgroup
          */
-        protected MergeData consolidateMergeData(List<MergeData> merge_rsps) {
+        protected MergeData consolidateMergeData(List<MergeData> merge_rsps, List<View> subviews) {
             long                            logical_time=0; // for new_vid
-            List<View>                      subgroups=new ArrayList<View>(11); // contains a list of Views, each View is a subgroup
             Collection<Collection<Address>> sub_mbrships=new ArrayList<Collection<Address>>();
             Set<Address>                    digest_membership=new HashSet<Address>(); // members as seen by the digests
 
@@ -713,7 +716,6 @@ public class Merger {
 
                     // merge all membership lists into one (prevent duplicates)
                     sub_mbrships.add(new ArrayList<Address>(tmp_view.getMembers()));
-                    subgroups.add(tmp_view);
                 }
                 Digest digest=tmp_data.getDigest();
                 if(digest != null)
@@ -741,9 +743,16 @@ public class Merger {
             Address new_coord=merged_mbrs.isEmpty()? null : merged_mbrs.get(0);
             if(new_coord == null)
                 return null;
-            
+
+            // Remove views from subviews whose creator are not in the new membership
+            for(Iterator<View> it=subviews.iterator(); it.hasNext();) {
+                Address creator=it.next().getCreator();
+                if(creator != null && !merged_mbrs.contains(creator))
+                    it.remove();
+            }
+
             // determine the new view; logical_time should be the highest view ID seen up to now plus 1
-            MergeView new_view=new MergeView(new_coord, logical_time + 1, merged_mbrs, subgroups);
+            MergeView new_view=new MergeView(new_coord, logical_time + 1, merged_mbrs, subviews);
 
             // determine the new digest
             MutableDigest new_digest=consolidateDigests(new_view, merge_rsps);

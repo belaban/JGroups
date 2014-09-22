@@ -26,18 +26,15 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
     @BeforeMethod
     protected void start() throws Exception {
-        a=createChannel(true, 4);
-        a.setName("A");
+        a=createChannel(true, 4).name("A");
         ra=new MyReceiver("A", a);
         a.setReceiver(ra);
 
-        b=createChannel(a);
-        b.setName("B");
+        b=createChannel(a).name("B");
         rb=new MyReceiver("B", b);
         b.setReceiver(rb);
 
-        c=createChannel(a);
-        c.setName("C");
+        c=createChannel(a).name("C");
         rc=new MyReceiver("C", c);
         c.setReceiver(rc);
         modifyConfigs(a,b,c);
@@ -328,13 +325,6 @@ public class OverlappingMergeTest extends ChannelTestBase {
         System.out.println("\nA's view: " + a.getView());
         System.out.println("B's view: " + b.getView());
         System.out.println("C's view: " + c.getView());
-
-
-        Map<Address,View> views=new HashMap<Address,View>();
-        views.put(a.getAddress(), a.getView());
-        views.put(b.getAddress(), b.getView());
-        views.put(c.getAddress(), c.getView());
-        // Event merge_evt=new Event(Event.MERGE, views);
 
         for(JChannel ch: new JChannel[]{a,b,c})
             ch.getProtocolStack().findProtocol(GMS.class).setLevel("trace");
