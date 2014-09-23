@@ -1,11 +1,13 @@
 
 package org.jgroups.tests;
 
+import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.*;
+import java.nio.channels.DatagramChannel;
 import java.util.Arrays;
 import java.util.List;
 
@@ -17,28 +19,50 @@ public class mcast {
     protected DatagramSocket  sock;       // for sending of multicasts
     protected InetAddress     mcast_addr=null, bind_addr=null;
     protected int             mcast_port=5555;
+    protected final int       local_port;
+    protected final int       ttl;
+    protected static final boolean        can_bind_to_mcast_addr;
+    protected static final StackType      ip_version;
+    protected static final ProtocolFamily prot_family;
 
-
-    public mcast(InetAddress bind_addr, InetAddress mcast_addr, int mcast_port) {
-        this.bind_addr=bind_addr;
-        this.mcast_addr=mcast_addr;
-        this.mcast_port=mcast_port;
+    static {
+        can_bind_to_mcast_addr=(Util.checkForLinux() && !Util.checkForAndroid())
+          || Util.checkForSolaris()
+          || Util.checkForHp()
+          || Util.checkForMac();
+        ip_version=Util.getIpStackType();
+        prot_family=ip_version == StackType.IPv6? StandardProtocolFamily.INET6 : StandardProtocolFamily.INET;
     }
 
-    protected void start() {
+
+    public mcast(InetAddress bind_addr, int local_port, InetAddress mcast_addr, int mcast_port, int ttl) {
+        this.bind_addr=bind_addr;
+        this.local_port=local_port;
+        this.mcast_addr=mcast_addr;
+        this.mcast_port=mcast_port;
+        this.ttl=ttl;
+    }
+
+    protected void start() throws Exception {
+        Receiver r=null;
+        DatagramChannel channel=null;
         try {
-            Receiver r=new Receiver();
+            r=new Receiver();
             r.start();
 
-            /*DatagramChannel channel=DatagramChannel.open();
-            channel.bind(new InetSocketAddress(bind_addr, 0));
-            channel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, 8);
-            sock=channel.socket();*/
-
-            sock=new DatagramSocket(0, bind_addr);
+            channel=DatagramChannel.open(prot_family);
+            channel.bind(new InetSocketAddress(bind_addr, local_port));
+            channel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, ttl);
+            sock=channel.socket();
         }
-        catch(Exception e) {
-            System.err.println(e);
+        catch(Exception ex) {
+            if(channel != null)
+                channel.close();
+            if(r != null) {
+                r.kill();
+                r.interrupt();
+            }
+            throw ex;
         }
 
         DataInputStream in=new DataInputStream(System.in);
@@ -56,9 +80,11 @@ public class mcast {
         }
     }
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws Exception {
         InetAddress mcast_addr=null, bind_addr=null;
         int mcast_port=5555;
+        int local_port=0;
+        int ttl=8;
 
         try {
             for(int i=0; i < args.length; i++) {
@@ -79,28 +105,47 @@ public class mcast {
                     mcast_port=Integer.parseInt(args[++i]);
                     continue;
                 }
-
+                if("-port".equals(tmp)) {
+                    local_port=Integer.parseInt(args[++i]);
+                    continue;
+                }
+                if("-ttl".equals(tmp)) {
+                    ttl=Integer.parseInt(args[++i]);
+                    continue;
+                }
                 help();
                 return;
             }
-            if(mcast_addr == null)
-                mcast_addr=InetAddress.getByName("232.5.5.5");
+            if(mcast_addr == null) {
+                switch(ip_version) {
+                    case IPv4:
+                        mcast_addr=InetAddress.getByName("232.5.5.5");
+                        break;
+                    case IPv6:
+                        mcast_addr=InetAddress.getByName("ff0e::8:8:8");
+                        break;
+                }
+            }
         }
         catch(Exception ex) {
             System.err.println(ex);
             return;
         }
 
-        mcast mcast=new mcast(bind_addr, mcast_addr, mcast_port);
+        mcast mcast=new mcast(bind_addr, local_port, mcast_addr, mcast_port, ttl);
         mcast.start();
     }
 
 
 
     static void help() {
-        System.out.println("mcast [-bind_addr <bind address>] [-help] [-mcast_addr <multicast address>] " +
-                             "[-port <port for multicast socket>]\n" +
-                             "(Note that a null bind_addr will join the receiver multicast socket on all interfaces)");
+        System.out.println("mcast [-help]\n" +
+                             "      [-bind_addr <bind address>]\n" +
+                             "      [-port <local port>]\n" +
+                             "      [-mcast_addr <multicast address>]\n" +
+                             "      [-mcast_port <port for multicast socket>]\n" +
+                             "      [-ttl <TTL>]\n" +
+                             "(Note that a null bind_addr will join the receiver multicast socket on all interfaces)\n");
     }
 
     protected void bindToInterfaces(List<NetworkInterface> interfaces, MulticastSocket s) {
@@ -121,9 +166,11 @@ public class mcast {
 
         protected Receiver() throws Exception {
             InetSocketAddress saddr=new InetSocketAddress(mcast_addr, mcast_port);
-            mcast_sock=new MulticastSocket(saddr);
-            // if(bind_addr != null)
-               // mcast_sock.setInterface(bind_addr);
+
+            if(can_bind_to_mcast_addr)
+                mcast_sock=new MulticastSocket(saddr);
+            else
+                mcast_sock=new MulticastSocket(mcast_port);
 
             if(bind_addr != null)
                 bindToInterfaces(Arrays.asList(NetworkInterface.getByInetAddress(bind_addr)), mcast_sock);
@@ -137,11 +184,15 @@ public class mcast {
                                  mcast_sock.getInterface());
         }
 
+        protected void kill() {
+            mcast_sock.close();
+        }
+
 
         public void run() {
             while(true) {
                 try {
-                    byte[] buf=new byte[256];
+                    byte[] buf=new byte[1024];
                     DatagramPacket packet=new DatagramPacket(buf, buf.length);
                     mcast_sock.receive(packet);
                     byte[] recv_buf=packet.getData();
