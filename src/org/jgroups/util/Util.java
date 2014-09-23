@@ -3448,8 +3448,8 @@ public class Util {
     }
 
     public static void checkIfValidAddress(InetAddress bind_addr,String prot_name) throws Exception {
-        if(bind_addr.isAnyLocalAddress() || bind_addr.isLoopbackAddress())
-            return;
+        //if(bind_addr.isAnyLocalAddress() || bind_addr.isLoopbackAddress())
+          //  return;
         Collection<InetAddress> addrs=getAllAvailableAddresses();
         for(InetAddress addr : addrs) {
             if(addr.equals(bind_addr))
