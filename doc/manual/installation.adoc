@@ -217,7 +217,9 @@ the internal network (e.g. `eth1`).
 [[ItDoesntWork]]
 === It doesn't work !
 
-Make sure your machine is set up correctly for IP multicast. There are 2 test programs that can be used to detect
+NOTE: The section below refers to JGroups versions prior to 3.5. In 3.5 and later versions, `mcast` (see below) should be used.
+
+Make sure your machine is set up correctly for IP multicasting. There are 2 test programs that can be used to detect
 this: McastReceiverTest and McastSenderTest. Start `McastReceiverTest`, e.g.
 
 
@@ -241,6 +243,18 @@ the system administrator, look for another job :-)
 
 Other means of getting help: there is a public forum on http://jira.jboss.com/jira/browse/JGRP[JIRA]
 for questions. Also consider subscribing to the javagroups-users mailing list to discuss such and other problems.
+
+==== mcast
+
+Instead of `McastSender` and `McastReceiver`, a single program `mcast` can be used. Start multiple instances of it.
+The options are:
+
+`-bind_addr`:: the network interface to bind to for the receiver. If null, `mcast` will join all
+               available interfaces
+`-port`:: the local port to use. If 0, an ephemeral port will be picked
+`-mcast_addr`:: the multicast address to join
+`-mcast_port`:: the port to listen on for multicasts
+`-ttl`:: The TTL (for sending of packets)
         
 
 [[IPv6Issues]]
