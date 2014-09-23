@@ -77,7 +77,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
       "is compacted (only for experts)",writable=false)
     protected long   xmit_table_max_compaction_time=10 * 60 * 1000;
 
-    @Property(description="Max time (in ms) after which a connection to a non-member is closed")
+    // @Property(description="Max time (in ms) after which a connection to a non-member is closed")
     protected long                   max_retransmit_time=60 * 1000L;
 
     @Property(description="Interval (in milliseconds) at which messages in the send windows are resent")

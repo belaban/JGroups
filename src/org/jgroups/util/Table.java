@@ -67,9 +67,6 @@ public class Table<T> {
 
 
 
-/*    public interface SeqnoExtractor<T> {
-        long extract(T element);
-    }*/
 
     public interface Visitor<T> {
         /**
@@ -105,7 +102,7 @@ public class Table<T> {
     /**
      * Creates a new table
      * @param num_rows the number of rows in the matrix
-     * @param elements_per_row the number of messages per row.
+     * @param elements_per_row the number of elements per row
      * @param offset the seqno before the first seqno to be inserted. E.g. if 0 then the first seqno will be 1
      * @param resize_factor teh factor with which to increase the number of rows
      * @param max_compaction_time the max time in milliseconds after we attempt a compaction
@@ -149,7 +146,7 @@ public class Table<T> {
     public void resetStats()             {num_compactions=num_moves=num_resizes=num_purges=0;}
 
     /** Returns the highest deliverable (= removable) seqno. This may be higher than {@link #getHighestDelivered()},
-     * e.g. if messages have been added but not yet removed */
+     * e.g. if elements have been added but not yet removed */
     public long getHighestDeliverable() {
         HighestDeliverable visitor=new HighestDeliverable();
         lock.lock();
@@ -372,6 +369,8 @@ public class Table<T> {
     public void purge(long seqno, boolean force) {
         lock.lock();
         try {
+            if(seqno <= low)
+                return;
             if(force) {
                 if(seqno > hr)
                     seqno=hr;
@@ -396,7 +395,8 @@ public class Table<T> {
             if(seqno > low)
                 low=seqno;
             if(force) {
-                low=hd=seqno;
+                if(seqno > hd)
+                    low=hd=seqno;
                 size=computeSize();
             }
             num_purges++;

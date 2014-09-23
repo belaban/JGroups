@@ -95,7 +95,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
       "connection will get re-established when used again. 0 disables connection reaping")
     protected long    conn_expiry_timeout=0;
 
-    @Property(description="Max time (in ms) after which a connection to a non-member is closed")
+    // @Property(description="Max time (in ms) after which a connection to a non-member is closed")
     protected long                   max_retransmit_time=60 * 1000L;
 
     @Property(description="Interval (in milliseconds) at which missing messages (from all retransmit buffers) " +
@@ -844,7 +844,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
             }
             if(entry != null && conn_expiry_timeout > 0)
                 entry.update();
-            if(added && total_len > 0 && entry.incrementStable(total_len) && win != null) {
+            if(added && total_len > 0 && entry != null && entry.incrementStable(total_len) && win != null) {
                 long[] digest=win.getDigest();
                 sendStableMessage(sender, entry.recv_conn_id, digest[0], digest[1]);
             }

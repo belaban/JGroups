@@ -569,7 +569,7 @@ abstract public class Executing extends Protocol {
                 Owner owner = entry.getKey();
                 if (!members.contains(owner.getAddress())) {
                     sendToCoordinator(Type.RUN_REQUEST, owner.getRequestId(), 
-                        owner.getAddress());
+                        local_addr);
                     Runnable runnable = entry.getValue();
                     _requestId.put(runnable, owner.getRequestId());
                     _awaitingConsumer.add(runnable);

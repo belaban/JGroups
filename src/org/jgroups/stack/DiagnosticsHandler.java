@@ -108,9 +108,10 @@ public class DiagnosticsHandler implements Runnable {
     }
 
     public void run() {
-        byte[] buf=new byte[1500]; // requests are small (responses might be bigger)
+        byte[] buf;
         DatagramPacket packet;
         while(!diag_sock.isClosed() && Thread.currentThread().equals(thread)) {
+            buf=new byte[1500]; // requests are small (responses might be bigger)
             packet=new DatagramPacket(buf, 0, buf.length);
             try {
                 diag_sock.receive(packet);
@@ -204,10 +205,12 @@ public class DiagnosticsHandler implements Runnable {
         for(Iterator<NetworkInterface> it=interfaces.iterator(); it.hasNext();) {
             NetworkInterface i=it.next();
             try {
-                if (i.isUp() && !i.getInterfaceAddresses().isEmpty()) { // fix for VM crash - suggested by JJalenak@netopia.com
-                    s.joinGroup(group_addr, i);
-                    if(log.isTraceEnabled())
-                        log.trace("joined " + group_addr + " on " + i.getName());
+                if (i.isUp()) {
+                    List<InterfaceAddress> inet_addrs=i.getInterfaceAddresses();
+                    if(inet_addrs != null && !inet_addrs.isEmpty()) { // fix for VM crash - suggested by JJalenak@netopia.com
+                        s.joinGroup(group_addr, i);
+                        log.trace("joined %s on %s", group_addr, i.getName());
+                    }
                 }
             }
             catch(IOException e) {

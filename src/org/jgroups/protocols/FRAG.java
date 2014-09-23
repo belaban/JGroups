@@ -167,10 +167,13 @@ public class FRAG extends Protocol {
         for(Message msg: batch) {
             FragHeader hdr=(FragHeader)msg.getHeader(this.id);
             if(hdr != null) { // needs to be defragmented
-                batch.remove(msg);
                 Message assembled_msg=unfragment(msg,hdr);
                 if(assembled_msg != null)
-                    batch.add(assembled_msg); // the newly added message will not get iterated over by the current iterator !
+                    // the reassembled msg has to be add in the right place (https://issues.jboss.org/browse/JGRP-1648),
+                    // and canot be added to the tail of the batch !
+                    batch.replace(msg, assembled_msg);
+                else
+                    batch.remove(msg);
             }
         }
         if(!batch.isEmpty())

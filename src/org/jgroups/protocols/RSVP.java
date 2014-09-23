@@ -188,30 +188,47 @@ public class RSVP extends Protocol {
     }
 
     public void up(MessageBatch batch) {
+        List<Short> response_ids=null;
         for(Message msg: batch) {
-            if(!msg.isFlagSet(Message.Flag.RSVP))
-                continue;
-            RsvpHeader hdr=(RsvpHeader)msg.getHeader(id);
-            if(hdr == null) {
-                log.error("message with RSVP flag needs to have an RsvpHeader");
-                continue;
-            }
-            try {
-                batch.remove(msg);
-                up(new Event(Event.MSG, msg));
-            }
-            catch(Throwable t) {
-                log.error("failed passing up message", t);
+            if(msg.isFlagSet(Message.Flag.RSVP)) {
+                RsvpHeader hdr=(RsvpHeader)msg.getHeader(id);
+                if(hdr == null) {
+                    log.error("message with RSVP flag needs to have an RsvpHeader");
+                    continue;
+                }
+                switch(hdr.type) {
+                    case RsvpHeader.REQ:
+                        if(!ack_on_delivery) // send ack on *reception*
+                            sendResponse(batch.sender(), hdr.id);
+                        else {
+                            if(response_ids == null)
+                                response_ids=new ArrayList<Short>();
+                            response_ids.add(hdr.id);
+                        }
+                        break;
+
+                    case RsvpHeader.REQ_ONLY:
+                    case RsvpHeader.RSP:
+                        if(hdr.type == RsvpHeader.RSP)
+                            handleResponse(msg.getSrc(), hdr.id);
+                        batch.remove(msg);
+                        break;
+                }
             }
         }
 
         if(!batch.isEmpty())
             up_prot.up(batch);
+
+        // we're sending RSVP responses if ack_on_delivery is true. Unfortunately, this is done after the entire
+        // *batch* was delivered, not after each message that was delivered
+        if(response_ids != null)
+            for(short id: response_ids)
+                sendResponse(batch.sender(), id);
     }
 
     protected void handleView(View view) {
         members=view.getMembers();
-
         synchronized(ids) {
             for(Iterator<Map.Entry<Short,Entry>> it=ids.entrySet().iterator(); it.hasNext();) {
                 Entry entry=it.next().getValue();

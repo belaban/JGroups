@@ -1,11 +1,5 @@
 package org.jgroups.protocols;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-
 import org.jgroups.Address;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
@@ -13,6 +7,8 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.locking.LockNotification;
 import org.jgroups.util.Owner;
 import org.jgroups.util.Util;
+
+import java.util.*;
 
 
 /**
@@ -78,9 +74,9 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         return backups != null? backups.toString() : null;
     }
 
-    protected void sendGrantLockRequest(String lock_name, Owner owner, long timeout, boolean is_trylock) {
+    protected void sendGrantLockRequest(String lock_name, int lock_id, Owner owner, long timeout, boolean is_trylock) {
         if(coord != null)
-            sendRequest(coord, Type.GRANT_LOCK, lock_name, owner, timeout, is_trylock);
+            sendRequest(coord, Type.GRANT_LOCK, lock_name, lock_id, owner, timeout, is_trylock);
     }
 
     protected void sendReleaseLockRequest(String lock_name, Owner owner) {
@@ -138,16 +134,8 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         }
 
         // For all non-acquired client locks, send the GRANT_LOCK request to the new coordinator (if changed)
-        if(old_coord != null && !old_coord.equals(coord)) {
-            if(!client_locks.isEmpty()) {
-                for(Map<Owner,ClientLock> map: client_locks.values()) {
-                    for(ClientLock lock: map.values()) {
-                        if(!lock.acquired && !lock.denied)
-                            sendGrantLockRequest(lock.name, lock.owner, lock.timeout, lock.is_trylock);
-                    }
-                }
-            }
-        }
+        if(old_coord != null && !old_coord.equals(coord))
+            client_lock_table.resendPendingLockRequests();
     }
 
     public void lockCreated(String name) {

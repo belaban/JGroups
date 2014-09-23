@@ -54,10 +54,13 @@ public class ParseMessages {
 
                 if(is_message_list) { // used if message bundling is enabled
                     final MessageBatch[] batches=TP.readMessageBatch(dis,multicast);
-                    final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch=batches[2];
+                    final MessageBatch batch=batches[0], oob_batch=batches[1],
+                      internal_batch_oob=batches[2], internal_batch=batches[3];
                     int size=batch != null? batch.size() : 0;
                     if(oob_batch != null)
                         size+=oob_batch.size();
+                    if(internal_batch_oob != null)
+                        size+=internal_batch_oob.size();
                     if(internal_batch != null)
                         size+=internal_batch.size();
 
@@ -65,7 +68,7 @@ public class ParseMessages {
 
                     int cnt=1;
 
-                    for(MessageBatch tmp: Arrays.asList(batch, oob_batch, internal_batch)) {
+                    for(MessageBatch tmp: Arrays.asList(batch, oob_batch, internal_batch_oob, internal_batch)) {
                         if(tmp != null) {
                             for(Message msg: tmp) {
                                 System.out.print("#" + cnt++ + ": ");

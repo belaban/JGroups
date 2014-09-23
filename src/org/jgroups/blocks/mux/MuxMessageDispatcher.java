@@ -73,23 +73,9 @@ public class MuxMessageDispatcher extends MessageDispatcher {
     }
 
     @Override
-    protected <T> GroupRequest<T> cast(Collection<Address> dests, Message msg,
-                                       RequestOptions options, boolean blockForResults) throws Exception {
-        RspFilter filter=options.getRspFilter();
-        RequestOptions newOptions = new RequestOptions(options.getMode(), options.getTimeout(), options.getAnycasting(),
-                                                       (filter != null) ? new NoMuxHandlerRspFilter(filter) : new NoMuxHandlerRspFilter(),
-                                                       options.getFlags());
-        return super.cast(dests, msg, newOptions, blockForResults);
-    }
-
-    @Override
-    protected <T> GroupRequest<T> cast(Collection<Address> dests, Message msg,
-                                       RequestOptions options, boolean blockForResults,
-                                       FutureListener<T> listener) throws Exception {
-        RspFilter filter=options.getRspFilter();
-        RequestOptions newOptions = new RequestOptions(options.getMode(), options.getTimeout(), options.getAnycasting(),
-                                                       (filter != null) ? new NoMuxHandlerRspFilter(filter) : new NoMuxHandlerRspFilter(),
-                                                       options.getFlags());
-        return super.cast(dests, msg, newOptions, blockForResults, listener);
+    protected <T> GroupRequest<T> cast(Collection<Address> dests, Message msg, RequestOptions options,
+                                       boolean blockForResults, FutureListener<T> listener) throws Exception {
+        RspFilter filter = options.getRspFilter();
+        return super.cast(dests, msg, options.setRspFilter(NoMuxHandlerRspFilter.createInstance(filter)), blockForResults, listener);
     }
 }

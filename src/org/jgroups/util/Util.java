@@ -219,16 +219,27 @@ public class Util {
     }
 
 
-    public static Protocol[] getTestStack() {
-        return new Protocol[]{
+    /**
+     * Returns a default stack for testing with transport = SHARED_LOOPBACK
+     * @param additional_protocols Any number of protocols to add to the top of the returned protocol list
+     * @return
+     */
+    public static Protocol[] getTestStack(Protocol ... additional_protocols) {
+        Protocol[] protocols={
           new SHARED_LOOPBACK(),
           new PING().timeout(1000),
           new NAKACK2(),
           new UNICAST3(),
           new STABLE(),
           new GMS(),
-          new FRAG2().fragSize(8000)
+          new FRAG2().fragSize(8000),
         };
+
+        if(additional_protocols == null)
+            return protocols;
+        Protocol[] tmp=Arrays.copyOf(protocols, protocols.length + additional_protocols.length);
+        System.arraycopy(additional_protocols, 0, tmp, protocols.length, additional_protocols.length);
+        return tmp;
     }
 
 
@@ -3964,6 +3975,14 @@ public class Util {
         
     public static StackType getIpStackType() {
        return ip_stack_type;
+    }
+
+    /** Returns true if the 2 addresses are of the same type (IPv4 or IPv6) */
+    public static boolean sameAddresses(InetAddress one, InetAddress two) {
+        return one == null
+          || two == null
+          || (one instanceof Inet6Address && two instanceof Inet6Address)
+          || (one instanceof Inet4Address && two instanceof Inet4Address);
     }
 
     /**

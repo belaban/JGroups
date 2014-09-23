@@ -549,8 +549,11 @@ public abstract class TP extends Protocol {
 
     // ================================== Internal thread pool ======================
 
-    /** The thread pool which handles JGroups internal messages (Flag.INTERNAL)*/
+    /** The thread pool which handles JGroups internal messages (Flag.INTERNAL) */
     protected Executor                internal_thread_pool;
+
+    /** Factory which is used by internal_thread_pool */
+    protected ThreadFactory           internal_thread_factory;
 
     /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
     protected BlockingQueue<Runnable> internal_thread_pool_queue;
@@ -716,6 +719,16 @@ public abstract class TP extends Protocol {
         oob_thread_factory=factory;
         if(oob_thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)oob_thread_pool).setThreadFactory(factory);
+    }
+
+    public ThreadFactory getInternalThreadPoolThreadFactory() {
+        return internal_thread_factory;
+    }
+
+    public void setInternalThreadPoolThreadFactory(ThreadFactory factory) {
+        internal_thread_factory=factory;
+        if(internal_thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)internal_thread_pool).setThreadFactory(factory);
     }
 
     public ThreadFactory getTimerThreadFactory() {
@@ -961,6 +974,9 @@ public abstract class TP extends Protocol {
         if(oob_thread_factory == null)
             oob_thread_factory=new DefaultThreadFactory("OOB", false, true);
 
+        if(internal_thread_factory == null)
+            internal_thread_factory=new DefaultThreadFactory("INT", false, true);
+
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
 
@@ -996,10 +1012,6 @@ public abstract class TP extends Protocol {
             suppress_log_different_version=new SuppressLog<Address>(log, "VersionMismatch", "SuppressMsg");
         if(suppress_time_different_cluster_warnings > 0)
             suppress_log_different_cluster=new SuppressLog<Address>(log, "MsgDroppedDiffCluster", "SuppressMsg");
-
-        Util.verifyRejectionPolicy(oob_thread_pool_rejection_policy);
-        Util.verifyRejectionPolicy(thread_pool_rejection_policy);
-        Util.verifyRejectionPolicy(internal_thread_pool_rejection_policy);
 
         // ========================================== OOB thread pool ==============================
 
@@ -1046,7 +1058,7 @@ public abstract class TP extends Protocol {
                 else
                     internal_thread_pool_queue=new SynchronousQueue<Runnable>();
                 internal_thread_pool=createThreadPool(internal_thread_pool_min_threads, internal_thread_pool_max_threads, internal_thread_pool_keep_alive_time,
-                                                 internal_thread_pool_rejection_policy, internal_thread_pool_queue, oob_thread_factory);
+                                                 internal_thread_pool_rejection_policy, internal_thread_pool_queue, internal_thread_factory);
             }
             // if the internal thread pool is disabled, we won't create it (not even a DirectExecutor)
         }
@@ -1419,7 +1431,7 @@ public abstract class TP extends Protocol {
 
             if(is_message_list) { // used if message bundling is enabled
                 final MessageBatch[] batches=readMessageBatch(dis, multicast);
-                final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch=batches[2];
+                final MessageBatch batch=batches[0], oob_batch=batches[1], internal_batch_oob=batches[2], internal_batch=batches[3];
 
                 if(oob_batch != null) {
                     num_oob_msgs_received+=oob_batch.size();
@@ -1429,6 +1441,11 @@ public abstract class TP extends Protocol {
                     num_incoming_msgs_received+=batch.size();
                     thread_pool.execute(new BatchHandler(batch));
                 }
+                if(internal_batch_oob != null) {
+                    num_oob_msgs_received+=internal_batch_oob.size();
+                    Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
+                    pool.execute(new BatchHandler(internal_batch_oob));
+                }
                 if(internal_batch != null) {
                     num_internal_msgs_received+=internal_batch.size();
                     Executor pool=internal_thread_pool != null? internal_thread_pool : oob_thread_pool;
@@ -1437,14 +1454,14 @@ public abstract class TP extends Protocol {
             }
             else {
                 Message msg=readMessage(dis);
-                if(msg.isFlagSet(Message.Flag.INTERNAL))
-                    num_internal_msgs_received++;
-                else if(msg.isFlagSet(Message.Flag.OOB))
+                if(msg.isFlagSet(Message.Flag.OOB))
                     num_oob_msgs_received++;
+                else if(msg.isFlagSet(Message.Flag.INTERNAL))
+                    num_internal_msgs_received++;
                 else
                     num_incoming_msgs_received++;
 
-                boolean internal=msg.isFlagSet(Message.Flag.INTERNAL); // use internal pool or OOB (if intrenal pool is null)
+                boolean internal=msg.isFlagSet(Message.Flag.INTERNAL); // use internal pool or OOB (if internal pool is null)
                 Executor pool=internal && internal_thread_pool != null? internal_thread_pool
                   : internal || msg.isFlagSet(Message.Flag.OOB)? oob_thread_pool : thread_pool;
                 TpHeader hdr=(TpHeader)msg.getHeader(id);
@@ -1708,17 +1725,22 @@ public abstract class TP extends Protocol {
     }
 
     /**
-     * Reads a list of messages into 3 MessageBatches: a regular, an OOB and an internal one
+     * Reads a list of messages into 4 MessageBatches:
+     * <ol>
+     *     <li>regular</li>
+     *     <li>OOB</li>
+     *     <li>INTERNAL-OOB (INTERNAL and OOB)</li>
+     *     <li>INTERNAL (INTERNAL)</li>
+     * </ol>
      * @param in
-     * @return an array of 2 MessageBatches, the regular is at index 0 and the OOB at index 1
-     * and the internal at index 2 (either can be null)
+     * @return an array of 4 MessageBatches in the order above, the first batch is at index 0
      * @throws Exception
      */
     public static MessageBatch[] readMessageBatch(DataInputStream in, boolean multicast) throws Exception {
-        MessageBatch[] batches=new MessageBatch[3]; // [0]: reg, [1]: OOB, [2]: internal
+        MessageBatch[] batches=new MessageBatch[4]; // [0]: reg, [1]: OOB, [2]: internal-oob, [3]: internal
         Address dest=Util.readAddress(in);
         Address src=Util.readAddress(in);
-        String cluster_name=Util.readString(in);
+        String  cluster_name=Util.readString(in);
 
         int len=in.readInt();
         for(int i=0; i < len; i++) {
@@ -1727,21 +1749,24 @@ public abstract class TP extends Protocol {
             msg.setDest(dest);
             if(msg.getSrc() == null)
                 msg.setSrc(src);
-            if(msg.isFlagSet(Message.Flag.INTERNAL)) {
-                if(batches[2] == null)
-                    batches[2]=new MessageBatch(dest, src, cluster_name, multicast, MessageBatch.Mode.INTERNAL, len);
-                batches[2].add(msg);
+            boolean oob=msg.isFlagSet(Message.Flag.OOB);
+            boolean internal=msg.isFlagSet(Message.Flag.INTERNAL);
+            int index=0;
+            MessageBatch.Mode mode=MessageBatch.Mode.REG;
+
+            if(oob && !internal) {
+                index=1; mode=MessageBatch.Mode.OOB;
             }
-            else if(msg.isFlagSet(Message.Flag.OOB)) {
-                if(batches[1] == null)
-                    batches[1]=new MessageBatch(dest, src, cluster_name, multicast, MessageBatch.Mode.OOB, len);
-                batches[1].add(msg);
+            else if(oob && internal) {
+                index=2; mode=MessageBatch.Mode.OOB;
             }
-            else {
-                if(batches[0] == null)
-                    batches[0]=new MessageBatch(dest, src, cluster_name, multicast, MessageBatch.Mode.REG, len);
-                batches[0].add(msg);
+            else if(!oob && internal) {
+                index=3; mode=MessageBatch.Mode.INTERNAL;
             }
+
+            if(batches[index] == null)
+                batches[index]=new MessageBatch(dest, src, cluster_name, multicast, mode, len);
+            batches[index].add(msg);
         }
         return batches;
     }
@@ -1753,8 +1778,10 @@ public abstract class TP extends Protocol {
 
             case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
+                Collection<Address> old_members;
                 synchronized(members) {
                     View view=(View)evt.getArg();
+                    old_members=new ArrayList<Address>(members);
                     members.clear();
 
                     if(!isSingleton()) {
@@ -1775,7 +1802,10 @@ public abstract class TP extends Protocol {
                     // fix for https://jira.jboss.org/jira/browse/JGRP-918
                     logical_addr_cache.retainAll(members);
                     fetchLocalAddresses();
-                    UUID.retainAll(members);
+
+                    List<Address> left_mbrs=Util.leftMembers(old_members,members);
+                    if(left_mbrs != null && !left_mbrs.isEmpty())
+                        UUID.removeAll(left_mbrs);
 
                     if(suppress_log_different_version != null)
                         suppress_log_different_version.removeExpired(suppress_time_different_version_warnings);
@@ -1910,10 +1940,8 @@ public abstract class TP extends Protocol {
     }
 
     protected void setInAllThreadFactories(String cluster_name, Address local_address, String pattern) {
-        ThreadFactory[] factories= {timer_thread_factory,
-                                    default_thread_factory,
-                                    oob_thread_factory,
-                                    global_thread_factory };
+        ThreadFactory[] factories= {timer_thread_factory, default_thread_factory, oob_thread_factory,
+          internal_thread_factory, global_thread_factory };
 
         boolean is_shared_transport=isSingleton();
 
@@ -2352,8 +2380,6 @@ public abstract class TP extends Protocol {
         protected SocketFactory socket_factory=new DefaultSocketFactory();
         Address                 local_addr;
 
-        // kludge, only used by TUNNEL
-        static final ThreadLocal<ProtocolAdapter> thread_local=new ThreadLocal<ProtocolAdapter>();
 
         public ProtocolAdapter(String cluster_name, Address local_addr, short transport_id, Protocol up, Protocol down, String pattern) {
             this.cluster_name=cluster_name;
@@ -2438,14 +2464,10 @@ public abstract class TP extends Protocol {
                     members.clear();
                     members.addAll(tmp);
                     break;
-                case Event.DISCONNECT:
-                    thread_local.set(this);
-                    break;
                 case Event.CONNECT:
                 case Event.CONNECT_WITH_STATE_TRANSFER:
                 case Event.CONNECT_USE_FLUSH:
                 case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:  
-                    thread_local.set(this);
                     cluster_name=(String)evt.getArg();
                     factory.setClusterName(cluster_name);
                     this.header=new TpHeader(cluster_name);

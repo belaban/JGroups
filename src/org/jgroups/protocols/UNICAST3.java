@@ -56,8 +56,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
       "is compacted (only for experts)",writable=false)
     protected long    xmit_table_max_compaction_time=10 * 60 * 1000;
 
-    @Property(description="Max time (in ms) after which a connection to a non-member is closed")
-    protected long                   max_retransmit_time=60 * 1000L;
+    // @Property(description="Max time (in ms) after which a connection to a non-member is closed")
+    protected long    max_retransmit_time=60 * 1000L;
 
     @Property(description="Interval (in milliseconds) at which messages in the send windows are resent")
     protected long    xmit_interval=500;
@@ -65,8 +65,14 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @Property(description="If true, trashes warnings about retransmission messages not found in the xmit_table (used for testing)")
     protected boolean log_not_found_msgs=true;
 
-    @Property(description="Send an ack for a batch immediately instead of using a delayed ack")
+    @Property(description="Send an ack for a batch immediately instead of using a delayed ack",
+              deprecatedMessage="replaced by ack_threshold")
+    @Deprecated
     protected boolean ack_batches_immediately=true;
+
+    @Property(description="Send an ack immediately when a batch of ack_threshold (or more) messages is received. " +
+      "Otherwise send delayed acks. If 1, ack single messages (similar to UNICAST)")
+    protected int ack_threshold=5;
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
@@ -175,7 +181,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     public long getMaxRetransmitTime() {return max_retransmit_time;}
 
     @Property(description="Max number of milliseconds we try to retransmit a message to any given member. After that, " +
-            "the connection is removed. Any new connection to that member will start with seqno #1 again. 0 disables this")
+      "the connection is removed. Any new connection to that member will start with seqno #1 again. 0 disables this")
     public void setMaxRetransmitTime(long max_retransmit_time) {
         this.max_retransmit_time=max_retransmit_time;
         if(cache != null && max_retransmit_time > 0)
@@ -683,6 +689,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         boolean added=win.add(seqno, msg); // win is guaranteed to be non-null if we get here
         num_msgs_received++;
 
+        if(ack_threshold <= 1)
+            sendAck(sender, win.getHighestDeliverable(), entry.connId());
+        else
+            entry.sendAck(true); // will be sent delayed (on the next xmit_interval)
+
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
         if(msg.isFlagSet(Message.Flag.OOB) && added) {
@@ -700,10 +711,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
 
         final AtomicBoolean processing=win.getProcessing();
-        if(processing.compareAndSet(false, true)) {
+        if(processing.compareAndSet(false, true))
             removeAndDeliver(processing, win, sender);
-            entry.sendAck(true); // will be sent delayed (on the next xmit_interval)
-        }
     }
 
 
@@ -715,14 +724,20 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             log.trace(sb);
         }
 
+        int batch_size=msgs.size();
         Table<Message> win=entry.received_msgs;
-        num_msgs_received+=msgs.size();
+        num_msgs_received+=batch_size;
         boolean added=oob ? win.add(msgs, true) : win.add(msgs);
 
         if(conn_expiry_timeout > 0)
             entry.update();
         if(entry.state() == State.CLOSING)
             entry.state(State.OPEN);
+
+        if(batch_size >= ack_threshold)
+            sendAck(sender, win.getHighestDeliverable(), entry.connId());
+        else
+            entry.sendAck(true);
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: http://jira.jboss.com/jira/browse/JGRP-379
         if(added && oob) {
@@ -744,13 +759,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
 
         final AtomicBoolean processing=win.getProcessing();
-        if(processing.compareAndSet(false, true)) {
-            if(ack_batches_immediately)
-                sendAck(sender, win.getHighestDeliverable(), entry.connId());
-            else
-                entry.sendAck(true);
+        if(processing.compareAndSet(false, true))
             removeAndDeliver(processing, win, sender);
-        }
     }
 
 
@@ -1331,11 +1341,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             ReceiverEntry  val=entry.getValue();
             Table<Message> win=val != null? val.received_msgs : null;
 
-            // send acks if needed
+            // receiver: send ack for received messages if needed
             if(win != null && val.sendAck()) // sendAck() resets send_ack to false
-                sendAck(target, win.getHighestDelivered(), val.connId());
+                sendAck(target, win.getHighestDeliverable(), val.connId());
 
-            // retransmit missing messages
+            // receiver: retransmit missing messages
             if(win != null && win.getNumMissing() > 0 && (missing=win.getMissing()) != null) { // getNumMissing() is fast
                 long highest=missing.getLast();
                 Long prev_seqno=xmit_task_map.get(target);
@@ -1353,7 +1363,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 xmit_task_map.remove(target); // no current gaps for target
         }
 
-        // only send the *highest sent* message if HA < HS and HA/HS didn't change from the prev run
+        // sender: only send the *highest sent* message if HA < HS and HA/HS didn't change from the prev run
         for(SenderEntry val: send_table.values()) {
             Table<Message> win=val != null? val.sent_msgs : null;
             if(win != null /** && !win.isEmpty() */) {

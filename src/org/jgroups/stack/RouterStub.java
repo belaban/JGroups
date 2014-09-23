@@ -194,12 +194,16 @@ public class RouterStub implements Comparable<RouterStub> {
         if(!isConnected()) {
             try {
                 sock=new Socket();
-                sock.bind(new InetSocketAddress(bind_addr, 0));
+                InetSocketAddress dest=new InetSocketAddress(router_host,router_port);
+                InetAddress tmp_bind_addr=bind_addr;
+                if(!Util.sameAddresses(bind_addr, tmp_bind_addr))
+                    tmp_bind_addr=null;
+                sock.bind(new InetSocketAddress(tmp_bind_addr, 0));
                 sock.setSoTimeout(sock_read_timeout);
                 sock.setSoLinger(true, 2);
                 sock.setTcpNoDelay(tcp_nodelay);
                 sock.setKeepAlive(true);
-                Util.connect(sock, new InetSocketAddress(router_host, router_port), sock_conn_timeout);
+                Util.connect(sock, dest, sock_conn_timeout);
                 output=new DataOutputStream(sock.getOutputStream());
                 input=new DataInputStream(sock.getInputStream());
                 connectionStateChanged(ConnectionStatus.CONNECTION_ESTABLISHED);

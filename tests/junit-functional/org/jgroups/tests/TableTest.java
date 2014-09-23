@@ -1083,6 +1083,20 @@ public class TableTest {
         assertIndices(table, 40, 40, 40);
     }
 
+    // Tests purge(40) followed by purge(20) - the second purge() should be ignored
+    // https://issues.jboss.org/browse/JGRP-1872
+    public void testPurgeLower() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 30; i++)
+            table.add(i, i);
+        System.out.println("table = " + table);
+        table.purge(20, true);
+        assertIndices(table, 20, 20, 30);
+
+        table.purge(15, true);
+        assertIndices(table, 20,20, 30);
+    }
+
 
     public void testCompact() {
         Table<Integer> table=new Table<Integer>(3, 10, 0);

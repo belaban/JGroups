@@ -975,7 +975,12 @@ public class ProtocolStack extends Protocol {
                     String singleton_name=transport.getSingletonName();
                     final Map<String,Protocol> up_prots=transport.getUpProtocols();
                     synchronized(up_prots) {
-                        up_prots.remove(cluster_name);
+                        Protocol adapter=up_prots.remove(cluster_name);
+                        if(adapter != null) {
+                            Protocol neighbor_above=adapter.getUpProtocol();
+                            if(neighbor_above != null)
+                                neighbor_above.setDownProtocol(transport);
+                        }
                     }
                     synchronized(singleton_transports) {
                         Tuple<TP, ProtocolStack.RefCounter> val=singleton_transports.get(singleton_name);

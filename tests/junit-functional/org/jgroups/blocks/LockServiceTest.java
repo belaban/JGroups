@@ -5,8 +5,6 @@ import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.LockService;
 import org.jgroups.protocols.CENTRAL_LOCK;
 import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
-import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -19,29 +17,29 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
+
 /** Tests {@link org.jgroups.blocks.locking.LockService}
  * @author Bela Ban
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
-public class LockServiceTest extends ChannelTestBase {
-    protected JChannel c1, c2, c3;
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class LockServiceTest {
+    protected JChannel    c1, c2, c3;
     protected LockService s1, s2, s3;
-    protected Lock lock;
+    protected Lock        lock;
     protected static final String LOCK="sample-lock";
 
 
     @BeforeClass
     protected void init() throws Exception {
-        c1=createChannel(true, 3, "A");
-        addLockingProtocol(c1);
+        c1=createChannel("A");
         s1=new LockService(c1);
         c1.connect("LockServiceTest");
 
-        c2=createChannel(c1, "B");
+        c2=createChannel("B");
         s2=new LockService(c2);
         c2.connect("LockServiceTest");
 
-        c3=createChannel(c1, "C");
+        c3=createChannel("C");
         s3=new LockService(c3);
         c3.connect("LockServiceTest");
 
@@ -113,31 +111,10 @@ public class LockServiceTest extends ChannelTestBase {
         lock.lock();
         try {
             System.out.println("Locks we have: " + s1.printLocks());
-            if(Thread.interrupted()) {
-                System.out.println("We still have interrupt flag set, as it should be");
-            }
-            else {
+            if(Thread.interrupted())
+                System.out.println("We have the interrupt flag status, as it should be");
+            else
                 assert false : "Interrupt status was lost - we don't want this!";
-            }
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-
-     public void testTryLockInterrupt() {
-        // Interrupt ourselves before trying to acquire lock
-        Thread.currentThread().interrupt();
-
-        lock.tryLock();
-        try {
-            System.out.println("Locks we have: " + s1.printLocks());
-            if(Thread.interrupted()) {
-                System.out.println("We still have interrupt flag set, as it should be");
-            }
-            else {
-                assert false : "Interrupt status was lost - we don't want this!";
-            }
         }
         finally {
             lock.unlock();
@@ -145,19 +122,51 @@ public class LockServiceTest extends ChannelTestBase {
     }
 
     @Test(expectedExceptions=InterruptedException.class)
-    public void testLockInterruptibly() throws InterruptedException {
+    public void testTryLockInterruptibly() throws InterruptedException {
         // Interrupt ourselves before trying to acquire lock
         Thread.currentThread().interrupt();
 
         lock.lockInterruptibly();
         try {
             System.out.println("Locks we have: " + s1.printLocks());
-            if(Thread.interrupted()) {
+            if(Thread.interrupted())
                 System.out.println("We still have interrupt flag set, as it should be");
-            }
-            else {
+            else
                 assert false : "Interrupt status was lost - we don't want this!";
-            }
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+
+    public void testTryLockInterrupt() {
+        Thread.currentThread().interrupt(); // interrupt myself before trying to acquire lock
+        boolean status=lock.tryLock();
+        try {
+            System.out.println("Locks we have: " + s1.printLocks());
+            if(Thread.interrupted())
+                System.out.println("Interrupt was set - correct");
+            else
+                assert false : "interrupt should not be set on tryLock()";
+            assert status;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    @Test(expectedExceptions=InterruptedException.class)
+    public void testTimedTryLockInterrupt() throws InterruptedException {
+        Thread.currentThread().interrupt(); // interrupt myself before trying to acquire lock
+        boolean status=lock.tryLock(5000, TimeUnit.MILLISECONDS);
+        try {
+            System.out.println("Locks we have: " + s1.printLocks());
+            if(Thread.interrupted())
+                System.out.println("Interrupt was set - correct");
+            else
+                assert false : "interrupt should not be set on tryLock()";
+            assert status;
         }
         finally {
             lock.unlock();
@@ -192,7 +201,7 @@ public class LockServiceTest extends ChannelTestBase {
         final CyclicBarrier barrier=new CyclicBarrier(NUM +1);
         TryLocker[] lockers=new TryLocker[NUM];
         for(int i=0; i < lockers.length; i++) {
-            lockers[i]=new TryLocker(lock, barrier, 500);
+            lockers[i]=new TryLocker(lock, barrier);
             lockers[i].start();
         }
         barrier.await();
@@ -200,11 +209,11 @@ public class LockServiceTest extends ChannelTestBase {
             locker.join();
         int num_acquired=0;
         for(TryLocker locker: lockers) {
-            if(locker.acquired) {
+            if(locker.acquired)
                 num_acquired++;
-            }
         }
-        assert num_acquired == 1;
+        System.out.println("num_acquired = " + num_acquired);
+        assert num_acquired == 1 : "expected 1 acquired bot got " + num_acquired;
     }
 
     public void testConcurrentLockRequestsFromDifferentMembers() throws Exception {
@@ -215,7 +224,7 @@ public class LockServiceTest extends ChannelTestBase {
 
         for(int i=0; i < lockers.length; i++) {
             Lock mylock=services[i % services.length].getLock(LOCK);
-            lockers[i]=new TryLocker(mylock, barrier, 500);
+            lockers[i]=new TryLocker(mylock, barrier);
             lockers[i].start();
         }
         barrier.await();
@@ -227,10 +236,15 @@ public class LockServiceTest extends ChannelTestBase {
                 num_acquired++;
             }
         }
+        System.out.println("num_acquired = " + num_acquired);
         assert num_acquired == 1 : "expected 1 but got " + num_acquired;
     }
 
 
+    protected JChannel createChannel(String name) throws Exception {
+        Protocol[] stack=Util.getTestStack(new CENTRAL_LOCK().level("trace"));
+        return new JChannel(stack).name(name);
+    }
 
     
     protected class Locker extends Thread {
@@ -282,16 +296,15 @@ public class LockServiceTest extends ChannelTestBase {
         }
     }
 
-    protected static class TryLocker extends Thread {
-        protected final Lock mylock;
-        protected final CyclicBarrier barrier;
-        protected final long timeout;
-        protected boolean acquired;
 
-        public TryLocker(Lock mylock, CyclicBarrier barrier, long timeout) {
+    protected static class TryLocker extends Thread {
+        protected final Lock          mylock;
+        protected final CyclicBarrier barrier;
+        protected boolean             acquired;
+
+        public TryLocker(Lock mylock, CyclicBarrier barrier) {
             this.mylock=mylock;
             this.barrier=barrier;
-            this.timeout=timeout;
         }
 
         public boolean isAcquired() {
@@ -307,10 +320,11 @@ public class LockServiceTest extends ChannelTestBase {
             }
 
             try {
-                acquired=tryLock(mylock, timeout, LOCK);
-                Util.sleep(timeout * 2);
+                acquired=tryLock(mylock, LOCK);
+                if(acquired)
+                    Util.sleep(2000);
             }
-            catch(InterruptedException e) {
+            catch(Exception e) {
                 e.printStackTrace();
             }
             finally {
@@ -330,7 +344,7 @@ public class LockServiceTest extends ChannelTestBase {
     protected static boolean tryLock(Lock lock, String name) {
         System.out.println("[" + Thread.currentThread().getId() + "] tryLocking " + name);
         boolean rc=lock.tryLock();
-        System.out.println("[" + Thread.currentThread().getId() + "] " + (rc? "locked " : "failed locking") + name);
+        System.out.println("[" + Thread.currentThread().getId() + "] " + (rc? "locked " : "failed locking ") + name);
         return rc;
     }
 
@@ -369,11 +383,4 @@ public class LockServiceTest extends ChannelTestBase {
         System.out.println("[" + Thread.currentThread().getId() + "] signalled " + name);
     }
 
-    protected void addLockingProtocol(JChannel ch) throws Exception {
-        ProtocolStack stack=ch.getProtocolStack();
-        Protocol lockprot = new CENTRAL_LOCK();
-        lockprot.init();
-        lockprot.setLevel("trace");
-        stack.insertProtocolAtTop(lockprot);
-    }
 }

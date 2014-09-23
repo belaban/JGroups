@@ -863,7 +863,7 @@ public class STABLE extends Protocol {
             }
 
             if(stability_digest != null) {
-                Message msg=new Message().setFlag(Message.Flag.OOB,Message.Flag.INTERNAL,Message.Flag.NO_RELIABILITY);
+                Message msg=new Message().setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
                 StableHeader hdr=new StableHeader(StableHeader.STABILITY, stability_digest);
                 msg.putHeader(id, hdr);
                 if(log.isTraceEnabled()) log.trace(local_addr + ": sending stability msg " + stability_digest.printHighestDeliveredSeqnos());

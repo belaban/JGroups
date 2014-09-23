@@ -4,13 +4,13 @@ package org.jgroups.protocols;
  * @author Bela Ban
  */
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.jgroups.Address;
 import org.jgroups.View;
 import org.jgroups.util.Owner;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Implementation of a locking protocol which acquires locks by contacting <em>all</em> of the nodes of a cluster.</p>
@@ -39,8 +39,8 @@ public class PEER_LOCK extends Locking {
     }
 
 
-    protected void sendGrantLockRequest(String lock_name, Owner owner, long timeout, boolean is_trylock) {
-        sendRequest(null, Type.GRANT_LOCK, lock_name, owner, timeout, is_trylock);
+    protected void sendGrantLockRequest(String lock_name, int lock_id, Owner owner, long timeout, boolean is_trylock) {
+        sendRequest(null, Type.GRANT_LOCK, lock_name, lock_id, owner, timeout, is_trylock);
     }
 
     protected void sendReleaseLockRequest(String lock_name, Owner owner) {
@@ -70,7 +70,7 @@ public class PEER_LOCK extends Locking {
     public void handleView(View view) {
         super.handleView(view);
         List<Address> members=view.getMembers();
-        for(Map<Owner,ClientLock> map: client_locks.values()) {
+        for(Map<Owner,ClientLock> map: client_lock_table.values()) {
             for(ClientLock lock: map.values())
                 ((PeerLock)lock).retainAll(members);
         }
@@ -95,7 +95,7 @@ public class PEER_LOCK extends Locking {
                 return;
             grants.retainAll(members);
             if(grants.isEmpty())
-                lockGranted();
+                lockGranted(0);
         }
 
         protected synchronized void handleLockGrantedResponse(Owner owner, Address sender) {
@@ -103,7 +103,7 @@ public class PEER_LOCK extends Locking {
                 return;
             grants.remove(sender);
             if(grants.isEmpty())
-                lockGranted();
+                lockGranted(0);
         }
     }
 }

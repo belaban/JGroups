@@ -201,6 +201,7 @@ public class Relayer {
         private   volatile Address            site_master;
         private   volatile JChannel           bridge;
         private   volatile RELAY2.RouteStatus status;
+        private   volatile long               lastStatusChangeTime;
 
         public Route(Address site_master, JChannel bridge) {
             this(site_master, bridge, RELAY2.RouteStatus.UP);
@@ -210,6 +211,7 @@ public class Relayer {
             this.site_master=site_master;
             this.bridge=bridge;
             this.status=status;
+            this.lastStatusChangeTime = System.currentTimeMillis();
         }
 
         public JChannel           bridge()                               {return bridge;}
@@ -217,7 +219,12 @@ public class Relayer {
         public Address            siteMaster()                           {return site_master;}
         public Route              siteMaster(Address new_site_master)    {site_master=new_site_master; return this;}
         public RELAY2.RouteStatus status()                               {return status;}
-        public Route              status(RELAY2.RouteStatus new_status)  {status=new_status; return this;}
+        public Route              status(RELAY2.RouteStatus new_status)  {
+            status=new_status;
+            lastStatusChangeTime = System.currentTimeMillis();
+            return this;
+        }
+
         public Route              reset()     {return bridge(null).siteMaster(null).status(RELAY2.RouteStatus.DOWN);}
 
         public void send(short target_site, Address final_destination, Address original_sender, final Message msg) {
@@ -234,7 +241,15 @@ public class Relayer {
                             queue=existing;
                     }
                     try {
-                        queue.put(createMessage(new SiteMaster(target_site), final_destination, original_sender, msg));
+                        long wait = Math.max(System.currentTimeMillis() - lastStatusChangeTime, 0);
+
+                        if (!queue.offer(
+                                createMessage(new SiteMaster(target_site), final_destination, original_sender, msg),
+                                wait,
+                                TimeUnit.MILLISECONDS
+                        )) {
+                            relay.sendSiteUnreachableTo(original_sender, target_site);
+                        }
                     }
                     catch(InterruptedException e) {
                     }
