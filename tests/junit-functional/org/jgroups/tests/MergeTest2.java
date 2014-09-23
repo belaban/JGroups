@@ -44,7 +44,7 @@ public class MergeTest2 {
                                          new DefaultThreadFactory("", false));
         handler.start();
         
-        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory("Timer", true, true),
+        TimeScheduler timer=new TimeScheduler3(new DefaultThreadFactory("Timer", true, true),
                                                5,10,
                                                3000, 1000, "abort");
 
@@ -106,7 +106,7 @@ public class MergeTest2 {
         non_faulty_members.addAll(Arrays.asList(a.getAddress(),b.getAddress(),c.getAddress(),d.getAddress()));
         List<Address> tmp=new ArrayList<Address>(non_faulty_members);
         tmp.remove(merge_leader.getAddress());
-        Address faulty_member=(Address)Util.pickRandomElement(tmp);
+        Address faulty_member=Util.pickRandomElement(tmp);
         non_faulty_members.remove(faulty_member);
 
         System.out.println("\nMerge leader: " + merge_leader.getAddress() + "\nFaulty member: " + faulty_member +

@@ -51,7 +51,7 @@ public class LargeMergeTest {
                                          new DefaultThreadFactory("", false));
         handler.start();
         
-        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory("Timer", true, true),
+        TimeScheduler timer=new TimeScheduler3(new DefaultThreadFactory("Timer", true, true),
                                                5,20,
                                                3000, 5000, "abort");
 

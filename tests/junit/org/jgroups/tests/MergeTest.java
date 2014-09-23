@@ -26,6 +26,7 @@ public class MergeTest extends ChannelTestBase {
     protected JChannel[] channels=null;
 
     @AfterMethod protected void destroy() {
+        level("warn", channels);
         for(JChannel ch: channels)
             try {
                 Util.shutdown(ch);
@@ -73,7 +74,14 @@ public class MergeTest extends ChannelTestBase {
 
     }
 
-    private JChannel[] createChannels(String cluster_name, String[] members) throws Exception {
+    protected static void level(String level, JChannel ... channels) {
+        for(JChannel ch: channels) {
+            GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+            gms.setLevel(level);
+        }
+    }
+
+    protected JChannel[] createChannels(String cluster_name, String[] members) throws Exception {
         JChannel[] retval=new JChannel[members.length];
         JChannel ch=null;
         for(int i=0; i < retval.length; i++) {

@@ -172,7 +172,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
     private static void modifyConfigs(JChannel ... channels) throws Exception {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
-            stack.removeProtocols("MERGE3", "VERIFY_SUSPECT", "FC");
+            stack.removeProtocols("MERGE3", "VERIFY_SUSPECT", "FC", "UFC", "MFC");
         }
     }
 
