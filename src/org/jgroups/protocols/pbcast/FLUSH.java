@@ -513,12 +513,11 @@ public class FLUSH extends Protocol {
 
     private void waitForUnblock() {
         try {
+            flush_unblock_promise.reset();
             flush_unblock_promise.getResultWithTimeout(end_flush_timeout);
         } catch (TimeoutException t) {
             if (log.isWarnEnabled())
                 log.warn(localAddress + ": waiting for UNBLOCK timed out after " + end_flush_timeout + " ms");
-        } finally {
-            flush_unblock_promise.reset();
         }
     }
 
