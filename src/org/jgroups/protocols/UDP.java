@@ -14,6 +14,7 @@ import org.jgroups.util.SuppressLog;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.*;
 import java.util.Collection;
 import java.util.Formatter;
@@ -131,9 +132,14 @@ public class UDP extends TP {
 
     protected static final boolean is_android, is_mac;
 
+    protected static final Method getImpl, setTimeToLive;
+
     static  {
         is_android=Util.checkForAndroid();
         is_mac=Util.checkForMac();
+
+        getImpl=findMethod(DatagramSocket.class, "getImpl");
+        setTimeToLive=findMethod(DatagramSocketImpl.class, "setTimeToLive", int.class);
     }
 
 
@@ -153,9 +159,9 @@ public class UDP extends TP {
      * @param ttl the time to live for the socket.
      * @throws IOException
      */
-    public void setMulticastTTL(int ttl) throws IOException {
+    public void setMulticastTTL(int ttl) {
         this.ip_ttl=ttl;
-        mcast_sock.setTimeToLive((byte)ttl);
+        setTimeToLive(ttl);
     }
 
     /**
@@ -163,7 +169,7 @@ public class UDP extends TP {
      * @return
      */
     public int getMulticastTTL() {
-        return this.ip_ttl;
+        return ip_ttl;
     }
 
     public void setMaxBundleSize(int size) {
@@ -315,6 +321,32 @@ public class UDP extends TP {
 
     /* ------------------------------ Private Methods -------------------------------- */
 
+    protected static Method findMethod(Class<?> clazz, String method_name, Class<?> ... parameters) {
+        try {
+            Method method=clazz.getDeclaredMethod(method_name, parameters);
+            method.setAccessible(true);
+            return method;
+        }
+        catch(Throwable t) {
+            return null;
+        }
+    }
+
+    protected void setTimeToLive(int ttl) {
+        if(getImpl != null && setTimeToLive != null) {
+            try {
+                Object impl=getImpl.invoke(sock);
+                setTimeToLive.invoke(impl, ttl);
+            }
+            catch(Exception e) {
+                log.error("failed setting ip_ttl", e);
+            }
+        }
+        else
+            log.warn("ip_ttl %d could not be set in the datagram socket; ttl will default to 1 (getImpl=%s, " +
+                       "setTimeToLive=%s)", ttl, getImpl, setTimeToLive);
+    }
+
     /** Creates the  UDP sender and receiver sockets */
     protected void createSockets() throws Exception {
         if(bind_addr == null)
@@ -328,7 +360,13 @@ public class UDP extends TP {
         if(bind_port > 0)
             sock=createDatagramSocketWithBindPort();
         else
-            sock=createEphemeralDatagramSocket();
+            sock=getSocketFactory().createDatagramSocket("jgroups.udp.unicast_sock", 0, bind_addr);
+
+        if(sock == null)
+            throw new Exception("socket is null");
+
+        setTimeToLive(ip_ttl);
+
         if(tos > 0) {
             try {
                 sock.setTrafficClass(tos);
@@ -337,9 +375,6 @@ public class UDP extends TP {
                 log.warn(Util.getMessage("TrafficClass"), tos, e);
             }
         }
-
-        if(sock == null)
-            throw new Exception("socket is null");
 
         // 3. Create socket for receiving IP multicast packets
         if(ip_mcast) {
@@ -352,8 +387,6 @@ public class UDP extends TP {
 
             if(disable_loopback)
                 mcast_sock.setLoopbackMode(disable_loopback);
-
-            mcast_sock.setTimeToLive(ip_ttl);
 
             mcast_addr=new IpAddress(mcast_group_addr, mcast_port);
 
@@ -439,33 +472,6 @@ public class UDP extends TP {
 
 
 
-    /** Creates a DatagramSocket with a random port. Because in certain operating systems, ports are reused,
-     * we keep a list of the n last used ports, and avoid port reuse */
-    protected DatagramSocket createEphemeralDatagramSocket() throws SocketException {
-        DatagramSocket tmp;
-        int localPort=0;
-        while(true) {
-            try {
-                tmp=getSocketFactory().createDatagramSocket("jgroups.udp.unicast_sock", localPort, bind_addr);
-            }
-            catch(SocketException socket_ex) {
-                // Vladimir May 30th 2007
-                // special handling for Linux 2.6 kernel which sometimes throws BindException while we probe for a random port
-                if(log.isTraceEnabled()) {
-                    log.trace(String.format("failed to create ephemeral port: %d on %s", localPort, bind_addr), socket_ex);
-                }
-                localPort++;
-                continue;
-            }
-            localPort=tmp.getLocalPort();
-            break;
-        }
-        return tmp;
-    }
-
-
-
-
     /**
      * Creates a DatagramSocket when bind_port > 0. Attempts to allocate the socket with port == bind_port, and
      * increments until it finds a valid port, or until port_range has been exceeded
@@ -490,9 +496,8 @@ public class UDP extends TP {
         }
 
         // Cannot listen at all, throw an Exception
-        if(rcv_port >= max_port + 1) { // +1 due to the increment above
+        if(rcv_port >= max_port + 1) // +1 due to the increment above
             throw new Exception("failed to open a port in range " + bind_port + '-' + max_port);
-        }
         return tmp;
     }
 

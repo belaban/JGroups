@@ -50,9 +50,8 @@ public class mcast {
             r=new Receiver();
             r.start();
 
-            channel=DatagramChannel.open(prot_family);
-            channel.bind(new InetSocketAddress(bind_addr, local_port));
-            channel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, ttl);
+            channel=DatagramChannel.open(prot_family).setOption(StandardSocketOptions.IP_MULTICAST_TTL, ttl)
+              .bind(new InetSocketAddress(bind_addr, local_port));
             sock=channel.socket();
         }
         catch(Exception ex) {
