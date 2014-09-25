@@ -125,8 +125,8 @@ public abstract class TP extends Protocol {
      * Discard packets with a different version. Usually minor version differences are okay. Setting this property
      * to true means that we expect the exact same version on all incoming packets
      */
-    @Property(description="Discard packets with a different version if true. Default is false")
-    protected boolean discard_incompatible_packets=false;
+    @Property(description="Discard packets with a different version if true")
+    protected boolean discard_incompatible_packets=true;
 
 
     @Property(description="Thread naming pattern for threads in this channel. Default is cl")

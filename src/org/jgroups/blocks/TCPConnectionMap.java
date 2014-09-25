@@ -504,12 +504,9 @@ public class TCPConnectionMap{
                 short version=in.readShort();
 
                 if(!Version.isBinaryCompatible(version) ) {
-                    if(log.isWarnEnabled())
-                        log.warn(new StringBuilder("packet from ").append(client_sock.getInetAddress())
-                                .append(':').append(client_sock.getPort()).append(" has different version (")
-                                .append(Version.print(version)).append(") from ours (")
-                                .append(Version.printVersion())
-                                .append("). This may cause problems").toString());
+                    throw new IOException("packet from " + client_sock.getInetAddress() + ":" + client_sock.getPort() +
+                            " has different version (" + Version.print(version) +
+                            ") from ours (" + Version.printVersion() + "); discarding it");
                 }
                 Address client_peer_addr=new IpAddress();
                 client_peer_addr.readFrom(in);
