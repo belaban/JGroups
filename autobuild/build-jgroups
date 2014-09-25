@@ -1,0 +1,106 @@
+#!/sea/local/bin/perl
+
+use strict;
+use File::Basename;
+
+BEGIN {
+die("AUTOBUILD_PATH is not defined") if (!$ENV{AUTOBUILD_PATH});
+unshift(@INC, "$ENV{AUTOBUILD_PATH}/modules");
+}
+
+use AutoBuild;
+use AutoBuild::Build;
+
+header("jgroups Update Script");
+
+#----------------------------------------------------------------------
+# Parse command line args
+#----------------------------------------------------------------------
+
+my $program = basename($0);
+
+sub usage {
+  print STDERR "Error: @_\n" if (int(@_));
+  print STDERR ("Usage: $program jgroups_BUILD_ID\n",
+  "Where: jgroups - is a valid build ID from the SCM database\n");
+  exit(1);
+}
+
+usage("Missing required arguments") if (int(@ARGV) < 1);
+usage("Too many arguments") if (int(@ARGV) > 1);
+
+my ($jgroupsBuildId) = @ARGV;
+
+usage("Invalid jgroups buildId: $jgroupsBuildId") if ($jgroupsBuildId !~ m/^\d+$/);
+
+ #----------------------------------------------------------------------
+ # Setup jgroups variables
+ #----------------------------------------------------------------------
+
+my $jgroupsBuild       = new AutoBuild::Build($jgroupsBuildId);
+my $jgroupsProduct     = $jgroupsBuild->getProduct();
+my $jgroupsBuildDir    = $jgroupsProduct->getBuildDir();
+my $jgroupsLogDir      = $jgroupsProduct->getLogDir();
+my $jgroupsBranch      = $jgroupsProduct->getBranch();
+$jgroupsBranch         = ($jgroupsBranch ? "releases/$jgroupsBranch" : "trunk");
+my $jgroupsRepo        = "svn://svn/iris-server3p/$jgroupsBranch/jgroups";
+my $jgroupsVersion     = $jgroupsBuild->getVersion();
+
+print "jgroups buildId: $jgroupsBuildId\n";
+print "jgroups buildDir: $jgroupsBuildDir\n";
+print "jgroups branch: $jgroupsBranch\n";
+print "jgroups logDir: $jgroupsLogDir\n";
+print "jgroups repoDir: $jgroupsRepo\n";
+print "jgroups buildVer: $jgroupsVersion\n";
+
+#----------------------------------------------------------------------
+# Build jgroups
+#----------------------------------------------------------------------
+header("Building jgroups");
+
+my $ANT_HOME;
+my $M2_HOME;
+my $JAVA_HOME;
+
+my $status=bashCmd("cd $jgroupsBuildDir/2.12.4.Final",
+                "export ANT_HOME=/sea/local/ant/1.8.3",
+                "export M2_HOME=/sea/local/maven/2.2.1",
+                "export JAVA_HOME=/sea/local/jdk/1.6.0_21",
+                "export PATH=$ANT_HOME/bin:$M2_HOME/bin:$JAVA_HOME/bin:/sea/local/bin:/sea/dev/bin:/usr/bin:/bin:/usr/ucb:/usr/ccs/bin:/usr/sbin",
+                "ant clean",
+                "ant",
+                "ant jar");
+
+
+fatal("jgroups failed to build") if ($status);
+
+#----------------------------------------------------------------------
+# Deploy jgroups to Artifactory
+#----------------------------------------------------------------------
+
+$status=bashCmd("cd $jgroupsBuildDir/2.12.4.Final",
+                "export ANT_HOME=/sea/local/ant/1.8.3",
+                "export M2_HOME=/sea/local/maven/2.2.1",
+                "export JAVA_HOME=/sea/local/jdk/1.6.0_21",
+                "export PATH=$ANT_HOME/bin:$M2_HOME/bin:$JAVA_HOME/bin:/sea/local/bin:/sea/dev/bin:/usr/bin:/bin:/usr/ucb:/usr/ccs/bin:/usr/sbin",
+                "/sea/local/maven/2.2.1/bin/mvn deploy:deploy-file -DgeneratePom=true -s/home/spiuser/.m2/settings-tom.xml -DrepositoryId=legacy-tekint -Durl=dav:http://tekcomms-artifactory.global.tektronix.net:8081/artifactory/legacy-tekint -DgroupId=org.jgroups -DartifactId=jgroups -Dversion=$jgroupsVersion -Dpackaging=jar -Dfile=$jgroupsBuildDir/2.12.4.Final/dist/jgroups-$jgroupsVersion.jar");
+
+fatal("jgroups failed to build") if ($status);
+ 
+#----------------------------------------------------------------------
+# All done!
+#----------------------------------------------------------------------
+header("Finished!");
+
+exit 0;
+
+#----------------------------------------------------------------------
+
+sub header {
+  print ("\n",
+  "#", '-' x 70, "\n",
+  "# ", join("\n# ",@_), "\n",
+  "#", '-' x 70, "\n",
+  "\n");
+}
+

@@ -1,0 +1,3 @@
+#vc : repoPath                         : refAreaPath : constraints
+#---+----------------------------------+-------------+-----------------
+svn : iris-server3p/<BRANCH>/jgroups   : .        	 :
