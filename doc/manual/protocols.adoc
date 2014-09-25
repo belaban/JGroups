@@ -792,7 +792,7 @@ VERIFY_SUSPECT tries to minimize false suspicions.
             
 
 The protocol works as follows: it catches SUSPECT events traveling up the stack.
-                The it verifies that the suspected member is really dead. If yes, it passes the SUSPECT event up the
+                Then it verifies that the suspected member is really dead. If yes, it passes the SUSPECT event up the
                 stack, otherwise it discards it. VERIFY_SUSPECT Has to be placed somewhere above the failure detection
                 protocol and below the GMS protocol (receiver of the SUSPECT event). Note that SUSPECT events may be
                 reordered by this protocol.
