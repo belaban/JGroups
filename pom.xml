@@ -162,8 +162,8 @@
                 <configuration>
                     <rules>
                         <requireJavaVersion>
-                            <!-- require JDK 1.7 to run the build -->
-                            <version>[1.7,)</version>
+                            <!-- require JDK 1.6 to run the build -->
+                            <version>[1.6,)</version>
                         </requireJavaVersion>
                         <requireMavenVersion>
                             <version>3.0.4</version>

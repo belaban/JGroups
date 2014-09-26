@@ -572,7 +572,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     /** The members of this group (updated when a member joins or leaves). With a shared transport,
      * members contains *all* members from all channels sitting on the shared transport */
-    protected final Set<Address> members=new CopyOnWriteArraySet<>();
+    protected final Set<Address> members=new CopyOnWriteArraySet<Address>();
 
 
     /** Keeps track of connects and disconnects, in order to start and stop threads */
@@ -631,7 +631,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected Bundler                 bundler;
 
     protected DiagnosticsHandler      diag_handler;
-    protected final List<DiagnosticsHandler.ProbeHandler> preregistered_probe_handlers=new LinkedList<>();
+    protected final List<DiagnosticsHandler.ProbeHandler> preregistered_probe_handlers=new LinkedList<DiagnosticsHandler.ProbeHandler>();
 
     /**
      * If singleton_name is enabled, this map is used to de-multiplex incoming messages according to their cluster
@@ -1128,12 +1128,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(time_service_interval > 0)
             time_service=new TimeService(timer, time_service_interval).start();
 
-        who_has_cache=new ExpiryCache<>(who_has_cache_timeout);
+        who_has_cache=new ExpiryCache<Address>(who_has_cache_timeout);
 
         if(suppress_time_different_version_warnings > 0)
-            suppress_log_different_version=new SuppressLog<>(log, "VersionMismatch", "SuppressMsg");
+            suppress_log_different_version=new SuppressLog<Address>(log, "VersionMismatch", "SuppressMsg");
         if(suppress_time_different_cluster_warnings > 0)
-            suppress_log_different_cluster=new SuppressLog<>(log, "MsgDroppedDiffCluster", "SuppressMsg");
+            suppress_log_different_cluster=new SuppressLog<Address>(log, "MsgDroppedDiffCluster", "SuppressMsg");
 
         // ========================================== OOB thread pool ==============================
 
@@ -1141,9 +1141,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
           || (oob_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)oob_thread_pool).isShutdown())) {
             if(oob_thread_pool_enabled) {
                 if(oob_thread_pool_queue_enabled)
-                    oob_thread_pool_queue=new LinkedBlockingQueue<>(oob_thread_pool_queue_max_size);
+                    oob_thread_pool_queue=new LinkedBlockingQueue<Runnable>(oob_thread_pool_queue_max_size);
                 else
-                    oob_thread_pool_queue=new SynchronousQueue<>();
+                    oob_thread_pool_queue=new SynchronousQueue<Runnable>();
                 oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
                                                  oob_thread_pool_rejection_policy, oob_thread_pool_queue, oob_thread_factory);
             }
@@ -1158,9 +1158,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
           || (thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)thread_pool).isShutdown())) {
             if(thread_pool_enabled) {
                 if(thread_pool_queue_enabled)
-                    thread_pool_queue=new LinkedBlockingQueue<>(thread_pool_queue_max_size);
+                    thread_pool_queue=new LinkedBlockingQueue<Runnable>(thread_pool_queue_max_size);
                 else
-                    thread_pool_queue=new SynchronousQueue<>();
+                    thread_pool_queue=new SynchronousQueue<Runnable>();
                 thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
                                              thread_pool_rejection_policy, thread_pool_queue, default_thread_factory);
             }
@@ -1176,9 +1176,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
           || (internal_thread_pool instanceof ThreadPoolExecutor && ((ThreadPoolExecutor)internal_thread_pool).isShutdown())) {
             if(internal_thread_pool_enabled) {
                 if(internal_thread_pool_queue_enabled)
-                    internal_thread_pool_queue=new LinkedBlockingQueue<>(internal_thread_pool_queue_max_size);
+                    internal_thread_pool_queue=new LinkedBlockingQueue<Runnable>(internal_thread_pool_queue_max_size);
                 else
-                    internal_thread_pool_queue=new SynchronousQueue<>();
+                    internal_thread_pool_queue=new SynchronousQueue<Runnable>();
                 internal_thread_pool=createThreadPool(internal_thread_pool_min_threads, internal_thread_pool_max_threads, internal_thread_pool_keep_alive_time,
                                                  internal_thread_pool_rejection_policy, internal_thread_pool_queue, internal_thread_factory);
             }
@@ -1186,7 +1186,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
 
-        Map<String, Object> m=new HashMap<>(2);
+        Map<String, Object> m=new HashMap<String, Object>(2);
         if(bind_addr != null)
             m.put("bind_addr", bind_addr);
         if(external_addr != null)
@@ -1196,7 +1196,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(!m.isEmpty())
             up(new Event(Event.CONFIG, m));
 
-        logical_addr_cache=new LazyRemovalCache<>(logical_addr_cache_max_size, logical_addr_cache_expiration);
+        logical_addr_cache=new LazyRemovalCache<Address,PhysicalAddress>(logical_addr_cache_max_size, logical_addr_cache_expiration);
         
         if(logical_addr_cache_reaper_interval > 0 && (logical_addr_cache_reaper == null || logical_addr_cache_reaper.isDone())) {
             logical_addr_cache_reaper=timer.scheduleWithFixedDelay(new Runnable() {
@@ -1321,7 +1321,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     public Map<String, String> handleProbe(String... keys) {
-        Map<String,String> retval=new HashMap<>(2);
+        Map<String,String> retval=new HashMap<String,String>(2);
         for(String key: keys) {
             if(key.equals("dump")) {
                 retval.put("dump", Util.dumpThreads());
@@ -1365,7 +1365,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     // responses for matching clusters
                     if(up_prots != null) {
                         boolean match=false;
-                        List<String> cluster_names=new ArrayList<>();
+                        List<String> cluster_names=new ArrayList<String>();
                         for(Protocol prot: up_prots.values())
                             if(prot instanceof ProtocolAdapter)
                                 cluster_names.add(((ProtocolAdapter)prot).getClusterName());
@@ -1933,7 +1933,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             PhysicalAddress target=logical_addr_cache.get(mbr);
             if(target == null) {
                 if(missing == null)
-                    missing=new ArrayList<>(mbrs.size());
+                    missing=new ArrayList<Address>(mbrs.size());
                 missing.add(mbr);
                 continue;
             }
@@ -2076,7 +2076,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     public static List<Message> readMessageList(DataInput in, short transport_id) throws Exception {
-        List<Message> list=new LinkedList<>();
+        List<Message> list=new LinkedList<Message>();
         Address dest=Util.readAddress(in);
         Address src=Util.readAddress(in);
         // AsciiString cluster_name=Bits.readAsciiString(in); // not used here
@@ -2163,7 +2163,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 Collection<Address> old_members;
                 synchronized(members) {
                     View view=(View)evt.getArg();
-                    old_members=new ArrayList<>(members);
+                    old_members=new ArrayList<Address>(members);
                     members.clear();
 
                     if(!isSingleton()) {
@@ -2431,7 +2431,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected class BaseBundler implements Bundler {
         /** Keys are destinations, values are lists of Messages */
-        final Map<SingletonAddress,List<Message>>  msgs=new HashMap<>(24);
+        final Map<SingletonAddress,List<Message>>  msgs=new HashMap<SingletonAddress,List<Message>>(24);
         final ByteArrayDataOutputStream            output=new ByteArrayDataOutputStream(1024);
         @GuardedBy("lock") long                    count;    // current number of bytes accumulated
         final ReentrantLock                        lock=new ReentrantLock();
@@ -2525,7 +2525,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             SingletonAddress dest=new SingletonAddress(cname, msg.getDest());
             List<Message> tmp=msgs.get(dest);
             if(tmp == null) {
-                tmp=new LinkedList<>();
+                tmp=new LinkedList<Message>();
                 msgs.put(dest, tmp);
             }
             tmp.add(msg);
@@ -2644,7 +2644,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         protected TransferQueueBundler(int capacity) {
             if(capacity <=0) throw new IllegalArgumentException("bundler capacity cannot be " + capacity);
-            queue=new LinkedBlockingQueue<>(capacity);
+            queue=new LinkedBlockingQueue<Message>(capacity);
             // buffer=new ConcurrentLinkedBlockingQueue2<Message>(capacity);
             threshold=(int)(capacity * .9); // 90% of capacity
         }
@@ -2718,7 +2718,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         AsciiString             cluster_name;
         final short             transport_id;
         TpHeader                header;
-        final Set<Address>      members=new CopyOnWriteArraySet<>();
+        final Set<Address>      members=new CopyOnWriteArraySet<Address>();
         final ThreadFactory     factory;
         protected SocketFactory socket_factory=new DefaultSocketFactory();
         Address                 local_addr;
@@ -2850,7 +2850,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         public Map<String, String> handleProbe(String... keys) {
-            Map<String,String> retval=new HashMap<>();
+            Map<String,String> retval=new HashMap<String, String>();
             retval.put("cluster", getClusterName());
             retval.put("local_addr", local_addr != null? local_addr.toString() : null);
             retval.put("local_addr (UUID)", local_addr instanceof UUID? ((UUID)local_addr).toStringLong() : null);
