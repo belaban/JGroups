@@ -15,12 +15,6 @@ import java.util.Map;
  * @author Bela Ban
  */
 public interface SocketFactory {
-
-    // todo: should we include NIO socket channels too ?
-    // todo: how should service names be structured ? jgroups.udp.unicast_port ?
-
-    // todo: should we really include creation of java.net.Sockets ? They don't listen on incoming ports. This would only
-    // be for socket configuration....
     Socket createSocket(String service_name) throws IOException;
     Socket createSocket(String service_name, String host, int port) throws IOException;
     Socket createSocket(String service_name, InetAddress address, int port) throws IOException;
