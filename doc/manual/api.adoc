@@ -861,6 +861,17 @@ The configuration of RSVP is described here: <<RSVP>>.
                 
 NOTE: RSVP was added in version 3.1.
 
+====== Non blocking RSVP
+
+Sometimes a sender wants a given message to be resent until it has been received, or a timeout occurs, but doesn't want
+to block. As an example, `RpcDispatcher.callRemoteMethodsWithFuture()` needs to return immediately, even if the results
+aren't available yet. If the call options contain flag `RSVP`, then the future would only be returned once all
+responses have been received. This is clearly undesirable behavior.
+
+To solve this, flag `RSVP_NB` (no-blocking) can be used. This has the same behavior as `RSVP`, but the caller is not
+blocked by the RSVP protocol. When a timeout occurs, a warning message will be logged, but since the caller doesn't
+block, the call won't throw an exception.
+
 
 [[ReceivingMessages]]
 ==== Receiving messages

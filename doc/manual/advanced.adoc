@@ -1997,6 +1997,10 @@ Message.RSVP:: When this flag is set, a message send will block until the receiv
                (multicast) have acked reception of the message, or until a timeout occurs.
                See <<RsvpSection>> for details.
 
+Message.RSVP_NB:: This is the same as RSVP, but doesn't block the sender of a message (invoker of an RPC). The call
+                  therefore returns immediately, but RSVP will resend the message until it has received all acks, or
+                  the timeout kicked in.
+
 Message.DONT_LOOPBACK:: If this flag is set and the message is a multicast message (dest == null), then the transport
                         by default (1) multicasts the message, (2) loops it back up the stack (on a separate thread) and
                         (3) discards the multicast when received. +

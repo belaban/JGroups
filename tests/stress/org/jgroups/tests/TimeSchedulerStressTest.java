@@ -137,7 +137,9 @@ public class TimeSchedulerStressTest {
                     timer=new DefaultTimeScheduler(NUM_THREADS_IN_TIMER); // ? That's not what we do in real life !
                 }
                 else if(tmp.equals("new")) {
-                    timer=new TimeScheduler2(NUM_THREADS_IN_TIMER);
+                    //timer=new TimeScheduler3(new DefaultThreadFactory("tmp", true, true),
+                      //                       NUM_THREADS_IN_TIMER, NUM_THREADS_IN_TIMER, 5000, 20000, "abort");
+                    timer=new TimeScheduler3();
                 }
                 else {
                     help();

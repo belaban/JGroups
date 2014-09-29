@@ -4,7 +4,8 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Retransmitter;
-import org.jgroups.util.TimeScheduler2;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.TimeScheduler3;
 import org.jgroups.util.Util;
 
 import java.util.List;
@@ -37,7 +38,7 @@ public class NakReceiverWindowStressTest2 {
         }
 
         Address sender=Util.createRandomAddress("A");
-        TimeScheduler2 timer=new TimeScheduler2(10);
+        TimeScheduler timer=new TimeScheduler3();
 
         NakReceiverWindow win=new NakReceiverWindow(sender, new Retransmitter.RetransmitCommand() {
 

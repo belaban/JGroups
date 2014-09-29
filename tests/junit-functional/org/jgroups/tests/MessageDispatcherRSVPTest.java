@@ -50,7 +50,7 @@ public class MessageDispatcherRSVPTest {
                                          new DefaultThreadFactory("", false));
         handler.start();
 
-        TimeScheduler timer=new TimeScheduler2(new DefaultThreadFactory("Timer", true, true),
+        TimeScheduler timer=new TimeScheduler3(new DefaultThreadFactory("Timer", true, true),
                                                5,20,
                                                3000, 5000, "abort");
 
@@ -81,7 +81,7 @@ public class MessageDispatcherRSVPTest {
                                            new UNICAST3().setValue("xmit_table_num_rows",5).setValue("xmit_interval", 300),
                                            new RSVP().setValue("timeout", 10000).setValue("throw_exception_on_timeout", true),
                                            new GMS().setValue("print_local_addr",false)
-                                             .setValue("leave_timeout",100)
+                                             .setValue("leave_timeout",100).setValue("join_timeout", 500)
                                              .setValue("log_view_warnings",false)
                                              .setValue("view_ack_collection_timeout",2000)
                                              .setValue("log_collect_msgs",false));

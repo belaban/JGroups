@@ -50,16 +50,17 @@ public class Message implements Streamable {
 
     // =============================== Flags ====================================
     public static enum Flag {
-        OOB((short)            1),          // message is out-of-band
-        DONT_BUNDLE(   (short)(1 << 1)),    // don't bundle message at the transport
-        NO_FC(         (short)(1 << 2)),    // bypass flow control
-        SCOPED(        (short)(1 << 3)),    // when a message has a scope
-        NO_RELIABILITY((short)(1 << 4)),    // bypass UNICAST(2) and NAKACK
-        NO_TOTAL_ORDER((short)(1 << 5)),    // bypass total order (e.g. SEQUENCER)
-        NO_RELAY(      (short)(1 << 6)),    // bypass relaying (RELAY)
-        RSVP(          (short)(1 << 7)),    // ack of a multicast (https://issues.jboss.org/browse/JGRP-1389)
-        INTERNAL(      (short)(1 << 8)),    // for internal use by JGroups only, don't use !
-        SKIP_BARRIER(  (short)(1 << 9));    // passing messages through a closed BARRIER
+        OOB((short)            1),           // message is out-of-band
+        DONT_BUNDLE(   (short)(1 <<  1)),    // don't bundle message at the transport
+        NO_FC(         (short)(1 <<  2)),    // bypass flow control
+        SCOPED(        (short)(1 <<  3)),    // when a message has a scope
+        NO_RELIABILITY((short)(1 <<  4)),    // bypass UNICAST(2) and NAKACK
+        NO_TOTAL_ORDER((short)(1 <<  5)),    // bypass total order (e.g. SEQUENCER)
+        NO_RELAY(      (short)(1 <<  6)),    // bypass relaying (RELAY)
+        RSVP(          (short)(1 <<  7)),    // ack of a multicast (https://issues.jboss.org/browse/JGRP-1389)
+        RSVP_NB(       (short)(1 <<  8)),    // non blocking RSVP
+        INTERNAL(      (short)(1 <<  9)),    // for internal use by JGroups only, don't use !
+        SKIP_BARRIER(  (short)(1 << 10));    // passing messages through a closed BARRIER
 
 
         final short value;
