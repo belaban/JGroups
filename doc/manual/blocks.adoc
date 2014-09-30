@@ -661,18 +661,17 @@ In 2.12, a new distributed locking service was added, replacing `DistributedLock
 implemented as a protocol and is used via `org.jgroups.blocks.locking.LockService`.
 
 `LockService` talks to the locking protocol via events. The main abstraction of a distributed lock is an
-implementation of java.util.concurrent.locks.Lock. All lock methods are supported, however, conditions
-are not fully supported, and still need some more testing (as of July 2011).
+implementation of java.util.concurrent.locks.Lock.
 
 Below is an example of how LockService is typically used:
 
 [source,java]
 ----
-// locking.xml needs to contain a locking protocol, e.g. PEER_LOCK
+// locking.xml needs to contain a locking protocol, e.g. CENTRAL_LOCK
 JChannel ch=new JChannel("/home/bela/locking.xml");
 LockService lock_service=new LockService(ch);
 ch.connect("lock-cluster");
-Lock lock=lock_service.getLock("mylock");
+Lock lock=lock_service.getLock("mylock"); // gets a cluster-wide lock
 lock.lock();
 try {
     // do something with the locked resource
@@ -692,11 +691,16 @@ the thread ID. This means that different threads inside the same JVM trying to a
 will compete for it. If `thread-22` grabs the lock first, then `thread-5` will block until `thread-23`
 releases the lock.
 
+NOTE: if we want the lock owner to only be the address (and not the thread-id), then property
++use_thread_id_for_lock_owner+ can be set to false. This means that all threads in a given node can lock or unlock
+a given lock. Example: thread T1 locks "lock", but thread T2 can unlock it. This is _not_ the same semantics as
++java.util.concurrent.locks.Lock+, but nevertheless useful in some scenarios. (Introduced in 3.6)
+
 JGroups includes a demo (`org.jgroups.demos.LockServiceDemo`), which can be used to interactively experiment
 with distributed locks. `LockServiceDemo -h` dumps all command line options.
         
 Currently (Jan 2011), there are 2 protocols which provide locking:
-<<PEER_LOCK>> and <<CENTRAL_LOCK>>. The locking
+<<PEER_LOCK>> (deprecated) and <<CENTRAL_LOCK>> (recommended). The locking
 protocol has to be placed at or towards the top of the stack (close to the channel).
         
 

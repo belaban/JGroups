@@ -33,12 +33,16 @@ import java.util.*;
 public class CENTRAL_LOCK extends Locking implements LockNotification {
 
     @Property(description="Number of backups to the coordinator. Server locks get replicated to these nodes as well")
-    protected int num_backups=1;
+    protected int                 num_backups=1;
 
-    protected Address coord;
+    @Property(description="By default, a lock owner is address:thread-id. If false, we only use the node's address. " +
+      "See https://issues.jboss.org/browse/JGRP-1886 for details")
+    protected boolean             use_thread_id_for_lock_owner=true;
+
+    protected Address             coord;
 
     @ManagedAttribute
-    protected boolean is_coord;
+    protected boolean             is_coord;
 
     protected final List<Address> backups=new ArrayList<Address>();
 
@@ -46,6 +50,10 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
     public CENTRAL_LOCK() {
         super();
         addLockListener(this);
+    }
+
+    protected Owner getOwner() {
+        return use_thread_id_for_lock_owner? super.getOwner(): new Owner(local_addr, -1);
     }
 
     public Address getCoord() {

@@ -237,6 +237,25 @@ public class LockServiceTest {
         assert num_acquired == 1 : "expected 1 but got " + num_acquired;
     }
 
+    /** Tests locking by T1 and unlocking by T2 (https://issues.jboss.org/browse/JGRP-1886) */
+    public void testLockUnlockByDiffentThreads() throws Exception {
+        CyclicBarrier barrier=null;
+        try {
+            setProp(CENTRAL_LOCK.class, "use_thread_id_for_lock_owner", false, c1,c2,c3);
+            barrier=new CyclicBarrier(2);
+            Thread locker=new Locker(barrier);
+            locker.start();
+            Util.sleep(2000);
+            boolean rc=tryLock(lock, 10000, LOCK);
+            assert rc;
+        }
+        finally {
+            setProp(CENTRAL_LOCK.class, "use_thread_id_for_lock_owner", true,c1,c2,c3);
+            unlock(lock, LOCK);
+        }
+    }
+
+
     public void testSuccessfulSignalOneTimeout() throws InterruptedException, BrokenBarrierException {
         Lock lock2 = s2.getLock(LOCK);
         Thread locker = new Signaller(false);
@@ -288,11 +307,19 @@ public class LockServiceTest {
         }
     }
 
+
+
     protected JChannel createChannel(String name) throws Exception {
         Protocol[] stack=Util.getTestStack(new CENTRAL_LOCK().level("trace"));
         return new JChannel(stack).name(name);
     }
 
+    protected void setProp(Class<?> clazz, String prop_name, Object value, JChannel ... channels) {
+        for(JChannel ch: channels) {
+            Protocol prot=ch.getProtocolStack().findProtocol(clazz);
+            prot.setValue(prop_name, value);
+        }
+    }
     
     protected class Locker extends Thread {
         protected final CyclicBarrier barrier;

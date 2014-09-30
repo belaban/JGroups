@@ -53,6 +53,6 @@ public class Owner implements Streamable {
     }
 
     public String toString() {
-        return address + "::" + thread_id;
+        return thread_id < 0? address.toString() : address + "::" + thread_id;
     }
 }
