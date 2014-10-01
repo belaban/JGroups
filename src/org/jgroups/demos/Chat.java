@@ -32,7 +32,7 @@ public class Chat extends ReceiverAdapter {
     private void start(String props, String name) throws Exception {
         channel=new JChannel(props);
         if(name != null)
-            channel.setName(name);
+            channel.name(name);
         channel.setReceiver(this);
         channel.connect("ChatCluster");
         eventLoop();
@@ -78,6 +78,6 @@ public class Chat extends ReceiverAdapter {
     }
 
     protected static void help() {
-        System.out.println("ChatDemo [-props XML config]");
+        System.out.println("Chat [-props XML config] [-name name]");
     }
 }
