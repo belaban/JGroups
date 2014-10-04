@@ -69,7 +69,9 @@ public class TCPGOSSIP extends Discovery {
     // (list of IpAddresses) hosts to be contacted for the initial membership
     private final List<InetSocketAddress> initial_hosts = new CopyOnWriteArrayList<InetSocketAddress>();
     
-    private volatile RouterStubManager stubManager;
+    protected volatile RouterStubManager stubManager;
+
+    public RouterStubManager getStubManager() {return stubManager;}
 
     public void init() throws Exception {
         super.init();

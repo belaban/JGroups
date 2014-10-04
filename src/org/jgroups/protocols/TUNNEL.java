@@ -61,7 +61,7 @@ public class TUNNEL extends TP {
 
    private DatagramSocket sock;
    
-   private volatile RouterStubManager stubManager;
+   protected volatile RouterStubManager stubManager;
 
    public TUNNEL() {
    }
@@ -81,6 +81,8 @@ public class TUNNEL extends TP {
       }
       gossip_router_hosts.addAll(Util.parseCommaDelimitedHosts2(hosts, 1));
    }
+
+   public RouterStubManager getStubManager() {return stubManager;}
 
    public String toString() {
       return "TUNNEL";
