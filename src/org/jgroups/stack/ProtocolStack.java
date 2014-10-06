@@ -484,7 +484,6 @@ public class ProtocolStack extends Protocol {
 
 
 
-
     public void setup(ProtocolStack stack) throws Exception {
         if(top_prot == null) {
             top_prot=new Configurator(this).setupProtocolStack(stack);
@@ -844,17 +843,17 @@ public class ProtocolStack extends Protocol {
                 if(transport.isSingleton()) {
                     String singleton_name=transport.getSingletonName();
                     synchronized(singleton_transports) {
-                        Tuple<TP, ProtocolStack.RefCounter> val=singleton_transports.get(singleton_name);
-                        if(val == null) {
-                            singleton_transports.put(singleton_name, new Tuple<TP, ProtocolStack.RefCounter>(transport,new ProtocolStack.RefCounter((short)1, (short)0)));
-                        }
+                        Tuple<TP,RefCounter> val=singleton_transports.get(singleton_name);
+                        if(val == null)
+                            singleton_transports.put(singleton_name, new Tuple<TP,RefCounter>(transport,new RefCounter((short)1, (short)0)));
                         else {
-                            ProtocolStack.RefCounter counter=val.getVal2();
+                            RefCounter counter=val.getVal2();
                             short num_inits=counter.incrementInitCount();
-                            if(num_inits >= 1) {
+                            if(num_inits >= 1)
                                 continue;
-                            }
                         }
+                        prot.init(); // if shared TP, call init() with lock : https://issues.jboss.org/browse/JGRP-1887
+                        continue;
                     }
                 }
             }
