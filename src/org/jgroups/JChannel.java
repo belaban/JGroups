@@ -844,19 +844,15 @@ public class JChannel extends Channel {
         for(ProtocolConfiguration config: configs)
             config.substituteVariables();  // replace vars with system props
 
-        synchronized(Channel.class) {
-            prot_stack=new ProtocolStack(this);
-            prot_stack.setup(configs); // Setup protocol stack (creates protocol, calls init() on them)
-        }
+        prot_stack=new ProtocolStack(this);
+        prot_stack.setup(configs); // Setup protocol stack (creates protocol, calls init() on them)
     }
 
     protected final void init(JChannel ch) throws Exception {
         if(ch == null)
             throw new IllegalArgumentException("channel is null");
-        synchronized(JChannel.class) {
-            prot_stack=new ProtocolStack(this);
-            prot_stack.setup(ch.getProtocolStack()); // Setup protocol stack (creates protocol, calls init() on them)
-        }
+        prot_stack=new ProtocolStack(this);
+        prot_stack.setup(ch.getProtocolStack()); // Setup protocol stack (creates protocol, calls init() on them)
     }
 
 
