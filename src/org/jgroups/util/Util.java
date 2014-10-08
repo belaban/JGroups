@@ -3033,12 +3033,12 @@ public class Util {
             if(log != null && log.isWarnEnabled()) {
                 StringBuilder sb=new StringBuilder();
                 String type=mcast_addr != null? mcast_addr instanceof Inet4Address? "IPv4" : "IPv6" : "n/a";
-                sb.append("could not bind to " + mcast_addr + " (" + type + " address)");
+                sb.append("could not bind to ").append(mcast_addr).append(" (").append(type).append(" address)");
                 sb.append("; make sure your mcast_addr is of the same type as the preferred IP stack (IPv4 or IPv6)");
                 sb.append(" by checking the value of the system properties java.net.preferIPv4Stack and java.net.preferIPv6Addresses.");
                 sb.append("\nWill ignore mcast_addr, but this may lead to cross talking " +
                             "(see http://www.jboss.org/community/docs/DOC-9469 for details). ");
-                sb.append("\nException was: " + ex);
+                sb.append("\nException was: ").append(ex);
                 log.warn(sb.toString());
             }
         }
