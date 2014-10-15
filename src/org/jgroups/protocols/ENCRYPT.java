@@ -222,13 +222,13 @@ public class ENCRYPT extends Protocol {
 			symEncodingCipher.init(Cipher.ENCRYPT_MODE, secretKey);
 			symDecodingCipher.init(Cipher.DECRYPT_MODE, secretKey);
 
-			this.symVersion = calculateVersionFrom(secretKey, protocol);
+			this.symVersion = calculateVersionFrom(secretKey);
 			if(protocol.log.isDebugEnabled()) {
 				protocol.log.debug(" Initialized symmetric ciphers with secret key (" + symVersion + ")");
 			}
 		}
 
-		private String calculateVersionFrom(SecretKey secretKey, ENCRYPT protocol)
+		private String calculateVersionFrom(SecretKey secretKey)
 				throws NoSuchAlgorithmException {
 			//set the version
 			MessageDigest digest=MessageDigest.getInstance("MD5");
