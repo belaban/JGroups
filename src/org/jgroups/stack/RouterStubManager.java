@@ -128,7 +128,8 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
             }
         };
         f = timer.scheduleWithFixedDelay(reconnector, 0, interval, TimeUnit.MILLISECONDS);
-        futures.putIfAbsent(stub, f);
+        if(f != null && stub != null)
+            futures.putIfAbsent(stub, f);
     }
 
     public void stopReconnecting(final RouterStub stub) {
