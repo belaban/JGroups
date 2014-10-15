@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.*;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.SSLContext;
 import java.util.*;
 
 /**
@@ -71,7 +72,12 @@ public class StompConnection implements Runnable {
         this(dest, null, null, reconnect, ssl);
     }
 
+    public StompConnection(String dest, boolean reconnect, SSLContext ssl) {
+        this(dest, null, null, reconnect, ssl);
+    }
+
     public StompConnection(String dest, String userid, String password, boolean reconnect, boolean ssl) {;
+        log.info("boolean version of StompConnection");
         server_destinations.add(dest);
         this.userid = userid;
         this.password = password;
@@ -80,6 +86,15 @@ public class StompConnection implements Runnable {
             socket_factory = SSLSocketFactory.getDefault();
         else
             socket_factory = SocketFactory.getDefault();
+    }
+
+    public StompConnection(String dest, String userid, String password, boolean reconnect, SSLContext sslcontext) {;
+        log.info("SSLContext version of StompConnection");
+        server_destinations.add(dest);
+        this.userid = userid;
+        this.password = password;
+        this.reconnect = reconnect;
+        socket_factory = sslcontext.getSocketFactory();
     }
 
     public String getSessionId() {return session_id;}
