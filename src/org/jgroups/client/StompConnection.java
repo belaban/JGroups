@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.*;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.SSLContext;
 import java.util.*;
 
 /**
@@ -78,6 +79,17 @@ public class StompConnection implements Runnable {
         this.reconnect = reconnect;
         if (ssl)
             socket_factory = SSLSocketFactory.getDefault();
+        else
+            socket_factory = SocketFactory.getDefault();
+    }
+
+    public StompConnection(String dest, String userid, String password, boolean reconnect, SSLContext sslcontext) {;
+        server_destinations.add(dest);
+        this.userid = userid;
+        this.password = password;
+        this.reconnect = reconnect;
+        if (sslcontext)
+            socket_factory = sslcontext;
         else
             socket_factory = SocketFactory.getDefault();
     }
