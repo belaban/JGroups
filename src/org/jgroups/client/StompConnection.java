@@ -88,10 +88,7 @@ public class StompConnection implements Runnable {
         this.userid = userid;
         this.password = password;
         this.reconnect = reconnect;
-        if (sslcontext)
-            socket_factory = sslcontext;
-        else
-            socket_factory = SocketFactory.getDefault();
+        socket_factory = sslcontext;
     }
 
     public String getSessionId() {return session_id;}
