@@ -372,7 +372,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
 
 
     private static void help() {
-        System.out.println("ReplCacheServer [-help] [-props <props>] [-cluster_name <name>]" +
+        System.out.println("ReplCacheDemo [-help] [-props <props>] [-cluster_name <name>]" +
                 "[-rpc_timeout <ms>] [-caching_time <ms>] " +
                 "[-migrate_data <true|false>] [-use_l1_cache <true|false>] " +
                 "[-l1_max_entries <num>] [-l1_reaping_interval <ms>] " +
