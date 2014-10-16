@@ -516,8 +516,6 @@ public class ENCRYPT extends Protocol {
 	@Override
 	public void up(MessageBatch batch) {
 		for(Message msg: batch) {
-			if(msg.getLength() == 0 && !encrypt_entire_message)
-				continue;
 
 			EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
 			if(hdr == null) {
@@ -531,9 +529,6 @@ public class ENCRYPT extends Protocol {
 			switch(hdr.getType()) {
 			case EncryptHeader.ENCRYPT:
 				SymmetricCipherState currentState = this.symCipherState.get();
-				// if msg buffer is empty, and we didn't encrypt the entire message, just pass up
-				if(!hdr.encrypt_entire_msg && msg.getLength() == 0)
-					break;
 
 				// if queueing then pass into queue to be dealt with later
 				if(queue_up) {
@@ -541,11 +536,11 @@ public class ENCRYPT extends Protocol {
 						log.trace("queueing up message as no session key established: " + msg);
 					try {
 						upMessageQueue.put(msg);
+						batch.remove(msg);
 					}
 					catch(InterruptedException e) {
 					}
-				}
-				else {
+				} else {
 					// make sure we pass up any queued messages first
 					// could be more optimised but this can wait we only need this if not using supplied key
 					if(!suppliedKey) {
@@ -557,18 +552,7 @@ public class ENCRYPT extends Protocol {
 						}
 					}
 
-					// try and decrypt the message - we need to copy msg as we modify its
-					// buffer (http://jira.jboss.com/jira/browse/JGRP-538)
-					try {
-						Message tmpMsg=currentState.decryptMessage( msg.copy(), this.encrypt_entire_message);
-						if(tmpMsg != null)
-							batch.replace(msg, tmpMsg);
-						else
-							log.warn("Unrecognised cipher discarding message");
-					}
-					catch(Exception e) {
-						log.error("failed decrypting message", e);
-					}
+					decryptSingleMessageInBatch(batch, msg, currentState);
 				}
 				break;
 			default:
@@ -580,6 +564,25 @@ public class ENCRYPT extends Protocol {
 
 		if(!batch.isEmpty())
 			up_prot.up(batch);
+	}
+
+	private void decryptSingleMessageInBatch(MessageBatch batch, Message msg,
+			SymmetricCipherState currentState) {
+		// try and decrypt the message - we need to copy msg as we modify its
+		// buffer (http://jira.jboss.com/jira/browse/JGRP-538)
+		try {
+			Message tmpMsg=currentState.decryptMessage( msg.copy(), this.encrypt_entire_message);
+			if(tmpMsg != null)
+				batch.replace(msg, tmpMsg);
+			else {
+				batch.remove(msg);
+				log.warn("Unrecognised cipher discarding message");
+			}
+		}
+		catch(Exception e) {
+			batch.remove(msg);
+			log.error("failed decrypting message", e);
+		}
 	}
 
 	public Object passItUp(Event evt) {
@@ -733,7 +736,7 @@ public class ENCRYPT extends Protocol {
 
 			// try and decrypt the message - we need to copy msg as we modify its
 			// buffer (http://jira.jboss.com/jira/browse/JGRP-538)
-			Message tmpMsg=currentState.decryptMessage( msg.copy(), this.encrypt_entire_message);
+			Message tmpMsg=currentState.decryptMessage( msg.copy(), hdr.encrypt_entire_msg);
 			if(tmpMsg != null) {
 				if(log.isTraceEnabled())
 					log.trace("decrypted message " + tmpMsg);
