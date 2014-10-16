@@ -1181,6 +1181,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     internal_thread_pool_queue=new SynchronousQueue<Runnable>();
                 internal_thread_pool=createThreadPool(internal_thread_pool_min_threads, internal_thread_pool_max_threads, internal_thread_pool_keep_alive_time,
                                                  internal_thread_pool_rejection_policy, internal_thread_pool_queue, internal_thread_factory);
+                if(internal_thread_pool_min_threads < 2)
+                    log.warn("The internal thread pool was configured with only %d min_threads; this might lead to problems " +
+                               "when more than 1 thread is needed, e.g. when merging", internal_thread_pool_min_threads);
             }
             // if the internal thread pool is disabled, we won't create it (not even a DirectExecutor)
         }
