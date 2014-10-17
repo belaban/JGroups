@@ -878,7 +878,7 @@ block, the call won't throw an exception.
 
 Method `receive()` in ReceiverAdapter (or Receiver) can be overridden to
 receive messages, views, and state transfer callbacks.
-            
+
 [source,java]
 ----
 public void receive(Message msg);
@@ -908,7 +908,7 @@ ch.connect("MyCluster");
 As shown above, the `viewAccepted()` callback of ReceiverAdapter can be used
 to get callbacks whenever a cluster membership change occurs. The receiver needs to be set via
 `JChannel.setReceiver(Receiver)`.
-            
+
 As discussed in <<ReceiverAdapter>>, code in callbacks must avoid anything that takes
 a lot of time, or blocks; JGroups invokes this callback as part of the view installation, and if this
 user code blocks, the view installation would block, too.
@@ -987,7 +987,6 @@ public void setState(InputStream input) throws Exception {
     System.out.println(list.size() + " messages in chat history):");
     for(String str: list)
         System.out.println(str);
-    }
 }
 ----
 

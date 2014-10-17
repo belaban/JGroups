@@ -8,6 +8,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
 import java.net.InetAddress;
@@ -18,20 +19,22 @@ import java.net.InetAddress;
 public class ProgrammaticChat {
 
     public static void main(String[] args) throws Exception {
-        JChannel ch=new JChannel(new UDP().setValue("bind_addr", InetAddress.getByName("127.0.0.1")),
-                                 new PING(),
-                                 new MERGE3(),
-                                 new FD_SOCK(),
-                                 new FD_ALL(),
-                                 new VERIFY_SUSPECT(),
-                                 new BARRIER(),
-                                 new NAKACK2(),
-                                 new UNICAST3(),
-                                 new STABLE(),
-                                 new GMS(),
-                                 new UFC(),
-                                 new MFC(),
-                                 new FRAG2()).name(args[0]);
+        Protocol[] prot_stack={
+          new UDP().setValue("bind_addr", InetAddress.getByName("127.0.0.1")),
+          new PING(),
+          new MERGE3(),
+          new FD_SOCK(),
+          new FD_ALL(),
+          new VERIFY_SUSPECT(),
+          new BARRIER(),
+          new NAKACK2(),
+          new UNICAST3(),
+          new STABLE(),
+          new GMS(),
+          new UFC(),
+          new MFC(),
+          new FRAG2()};
+        JChannel ch=new JChannel(prot_stack).name(args[0]);
 
         ch.setReceiver(new ReceiverAdapter() {
             public void viewAccepted(View new_view) {
