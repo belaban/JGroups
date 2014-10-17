@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testng-results skipped="0" failed="0" total="8" passed="8">
+  <reporter-output>
+  </reporter-output>
+  <suite name="Default suite" duration-ms="547" started-at="2014-10-17T07:03:03Z" finished-at="2014-10-17T07:03:04Z">
+    <groups>
+      <group name="functional">
+        <method signature="ENCRYPT14KeystoreTest.testEventUpNoMessage()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testEventUpNoMessage" class="org.jgroups.protocols.ENCRYPT14KeystoreTest"/>
+        <method signature="ENCRYPT14KeystoreTest.testInitKeystoreProperties()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testInitKeystoreProperties" class="org.jgroups.protocols.ENCRYPT14KeystoreTest"/>
+        <method signature="ENCRYPT14KeystoreTest.testInitWrongKeystoreProperties()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testInitWrongKeystoreProperties" class="org.jgroups.protocols.ENCRYPT14KeystoreTest"/>
+        <method signature="ENCRYPT14KeystoreTest.testMessageDownEncode()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testMessageDownEncode" class="org.jgroups.protocols.ENCRYPT14KeystoreTest"/>
+        <method signature="ENCRYPT14KeystoreTest.testMessageUpDecode()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testMessageUpDecode" class="org.jgroups.protocols.ENCRYPT14KeystoreTest"/>
+        <method signature="ENCRYPT14KeystoreTest.testMessageUpNoBuffer()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testMessageUpNoBuffer" class="org.jgroups.protocols.ENCRYPT14KeystoreTest"/>
+        <method signature="ENCRYPT14KeystoreTest.testMessageUpNoEncryptHeader()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testMessageUpNoEncryptHeader" class="org.jgroups.protocols.ENCRYPT14KeystoreTest"/>
+        <method signature="ENCRYPT14KeystoreTest.testMessageUpWrongKey()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testMessageUpWrongKey" class="org.jgroups.protocols.ENCRYPT14KeystoreTest"/>
+      </group> <!-- functional -->
+    </groups>
+    <test name="Default test" duration-ms="547" started-at="2014-10-17T07:03:03Z" finished-at="2014-10-17T07:03:04Z">
+      <class name="org.jgroups.protocols.ENCRYPT14KeystoreTest">
+        <test-method status="PASS" signature="testEventUpNoMessage()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testEventUpNoMessage" duration-ms="390" started-at="2014-10-17T10:03:03Z" finished-at="2014-10-17T10:03:04Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testEventUpNoMessage -->
+        <test-method status="PASS" signature="testInitWrongKeystoreProperties()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testInitWrongKeystoreProperties" duration-ms="16" started-at="2014-10-17T10:03:04Z" finished-at="2014-10-17T10:03:04Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testInitWrongKeystoreProperties -->
+        <test-method status="PASS" signature="testInitKeystoreProperties()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testInitKeystoreProperties" duration-ms="0" started-at="2014-10-17T10:03:04Z" finished-at="2014-10-17T10:03:04Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testInitKeystoreProperties -->
+        <test-method status="PASS" signature="testMessageUpDecode()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testMessageUpDecode" duration-ms="0" started-at="2014-10-17T10:03:04Z" finished-at="2014-10-17T10:03:04Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testMessageUpDecode -->
+        <test-method status="PASS" signature="testMessageDownEncode()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testMessageDownEncode" duration-ms="0" started-at="2014-10-17T10:03:04Z" finished-at="2014-10-17T10:03:04Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testMessageDownEncode -->
+        <test-method status="PASS" signature="testMessageUpNoBuffer()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testMessageUpNoBuffer" duration-ms="1" started-at="2014-10-17T10:03:04Z" finished-at="2014-10-17T10:03:04Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testMessageUpNoBuffer -->
+        <test-method status="PASS" signature="testMessageUpNoEncryptHeader()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testMessageUpNoEncryptHeader" duration-ms="78" started-at="2014-10-17T10:03:04Z" finished-at="2014-10-17T10:03:04Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testMessageUpNoEncryptHeader -->
+        <test-method status="PASS" signature="testMessageUpWrongKey()[pri:0, instance:org.jgroups.protocols.ENCRYPT14KeystoreTest@c87802]" name="testMessageUpWrongKey" duration-ms="46" started-at="2014-10-17T10:03:04Z" finished-at="2014-10-17T10:03:04Z">
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testMessageUpWrongKey -->
+      </class> <!-- org.jgroups.protocols.ENCRYPT14KeystoreTest -->
+    </test> <!-- Default test -->
+  </suite> <!-- Default suite -->
+</testng-results>

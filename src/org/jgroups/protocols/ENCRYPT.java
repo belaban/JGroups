@@ -140,58 +140,58 @@ public class ENCRYPT extends Protocol {
 
 	private static final String DEFAULT_SYM_ALGO="AES";
 	// address info
-	Address local_addr=null;
+	volatile Address local_addr=null;
 	// keyserver address
-	Address keyServerAddr=null;
+	volatile Address keyServerAddr=null;
 
 	//used to see whether we are the key server
-	boolean keyServer=false;
+	volatile boolean keyServer=false;
 
 	/* -----------------------------------------    Properties     -------------------------------------------------- */
 
 	// encryption properties in no supplied key mode
 	@Property(name="asym_provider", description="Cryptographic Service Provider. Default is Bouncy Castle Provider")
-	String asymProvider=null;
+	volatile String asymProvider=null;
 
 	@Property(name="sym_provider", description="Cryptographic Service Provider. Default is Bouncy Castle Provider")
-	String symProvider=null;
+	volatile String symProvider=null;
 
 	@Property(name="asym_algorithm", description="Cipher engine transformation for asymmetric algorithm. Default is RSA")
-	String asymAlgorithm="RSA";
+	volatile String asymAlgorithm="RSA";
 
 	@Property(name="sym_algorithm", description="Cipher engine transformation for symmetric algorithm. Default is AES")
-	String symAlgorithm=DEFAULT_SYM_ALGO;
+	volatile String symAlgorithm=DEFAULT_SYM_ALGO;
 
 	@Property(name="asym_init", description="Initial public/private key length. Default is 512")
-	int asymInit=512;
+	volatile int asymInit=512;
 
 	@Property(name="sym_init", description="Initial key length for matching symmetric algorithm. Default is 128")
-	int symInit=128;
+	volatile int symInit=128;
 
 	@Property(name="change_keys", description="Generate new symmetric keys on every view change. Default is false")
-	boolean changeKeysOnViewChange=false;
+	volatile boolean changeKeysOnViewChange=false;
 
 	// properties for functioning in supplied key mode
-	private boolean suppliedKey=false;
+	private volatile boolean suppliedKey=false;
 
 	@Property(name="key_store_name", description="File on classpath that contains keystore repository")
-	String keyStoreName;
+	volatile String keyStoreName;
 
 	@Property(name="store_password", description="Password used to check the integrity/unlock the keystore. Change the default")
 	private final String storePassword="changeit"; //JDK default
 
 	@Property(name="key_password", description="Password for recovering the key. Change the default")
-	private String keyPassword=null; // allows to assign keypwd=storepwd if not set (https://issues.jboss.org/browse/JGRP-1375)
+	private volatile String keyPassword=null; // allows to assign keypwd=storepwd if not set (https://issues.jboss.org/browse/JGRP-1375)
 
 
 	@Property(name="alias", description="Alias used for recovering the key. Change the default")
 	private final String alias="mykey"; // JDK default
 
 	// public/private Key
-	KeyPair Kpair; // to store own's public/private Key
+	volatile KeyPair Kpair; // to store own's public/private Key
 
 	//	 for client to store server's public Key
-	PublicKey serverPubKey=null;
+	volatile PublicKey serverPubKey=null;
 
 	final static class SymmetricCipherState {
 		private final String symVersion;
@@ -199,7 +199,7 @@ public class ENCRYPT extends Protocol {
 		private final ENCRYPT protocol;
 
 		private final Cipher symEncodingCipher;
-		private Cipher symDecodingCipher;
+		private final Cipher symDecodingCipher;
 
 		private SymmetricCipherState(SecretKey secretKey, ENCRYPT protocol) throws Exception {
 			this.protocol = protocol;
@@ -207,7 +207,7 @@ public class ENCRYPT extends Protocol {
 			String algorithm = this.protocol.getSymAlgorithm();
 			String symProvider = this.protocol.getSymProvider();
 			if(protocol.log.isDebugEnabled()) {
-				protocol.log.debug(" Initializing symmetric ciphers");
+				protocol.log.debug(protocol.getLocal_addr() + ": Initializing symmetric ciphers");
 			}
 
 			if(algorithm != null && symProvider != null && !symProvider.trim().isEmpty()) {
@@ -224,7 +224,7 @@ public class ENCRYPT extends Protocol {
 
 			this.symVersion = calculateVersionFrom(secretKey);
 			if(protocol.log.isDebugEnabled()) {
-				protocol.log.debug(" Initialized symmetric ciphers with secret key (" + symVersion + ")");
+				protocol.log.debug(protocol.getLocal_addr() + ": Initialized symmetric ciphers with secret key (" + symVersion + ")");
 			}
 		}
 
@@ -291,11 +291,11 @@ public class ENCRYPT extends Protocol {
 	private final BlockingQueue<Message> downMessageQueue=new LinkedBlockingQueue<Message>();
 
 	// decrypting cypher for secret key requests
-	private Cipher asymCipher;
+	private volatile  Cipher asymCipher;
 
 	/** determines whether to encrypt the entire message, or just the buffer */
 	@Property
-	private final boolean encrypt_entire_message=false;
+	private volatile boolean encrypt_entire_message=false;
 
 	public void setObserver(Observer o) {
 		observer=o;
@@ -320,7 +320,7 @@ public class ENCRYPT extends Protocol {
 			keyPassword=storePassword;
 
 			if(log.isDebugEnabled())
-				log.debug("key_password used is same as store_password");
+				log.debug(getLocal_addr() + ":key_password used is same as store_password");
 		}
 		if(keyStoreName == null) {
 			initialSecretKey = generateSymKey();
@@ -422,7 +422,7 @@ public class ENCRYPT extends Protocol {
 		SecretKey secretKey = keyGen.generateKey();
 
 		if(log.isDebugEnabled())
-			log.debug(" Symmetric key generated ");
+			log.debug(getLocal_addr() + ": Symmetric key generated ");
 
 		return secretKey;
 
@@ -469,7 +469,7 @@ public class ENCRYPT extends Protocol {
 		asymCipher.init(Cipher.DECRYPT_MODE, Kpair.getPrivate());
 
 		if(log.isDebugEnabled())
-			log.debug(" asym algo initialized");
+			log.debug(getLocal_addr() + ": asym algo initialized");
 	}
 
 	/** Just remove if you don't need to reset any state */
@@ -484,7 +484,7 @@ public class ENCRYPT extends Protocol {
 		case Event.VIEW_CHANGE:
 			View view=(View)evt.getArg();
 			if(log.isDebugEnabled())
-				log.debug("new view: " + view);
+				log.debug(getLocal_addr() + ":new view: " + view);
 			if(!suppliedKey) {
 				handleViewChange(view, false);
 			}
@@ -503,7 +503,7 @@ public class ENCRYPT extends Protocol {
 				handleUpMessage(evt);
 			}
 			catch(Exception e) {
-				log.warn("exception occurred decrypting message", e);
+				log.warn(getLocal_addr() + ":exception occurred decrypting message", e);
 			}
 			return null;
 		default:
@@ -520,7 +520,7 @@ public class ENCRYPT extends Protocol {
 			EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
 			if(hdr == null) {
 				if(log.isTraceEnabled())
-					log.trace("dropping message as ENCRYPT header is null or has not been recognized, msg will not be passed up, " +
+					log.trace(getLocal_addr() + ":dropping message as ENCRYPT header is null or has not been recognized, msg will not be passed up, " +
 							"headers are " + msg.printHeaders());
 				batch.remove(msg);
 				continue;
@@ -533,7 +533,7 @@ public class ENCRYPT extends Protocol {
 				// if queueing then pass into queue to be dealt with later
 				if(queue_up) {
 					if(log.isTraceEnabled())
-						log.trace("queueing up message as no session key established: " + msg);
+						log.trace(getLocal_addr() + ":queueing up message as no session key established: " + msg);
 					try {
 						upMessageQueue.put(msg);
 						batch.remove(msg);
@@ -548,7 +548,7 @@ public class ENCRYPT extends Protocol {
 							drainUpQueue();
 						}
 						catch(Exception e) {
-							log.error("failed draining up queue", e);
+							log.error(getLocal_addr() + ":failed draining up queue", e);
 						}
 					}
 
@@ -571,17 +571,18 @@ public class ENCRYPT extends Protocol {
 		// try and decrypt the message - we need to copy msg as we modify its
 		// buffer (http://jira.jboss.com/jira/browse/JGRP-538)
 		try {
-			Message tmpMsg=currentState.decryptMessage( msg.copy(), this.encrypt_entire_message);
+			Message tmpMsg=decryptMessage(currentState,  msg.copy());
+
 			if(tmpMsg != null)
 				batch.replace(msg, tmpMsg);
 			else {
 				batch.remove(msg);
-				log.warn("Unrecognised cipher discarding message");
+				log.warn(getLocal_addr() + ":Unrecognised cipher discarding message");
 			}
 		}
 		catch(Exception e) {
 			batch.remove(msg);
-			log.error("failed decrypting message", e);
+			log.error(getLocal_addr() + ":failed decrypting message from " + msg.getSrc(), e);
 		}
 	}
 
@@ -620,14 +621,14 @@ public class ENCRYPT extends Protocol {
 		try {
 			if ( changeKeysOnViewChange || !keyServer) {
 				if ( log.isDebugEnabled()) {
-					log.debug("Initalizing new ciphers");
+					log.debug(getLocal_addr() + ":Initalizing new ciphers");
 				}
 				SecretKey newKey = generateSymKey();
 				this.symCipherState.set(SymmetricCipherState.of(newKey, this));
 			}
 
 		} catch (Exception e) {
-			log.error("Could not initialize new ciphers: %s", e.getMessage());
+			log.error(getLocal_addr() + ":Could not initialize new ciphers: %s", e.getMessage());
 			if ( e instanceof RuntimeException) {
 				throw (RuntimeException)e;
 			} else {
@@ -646,7 +647,7 @@ public class ENCRYPT extends Protocol {
 		keyServerAddr=tmpKeyServer;
 		keyServer=true;
 		if(log.isDebugEnabled() && !forced)
-			log.debug("[" + local_addr + "] I have become the new key server ");
+			log.debug(getLocal_addr() + ":[" + local_addr + "] I have become the new key server ");
 		queue_down=false;
 		queue_up=false;
 	}
@@ -669,7 +670,7 @@ public class ENCRYPT extends Protocol {
 			keyServerAddr=newKeyServer;
 			keyServer=false;
 			if(log.isDebugEnabled())
-				log.debug("[" + local_addr + "] " + keyServerAddr + " has become the new key server, sending key request to it");
+				log.debug(getLocal_addr() + ":[" + local_addr + "] " + keyServerAddr + " has become the new key server, sending key request to it");
 
 			// create a key request message
 			sendKeyRequest();
@@ -692,13 +693,13 @@ public class ENCRYPT extends Protocol {
 		EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
 		if(hdr == null) {
 			if(log.isTraceEnabled())
-				log.trace("dropping message as ENCRYPT header is null or has not been recognized, msg will not be passed up, " +
+				log.trace(getLocal_addr() + ":dropping message as ENCRYPT header is null or has not been recognized, msg will not be passed up, " +
 						"headers are " + msg.printHeaders());
 			return;
 		}
 
 		if(log.isTraceEnabled())
-			log.trace("header received " + hdr);
+			log.trace(getLocal_addr() + ":header received " + hdr);
 
 		switch(hdr.getType()) {
 		case EncryptHeader.ENCRYPT:
@@ -716,7 +717,7 @@ public class ENCRYPT extends Protocol {
 		// if msg buffer is empty, and we didn't encrypt the entire message, just pass up
 		if(!hdr.encrypt_entire_msg && msg.getLength() == 0) {
 			if(log.isTraceEnabled())
-				log.trace("passing up message as it has an empty buffer ");
+				log.trace(getLocal_addr() + ":passing up message as it has an empty buffer ");
 			passItUp(evt);
 			return;
 		}
@@ -724,7 +725,7 @@ public class ENCRYPT extends Protocol {
 		// if queueing then pass into queue to be dealt with later
 		if(queue_up) {
 			if(log.isTraceEnabled())
-				log.trace("queueing up message as no session key established: " + msg);
+				log.trace(getLocal_addr() + ":queueing up message as no session key established: " + msg);
 			upMessageQueue.put(msg);
 		}
 		else {
@@ -739,11 +740,11 @@ public class ENCRYPT extends Protocol {
 			Message tmpMsg=currentState.decryptMessage( msg.copy(), hdr.encrypt_entire_msg);
 			if(tmpMsg != null) {
 				if(log.isTraceEnabled())
-					log.trace("decrypted message " + tmpMsg);
+					log.trace(getLocal_addr() + ":decrypted message " + tmpMsg);
 				passItUp(new Event(Event.MSG, tmpMsg));
 			}
 			else
-				log.warn("Unrecognised cipher discarding message");
+				log.warn(getLocal_addr() + ":Unrecognised cipher discarding message");
 		}
 	}
 
@@ -751,7 +752,7 @@ public class ENCRYPT extends Protocol {
 		// check if we had some sort of encrypt control header if using supplied key we should not process it
 		if(suppliedKey) {
 			if(log.isWarnEnabled())
-				log.warn("We received an encrypt header of " + hdr.getType() + " while in configured mode");
+				log.warn(getLocal_addr() + ":We received an encrypt header of " + hdr.getType() + " while in configured mode");
 			return;
 		}
 
@@ -760,7 +761,7 @@ public class ENCRYPT extends Protocol {
 		// if a key request
 		case EncryptHeader.KEY_REQUEST:
 			if(log.isDebugEnabled())
-				log.debug("received a key request from peer");
+				log.debug(getLocal_addr() + ":received a key request from peer");
 
 			// if a key request send response key back
 			try {
@@ -770,12 +771,12 @@ public class ENCRYPT extends Protocol {
 				sendSecretKey(this.symCipherState.get(), tmpKey, msg.getSrc());
 			}
 			catch(Exception e) {
-				log.warn("unable to reconstitute peer's public key");
+				log.warn(getLocal_addr() + ":unable to reconstitute peer's public key");
 			}
 			break;
 		case EncryptHeader.SECRETKEY:
 			if(log.isDebugEnabled())
-				log.debug("received a secretkey response from keyserver");
+				log.debug(getLocal_addr() + ":received a secretkey response from keyserver");
 
 			try {
 				SecretKey tmp=decodeKey(msg.getBuffer());
@@ -785,15 +786,15 @@ public class ENCRYPT extends Protocol {
 					// otherwise lets set the returned key as the shared key
 					setKeys(tmp, hdr.getVersion());
 					if(log.isDebugEnabled())
-						log.debug("Decoded secretkey response");
+						log.debug(getLocal_addr() + ":Decoded secretkey response");
 				}
 			}
 			catch(Exception e) {
-				log.warn("unable to process received public key");
+				log.warn(getLocal_addr() + ":unable to process received public key");
 			}
 			break;
 		default:
-			log.warn("Received ignored encrypt header of " + hdr.getType());
+			log.warn(getLocal_addr() + ":Received ignored encrypt header of " + hdr.getType());
 			break;
 		}
 	}
@@ -815,7 +816,7 @@ public class ENCRYPT extends Protocol {
 			if(log.isTraceEnabled()) {
 				int size=upMessageQueue.size();
 				if(size > 0)
-					log.trace("draining " + size + " messages from the up queue");
+					log.trace(getLocal_addr() + ":draining " + size + " messages from the up queue");
 			}
 			Message tmp=null;
 			while((tmp=upMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null) {
@@ -824,7 +825,7 @@ public class ENCRYPT extends Protocol {
 				if(msg != null)
 					passItUp(new Event(Event.MSG, msg));
 				else
-					log.warn("discarding message in queue up drain as cannot decode it");
+					log.warn(getLocal_addr() + ":discarding message in queue up drain as cannot decode it");
 			}
 		}
 	}
@@ -852,7 +853,7 @@ public class ENCRYPT extends Protocol {
 		this.symCipherState.set(newState);
 
 		// drain the up queue
-		log.debug("setting queue up to false in setKeys");
+		log.debug(getLocal_addr() + ":setting queue up to false in setKeys");
 		queue_up=false;
 		drainUpQueue();
 
@@ -872,15 +873,15 @@ public class ENCRYPT extends Protocol {
 	private Message decryptMessage(SymmetricCipherState cipherState, Message msg) throws Exception {
 		EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
 		if(!hdr.getVersion().equals(cipherState.getSymVersion())) {
-			log.warn("attempting to use stored cipher as message does not use current encryption version ");
-			SymmetricCipherState cipher=keyMap.getIfPresent(hdr.getVersion());
-			if(cipher == null) {
-				log.warn("Unable to find a matching cipher in previous key map");
+			log.warn(getLocal_addr() + ":attempting to use stored cipher as message does not use current encryption version ");
+			cipherState=keyMap.getIfPresent(hdr.getVersion());
+			if(cipherState == null) {
+				log.warn(getLocal_addr() + ":Unable to find a matching cipher in previous key map");
 				return null;
 			}
 			else {
 				if(log.isTraceEnabled())
-					log.trace("decrypting using previous cipher version " + hdr.getVersion());
+					log.trace(getLocal_addr() + ":decrypting using previous cipher version " + hdr.getVersion());
 			}
 		}
 
@@ -907,7 +908,7 @@ public class ENCRYPT extends Protocol {
 		Message newMsg;
 
 		if(log.isDebugEnabled())
-			log.debug("encoding shared key ");
+			log.debug(getLocal_addr() + ":encoding shared key ");
 
 		// create a cipher with peer's public key
 		Cipher tmp;
@@ -923,7 +924,7 @@ public class ENCRYPT extends Protocol {
 		.putHeader(this.id, new EncryptHeader(EncryptHeader.SECRETKEY, currentState.getSymVersion()));
 
 		if(log.isDebugEnabled())
-			log.debug(" Sending version " + currentState.getSymVersion() + " encoded key to client");
+			log.debug(getLocal_addr() + ": Sending version " + currentState.getSymVersion() + " encoded key to client " + source);
 		passItDown(new Event(Event.MSG,newMsg));
 	}
 
@@ -957,7 +958,7 @@ public class ENCRYPT extends Protocol {
 			try {
 				if(queue_down) {
 					if(log.isTraceEnabled())
-						log.trace("queueing down message as no session key established" + msg);
+						log.trace(getLocal_addr() + ":queueing down message as no session key established" + msg);
 					downMessageQueue.put(msg); // queue messages if we are waiting for a new key
 				}
 				else {
@@ -970,14 +971,14 @@ public class ENCRYPT extends Protocol {
 
 			}
 			catch(Exception e) {
-				log.warn("unable to send down event " + e);
+				log.warn(getLocal_addr() + ":unable to send down event " + e);
 			}
 			return null;
 
 		case Event.VIEW_CHANGE:
 			View view=(View)evt.getArg();
 			if(log.isDebugEnabled())
-				log.debug("new view: " + view);
+				log.debug(getLocal_addr() + ":new view: " + view);
 			if(!suppliedKey) {
 				handleViewChange(view, false);
 			}
@@ -986,7 +987,7 @@ public class ENCRYPT extends Protocol {
 		case Event.SET_LOCAL_ADDRESS:
 			local_addr=(Address)evt.getArg();
 			if(log.isDebugEnabled())
-				log.debug("set local address to " + local_addr);
+				log.debug(getLocal_addr() + ":set local address to " + local_addr);
 			break;
 
 		case Event.TMP_VIEW:
@@ -1022,7 +1023,7 @@ public class ENCRYPT extends Protocol {
 			if(log.isTraceEnabled()) {
 				int size=downMessageQueue.size();
 				if(size > 0)
-					log.trace("draining " + size + " messages from the down queue");
+					log.trace(getLocal_addr() + ":draining " + size + " messages from the down queue");
 			}
 			Message tmp=null;
 			while((tmp=downMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null) {
@@ -1037,15 +1038,12 @@ public class ENCRYPT extends Protocol {
 	 * @throws Exception
 	 */
 	private void sendDown(Message msg) throws Exception {
-		if(msg.getLength() == 0 && !encrypt_entire_message) {
-			passItDown(new Event(Event.MSG, msg));
-			return;
-		}
+
 		SymmetricCipherState symState = this.symCipherState.get();
 		EncryptHeader hdr=new EncryptHeader(EncryptHeader.ENCRYPT, symState.getSymVersion());
 		hdr.encrypt_entire_msg=this.encrypt_entire_message;
 
-		if(encrypt_entire_message) {
+		if(hdr.encrypt_entire_msg) {
 			if(msg.getSrc() == null)
 				msg.setSrc(local_addr);
 			byte[] serialized_msg=Util.streamableToByteBuffer(msg);
@@ -1061,19 +1059,20 @@ public class ENCRYPT extends Protocol {
 				tmp.setSrc(local_addr);
 			tmp.putHeader(this.id, hdr);
 			passItDown(new Event(Event.MSG, tmp));
-			return;
+		} else {
+
+			// put our encrypt header on the message
+			msg.putHeader(this.id, hdr);
+
+			// copy neeeded because same message (object) may be retransmitted -> no double encryption
+			Message msgEncrypted=msg.copy(false);
+			msgEncrypted.setBuffer(symState.encryptMessage(
+					msg.getRawBuffer(),
+					msg.getOffset(),
+					msg.getLength()));
+			passItDown(new Event(Event.MSG, msgEncrypted));
+
 		}
-
-		// put our encrypt header on the message
-		msg.putHeader(this.id, hdr);
-
-		// copy neeeded because same message (object) may be retransmitted -> no double encryption
-		Message msgEncrypted=msg.copy(false);
-		msgEncrypted.setBuffer(symState.encryptMessage(
-				msg.getRawBuffer(),
-				msg.getOffset(),
-				msg.getLength()));
-		passItDown(new Event(Event.MSG, msgEncrypted));
 	}
 
 
@@ -1138,13 +1137,6 @@ public class ENCRYPT extends Protocol {
 		return asymProvider;
 	}
 
-	//	/**
-	//	 * @return Returns the desKey.
-	//	 */
-	//	protected SecretKey getDesKey() {
-	//		return secretKey;
-	//	}
-
 	/**
 	 * @return Returns the kpair.
 	 */
@@ -1194,36 +1186,6 @@ public class ENCRYPT extends Protocol {
 		return asymAlgorithm;
 	}
 
-	//	/**
-	//	 * @return Returns the symVersion.
-	//	 */
-	//	private String getSymVersion() {
-	//		return symVersion;
-	//	}
-
-	//	/**
-	//	 * @param symVersion
-	//	 *                The symVersion to set.
-	//	 */
-	//	private void setSymVersion(String symVersion) {
-	//		this.symVersion=symVersion;
-	//	}
-	//
-	//	/**
-	//	 * @return Returns the secretKey.
-	//	 */
-	//	private SecretKey getSecretKey() {
-	//		return secretKey;
-	//	}
-
-	//	/**
-	//	 * @param secretKey
-	//	 *                The secretKey to set.
-	//	 */
-	//	private void setSecretKey(SecretKey secretKey) {
-	//		this.secretKey=secretKey;
-	//	}
-
 	/**
 	 * @return Returns the keyStoreName.
 	 */
@@ -1231,13 +1193,6 @@ public class ENCRYPT extends Protocol {
 		return keyStoreName;
 	}
 
-	//	/**
-	//	 * @return Returns the symDecodingCipher.
-	//	 */
-	//	protected Cipher getSymDecodingCipher() {
-	//		return symDecodingCipher;
-	//	}
-	//
 	/**
 	 * @return Returns the symEncodingCipher.
 	 */
