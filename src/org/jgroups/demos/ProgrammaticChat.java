@@ -18,7 +18,7 @@ import java.net.InetAddress;
 public class ProgrammaticChat {
 
     public static void main(String[] args) throws Exception {
-        JChannel ch=new JChannel(new UDP().setValue("bind_addr", InetAddress.getByName("192.168.1.5")),
+        JChannel ch=new JChannel(new UDP().setValue("bind_addr", InetAddress.getByName("127.0.0.1")),
                                  new PING(),
                                  new MERGE3(),
                                  new FD_SOCK(),
@@ -31,7 +31,7 @@ public class ProgrammaticChat {
                                  new GMS(),
                                  new UFC(),
                                  new MFC(),
-                                 new FRAG2());
+                                 new FRAG2()).name(args[0]);
 
         ch.setReceiver(new ReceiverAdapter() {
             public void viewAccepted(View new_view) {
