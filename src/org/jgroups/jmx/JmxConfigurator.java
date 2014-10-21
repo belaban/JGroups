@@ -10,7 +10,6 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 
 import javax.management.*;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -101,11 +100,10 @@ public class JmxConfigurator {
         for (Protocol p : protocols) {
             if (p.getClass().isAnnotationPresent(MBean.class)) {
                 try {
-                    unregister(p, server, getProtocolRegistrationName(clusterName, domain, p));
+                    String obj_name=getProtocolRegistrationName(clusterName, domain, p);
+                    unregister(p, server, obj_name);
                 } catch (MBeanRegistrationException e) {
-                    if (log.isWarnEnabled()) {
-                        log.warn("MBean unregistration failed " + e);
-                    }
+                    log.warn("MBean unregistration failed: " + e.getCause());
                 }
             }
         }
@@ -175,40 +173,31 @@ public class JmxConfigurator {
 
             ResourceDMBean res=new ResourceDMBean(obj);
             server.registerMBean(res, objName);
-        } catch (InstanceAlreadyExistsException e) {
-            if (log.isErrorEnabled()) {
-                log.error("register MBean failed " + e.getMessage());
-            }
+        }
+        catch (InstanceAlreadyExistsException e) {
             throw new MBeanRegistrationException(e, "The @MBean objectName is not unique");
-        } catch (NotCompliantMBeanException e) {
-            if (log.isErrorEnabled()) {
-                log.error("register MBean failed " + e.getMessage());
-            }
+        }
+        catch (NotCompliantMBeanException e) {
             throw new MBeanRegistrationException(e);
         }
-
     }
 
-    private static void internalUnregister(Object obj, MBeanServer server, String name)
-                    throws MBeanRegistrationException {
+    private static void internalUnregister(Object obj, MBeanServer server, String name) throws MBeanRegistrationException {
         try {
-            if (name != null && !name.isEmpty()) {
-                server.unregisterMBean(new ObjectName(name));
-            } else if (obj != null) {
-                server.unregisterMBean(getObjectName(obj, null));
-            } else {
-                throw new MBeanRegistrationException(null,
-                                "Cannot find MBean name from @MBean or passed in value");
-            }
-        } catch (InstanceNotFoundException infe) {
-            if (log.isErrorEnabled()) {
-                log.error("unregister MBean failed " + infe.getMessage());
-            }
+            ObjectName obj_name=null;
+            if(name != null && !name.isEmpty())
+                obj_name=new ObjectName(name);
+            else if(obj != null)
+                obj_name=getObjectName(obj, null);
+            else
+                throw new MBeanRegistrationException(null, "Cannot find MBean name from @MBean or passed in value");
+            if(server.isRegistered(obj_name))
+                server.unregisterMBean(obj_name);
+        }
+        catch (InstanceNotFoundException infe) {
             throw new MBeanRegistrationException(infe);
-        } catch (MalformedObjectNameException e) {
-            if (log.isErrorEnabled()) {
-                log.error("unregister MBean failed " + e.getMessage());
-            }
+        }
+        catch (MalformedObjectNameException e) {
             throw new MBeanRegistrationException(e);
         }
     }
@@ -227,16 +216,13 @@ public class JmxConfigurator {
   
     /**
      * Unregisters object_name and everything under it
-     * 
      * @param object_name
      */
     public static void unregister(MBeanServer server, String object_name) throws Exception {
         Set<ObjectName> mbeans = server.queryNames(new ObjectName(object_name), null);
-        if (mbeans != null) {
-            for (Iterator<ObjectName> it = mbeans.iterator(); it.hasNext();) {
-                server.unregisterMBean(it.next());
-            }
-        }
+        if(mbeans != null)
+            for (ObjectName name: mbeans)
+                server.unregisterMBean(name);
     }
 
     private static String getChannelRegistrationName(JChannel c, String domain, String clusterName) {
