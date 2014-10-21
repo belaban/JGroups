@@ -15,6 +15,7 @@ import java.io.ObjectOutput;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
 
@@ -30,6 +31,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.ENCRYPT.EncryptHeader;
 import org.jgroups.protocols.ENCRYPT.SymmetricCipherState;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -488,6 +490,31 @@ public class ENCRYPTAsymmetricTest {
 		Util.assertFalse(key.equals(keyAfterViewChange));
 
 	}
+	public static void testMessagesNotPassedUpDuringQueuingUp() throws Exception{
+
+		ENCRYPT node=new ENCRYPT();
+		node.setUpProtocol(new FailOnBatchProtocol());
+		node.changeKeysOnViewChange=true;
+		Address serverAddress=new MockAddress("server");
+		Address peerAddress=new MockAddress("peer");
+		node.setLocal_addr(peerAddress);
+		node.init();
+
+		// Send up view to activate queuing
+		Event initalView = createViewChange(1, serverAddress, peerAddress);
+		node.up(initalView);
+
+		Message msg = new Message(serverAddress);
+		msg.setBuffer("hello".getBytes());
+		EncryptHeader hdr=new EncryptHeader(EncryptHeader.ENCRYPT, "N/A");
+		msg.putHeader(node.getId(), hdr);
+		MessageBatch batch = new MessageBatch(Collections.singletonList(msg));
+
+		node.up(batch);
+
+
+
+	}
 
 	private static void updateViewFor(ENCRYPT peer, ENCRYPT keyServer,
 			MockObserver serverObserver, Event serverEvent,
@@ -625,5 +652,17 @@ public class ENCRYPTAsymmetricTest {
 		}
 	}
 
+	private static class FailOnBatchProtocol extends FRAG {
 
+		@Override
+		public Object up(Event evt) {
+			return null;
+		}
+
+		@Override
+		public void up(MessageBatch batch) {
+			throw new IllegalArgumentException("Protocol does not accept message batches");
+		}
+
+	}
 }

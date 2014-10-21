@@ -16,6 +16,5 @@
         <dependency org="xalan"                    name="xalan"           rev="2.7.1"/>
         <dependency org="org.testng"               name="testng"          rev="6.8.7"/>
         <dependency org="com.beust"                name="jcommander"      rev="1.5"/>
-        <dependency org="com.google.guava"         name="guava"           rev="12.0" />
     </dependencies>
 </ivy-module>
