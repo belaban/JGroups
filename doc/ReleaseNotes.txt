@@ -103,5 +103,5 @@ The complete list of features and bug fixes can be found at http://jira.jboss.co
 
 
 Bela Ban, Kreuzlingen, Switzerland
-Sept 2014
+Oct 2014
 
