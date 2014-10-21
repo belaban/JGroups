@@ -10,8 +10,29 @@ Author: Bela Ban
 New features
 ============
 
+CENTRAL_LOCK: lock owners can be node rather than individual threads
+--------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1886]
+
+Added an option to make the node the lock owner rather than the combo node:thread. This was needed by the JGroups
+clustering plugin for vert.x.
 
 
+RSVP: option to not block caller
+--------------------------------
+[https://issues.jboss.org/browse/JGRP-1851]
+
+This way, a caller knows that its message will get resent, but it doesn't have to block. Also added code to skip
+RSVP if the message was unicast and UNICAST3 was used as protocol (only used for multicast messages).
+
+
+Docker image for JGroups
+------------------------
+[https://issues.jboss.org/browse/JGRP-1840]
+
+mcast: new multicast diagnosis tool
+-----------------------------------
+[https://issues.jboss.org/browse/JGRP-1832]
 
 
 
@@ -19,8 +40,8 @@ New features
 Optimizations
 =============
 
-Limit the max size of retransmission requests
----------------------------------------------
+UNICAST3 / NAKACK2: limit the max size of retransmission requests
+-----------------------------------------------------------------
 [https://issues.jboss.org/browse/JGRP-1868]
 
 When we have a retransmission request in UNICAST3 or NAKACK2 for a large number of messages, then the size of the
@@ -28,15 +49,47 @@ retransmit message may become larger than what the transport can handle, and is 
 retransmissions.
 The fix here is to retransmit only the oldest N messages such that the retransmit message doesn't exceed the max
 bundling size of the transport and to use a bitmap to identify missing messages to be retransmitted.
+Also, the bitmaps used by SeqnoList reduce the size of a retransmission message.
 
 
+Channel creation has unneeded synchronization
+---------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1887]
 
+Slowing down parallel creation of many channels; this was removed.
+
+
+UNICAST3: sync receiver table with sender table
+-----------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1875]
+
+In some edge cases, a receiver would not sync correctly with a sender.
 
 
 
 Bug fixes
 =========
 
+JMX: unregistering a channel which didn't register any protocols issues warnings
+--------------------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1894]
+
+
+UDP: ip_ttl was ignored and is always 1
+---------------------------------------
+[https://issues.jboss.org/browse/JGRP-1880]
+
+
+MERGE3: in some cases, the information about subgroups is incorrect
+-------------------------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1876]
+
+The actual MergeView was always correct, but the information about subgroups wasn't.
+
+
+RELAY2 doesn't work with FORK
+-----------------------------
+[https://issues.jboss.org/browse/JGRP-1875]
 
 
 
