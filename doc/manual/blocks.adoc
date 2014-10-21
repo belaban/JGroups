@@ -487,7 +487,7 @@ public void testResponseFilter() throws Exception {
 Here, we invoke a cluster wide RPC (dests=null), which blocks (mode=`GET_ALL`) for 10 seconds max
 (timeout=10000), but also passes an instance of RspFilter to the call (in options).
           
-The filter accepts all responses whose value is greater than 2, and returns as soon as it has received
+The filter accepts all responses whose value is greater than 1, and returns as soon as it has received
 2 responses which satisfy the above condition.
           
 
