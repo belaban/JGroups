@@ -11,6 +11,7 @@ import javax.security.auth.callback.CallbackHandler;
 import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
+import javax.security.sasl.SaslServerFactory;
 
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
@@ -23,21 +24,21 @@ public class SaslServerContext implements SaslContext {
     CountDownLatch latch = new CountDownLatch(1);
     Subject subject;
 
-    public SaslServerContext(final String mech, final String serverName, final CallbackHandler callback_handler, final Map<String, String> props, final Subject subject) throws SaslException {
+    public SaslServerContext(final SaslServerFactory saslServerFactory, final String mech, final String serverName, final CallbackHandler callback_handler, final Map<String, String> props, final Subject subject) throws SaslException {
         this.subject = subject;
         if (this.subject != null) {
             try {
                 server = Subject.doAs(this.subject, new PrivilegedExceptionAction<SaslServer>() {
                     @Override
                     public SaslServer run() throws Exception {
-                        return Sasl.createSaslServer(mech, "jgroups", serverName, props, callback_handler);
+                        return saslServerFactory.createSaslServer(mech, SASL.SASL_PROTOCOL_NAME, serverName, props, callback_handler);
                     }
                 });
             } catch (PrivilegedActionException e) {
                 throw (SaslException)e.getCause(); // The createSaslServer will only throw this type of exception
             }
         } else {
-            server = Sasl.createSaslServer(mech, "jgroups", serverName, props, callback_handler);
+            server = saslServerFactory.createSaslServer(mech, SASL.SASL_PROTOCOL_NAME, serverName, props, callback_handler);
         }
     }
 
@@ -74,7 +75,7 @@ public class SaslServerContext implements SaslContext {
             latch.countDown();
         }
         if (challenge != null) {
-            return message.putHeader(SASL.SASL_ID, new SaslHeader(Type.RESPONSE, challenge));
+            return message.putHeader(SASL.SASL_ID, new SaslHeader(Type.CHALLENGE, challenge));
         } else {
             return null;
         }

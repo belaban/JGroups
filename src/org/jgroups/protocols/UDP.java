@@ -292,44 +292,16 @@ public class UDP extends TP {
 
     /* ------------------------------ Private Methods -------------------------------- */
 
-    /**
-     * Create UDP sender and receiver sockets. Currently there are 2 sockets
-     * (sending and receiving). This is due to Linux's non-BSD compatibility
-     * in the JDK port (see DESIGN).
-     */
+    /** Creates the  UDP sender and receiver sockets */
     protected void createSockets() throws Exception {
-        // bind_addr not set, try to assign one by default. This is needed on Windows
+        if(bind_addr == null)
+            throw new IllegalArgumentException("bind_addr cannot be null") ;
 
-        // changed by bela Feb 12 2003: by default multicast sockets will be bound to all network interfaces
-
-        // CHANGED *BACK* by bela March 13 2003: binding to all interfaces did not result in a correct
-        // local_addr. As a matter of fact, comparison between e.g. 0.0.0.0:1234 (on hostA) and
-        // 0.0.0.0:1.2.3.4 (on hostB) would fail !
-//        if(bind_addr == null) {
-//            InetAddress[] interfaces=InetAddress.getAllByName(InetAddress.getLocalHost().getHostAddress());
-//            if(interfaces != null && interfaces.length > 0)
-//                bind_addr=interfaces[0];
-//        }
-    	// RA 14 Sep 09: These lines were never called as bind_addr always returned a non-null value             	
-//        if(bind_addr == null && !use_local_host) {
-//            bind_addr=Util.getFirstNonLoopbackAddress();
-//        }
-//        if(bind_addr == null)
-//            bind_addr=InetAddress.getLocalHost();
-    	
-    	if(bind_addr == null)
-    		throw new IllegalArgumentException("bind_addr cannot be null") ;
-
-//    	RA: 16 Sep 09: need to resolve the use of use_local_host 
-//    	if(bind_addr != null && !bind_addr.isLoopbackAddress() && use_local_host) {
-//    		throw new IllegalArgumentException("must use use localhost as a bind address") ;
-//    	}
-
+        Util.checkIfValidAddress(bind_addr, getName());
         if(log.isDebugEnabled()) log.debug("sockets will use interface " + bind_addr.getHostAddress());
 
-
-        // 2. Create socket for receiving unicast UDP packets. The address and port
-        //    of this socket will be our local address (local_addr)
+        // 2. Create socket for receiving unicast UDP packets and sending of IP multicast packets. The address and port
+        //    of this socket will be our local physical address (local_addr)
         if(bind_port > 0) {
             sock=createDatagramSocketWithBindPort();
         }

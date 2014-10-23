@@ -210,13 +210,15 @@ public class DiagnosticsHandler implements Runnable {
         for(Iterator<NetworkInterface> it=interfaces.iterator(); it.hasNext();) {
             NetworkInterface i=it.next();
             try {
-                if (i.isUp() && !i.getInterfaceAddresses().isEmpty()) { // fix for VM crash - suggested by JJalenak@netopia.com
-                    s.joinGroup(group_addr, i);
-                    if(log.isTraceEnabled())
-                        log.trace("joined " + group_addr + " on " + i.getName());
+                if (i.isUp()) {
+                    List<InterfaceAddress> inet_addrs=i.getInterfaceAddresses();
+                    if(inet_addrs != null && !inet_addrs.isEmpty()) { // fix for VM crash - suggested by JJalenak@netopia.com
+                        s.joinGroup(group_addr, i);
+                        log.trace("joined %s on %s", group_addr, i.getName());
+                    }
                 }
             }
-            catch(IOException e) {
+            catch(Exception e) { // also catches NPE in getInterfaceAddresses() (https://issues.jboss.org/browse/JGRP-1845)
                 log.warn("failed to join " + group_addr + " on " + i.getName() + ": " + e);
             }
         }

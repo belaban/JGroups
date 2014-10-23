@@ -72,12 +72,14 @@ public class ForkChannel extends JChannel implements ChannelListener {
         this.main_channel=main_channel;
         this.fork_channel_id=fork_channel_id;
 
-        FORK fork=getFORK(main_channel, position, neighbor, create_fork_if_absent);
-        Protocol bottom_prot=fork.get(fork_stack_id);
-        if(bottom_prot == null) // Create the fork-stack if absent
-            bottom_prot=fork.createForkStack(fork_stack_id, new ForkProtocolStack(), false,
-                                             protocols == null? null : Arrays.asList(protocols));
-
+        Protocol bottom_prot=null;
+        synchronized(ForkChannel.class) { // To prevent multiple concurrent FORK creations https://issues.jboss.org/browse/JGRP-1842
+            FORK fork=getFORK(main_channel, position, neighbor, create_fork_if_absent);
+            bottom_prot=fork.get(fork_stack_id);
+            if(bottom_prot == null) // Create the fork-stack if absent
+                bottom_prot=fork.createForkStack(fork_stack_id, new ForkProtocolStack(), false,
+                                                 protocols == null? null : Arrays.asList(protocols));
+        }
         prot_stack=getForkStack(bottom_prot);
         flush_supported=main_channel.flushSupported();
     }

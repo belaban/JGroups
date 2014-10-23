@@ -175,8 +175,10 @@ public class TableTest {
 
     public void testAddWithWrapAroundAndRemoveMany() {
         Table<Integer> buf=new Table<Integer>(3, 10, 5);
-        for(int i=6; i <=15; i++)
-            assert buf.add(i, i) : "addition of seqno " + i + " failed";
+        for(int i=6; i <=15; i++) {
+            boolean rc=buf.add(i, i);
+            assert rc : "addition of seqno " + i + " failed";
+        }
         System.out.println("buf = " + buf);
         List<Integer> removed=buf.removeMany(true, 3);
         System.out.println("removed " + removed);
@@ -1083,6 +1085,20 @@ public class TableTest {
         System.out.println("table = " + table);
         assert table.isEmpty();
         assertIndices(table, 40, 40, 40);
+    }
+
+    // Tests purge(40) followed by purge(20) - the second purge() should be ignored
+    // https://issues.jboss.org/browse/JGRP-1872
+    public void testPurgeLower() {
+        Table<Integer> table=new Table<Integer>(3, 10, 0);
+        for(int i=1; i <= 30; i++)
+            table.add(i, i);
+        System.out.println("table = " + table);
+        table.purge(20, true);
+        assertIndices(table, 20, 20, 30);
+
+        table.purge(15, true);
+        assertIndices(table, 20,20, 30);
     }
 
 

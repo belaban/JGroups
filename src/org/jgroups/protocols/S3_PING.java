@@ -35,19 +35,19 @@ import static java.lang.String.valueOf;
  */
 public class S3_PING extends FILE_PING {
 
-    @Property(description="The access key to AWS (S3)")
+    @Property(description="The access key to AWS (S3)",exposeAsManagedAttribute=false)
     protected String access_key=null;
 
-    @Property(description="The secret access key to AWS (S3)")
+    @Property(description="The secret access key to AWS (S3)",exposeAsManagedAttribute=false)
     protected String secret_access_key=null;
 
     @Property(description="When non-null, we set location to prefix-UUID")
     protected String prefix=null;
 
-    @Property(description="When non-null, we use this pre-signed URL for PUTs")
+    @Property(description="When non-null, we use this pre-signed URL for PUTs",exposeAsManagedAttribute=false)
     protected String pre_signed_put_url=null;
 
-    @Property(description="When non-null, we use this pre-signed URL for DELETEs")
+    @Property(description="When non-null, we use this pre-signed URL for DELETEs",exposeAsManagedAttribute=false)
     protected String pre_signed_delete_url=null;
 
     protected AWSAuthConnection conn=null;
