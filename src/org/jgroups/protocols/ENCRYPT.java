@@ -862,10 +862,10 @@ public class ENCRYPT extends Protocol {
 	private Message decryptMessage(SymmetricCipherState cipherState, Message msg) throws Exception {
 		EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
 		if(!hdr.getVersion().equals(cipherState.getSymVersion())) {
-			log.warn(getLocal_addr() + ": attempting to use stored cipher as message does not use current encryption version ");
+			log.warn(getLocal_addr() + ": attempting to use stored cipher as message does not use current encryption version. Sender: " + msg.getSrc());
 			cipherState=keyMap.get(hdr.getVersion());
 			if(cipherState == null) {
-				log.warn(getLocal_addr() + ": Unable to find a matching cipher in previous key map");
+				log.warn(getLocal_addr() + ": Unable to find a matching cipher ("+ hdr.getVersion()+") in previous key map");
 				return null;
 			}
 			else {
