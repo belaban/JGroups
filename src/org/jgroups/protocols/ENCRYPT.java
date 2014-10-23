@@ -615,7 +615,7 @@ public class ENCRYPT extends Protocol {
 					log.debug(getLocal_addr() + ": Initalizing new ciphers");
 				}
 				SecretKey newKey = generateSymKey();
-				this.symCipherState.set(SymmetricCipherState.of(newKey, this));
+				setKeys(newKey);
 			}
 
 		} catch (Exception e) {
@@ -775,7 +775,9 @@ public class ENCRYPT extends Protocol {
 					sendKeyRequest(); // unable to understand response, let's try again
 				else {
 					// otherwise lets set the returned key as the shared key
-					setKeys(tmp, hdr.getVersion());
+					setKeys(tmp);
+					drainQueues();
+
 					if(log.isDebugEnabled())
 						log.debug(getLocal_addr() + ": Decoded secretkey response");
 				}
@@ -832,7 +834,7 @@ public class ENCRYPT extends Protocol {
 	 * @param version
 	 * @throws Exception
 	 */
-	private void setKeys(SecretKey key, String version) throws Exception {
+	private void setKeys(SecretKey key) throws Exception {
 
 		SymmetricCipherState oldState = this.symCipherState.get();
 		// put the previous key into the map
@@ -844,8 +846,11 @@ public class ENCRYPT extends Protocol {
 
 		this.symCipherState.set(newState);
 
+	}
+
+	private void drainQueues() throws Exception {
 		// drain the up queue
-		log.debug(getLocal_addr() + ": setting queue up to false in setKeys");
+		log.debug(getLocal_addr() + ": Draining queues");
 		queue_up=false;
 		drainUpQueue();
 
