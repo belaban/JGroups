@@ -8,6 +8,7 @@ package org.jgroups.protocols;
 
 
 import java.security.Security;
+import java.util.Collections;
 import java.util.TreeMap;
 
 import javax.crypto.SecretKey;
@@ -21,6 +22,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.ENCRYPT.EncryptHeader;
 import org.jgroups.protocols.ENCRYPT.SymmetricCipherState;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.AsciiString;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -453,6 +455,33 @@ public class ENCRYPTAsymmetricTest {
 		Util.assertFalse(key.equals(keyAfterViewChange));
 	}
 
+	public static void testMessagesNotPassedUpDuringQueuingUp() throws Exception{
+
+		ENCRYPT node=new ENCRYPT();
+		MockProtocol observer = new MockProtocol();
+		node.setUpProtocol(observer);
+		node.setDownProtocol(observer);
+		node.changeKeysOnViewChange=true;
+		Address serverAddress=server_addr;
+		Address peerAddress=peer_addr;
+		node.setLocalAddress(peerAddress);
+		node.init();
+
+		// Send up view to activate queuing
+		Event initalView = new Event(Event.VIEW_CHANGE, View.create(server_addr, 1, server_addr, peerAddress));
+		node.up(initalView);
+
+		Message msg = new Message(serverAddress);
+		msg.setBuffer("hello".getBytes());
+		EncryptHeader hdr=new EncryptHeader(EncryptHeader.ENCRYPT, new AsciiString("N/A").chars());
+		msg.putHeader(node.getId(), hdr);
+		MessageBatch batch = new MessageBatch(Collections.singletonList(msg));
+
+		node.up(batch);
+
+
+
+	}
 	private static void updateViewFor(ENCRYPT peer, ENCRYPT keyServer, MockProtocol serverObserver, Event serverEvent,
 			MockProtocol peerObserver) {
 		peer.up(serverEvent);
