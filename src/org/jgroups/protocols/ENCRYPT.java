@@ -36,6 +36,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
+import org.jgroups.UnrecognizedCipherException;
 import org.jgroups.View;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
@@ -524,26 +525,22 @@ public class ENCRYPT extends Protocol {
 				if(queue_up) {
 					if(log.isTraceEnabled())
 						log.trace(getLocal_addr() + ": queueing up message as no session key established: " + msg);
-					try {
-						upMessageQueue.put(msg);
-						batch.remove(msg);
-					}
-					catch(InterruptedException e) {
-					}
+					queueMessage(msg);
+					batch.remove(msg);
 				} else {
 					// make sure we pass up any queued messages first
 					// could be more optimised but this can wait we only need this if not using supplied key
-					if(!suppliedKey) {
-						try {
-							drainUpQueue();
-						}
-						catch(Exception e) {
-							log.error(getLocal_addr() + ": failed draining up queue", e);
-						}
-					}
+					if(!suppliedKey && !drainUpQueue(false)) {
+						queueMessage(msg);
+						batch.remove(msg);
 
-					decryptSingleMessageInBatch(batch, msg, currentState);
+					}
+					else {
+						decryptSingleMessageInBatch(batch, msg, currentState);
+					}
 				}
+
+
 				break;
 			default:
 				batch.remove(msg); // a control message will get handled by ENCRYPT and should not be passed up
@@ -557,23 +554,25 @@ public class ENCRYPT extends Protocol {
 		}
 	}
 
+	private void queueMessage(Message msg) {
+		try {
+			upMessageQueue.put(msg);
+		}
+		catch(InterruptedException e) {
+		}
+	}
+
 	private void decryptSingleMessageInBatch(MessageBatch batch, Message msg,
 			SymmetricCipherState currentState) {
 		// try and decrypt the message - we need to copy msg as we modify its
 		// buffer (http://jira.jboss.com/jira/browse/JGRP-538)
-		try {
-			Message tmpMsg=decryptMessage(currentState,  msg.copy());
+		Message tmpMsg=tryDecryptMessage(currentState,  msg.copy());
 
-			if(tmpMsg != null)
-				batch.replace(msg, tmpMsg);
-			else {
-				batch.remove(msg);
-				log.warn(getLocal_addr() + ": Unrecognised cipher discarding message");
-			}
-		}
-		catch(Exception e) {
+		if(tmpMsg != null)
+			batch.replace(msg, tmpMsg);
+		else {
 			batch.remove(msg);
-			log.error(getLocal_addr() + ": failed decrypting message from " + msg.getSrc(), e);
+			log.warn(getLocal_addr() + ": Unrecognised cipher discarding message");
 		}
 	}
 
@@ -718,25 +717,42 @@ public class ENCRYPT extends Protocol {
 			if(log.isTraceEnabled())
 				log.trace(getLocal_addr() + ": queueing up message as no session key established: " + msg);
 			upMessageQueue.put(msg);
-		}
-		else {
+		} else {
 			SymmetricCipherState currentState = this.symCipherState.get();
 			// make sure we pass up any queued messages first
 			// could be more optimised but this can wait we only need this if not using supplied key
-			if(!suppliedKey)
-				drainUpQueue();
+			if(!suppliedKey && !drainUpQueue(false)) {
+				log.trace(getLocal_addr() + ": Draining queue failed");
+				upMessageQueue.put(msg);
+			} else {
 
-			// try and decrypt the message - we need to copy msg as we modify its
-			// buffer (http://jira.jboss.com/jira/browse/JGRP-538)
-			Message tmpMsg=currentState.decryptMessage( msg.copy(), hdr.encrypt_entire_msg);
-			if(tmpMsg != null) {
-				if(log.isTraceEnabled())
-					log.trace(getLocal_addr() + ": decrypted message " + tmpMsg);
-				passItUp(new Event(Event.MSG, tmpMsg));
+				// try and decrypt the message - we need to copy msg as we modify its
+				// buffer (http://jira.jboss.com/jira/browse/JGRP-538)
+				Message tmpMsg=tryDecryptMessage(currentState, msg);
+				//currentState.decryptMessage( msg.copy(), hdr.encrypt_entire_msg);
+				if(tmpMsg != null) {
+					if(log.isTraceEnabled())
+						log.trace(getLocal_addr() + ": decrypted message " + tmpMsg);
+					passItUp(new Event(Event.MSG, tmpMsg));
+				}
+				else
+					log.warn(getLocal_addr() + ": Unrecognised cipher discarding message");
 			}
-			else
-				log.warn(getLocal_addr() + ": Unrecognised cipher discarding message");
+
 		}
+	}
+
+	private Message tryDecryptMessage(SymmetricCipherState currentState, Message encryptedMsg) {
+		try {
+			return doDecryptMessage(currentState, encryptedMsg);
+		}catch (UnrecognizedCipherException uce) {
+			log.warn(getLocal_addr() + ": Unrecognized cipher, queuing up message");
+			queue_up = true;
+			queueMessage(encryptedMsg);
+		}catch (Exception e) {
+			log.error(getLocal_addr() + ": Exception caught during decryption.", e);
+		}
+		return null;
 	}
 
 	protected void handleUpEvent(Message msg, EncryptHeader hdr) {
@@ -800,7 +816,7 @@ public class ENCRYPT extends Protocol {
 	 * @throws QueueClosedException
 	 * @throws Exception
 	 */
-	private void drainUpQueue() throws Exception {
+	private boolean drainUpQueue(boolean forceDrain)  {
 
 		// Synchronized in order to make sure two threads are not
 		// draining the queue at the same time
@@ -812,15 +828,33 @@ public class ENCRYPT extends Protocol {
 					log.trace(getLocal_addr() + ": draining " + size + " messages from the up queue");
 			}
 			Message tmp=null;
-			while((tmp=upMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null) {
-				Message msg=decryptMessage(this.symCipherState.get(), tmp.copy());
+			try {
+				while((tmp=upMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null) {
+					try {
 
-				if(msg != null)
-					passItUp(new Event(Event.MSG, msg));
-				else
-					log.warn(getLocal_addr() + ": discarding message in queue up drain as cannot decode it");
+						Message msg=doDecryptMessage(this.symCipherState.get(), tmp.copy());
+
+						if(msg != null)
+							passItUp(new Event(Event.MSG, msg));
+						else
+							log.warn(getLocal_addr() + ": discarding message in queue up drain as cannot decode it");
+					} catch ( UnrecognizedCipherException uce) {
+						log.warn(getLocal_addr() + ": Unrecognized cipher encountered.");
+						if ( forceDrain) {
+							log.warn(getLocal_addr() + ": Forced drain, continuing");
+						} else {
+							log.warn(getLocal_addr() + ": Skipping rest of messages");
+							queue_up = true;
+							return false;
+						}
+					}
+				}
+			} catch (Exception e) {
+				log.error(getLocal_addr() + ": Draining up queue failed.", e);
+				return false;
 			}
 		}
+		return true;
 	}
 
 	/**
@@ -852,7 +886,7 @@ public class ENCRYPT extends Protocol {
 		// drain the up queue
 		log.debug(getLocal_addr() + ": Draining queues");
 		queue_up=false;
-		drainUpQueue();
+		drainUpQueue(true);
 
 		queue_down=false;
 		drainDownQueue();
@@ -867,14 +901,14 @@ public class ENCRYPT extends Protocol {
 	 * @return
 	 * @throws Exception
 	 */
-	private Message decryptMessage(SymmetricCipherState cipherState, Message msg) throws Exception {
+	private Message doDecryptMessage(SymmetricCipherState cipherState, Message msg) throws UnrecognizedCipherException, Exception {
 		EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
 		if(!hdr.getVersion().equals(cipherState.getSymVersion())) {
 			log.warn(getLocal_addr() + ": attempting to use stored cipher as message does not use current encryption version. Sender: " + msg.getSrc());
 			cipherState=keyMap.get(hdr.getVersion());
 			if(cipherState == null) {
 				log.warn(getLocal_addr() + ": Unable to find a matching cipher ("+ hdr.getVersion()+") in previous key map");
-				return null;
+				throw new UnrecognizedCipherException();
 			}
 			else {
 				if(log.isTraceEnabled())
