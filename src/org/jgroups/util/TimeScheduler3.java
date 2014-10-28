@@ -257,7 +257,8 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
 
         public int compareTo(Delayed o) {
             long my_delay=getDelay(TimeUnit.NANOSECONDS), other_delay=o.getDelay(TimeUnit.NANOSECONDS);
-            return Long.compare(my_delay, other_delay);
+            // return Long.compare(my_delay, other_delay); // JDK 7 only
+            return (my_delay < other_delay) ? -1 : ((my_delay == other_delay) ? 0 : 1);
         }
 
         public long getDelay(TimeUnit unit) {

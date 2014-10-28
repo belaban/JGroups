@@ -1,17 +1,17 @@
 package org.jgroups.protocols;
 
+import org.jgroups.Event;
+import org.jgroups.annotations.Property;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
+import org.jgroups.util.Util;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
-
-import org.jgroups.Event;
-import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Util;
 
 
 /**
@@ -131,7 +131,9 @@ public class DELAY extends Protocol {
         public int compareTo(Delayed o) {
             if (o == this)
                 return 0;
-            return Long.compare(this.getDelay(TimeUnit.NANOSECONDS), o.getDelay(TimeUnit.NANOSECONDS));
+            // return Long.compare(this.getDelay(TimeUnit.NANOSECONDS), o.getDelay(TimeUnit.NANOSECONDS)); // JDK 7 only
+            long my_delay=this.getDelay(TimeUnit.NANOSECONDS), other_delay=o.getDelay(TimeUnit.NANOSECONDS);
+            return (my_delay < other_delay) ? -1 : ((my_delay == other_delay) ? 0 : 1);
         }
     }
 
