@@ -24,7 +24,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -508,7 +507,7 @@ public class ENCRYPT extends Protocol {
 
 	@Override
 	public void up(MessageBatch batch) {
-		Decrypter decrypter=new Decrypter();
+		Decrypter decrypter=new Decrypter(getSymState());
 		batch.map(decrypter);
 		if(!batch.isEmpty())
 			up_prot.up(batch);
@@ -620,25 +619,22 @@ public class ENCRYPT extends Protocol {
 
 
 	protected Object handleEncryptedMessage(Message msg, Event evt, EncryptHeader hdr) throws Exception {
-		// if queueing then pass into queue to be dealt with later
+
 		if(queue_up) {
-			log.trace(local_addr + ":  queueing up message as no session key established: %s", msg);
+			// if queueing then pass into queue to be dealt with later
 			upMessageQueue.put(msg);
+			log.trace(local_addr + ":  queueing up message as no session key established: %s", msg);
 			return null;
+		} else if (!suppliedKey){
+			drainUpQueue(false);
 		}
 
-		// make sure we pass up any queued messages first
-		// could be more optimised but this can wait we only need this if not using supplied key
-		if(!suppliedKey)
-			drainUpQueue();
-
-		// try and decrypt the message - we need to copy msg as we modify its
-		// buffer (http://jira.jboss.com/jira/browse/JGRP-538)
-		Message tmpMsg=decryptMessage(this.symCipherState.get(), msg.copy()); // need to copy for possible xmits
-		if(tmpMsg != null)
+		Message tmpMsg = tryDecryptMessage(getSymState(), msg.copy());
+		if(tmpMsg != null) {
 			return up_prot.up(new Event(Event.MSG, tmpMsg));
-		log.warn(local_addr + ":  unrecognised cipher; discarding message");
-		return null;
+		} else {
+			return null;
+		}
 	}
 
 	protected void handleUpEvent(Message msg, EncryptHeader hdr) {
@@ -675,7 +671,7 @@ public class ENCRYPT extends Protocol {
 				else {
 					// otherwise lets set the returned key as the shared key
 					setKeys(tmp);
-					drainQueues();
+					drainAllQueues();
 					log.debug(local_addr + ":  decoded secretkey response");
 				}
 			}
@@ -689,11 +685,11 @@ public class ENCRYPT extends Protocol {
 		}
 	}
 
-	private void drainQueues() throws Exception {
+	private void drainAllQueues() throws Exception {
 		// drain the up queue
 		log.debug(local_addr + ": Draining queues");
 		queue_up=false;
-		drainUpQueue();
+		drainUpQueue(true);
 
 		queue_down=false;
 		drainDownQueue();
@@ -702,7 +698,7 @@ public class ENCRYPT extends Protocol {
 	 * used to drain the up queue - synchronized so we can call it safely
 	 * despite access from potentially two threads at once
 	 */
-	private void drainUpQueue() {
+	private void drainUpQueue(boolean forceDrain) {
 		if(log.isTraceEnabled()) {
 			int size=upMessageQueue.size();
 			if(size > 0)
@@ -717,8 +713,16 @@ public class ENCRYPT extends Protocol {
 				Message msg=decryptMessage(currentState, tmp.copy()); // need to copy for possible xmits
 				if(msg != null)
 					up_prot.up(new Event(Event.MSG, msg));
-			}
-			catch(Throwable t) {
+			} catch ( UnrecognizedCipherException uce) {
+				log.warn(local_addr + ":  Unrecognized cipher used in message", uce);
+				if ( forceDrain) {
+					log.warn("Discarding message");
+				} else {
+					log.warn("Cancelling drain");
+					queue_up = true;
+					return;
+				}
+			} catch(Throwable t) {
 				log.error(local_addr + ":  failed decrypting and sending message up when draining queue", t);
 			}
 		}
@@ -773,14 +777,14 @@ public class ENCRYPT extends Protocol {
 	/**
 	 * Does the actual work for decrypting - if version does not match current cipher then tries the previous cipher
 	 */
-	private Message decryptMessage(SymmetricCipherState cipherState,  Message msg) throws Exception {
+	private Message decryptMessage(SymmetricCipherState cipherState,  Message msg) throws UnrecognizedCipherException, Exception {
 		EncryptHeader hdr=(EncryptHeader)msg.getHeader(this.id);
 		if(!Arrays.equals(hdr.getVersion(),cipherState.getSymVersion().chars())) {
 			log.warn(local_addr + ":  attempting to use stored cipher as message does not use current encryption version ");
 			cipherState=keyMap.get(new AsciiString(hdr.getVersion()));
 			if(cipherState == null) {
 				log.warn(local_addr + ": Unable to find a matching cipher ("+ hdr.getVersion()+") in previous key map");
-				return null;
+				throw new UnrecognizedCipherException();
 			}
 			else {
 				if(log.isTraceEnabled())
@@ -840,8 +844,9 @@ public class ENCRYPT extends Protocol {
 				}
 				else {
 					// make sure the down queue is drained first to keep ordering
-					if(!suppliedKey)
+					if(!suppliedKey) {
 						drainDownQueue();
+					}
 					encryptAndSend(msg);
 				}
 			}
@@ -951,40 +956,46 @@ public class ENCRYPT extends Protocol {
 	}
 
 
+	private Message tryDecryptMessage(SymmetricCipherState  currentState, Message msg) {
+		Message decryptedMsg = null;
+		try {
+			decryptedMsg=decryptMessage(currentState, msg.copy()); // need to copy for possible xmits
 
+		} catch ( UnrecognizedCipherException uce) {
+			queue_up = true;
+			log.warn(local_addr + ": Unrecognized cipher, startin queuing until new view received");
+		}catch(Exception e) {
+			log.error(local_addr + ":  failed decrypting message from %s (offset=%d, length=%d, buf.length=%d): %s, headers are %s",
+					msg.getSrc(), msg.getOffset(), msg.getLength(), msg.getRawBuffer().length, e, msg.printHeaders());
+		}
+		return decryptedMsg;
+	}
 
 	/** Decrypts all messages in a batch, replacing encrypted messages in-place with their decrypted versions */
 	protected class Decrypter implements MessageBatch.Visitor<Message> {
-		protected Lock   lock;
-		protected Cipher cipher;
+		private final SymmetricCipherState currentState;
+
+		public Decrypter(SymmetricCipherState currentState) {
+			super();
+			this.currentState = currentState;
+		}
 
 		@Override
 		public Message visit(Message msg, MessageBatch batch) {
-			EncryptHeader hdr;
-
-			if(msg == null || (msg.getLength() == 0 && !encrypt_entire_message) || ((hdr=(EncryptHeader)msg.getHeader(id)) == null))
-				return null;
+			EncryptHeader hdr = (EncryptHeader)msg.getHeader(id);
 
 			if(hdr.getType() == EncryptHeader.ENCRYPT) {
-				// if queueing then pass into queue to be dealt with later
+
+				// if queueing then queue will be dealt with later
 				if(queue_up) {
 					queueUpMessage(msg, batch);
 					return null;
+				} else if ( !suppliedKey) {
+					drainUpQueue(false);
 				}
-
-				// make sure we pass up any queued messages first
-				if(!suppliedKey)
-					drainUpQueue();
-				SymmetricCipherState currentState = symCipherState.get();
-
-				try {
-					Message tmpMsg=decryptMessage(currentState, msg.copy()); // need to copy for possible xmits
-					if(tmpMsg != null)
-						batch.replace(msg, tmpMsg);
-				}
-				catch(Exception e) {
-					log.error(local_addr + ":  failed decrypting message from %s (offset=%d, length=%d, buf.length=%d): %s, headers are %s",
-							msg.getSrc(), msg.getOffset(), msg.getLength(), msg.getRawBuffer().length, e, msg.printHeaders());
+				Message tmpMsg=tryDecryptMessage(currentState, msg.copy()); // need to copy for possible xmits
+				if(tmpMsg != null) {
+					batch.replace(msg, tmpMsg);
 				}
 			}
 			else {
