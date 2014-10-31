@@ -10,8 +10,7 @@ set CP=%JG%\classes\;%JG%\conf\;%JG%\lib\*;%JG%\keystore
 
 set VMFLAGS=-Xmx500M -Xms500M
 
-rem LOG="-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.Jdk14Logger -Djava.util.logging.config.file=c:\logging.properties"
-set LOG=-Dlog4j.configuration=file:c:\log4j.properties
+set LOG=-Dlog4j.configurationFile=%JG%\conf\log4j2.xml
 
 set FLAGS=-Djava.net.preferIPv4Stack=true -Djgroups.bind_addr=match-address:192.168.*
 
