@@ -853,7 +853,7 @@ all current members. If there are 4 members A, B, C and D, and A has received ac
 and C, but D's ack is missing and D crashes before the timeout kicks in, then this will
 nevertheless make send() return, as if D had actually sent an ack.
                 
-If the +timeout+ property if greater than 0, and we don't receive all acks within
+If the +timeout+ property is greater than 0, and we don't receive all acks within
 timeout milliseconds, a TimeoutException will be thrown (if RSVP.throw_exception_on_timeout is true).
 The application can choose to catch this (runtime) exception and do something with it, e.g. retry.
                 
@@ -868,7 +868,7 @@ to block. As an example, `RpcDispatcher.callRemoteMethodsWithFuture()` needs to 
 aren't available yet. If the call options contain flag `RSVP`, then the future would only be returned once all
 responses have been received. This is clearly undesirable behavior.
 
-To solve this, flag `RSVP_NB` (no-blocking) can be used. This has the same behavior as `RSVP`, but the caller is not
+To solve this, flag `RSVP_NB` (non-blocking) can be used. This has the same behavior as `RSVP`, but the caller is not
 blocked by the RSVP protocol. When a timeout occurs, a warning message will be logged, but since the caller doesn't
 block, the call won't throw an exception.
 
