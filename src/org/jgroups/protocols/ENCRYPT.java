@@ -180,118 +180,6 @@ public class ENCRYPT extends Protocol {
 	//	 for client to store server's public Key
 	PublicKey serverPubKey=null;
 
-	//	// Cipher pools used for encryption and decryption. Size is cipher_pool_size
-	//	protected Cipher[] encoding_ciphers, decoding_ciphers;
-	//
-	//	// Locks to synchronize access to the cipher pools
-	//	protected Lock[] encoding_locks, decoding_locks;
-	//
-	//	protected final AtomicInteger cipher_index=new AtomicInteger(0); // the cipher and lock to select
-	//
-	//	// version filed for secret key
-	//	protected byte[] symVersion;
-	//
-	//	// dhared secret key to encrypt/decrypt messages
-	//	protected SecretKey secretKey;
-	final  class SymmetricCipherState {
-		private final AsciiString symVersion;
-		private final SecretKey secretKey;
-		private final int cipherAmount = cipher_pool_size;
-		private final Cipher[] symEncodingCipher = new Cipher[this.cipherAmount];
-		private final Cipher[] symDecodingCipher = new Cipher[this.cipherAmount];
-		private final AtomicInteger encoderCounter = new AtomicInteger(0);
-		private final AtomicInteger decoderCounter = new AtomicInteger(0);
-
-		private SymmetricCipherState(SecretKey secretKey) throws Exception {
-			this.secretKey = secretKey;
-			log.debug(local_addr + ":  Initializing symmetric ciphers");
-			for ( int counter = 0; counter < this.cipherAmount; ++counter) {
-				if(symAlgorithm != null && symProvider != null && !symProvider.trim().isEmpty()) {
-					symEncodingCipher[counter] = Cipher.getInstance(symAlgorithm, symProvider);
-					symDecodingCipher[counter] = Cipher.getInstance(symAlgorithm, symProvider);
-				}
-				else {
-					symEncodingCipher[counter] = Cipher.getInstance(symAlgorithm);
-					symDecodingCipher[counter] = Cipher.getInstance(symAlgorithm);
-				}
-
-				symEncodingCipher[counter].init(Cipher.ENCRYPT_MODE, secretKey);
-				symDecodingCipher[counter].init(Cipher.DECRYPT_MODE, secretKey);
-			}
-
-			this.symVersion = calculateVersionFrom(secretKey);
-			log.debug(local_addr + ":  Initialized symmetric ciphers with secret key (" + symVersion + ")");
-		}
-
-
-		private int getNextCipherIndex( AtomicInteger i) {
-			int value;
-			synchronized (i) {
-				value = i.getAndIncrement();
-				if ( value == this.cipherAmount) {
-					i.set(0);
-					value = 0;
-				}
-			}
-			return value;
-		}
-		//		public String byteArrayToHexString(byte[] b){
-		//			StringBuilder sb = new StringBuilder(b.length * 2);
-		//			for (int i = 0; i < b.length; i++){
-		//				int v = b[i] & 0xff;
-		//				if (v < 16) { sb.append('0'); }
-		//				sb.append(Integer.toHexString(v));
-		//			}
-		//			return sb.toString().toUpperCase();
-		//		}
-
-		private AsciiString calculateVersionFrom(SecretKey secretKey)
-				throws NoSuchAlgorithmException {
-			//set the version
-			MessageDigest digest=MessageDigest.getInstance("MD5");
-			digest.reset();
-			digest.update(secretKey.getEncoded());
-
-			return  new AsciiString(digest.digest());
-
-		}
-
-		public AsciiString getSymVersion() {
-			return symVersion;
-		}
-
-		public SecretKey getSecretKey() {
-			return secretKey;
-		}
-
-		public synchronized byte[] encryptMessage(byte[] plain, int offset, int length) throws Exception {
-			Cipher cipher = this.symEncodingCipher[getNextCipherIndex(encoderCounter)];
-			synchronized (cipher) {
-				return cipher.doFinal(plain,offset,length);
-			}
-		}
-
-		public synchronized Message decryptMessage(Message msg, boolean decrypt_entire_msg) throws Exception {
-			Cipher cipher = this.symDecodingCipher[getNextCipherIndex(decoderCounter)];
-			synchronized (cipher) {
-				byte[] decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
-
-				if(!decrypt_entire_msg) {
-					msg.setBuffer(decrypted_msg);
-					return msg;
-				} else {
-					Message ret=(Message)Util.streamableFromByteBuffer(Message.class, decrypted_msg);
-					if(ret.getDest() == null)
-						ret.setDest(msg.getDest());
-					if(ret.getSrc() == null)
-						ret.setSrc(msg.getSrc());
-					return ret;
-				}
-
-			}
-
-		}
-	}
 
 
 	private final AtomicReference<SymmetricCipherState> symCipherState = new AtomicReference<SymmetricCipherState>(null);
@@ -1074,11 +962,103 @@ public class ENCRYPT extends Protocol {
 		}
 
 
-
-
 	}
 
 	public SymmetricCipherState getSymState() {
 		return this.symCipherState.get();
 	}
+
+	final  class SymmetricCipherState {
+		private final AsciiString symVersion;
+		private final SecretKey secretKey;
+		private final int cipherAmount = cipher_pool_size;
+		private final Cipher[] symEncodingCipher = new Cipher[this.cipherAmount];
+		private final Cipher[] symDecodingCipher = new Cipher[this.cipherAmount];
+		private final AtomicInteger encoderCounter = new AtomicInteger(0);
+		private final AtomicInteger decoderCounter = new AtomicInteger(0);
+
+		private SymmetricCipherState(SecretKey secretKey) throws Exception {
+			this.secretKey = secretKey;
+			log.debug(local_addr + ":  Initializing symmetric ciphers");
+			for ( int counter = 0; counter < this.cipherAmount; ++counter) {
+				if(symAlgorithm != null && symProvider != null && !symProvider.trim().isEmpty()) {
+					symEncodingCipher[counter] = Cipher.getInstance(symAlgorithm, symProvider);
+					symDecodingCipher[counter] = Cipher.getInstance(symAlgorithm, symProvider);
+				}
+				else {
+					symEncodingCipher[counter] = Cipher.getInstance(symAlgorithm);
+					symDecodingCipher[counter] = Cipher.getInstance(symAlgorithm);
+				}
+
+				symEncodingCipher[counter].init(Cipher.ENCRYPT_MODE, secretKey);
+				symDecodingCipher[counter].init(Cipher.DECRYPT_MODE, secretKey);
+			}
+
+			this.symVersion = calculateVersionFrom(secretKey);
+			log.debug(local_addr + ":  Initialized symmetric ciphers with secret key (" + symVersion + ")");
+		}
+
+
+		private int getNextCipherIndex( AtomicInteger i) {
+			int value;
+			synchronized (i) {
+				value = i.getAndIncrement();
+				if ( value == this.cipherAmount) {
+					i.set(0);
+					value = 0;
+				}
+			}
+			return value;
+		}
+
+
+		private AsciiString calculateVersionFrom(SecretKey secretKey)
+				throws NoSuchAlgorithmException {
+			//set the version
+			MessageDigest digest=MessageDigest.getInstance("MD5");
+			digest.reset();
+			digest.update(secretKey.getEncoded());
+
+			return  new AsciiString(digest.digest());
+
+		}
+
+		public AsciiString getSymVersion() {
+			return symVersion;
+		}
+
+		public SecretKey getSecretKey() {
+			return secretKey;
+		}
+
+		public synchronized byte[] encryptMessage(byte[] plain, int offset, int length) throws Exception {
+			Cipher cipher = this.symEncodingCipher[getNextCipherIndex(encoderCounter)];
+			synchronized (cipher) {
+				return cipher.doFinal(plain,offset,length);
+			}
+		}
+
+		public synchronized Message decryptMessage(Message msg, boolean decrypt_entire_msg) throws Exception {
+			Cipher cipher = this.symDecodingCipher[getNextCipherIndex(decoderCounter)];
+			synchronized (cipher) {
+				byte[] decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
+
+				if(!decrypt_entire_msg) {
+					msg.setBuffer(decrypted_msg);
+					return msg;
+				} else {
+					Message ret=(Message)Util.streamableFromByteBuffer(Message.class, decrypted_msg);
+					if(ret.getDest() == null)
+						ret.setDest(msg.getDest());
+					if(ret.getSrc() == null)
+						ret.setSrc(msg.getSrc());
+					return ret;
+				}
+
+			}
+
+		}
+	}
+
+
 }
