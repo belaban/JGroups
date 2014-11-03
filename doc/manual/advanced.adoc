@@ -2636,7 +2636,7 @@ The second method accepts a list of membership lists; each list represents a sub
             +{X,Y,Z}+. A, M and X are the respective coordinators of the subviews and the task of the code
             is to determine the _single coordinator_ which will be coordinator of the merged
             view. The default implementation adds all subview coordinators to a sorted set, takes the first (say M),
-            adds it to the resulting list and the adds the subviews in turn. This could result in a MergeView like
+            adds it to the resulting list and then adds the subviews in turn. This could result in a MergeView like
             +{M,A,B,C,N,O,P,X,Y,Z}+.
         
 
@@ -2644,7 +2644,7 @@ The second method accepts a list of membership lists; each list represents a sub
 NOTE: In both regular and merge views, it is important that there are no duplicate members. It is entirely
       possible to get overlapping subviews in the case of a merge, for instance:
       +{A,B,C}+, +{C,D}+ and +{C,D}+. This _cannot_
-      result in C or D being present in the resulting merged view multiple times.
+      result in C or D being present in the resulting merge view multiple times.
 
 A +MembershipChangePolicy+ can be set in GMS via property +$$membership_change_policy$$+,
             which accepts the fully qualified classname of the implementation of MembershipChangePolicy. There is
