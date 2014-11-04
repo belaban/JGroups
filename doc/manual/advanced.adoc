@@ -2790,7 +2790,7 @@ The brown stack to the left is the main stack and it has the main channel connec
             present in the main stack, or else fork stacks can not be created.
         
 
-The FORK protocol of the main stack contains 2 fork stacks: "counter" and "lock". There are
+The FORK protocol of the main stack contains 2 fork stacks: "counter" and "lock". These are
             _fork stack IDs_ and are used when creating a fork channel to determine whether fork
             channels share the same fork stack, or not.
         
@@ -2947,7 +2947,7 @@ In addition to passing the main channel, the fork stack and channel IDs and the 
                 relative to the neighbor protocol has to be defined as well.
             
 
-The design of FORK / ForkChannel is discussed in more detail at
-            link:$$https://github.com/belaban/JGroups/blob/master/doc/design/FORK.txt$$[FORK.txt]
+The design of FORK / ForkChannel is discussed in more detail in
+link:$$https://github.com/belaban/JGroups/blob/master/doc/design/FORK.txt$$[FORK.txt]
         
 
