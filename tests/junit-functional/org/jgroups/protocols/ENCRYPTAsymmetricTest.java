@@ -151,7 +151,7 @@ public class ENCRYPTAsymmetricTest {
         // send a view change to trigger the become key server
         // we use the fact that our address is now the controller one
         View tempView=View.create(encrypt_addr,1,encrypt_addr);
-		Event event=new Event(Event.TMP_VIEW, tempView);
+        Event event=new Event(Event.TMP_VIEW, tempView);
         // this should have changed us to the key server
         encrypt.up(event);
 

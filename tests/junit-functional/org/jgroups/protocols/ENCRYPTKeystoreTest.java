@@ -106,7 +106,7 @@ public class ENCRYPTKeystoreTest {
 
 
         Message msg=new Message(null, null, encodedBytes)
-		.putHeader(ENCRYPT_ID, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT, state.getSymVersion().chars()));
+            .putHeader(ENCRYPT_ID, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT, state.getSymVersion().chars()));
         encrypt.up(new Event(Event.MSG, msg));
         assert observer.getUpMessages().isEmpty();
     }
