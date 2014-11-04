@@ -4,18 +4,19 @@
 package org.jgroups.protocols;
 
 
+import java.security.MessageDigest;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.protocols.ENCRYPT.SymmetricCipherState;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
-
-import javax.crypto.Cipher;
-import java.security.MessageDigest;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author xenephon
@@ -41,9 +42,7 @@ public class ENCRYPTKeystoreTest {
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
-        assert encrypt.getSymDecodingCipher() != null;
-        assert encrypt.getSymEncodingCipher() != null;
-
+        assert encrypt.getSymState() != null;
     }
 
     public static void testMessageDownEncode() throws Exception {
@@ -59,8 +58,8 @@ public class ENCRYPTKeystoreTest {
         Message sentMsg=(Message)observer.getDownMessages().get("message0").getArg();
         String encText=new String(sentMsg.getBuffer());
         assert !encText.equals(messageText);
-        Cipher cipher=encrypt2.getSymDecodingCipher();
-        byte[] decodedBytes=cipher.doFinal(sentMsg.getBuffer());
+        SymmetricCipherState cipher = encrypt2.getSymState();
+        byte[] decodedBytes=cipher.decryptMessage(sentMsg, false).getBuffer();
         String temp=new String(decodedBytes);
         System.out.println("decoded text:" + temp);
         assert temp.equals(messageText);
@@ -76,13 +75,13 @@ public class ENCRYPTKeystoreTest {
 
         encrypt.keyServer=true;
         String messageText="hello this is a test message";
-        Cipher cipher=encrypt2.getSymEncodingCipher();
-        byte[] encodedBytes=cipher.doFinal(messageText.getBytes());
+        SymmetricCipherState state=encrypt2.getSymState();
+        byte[] encodedBytes=state.encryptMessage(messageText.getBytes(), 0	, messageText.getBytes().length);
         assert !new String(encodedBytes).equals(messageText);
 
         MessageDigest digest=MessageDigest.getInstance("MD5");
         digest.reset();
-        digest.update(encrypt.getDesKey().getEncoded());
+        digest.update(encrypt.getSymState().getSecretKey().getEncoded());
 
         byte[] symVersion=digest.digest();
         Message msg=new Message(null, encodedBytes)
@@ -101,18 +100,14 @@ public class ENCRYPTKeystoreTest {
 
         encrypt.keyServer=true;
         String messageText="hello this is a test message";
-        Cipher cipher=encrypt2.getSymEncodingCipher();
-        byte[] encodedBytes=cipher.doFinal(messageText.getBytes());
+        SymmetricCipherState state=encrypt2.getSymState();
+        byte[] encodedBytes=state.encryptMessage(messageText.getBytes(), 0	, messageText.getBytes().length);
         assert !new String(encodedBytes).equals(messageText);
 
-        MessageDigest digest=MessageDigest.getInstance("MD5");
-        digest.reset();
-        digest.update(encrypt2.getDesKey().getEncoded());
 
-        byte[] symVersion=digest.digest();
 
         Message msg=new Message(null, null, encodedBytes)
-          .putHeader(ENCRYPT_ID, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT, symVersion));
+            .putHeader(ENCRYPT_ID, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT, state.getSymVersion().chars()));
         encrypt.up(new Event(Event.MSG, msg));
         assert observer.getUpMessages().isEmpty();
     }
@@ -124,8 +119,8 @@ public class ENCRYPTKeystoreTest {
 
         encrypt.keyServer=true;
         String messageText="hello this is a test message";
-        Cipher cipher=encrypt2.getSymEncodingCipher();
-        byte[] encodedBytes=cipher.doFinal(messageText.getBytes());
+        SymmetricCipherState state=encrypt2.getSymState();
+        byte[] encodedBytes=state.encryptMessage(messageText.getBytes(), 0, messageText.getBytes().length);
         assert !new String(encodedBytes).equals(messageText);
 
         Message msg=new Message(null, encodedBytes);
@@ -160,13 +155,13 @@ public class ENCRYPTKeystoreTest {
         encrypt.setValue("encrypt_entire_message",true);
         Message msg=new Message(null, "hello world".getBytes()).putHeader((short)1, new TpHeader("cluster"));
         MockProtocol mock=new MockProtocol();
+        encrypt.setUpProtocol(mock);
         encrypt.setDownProtocol(mock);
         encrypt.down(new Event(Event.MSG, msg));
 
         Message encrypted_msg=(Message)mock.getDownMessages().get("message0").getArg();
 
-        encrypt.setDownProtocol(null);
-        encrypt.setUpProtocol(mock);
+
         encrypt.up(new Event(Event.MSG, encrypted_msg));
 
         Message decrypted_msg=(Message)mock.getUpMessages().get("message1").getArg();
