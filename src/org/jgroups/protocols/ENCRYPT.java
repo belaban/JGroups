@@ -424,25 +424,25 @@ public class ENCRYPT extends Protocol {
             handleNewKeyServer(tmpKeyServer);
     }
 
-    private void initializeNewSymmetricKey() {
-        try {
-            if ( changeKeysOnViewChange || !keyServer) {
+	private void initializeNewSymmetricKey() {
+		try {
+			if ( changeKeysOnViewChange || !keyServer) {
                 if ( log.isDebugEnabled()) {
                     log.debug(local_addr + ": Initalizing new ciphers");
                 }
                 SecretKey newKey = generateSymKey();
                 setKeys(newKey);
-            }
+			}
 
-        } catch (Exception e) {
-            log.error(local_addr+ ": Could not initialize new ciphers: %s", e.getMessage());
-            if ( e instanceof RuntimeException) {
-                throw (RuntimeException)e;
-            } else {
-                throw new IllegalStateException(e);
-            }
-        }
-    }
+		} catch (Exception e) {
+			log.error(local_addr+ ": Could not initialize new ciphers: %s", e.getMessage());
+			if ( e instanceof RuntimeException) {
+				throw (RuntimeException)e;
+			} else {
+				throw new IllegalStateException(e);
+			}
+		}
+	}
 
     /**
      * Handles becoming server - resetting queue settings and setting keyserver
@@ -467,8 +467,8 @@ public class ENCRYPT extends Protocol {
      * @param newKeyServer
      */
     private void handleNewKeyServer(Address newKeyServer) {
-        
-        if ( changeKeysOnViewChange || keyServerChanged(newKeyServer)) {
+    	
+    	if ( changeKeysOnViewChange || keyServerChanged(newKeyServer)) {
             // start queueing until we have new key
             // to make sure we are not sending with old key
             queue_up=true;
@@ -478,12 +478,12 @@ public class ENCRYPT extends Protocol {
             keyServer=false;
             log.debug(local_addr + ":  %s: %s has become the new key server, sending key request to it", local_addr, keyServerAddr);
             sendKeyRequest();
-        }
+    	}
     }
 
-    private boolean keyServerChanged(Address newKeyServer) {
-        return keyServerAddr == null || !keyServerAddr.equals(newKeyServer);
-    }
+	private boolean keyServerChanged(Address newKeyServer) {
+		return keyServerAddr == null || !keyServerAddr.equals(newKeyServer);
+	}
 
 
     private Object handleUpMessage(Event evt) throws Exception {
@@ -782,10 +782,10 @@ public class ENCRYPT extends Protocol {
             down_prot.down(new Event(Event.MSG, tmp));
             return;
         } else {
-            // copy neeeded because same message (object) may be retransmitted -> no double encryption
-            Message msgEncrypted=msg.copy(false).putHeader(this.id, hdr)
+        // copy neeeded because same message (object) may be retransmitted -> no double encryption
+        Message msgEncrypted=msg.copy(false).putHeader(this.id, hdr)
                     .setBuffer(currentState.encryptMessage(msg.getRawBuffer(),msg.getOffset(),msg.getLength()));
-            down_prot.down(new Event(Event.MSG,msgEncrypted));
+        down_prot.down(new Event(Event.MSG,msgEncrypted));
     }
 
     }
