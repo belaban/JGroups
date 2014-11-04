@@ -40,13 +40,13 @@ public class ENCRYPTKeystoreTest {
 
     public static void testInitKeystoreProperties() throws Exception {
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.keyStoreName = "keystore/defaultStore.keystore";
+        encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
         assert encrypt.getSymState() != null;
     }
 
     public static void testMessageDownEncode() throws Exception {
-        ENCRYPT encrypt=create("keystore/defaultStore.keystore"), encrypt2=create("keystore/defaultStore.keystore");
+        ENCRYPT encrypt=create("defaultStore.keystore"), encrypt2=create("defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setDownProtocol(observer);
 
@@ -68,7 +68,7 @@ public class ENCRYPTKeystoreTest {
 
 
     public static void testMessageUpDecode() throws Exception {
-        ENCRYPT encrypt=create("keystore/defaultStore.keystore"), encrypt2=create("keystore/defaultStore.keystore");
+        ENCRYPT encrypt=create("defaultStore.keystore"), encrypt2=create("defaultStore.keystore");
         
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
@@ -94,7 +94,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public static void testMessageUpWrongKey() throws Exception {
-        ENCRYPT encrypt=create("keystore/defaultStore.keystore"), encrypt2=create("keystore/defaultStore2.keystore");
+        ENCRYPT encrypt=create("defaultStore.keystore"), encrypt2=create("defaultStore2.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
 
@@ -113,7 +113,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public static void testMessageUpNoEncryptHeader() throws Exception {
-        ENCRYPT encrypt=create("keystore/defaultStore.keystore"), encrypt2=create("keystore/defaultStore.keystore");
+        ENCRYPT encrypt=create("defaultStore.keystore"), encrypt2=create("defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
 
@@ -129,7 +129,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public static void testEventUpNoMessage() throws Exception {
-        ENCRYPT encrypt=create("keystore/defaultStore.keystore");
+        ENCRYPT encrypt=create("defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
         encrypt.keyServer=true;
@@ -141,7 +141,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public static void testMessageUpNoBuffer() throws Exception {
-        ENCRYPT encrypt=create("keystore/defaultStore.keystore");
+        ENCRYPT encrypt=create("defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
         encrypt.keyServer=true;
@@ -150,8 +150,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public void testEncryptEntireMessage() throws Exception {
-        ENCRYPT encrypt=create("keystore/defaultStore.keystore");
-//        encrypt.setLocalAddress(Util.createRandomAddress("));
+        ENCRYPT encrypt=create("defaultStore.keystore");
         encrypt.keyServer=true;
         encrypt.setValue("encrypt_entire_message",true);
         Message msg=new Message(null, "hello world".getBytes()).putHeader((short)1, new TpHeader("cluster"));
