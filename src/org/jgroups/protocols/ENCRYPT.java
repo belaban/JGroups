@@ -774,8 +774,8 @@ public class ENCRYPT extends Protocol {
             if(msg.getSrc() == null)
                 msg.setSrc(local_addr);
 
-            Buffer serialized_msg=Util.streamableToBuffer(msg);
-            byte[] encrypted_msg = currentState.encryptMessage(serialized_msg.getBuf(),serialized_msg.getOffset(),serialized_msg.getLength());
+            byte[] serialized_msg=Util.streamableToByteBuffer(msg);
+            byte[] encrypted_msg = currentState.encryptMessage(serialized_msg,0,serialized_msg.length);
 
             // exclude existing headers, they will be seen again when we decrypt and unmarshal the msg at the receiver
             Message tmp=msg.copy(false, false).setBuffer(encrypted_msg).putHeader(this.id,hdr);

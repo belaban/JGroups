@@ -15,6 +15,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.ENCRYPT.SymmetricCipherState;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 /**
@@ -39,13 +40,13 @@ public class ENCRYPTKeystoreTest {
 
     public static void testInitKeystoreProperties() throws Exception {
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.keyStoreName = "defaultStore.keystore";
+        encrypt.keyStoreName = "keystore/defaultStore.keystore";
         encrypt.init();
         assert encrypt.getSymState() != null;
     }
 
     public static void testMessageDownEncode() throws Exception {
-        ENCRYPT encrypt=create("defaultStore.keystore"), encrypt2=create("defaultStore.keystore");
+        ENCRYPT encrypt=create("keystore/defaultStore.keystore"), encrypt2=create("keystore/defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setDownProtocol(observer);
 
@@ -67,7 +68,7 @@ public class ENCRYPTKeystoreTest {
 
 
     public static void testMessageUpDecode() throws Exception {
-        ENCRYPT encrypt=create("defaultStore.keystore"), encrypt2=create("defaultStore.keystore");
+        ENCRYPT encrypt=create("keystore/defaultStore.keystore"), encrypt2=create("keystore/defaultStore.keystore");
         
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
@@ -93,7 +94,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public static void testMessageUpWrongKey() throws Exception {
-        ENCRYPT encrypt=create("defaultStore.keystore"), encrypt2=create("defaultStore2.keystore");
+        ENCRYPT encrypt=create("keystore/defaultStore.keystore"), encrypt2=create("keystore/defaultStore2.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
 
@@ -112,7 +113,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public static void testMessageUpNoEncryptHeader() throws Exception {
-        ENCRYPT encrypt=create("defaultStore.keystore"), encrypt2=create("defaultStore.keystore");
+        ENCRYPT encrypt=create("keystore/defaultStore.keystore"), encrypt2=create("keystore/defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
 
@@ -128,7 +129,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public static void testEventUpNoMessage() throws Exception {
-        ENCRYPT encrypt=create("defaultStore.keystore");
+        ENCRYPT encrypt=create("keystore/defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
         encrypt.keyServer=true;
@@ -140,7 +141,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public static void testMessageUpNoBuffer() throws Exception {
-        ENCRYPT encrypt=create("defaultStore.keystore");
+        ENCRYPT encrypt=create("keystore/defaultStore.keystore");
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
         encrypt.keyServer=true;
@@ -149,18 +150,19 @@ public class ENCRYPTKeystoreTest {
     }
 
     public void testEncryptEntireMessage() throws Exception {
-        ENCRYPT encrypt=create("defaultStore.keystore");
+        ENCRYPT encrypt=create("keystore/defaultStore.keystore");
+//        encrypt.setLocalAddress(Util.createRandomAddress("));
         encrypt.keyServer=true;
         encrypt.setValue("encrypt_entire_message",true);
         Message msg=new Message(null, "hello world".getBytes()).putHeader((short)1, new TpHeader("cluster"));
         MockProtocol mock=new MockProtocol();
+        encrypt.setUpProtocol(mock);
         encrypt.setDownProtocol(mock);
         encrypt.down(new Event(Event.MSG, msg));
 
         Message encrypted_msg=(Message)mock.getDownMessages().get("message0").getArg();
 
-        encrypt.setDownProtocol(null);
-        encrypt.setUpProtocol(mock);
+
         encrypt.up(new Event(Event.MSG, encrypted_msg));
 
         Message decrypted_msg=(Message)mock.getUpMessages().get("message1").getArg();
