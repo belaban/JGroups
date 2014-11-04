@@ -67,10 +67,10 @@ public class ENCRYPTAsymmetricTest {
         assert "RAW".equals(encrypt.getSymState().getSecretKey().getFormat());
         assert encrypt.getSymState().getSecretKey().getEncoded() != null;
 
-		//test the resulting ciphers
-		System.out.println("Provider:" + encrypt.getAsymCipher().getProvider());
-		assert encrypt.getAsymCipher() != null;
-		assert encrypt.getSymState() != null;
+        //test the resulting ciphers
+        System.out.println("Provider:" + encrypt.getAsymCipher().getProvider());
+        assert encrypt.getAsymCipher() != null;
+        assert encrypt.getSymState() != null;
     }
 
     public static void testInitBCAsymProperties() throws Exception {
@@ -135,16 +135,16 @@ public class ENCRYPTAsymmetricTest {
 
 
         encrypt.keyServer=false;
-		Message msg=new Message();
-		byte[] bytes = "hello".getBytes();
-		msg.setBuffer(state.encryptMessage(bytes, 0	, bytes.length));
-		msg.putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, state.getSymVersion().chars()));
+        Message msg=new Message();
+        byte[] bytes = "hello".getBytes();
+        msg.setBuffer(state.encryptMessage(bytes, 0	, bytes.length));
+        msg.putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, state.getSymVersion().chars()));
 
-		Event evt=new Event(Event.MSG, msg);
+        Event evt=new Event(Event.MSG, msg);
 
-		//pass in event to encrypt layer
+        //pass in event to encrypt layer
 
-		encrypt.up(evt);
+        encrypt.up(evt);
         // assert that message is queued as we have no key
         Util.assertTrue(observer.upMessages.isEmpty());
 
@@ -156,10 +156,10 @@ public class ENCRYPTAsymmetricTest {
         encrypt.up(event);
 
         // send another encrypted message
-		Message msg2=new Message();
-		byte[] bytes2 = "hello2".getBytes();
-		msg2.setBuffer(state.encryptMessage(bytes2, 0	, bytes2.length));
-		msg2.putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, state.getSymVersion().chars()));
+        Message msg2=new Message();
+        byte[] bytes2 = "hello2".getBytes();
+        msg2.setBuffer(state.encryptMessage(bytes2, 0	, bytes2.length));
+        msg2.putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, state.getSymVersion().chars()));
 
         // we should have three messages now in our observer that are decrypted
         encrypt.up(new Event(Event.MSG, msg2));
@@ -200,16 +200,16 @@ public class ENCRYPTAsymmetricTest {
 
 
         // encrypt and send an initial message to peer
-		SymmetricCipherState state=server.getSymState();
-		Message msg=new Message();
-		byte[] bytes = "hello".getBytes();
+        SymmetricCipherState state=server.getSymState();
+        Message msg=new Message();
+        byte[] bytes = "hello".getBytes();
 
-		msg.setBuffer(state.encryptMessage(bytes, 0, bytes.length));
-		msg.putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, state.getSymVersion().chars()));
+        msg.setBuffer(state.encryptMessage(bytes, 0, bytes.length));
+        msg.putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, state.getSymVersion().chars()));
 
-		Event evt=new Event(Event.MSG, msg);
+        Event evt=new Event(Event.MSG, msg);
 
-		peer.up(evt);
+        peer.up(evt);
         //assert that message is queued as we have no key from server
         Util.assertTrue(peerObserver.upMessages.isEmpty());
 
@@ -236,23 +236,23 @@ public class ENCRYPTAsymmetricTest {
         Util.assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(ENCRYPT_ID)).getType(), EncryptHeader.SECRETKEY);
 
 
-		assert !peer.getSymState().getSecretKey().equals(server.getSymState().getSecretKey());
+        assert !peer.getSymState().getSecretKey().equals(server.getSymState().getSecretKey());
         // now send back to peer
         peer.up(reply);
 
         // assert that both now have same key
-		Util.assertEquals(peer.getSymState().getSecretKey(), server.getSymState().getSecretKey());
+        Util.assertEquals(peer.getSymState().getSecretKey(), server.getSymState().getSecretKey());
 
         // send another encrypted message to peer to test queue
-		Message msg2=new Message();
-		byte[] bytes2 = "hello2".getBytes();
+        Message msg2=new Message();
+        byte[] bytes2 = "hello2".getBytes();
 
-		msg2.setBuffer(state.encryptMessage(bytes2, 0, bytes2.length));
-		msg2.putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, state.getSymVersion().chars()));
+        msg2.setBuffer(state.encryptMessage(bytes2, 0, bytes2.length));
+        msg2.putHeader(ENCRYPT_ID, new EncryptHeader(EncryptHeader.ENCRYPT, state.getSymVersion().chars()));
 
-		Event evt2=new Event(Event.MSG, msg2);
+        Event evt2=new Event(Event.MSG, msg2);
 
-		peer.up(evt2);
+        peer.up(evt2);
 
 
         // make sure we have the events now in the up layers
@@ -425,8 +425,8 @@ public class ENCRYPTAsymmetricTest {
 
         updateViewFor(peer, peer2, peer2Observer, viewChange2, peerObserver);
 
-		Assert.assertFalse(server.getSymState().getSecretKey().equals(peer.getSymState().getSecretKey()));
-		Assert.assertEquals(peer.getSymState().getSecretKey(), peer2.getSymState().getSecretKey());
+        Assert.assertFalse(server.getSymState().getSecretKey().equals(peer.getSymState().getSecretKey()));
+        Assert.assertEquals(peer.getSymState().getSecretKey(), peer2.getSymState().getSecretKey());
 
     }
 
@@ -457,29 +457,27 @@ public class ENCRYPTAsymmetricTest {
     
 	public static void testMessagesNotPassedUpDuringQueuingUp() throws Exception{
 
-		ENCRYPT node=new ENCRYPT();
-		MockProtocol observer = new MockProtocol();
-		node.setUpProtocol(observer);
-		node.setDownProtocol(observer);
-		node.changeKeysOnViewChange=true;
-		Address serverAddress=server_addr;
-		Address peerAddress=peer_addr;
-		node.setLocalAddress(peerAddress);
-		node.init();
+        ENCRYPT node=new ENCRYPT();
+        MockProtocol observer = new MockProtocol();
+        node.setUpProtocol(observer);
+        node.setDownProtocol(observer);
+        node.changeKeysOnViewChange=true;
+        Address serverAddress=server_addr;
+        Address peerAddress=peer_addr;
+        node.setLocalAddress(peerAddress);
+        node.init();
 
-		// Send up view to activate queuing
-		Event initalView = new Event(Event.VIEW_CHANGE, View.create(server_addr, 1, server_addr, peerAddress));
-		node.up(initalView);
+        // Send up view to activate queuing
+        Event initalView = new Event(Event.VIEW_CHANGE, View.create(server_addr, 1, server_addr, peerAddress));
+        node.up(initalView);
 
-		Message msg = new Message(serverAddress);
-		msg.setBuffer("hello".getBytes());
-		EncryptHeader hdr=new EncryptHeader(EncryptHeader.ENCRYPT, new AsciiString("N/A").chars());
-		msg.putHeader(node.getId(), hdr);
-		MessageBatch batch = new MessageBatch(Collections.singletonList(msg));
+        Message msg = new Message(serverAddress);
+        msg.setBuffer("hello".getBytes());
+        EncryptHeader hdr=new EncryptHeader(EncryptHeader.ENCRYPT, new AsciiString("N/A").chars());
+        msg.putHeader(node.getId(), hdr);
+        MessageBatch batch = new MessageBatch(Collections.singletonList(msg));
 
-		node.up(batch);
-
-
+        node.up(batch);
 
 	}
 	private static void updateViewFor(ENCRYPT peer, ENCRYPT keyServer, MockProtocol serverObserver, Event serverEvent,
