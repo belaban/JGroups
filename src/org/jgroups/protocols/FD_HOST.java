@@ -387,16 +387,17 @@ public class FD_HOST extends Protocol {
                     boolean is_alive=ping_command.isAlive(target, check_timeout);
                     num_liveness_checks++;
                     if(is_alive)
-                        updateTimestampFor(target);
-                    else
-                        log.trace("%s: %s is not alive (age=%d secs)", local_addr, target, getAgeOf(target));
+                        updateTimestampFor(target); // skip the timestamp check, as this host is alive
+                    else {
+                        log.trace("%s: %s is not alive (age=%d secs)",local_addr,target,getAgeOf(target));
 
-                    // Check timestamp
-                    long current_time=getTimestamp();
-                    long timestamp=timestamps.get(target);
-                    long diff=TimeUnit.MILLISECONDS.convert(current_time - timestamp, TimeUnit.NANOSECONDS);
-                    if(diff >= timeout)
-                       suspect(target);
+                        // Check timestamp - we didn't get a response to the liveness check
+                        long current_time=getTimestamp();
+                        long timestamp=timestamps.get(target);
+                        long diff=TimeUnit.MILLISECONDS.convert(current_time - timestamp,TimeUnit.NANOSECONDS);
+                        if(diff >= timeout)
+                            suspect(target);
+                    }
                 }
                 catch(Exception e) {
                     log.error("%s: ping command failed: %s", local_addr, e);
