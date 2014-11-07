@@ -381,9 +381,9 @@ public class FD_HOST extends Protocol {
             }
             targets.remove(local_host);
 
-            // 1. Ping each host
             for(InetAddress target: targets) {
                 try {
+                    // Ping each host
                     boolean is_alive=ping_command.isAlive(target, check_timeout);
                     num_liveness_checks++;
                     if(is_alive)
