@@ -403,15 +403,6 @@ public class FD_HOST extends Protocol {
                     log.error("%s: ping command failed: %s", local_addr, e);
                 }
             }
-
-            // 2. Check timestamps
-            long current_time=getTimestamp();
-            for(Map.Entry<InetAddress,Long> entry: timestamps.entrySet()) {
-                InetAddress host=entry.getKey();
-                long timestamp=entry.getValue();
-                if(current_time - timestamp >= timeout)
-                    suspect(host);
-            }
         }
     }
 
