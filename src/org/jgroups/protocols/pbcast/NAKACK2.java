@@ -95,11 +95,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected long xmit_interval=1000;
 
     @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
-    protected int xmit_table_num_rows=50;
+    protected int xmit_table_num_rows=100;
 
     @Property(description="Number of elements of a row of the matrix in the retransmission table (only for experts). " +
       "The capacity of the matrix is xmit_table_num_rows * xmit_table_msgs_per_row",writable=false)
-    protected int xmit_table_msgs_per_row=10000;
+    protected int xmit_table_msgs_per_row=1000;
 
     @Property(description="Resize factor of the matrix in the retransmission table (only for experts)",writable=false)
     protected double xmit_table_resize_factor=1.2;
