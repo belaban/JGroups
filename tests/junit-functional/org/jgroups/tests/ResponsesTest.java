@@ -149,6 +149,26 @@ public class ResponsesTest {
         assert rsps.size() == 3;
     }
 
+    public void testWaitForOnDone() {
+        final Responses rsps=new Responses(5, true).done();
+        boolean done=rsps.waitFor(500);
+        assert done;
+    }
+
+    /** Tests JGRP-1899 */
+    public void testWaitFor3() {
+        Responses rsps=new Responses(0, true, 5);
+        for(int i=0; i < 5; i++)
+            rsps.addResponse(new PingData(addrs[i], true, names[i], phys_addrs[i]), false);
+
+        boolean complete=rsps.waitFor(5);
+        assert !complete;
+
+        rsps.addResponse(new PingData(addrs[5], true, names[5], phys_addrs[5]).coord(true), false);
+        complete=rsps.waitFor(500);
+        assert complete;
+    }
+
     public void testIterator() throws Exception {
         Responses rsps=new Responses(10, true);
         for(int i=0; i < 5; i++)

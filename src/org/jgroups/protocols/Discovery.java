@@ -212,8 +212,9 @@ public abstract class Discovery extends Protocol {
 
     public Responses findMembers(final List<Address> members, final boolean initial_discovery, boolean async) {
         num_discovery_requests++;
-        int size=members != null? members.size() : 16;
-        final Responses rsps=new Responses(size, initial_discovery && break_on_coord_rsp, size);
+        int num_expected=members != null? members.size() : 0;
+        int capacity=members != null? members.size() : 16;
+        final Responses rsps=new Responses(num_expected, initial_discovery && break_on_coord_rsp, capacity);
         synchronized(ping_responses) {
             ping_responses.put(System.currentTimeMillis(), rsps);
         }
@@ -486,8 +487,10 @@ public abstract class Discovery extends Protocol {
                 long timestamp=entry.getKey();
                 Responses rsps=entry.getValue();
                 rsps.addResponse(rsp, overwrite);
-                if(rsps.isDone() || System.currentTimeMillis() - timestamp > discovery_rsp_expiry_time)
+                if(rsps.isDone() || System.currentTimeMillis() - timestamp > discovery_rsp_expiry_time) {
                     it.remove();
+                    rsps.done();
+                }
             }
         }
     }

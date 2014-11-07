@@ -11,7 +11,10 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 
 /**
@@ -167,14 +170,14 @@ public class ClientGmsImpl extends GmsImpl {
         for(PingData response: rsps)
             clients.add(response.getAddress());
 
-        log.trace("%s: clients to choose new coord from are: %s", gms.local_addr, clients);
+        log.trace("%s: nodes to choose new coord from are: %s", gms.local_addr, clients);
         Address new_coord=clients.first();
         if(new_coord.equals(joiner)) {
-            log.trace("%s: I (%s) am the first of the clients, will become coordinator", gms.local_addr, joiner);
+            log.trace("%s: I (%s) am the first of the nodes, will become coordinator", gms.local_addr, joiner);
             becomeSingletonMember(joiner);
             return true;
         }
-        log.trace("%s: I (%s) am not the first of the clients, waiting for another client to become coordinator",
+        log.trace("%s: I (%s) am not the first of the nodes, waiting for another client to become coordinator",
                   gms.local_addr, joiner);
         Util.sleep(500);
         return false;
