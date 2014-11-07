@@ -381,9 +381,9 @@ public class FD_HOST extends Protocol {
             }
             targets.remove(local_host);
 
-            // 1. Ping each host
             for(InetAddress target: targets) {
                 try {
+                    // Ping each host
                     boolean is_alive=ping_command.isAlive(target, check_timeout);
                     num_liveness_checks++;
                     if(is_alive)
@@ -402,15 +402,6 @@ public class FD_HOST extends Protocol {
                 catch(Exception e) {
                     log.error("%s: ping command failed: %s", local_addr, e);
                 }
-            }
-
-            // 2. Check timestamps
-            long current_time=getTimestamp();
-            for(Map.Entry<InetAddress,Long> entry: timestamps.entrySet()) {
-                InetAddress host=entry.getKey();
-                long timestamp=entry.getValue();
-                if(current_time - timestamp >= timeout)
-                    suspect(host);
             }
         }
     }
