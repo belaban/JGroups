@@ -202,7 +202,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected boolean thread_pool_queue_enabled=true;
 
 
-    @Property(name="thread_pool.queue_max_size", description="Maximum queue size for incoming OOB messages")
+    @Property(name="thread_pool.queue_max_size", description="Maximum queue size for incoming regular messages")
     protected int thread_pool_queue_max_size=10000;
 
     @Property(name="thread_pool.rejection_policy",
