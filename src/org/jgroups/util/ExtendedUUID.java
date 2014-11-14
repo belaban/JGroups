@@ -199,6 +199,8 @@ public class ExtendedUUID extends UUID {
 
     public String print() {
         StringBuilder sb=new StringBuilder(super.toString());
+        if(flags != 0 || keys != null)
+            sb.append(" (");
         if(flags != 0)
             sb.append(" flags=" + flags + " (" + flagsToString() + ")");
         if(keys == null)
@@ -227,6 +229,8 @@ public class ExtendedUUID extends UUID {
 
             sb.append(", ").append(new AsciiString(key)).append("=").append(obj);
         }
+        if(flags != 0 || keys != null)
+            sb.append(")");
         return sb.toString();
     }
 
