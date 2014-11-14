@@ -589,8 +589,9 @@ public class FD_SOCK extends Protocol implements Runnable {
             if(dest == null) {
                 return false;
             }
+            SocketAddress destAddr=null;
             try {
-                SocketAddress destAddr=new InetSocketAddress(dest.getIpAddress(), dest.getPort());
+                destAddr=new InetSocketAddress(dest.getIpAddress(), dest.getPort());
                 // ping_sock=new Socket();
                 ping_sock=getSocketFactory().createSocket("jgroups.fd.ping_sock");
 
@@ -617,7 +618,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 return true;
             }
             catch(Throwable ex) {
-                log.warn("%s: creating the client socket failed: %s", local_addr, ex);
+                log.warn("%s: creating the client socket to %s failed: %s", local_addr, destAddr, ex);
                 return false;
             }
         }

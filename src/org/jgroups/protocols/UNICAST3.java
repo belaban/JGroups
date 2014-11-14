@@ -46,9 +46,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
     protected int     xmit_table_num_rows=100;
 
-    @Property(description="Number of elements of a row of the matrix in the retransmission table (only for experts). " +
-      "The capacity of the matrix is xmit_table_num_rows * xmit_table_msgs_per_row",writable=false)
-    protected int     xmit_table_msgs_per_row=1000;
+    @Property(description="Number of elements of a row of the matrix in the retransmission table; " +
+      "gets rounded to the next power of 2 (only for experts). The capacity of the matrix is xmit_table_num_rows * xmit_table_msgs_per_row",writable=false)
+    protected int     xmit_table_msgs_per_row=1024;
 
     @Property(description="Resize factor of the matrix in the retransmission table (only for experts)",writable=false)
     protected double  xmit_table_resize_factor=1.2;
