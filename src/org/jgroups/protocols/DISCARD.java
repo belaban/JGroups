@@ -1,21 +1,29 @@
 
 package org.jgroups.protocols;
 
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import javax.swing.*;
+
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
-
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.*;
-import java.util.List;
-
 
 /**
  * Discards up or down messages based on a percentage; e.g., setting property 'up' to 0.1 causes 10%
@@ -40,11 +48,11 @@ public class DISCARD extends Protocol {
 
     @ManagedAttribute(description="Number of dropped up messages",name="dropped_up_messages")
     protected int                       num_up=0;
-    
-    protected final Set<Address>        ignoredMembers = new HashSet<Address>();
+
+    protected final Set<Address>        ignoredMembers = Collections.synchronizedSet(new HashSet<Address>());
 
 
-    protected final Collection<Address> members=new ArrayList<Address>();
+    protected final Collection<Address> members = Collections.synchronizedList(new ArrayList<Address>());
 
     @Property(description="drop all messages (up or down)",writable=true)
     protected boolean                   discard_all=false;
@@ -61,7 +69,7 @@ public class DISCARD extends Protocol {
     protected boolean                   use_gui=false;
 
 
-    public DISCARD                      localAddress(Address addr) {setLocalAddress(addr); return this;}
+    public DISCARD localAddress(Address addr) {setLocalAddress(addr); return this;}
 
     public Address                      localAddress() {
         if(localAddress == null)
@@ -80,9 +88,9 @@ public class DISCARD extends Protocol {
     public boolean isExcludeItself() {
         return excludeItself;
     }
-    
+
     public void setLocalAddress(Address localAddress){
-    	this.localAddress =localAddress;
+        this.localAddress =localAddress;
         if(discard_dialog != null)
             discard_dialog.setTitle(localAddress != null? localAddress.toString() : "n/a");
     }
@@ -242,7 +250,7 @@ public class DISCARD extends Protocol {
                 List<Address> mbrs=view.getMembers();
                 members.clear();
                 members.addAll(mbrs);
-                ignoredMembers.retainAll(mbrs); // remove all non members
+//                ignoredMembers.retainAll(mbrs); // remove all non members
                 if(discard_dialog != null)
                     discard_dialog.handleView(mbrs);
                 break;
@@ -314,7 +322,7 @@ public class DISCARD extends Protocol {
     }
 
 
-    
+
 
 
     protected class DiscardDialog extends JFrame implements ActionListener {
