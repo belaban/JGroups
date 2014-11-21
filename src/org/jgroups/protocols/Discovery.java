@@ -85,6 +85,10 @@ public abstract class Discovery extends Protocol {
       "discovery is blocking and/or takes more than a few milliseconds")
     protected boolean                    async_discovery=false;
 
+    @Property(description="When a new node joins, and we have a static discovery protocol (TCPPING), then send the " +
+      "contents of the discovery cache to new and existing members if true (and we're the coord). Addresses JGRP-1903")
+    protected boolean                    send_cache_on_join=false;
+
 
     @ManagedOperation(description="Sets force_sending_discovery_rsps")
     public void setForceSendingDiscoveryRsps(boolean flag) {
@@ -178,6 +182,15 @@ public abstract class Discovery extends Protocol {
     protected boolean isMergeRunning() {
         Object retval=up_prot.up(new Event(Event.IS_MERGE_IN_PROGRESS));
         return retval instanceof Boolean && (Boolean)retval;
+    }
+
+    @ManagedOperation(description="Sends information about my cache to everyone but myself")
+    public void sendCacheInformation() {
+        List<Address> current_members=null;
+        synchronized(members) {
+            current_members=new ArrayList<Address>(members);
+        }
+        disseminateDiscoveryInformation(current_members, null, current_members);
     }
 
     public List<Integer> providedUpServices() {
@@ -372,6 +385,7 @@ public abstract class Discovery extends Protocol {
             // case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
                 List<Address> tmp;
+                View old_view=view;
                 view=(View)evt.getArg();
                 if((tmp=view.getMembers()) != null) {
                     synchronized(members) {
@@ -381,7 +395,17 @@ public abstract class Discovery extends Protocol {
                 }
                 current_coord=!members.isEmpty()? members.get(0) : null;
                 is_coord=current_coord != null && local_addr != null && current_coord.equals(local_addr);
-                return down_prot.down(evt);
+                Object retval=down_prot.down(evt);
+                if(send_cache_on_join && !isDynamic() && is_coord) {
+                    List<Address> curr_mbrs, left_mbrs, new_mbrs;
+                    synchronized(members) {
+                        curr_mbrs=new ArrayList<Address>(members);
+                        left_mbrs=old_view != null? Util.leftMembers(old_view.getMembers(), members) : null;
+                        new_mbrs=old_view != null? Util.newMembers(old_view.getMembers(), members) : null;
+                    }
+                    startCacheDissemination(curr_mbrs, left_mbrs, new_mbrs); // separate task
+                }
+                return retval;
 
             case Event.BECOME_SERVER: // called after client has joined and is fully working group member
                 down_prot.down(evt);
@@ -506,6 +530,11 @@ public abstract class Discovery extends Protocol {
         return false;
     }
 
+    protected synchronized void startCacheDissemination(List<Address> curr_mbrs, List<Address> left_mbrs, List<Address> new_mbrs) {
+        timer.execute(new DiscoveryCacheDisseminationTask(curr_mbrs,left_mbrs,new_mbrs));
+    }
+
+
     /**
      * Creates a byte[] representation of the PingData, but DISCARDING the view it contains.
      * @param data the PingData instance to serialize.
@@ -573,5 +602,61 @@ public abstract class Discovery extends Protocol {
     }
 
     protected boolean isCoord(Address member) {return member.equals(current_coord);}
+
+    /** Disseminates cache information (UUID/IP adddress/port/name) to the given members
+     * @param current_mbrs The current members. Guaranteed to be non-null. This is a copy and can be modified.
+     * @param left_mbrs The members which left. These are excluded from dissemination. Can be null if no members left
+     * @param new_mbrs The new members that we need to disseminate the information to. Will be all members if null.
+     */
+    protected void disseminateDiscoveryInformation(List current_mbrs, List<Address> left_mbrs, List<Address> new_mbrs) {
+        if(new_mbrs == null || new_mbrs.isEmpty())
+            return;
+
+        if(local_addr != null)
+            current_mbrs.remove(local_addr);
+        if(left_mbrs != null)
+            current_mbrs.removeAll(left_mbrs);
+
+        // 1. Send information about <everyone - self - left_mbrs> to new_mbrs
+        Set<Address> info=new HashSet<Address>(current_mbrs);
+        for(Address addr : info) {
+            PhysicalAddress phys_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS,addr));
+            if(phys_addr == null)
+                continue;
+            boolean is_coordinator=isCoord(addr);
+            for(Address target : new_mbrs)
+                sendDiscoveryResponse(addr,phys_addr,UUID.get(addr),target,is_coordinator);
+        }
+
+        // 2. Send information about new_mbrs to <everyone - self - left_mbrs - new_mbrs>
+        Set<Address> targets=new HashSet<Address>(current_mbrs);
+        targets.removeAll(new_mbrs);
+
+        if(!targets.isEmpty()) {
+            for(Address addr : new_mbrs) {
+                PhysicalAddress phys_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS,addr));
+                if(phys_addr == null)
+                    continue;
+                boolean is_coordinator=isCoord(addr);
+                for(Address target : targets)
+                    sendDiscoveryResponse(addr,phys_addr,UUID.get(addr),target,is_coordinator);
+            }
+        }
+    }
+
+
+    protected class DiscoveryCacheDisseminationTask implements Runnable {
+        protected final List<Address> curr_mbrs, left_mbrs, new_mbrs;
+
+        public DiscoveryCacheDisseminationTask(List<Address> curr_mbrs,List<Address> left_mbrs,List<Address> new_mbrs) {
+            this.curr_mbrs=curr_mbrs;
+            this.left_mbrs=left_mbrs;
+            this.new_mbrs=new_mbrs;
+        }
+
+        public void run() {
+            disseminateDiscoveryInformation(curr_mbrs, left_mbrs, new_mbrs);
+        }
+    }
 
 }
