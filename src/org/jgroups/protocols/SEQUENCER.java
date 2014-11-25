@@ -61,6 +61,7 @@ public class SEQUENCER extends Protocol {
     protected final ConcurrentMap<Address,BoundedHashMap<Long,Long>> delivery_table=Util.createConcurrentMap();
 
     protected volatile Flusher                  flusher;
+        
 
     /** Used for each resent message to wait until the message has been received */
     protected final Promise<Long>               ack_promise=new Promise<Long>();
