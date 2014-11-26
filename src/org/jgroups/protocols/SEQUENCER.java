@@ -402,7 +402,7 @@ public class SEQUENCER extends Protocol {
     }
 
 
-    protected void forwardToCoord(long seqno, Message msg) {
+   protected void forwardToCoord(long seqno, Message msg) {
         if(is_coord) {
             forward(msg, seqno, false);
             return;
@@ -412,7 +412,7 @@ public class SEQUENCER extends Protocol {
             forward_table.put(seqno, msg);
             return;
         }
-
+ 
         if(!ack_mode) {
             forward_table.put(seqno, msg);
             forward(msg, seqno, false);
