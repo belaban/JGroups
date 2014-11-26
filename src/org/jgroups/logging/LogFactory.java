@@ -15,7 +15,7 @@ public class LogFactory {
     public static final boolean    IS_LOG4J_AVAILABLE;
     protected static final boolean USE_JDK_LOGGER;
 
-    protected static final CustomLogFactory custom_log_factory;
+    protected static CustomLogFactory custom_log_factory;
 
 
     static {
@@ -35,6 +35,13 @@ public class LogFactory {
         IS_LOG4J2_AVAILABLE=isAvailable("org.apache.logging.log4j.core.Logger");
     }
 
+    public static CustomLogFactory getCustomLogFactory() {
+        return custom_log_factory;
+    }
+
+    public static void setCustomLogFactory(CustomLogFactory factory) {
+        custom_log_factory=factory;
+    }
 
     public static String loggerType() {
         if(USE_JDK_LOGGER)      return "jdk";
