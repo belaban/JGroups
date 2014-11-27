@@ -22,7 +22,7 @@ import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.protocols.jzookeeper.Zab.Flusher;
+import org.jgroups.protocols.jzookeeper.ZAB.Flusher;
 import org.jgroups.protocols.SEQUENCER.SequencerHeader;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Bits;
@@ -31,7 +31,11 @@ import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
-public class Zab extends Protocol {
+/**
+ * Implementation of Zookeeper Atmoic Broadcast protocol using JGroups.
+ * @author Bela Ban and Ibrahim EL-Sanosi
+ */
+public class ZAB extends Protocol {
 	
 	protected Address                           local_addr;
     protected volatile Address                  coord;
