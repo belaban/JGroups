@@ -12,15 +12,17 @@ import java.io.DataOutput;
 
 
 /**
+ * Header used by {@link org.jgroups.protocols.pbcast.NAKACK2}
  * @author Bela Ban
  */
 public class NakAckHeader2 extends Header {
-    public static final byte MSG=1;       // regular msg
-    public static final byte XMIT_REQ=2;  // retransmit request
-    public static final byte XMIT_RSP=3;  // retransmit response (contains one or more messages)
+    public static final byte MSG           = 1;  // regular msg
+    public static final byte XMIT_REQ      = 2;  // retransmit request
+    public static final byte XMIT_RSP      = 3;  // retransmit response (contains one or more messages)
+    public static final byte HIGHEST_SEQNO = 4;  // the highest sent seqno
 
-    byte      type=0;
-    long      seqno=-1;        // seqno of regular message (MSG)
+    byte      type;
+    long      seqno=-1;        // seqno of regular message (MSG, HIGHEST_SEQNO)
     Address   sender;          // the original sender of the message (for XMIT_REQ)
 
 
@@ -39,6 +41,8 @@ public class NakAckHeader2 extends Header {
     public static NakAckHeader2 createXmitResponseHeader() {
         return new NakAckHeader2(XMIT_RSP, -1);
     }
+
+    public static NakAckHeader2 createHighestSeqnoHeader(long seqno) {return new NakAckHeader2(HIGHEST_SEQNO, seqno);}
 
 
     /**
@@ -68,6 +72,7 @@ public class NakAckHeader2 extends Header {
         switch(type) {
             case MSG:
             case XMIT_RSP:
+            case HIGHEST_SEQNO:
                 Bits.writeLong(seqno, out);
                 break;
             case XMIT_REQ:
@@ -81,6 +86,7 @@ public class NakAckHeader2 extends Header {
         switch(type) {
             case MSG:
             case XMIT_RSP:
+            case HIGHEST_SEQNO:
                 seqno=Bits.readLong(in);
                 break;
             case XMIT_REQ:
@@ -95,6 +101,7 @@ public class NakAckHeader2 extends Header {
         switch(type) {
             case MSG:
             case XMIT_RSP:
+            case HIGHEST_SEQNO:
                 return retval + Bits.size(seqno);
 
             case XMIT_REQ:
@@ -116,14 +123,11 @@ public class NakAckHeader2 extends Header {
 
     public static String type2Str(byte t) {
         switch(t) {
-            case MSG:
-                return "MSG";
-            case XMIT_REQ:
-                return "XMIT_REQ";
-            case XMIT_RSP:
-                return "XMIT_RSP";
-            default:
-                return "<undefined>";
+            case MSG:           return "MSG";
+            case XMIT_REQ:      return "XMIT_REQ";
+            case XMIT_RSP:      return "XMIT_RSP";
+            case HIGHEST_SEQNO: return "HIGHEST_SEQNO";
+            default:            return "<undefined>";
         }
     }
 
@@ -134,6 +138,7 @@ public class NakAckHeader2 extends Header {
         switch(type) {
             case MSG:
             case XMIT_RSP: // seqno and sender
+            case HIGHEST_SEQNO:
                 ret.append(", seqno=").append(seqno);
                 break;
             case XMIT_REQ:  // range and sender

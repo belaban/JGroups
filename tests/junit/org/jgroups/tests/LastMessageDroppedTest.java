@@ -1,9 +1,11 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -19,42 +21,34 @@ import java.util.List;
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class LastMessageDroppedTest extends ChannelTestBase {
-    JChannel c1, c2;
+    JChannel a, b;
 
-    @BeforeMethod
-    void init() throws Exception {
-        c1=createChannel(true, 2);
-        c2=createChannel(c1);
-        // c1.setOpt(Channel.LOCAL, false);
-        c1.connect("LastMessageDroppedTest");
-        c2.connect("LastMessageDroppedTest");
-        View view=c2.getView();
-        System.out.println("view = " + view);
-        assert view.size() == 2 : "view is " + view;
+    @BeforeMethod void init() throws Exception {
+        a=createChannel(true, 2).name("A");
+        b=createChannel(a).name("B");
+        changeNAKACK2(a,b);
+        a.connect("LastMessageDroppedTest");
+        b.connect("LastMessageDroppedTest");
+        Util.waitUntilAllChannelsHaveSameSize(10000,500,a,b);
     }
 
 
-    @AfterMethod
-    void cleanup() {
-        Util.close(c2, c1);
+    @AfterMethod void cleanup() {
+        Util.close(b,a);
     }
 
     public void testLastMessageDropped() throws Exception {
         DISCARD discard=new DISCARD();
-        ProtocolStack stack=c1.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK2.class);
-        c1.setDiscardOwnMessages(true);
-
-        Message m1=new Message(null, null, 1);
-        Message m2=new Message(null, null, 2);
-        Message m3=new Message(null, null, 3);
+        ProtocolStack stack=a.getProtocolStack();
+        stack.insertProtocol(discard,ProtocolStack.BELOW,NAKACK2.class);
+        a.setDiscardOwnMessages(true);
 
         MyReceiver receiver=new MyReceiver();
-        c2.setReceiver(receiver);
-        c1.send(m1);
-        c1.send(m2);
+        b.setReceiver(receiver);
+        a.send(null, 1);
+        a.send(null, 2);
         discard.setDropDownMulticasts(1); // drop the next multicast
-        c1.send(m3);
+        a.send(null, 3);
         Util.sleep(100);
 
         List<Integer> list=receiver.getMsgs();
@@ -62,7 +56,6 @@ public class LastMessageDroppedTest extends ChannelTestBase {
             System.out.println("list=" + list);
             if(list.size() == 3)
                 break;
-            stable(c1, c2);
             Util.sleep(1000);
         }
         System.out.println("list=" + list);
@@ -71,18 +64,15 @@ public class LastMessageDroppedTest extends ChannelTestBase {
     }
 
 
-    private static void stable(JChannel ... channels) {
+    protected static void changeNAKACK2(JChannel ... channels) {
         for(JChannel ch: channels) {
-            ProtocolStack stack=ch.getProtocolStack();
-            STABLE stable=(STABLE)stack.findProtocol(STABLE.class);
-            if(stable == null)
-                throw new IllegalStateException("STABLE protocol was not found");
-            stable.gc();
+            NAKACK2 nak=(NAKACK2)ch.getProtocolStack().findProtocol(NAKACK2.class);
+            nak.setResendLastSeqno(true);
         }
     }
 
 
-    private static class MyReceiver extends ReceiverAdapter {
+    protected static class MyReceiver extends ReceiverAdapter {
         private final List<Integer> msgs=new ArrayList<Integer>(3);
 
         public List<Integer> getMsgs() {
@@ -90,7 +80,6 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         }
 
         public void receive(Message msg) {
-            // System.out.println("<< " + msg.getObject());
             msgs.add((Integer)msg.getObject());
         }
     }

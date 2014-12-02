@@ -37,7 +37,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     @Property(description="Max number of messages to be removed from a RingBuffer. This property might " +
       "get removed anytime, so don't use it !")
-    protected int max_msg_batch_size=100;
+    protected int     max_msg_batch_size=100;
     
     /**
      * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers
@@ -72,7 +72,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected boolean discard_delivered_msgs=true;
 
     @Property(description="Timeout to rebroadcast messages. Default is 2000 msec")
-    protected long max_rebroadcast_timeout=2000;
+    protected long    max_rebroadcast_timeout=2000;
 
     /**
      * When not finding a message on an XMIT request, include the last N
@@ -92,36 +92,44 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     @Property(description="Interval (in milliseconds) at which missing messages (from all retransmit buffers) " +
       "are retransmitted")
-    protected long xmit_interval=1000;
+    protected long    xmit_interval=1000;
 
     @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
-    protected int xmit_table_num_rows=100;
+    protected int     xmit_table_num_rows=100;
 
     @Property(description="Number of elements of a row of the matrix in the retransmission table; gets rounded to the " +
       "next power of 2 (only for experts). The capacity of the matrix is xmit_table_num_rows * xmit_table_msgs_per_row",
               writable=false)
-    protected int xmit_table_msgs_per_row=1024;
+    protected int     xmit_table_msgs_per_row=1024;
 
     @Property(description="Resize factor of the matrix in the retransmission table (only for experts)",writable=false)
-    protected double xmit_table_resize_factor=1.2;
+    protected double  xmit_table_resize_factor=1.2;
 
     @Property(description="Number of milliseconds after which the matrix in the retransmission table " +
       "is compacted (only for experts)",writable=false)
-    protected long xmit_table_max_compaction_time=10000;
+    protected long    xmit_table_max_compaction_time=10000;
 
     @Property(description="Size of the queue to hold messages received after creating the channel, but before being " +
       "connected (is_server=false). After becoming the server, the messages in the queue are fed into up() and the " +
       "queue is cleared. The motivation is to avoid retransmissions (see https://issues.jboss.org/browse/JGRP-1509 " +
       "for details). 0 disables the queue.")
-    protected int become_server_queue_size=50;
+    protected int     become_server_queue_size=50;
 
     @Property(description="Time during which identical warnings about messages from a non member will be suppressed. " +
       "0 disables this (every warning will be logged). Setting the log level to ERROR also disables this.")
-    protected long suppress_time_non_member_warnings=60000;
+    protected long    suppress_time_non_member_warnings=60000;
 
     @Property(description="Max number of messages to ask for in a retransmit request. 0 disables this and uses " +
       "the max bundle size in the transport")
-    protected int  max_xmit_req_size;
+    protected int     max_xmit_req_size;
+
+    @Property(description="If enabled, multicasts the highest sent seqno every xmit_interval ms. This is skipped if " +
+      "a regular message has been multicast, and the task aquiesces if the highest sent seqno hasn't changed for " +
+      "resend_last_seqno_max_times times. Used to speed up retransmission of dropped last messages (JGRP-1904)")
+    protected boolean resend_last_seqno=false;
+
+    @Property(description="Max number of times the last seqno is resent before acquiescing if last seqno isn't incremented")
+    protected int     resend_last_seqno_max_times=3;
 
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
@@ -177,6 +185,23 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             suppress_log_non_member.getCache().clear();
     }
 
+    @ManagedAttribute
+    public void setResendLastSeqno(boolean flag) {
+        if(resend_last_seqno != flag)
+            resend_last_seqno=flag;
+        if(resend_last_seqno) {
+            if(last_seqno_resender == null)
+                last_seqno_resender=new LastSeqnoResender();
+        }
+        else {
+            if(last_seqno_resender != null)
+                last_seqno_resender=null;
+        }
+    }
+
+    @ManagedAttribute(description="Whether or not the task to resend the last seqno is running (depends on resend_last_seqno)")
+    public boolean resendTaskRunning() {return last_seqno_resender != null;}
+
 
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
     protected volatile boolean          is_server=false;
@@ -196,7 +221,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected volatile boolean          leaving=false;
     protected volatile boolean          running=false;
     protected TimeScheduler             timer=null;
-
+    protected LastSeqnoResender         last_seqno_resender;
     protected final Lock                rebroadcast_lock=new ReentrantLock();
     protected final Condition           rebroadcast_done=rebroadcast_lock.newCondition();
 
@@ -418,6 +443,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             max_xmit_req_size=Math.min(max_xmit_req_size, estimated_max_msgs_in_xmit_req);
         if(old_max_xmit_size != max_xmit_req_size)
             log.trace("%s: set max_xmit_req_size from %d to %d", local_addr, old_max_xmit_size, max_xmit_req_size);
+
+        if(resend_last_seqno)
+            setResendLastSeqno(resend_last_seqno);
     }
 
 
@@ -601,6 +629,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                         handleXmitRsp(msg, hdr);
                         return null;
 
+                    case NakAckHeader2.HIGHEST_SEQNO:
+                        handleHighestSeqno(msg.src(), hdr.seqno);
+                        return null;
+
                     default:
                         log.error(Util.getMessage("HeaderTypeNotKnown"), local_addr, hdr.type);
                         return null;
@@ -657,6 +689,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                         msgs.add(new Tuple<Long,Message>(hdr.seqno, xmitted_msg));
                         got_retransmitted_msg=true;
                     }
+                    break;
+                case NakAckHeader2.HIGHEST_SEQNO:
+                    handleHighestSeqno(batch.sender(), hdr.seqno);
                     break;
                 default:
                     log.error(Util.getMessage("HeaderTypeNotKnown"), local_addr, hdr.type);
@@ -766,6 +801,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             log.trace("%s: sending %s#%d", local_addr, local_addr, msg_id);
         down_prot.down(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
         num_messages_sent++;
+
+        if(resend_last_seqno && last_seqno_resender != null)
+            last_seqno_resender.skipNext();
     }
 
 
@@ -1039,6 +1077,26 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
         catch(Exception ex) {
             log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "retransmitted message", msg, ex);
+        }
+    }
+
+    /**
+     * Compares the sender's highest seqno with my highest seqno: if the sender's is higher, ask sender for retransmission
+     * @param sender The sender
+     * @param seqno The highest seqno sent by sender
+     */
+    protected void handleHighestSeqno(Address sender, long seqno) {
+        // check whether the highest seqno received from sender is > highest seqno received for sender in my digest.
+        // If yes, request retransmission (see "Last Message Dropped" topic in DESIGN)
+        Table<Message> buf=xmit_table.get(sender);
+        if(buf == null)
+            return;
+        long my_highest_received=buf.getHighestReceived();
+
+        if(my_highest_received >= 0 && seqno > my_highest_received) {
+            log.trace("%s: my_highest_rcvd (%s#%d) < highest received (%s#%d): requesting retransmission",
+                      local_addr, sender, my_highest_received, sender, seqno);
+            retransmit(seqno,seqno,sender);
         }
     }
 
@@ -1465,9 +1523,41 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             else if(!xmit_task_map.isEmpty())
                 xmit_task_map.remove(target); // no current gaps for target
         }
+
+        if(resend_last_seqno && last_seqno_resender != null)
+            last_seqno_resender.execute(seqno.get());
     }
 
 
+    /** Class which is called by RetransmitTask to resend the last seqno sent (if resend_last_seqno is enabled) */
+    protected class LastSeqnoResender {
+        // Number of times the same seqno has been sent (acquiesces after resend_last_seqno_max_times)
+        protected int                 num_resends;
+        protected long                last_seqno_resent; // the last seqno that was resent by this task
+        // set to true when a regular msg is sent to prevent the task from running
+        protected final AtomicBoolean skip_next_resend=new AtomicBoolean(false);
+
+        protected void skipNext() {
+            skip_next_resend.compareAndSet(false,true);
+        }
+
+        protected void execute(long seqno) {
+            if(seqno == 0 || skip_next_resend.compareAndSet(true,false))
+                return;
+            if(seqno == last_seqno_resent && num_resends >= resend_last_seqno_max_times)
+                return;
+            if(seqno > last_seqno_resent) {
+                last_seqno_resent=seqno;
+                num_resends=1;
+            }
+            else
+                num_resends++;
+            Message msg=new Message(null).putHeader(id, NakAckHeader2.createHighestSeqnoHeader(seqno))
+              .setFlag(Message.Flag.OOB, Message.Flag.INTERNAL)
+              .setTransientFlag(Message.TransientFlag.DONT_LOOPBACK); // we don't need to receive our own broadcast
+            down_prot.down(new Event(Event.MSG, msg));
+        }
+    }
 
 
     protected static class Counter implements Table.Visitor<Message> {

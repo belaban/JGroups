@@ -127,9 +127,9 @@ public class SizeTest {
     }
 
     public static void testNakackHeader() throws Exception {
-        _testSize(NakAckHeader.createMessageHeader(322649));
-        _testSize(NakAckHeader.createXmitRequestHeader(100, 104, Util.createRandomAddress()));
-        _testSize(NakAckHeader.createXmitResponseHeader());
+        _testSize(NakAckHeader2.createMessageHeader(322649));
+        _testSize(NakAckHeader2.createXmitRequestHeader(Util.createRandomAddress()));
+        _testSize(NakAckHeader2.createXmitResponseHeader());
     }
 
 
