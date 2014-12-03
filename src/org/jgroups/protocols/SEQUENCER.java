@@ -149,7 +149,7 @@ public class SEQUENCER extends Protocol {
 
                 if(flushing)
                     block();
-
+                
                 // A seqno is not used to establish ordering, but only to weed out duplicates; next_seqno doesn't need
                 // to increase monotonically, but only to be unique (https://issues.jboss.org/browse/JGRP-1461) !
                 long next_seqno=seqno.incrementAndGet();
@@ -412,7 +412,7 @@ public class SEQUENCER extends Protocol {
             forward_table.put(seqno, msg);
             return;
         }
- 
+   
         if(!ack_mode) {
             forward_table.put(seqno, msg);
             forward(msg, seqno, false);

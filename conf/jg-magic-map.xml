@@ -75,5 +75,7 @@
     <class id="112" name="org.jgroups.protocols.SaslHeader"/>
     <class id="113" name="org.jgroups.protocols.SEQUENCER2$SequencerHeader"/>
     <class id="114" name="org.jgroups.protocols.MERGE2$MergeHeader"/>
+    <class id="115" name="org.jgroups.protocols.jzookeeper.ZAB$ZABHeader"/>
+    
 </magic-number-class-mapping>
 
