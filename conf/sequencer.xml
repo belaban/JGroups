@@ -21,8 +21,8 @@
     <pbcast.GMS/>
     <UFC/>
     <MFC/>
-    <!-- SEQUENCER could also be placed just under GMS, if messages and views need to be totally ordered -->
-    <SEQUENCER />
+    <!-- ZAB could also be placed just under GMS, if messages and views need to be totally ordered -->
+    <jzookeeper.ZAB />
     <FRAG2/>
     <pbcast.STATE_TRANSFER />
 </config>

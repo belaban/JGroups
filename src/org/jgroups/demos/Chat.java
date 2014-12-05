@@ -7,9 +7,12 @@ import org.jgroups.View;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.Scanner;
 
 public class Chat extends ReceiverAdapter {
     JChannel channel;
+    Scanner read = new Scanner(System.in);
+
 
     public void viewAccepted(View new_view) {
         System.out.println("** view: " + new_view);
@@ -39,26 +42,57 @@ public class Chat extends ReceiverAdapter {
         channel.close();
     }
 
-    private void eventLoop() {
-        BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
+    private void eventLoop() throws Exception {
+    	 int type;
+    	 boolean exit = false;
         while(true) {
-            try {
-                System.out.print("> "); System.out.flush();
-                String line=in.readLine().toLowerCase();
-                if(line.startsWith("quit") || line.startsWith("exit")) {
+            
+                System.out.print("Select one of the following");
+                System.out.print("(1) send 10 messages to leader");
+                System.out.print("(2) send 10 messages to follower");
+                System.out.print("(3) send 1 message to leader");
+                System.out.print("(4) send 1 messages to follower");
+                System.out.print("(5) exit");
+
+               type= read.nextInt();
+                switch (type){
+                case 1:
+                	Message msgl = null;
+                	for (int i = 0; i < 10; i++) {
+                        msgl=new Message(channel.getView().getMembers().get(0), null, "msg"+i);
+                		channel.send(msgl);				
+					}
+                	break;
+                case 2:
+                	Message msgf = null;
+                	for (int i = 0; i < 10; i++) {
+                        msgf=new Message(channel.getView().getMembers().get(1), null, "msg"+i);
+                		channel.send(msgf);				
+					}
+                	break;
+                case 3:
+                	Message msg1l = null;
+                        msg1l=new Message(channel.getView().getMembers().get(0), null, "msg1l");
+                		channel.send(msg1l);
                     break;
+                case 4:
+                	Message msg1f = null;
+                        msg1f=new Message(channel.getView().getMembers().get(1), null, "msg1f");
+                		channel.send(msg1f);
+                    break;
+                case 5:
+                	exit = true;
+                	break;
                 }
-                Message msg=new Message(null, null, line);
-                channel.send(msg);
-            }
-            catch(Exception e) {
-            }
+                if (exit)
+                	break;
+                
         }
     }
 
 
     public static void main(String[] args) throws Exception {
-        String props="conf/udp.xml";
+        String props="conf/udp_sequencer.xml";
         String name=null;
 
         for(int i=0; i < args.length; i++) {
