@@ -2,15 +2,18 @@ package org.jgroups.protocols.jzookeeper;
 
 import java.util.HashSet;
 
+import org.jgroups.Address;
 import org.jgroups.Message;
 
 public class Proposal {
 	
-	int AckCount;
+	public int AckCount;
 
-    public HashSet<Long> ackSet = new HashSet<Long>();
+	private HashSet<Long> ackSet = new HashSet<Long>();
 
-    public Message message;
+	private Message message;
+    
+	private Address messageSrc;
 
     public Proposal(){
     	
@@ -45,7 +48,12 @@ public class Proposal {
 	public void setMessage(Message message) {
 		this.message = message;
 	}
-    
+	public Address getMessageSrc() {
+		return messageSrc;
+	}
+	public void setMessageSrc(Address messageSrc) {
+		this.messageSrc = messageSrc;
+	}
     
 
 }

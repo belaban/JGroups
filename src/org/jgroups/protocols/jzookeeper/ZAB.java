@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
@@ -30,18 +33,30 @@ public class ZAB extends Protocol {
 	private Address                           local_addr;
 	private volatile Address                  leader;
 	private volatile View                     view;
-	private boolean                            isLeader;
-	
+	private boolean                           isLeader;
+	private boolean running        =          false;
+    private ExecutorService executor;
+
 	private long lastZxidProposed=-1, zxidACK=-1, lastZxidCommitted=-1;
 	
 	private ConcurrentMap<Long, Proposal> outstandingProposals = new ConcurrentHashMap<Long, Proposal>();
 	
 	private Map<Long, Message> queuedProposalMessage = new HashMap<Long, Message>();
 	private Map<Long, Message> queuedCommitMessage = new HashMap<Long, Message>();
+	private final LinkedBlockingQueue<Message> queuedMessages =
+	        new LinkedBlockingQueue<Message>();
+
 	CommitProcessor commitProcessor = new CommitProcessor();
 	
 	SyncRequestProcessor syncProcessor = new SyncRequestProcessor();
 
+	 public void start() throws Exception {
+	        super.start();
+	        running=true;
+	        executor = Executors.newSingleThreadExecutor();
+	        executor.execute(new FollowerMessageHandler(this.id));
+	    }
+	
     /**
      * Just remove if you don't need to reset any state
      */
@@ -83,7 +98,7 @@ public class ZAB extends Protocol {
                 			return null;
                 		 }
                 		try {
-                            sendProposal(msg);              
+                			queuedMessages.add(msg);
                 		}
                 		catch(Exception ex) {
                 			log.error("failed forwarding message to " + msg.getDest(), ex);
@@ -124,6 +139,16 @@ public class ZAB extends Protocol {
     public Object down(Event evt) {
 
         switch(evt.getType()) {
+           case Event.MSG:
+	            Message msg=(Message)evt.getArg();
+	            forwardToLeader(msg);
+	           // Message forward_msg=new Message(leader, Util.objectToByteBuffer(msg)).putHeader(this.id,hdr);
+	            //down_prot.down(new Event(Event.MSG, forward_msg));
+	            // Do something with the event, e.g. add a header to the message
+	            // Optionally pass down
+            break;
+        
+            
             case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
                 List<Address> new_members=((View)evt.getArg()).getMembers();
@@ -134,26 +159,32 @@ public class ZAB extends Protocol {
                 }
                 return down_prot.down(evt);
 
-            case Event.MSG:
-                Message msg=(Message)evt.getArg();
-                long newZxid = incrementZxid();
-                ZABHeader hdr = new ZABHeader(ZABHeader.FORWARD, newZxid);
-                msg.putHeaderIfAbsent(this.id, hdr);
-               // Message forward_msg=new Message(leader, Util.objectToByteBuffer(msg)).putHeader(this.id,hdr);
-                //down_prot.down(new Event(Event.MSG, forward_msg));
-                // Do something with the event, e.g. add a header to the message
-                // Optionally pass down
+            case Event.SET_LOCAL_ADDRESS:
+            	local_addr = (Address) evt.getArg();
                 break;
         }
-
-        return down_prot.down(evt);          // Pass on to the layer below us
+        return down_prot.down(evt);
     }
     
-    /**
-     * create a proposal and send it out to all the members
-     * 
-     * @param message
-     */
+    
+    public void forwardToLeader(Message msg){
+    	
+    	if (msg == null)
+    		return;
+    	
+    	ZABHeader forwardMsg = new ZABHeader(ZABHeader.FORWARD);
+		msg.putHeader(this.id, forwardMsg);
+		
+    	if (!isLeader()){
+    		msg.setDest(leader);
+       		down_prot.down(new Event(Event.MSG, forwardMsg));    
+    	}
+    	
+    	else
+    		queuedMessages.add(msg);   		
+    	
+    }
+    
     public void sendProposal(Message msg){
     	
     	Message ProposalMessage = null;
@@ -177,6 +208,7 @@ public class ZAB extends Protocol {
     	
     	Proposal p = new Proposal();
     	p.setMessage(ProposalMessage);
+    	p.setMessageSrc(msg.getSrc());
     	outstandingProposals.put(zxid, p);
     	try{
     		//Message forwardMsg = new Message(null, Util.objectToByteBuffer(msg));
@@ -348,6 +380,9 @@ public class ZAB extends Protocol {
 
 
         leader = members.get(0);
+        if (leader.equals(local_addr)){
+        	isLeader = true;      	
+        }
         
     }
     
@@ -355,6 +390,14 @@ public class ZAB extends Protocol {
     	return majority >= (view.size()/2) + 1? true : false;
     }
 
+    public void stop() {
+    	if (log.isDebugEnabled())
+            log.debug("The protocot are therminated");
+
+        executor.shutdown();
+        running=false;
+        super.stop();
+    }
 
 
     public static class ZABHeader extends Header {
@@ -365,11 +408,11 @@ public class ZAB extends Protocol {
          private static final byte COMMIT        = 4;
          
          private int type = -1;
-         private long zxid=-1;
-         
+         private long zxid=-1;         
          
     	 public ZABHeader() {
          }
+    	
 
          public ZABHeader(byte type) {
              this.type=type;
@@ -419,6 +462,66 @@ public class ZAB extends Protocol {
          }
 
      }
+    
+    
+    final class FollowerMessageHandler implements Runnable {
+    	
+    	private short id;
+    	public FollowerMessageHandler(short id){
+    		this.id = id;
+    	}
+    	
+    	/**
+         * create a proposal and send it out to all the members
+         * 
+         * @param message
+         */
+        @Override
+        public void run() {
+    
+            while (running) {
+            	
+            	Message messgae = null;
+            	messgae = queuedMessages.poll();
+                 if (messgae == null) {
+                	 try {
+						messgae = queuedMessages.take();
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+                 }
+            	
+            	Address sender = messgae.getSrc();
+                if(view != null && !view.containsMember(sender)) {
+                    if(log.isErrorEnabled())
+                        log.error(local_addr + ": dropping FORWARD request from non-member " + sender +
+                                    "; view=" + view);
+                    return;
+                }
+                
+
+            	zxid = incrementZxid();
+            	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, zxid);
+                
+                Message ProposalMessage=new Message(null, messgae.getRawBuffer(), messgae.getOffset(), messgae.getLength()).putHeader(this.id, hdrProposal);
+            	
+            	Proposal p = new Proposal();
+            	p.setMessage(messgae);
+            	p.setMessageSrc(messgae.getSrc());
+            	outstandingProposals.put(zxid, p);
+            	try{
+            		down_prot.down(new Event(Event.MSG, ProposalMessage));     
+                 }catch(Exception ex) {
+            		log.error("failed proposing message to members");
+            	}    
+            	
+            }
+            
+        }
+
+       
+    }
 
 }
 
