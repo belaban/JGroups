@@ -150,15 +150,9 @@ public class ZAB extends Protocol {
         
             
             case Event.TMP_VIEW:
-            case Event.VIEW_CHANGE:
-                List<Address> new_members=((View)evt.getArg()).getMembers();
-                synchronized(members) {
-                    members.clear();
-                    if(new_members != null && !new_members.isEmpty())
-                        members.addAll(new_members);
-                }
-                return down_prot.down(evt);
-
+            case Event.VIEW_CHANGE:          	
+            	handleViewChange((View)evt.getArg());
+                break;
             case Event.SET_LOCAL_ADDRESS:
             	local_addr = (Address) evt.getArg();
                 break;
@@ -203,7 +197,10 @@ public class ZAB extends Protocol {
 
     	zxid = incrementZxid();
     	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, zxid);
-        
+        byte [] bufMs = msg.getBuffer();
+        String updateMsg = new String(bufMs);
+        updateMsg = updateMsg + " zxid= " + zxid;
+        msg = msg.setBuffer(updateMsg.getBytes());
         ProposalMessage=new Message(null, msg.getRawBuffer(), msg.getOffset(), msg.getLength()).putHeader(this.id, hdrProposal);
     	
     	Proposal p = new Proposal();
@@ -370,20 +367,27 @@ public class ZAB extends Protocol {
 
     
     public void handleViewChange(View v) {
-    	members = v.getMembers();
-        if(members.isEmpty()) return;
-
-        if(view == null || view.compareTo(v) < 0)
+    	if(view == null || view.compareTo(v) < 0)
             view=v;
         else
             return;
+    	
+    	List<Address> new_members=(v.getMembers());
+        synchronized(members) {
+            members.clear();
+            if(new_members != null && !new_members.isEmpty())
+                members.addAll(new_members);
+        }
 
+        
 
-        leader = members.get(0);
-        if (leader.equals(local_addr)){
+        Address new_leader=Util.getCoordinator(v);
+        boolean leader_changed=leader == null || !leader.equals(new_leader);
+        if(leader_changed) {
+            leader=new_leader;
         	isLeader = true;      	
         }
-        
+
     }
     
     public boolean isQuorum(int majority){
