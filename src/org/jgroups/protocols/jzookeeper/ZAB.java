@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
@@ -29,14 +30,15 @@ public class ZAB extends Protocol {
 
 	
 	private List<Address> members=new ArrayList<Address>();
-	private long zxid = -1;
 	private Address                           local_addr;
 	private volatile Address                  leader;
 	private volatile View                     view;
 	private boolean                           isLeader;
 	private boolean running        =          false;
-    private ExecutorService executor;
+    protected final AtomicLong        zxid=new AtomicLong(0);
 
+    private ExecutorService executor;
+    
 	private long lastZxidProposed=-1, zxidACK=-1, lastZxidCommitted=-1;
 	
 	private ConcurrentMap<Long, Proposal> outstandingProposals = new ConcurrentHashMap<Long, Proposal>();
@@ -63,20 +65,13 @@ public class ZAB extends Protocol {
     public static void reset() {
     }
 
-    public long getZxid(){
-    	return zxid;
-    }
-    
-    public void setZxid(long zx){
-    	 zxid = zx;
-    }
     
     public boolean isLeader(){
     	return isLeader;
     }
     
-    public long incrementZxid(){
-    	return ++zxid;
+    public long getNewZxid(){
+    	return zxid.incrementAndGet();
     }
     
 
@@ -86,12 +81,12 @@ public class ZAB extends Protocol {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 
-                long newZxid = incrementZxid();
                 ZABHeader hdr = (ZABHeader)msg.getHeader(this.id);
                 if (hdr==null)
                 	break;
                 switch(hdr.type) {
                 	case ZABHeader.FORWARD:
+                		
                 		if(!isLeader) {
                 			if(log.isErrorEnabled())
                             log.error(local_addr + ": non-Leader; dropping FORWARD request from " + msg.getSrc());
@@ -179,41 +174,41 @@ public class ZAB extends Protocol {
     	
     }
     
-    public void sendProposal(Message msg){
-    	
-    	Message ProposalMessage = null;
-    	
-    	if (msg == null)
-    		return;
-    	
-    	Address sender=msg.getSrc();
-        if(view != null && !view.containsMember(sender)) {
-            if(log.isErrorEnabled())
-                log.error(local_addr + ": dropping FORWARD request from non-member " + sender +
-                            "; view=" + view);
-            return;
-        }
-        
-
-    	zxid = incrementZxid();
-    	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, zxid);
-        byte [] bufMs = msg.getBuffer();
-        String updateMsg = new String(bufMs);
-        updateMsg = updateMsg + " zxid= " + zxid;
-        msg = msg.setBuffer(updateMsg.getBytes());
-        ProposalMessage=new Message(null, msg.getRawBuffer(), msg.getOffset(), msg.getLength()).putHeader(this.id, hdrProposal);
-    	
-    	Proposal p = new Proposal();
-    	p.setMessage(ProposalMessage);
-    	p.setMessageSrc(msg.getSrc());
-    	outstandingProposals.put(zxid, p);
-    	try{
-    		//Message forwardMsg = new Message(null, Util.objectToByteBuffer(msg));
-    		down_prot.down(new Event(Event.MSG, ProposalMessage));     
-         }catch(Exception ex) {
-    		log.error("failed proposing message to members");
-    	}    	
-    }
+//    public void sendProposal(Message msg){
+//    	
+//    	Message ProposalMessage = null;
+//    	
+//    	if (msg == null)
+//    		return;
+//    	
+//    	Address sender=msg.getSrc();
+//        if(view != null && !view.containsMember(sender)) {
+//            if(log.isErrorEnabled())
+//                log.error(local_addr + ": dropping FORWARD request from non-member " + sender +
+//                            "; view=" + view);
+//            return;
+//        }
+//        
+//
+//    	long newZxid = getNewZxid();
+//    	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, newZxid);
+//        byte [] bufMs = msg.getBuffer();
+//        String updateMsg = new String(bufMs);
+//        updateMsg = updateMsg + " zxid= " + zxid;
+//        msg = msg.setBuffer(updateMsg.getBytes());
+//        ProposalMessage=new Message(null, msg.getRawBuffer(), msg.getOffset(), msg.getLength()).putHeader(this.id, hdrProposal);
+//    	
+//    	Proposal p = new Proposal();
+//    	p.setMessage(ProposalMessage);
+//    	p.setMessageSrc(msg.getSrc());
+//    	outstandingProposals.put(newZxid, p);
+//    	try{
+//    		//Message forwardMsg = new Message(null, Util.objectToByteBuffer(msg));
+//    		down_prot.down(new Event(Event.MSG, ProposalMessage));     
+//         }catch(Exception ex) {
+//    		log.error("failed proposing message to members");
+//    	}    	
+//    }
     
     
     /**
@@ -300,7 +295,7 @@ public class ZAB extends Protocol {
 		
 		if(isQuorum(p.getAckCount())){
 			
-			if (zxid != lastZxidCommitted+1) {
+			if (zxid.get() != lastZxidCommitted+1) {
                 log.warn("Commiting zxid 0x{} from {} not first!",
                         Long.toHexString(ackZxid), sender);
                 log.warn("First is 0x{}", Long.toHexString(lastZxidCommitted + 1));
@@ -505,15 +500,15 @@ public class ZAB extends Protocol {
                 }
                 
 
-            	zxid = incrementZxid();
-            	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, zxid);
+            	long new_zxid = getNewZxid();
+            	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, new_zxid);
                 
                 Message ProposalMessage=new Message(null, messgae.getRawBuffer(), messgae.getOffset(), messgae.getLength()).putHeader(this.id, hdrProposal);
             	
             	Proposal p = new Proposal();
             	p.setMessage(messgae);
             	p.setMessageSrc(messgae.getSrc());
-            	outstandingProposals.put(zxid, p);
+            	outstandingProposals.put(zxid.get(), p);
             	try{
             		down_prot.down(new Event(Event.MSG, ProposalMessage));     
                  }catch(Exception ex) {

@@ -158,7 +158,6 @@ public class FORWARD_TO_COORD extends Protocol {
     
     protected long getNextId() {return current_id.incrementAndGet();}
 
-
     protected void handleViewChange(View view) {
         Address new_coord=Util.getCoordinator(view);
         boolean coord_changed=coord == null || !coord.equals(new_coord);
