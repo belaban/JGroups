@@ -17,12 +17,12 @@ import org.jgroups.stack.ProtocolStack;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
-
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -1147,6 +1147,28 @@ public class Util {
 
         retval=(Streamable)clazz.newInstance();
         retval.readFrom(in);
+        return retval;
+    }
+
+
+    public static <T extends Streamable> void write(T[] array, DataOutput out) throws Exception {
+        Bits.writeInt(array != null? array.length : 0, out);
+        if(array == null)
+            return;
+        for(T el: array)
+            el.writeTo(out);
+    }
+
+    public static <T extends Streamable> T[] read(Class<T> clazz, DataInput in) throws Exception {
+        int size=Bits.readInt(in);
+        if(size == 0)
+            return null;
+        T[] retval=(T[])Array.newInstance(clazz, size);
+
+        for(int i=0; i < retval.length; i++) {
+            retval[i]=clazz.newInstance();
+            retval[i].readFrom(in);
+        }
         return retval;
     }
 

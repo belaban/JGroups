@@ -492,6 +492,28 @@ public class UtilTest {
         Assert.assertEquals(buf.length, buf2.length);
     }
 
+    public static void testWriteAndReadStreamableArray() throws Exception {
+        Message[] msgs={
+          new Message(null, "hello world").setFlag(Message.Flag.OOB, Message.Flag.NO_RELIABILITY),
+          new Message(Util.createRandomAddress("dest"), "bela ban"),
+          new Message(Util.createRandomAddress("dest"), Util.createRandomAddress("src"), "hello world again").setTransientFlag(Message.TransientFlag.DONT_LOOPBACK)
+        };
+
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(256);
+        Util.write(msgs, out);
+
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(out.buffer(), 0, out.position());
+        Message[] tmp=Util.read(Message.class, in);
+        for(int i=0; i < msgs.length; i++) {
+            if(msgs[i].dest() == null)
+                assert tmp[i].dest() == null;
+            else
+                assert(msgs[i].dest().equals(tmp[i].dest()));
+            assert msgs[i].getLength() == tmp[i].getLength();
+            assert msgs[i].getObject().equals(tmp[i].getObject());
+        }
+    }
+
 
     public static void testMatch() {
         long[] a={1,2,3};
