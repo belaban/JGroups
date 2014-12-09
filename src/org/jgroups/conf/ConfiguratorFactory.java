@@ -208,7 +208,7 @@ public class ConfiguratorFactory {
     static XmlConfigurator getXmlConfigurator(String properties) throws IOException {
         XmlConfigurator returnValue=null;
         InputStream configStream=getConfigStream(properties);
-        if(configStream == null && properties.endsWith(".xml"))
+        if(configStream == null && properties.endsWith("xml"))
             throw new FileNotFoundException(String.format(Util.getMessage("FileNotFound"), properties));
 
         if (configStream != null) {
