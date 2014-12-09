@@ -12,15 +12,41 @@ import javax.security.auth.callback.UnsupportedCallbackException;
  * SaslClientCallbackHandler.
  *
  * @author Tristan Tarrant
+ * @author Martes G Wigglesworth
  */
 public class SaslClientCallbackHandler implements CallbackHandler {
 
-    private final String name;
-    private final char[] password;
+    private String client_name;
+    private char[] client_password;
+    
+    public SaslClientCallbackHandler()
+    {
+        client_name = null;
+        client_password = null;
+    }
 
     public SaslClientCallbackHandler(String name, char[] password) {
-        this.name = name;
-        this.password = password;
+        this.client_name = name;
+        this.client_password = password;
+    }
+    
+    public String getClient_Name()
+    {
+        return this.client_name;
+    }
+    
+    public char[] getClient_Password()
+    {
+        return this.client_password;
+    }
+    public void setClient_Name(String newName)
+    {
+        this.client_name = newName;
+    }
+    
+    public void setClient_Password(char[] newPassword)
+    {
+        this.client_password = newPassword;
     }
 
     @Override
