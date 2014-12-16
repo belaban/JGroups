@@ -40,6 +40,9 @@
     <!-- Also available: colony.css, github.css etc -->
     <property name="asciidoctor-style"     value="./asciidoctor.css"/>
     <property name="ivy.version"           value="2.3.0" />
+	 <property name="user"             value="a6915654"/>
+	 <property name="pass"             value="Newcastle1"/>
+	 <property name="ffcopy"             value="scpTest"/>
 
 
 	<!-- 5 minutes per test suite timeout -->
@@ -213,6 +216,8 @@
             depends="jgroups.jar,jgroups-sources.jar">
         <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
 
+
+    	
     </target>
 
 
@@ -247,7 +252,8 @@
             <fileset dir="${lib.dir}">
                 <include name="licenses/thirdparty*"/>
             </fileset>
-        </jar>
+        </jar> 	
+    	
     </target>
 
 
@@ -270,10 +276,16 @@
              includes="org/jgroups/**">
         </jar>
     </target>
-
-
+	
+ <target name="scpDeploy" depends="jgroups.jar,jgroups-sources.jar">
+	<scp file="${dist.dir}/jgroups-${version}.jar"
+	     todir="a6915654@linux.cs.ncl.ac.uk:/home/pg/p13/a6915654/scpTest/"
+ 	     keyfile="${user.home}/.ssh/id_rsa"
+ 	     trust="true"/>
+	</target>
 
     <!-- generate java doc -->
+
     <target name="javadoc"
             depends="prepare,check-javadoc" unless="javadoc.exists"
             description="Creates Javadoc documentation in ./dist/javadoc">
@@ -596,6 +608,14 @@
         <echo message="The test report is ${tmp.dir}/test-results/html/index.html"/>
         <echo message="******************************************************************"/>
     </target>
+	
+	<!--<target name="scpDeploy" depends="jgroups.jar,jar"
+	            description="Deploy generated jar files to a remote host using scp">
+	        <scp file="${dist.dir}/jgroups-${version}.jar"
+	             todir="a6915654@linux.cs.ncl.ac.uk:scpTest"
+	             keyfile="${user.home}/.ssh/id_dsa"
+	             trust="true"/>
+	    </target>-->
 
 
     <macrodef name="runtest" description="Runs a configuration-dependent test suite">

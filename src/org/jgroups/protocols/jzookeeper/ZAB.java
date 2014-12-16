@@ -28,7 +28,6 @@ import org.jgroups.util.Util;
 
 public class ZAB extends Protocol {
 
-	
 	private List<Address> members=new ArrayList<Address>();
 	private Address                           local_addr;
 	private volatile Address                  leader;
@@ -57,6 +56,7 @@ public class ZAB extends Protocol {
 	        running=true;
 	        executor = Executors.newSingleThreadExecutor();
 	        executor.execute(new FollowerMessageHandler(this.id));
+	        log.setLevel("trace");
 	    }
 	
     /**
@@ -93,6 +93,7 @@ public class ZAB extends Protocol {
                 			return null;
                 		 }
                 		try {
+                    		log.info("Leader, Forward Requests received puting in queure (forwardToLeader)");
                 			queuedMessages.add(msg);
                 		}
                 		catch(Exception ex) {
@@ -101,12 +102,18 @@ public class ZAB extends Protocol {
                          break;
                    
                 	case ZABHeader.PROPOSAL:
-                		if (!isLeader())
-                			sendACK(msg);		
+                		if (!isLeader()){
+                    		log.info("follower, proposal message received, call senAck (up, proposal)");
+                			sendACK(msg);
+                		}
+                		else 
+                    		log.info("Leader, proposal message received ignoring it (up, proposal)");
+
                          break;
                     
                 	 case ZABHeader.ACK:
                 		if (isLeader())
+                     		log.info("Leader, ack message received, call processACK(up, ACK)");
                 			processACK(msg, msg.getSrc());
                 		break;
                 		
@@ -136,7 +143,9 @@ public class ZAB extends Protocol {
         switch(evt.getType()) {
            case Event.MSG:
 	            Message msg=(Message)evt.getArg();
+	            log.info("New request are received (down) " + msg);
 	            forwardToLeader(msg);
+	                    
 	           // Message forward_msg=new Message(leader, Util.objectToByteBuffer(msg)).putHeader(this.id,hdr);
 	            //down_prot.down(new Event(Event.MSG, forward_msg));
 	            // Do something with the event, e.g. add a header to the message
@@ -166,11 +175,14 @@ public class ZAB extends Protocol {
 		
     	if (!isLeader()){
     		msg.setDest(leader);
+            log.info("Not leader, Requests forwarding to the leader(forwardToLeader) "+msg);
        		down_prot.down(new Event(Event.MSG, forwardMsg));    
     	}
     	
-    	else
-    		queuedMessages.add(msg);   		
+    	else{
+    		log.info("Leader, therefore Requests puting in queury (forwardToLeader) "+msg);
+    		queuedMessages.add(msg);   
+    	}
     	
     }
     
@@ -217,7 +229,8 @@ public class ZAB extends Protocol {
      * @param message
      */
     public void sendACK(Message msg){
-    	
+		log.info("follower, sending ack (sendAck)");
+
     	if (msg == null )
     		return;
     	
@@ -492,7 +505,10 @@ public class ZAB extends Protocol {
                  }
             	
             	Address sender = messgae.getSrc();
+            	log.info("view is = "+view.containsMember(sender));
+             	log.info("view is = "+view);
                 if(view != null && !view.containsMember(sender)) {
+                	log.info("Sender is not included");
                     if(log.isErrorEnabled())
                         log.error(local_addr + ": dropping FORWARD request from non-member " + sender +
                                     "; view=" + view);
@@ -501,14 +517,15 @@ public class ZAB extends Protocol {
                 
 
             	long new_zxid = getNewZxid();
-            	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, new_zxid);
-                
+            	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, new_zxid);                
                 Message ProposalMessage=new Message(null, messgae.getRawBuffer(), messgae.getOffset(), messgae.getLength()).putHeader(this.id, hdrProposal);
             	
             	Proposal p = new Proposal();
             	p.setMessage(messgae);
             	p.setMessageSrc(messgae.getSrc());
+            	p.AckCount++;
             	outstandingProposals.put(zxid.get(), p);
+            	
             	try{
             		down_prot.down(new Event(Event.MSG, ProposalMessage));     
                  }catch(Exception ex) {
