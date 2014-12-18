@@ -1,14 +1,24 @@
 <ivysettings>
     <settings defaultResolver="default"/>
-    <property name="m2-pattern" value="${user.home}/.m2/jboss-repository/[organisation]/[module]/[revision]/[module]-[revision](-[classifier]).[ext]" override="false" />
+    <property
+            name="m2-pattern"
+            value="${user.home}/.m2/jboss-repository/[organisation]/[module]/[revision]/[module]-[revision](-[classifier]).[ext]"
+            override="false" />
     <resolvers>
+        <filesystem name="local-maven2" m2compatible="true" >
+            <artifact pattern="${m2-pattern}"/>
+        </filesystem>
+
+        <filesystem name="local-m2-publish" m2compatible="true">
+            <artifact pattern="${m2-pattern}"/>
+        </filesystem>
+
+        <ibiblio name="central" m2compatible="true"/>
+
         <!-- Tries to find an artifact in the local maven repo first -->
         <chain name="default">
-            <filesystem name="local-maven2" m2compatible="true" >
-                <artifact pattern="${m2-pattern}"/>
-                <ivy pattern="${m2-pattern}"/>
-            </filesystem>
-            <ibiblio name="central" m2compatible="true"/>
+            <resolver ref="local-maven2"/>
+            <resolver ref="central"/>
         </chain>
     </resolvers>
 </ivysettings>
