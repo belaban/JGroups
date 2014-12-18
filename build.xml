@@ -131,6 +131,69 @@
         </move>
     </target>
 
+    <!-- =================================
+          target: publish
+         ================================= -->
+    <target name="publish" depends="define-ivy-task" description="--> publish this project in the ivy repository">
+        <property name="revision" value="${version}"/>
+
+        <!--<ivy:deliver
+                deliverpattern="${dist.dir}/ivy.xml"
+                pubrevision="${version}"
+                status="release"
+                organisation="org.jgroups"
+                module="jgroups"
+                revision="${version}"
+                />-->
+
+        <!--<ivy:makepom ivyfile="${root.dir}/ivy.xml" pomfile="${dist.dir}/jgroups-${version}.pom"/>-->
+
+        <copy todir="${dist.dir}">
+            <fileset dir="${root.dir}">
+                <include name="pom.xml"/>
+            </fileset>
+            <globmapper from="pom.xml" to="jgroups-${version}.pom"/>
+        </copy>
+
+        <!-- artifactspattern="${dist.dir}/[artifact]-[revision](-[classifier]).[ext]" -->
+        <delete file="${dist.dir}/README"/>
+
+        <ivy:publish artifactspattern="${dist.dir}/[artifact]-[revision](-[classifier]).[ext]"
+                     publishivy="false"
+                     resolver="local-maven2"
+                     overwrite="true"
+                     forcedeliver="true"
+                     pubrevision="${revision}"
+                     status="release"
+                     organisation="org.jgroups"
+                     module="jgroups"
+                     revision="${version}"
+                     haltonmissing="true"/>
+
+        <copy file="${doc.dir}/README" tofile="${dist.dir}/README" overwrite="true"/>
+
+        <echo message="project ${ant.project.name} released with version ${revision}" />
+    </target>
+
+
+
+    <!--<target name="publish-to-repo" depends="define-ivy-task" description="&ndash;&gt; publish this project in the ivy repository">
+        <property name="revision" value="${version}"/>
+        <ivy:publish artifactspattern="${dist.dir}/[artifact]-[revision](-[classifier]).[ext]"
+                     publishivy="false"
+                     resolver="public"
+                     overwrite="true"
+                     pubrevision="${revision}"
+                     status="release"
+                     organisation="org.jgroups"
+                     module="jgroups"
+                     revision="${revision}"
+                     conf="default"
+                />
+        <echo message="project ${ant.project.name} released with version ${revision}" />
+    </target>
+-->
+
 
     <target name="define-testng-task">
         <taskdef resource="testngtasks" classpathref="jg.classpath"/>
@@ -264,7 +327,7 @@
               failok="false"
               exceptions="true"
               files="${conf.dir}/jgroups.bnd" />
-        <jar jarfile="${dist.dir}/jgroups-sources.jar"
+        <jar jarfile="${dist.dir}/jgroups-${version}-sources.jar"
              basedir="${src.dir}"
              manifest="${conf.dir}/MANIFEST.MF"
              includes="org/jgroups/**">

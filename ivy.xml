@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ivy-module version="2.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd">
+            xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd"
+            xmlns:e="http://ant.apache.org/ivy/extra">
     <info organisation="org.jgroups" module="jgroups" revision="3.6.1.Final"/>
 
-    <!--<publications>
-        <artifact type="pom" ext="pom" conf="default"/>
-        <artifact type="jar" ext="jar" conf="default"/>
-        <artifact type="source" ext="jar" conf="sources" m:classifier="sources"/>
-    </publications>-->
+    <publications>
+        <artifact name="jgroups" type="pom" />
+        <artifact name="jgroups" type="jar" />
+        <artifact name="jgroups" type="jar" e:classifier="sources"/>
+    </publications>
 
     <dependencies>
         <dependency org="biz.aQute"                name="bnd"             rev="1.50.0"/>

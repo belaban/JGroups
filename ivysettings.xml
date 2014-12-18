@@ -1,5 +1,5 @@
 <ivysettings>
-    <settings defaultResolver="default"/>1
+    <settings defaultResolver="default"/>
 
     <property
             name="m2-location"
@@ -24,7 +24,7 @@
         </filesystem>
 
         <filesystem name="local-ivy-publish" m2compatible="true">
-            <artifact pattern="${ivy.default.ivy.user.dir}/${ivy-pattern}"/>
+            <artifact pattern="${user.home}/.ivy2/cache/${ivy-pattern}"/>
         </filesystem>
 
         <ibiblio name="public" m2compatible="true"/>
@@ -36,4 +36,5 @@
             <resolver ref="public"/>
         </chain>
     </resolvers>
+
 </ivysettings>
