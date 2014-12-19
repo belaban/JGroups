@@ -2,8 +2,6 @@
     <settings defaultResolver="default"/>
     <credentials  host="repository.jboss.org" realm="jboss-releases-repository" username="${username}" passwd="${password}"/>
 
-    <!--<property name="nexus-public"
-              value="https://repository.jboss.org/nexus/content/groups/public"/>-->
     <property name="nexus-public"
               value="https://repository.jboss.org/nexus/service/local/staging/deploy/maven2"/>
 

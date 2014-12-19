@@ -132,7 +132,7 @@
     </target>
 
     <!-- =================================
-          target: publish
+          target: publish-local
          ================================= -->
     <target name="publish-local" depends="define-ivy-task"
             description="Publishes this project to the local ivy repo (artifacts need to be in ./dist)">
