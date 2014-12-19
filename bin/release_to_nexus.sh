@@ -14,6 +14,9 @@ POM=../pom.xml
 JAR=`find $DIST -name "jgroups-*.jar" | grep -v source`
 SRC_JAR=`find $DIST -name "jgroups-*.jar" | grep source`
 
+## Release directly, skipping the staging repo
+## REPO=https://repository.jboss.org/nexus/content/repositories/releases/
+
 REPO=https://repository.jboss.org/nexus/service/local/staging/deploy/maven2
 FLAGS="-Dpackaging=jar -DrepositoryId=jboss-releases-repository"
 
