@@ -134,7 +134,8 @@
     <!-- =================================
           target: publish
          ================================= -->
-    <target name="publish" depends="define-ivy-task" description="--> publish this project in the ivy repository">
+    <target name="publish-local" depends="define-ivy-task"
+            description="Publishes this project to the local ivy repo (artifacts need to be in ./dist)">
         <property name="revision" value="${version}"/>
 
         <!--<ivy:deliver
@@ -177,7 +178,7 @@
 
 
 
-    <!--<target name="publish-to-repo" depends="define-ivy-task" description="&ndash;&gt; publish this project in the ivy repository">
+    <!--<target name="publish-remote" depends="define-ivy-task" description="&ndash;&gt; publish this project in the ivy repository">
         <property name="revision" value="${version}"/>
         <ivy:publish artifactspattern="${dist.dir}/[artifact]-[revision](-[classifier]).[ext]"
                      publishivy="false"

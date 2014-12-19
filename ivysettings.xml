@@ -1,5 +1,11 @@
 <ivysettings>
     <settings defaultResolver="default"/>
+    <credentials  host="repository.jboss.org" realm="jboss-releases-repository" username="${username}" passwd="${password}"/>
+
+    <!--<property name="nexus-public"
+              value="https://repository.jboss.org/nexus/content/groups/public"/>-->
+    <property name="nexus-public"
+              value="https://repository.jboss.org/nexus/service/local/staging/deploy/maven2"/>
 
     <property
             name="m2-location"
@@ -28,6 +34,8 @@
         </filesystem>
 
         <ibiblio name="public" m2compatible="true"/>
+
+        <ibiblio name="nexus"  m2compatible="true" root="${nexus-public}"/>
 
         <!-- Tries to find an artifact in the local maven repo first -->
         <chain name="default">
