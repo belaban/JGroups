@@ -128,6 +128,8 @@ public class SEQUENCER extends Protocol {
         super.start();
         running=true;
         ack_mode=true;
+        log.setLevel("trace");
+
     }
 
     public void stop() {
@@ -140,6 +142,7 @@ public class SEQUENCER extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
+            	log.info("received request (down)");
                 Message msg=(Message)evt.getArg();
                 if(msg.getDest() != null || msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
                     break;
@@ -147,8 +150,12 @@ public class SEQUENCER extends Protocol {
                 if(msg.getSrc() == null)
                     msg.setSrc(local_addr);
 
-                if(flushing)
+                if(flushing){
+                	log.info("invoking block() method (down)");
+
                     block();
+                    
+                }
                 
                 // A seqno is not used to establish ordering, but only to weed out duplicates; next_seqno doesn't need
                 // to increase monotonically, but only to be unique (https://issues.jboss.org/browse/JGRP-1461) !
@@ -156,6 +163,7 @@ public class SEQUENCER extends Protocol {
                 in_flight_sends.incrementAndGet();
                 try {
                     SequencerHeader hdr=new SequencerHeader(is_coord? SequencerHeader.BCAST : SequencerHeader.WRAPPED_BCAST, next_seqno);
+                    log.info("put new header (down) " + hdr.type);
                     msg.putHeader(this.id, hdr);
                     if(log.isTraceEnabled())
                         log.trace("[" + local_addr + "]: forwarding " + local_addr + "::" + seqno + " to coord " + coord);
@@ -163,6 +171,8 @@ public class SEQUENCER extends Protocol {
                     // We always forward messages to the coordinator, even if we're the coordinator. Having the coord
                     // send its messages directly led to starvation of messages from other members. MPerf perf went up
                     // from 20MB/sec/node to 50MB/sec/node with this change !
+                    log.info("invloking forwardToCoord method  (down)"+msg);
+
                     forwardToCoord(next_seqno, msg);
                 }
                 catch(Exception ex) {
@@ -203,10 +213,12 @@ public class SEQUENCER extends Protocol {
                 hdr=(SequencerHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break; // pass up
+                log.info(local_addr + " received message from (up) " + msg.getSrc() + " type "+ hdr.type);
 
                 switch(hdr.type) {
                     case SequencerHeader.FORWARD:
                     case SequencerHeader.FLUSH:
+                    	 log.info("[ " + local_addr + "] "+"(up) inside FORWARD and flush");
                         if(!is_coord) {
                             if(log.isErrorEnabled())
                                 log.error(local_addr + ": non-coord; dropping FORWARD request from " + msg.getSrc());
@@ -219,17 +231,23 @@ public class SEQUENCER extends Protocol {
                                             "; view=" + view);
                             return null;
                         }
-
+                        log.info(local_addr + " received message from " + msg.dest() + " type "+ msg.getHeader(id));
                         broadcast(msg, true, msg.getSrc(), hdr.seqno, hdr.type == SequencerHeader.FLUSH); // do copy the message
                         received_forwards++;
                         break;
 
                     case SequencerHeader.BCAST:
+                      	 log.info("[ " + local_addr + "] "+"(up) inside BCAST");
+                       	 log.info("[ " + local_addr + "] "+"(up) invoking deliver method");
+
                         deliver(msg, evt, hdr);
                         received_bcasts++;
                         break;
 
                     case SequencerHeader.WRAPPED_BCAST:
+                   	 log.info("[ " + local_addr + "] "+"(up) inside WRAPPED_BCAST");
+                   	 log.info("[ " + local_addr + "] "+"(up) invoking unwrapAndDeliver method");
+
                         unwrapAndDeliver(msg, hdr.flush_ack);  // unwrap the original message (in the payload) and deliver it
                         received_bcasts++;
                         break;
@@ -404,18 +422,23 @@ public class SEQUENCER extends Protocol {
 
    protected void forwardToCoord(long seqno, Message msg) {
         if(is_coord) {
+            log.info("[ " + local_addr + "] "+"recieved msg (forwardToCoord) (if (is_coord) "+msg);
             forward(msg, seqno, false);
             return;
         }
 
         if(!running || flushing) {
+            log.info("[ " + local_addr + "] "+"recieved msg (forwardToCoord) if(!running || flushing) "+msg);
+
             forward_table.put(seqno, msg);
             return;
         }
    
         if(!ack_mode) {
             forward_table.put(seqno, msg);
+            log.info("[ " + local_addr + "] "+"recieved msg (forwardToCoord) if(!ack_mode) "+msg);
             forward(msg, seqno, false);
+
             return;
         }
 
@@ -423,6 +446,8 @@ public class SEQUENCER extends Protocol {
         try {
             forward_table.put(seqno, msg);
             while(running && !flushing) {
+                log.info("[ " + local_addr + "] "+"recieved msg (forwardToCoord) while(running && !flushing) "+msg);
+
                 ack_promise.reset();
                 forward(msg, seqno, true);
                 if(!ack_mode || !running || flushing)
@@ -442,6 +467,8 @@ public class SEQUENCER extends Protocol {
         if(target == null)
             return;
         byte type=flush? SequencerHeader.FLUSH : SequencerHeader.FORWARD;
+        log.info("[ " + local_addr + "] "+"recieved msg (forward) "+msg + " type " + type);
+
         try {
             SequencerHeader hdr=new SequencerHeader(type, seqno);
             Message forward_msg=new Message(target, Util.objectToByteBuffer(msg)).putHeader(this.id,hdr);
@@ -454,14 +481,19 @@ public class SEQUENCER extends Protocol {
     }
 
     protected void broadcast(final Message msg, boolean copy, Address original_sender, long seqno, boolean resend) {
-        Message bcast_msg=null;
+        log.info("[ " + local_addr + "] " + "inside broadcast method");
+
+    	Message bcast_msg=null;
 
         if(!copy) {
+            log.info("[ " + local_addr + "]" + "inside broadcast method if(!copy)");
             bcast_msg=msg; // no need to add a header, message already has one
         }
         else {
+            log.info("[ " + local_addr + "]" + "inside broadcast method making SequencerHeader.WRAPPED_BCAST");
             SequencerHeader new_hdr=new SequencerHeader(SequencerHeader.WRAPPED_BCAST, seqno);
             bcast_msg=new Message(null, msg.getRawBuffer(), msg.getOffset(), msg.getLength()).putHeader(this.id, new_hdr);
+
             if(resend) {
                 new_hdr.flush_ack=true;
                 bcast_msg.setFlag(Message.Flag.DONT_BUNDLE);
@@ -482,11 +514,13 @@ public class SEQUENCER extends Protocol {
      * @param msg
      */
     protected void unwrapAndDeliver(final Message msg, boolean flush_ack) {
+    	log.info("[ " + local_addr + "]"+ "inside unwrapAndDeliver method");
         try {
             Message msg_to_deliver=(Message)Util.objectFromByteBuffer(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             SequencerHeader hdr=(SequencerHeader)msg_to_deliver.getHeader(this.id);
             if(flush_ack)
                 hdr.flush_ack=true;
+            log.info("inside unwrapAndDeliver invoking deliver methid");
             deliver(msg_to_deliver, new Event(Event.MSG, msg_to_deliver), hdr);
         }
         catch(Exception ex) {
@@ -496,6 +530,8 @@ public class SEQUENCER extends Protocol {
 
 
     protected void deliver(Message msg, Event evt, SequencerHeader hdr) {
+
+        log.info("[ " + local_addr + "]"+"inside deliver invoking deliver method");
         Address sender=msg.getSrc();
         if(sender == null) {
             if(log.isErrorEnabled())

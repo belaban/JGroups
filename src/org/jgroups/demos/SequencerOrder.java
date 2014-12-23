@@ -1,7 +1,6 @@
 package org.jgroups.demos;
 
 
-import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
@@ -9,9 +8,6 @@ import org.jgroups.protocols.SHUFFLE;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -28,8 +24,8 @@ public class SequencerOrder {
     private JChannel              a, b, c;
     private MyReceiver            r1, r2, r3;
     static final String           GROUP="SequencerOrderTest";
-    static final int              NUM_MSGS=3; // messages per thread
-    static final int              NUM_THREADS=10;
+    static final int              NUM_MSGS=1; // messages per thread
+    static final int              NUM_THREADS=1;
     static final int              EXPECTED_MSGS=NUM_MSGS * NUM_THREADS;
     static final String           props="sequencer.xml";
     private final Sender[]        senders=new Sender[NUM_THREADS];
@@ -42,17 +38,17 @@ public SequencerOrder(){
    
     void setUp() throws Exception {
         a=new JChannel(props).name("A");
-        a.connect(GROUP);
+        a.connect("SEQ");
         r1=new MyReceiver("A");
         a.setReceiver(r1);
 
         b=new JChannel(props).name("B");
-        b.connect(GROUP);
+        b.connect("SEQ");
         r2=new MyReceiver("B");
         b.setReceiver(r2);
 
         c=new JChannel(props).name("C");
-        c.connect(GROUP);
+        c.connect("SEQ");
         r3=new MyReceiver("C");
         c.setReceiver(r3);
         System.setProperty("Djava.net.preferIPv4Stack","true");
@@ -91,8 +87,8 @@ public SequencerOrder(){
         final List<String> l3=r3.getMsgs();
         
         System.out.println("-- verifying messages on A, B and C");
-        verifyNumberOfMessages(EXPECTED_MSGS, l1, l2, l3);
-        verifySameOrder(EXPECTED_MSGS, l1, l2, l3);
+       // verifyNumberOfMessages(EXPECTED_MSGS, l1, l2, l3);
+        //verifySameOrder(EXPECTED_MSGS, l1, l2, l3);
     }
 
     protected static void insertShuffle(JChannel... channels) throws Exception {
@@ -168,16 +164,20 @@ public SequencerOrder(){
         }
 
         public void run() {
-            for(int i=1; i <= num_msgs; i++) {
+        	for(int i=0; i < channels.length; i++) 
+        		System.out.println(channels[i].getName());
+            //for(int i=1; i <= num_msgs; i++) {
                 try {
                     JChannel ch=(JChannel)Util.pickRandomElement(channels);
+            		System.out.println("The sendor is " +ch.getName());
                     String channel_name=ch.getName();
                     int number=num.incrementAndGet();
                     ch.send(null, channel_name + number);
+                    //ch.send(null, channel_name + number);
                 }
                 catch(Exception e) {
                 }
-            }
+            //}
         }
     }
 

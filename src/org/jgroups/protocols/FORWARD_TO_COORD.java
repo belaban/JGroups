@@ -71,6 +71,7 @@ public class FORWARD_TO_COORD extends Protocol {
         fwd_queue.setUpProt(up_prot);
         fwd_queue.setDownProt(down_prot);
         fwd_queue.start();
+        log.setLevel("trace");
     }
 
     public void stop() {
@@ -111,6 +112,7 @@ public class FORWARD_TO_COORD extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
+                log.warn(local_addr + ": received message (up)");
                 Message msg=(Message)evt.getArg();
                 ForwardHeader hdr=(ForwardHeader)msg.getHeader(id);
                 if(hdr == null)

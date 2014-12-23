@@ -76,6 +76,11 @@
     <class id="113" name="org.jgroups.protocols.SEQUENCER2$SequencerHeader"/>
     <class id="114" name="org.jgroups.protocols.MERGE2$MergeHeader"/>
     <class id="115" name="org.jgroups.protocols.jzookeeper.ZAB$ZABHeader"/>
+    <class id="116" name="org.jgroups.protocols.jzookeeper.MZAB$MZABHeader"/>
+    <class id="117" name="org.jgroups.protocols.SEQUENCE2$SequencerHeader"/>   
+    <class id="118" name="org.jgroups.protocols.FIRST$MyFirstHeader"/>
+    
+    
     
 </magic-number-class-mapping>
 

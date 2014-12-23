@@ -20,12 +20,14 @@ import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.annotations.MBean;
 import org.jgroups.protocols.SEQUENCER.SequencerHeader;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Bits;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
+@MBean(description="Implementation of total order protocol using a sequencer")
 public class ZAB extends Protocol {
 
 	private List<Address> members=new ArrayList<Address>();
@@ -76,11 +78,12 @@ public class ZAB extends Protocol {
     
 
     public Object up(Event evt) {
-        switch(evt.getType()) {
+        log.info("UP[" + local_addr + "] " + "recieved from "+ evt.getType());
 
+        switch(evt.getType()) {
             case Event.MSG:
+
                 Message msg=(Message)evt.getArg();
-                
                 ZABHeader hdr = (ZABHeader)msg.getHeader(this.id);
                 if (hdr==null)
                 	break;
@@ -99,7 +102,7 @@ public class ZAB extends Protocol {
                 		catch(Exception ex) {
                 			log.error("failed forwarding message to " + msg.getDest(), ex);
                 		}
-                         break;
+                		return null;
                    
                 	case ZABHeader.PROPOSAL:
                 		if (!isLeader()){
@@ -109,16 +112,17 @@ public class ZAB extends Protocol {
                 		else 
                     		log.info("Leader, proposal message received ignoring it (up, proposal)");
 
-                         break;
+                		return null;
                     
                 	 case ZABHeader.ACK:
                 		if (isLeader())
                      		log.info("Leader, ack message received, call processACK(up, ACK)");
                 			processACK(msg, msg.getSrc());
-                		break;
+                			return null;
                 		
                 	 case ZABHeader.COMMIT:
                 	     deliver(msg);
+                	     return null;
                 		
                 }
             case Event.VIEW_CHANGE:
@@ -139,18 +143,36 @@ public class ZAB extends Protocol {
     }
 
     public Object down(Event evt) {
-
+    			
         switch(evt.getType()) {
            case Event.MSG:
+
 	            Message msg=(Message)evt.getArg();
-	            log.info("New request are received (down) " + msg);
-	            forwardToLeader(msg);
-	                    
+	            
+                if(msg.getDest() != null || msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
+                    break;
+
+                if(msg.getSrc() == null)
+                    msg.setSrc(local_addr);
+              //
+	            //ZABHeader hdr = (ZABHeader)msg.getHeader(this.id);
+	          //  if (hdr==null){
+		            log.info("New request are received (down) " + msg);
+//		            log.info("is leader ? (down) " + isLeader());
+//		            log.info("Leader detials " + leader);
+//		            log.info("Local detials " + local_addr);
+//		            log.info("msg.getDis() "+msg.getDest());
+//		            log.info("msg detials " + msg.getObject());
+
+	
+	
+		            forwardToLeader(msg);
+	           // }
 	           // Message forward_msg=new Message(leader, Util.objectToByteBuffer(msg)).putHeader(this.id,hdr);
 	            //down_prot.down(new Event(Event.MSG, forward_msg));
 	            // Do something with the event, e.g. add a header to the message
 	            // Optionally pass down
-            break;
+            return null;
         
             
             case Event.TMP_VIEW:
@@ -166,25 +188,43 @@ public class ZAB extends Protocol {
     
     
     public void forwardToLeader(Message msg){
+    	Address target = leader;
     	
-    	if (msg == null)
+        if(target == null)
+            return;
+        
+        if (msg == null)
     		return;
-    	
-    	ZABHeader forwardMsg = new ZABHeader(ZABHeader.FORWARD);
-		msg.putHeader(this.id, forwardMsg);
-		
-    	if (!isLeader()){
-    		msg.setDest(leader);
-            log.info("Not leader, Requests forwarding to the leader(forwardToLeader) "+msg);
-       		down_prot.down(new Event(Event.MSG, forwardMsg));    
-    	}
-    	
-    	else{
+        
+        log.info("[" + local_addr + "] "+"recieved msg (forwardToLeader) "+msg);
+
+        if (!isLeader()){
+        try {
+        	ZABHeader forwardMsg = new ZABHeader(ZABHeader.FORWARD);
+    		msg.putHeader(this.id, forwardMsg);
+    		msg.setDest(target);
+    		
+            //Message forward_msg=new Message(target, Util.objectToByteBuffer(msg)).putHeader(this.id,hdr);
+            down_prot.down(new Event(Event.MSG, msg));
+        }catch (Exception e){
+        	
+        }
+        }	
+        
+        else{
     		log.info("Leader, therefore Requests puting in queury (forwardToLeader) "+msg);
     		queuedMessages.add(msg);   
     	}
+  
+    		//msg.sDest(leader);
+//            log.info("Not leader, Requests forwarding to the leader(forward
+    		log.info("send it to " + leader);
+       		//down_prot.down(new Event(Event.MSG, forwardMsg));  
     	
-    }
+    	
+    }  
+    	
+    	
     
 //    public void sendProposal(Message msg){
 //    	
@@ -393,8 +433,11 @@ public class ZAB extends Protocol {
         boolean leader_changed=leader == null || !leader.equals(new_leader);
         if(leader_changed) {
             leader=new_leader;
-        	isLeader = true;      	
+        	//isLeader = true;      	
         }
+        
+        isLeader=local_addr != null && local_addr.equals(leader);
+
 
     }
     
@@ -403,12 +446,12 @@ public class ZAB extends Protocol {
     }
 
     public void stop() {
-    	if (log.isDebugEnabled())
-            log.debug("The protocot are therminated");
-
-        executor.shutdown();
-        running=false;
-        super.stop();
+    	//if (log.isDebugEnabled())
+        //    log.debug("The protocot are therminated");
+    	//running=false;
+       // executor.shutdown();
+        
+        //super.stop();
     }
 
 
