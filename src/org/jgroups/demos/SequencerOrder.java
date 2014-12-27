@@ -24,7 +24,7 @@ public class SequencerOrder {
     private JChannel              a, b, c;
     private MyReceiver            r1, r2, r3;
     static final String           GROUP="SequencerOrderTest";
-    static final int              NUM_MSGS=1; // messages per thread
+    static final int              NUM_MSGS=3; // messages per thread
     static final int              NUM_THREADS=1;
     static final int              EXPECTED_MSGS=NUM_MSGS * NUM_THREADS;
     static final String           props="sequencer.xml";
@@ -166,7 +166,7 @@ public SequencerOrder(){
         public void run() {
         	for(int i=0; i < channels.length; i++) 
         		System.out.println(channels[i].getName());
-            //for(int i=1; i <= num_msgs; i++) {
+            for(int i=1; i <= num_msgs; i++) {
                 try {
                     JChannel ch=(JChannel)Util.pickRandomElement(channels);
             		System.out.println("The sendor is " +ch.getName());
@@ -177,7 +177,7 @@ public SequencerOrder(){
                 }
                 catch(Exception e) {
                 }
-            //}
+            }
         }
     }
 
