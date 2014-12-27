@@ -79,12 +79,14 @@ public class ZAB extends Protocol {
 
     public Object up(Event evt) {
         log.info("UP[" + local_addr + "] " + "recieved from "+ evt.getType());
-
+        
         switch(evt.getType()) {
+        
             case Event.MSG:
-
+            	
                 Message msg=(Message)evt.getArg();
                 ZABHeader hdr = (ZABHeader)msg.getHeader(this.id);
+                log.info("UP inside MGS[" + local_addr + "] " + hdr);
                 if (hdr==null)
                 	break;
                 switch(hdr.type) {
@@ -212,7 +214,7 @@ public class ZAB extends Protocol {
         }	
         
         else{
-    		log.info("Leader, therefore Requests puting in queury (forwardToLeader) "+msg);
+    		log.info("Leader, therefore Requests puting in queuy (forwardToLeader) "+msg);
     		queuedMessages.add(msg);   
     	}
   
@@ -448,10 +450,10 @@ public class ZAB extends Protocol {
     public void stop() {
     	//if (log.isDebugEnabled())
         //    log.debug("The protocot are therminated");
-    	//running=false;
-       // executor.shutdown();
+    	running=false;
+       executor.shutdown();
         
-        //super.stop();
+        super.stop();
     }
 
 
@@ -496,7 +498,8 @@ public class ZAB extends Protocol {
              switch(type) {
                  case FORWARD:        return "FORWARD";
                  case PROPOSAL:          return "PROPOSAL";
-                 case COMMIT:  return "WRAPPED_BCAST";
+                 case ACK:          return "ACK";
+                 case COMMIT:  return "COMMIT";
                  default:             return "n/a";
              }
          }
@@ -548,8 +551,8 @@ public class ZAB extends Protocol {
                  }
             	
             	Address sender = messgae.getSrc();
-            	log.info("view is = "+view.containsMember(sender));
-             	log.info("view is = "+view);
+            	//log.info("view is = "+view.containsMember(sender));
+             	//log.info("view is = "+view);
                 if(view != null && !view.containsMember(sender)) {
                 	log.info("Sender is not included");
                     if(log.isErrorEnabled())
@@ -562,7 +565,7 @@ public class ZAB extends Protocol {
             	long new_zxid = getNewZxid();
             	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, new_zxid);                
                 Message ProposalMessage=new Message(null, messgae.getRawBuffer(), messgae.getOffset(), messgae.getLength()).putHeader(this.id, hdrProposal);
-            	
+                ProposalMessage.setSrc(local_addr);
             	Proposal p = new Proposal();
             	p.setMessage(messgae);
             	p.setMessageSrc(messgae.getSrc());
@@ -570,6 +573,7 @@ public class ZAB extends Protocol {
             	outstandingProposals.put(zxid.get(), p);
             	
             	try{
+                 	log.info("Leader is about to sent a proposal " + ProposalMessage);
             		down_prot.down(new Event(Event.MSG, ProposalMessage));     
                  }catch(Exception ex) {
             		log.error("failed proposing message to members");

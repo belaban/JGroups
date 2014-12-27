@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests ordering with SEQUENCER: NUM_THREADS send messages concurrently over 3 channels, each thread sending NUM_MSGS
  * messages. At the end of the test, we assert that NUM_THREADS * NUM_MSGS messages have been received and that every
  * receiver delivered all messages in the same order.
- * @author Bela Ban
+ * @author Bela Ban and Ibrahim EL-Sanosi
  */
 public class SequencerOrder {
     private JChannel              a, b, c;
