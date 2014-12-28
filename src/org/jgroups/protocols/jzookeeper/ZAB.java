@@ -124,7 +124,6 @@ public class ZAB extends Protocol {
                 		
                 	 case ZABHeader.COMMIT:
                 	     deliver(msg);
-                	     return null;
                 		
                 }
             case Event.VIEW_CHANGE:
