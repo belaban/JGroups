@@ -23,10 +23,10 @@
     <MFC/>
     <!-- ZAB could also be placed just under GMS, if messages and views need to be totally ordered -->
      <!--<SEQUENCER />-->
-     <SEQUENCE2 />
+     <!--<SEQUENCE2 />-->
      <!--<FORWARD_TO_COORD />-->
     <!--<FIRST />-->
-     <!-- <jzookeeper.ZAB /> -->
+     <jzookeeper.ZAB />
     <FRAG2/>
     <pbcast.STATE_TRANSFER />
 </config>

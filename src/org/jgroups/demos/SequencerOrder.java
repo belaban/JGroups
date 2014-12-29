@@ -24,8 +24,8 @@ public class SequencerOrder {
     private JChannel              a, b, c;
     private MyReceiver            r1, r2, r3;
     static final String           GROUP="SequencerOrderTest";
-    static final int              NUM_MSGS=5; // messages per thread
-    static final int              NUM_THREADS=5;
+    static final int              NUM_MSGS=3; // messages per thread
+    static final int              NUM_THREADS=1;
     static final int              EXPECTED_MSGS=NUM_MSGS * NUM_THREADS;
     static final String           props="sequencer.xml";
     private final Sender[]        senders=new Sender[NUM_THREADS];
@@ -198,6 +198,7 @@ public SequencerOrder(){
         public int size() {return msgs.size();}
 
         public void receive(Message msg) {
+        	System.out.println("Receive responce back "+ msg);
             String val=(String)msg.getObject();
             if(val != null) {
                 synchronized(msgs) {
