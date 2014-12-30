@@ -168,18 +168,23 @@ public SequencerOrder(){
         public void run() {
         	for(int i=0; i < channels.length; i++) 
         		System.out.println(channels[i].getName());
-            for(int i=1; i <= num_msgs; i++) {
+            //for(int i=1; i <= num_msgs; i++) {
                 try {
                     JChannel ch=(JChannel)Util.pickRandomElement(channels);
             		System.out.println("The sendor is " +ch.getName());
                     String channel_name=ch.getName();
                     int number=num.incrementAndGet();
                     ch.send(null, channel_name + number);
+                    JChannel ch1=(JChannel)Util.pickRandomElement(channels);
+            		System.out.println("The sendor is " +ch.getName());
+                    String channel_name1=ch.getName();
+                    int number1=num.incrementAndGet();
+                    ch1.send(null, channel_name1 + number1);
                     //ch.send(null, channel_name + number);
                 }
                 catch(Exception e) {
                 }
-            }
+            //}
         }
     }
 

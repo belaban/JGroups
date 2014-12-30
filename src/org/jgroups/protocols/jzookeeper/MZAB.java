@@ -34,8 +34,9 @@ import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
-public class ZAB extends Protocol {
+public class MZAB extends Protocol {
 	
+
 	protected final AtomicLong        zxid=new AtomicLong(0);
     private ExecutorService executor;
 
@@ -155,7 +156,6 @@ public class ZAB extends Protocol {
 
     public void stop() {
         running=false;
-        executor.shutdown();
         unblockAll();
         stopFlusher();
         super.stop();
@@ -183,7 +183,7 @@ public class ZAB extends Protocol {
                 // to increase monotonically, but only to be unique (https://issues.jboss.org/browse/JGRP-1461) !
                // long next_seqno=seqno.incrementAndGet();
                 try {
-//                    ZABHeader hdr=new ZABHeader(is_coord? ZABHeader.PROPOSAL : ZABHeader.FORWARD);
+//                    MZABHeader hdr=new MZABHeader(is_coord? MZABHeader.PROPOSAL : MZABHeader.FORWARD);
 //                    log.info("put new header (down) " + hdr.type);
 //                    msg.putHeader(this.id, hdr);
 //                    if(log.isTraceEnabled())
@@ -224,20 +224,20 @@ public class ZAB extends Protocol {
 
     public Object up(Event evt) {
         Message msg;
-        ZABHeader hdr;
+        MZABHeader hdr;
 
         switch(evt.getType()) {
             case Event.MSG:
                 msg=(Message)evt.getArg();
                 if(msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
                     break;
-                hdr=(ZABHeader)msg.getHeader(this.id);
+                hdr=(MZABHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break; // pass up
                 log.info("[" + local_addr + "] "+ " received message from (up) " + msg.getSrc() + " type "+ hdr.type);
 
                 switch(hdr.type) {
-                    case ZABHeader.FORWARD:
+                    case MZABHeader.FORWARD:
                     	
                     	if(!is_coord) {
                 			if(log.isErrorEnabled())
@@ -253,9 +253,9 @@ public class ZAB extends Protocol {
                 		}
                 		return null;
 
-                    case ZABHeader.PROPOSAL:
+                    case MZABHeader.PROPOSAL:
                    	 log.info("[" + local_addr + "] "+"(up) inside PROPOSAL");
-
+                   	 
                    	if (!is_coord){
                 		log.info("[" + local_addr + "] "+"follower, proposal message received, call senAck (up, proposal)");
             			sendACK(msg);
@@ -264,21 +264,14 @@ public class ZAB extends Protocol {
                 		log.info("[" + local_addr + "] "+"Leader, proposal message received ignoring it (up, proposal)");
 
             		return null;
-            		
-            		
-                    case ZABHeader.ACK:
-                		log.info("["+local_addr+"] "+"follower, ACK message received, call senAck (up, proposal)");
-                		if (is_coord){
-                     		log.info("Leader, ack message received, call processACK(up, ACK)");
-                			processACK(msg, msg.getSrc());
-                			return null;
-                		}
-                    case ZABHeader.COMMIT:
-                		log.info("["+local_addr+"] "+"follower, commit message received, call deliver (up, COMMIT)");
-
-                		 deliver(msg);
+            		               		
+                    case MZABHeader.ACK:
+                		
+                 		log.info("[" + local_addr + "] "+"Ack message received, call processACK(up, ACK)");
+            			processACK(msg, msg.getSrc());
+            			return null;
+          
             }                
-                return null;
             case Event.VIEW_CHANGE:
                 Object retval=up_prot.up(evt);
                 handleViewChange((View)evt.getArg());
@@ -399,7 +392,7 @@ public class ZAB extends Protocol {
                     continue;
                 }
 
-                ZABHeader hdr=new ZABHeader(ZABHeader.PROPOSAL, key);
+                MZABHeader hdr=new MZABHeader(MZABHeader.PROPOSAL, key);
                 Message forward_msg=new Message(null, val).putHeader(this.id, hdr);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": flushing (broadcasting) " + local_addr + "::" + key);
@@ -434,7 +427,7 @@ public class ZAB extends Protocol {
             }
 
             while(flushing && running && !forward_table.isEmpty()) {
-                ZABHeader hdr=new ZABHeader(ZABHeader.FLUSH, key);
+                MZABHeader hdr=new MZABHeader(MZABHeader.FLUSH, key);
                 Message forward_msg=new Message(coord, val).putHeader(this.id,hdr).setFlag(Message.Flag.DONT_BUNDLE);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": flushing (forwarding) " + local_addr + "::" + key + " to coord " + coord);
@@ -499,11 +492,11 @@ public class ZAB extends Protocol {
         Address target=coord;
         if(target == null)
             return;
-        byte type=ZABHeader.FORWARD;
+        byte type=MZABHeader.FORWARD;
         log.info("[" + local_addr + "] "+"recieved msg (forward) "+msg + " type " + type);
 
         try {
-            ZABHeader hdr=new ZABHeader(type);
+            MZABHeader hdr=new MZABHeader(type);
             Message forward_msg=new Message(target, Util.objectToByteBuffer(msg)).putHeader(this.id,hdr);
             down_prot.down(new Event(Event.MSG, forward_msg));
             forwarded_msgs++;
@@ -514,12 +507,13 @@ public class ZAB extends Protocol {
     }
     
     public void sendACK(Message msg){
+    	Proposal p;
 		log.info("follower, sending ack (sendAck)");
 
     	if (msg == null )
     		return;
     	
-    	ZABHeader hdr = (ZABHeader) msg.getHeader(this.id);
+    	MZABHeader hdr = (MZABHeader) msg.getHeader(this.id);
     	
     	if (hdr == null)
     		return;
@@ -531,33 +525,82 @@ public class ZAB extends Protocol {
                     + Long.toHexString(lastZxidProposed + 1));
         }
     	
-    	lastZxidProposed = hdr.getZxid();
-		queuedProposalMessage.put(hdr.getZxid(), msg);
+
+	    	
+			if (!is_coord){
+				log.info("[" + local_addr + "] "+"follower, sending ack (sendAck)");
+				p = new Proposal();
+		       	p.setMessage(new Message(null, msg.getObject()));
+		    	p.setMessageSrc(hdr.getSrc());
+		    	p.AckCount++; //Ack from leader
+		    	outstandingProposals.put(hdr.getZxid(), p);
+		    	lastZxidProposed = hdr.getZxid();
+				queuedProposalMessage.put(hdr.getZxid(), msg);
+				if (ZUtil.SendAckOrNoSend()){
+					log.info("[" + local_addr + "] "+"follower, sending ack if (ZUtil.SendAckOrNoSend()) (sendAck)");
+
+					MZABHeader hdrACK = new MZABHeader(MZABHeader.ACK, hdr.getZxid());
+					Message ackMessage = new Message(null).putHeader(id, hdrACK);
+					try{
+			    		down_prot.down(new Event(Event.MSG, ackMessage));     
+			         }catch(Exception ex) {
+			    		log.error("failed sending ACK message to Leader");
+			    	} 
+	    	    }
+    	     }
+//	     	else{
+//	     		p = outstandingProposals.get(hdr.getZxid());
+//	     		p.AckCount++;				
+//			}
 		
-		//send Ack to the leader
 		
-		ZABHeader hdrACK = new ZABHeader(ZABHeader.ACK, hdr.getZxid());
-		Message ACKMessage = new Message(coord).putHeader(this.id, hdrACK);
-		
-		try{
-    		//Message forwardMsg = new Message(null, Util.objectToByteBuffer(msg));
-    		down_prot.down(new Event(Event.MSG, ACKMessage));     
-         }catch(Exception ex) {
-    		log.error("failed sending ACK message to Leader");
-    	} 
-		
-		
-		//Proposal p = outstandingProposal.get(hdr.getZxid());
-		//p.ackSet.add(hdr.getZxid());
-		
-    	
-    }
+    	}
+    
+//    public void sendACK(Message msg){
+//		log.info("follower, sending ack (sendAck)");
+//
+//    	if (msg == null )
+//    		return;
+//    	
+//    	MZABHeader hdr = (MZABHeader) msg.getHeader(this.id);
+//    	
+//    	if (hdr == null)
+//    		return;
+//    	
+//    	if (hdr.getZxid() != lastZxidProposed + 1){
+//            log.warn("Got zxid 0x"
+//                    + Long.toHexString(hdr.getZxid())
+//                    + " expected 0x"
+//                    + Long.toHexString(lastZxidProposed + 1));
+//        }
+//    	
+//    	lastZxidProposed = hdr.getZxid();
+//		queuedProposalMessage.put(hdr.getZxid(), msg);
+//		
+//		//send Ack to the leader
+//		
+//		MZABHeader hdrACK = new MZABHeader(MZABHeader.ACK, hdr.getZxid());
+//		Message ACKMessage = new Message(coord).putHeader(this.id, hdrACK);
+//		
+//		try{
+//    		//Message forwardMsg = new Message(null, Util.objectToByteBuffer(msg));
+//    		down_prot.down(new Event(Event.MSG, ACKMessage));     
+//         }catch(Exception ex) {
+//    		log.error("failed sending ACK message to Leader");
+//    	} 
+//		
+//		
+//		//Proposal p = outstandingProposal.get(hdr.getZxid());
+//		//p.ackSet.add(hdr.getZxid());
+//		
+//    	
+//    }
     
     
 synchronized void processACK(Message msgACK, Address sender){
     	
-    	log.info("Received ACK from " + sender);
-    	ZABHeader hdr = (ZABHeader) msgACK.getHeader(this.id);	
+    	log.info("[" + local_addr + "] "+"Received ACK from " + sender);
+    	MZABHeader hdr = (MZABHeader) msgACK.getHeader(this.id);	
     	long ackZxid = hdr.getZxid();
 
 		if (lastZxidCommitted >= ackZxid) {
@@ -575,53 +618,81 @@ synchronized void processACK(Message msgACK, Address sender){
                     Long.toHexString(ackZxid), sender);
             return;
         }
-		
-		p.AckCount++;
-		if (log.isDebugEnabled()) {
-            log.debug("Count for zxid: 0x{} is {}" +
-                    Long.toHexString(ackZxid)+" "+ p.getAckCount());
-        }
-		
-		log.info("quorum for msg " + ackZxid + "="+  isQuorum(p.getAckCount()));
-		if(isQuorum(p.getAckCount())){
+		if (!sender.equals(coord)){
+			p.AckCount++;
+			if (log.isDebugEnabled()) {
+	            log.debug("Count for zxid: 0x{} is {}" +
+	                    Long.toHexString(ackZxid)+" "+ p.getAckCount());
+	        }
 			
-			if (zxid.get() != lastZxidCommitted+1) {
-                log.warn("Commiting zxid 0x{} from {} not first! "+
-                        Long.toHexString(ackZxid)+" "+ sender);
-                log.warn("First is 0x{}"+ Long.toHexString(lastZxidCommitted + 1));
-            }
-            outstandingProposals.remove(ackZxid);
-           
+			log.info("quorum for msg " + ackZxid + "="+  isQuorum(p.getAckCount()));
+			if(isQuorum(p.getAckCount()) && isFirstZxid(ackZxid)){
+		    	log.info("[" + local_addr + "] "+"quorum reach inside if(isQuorum(p.getAckCount()) && isFirstZxid(zxid.get())) " + sender);
+	
+				if (ackZxid != lastZxidCommitted+1) {
+	                log.warn("Commiting zxid 0x{} from {} not first! "+
+	                        Long.toHexString(ackZxid)+" "+ sender);
+	                log.warn("First is 0x{}"+ Long.toHexString(lastZxidCommitted + 1));
+	            }
+	            outstandingProposals.remove(ackZxid);
+	           
+	
+	            if (p.getMessage() == null) {
+	                log.warn("Going to commmit null request for proposal: {}", p);
+	            }
+	            
+	            commit(ackZxid);	
+			}
+		}
+			
+			
+		}
 
-            if (p.getMessage() == null) {
-                log.warn("Going to commmit null request for proposal: {}", p);
-            }
-            
-            commit(ackZxid);	
-		}
-			
-			
-		}
+public boolean isFirstZxid(long zxid){
+	
+		boolean find = true;
+		for (long z : outstandingProposals.keySet()){
+			if (z < zxid){
+				find = false;
+				break;
+			}
+		}       		
+		
+		return find;
+	}
+		
 		
 		public void commit(long zxid){
 	    	   synchronized(this){
 	    	       lastZxidCommitted = zxid;
 	    	   }
 	    	   
-	    	   ZABHeader hdrCommit = new ZABHeader(ZABHeader.COMMIT, zxid);
-	    	   Message commitMessage = new Message(null).putHeader(id, hdrCommit);
-	    	   
-	    	   try{
-	       		down_prot.down(new Event(Event.MSG, commitMessage));     
-	            }catch(Exception ex) {
-	       		log.error("failed sending commit message to members");
-	       	} 
+	    	   deliver(zxid);
 
+	    }
+	    
+	    public void deliver(long zxid){
+	    	Message msg = null;
+			msg = queuedProposalMessage.remove(zxid);
+
+	    		
+	    	if (!is_coord && msg == null)
+	           	log.warn("No message pending for zxid" + zxid);
+	    		
+	    	if (queuedCommitMessage.containsKey(zxid)){
+	           	log.warn("message is already delivered for zxid" + zxid);
+	           	return;
+	    	}
+	    		
+	    	queuedCommitMessage.put(zxid, msg);
+	    	log.info("[" + local_addr + "] "+ " commit request with MSG and zxid = " + " "+ msg + " " + zxid);
+
+	    	   
 	    }
 		
 		public void deliver(Message toDeliver){
 	    	Message msg = null;
-	    	ZABHeader hdr = (ZABHeader) toDeliver.getHeader(this.id);
+	    	MZABHeader hdr = (MZABHeader) toDeliver.getHeader(this.id);
 	    	long zxid = hdr.getZxid();
 	    	
 	    //	if (!is_coord){
@@ -636,7 +707,7 @@ synchronized void processACK(Message msgACK, Address sender){
 //		    	}
 
 	    	queuedCommitMessage.put(zxid, msg);
-	    	log.info("[" + local_addr + "] "+ " commit request with MSG and zxid = " + " "+ msg + " " + zxid);
+	    	log.info("[" + local_addr + "] "+ " commitet request with zxid = "+zxid);
 	    	   
 	    	}
 	    	//log.info("about to send responce back to client");
@@ -661,8 +732,8 @@ synchronized void processACK(Message msgACK, Address sender){
             bcast_msg=msg; // no need to add a header, message already has one
         }
         else {
-            log.info("[ " + local_addr + "]" + "inside broadcast method making ZABHeader.WRAPPED_BCAST");
-            ZABHeader new_hdr=new ZABHeader(ZABHeader.ACK, seqno);
+            log.info("[ " + local_addr + "]" + "inside broadcast method making MZABHeader.WRAPPED_BCAST");
+            MZABHeader new_hdr=new MZABHeader(MZABHeader.ACK, seqno);
             bcast_msg=new Message(null, msg.getRawBuffer(), msg.getOffset(), msg.getLength()).putHeader(this.id, new_hdr);
 
             if(resend) {
@@ -758,7 +829,7 @@ synchronized void processACK(Message msgACK, Address sender){
 
 
 
-    public static class ZABHeader extends Header {
+    public static class MZABHeader extends Header {
     	
     	 private static final byte FORWARD       = 1;
          private static final byte PROPOSAL      = 2;
@@ -766,6 +837,8 @@ synchronized void processACK(Message msgACK, Address sender){
          private static final byte COMMIT        = 4;
          protected static final byte FLUSH       = 5;
          
+         private Address src = null;
+
     	
 //        protected static final byte FORWARD       = 1;
 //        protected static final byte FLUSH         = 2;
@@ -776,20 +849,30 @@ synchronized void processACK(Message msgACK, Address sender){
         protected long    seqno=-1;
         protected boolean flush_ack;
 
-        public ZABHeader() {
+        public MZABHeader() {
         }
 
-        public ZABHeader(byte type) {
+        public MZABHeader(byte type) {
             this.type=type;
         }
 
-        public ZABHeader(byte type, long seqno) {
+        public MZABHeader(byte type, long seqno) {
             this(type);
+            this.seqno=seqno;
+        }
+        
+        public MZABHeader(byte type, Address src, long seqno) {
+            this(type);
+            this.src = src;
             this.seqno=seqno;
         }
 
         public long getSeqno() {
             return seqno;
+        }
+        
+        public Address getSrc() {
+            return src;
         }
 
         public String toString() {
@@ -878,7 +961,7 @@ synchronized void processACK(Message msgACK, Address sender){
                 
 
             	long new_zxid = getNewZxid();
-            	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, new_zxid);                
+            	MZABHeader hdrProposal = new MZABHeader(MZABHeader.PROPOSAL, new_zxid);                
                 Message ProposalMessage=new Message(null, messgae.getRawBuffer(), messgae.getOffset(), messgae.getLength()).putHeader(this.id, hdrProposal);
                 ProposalMessage.setSrc(local_addr);
             	Proposal p = new Proposal();

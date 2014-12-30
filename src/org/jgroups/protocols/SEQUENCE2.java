@@ -1,4 +1,15 @@
-package org.jgroups.protocols.jzookeeper;
+
+package org.jgroups.protocols;
+
+import org.jgroups.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
+import org.jgroups.protocols.ZAB.ZABHeader;
+import org.jgroups.protocols.jzookeeper.Proposal;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -18,25 +29,15 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Global;
-import org.jgroups.Header;
-import org.jgroups.Message;
-import org.jgroups.View;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
-import org.jgroups.util.Bits;
-import org.jgroups.util.BoundedHashMap;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Promise;
-import org.jgroups.util.Util;
 
-public class ZAB extends Protocol {
-	
-	protected final AtomicLong        zxid=new AtomicLong(0);
+/**
+ * Implementation of total order protocol using a sequencer.
+ * Consult <a href="https://github.com/belaban/JGroups/blob/master/doc/design/SEQUENCER.txt">SEQUENCER.txt</a> for details
+ * @author Bela Ban
+ */
+@MBean(description="Implementation of total order protocol using a sequencer")
+public class SEQUENCE2 extends Protocol {
+    protected final AtomicLong        zxid=new AtomicLong(0);
     private ExecutorService executor;
 
     protected Address                           local_addr;
@@ -155,7 +156,6 @@ public class ZAB extends Protocol {
 
     public void stop() {
         running=false;
-        executor.shutdown();
         unblockAll();
         stopFlusher();
         super.stop();
@@ -183,7 +183,7 @@ public class ZAB extends Protocol {
                 // to increase monotonically, but only to be unique (https://issues.jboss.org/browse/JGRP-1461) !
                // long next_seqno=seqno.incrementAndGet();
                 try {
-//                    ZABHeader hdr=new ZABHeader(is_coord? ZABHeader.PROPOSAL : ZABHeader.FORWARD);
+//                    SequencerHeader hdr=new SequencerHeader(is_coord? SequencerHeader.PROPOSAL : SequencerHeader.FORWARD);
 //                    log.info("put new header (down) " + hdr.type);
 //                    msg.putHeader(this.id, hdr);
 //                    if(log.isTraceEnabled())
@@ -224,20 +224,20 @@ public class ZAB extends Protocol {
 
     public Object up(Event evt) {
         Message msg;
-        ZABHeader hdr;
+        SequencerHeader hdr;
 
         switch(evt.getType()) {
             case Event.MSG:
                 msg=(Message)evt.getArg();
                 if(msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER) || msg.isFlagSet(Message.Flag.OOB))
                     break;
-                hdr=(ZABHeader)msg.getHeader(this.id);
+                hdr=(SequencerHeader)msg.getHeader(this.id);
                 if(hdr == null)
                     break; // pass up
                 log.info("[" + local_addr + "] "+ " received message from (up) " + msg.getSrc() + " type "+ hdr.type);
 
                 switch(hdr.type) {
-                    case ZABHeader.FORWARD:
+                    case SequencerHeader.FORWARD:
                     	
                     	if(!is_coord) {
                 			if(log.isErrorEnabled())
@@ -253,7 +253,7 @@ public class ZAB extends Protocol {
                 		}
                 		return null;
 
-                    case ZABHeader.PROPOSAL:
+                    case SequencerHeader.PROPOSAL:
                    	 log.info("[" + local_addr + "] "+"(up) inside PROPOSAL");
 
                    	if (!is_coord){
@@ -266,14 +266,14 @@ public class ZAB extends Protocol {
             		return null;
             		
             		
-                    case ZABHeader.ACK:
+                    case SequencerHeader.ACK:
                 		log.info("["+local_addr+"] "+"follower, ACK message received, call senAck (up, proposal)");
                 		if (is_coord){
                      		log.info("Leader, ack message received, call processACK(up, ACK)");
                 			processACK(msg, msg.getSrc());
                 			return null;
                 		}
-                    case ZABHeader.COMMIT:
+                    case SequencerHeader.COMMIT:
                 		log.info("["+local_addr+"] "+"follower, commit message received, call deliver (up, COMMIT)");
 
                 		 deliver(msg);
@@ -399,7 +399,7 @@ public class ZAB extends Protocol {
                     continue;
                 }
 
-                ZABHeader hdr=new ZABHeader(ZABHeader.PROPOSAL, key);
+                SequencerHeader hdr=new SequencerHeader(SequencerHeader.PROPOSAL, key);
                 Message forward_msg=new Message(null, val).putHeader(this.id, hdr);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": flushing (broadcasting) " + local_addr + "::" + key);
@@ -434,7 +434,7 @@ public class ZAB extends Protocol {
             }
 
             while(flushing && running && !forward_table.isEmpty()) {
-                ZABHeader hdr=new ZABHeader(ZABHeader.FLUSH, key);
+                SequencerHeader hdr=new SequencerHeader(SequencerHeader.FLUSH, key);
                 Message forward_msg=new Message(coord, val).putHeader(this.id,hdr).setFlag(Message.Flag.DONT_BUNDLE);
                 if(log.isTraceEnabled())
                     log.trace(local_addr + ": flushing (forwarding) " + local_addr + "::" + key + " to coord " + coord);
@@ -499,11 +499,11 @@ public class ZAB extends Protocol {
         Address target=coord;
         if(target == null)
             return;
-        byte type=ZABHeader.FORWARD;
+        byte type=SequencerHeader.FORWARD;
         log.info("[" + local_addr + "] "+"recieved msg (forward) "+msg + " type " + type);
 
         try {
-            ZABHeader hdr=new ZABHeader(type);
+            SequencerHeader hdr=new SequencerHeader(type);
             Message forward_msg=new Message(target, Util.objectToByteBuffer(msg)).putHeader(this.id,hdr);
             down_prot.down(new Event(Event.MSG, forward_msg));
             forwarded_msgs++;
@@ -519,7 +519,7 @@ public class ZAB extends Protocol {
     	if (msg == null )
     		return;
     	
-    	ZABHeader hdr = (ZABHeader) msg.getHeader(this.id);
+    	SequencerHeader hdr = (SequencerHeader) msg.getHeader(this.id);
     	
     	if (hdr == null)
     		return;
@@ -536,7 +536,7 @@ public class ZAB extends Protocol {
 		
 		//send Ack to the leader
 		
-		ZABHeader hdrACK = new ZABHeader(ZABHeader.ACK, hdr.getZxid());
+		SequencerHeader hdrACK = new SequencerHeader(SequencerHeader.ACK, hdr.getZxid());
 		Message ACKMessage = new Message(coord).putHeader(this.id, hdrACK);
 		
 		try{
@@ -557,7 +557,7 @@ public class ZAB extends Protocol {
 synchronized void processACK(Message msgACK, Address sender){
     	
     	log.info("Received ACK from " + sender);
-    	ZABHeader hdr = (ZABHeader) msgACK.getHeader(this.id);	
+    	SequencerHeader hdr = (SequencerHeader) msgACK.getHeader(this.id);	
     	long ackZxid = hdr.getZxid();
 
 		if (lastZxidCommitted >= ackZxid) {
@@ -608,7 +608,7 @@ synchronized void processACK(Message msgACK, Address sender){
 	    	       lastZxidCommitted = zxid;
 	    	   }
 	    	   
-	    	   ZABHeader hdrCommit = new ZABHeader(ZABHeader.COMMIT, zxid);
+	    	   SequencerHeader hdrCommit = new SequencerHeader(SequencerHeader.COMMIT, zxid);
 	    	   Message commitMessage = new Message(null).putHeader(id, hdrCommit);
 	    	   
 	    	   try{
@@ -621,7 +621,7 @@ synchronized void processACK(Message msgACK, Address sender){
 		
 		public void deliver(Message toDeliver){
 	    	Message msg = null;
-	    	ZABHeader hdr = (ZABHeader) toDeliver.getHeader(this.id);
+	    	SequencerHeader hdr = (SequencerHeader) toDeliver.getHeader(this.id);
 	    	long zxid = hdr.getZxid();
 	    	
 	    //	if (!is_coord){
@@ -636,7 +636,7 @@ synchronized void processACK(Message msgACK, Address sender){
 //		    	}
 
 	    	queuedCommitMessage.put(zxid, msg);
-	    	log.info("[" + local_addr + "] "+ " commit request with MSG and zxid = " + " "+ msg + " " + zxid);
+	    	log.info("[" + local_addr + "] "+ " commitet request with zxid = "+zxid);
 	    	   
 	    	}
 	    	//log.info("about to send responce back to client");
@@ -661,8 +661,8 @@ synchronized void processACK(Message msgACK, Address sender){
             bcast_msg=msg; // no need to add a header, message already has one
         }
         else {
-            log.info("[ " + local_addr + "]" + "inside broadcast method making ZABHeader.WRAPPED_BCAST");
-            ZABHeader new_hdr=new ZABHeader(ZABHeader.ACK, seqno);
+            log.info("[ " + local_addr + "]" + "inside broadcast method making SequencerHeader.WRAPPED_BCAST");
+            SequencerHeader new_hdr=new SequencerHeader(SequencerHeader.ACK, seqno);
             bcast_msg=new Message(null, msg.getRawBuffer(), msg.getOffset(), msg.getLength()).putHeader(this.id, new_hdr);
 
             if(resend) {
@@ -758,7 +758,7 @@ synchronized void processACK(Message msgACK, Address sender){
 
 
 
-    public static class ZABHeader extends Header {
+    public static class SequencerHeader extends Header {
     	
     	 private static final byte FORWARD       = 1;
          private static final byte PROPOSAL      = 2;
@@ -776,14 +776,14 @@ synchronized void processACK(Message msgACK, Address sender){
         protected long    seqno=-1;
         protected boolean flush_ack;
 
-        public ZABHeader() {
+        public SequencerHeader() {
         }
 
-        public ZABHeader(byte type) {
+        public SequencerHeader(byte type) {
             this.type=type;
         }
 
-        public ZABHeader(byte type, long seqno) {
+        public SequencerHeader(byte type, long seqno) {
             this(type);
             this.seqno=seqno;
         }
@@ -878,7 +878,7 @@ synchronized void processACK(Message msgACK, Address sender){
                 
 
             	long new_zxid = getNewZxid();
-            	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, new_zxid);                
+            	SequencerHeader hdrProposal = new SequencerHeader(SequencerHeader.PROPOSAL, new_zxid);                
                 Message ProposalMessage=new Message(null, messgae.getRawBuffer(), messgae.getOffset(), messgae.getLength()).putHeader(this.id, hdrProposal);
                 ProposalMessage.setSrc(local_addr);
             	Proposal p = new Proposal();
@@ -902,5 +902,4 @@ synchronized void processACK(Message msgACK, Address sender){
 
        
     }
-
 }
