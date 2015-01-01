@@ -59,25 +59,25 @@ public class Chat extends ReceiverAdapter {
                 case 1:
                 	Message msgl = null;
                 	for (int i = 0; i < 10; i++) {
-                        msgl=new Message(channel.getView().getMembers().get(0), null, "msg"+i);
+                        msgl=new Message(channel.getView().getMembers().get(0),"msg"+i);
                 		channel.send(msgl);				
 					}
                 	break;
                 case 2:
                 	Message msgf = null;
                 	for (int i = 0; i < 10; i++) {
-                        msgf=new Message(channel.getView().getMembers().get(1), null, "msg"+i);
+                        msgf=new Message(channel.getView().getMembers().get(1), "msg"+i);
                 		channel.send(msgf);				
 					}
                 	break;
                 case 3:
                 	Message msg1l = null;
-                        msg1l=new Message(channel.getView().getMembers().get(0), null, "msg1l");
+                        msg1l=new Message(channel.getView().getMembers().get(0), "msg1l");
                 		channel.send(msg1l);
                     break;
                 case 4:
                 	Message msg1f = null;
-                        msg1f=new Message(channel.getView().getMembers().get(1), null, "msg1f");
+                        msg1f=new Message(channel.getView().getMembers().get(1), "msg1f");
                 		channel.send(msg1f);
                     break;
                 case 5:
@@ -92,7 +92,7 @@ public class Chat extends ReceiverAdapter {
 
 
     public static void main(String[] args) throws Exception {
-        String props="conf/udp_sequencer.xml";
+        String props="conf/sequencer.xml";
         String name=null;
 
         for(int i=0; i < args.length; i++) {

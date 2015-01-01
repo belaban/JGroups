@@ -242,7 +242,7 @@ public class ZAB extends Protocol {
                     	if(!is_coord) {
                 			if(log.isErrorEnabled())
                             log.error("[" + local_addr + "] "+ ": non-Leader; dropping FORWARD request from " + msg.getSrc());
-                			return null;
+                			break;
                 		 }
                 		try {
                     		log.info("[" + local_addr + "] "+"Leader, puting in queuy");
@@ -251,7 +251,7 @@ public class ZAB extends Protocol {
                 		catch(Exception ex) {
                 			log.error("failed forwarding message to " + msg.getDest(), ex);
                 		}
-                		return null;
+                		break;
 
                     case ZABHeader.PROPOSAL:
                    	 log.info("[" + local_addr + "] "+"(up) inside PROPOSAL");
@@ -263,7 +263,7 @@ public class ZAB extends Protocol {
             		else 
                 		log.info("[" + local_addr + "] "+"Leader, proposal message received ignoring it (up, proposal)");
 
-            		return null;
+            		break;
             		
             		
                     case ZABHeader.ACK:
@@ -271,12 +271,13 @@ public class ZAB extends Protocol {
                 		if (is_coord){
                      		log.info("Leader, ack message received, call processACK(up, ACK)");
                 			processACK(msg, msg.getSrc());
-                			return null;
+                			break;
                 		}
                     case ZABHeader.COMMIT:
                 		log.info("["+local_addr+"] "+"follower, commit message received, call deliver (up, COMMIT)");
 
                 		 deliver(msg);
+                		 break;
             }                
                 return null;
             case Event.VIEW_CHANGE:
