@@ -37,8 +37,7 @@ FLAGS="$FLAGS -Xshare:off"
 #GC="-XX:+UseG1GC" ## use at least JDK 8
 GC="-XX:+UseParNewGC -XX:+UseConcMarkSweepGC" ## concurrent mark and sweep (CMS) collector
 
-# JMX="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7777 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
-JMX="-Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.port=5731 -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost"
+JMX="-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost"
 #EXPERIMENTAL="-XX:+UseFastAccessorMethods -XX:+UseTLAB"
 
 #EXPERIMENTAL="$EXPERIMENTAL -XX:+DoEscapeAnalysis -XX:+EliminateLocks -XX:+UseBiasedLocking"
