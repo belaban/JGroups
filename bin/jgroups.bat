@@ -12,6 +12,6 @@ set VMFLAGS=-Xmx500M -Xms500M
 
 set LOG=-Dlog4j.configurationFile=%JG%\conf\log4j2.xml
 
-set FLAGS=-Djava.net.preferIPv4Stack=true -Djgroups.bind_addr=match-address:192.168.*
+set FLAGS=-Djava.net.preferIPv4Stack=true -Djgroups.bind_addr=site_local
 
 java -classpath %CP% %LOG% %VMFLAGS% %FLAGS% -Dcom.sun.management.jmxremote %*
