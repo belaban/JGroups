@@ -264,7 +264,7 @@ value(s). An application will typically create a channel first, and then create 
 RpcDispatcher on top of it. RpcDispatcher can be used to invoke remote methods
 (client role) and at the same time be called by other members (server role).
 
-Compared toMessageDispatcher, no `handle()`
+Compared to MessageDispatcher, no `handle()`
 method needs to be implemented. Instead the methods to be called can be placed directly in the class using
 regular method definitions (see example below). The methods will get invoked using reflection.
 
