@@ -780,12 +780,12 @@ The attributes are listed below. The roughly correspond to the options of a
                                     "c" includes the cluster name and "l" includes local address of the channel.
                                         The default is "cl"
                                     
-|enabled|Whether of not to use a thread pool. If set to false, the caller's thread
+|enabled|Whether or not to use a thread pool. If set to false, the caller's thread
                                     is used.
 |min_threads|The minimum number of threads to use.
 |max_threads|The maximum number of threads to use.
 |keep_alive_time|Number of milliseconds until an idle thread is placed back into the pool
-|queue_enabled|Whether of not to use a (bounded) queue. If enabled, when all minimum
+|queue_enabled|Whether or not to use a (bounded) queue. If enabled, when all minimum
                                     threads are busy, work items are added to the queue. When the queue is full,
                                     additional threads are created, up to max_threads. When max_threads have been
                                     reached (and the queue is full), the rejection policy is consulted.
