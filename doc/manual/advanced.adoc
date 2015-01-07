@@ -768,7 +768,7 @@ Here's an example of the new configuration:
 The attributes for the 2 thread pools are prefixed with thread_pool and oob_thread_pool respectively.
                 
 
-The attributes are listed below. The roughly correspond to the options of a
+The attributes are listed below. They roughly correspond to the options of a
                     java.util.concurrent.ThreadPoolExecutor in JDK 5.
 
 .Attributes of thread pools
