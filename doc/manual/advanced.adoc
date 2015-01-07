@@ -899,7 +899,7 @@ Scopes are implemented in a separate protocol called <<SCOPE>>. This protocol
 NOTE: Note that scopes should be _as unique as possible_. Compare this to hashing: the fewer collisions
       there are, the better the concurrency will be. So, if for example, two web sessions pick the same
       scope, then updates to those sessions will be delivered in the order in which they were sent, and
-      not concurrently. While this doesn't cause erraneous behavior, it defies the purpose of SCOPE. +
+      not concurrently. While this doesn't cause erroneous behavior, it defies the purpose of SCOPE. +
       Also note that, if multicast and unicast messages have the same scope, they will be delivered
       in sequence. So if A multicasts messages to the group with scope 25, and A also unicasts messages
       to B with scope 25, then A's multicasts and unicasts will be delivered in order at B ! Again,
