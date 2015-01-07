@@ -179,19 +179,8 @@ public class MZAB extends Protocol {
                     
                 }
                 
-                // A seqno is not used to establish ordering, but only to weed out duplicates; next_seqno doesn't need
-                // to increase monotonically, but only to be unique (https://issues.jboss.org/browse/JGRP-1461) !
-               // long next_seqno=seqno.incrementAndGet();
+               
                 try {
-//                    MZABHeader hdr=new MZABHeader(is_coord? MZABHeader.PROPOSAL : MZABHeader.FORWARD);
-//                    log.info("put new header (down) " + hdr.type);
-//                    msg.putHeader(this.id, hdr);
-//                    if(log.isTraceEnabled())
-//                        log.trace("[" + local_addr + "]: forwarding " + local_addr + "::" + seqno + " to coord " + coord);
-
-                    // We always forward messages to the coordinator, even if we're the coordinator. Having the coord
-                    // send its messages directly led to starvation of messages from other members. MPerf perf went up
-                    // from 20MB/sec/node to 50MB/sec/node with this change !
                     log.info("[" + local_addr + "] "+"invloking forwardToCoord method  (down)"+msg);
 
                     forwardToCoord(msg);
@@ -251,27 +240,27 @@ public class MZAB extends Protocol {
                 		catch(Exception ex) {
                 			log.error("failed forwarding message to " + msg.getDest(), ex);
                 		}
-                		return null;
-
+                		break;
                     case MZABHeader.PROPOSAL:
-                   	 log.info("[" + local_addr + "] "+"(up) inside PROPOSAL");
-                   	 
-                   	if (!is_coord){
-                		log.info("[" + local_addr + "] "+"follower, proposal message received, call senAck (up, proposal)");
-            			sendACK(msg);
-            		}
-            		else 
-                		log.info("[" + local_addr + "] "+"Leader, proposal message received ignoring it (up, proposal)");
+	                   	 log.info("[" + local_addr + "] "+"(up) inside PROPOSAL");
+	                   	 
+	                   	if (!is_coord){
+	                		log.info("[" + local_addr + "] "+"follower, proposal message received, call senAck (up, proposal)");
+	            			sendACK(msg);
+	            		}
+	            		else 
+	                		log.info("[" + local_addr + "] "+"Leader, proposal message received ignoring it (up, proposal)");
 
-            		return null;
+            		    break;
             		               		
                     case MZABHeader.ACK:
                 		
                  		log.info("[" + local_addr + "] "+"Ack message received, call processACK(up, ACK)");
             			processACK(msg, msg.getSrc());
-            			return null;
+            			break;
           
             }                
+                return null;
             case Event.VIEW_CHANGE:
                 Object retval=up_prot.up(evt);
                 handleViewChange((View)evt.getArg());
@@ -291,7 +280,6 @@ public class MZAB extends Protocol {
                 continue;
             batch.remove(msg);
 
-            // simplistic implementation
             try {
                 up(new Event(Event.MSG, msg));
             }
@@ -329,8 +317,7 @@ public class MZAB extends Protocol {
     	return zxid.incrementAndGet();
     }
     protected void flush(final Address new_coord) throws InterruptedException {
-        // wait until all threads currently sending messages have returned (new threads after flushing=true) will block
-        // flushing is set to true in startFlusher()
+        
         while(flushing && running) {
             if(in_flight_sends.get() == 0)
                 break;
@@ -401,17 +388,7 @@ public class MZAB extends Protocol {
             return;
         }
 
-        // for forwarded messages, we need to receive the forwarded message from the coordinator, to prevent this case:
-        // - V1={A,B,C}
-        // - A crashes
-        // - C installs V2={B,C}
-        // - C forwards messages 3 and 4 to B (the new coord)
-        // - B drops 3 because its view is still V1
-        // - B installs V2
-        // - B receives message 4 and broadcasts it
-        // ==> C's message 4 is delivered *before* message 3 !
-        // ==> By resending 3 until it is received, then resending 4 until it is received, we make sure this won't happen
-        // (see https://issues.jboss.org/browse/JGRP-1449)
+        
         while(flushing && running && !forward_table.isEmpty()) {
             Map.Entry<Long,Message> entry=forward_table.firstEntry();
             final Long key=entry.getKey();
@@ -442,51 +419,13 @@ public class MZAB extends Protocol {
 
 
    protected void forwardToCoord(Message msg) {
-        //if(is_coord) {
-        	//next_seqno=seqno.incrementAndGet();
+        
             log.info("[ " + local_addr + "] "+"recieved msg (forwardToCoord) (if (is_coord) "+msg);
             forward(msg);
-           // return;
-        //}
-        //else{
-          //  forward(msg);
-            //return;
+           
         }
 
-//        if(!running || flushing) {
-//            log.info("[ " + local_addr + "] "+"recieved msg (forwardToCoord) if(!running || flushing) "+msg);
-//
-//            forward_table.put(next_seqno, msg);
-//            return;
-//        }
-   
-//        if(!ack_mode) {
-//            forward_table.put(next_seqno, msg);
-//            log.info("[ " + local_addr + "] "+"recieved msg (forwardToCoord) if(!ack_mode) "+msg);
-//            forward(msg, next_seqno, false);
-//
-//            return;
-//        }
-
-//        /*send_lock.lock();
-//        try {
-//            forward_table.put(next_seqno, msg);
-//            while(running && !flushing) {
-//                log.info("[ " + local_addr + "] "+"recieved msg (forwardToCoord) while(running && !flushing) "+msg);
-//
-//                ack_promise.reset();
-//                forward(msg, next_seqno, true);
-//                if(!ack_mode || !running || flushing)
-//                    break;
-//                Long ack=ack_promise.getResult(500);
-//                if((ack != null && ack.equals(next_seqno)) || !forward_table.containsKey(next_seqno))
-//                    break;
-//            }
-//        }
-//        finally {
-//            send_lock.unlock();
-//        }*/
-   // }
+  
 
     protected void forward(final Message msg) {
         Address target=coord;
@@ -548,53 +487,11 @@ public class MZAB extends Protocol {
 			    	} 
 	    	    }
     	     }
-//	     	else{
-//	     		p = outstandingProposals.get(hdr.getZxid());
-//	     		p.AckCount++;				
-//			}
-		
+	     	
 		
     	}
     
-//    public void sendACK(Message msg){
-//		log.info("follower, sending ack (sendAck)");
-//
-//    	if (msg == null )
-//    		return;
-//    	
-//    	MZABHeader hdr = (MZABHeader) msg.getHeader(this.id);
-//    	
-//    	if (hdr == null)
-//    		return;
-//    	
-//    	if (hdr.getZxid() != lastZxidProposed + 1){
-//            log.warn("Got zxid 0x"
-//                    + Long.toHexString(hdr.getZxid())
-//                    + " expected 0x"
-//                    + Long.toHexString(lastZxidProposed + 1));
-//        }
-//    	
-//    	lastZxidProposed = hdr.getZxid();
-//		queuedProposalMessage.put(hdr.getZxid(), msg);
-//		
-//		//send Ack to the leader
-//		
-//		MZABHeader hdrACK = new MZABHeader(MZABHeader.ACK, hdr.getZxid());
-//		Message ACKMessage = new Message(coord).putHeader(this.id, hdrACK);
-//		
-//		try{
-//    		//Message forwardMsg = new Message(null, Util.objectToByteBuffer(msg));
-//    		down_prot.down(new Event(Event.MSG, ACKMessage));     
-//         }catch(Exception ex) {
-//    		log.error("failed sending ACK message to Leader");
-//    	} 
-//		
-//		
-//		//Proposal p = outstandingProposal.get(hdr.getZxid());
-//		//p.ackSet.add(hdr.getZxid());
-//		
-//    	
-//    }
+
     
     
 synchronized void processACK(Message msgACK, Address sender){
@@ -695,26 +592,15 @@ public boolean isFirstZxid(long zxid){
 	    	MZABHeader hdr = (MZABHeader) toDeliver.getHeader(this.id);
 	    	long zxid = hdr.getZxid();
 	    	
-	    //	if (!is_coord){
 	    		msg = queuedProposalMessage.remove(zxid);
 	    		
-		    	//if (!is_coord && msg == null)
-		          // 	log.warn("No message pending for zxid" + zxid);
-		    		
-//		    	if (queuedCommitMessage.containsKey(zxid)){
-//		           	log.warn("message is already delivered for zxid" + zxid);
-//		           	return;
-//		    	}
+		    	
 
 	    	queuedCommitMessage.put(zxid, msg);
 	    	log.info("[" + local_addr + "] "+ " commitet request with zxid = "+zxid);
 	    	   
 	    	}
-	    	//log.info("about to send responce back to client");
-	        //down_prot.up(new Event(Event.MSG,msg));
-
 	    	
-	    
 
 		public boolean isQuorum(int majority){
 			log.info(" acks =  " + majority + " majority "+ ((view.size()/2)+1));
@@ -839,12 +725,6 @@ public boolean isFirstZxid(long zxid){
          
          private Address src = null;
 
-    	
-//        protected static final byte FORWARD       = 1;
-//        protected static final byte FLUSH         = 2;
-//        protected static final byte BCAST         = 3;
-//        protected static final byte WRAPPED_BCAST = 4;
-
         protected byte    type=-1;
         protected long    seqno=-1;
         protected boolean flush_ack;
@@ -947,10 +827,8 @@ public boolean isFirstZxid(long zxid){
 						e.printStackTrace();
 					}
                  }
-            	//Message msg = (Message)Util.objectFromByteBuffer(messgae.getRawBuffer(), messgae.getOffset(), messgae.getLength());
             	Address sender = messgae.getSrc();
-            	//log.info("view is = "+view.containsMember(sender));
-             	//log.info("view is = "+view);
+            	
                 if(view != null && !view.containsMember(sender)) {
                 	log.info("Sender is not included");
                     if(log.isErrorEnabled())

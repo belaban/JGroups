@@ -71,11 +71,15 @@ public class Chat extends ReceiverAdapter {
 					}
                 	break;
                 case 3:
+                	System.out.println("The view is "+channel.getView());
+                	System.out.println("Message will send to "+channel.getView().getMembers().get(0));
                 	Message msg1l = null;
                         msg1l=new Message(channel.getView().getMembers().get(0), "msg1l");
                 		channel.send(msg1l);
                     break;
                 case 4:
+                	System.out.println("The view is "+channel.getView());
+                	System.out.println("Message will send to "+channel.getView().getMembers().get(1));
                 	Message msg1f = null;
                         msg1f=new Message(channel.getView().getMembers().get(1), "msg1f");
                 		channel.send(msg1f);
