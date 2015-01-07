@@ -834,7 +834,7 @@ there are 2 utility classes provided to get around this problem.  For users that
 CompletionService with an Executor there is an equivalent ExecutionCompletionService provided that allows
 for a user to have the same functionality.  It would have been preferred to allow for the same
 ExecutorCompletionService to be used, but due to it's implementation using a non serializable object
-the ExecutionCompletionService was implemented to be used instead in conjunction with an ExecutorService.
+the ExecutionCompletionService was implemented to be used instead in conjunction with an ExecutionService.
 
 Also utility class was designed to help users to submit tasks which use a non serializable class.  The
 Executions class contains a method serializableCallable which allows for a user to pass a constructor of a
