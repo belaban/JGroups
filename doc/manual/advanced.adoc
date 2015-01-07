@@ -1491,7 +1491,7 @@ Relaying is done via the RELAY protocol added to the top of the stack. The bridg
         
 
 Note that property "site" must be set in both subclusters. In the example above, we could set site="nyc"
-            for the NYC subcluster and site="sfo" for the SFO ubcluster.
+            for the NYC subcluster and site="sfo" for the SFO subcluster.
         
 
 The design is described in detail in JGroups/doc/design/RELAY.txt (part of the source distribution). In
