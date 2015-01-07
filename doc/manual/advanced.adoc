@@ -338,7 +338,7 @@ Here we use callRemoteMethodsWithFuture() which (although the call
                     results by fetching them from the futures.
                 
 
-Compared to the few milliseconds above, this will take ca 60 ms (30 for the request and 30 for
+Compared to the few milliseconds above, this will take 60 ms (30 for the request and 30 for
                     the responses), but this is still better than the 600 ms we get when not using the DONT_BUNDLE
                     flag. Note that, if the accumulated size of the 10 requests exceeds +$$max_bundle_size$$+,
                     the large message would be sent immediately, so this might even be faster than 30 ms for the request.
