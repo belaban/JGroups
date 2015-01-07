@@ -795,7 +795,7 @@ There is a separate class that can was written specifically as a consumer, which
 the cluster.  This class is ExecutionRunner and implements java.lang.Runnable.
 
 A user is required to run one or more instances of a ExecutionRunner on a node of
-the cluster.  By having a thread run one of these runners, that thread has no volunteered to be able to
+the cluster.  By having a thread run one of these runners, that thread has now volunteered to be able to
 run any task that is submitted to the cluster via an ExecutionService.  This allows
 for any node in the cluster to participate or not participate in the running of these tasks and also any
 node can optionally run more than 1 ExecutionRunner if this node has additional
