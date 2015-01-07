@@ -679,7 +679,7 @@ However, there are several drawbacks: first, having to maintain a TCP connection
 === The concurrent stack
 
 The concurrent stack (introduced in 2.5) provides a number of improvements over previous releases,
-            which has some deficiencies:
+            which had some deficiencies:
             
 * Large number of threads: each protocol had by default 2 threads, one for the up and one for the
                     down queue. They could be disabled per protocol by setting up_thread or down_thread to false.
