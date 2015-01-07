@@ -836,7 +836,7 @@ for a user to have the same functionality.  It would have been preferred to allo
 ExecutorCompletionService to be used, but due to it's implementation using a non serializable object
 the ExecutionCompletionService was implemented to be used instead in conjunction with an ExecutorService.
 
-Also utility class was designed to help users to submit tasks which use a non serializable class.  The
+Also a utility class was designed to help users to submit tasks which use a non serializable class.  The
 Executions class contains a method serializableCallable which allows for a user to pass a constructor of a
 class that implements Callable and it's arguments to then return to a user a Callable that will upon running
 will automatically create and object from the constructor passing the provided arguments to it and then will
