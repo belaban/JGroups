@@ -962,7 +962,7 @@ public interface Counter {
 [[CounterServiceDesign]]
 ==== Design
 
-The design of COUNTER is described in details in
+The design of COUNTER is described in detail in
 https://github.com/belaban/JGroups/blob/master/doc/design/CounterService.txt[CounterService.txt].
             
 In a nutshell, in a cluster the current coordinator maintains a hashmap of named counters. Members send
