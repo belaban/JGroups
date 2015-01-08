@@ -338,7 +338,7 @@ Here we use callRemoteMethodsWithFuture() which (although the call
                     results by fetching them from the futures.
                 
 
-Compared to the few milliseconds above, this will take ca 60 ms (30 for the request and 30 for
+Compared to the few milliseconds above, this will take 60 ms (30 for the request and 30 for
                     the responses), but this is still better than the 600 ms we get when not using the DONT_BUNDLE
                     flag. Note that, if the accumulated size of the 10 requests exceeds +$$max_bundle_size$$+,
                     the large message would be sent immediately, so this might even be faster than 30 ms for the request.
@@ -679,7 +679,7 @@ However, there are several drawbacks: first, having to maintain a TCP connection
 === The concurrent stack
 
 The concurrent stack (introduced in 2.5) provides a number of improvements over previous releases,
-            which has some deficiencies:
+            which had some deficiencies:
             
 * Large number of threads: each protocol had by default 2 threads, one for the up and one for the
                     down queue. They could be disabled per protocol by setting up_thread or down_thread to false.
@@ -768,7 +768,7 @@ Here's an example of the new configuration:
 The attributes for the 2 thread pools are prefixed with thread_pool and oob_thread_pool respectively.
                 
 
-The attributes are listed below. The roughly correspond to the options of a
+The attributes are listed below. They roughly correspond to the options of a
                     java.util.concurrent.ThreadPoolExecutor in JDK 5.
 
 .Attributes of thread pools
@@ -780,12 +780,12 @@ The attributes are listed below. The roughly correspond to the options of a
                                     "c" includes the cluster name and "l" includes local address of the channel.
                                         The default is "cl"
                                     
-|enabled|Whether of not to use a thread pool. If set to false, the caller's thread
+|enabled|Whether or not to use a thread pool. If set to false, the caller's thread
                                     is used.
 |min_threads|The minimum number of threads to use.
 |max_threads|The maximum number of threads to use.
 |keep_alive_time|Number of milliseconds until an idle thread is placed back into the pool
-|queue_enabled|Whether of not to use a (bounded) queue. If enabled, when all minimum
+|queue_enabled|Whether or not to use a (bounded) queue. If enabled, when all minimum
                                     threads are busy, work items are added to the queue. When the queue is full,
                                     additional threads are created, up to max_threads. When max_threads have been
                                     reached (and the queue is full), the rejection policy is consulted.
@@ -899,7 +899,7 @@ Scopes are implemented in a separate protocol called <<SCOPE>>. This protocol
 NOTE: Note that scopes should be _as unique as possible_. Compare this to hashing: the fewer collisions
       there are, the better the concurrency will be. So, if for example, two web sessions pick the same
       scope, then updates to those sessions will be delivered in the order in which they were sent, and
-      not concurrently. While this doesn't cause erraneous behavior, it defies the purpose of SCOPE. +
+      not concurrently. While this doesn't cause erroneous behavior, it defies the purpose of SCOPE. +
       Also note that, if multicast and unicast messages have the same scope, they will be delivered
       in sequence. So if A multicasts messages to the group with scope 25, and A also unicasts messages
       to B with scope 25, then A's multicasts and unicasts will be delivered in order at B ! Again,
@@ -1491,7 +1491,7 @@ Relaying is done via the RELAY protocol added to the top of the stack. The bridg
         
 
 Note that property "site" must be set in both subclusters. In the example above, we could set site="nyc"
-            for the NYC subcluster and site="sfo" for the SFO ubcluster.
+            for the NYC subcluster and site="sfo" for the SFO subcluster.
         
 
 The design is described in detail in JGroups/doc/design/RELAY.txt (part of the source distribution). In

@@ -264,7 +264,7 @@ value(s). An application will typically create a channel first, and then create 
 RpcDispatcher on top of it. RpcDispatcher can be used to invoke remote methods
 (client role) and at the same time be called by other members (server role).
 
-Compared toMessageDispatcher, no `handle()`
+Compared to MessageDispatcher, no `handle()`
 method needs to be implemented. Instead the methods to be called can be placed directly in the class using
 regular method definitions (see example below). The methods will get invoked using reflection.
 
@@ -795,7 +795,7 @@ There is a separate class that can was written specifically as a consumer, which
 the cluster.  This class is ExecutionRunner and implements java.lang.Runnable.
 
 A user is required to run one or more instances of a ExecutionRunner on a node of
-the cluster.  By having a thread run one of these runners, that thread has no volunteered to be able to
+the cluster.  By having a thread run one of these runners, that thread has now volunteered to be able to
 run any task that is submitted to the cluster via an ExecutionService.  This allows
 for any node in the cluster to participate or not participate in the running of these tasks and also any
 node can optionally run more than 1 ExecutionRunner if this node has additional
@@ -834,9 +834,9 @@ there are 2 utility classes provided to get around this problem.  For users that
 CompletionService with an Executor there is an equivalent ExecutionCompletionService provided that allows
 for a user to have the same functionality.  It would have been preferred to allow for the same
 ExecutorCompletionService to be used, but due to it's implementation using a non serializable object
-the ExecutionCompletionService was implemented to be used instead in conjunction with an ExecutorService.
+the ExecutionCompletionService was implemented to be used instead in conjunction with an ExecutionService.
 
-Also utility class was designed to help users to submit tasks which use a non serializable class.  The
+Also a utility class was designed to help users to submit tasks which use a non serializable class.  The
 Executions class contains a method serializableCallable which allows for a user to pass a constructor of a
 class that implements Callable and it's arguments to then return to a user a Callable that will upon running
 will automatically create and object from the constructor passing the provided arguments to it and then will
@@ -962,7 +962,7 @@ public interface Counter {
 [[CounterServiceDesign]]
 ==== Design
 
-The design of COUNTER is described in details in
+The design of COUNTER is described in detail in
 https://github.com/belaban/JGroups/blob/master/doc/design/CounterService.txt[CounterService.txt].
             
 In a nutshell, in a cluster the current coordinator maintains a hashmap of named counters. Members send

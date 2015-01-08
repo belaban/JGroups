@@ -462,7 +462,7 @@ public class Message implements Streamable {
     /**
      * Checks if a given flag is set
      * @param flag The flag
-     * @return Whether of not the flag is curently set
+     * @return Whether or not the flag is curently set
      */
     public boolean isFlagSet(Flag flag) {
         return isFlagSet(flags, flag);
