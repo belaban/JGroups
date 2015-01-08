@@ -70,6 +70,8 @@
     <class id="74" name="org.jgroups.protocols.jzookeeper.MZAB"/>    
     <class id="75" name="org.jgroups.protocols.SEQUENCE2"/>
     <class id="76" name="org.jgroups.protocols.FIRST"/>
+    <class id="77" name="org.jgroups.protocols.jzookeeper.TestProtocol"/>    
+    
 
 
     <!-- IDs reserved for building blocks -->
