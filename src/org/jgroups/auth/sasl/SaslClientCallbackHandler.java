@@ -53,9 +53,9 @@ public class SaslClientCallbackHandler implements CallbackHandler {
     public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
         for (Callback callback : callbacks) {
             if (callback instanceof PasswordCallback) {
-                ((PasswordCallback) callback).setPassword(password);
+                ((PasswordCallback) callback).setPassword(client_password);
             } else if (callback instanceof NameCallback) {
-                ((NameCallback) callback).setName(name);
+                ((NameCallback) callback).setName(client_name);
             }
         }
     }
