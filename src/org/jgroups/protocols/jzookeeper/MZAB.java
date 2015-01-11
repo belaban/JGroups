@@ -469,7 +469,7 @@ public class MZAB extends Protocol {
 			if (!is_coord){
 				log.info("[" + local_addr + "] "+"follower, sending ack (sendAck)");
 				p = new Proposal();
-		       	p.setMessage(new Message(null, msg.getObject()));
+		       	//p.setMessage(new Message(null, msg.getObject()));
 		    	p.setMessageSrc(hdr.getSrc());
 		    	p.AckCount++; //Ack from leader
 		    	outstandingProposals.put(hdr.getZxid(), p);
@@ -534,9 +534,9 @@ synchronized void processACK(Message msgACK, Address sender){
 	            outstandingProposals.remove(ackZxid);
 	           
 	
-	            if (p.getMessage() == null) {
-	                log.warn("Going to commmit null request for proposal: {}", p);
-	            }
+//	            if (p.getMessage() == null) {
+//	                log.warn("Going to commmit null request for proposal: {}", p);
+//	            }
 	            
 	            commit(ackZxid);	
 			}
@@ -843,7 +843,7 @@ public boolean isFirstZxid(long zxid){
                 Message ProposalMessage=new Message(null, messgae.getRawBuffer(), messgae.getOffset(), messgae.getLength()).putHeader(this.id, hdrProposal);
                 ProposalMessage.setSrc(local_addr);
             	Proposal p = new Proposal();
-            	p.setMessage(messgae);
+            	//p.setMessage(messgae);
             	p.setMessageSrc(messgae.getSrc());
             	p.AckCount++;
             	log.info("ACK nums = "+p.AckCount);

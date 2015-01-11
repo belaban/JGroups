@@ -1058,7 +1058,6 @@ public class Util {
         return retval;
     }
 
-
     /**
      * Returns the marshalled size of a Collection of Addresses.
      * <em>Assumes elements are of the same type !</em>

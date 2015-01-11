@@ -11,18 +11,18 @@ public class Proposal {
 
 	private HashSet<Long> ackSet = new HashSet<Long>();
 
-	private Message message;
+	private MessageInfo messageInfo=null;
     
 	private Address messageSrc;
 
     public Proposal(){
     	
     }
-	public Proposal(int count, HashSet<Long> ackSet, Message message) {
+	public Proposal(int count, HashSet<Long> ackSet, MessageInfo messageInfo) {
 
 		this.AckCount = count;
 		this.ackSet = ackSet;
-		this.message = message;
+		this.messageInfo = messageInfo;
 	}
 
 	public int getAckCount() {
@@ -41,12 +41,12 @@ public class Proposal {
 		this.ackSet = ackSet;
 	}
 
-	public Message getMessage() {
-		return message;
+	public MessageInfo getMessageInfo() {
+		return messageInfo;
 	}
 
-	public void setMessage(Message message) {
-		this.message = message;
+	public void setMessageInfo(MessageInfo messageInfo) {
+		this.messageInfo = messageInfo;
 	}
 	public Address getMessageSrc() {
 		return messageSrc;
