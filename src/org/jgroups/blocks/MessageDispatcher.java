@@ -12,10 +12,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Bela Ban
  */
-public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
+public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, Closeable {
     protected Channel                               channel;
     protected RequestCorrelator                     corr;
     protected MessageListener                       msg_listener;
@@ -159,6 +156,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener {
         ;
     }
 
+    @Override public void close() throws IOException {stop();}
 
     public void stop() {
         if(corr != null)
