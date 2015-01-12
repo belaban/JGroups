@@ -49,6 +49,10 @@ public class ForkProtocolStack extends ProtocolStack {
                 if(hdr.getForkChannelId() == null)
                     throw new IllegalArgumentException("header has a null fork_channel_id");
                 JChannel fork_channel=get(hdr.getForkChannelId());
+                if (fork_channel == null) {
+                    log.warn("fork-channel for id=%s not found; discarding message", hdr.getForkChannelId());
+                    return null;
+                }
                 return fork_channel.up(evt);
 
             case Event.VIEW_CHANGE:
