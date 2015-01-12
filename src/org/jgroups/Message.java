@@ -869,7 +869,7 @@ public class Message implements Streamable {
      *
     * @return The number of bytes for the marshalled message
     */
-    public int size() {
+    public long size() {
         int retval=Global.BYTE_SIZE   // leading byte
                 + Global.SHORT_SIZE;   // flags
         if(dest_addr != null)
