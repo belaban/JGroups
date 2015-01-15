@@ -334,7 +334,8 @@ public class MERGE3 extends Protocol {
             if(tmp != null)
                 existing=tmp;
         }
-        existing.add(sender);
+        if(sender != null)
+            existing.add(sender);
 
         // remove sender from all other sets (old info)
         for(Set<Address> set: views.values())
