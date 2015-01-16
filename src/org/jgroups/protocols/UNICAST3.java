@@ -130,7 +130,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     /** Keep track of when a SEND_FIRST_SEQNO message was sent to a given sender */
     protected ExpiryCache<Address>         last_sync_sent=null;
 
-    protected static final Message         DUMMY_OOB_MSG=new Message(false).setFlag(Message.Flag.OOB);
+    protected static final Message         DUMMY_OOB_MSG=new Message().setFlag(Message.Flag.OOB);
 
     protected final Filter<Message> drop_oob_and_dont_loopback_msgs_filter=new Filter<Message>() {
         public boolean accept(Message msg) {

@@ -140,7 +140,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @ManagedAttribute(description="Number of messages received")
     protected int                          num_messages_received;
 
-    protected static final Message         DUMMY_OOB_MSG=new Message(false).setFlag(Message.Flag.OOB);
+    protected static final Message         DUMMY_OOB_MSG=new Message().setFlag(Message.Flag.OOB);
 
     // Accepts messages which are (1) non-null, (2) no DUMMY_OOB_MSGs and (3) not OOB_DELIVERED
     protected final Filter<Message> no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs=new Filter<Message>() {
