@@ -139,8 +139,8 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.7</source>
+                    <target>1.7</target>
                     <excludes>
                         <exclude>org/jgroups/util/JUnitXMLReporter.java</exclude>
                         <!--<exclude>org/jgroups/demos/**</exclude>-->
@@ -162,8 +162,8 @@
                 <configuration>
                     <rules>
                         <requireJavaVersion>
-                            <!-- require JDK 1.6 to run the build -->
-                            <version>[1.6,)</version>
+                            <!-- require JDK 1.7 to run the build -->
+                            <version>[1.7,)</version>
                         </requireJavaVersion>
                         <requireMavenVersion>
                             <version>3.0.4</version>
