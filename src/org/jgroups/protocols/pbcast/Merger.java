@@ -520,6 +520,7 @@ public class Merger {
                 return;
 
             this.coords.clear();
+            this.subviews.clear();
             subviews.addAll(views.values());
 
             // now remove all members which don't have us in their view, so RPCs won't block (e.g. FLUSH)
