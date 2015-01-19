@@ -10,13 +10,18 @@ import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Scanner;
 
 public class ZABBenchmark extends ReceiverAdapter {
 	long start, end;
     int msgReceived =0;
+    int numMsg = 0;
     JChannel channel;
     Scanner read = new Scanner(System.in);
+    Calendar cal = Calendar.getInstance();
 
 
     public void viewAccepted(View new_view) {
@@ -24,11 +29,24 @@ public class ZABBenchmark extends ReceiverAdapter {
     }
 
     public void receive(Message msg) {
+    	long timestamp = new Date().getTime();  
+		cal.setTimeInMillis(timestamp);
+		String timeString =
+			   new SimpleDateFormat("HH:mm:ss:SSS").format(cal.getTime());
+    	msgReceived++;
         String line="[" + msg.getSrc() + "]: " + msg.getObject();
         System.out.println(line);
         end = System.nanoTime();
-        System.out.println("messgages received is = " + ++msgReceived);
+        
+        System.out.println("messgages received is = " + msgReceived + " at "+ timeString);
         System.out.println("Throughput = " + (end - start)/1000000);
+        System.out.println("Test Done ");
+//        if (msgReceived >=numMsg){
+//        	System.out.println("messgages received is = " + msgReceived);
+//            System.out.println("Throughput = " + (end - start)/1000000);
+//            System.out.println("Test Done ");
+//
+//        }
     }
 
     /** Method called from other app, injecting channel */
@@ -51,7 +69,7 @@ public class ZABBenchmark extends ReceiverAdapter {
     }
 
     private void eventLoop() throws Exception {
-    	 int type, numMgs;
+    	 int type;
     	 Address target = null;
      	Message msg = null;
     	 Data msgData= new Data();
@@ -70,49 +88,47 @@ public class ZABBenchmark extends ReceiverAdapter {
 
 
                type= read.nextInt();
-               start = System.nanoTime();
+               msgReceived=0;
                 switch (type){
                 case 1:
-                	//for (int i = 0; i < 10; i++) {
+                		start = System.nanoTime();
                         msg=new Message(channel.getView().getMembers().get(0),da);
                 		channel.send(msg);				
-					//}
                 	break;
                 case 2:
-                	//for (int i = 0; i < 10; i++) {
+                    	start = System.nanoTime();
                         msg=new Message(channel.getView().getMembers().get(1), da);
                 		channel.send(msg);				
-					//}
                 	break;
                 case 3:
-                	//for (int i = 0; i < 10; i++) {
+                        start = System.nanoTime();
                         msg=new Message(channel.getView().getMembers().get(2), da);
                 		channel.send(msg);				
-					//}
                 	break;
                 case 4:
+                       start = System.nanoTime();
                 		target = Util.pickRandomElement(channel.getView().getMembers());
                     	System.out.println("The destination follower Addtess is "+target);
-
                         msg=new Message(target, da);
                 		channel.send(msg);
                     break;
                 case 5:
                 	System.out.println("Enter number of messages");
-                	numMgs= read.nextInt();
-            		target = Util.pickRandomElement(channel.getView().getMembers());
+                	numMsg= read.nextInt();
+                    start = System.nanoTime();
                 	System.out.println("Message will send to "+target);
-                	for (int i = 0; i < numMgs; i++) {
-
+                	for (int i = 0; i < numMsg; i++) {
+                		target = Util.pickRandomElement(channel.getView().getMembers());
                         msg=new Message(target, da);
                 		channel.send(msg);
                 	}
                     break;
                 case 6:
                 	System.out.println("Enter number of messages");
-                	numMgs= read.nextInt();
+                	numMsg= read.nextInt();
                 	System.out.println("Message will send to "+target);
-                	for (int i = 0; i < numMgs; i++) {
+                    start = System.nanoTime();
+                	for (int i = 0; i < numMsg; i++) {
                 		target = Util.pickRandomElement(channel.getView().getMembers());
                         msg=new Message(target, da);
                 		channel.send(msg);

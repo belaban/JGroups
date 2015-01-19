@@ -80,6 +80,8 @@
     <class id="117" name="org.jgroups.protocols.SEQUENCE2$SequencerHeader"/>   
     <class id="118" name="org.jgroups.protocols.FIRST$MyFirstHeader"/>
     <class id="119" name="org.jgroups.protocols.jzookeeper.TestProtocol$TestHeader"/>
+    <class id="120" name="org.jgroups.protocols.jzookeeper.MMZAB$MMZABHeader"/>
+    
     
     
     

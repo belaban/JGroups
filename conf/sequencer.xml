@@ -61,7 +61,10 @@
      <!--<SEQUENCE2 />-->
      <!--<FORWARD_TO_COORD />-->
     <!--<FIRST />-->
-     <jzookeeper.MZAB />
+     <jzookeeper.MZAB  
+     		box_member="true"
+            total_order="TOA"
+            box_members="mill030:mill031:mill032" /> />
     <FRAG2/>
     <pbcast.STATE_TRANSFER />
 </config>

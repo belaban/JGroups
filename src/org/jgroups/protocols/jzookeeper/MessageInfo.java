@@ -16,21 +16,34 @@ import java.util.Arrays;
  * @since 4.0
  */
 public class MessageInfo implements Comparable<MessageInfo>, SizeStreamable {
-    private MessageID id = null;
+    private MessageId id = null;
     private long ordering = -1; // Sequence provided by the BOX, value created after TOA and before placed in the queue
+    private long[] lastOrderSequence = new long[0];
+    private ViewId viewId = null;
+    private byte[] destinations = new byte[0];
 
     public MessageInfo() {
     }
 
-    public MessageInfo(MessageID id) {
-    	this.id = id;
-        
+    public MessageInfo(MessageId id) {
+    	   this.id = id;
+    }
+    public MessageInfo(MessageId id, ViewId viewId, byte[] destinations) {
+        this(id, -1, viewId, destinations);
     }
 
-    public MessageID getId() {
+    public MessageInfo(MessageId id, long ordering, ViewId viewId, byte[] destinations) {
+        this.id = id;
+        this.ordering = ordering;
+        this.viewId = viewId;
+        this.destinations = destinations;
+    }
+
+    public MessageId getId() {
         return id;
     }
-    public void setId(MessageID id) {
+
+    public void setId(MessageId id) {
         this.id = id;
     }
 
@@ -42,24 +55,51 @@ public class MessageInfo implements Comparable<MessageInfo>, SizeStreamable {
         this.ordering = ordering;
     }
 
-   
+    public long[] getLastOrderSequence() {
+        return lastOrderSequence;
+    }
+
+    public void setLastOrderSequence(long[] lastOrderSequence) {
+        this.lastOrderSequence = lastOrderSequence;
+    }
+
+    public ViewId getViewId() {
+        return viewId;
+    }
+
+    public void setViewId(ViewId viewId) {
+        this.viewId = viewId;
+    }
+
+    public byte[] getDestinations() {
+        return destinations;
+    }
+
+    public void setDestinations(byte[] destinations) {
+        this.destinations = destinations;
+    }
+
     @Override
     public int size() {
-        return id.size() + Bits.size(ordering);
-    }
+        return id.serializedSize() + Bits.size(ordering) + longArraySize(lastOrderSequence) + (viewId != null ? viewId.serializedSize() : 0) + (destinations != null ? Util.size(destinations) : 0);
+      }
 
     @Override
     public void writeTo(DataOutput out) throws Exception {
         writeMessageId(id, out);
         Bits.writeLong(ordering, out);
-       
+        writeLongArray(lastOrderSequence, out);
+        Util.writeViewId(viewId, out);
+        Util.writeByteBuffer(destinations, out);
     }
 
     @Override
     public void readFrom(DataInput in) throws Exception {
         id = readMessageId(in);
         ordering = Bits.readLong(in);
-    
+        lastOrderSequence = readLongArray(in);
+        viewId = Util.readViewId(in);
+        destinations = Util.readByteBuffer(in);
     }
 
     @Override
@@ -70,7 +110,11 @@ public class MessageInfo implements Comparable<MessageInfo>, SizeStreamable {
         MessageInfo that = (MessageInfo) o;
 
         if (ordering != that.ordering) return false;
+        if (!Arrays.equals(destinations, that.destinations)) return false;
         if (id != null ? !id.equals(that.id) : that.id != null) return false;
+        if (!Arrays.equals(lastOrderSequence, that.lastOrderSequence)) return false;
+        if (viewId != null ? !viewId.equals(that.viewId) : that.viewId != null) return false;
+
         return true;
     }
 
@@ -78,6 +122,9 @@ public class MessageInfo implements Comparable<MessageInfo>, SizeStreamable {
     public int hashCode() {
         int result = id != null ? id.hashCode() : 0;
         result = 31 * result + (int) (ordering ^ (ordering >>> 32));
+        result = 31 * result + (lastOrderSequence != null ? Arrays.hashCode(lastOrderSequence) : 0);
+        result = 31 * result + (viewId != null ? viewId.hashCode() : 0);
+        result = 31 * result + (destinations != null ? Arrays.hashCode(destinations) : 0);
         return result;
     }
 
@@ -96,10 +143,13 @@ public class MessageInfo implements Comparable<MessageInfo>, SizeStreamable {
         return "MessageInfo{" +
                 "id=" + id +
                 ", ordering=" + ordering +
+                ", lastOrderSequence=" + Arrays.toString(lastOrderSequence) +
+                ", viewId=" + viewId +
+                ", destinations=" + Arrays.toString(destinations) +
                 '}';
     }
 
-    private void writeMessageId(MessageID id, DataOutput out) throws Exception {
+    private void writeMessageId(MessageId id, DataOutput out) throws Exception {
         if (id == null) {
             out.writeShort(-1);
         } else {
@@ -108,12 +158,12 @@ public class MessageInfo implements Comparable<MessageInfo>, SizeStreamable {
         }
     }
 
-    private MessageID readMessageId(DataInput in) throws Exception {
+    private MessageId readMessageId(DataInput in) throws Exception {
         short length = in.readShort();
         if (length < 0) {
             return null;
         } else {
-            MessageID id = new MessageID();
+            MessageId id = new MessageId();
             id.readFrom(in);
             return id;
         }
