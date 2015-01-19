@@ -1181,18 +1181,22 @@ public class JChannel extends Channel {
                     }
                 }
                 tmp_stats=dumpStats(protocol_name, list);
-                for(Map.Entry<String,Object> entry: tmp_stats.entrySet()) {
-                    Map<String,Object> tmp_map=(Map<String,Object>)entry.getValue();
-                    String key=entry.getKey();
-                    map.put(key, tmp_map != null? tmp_map.toString() : null);
+                if(tmp_stats != null) {
+                    for(Map.Entry<String,Object> entry : tmp_stats.entrySet()) {
+                        Map<String,Object> tmp_map=(Map<String,Object>)entry.getValue();
+                        String key=entry.getKey();
+                        map.put(key, tmp_map != null? tmp_map.toString() : null);
+                    }
                 }
             }
             else {
                 tmp_stats=dumpStats();
-                for(Map.Entry<String,Object> entry: tmp_stats.entrySet()) {
-                    Map<String,Object> tmp_map=(Map<String,Object>)entry.getValue();
-                    String key=entry.getKey();
-                    map.put(key, tmp_map != null? tmp_map.toString() : null);
+                if(tmp_stats != null) {
+                    for(Map.Entry<String,Object> entry : tmp_stats.entrySet()) {
+                        Map<String,Object> tmp_map=(Map<String,Object>)entry.getValue();
+                        String key=entry.getKey();
+                        map.put(key, tmp_map != null? tmp_map.toString() : null);
+                    }
                 }
             }
         }
