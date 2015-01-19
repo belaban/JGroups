@@ -193,9 +193,8 @@ public class ExtendedUUID extends UUID {
         return retval;
     }
 
-    public String toString() {
-        return print();
-    }
+    public String toString() {return super.toString();}
+
 
     public String print() {
         StringBuilder sb=new StringBuilder(super.toString());
