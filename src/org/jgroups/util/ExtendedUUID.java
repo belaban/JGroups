@@ -202,7 +202,7 @@ public class ExtendedUUID extends UUID {
         if(flags != 0 || keys != null)
             sb.append(" (");
         if(flags != 0)
-            sb.append(" flags=" + flags + " (" + flagsToString() + ")");
+            sb.append("flags=" + flags + " (" + flagsToString() + ")");
         if(keys == null)
             return sb.toString();
         for(int i=0; i < keys.length; i++) {
@@ -310,8 +310,8 @@ public class ExtendedUUID extends UUID {
     protected String flagsToString() {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        for(Tuple<Short,String> flag: Arrays.asList(new Tuple<Short,String>(site_master, "sm"),
-                                                    new Tuple<Short,String>(can_become_site_master, "can_be_sm"))) {
+        for(Tuple<Short,String> flag: Arrays.asList(new Tuple<>(site_master, "sm"),
+                                                    new Tuple<>(can_become_site_master, "can_be_sm"))) {
             if(isFlagSet(flag.getVal1())) {
                 if(first)
                     first=false;
