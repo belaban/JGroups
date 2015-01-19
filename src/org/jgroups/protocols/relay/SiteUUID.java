@@ -54,10 +54,15 @@ public class SiteUUID extends ExtendedUUID implements SiteAddress {
         return new SiteUUID(mostSigBits, leastSigBits, get(NAME), get(SITE_NAME));
     }
 
+    @Override
     public String toString() {
+        return print(false);
+    }
+
+    public String print(boolean detailed) {
         String name=getName();
         String retval=name != null? name : get(this);
-        return retval + ":" + getSite() + printOthers();
+        return retval + ":" + getSite() + (detailed? printOthers() : "");
     }
 
     protected String printOthers() {
