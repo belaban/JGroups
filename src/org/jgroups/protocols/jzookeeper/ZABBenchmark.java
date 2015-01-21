@@ -75,6 +75,16 @@ public class ZABBenchmark extends ReceiverAdapter {
     	 Data msgData= new Data();
     	 String da = msgData.createBytes(100);
     	 boolean exit = false;
+//    	 System.out.println("Enter number of messages");
+//     	numMsg= read.nextInt();
+         //start = System.nanoTime();
+     	//System.out.println("Message will send to "+target);
+//         Thread.sleep(millis);
+//     	for (int i = 0; i < 100; i++) {
+//     		target = Util.pickRandomElement(channel.getView().getMembers());
+//             msg=new Message(target, da);
+//     		channel.send(msg);
+//     	}
         while(true) {
             
                 System.out.println("Select one of the following");
