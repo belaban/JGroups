@@ -1406,16 +1406,14 @@ JGroups provides protocols to encrypt cluster traffic (ENCRYPT), and to make sur
 ===== ENCRYPT
 
 A detailed description of ENCRYPT is found in the JGroups source (__JGroups/doc/ENCRYPT.html__).
-                    Encryption by default only encrypts the message body, but doesn't encrypt message headers.
-                    To encrypt the entire message (including all headers, plus destination and source addresses),
-                    the property ++$$encrypt_entire_message$$++ has to be set to true.
-                    Also, ENCRYPT has to be below any protocols whose headers we want to encrypt, e.g.
-                
+Encryption by default only encrypts the message body, but doesn't encrypt message headers.
+To encrypt the entire message (including all headers, plus destination and source addresses),
+the property ++$$encrypt_entire_message$$++ has to be set to true.
+Also, ENCRYPT has to be below any protocols whose headers we want to encrypt, e.g.
 
 
 [source,xml]
 ----
-
 <config ... >
     <UDP />
     <PING />
@@ -1431,7 +1429,6 @@ A detailed description of ENCRYPT is found in the JGroups source (__JGroups/doc/
              sym_init="128" sym_algorithm="AES/ECB/PKCS5Padding"
              asym_init="512" asym_algorithm="RSA"/>
 </config>
-                
 ----
 
 Note that ENCRYPT sits below NAKACK and UNICAST, so the sequence numbers for these 2 protocols will
