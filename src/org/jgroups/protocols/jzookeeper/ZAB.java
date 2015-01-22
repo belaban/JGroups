@@ -65,8 +65,8 @@ public class ZAB extends Protocol {
 	private Map<Long, ZABHeader> queuedProposalMessage = new HashMap<Long, ZABHeader>();
     private AtomicInteger localSequence = new AtomicInteger(); // This nodes sequence number
     private final Map<MessageId, Message> messageStore = Collections.synchronizedMap(new HashMap<MessageId, Message>());
-	Calendar cal = Calendar.getInstance();
-
+    private Calendar cal = Calendar.getInstance();
+    private int index=-1;
     protected volatile boolean                  running=true;
  
     public ZAB(){
@@ -201,13 +201,16 @@ public class ZAB extends Protocol {
     
     private void handleClientRequest(Message message){    	
  	    //log.info("[" + local_addr + "] "+" recieved request from application (handleClientRequest) from "+message.getSrc());
-
+    	
     	 Address destination = null;
     	 MessageId messageId = new MessageId(local_addr, localSequence.getAndIncrement()); // Increment localSequence
          messageStore.put(messageId, message);
          
-        ZABHeader hdrReq=new ZABHeader(ZABHeader.REQUEST, messageId);        
-        destination = Util.pickRandomElement(zabMembers); // Select box at random;
+        ZABHeader hdrReq=new ZABHeader(ZABHeader.REQUEST, messageId);  
+        ++index;
+        if (index>3)
+        	index=0;
+        destination = zabMembers.get(index);//Util.pickRandomElement(zabMembers); // Select box at random;
         
 //        if (log.isTraceEnabled())
 //            log.info("Send ordering request | " + message + " | dest " + destination);
