@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -68,6 +69,9 @@ public class MERGE3 extends Protocol {
 
     // hashmap to keep track of view-id sent in INFO messages
     protected final ConcurrentMap<ViewId,Set<Address>> views=new ConcurrentHashMap<ViewId,Set<Address>>(view != null? view.size() : 16);
+    
+    // hashmap to keep track of oldest timestamp view-id sent in INFO messages
+    protected final ConcurrentMap<ViewId, Long> view_timestamps =new ConcurrentHashMap<ViewId,Long>(view != null? view.size() : 16);
 
     protected final ResponseCollector<View> view_rsps=new ResponseCollector<View>();
 
@@ -107,7 +111,9 @@ public class MERGE3 extends Protocol {
 
     @ManagedOperation(description="Clears the views cache")
     public void clearViews() {views.clear();}
-
+    
+    @ManagedOperation(description="Clears the views timestamps cache")
+    public void clearViewsTimestamps() {view_timestamps.clear();}
 
     @ManagedOperation(description="Send INFO")
     public void sendInfo() {
@@ -230,6 +236,7 @@ public class MERGE3 extends Protocol {
                 Object ret=down_prot.down(evt);
                 view=(View)evt.getArg();
                 clearViews();
+                clearViewsTimestamps();
 
                 if(ergonomics && max_participants_in_merge > 0)
                     max_participants_in_merge=Math.max(100, view.size() / 3);
@@ -337,6 +344,10 @@ public class MERGE3 extends Protocol {
         if(sender != null)
             existing.add(sender);
 
+        Long time = view_timestamps.get(view_id);
+        if(time == null)
+        	view_timestamps.put(view_id, new Long(System.currentTimeMillis()));
+
         // remove sender from all other sets (old info)
         for(Set<Address> set: views.values())
             if(set != existing)
@@ -397,8 +408,10 @@ public class MERGE3 extends Protocol {
                 addInfo(local_addr, hdr.view_id, hdr.logical_name, hdr.physical_addr);
                 if(views.size() <= 1) {
                     log.trace("%s: found no inconsistent views: %s", local_addr, dumpViews());
+                    clearViewsTimestamps();
                     return;
                 }
+                log.debug("%s: found inconsistent views: %s", local_addr, dumpViews());
                 _run();
             }
             finally {
@@ -417,7 +430,16 @@ public class MERGE3 extends Protocol {
                 Set<Address> members=entry.getValue();
                 if(members != null && members.contains(coord))
                     coords.add(coord);
+                else {
+                	// JGRP-1876 we haven't received a mergeInfo from the coordinator
+                	if(System.currentTimeMillis() - view_timestamps.get(entry.getKey()) < (check_interval - min_interval)){
+                		log.warn("%s: hasn't received MergeInfo from the coord of viewId %s old: %s s", local_addr, entry.getKey(), 
+                				TimeUnit.SECONDS.convert((System.currentTimeMillis() - view_timestamps.get(entry.getKey())), TimeUnit.MILLISECONDS));
+                		return;
+                	}
+                }
             }
+            clearViewsTimestamps();
 
             Address merge_leader=coords.isEmpty() ? null : coords.first();
             if(merge_leader == null || local_addr == null || !merge_leader.equals(local_addr)) {
