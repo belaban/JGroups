@@ -80,10 +80,12 @@
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
     <class id="201" name="org.jgroups.blocks.mux.MuxRequestCorrelator"/>
     <class id="202" name="org.jgroups.tests.perf.MPerf"/>
+    
 
     <!-- FORK needs to have an ID > 200 in order for RELAY2 to copy it -->
     <class id="203" name="org.jgroups.protocols.FORK"/>
 
     <!-- User-defined protocols should use IDs >= 1000 -->
+    <class id="204" name="org.jgroups.protocols.jzookeeper.ZABBenchmarkMultiThreads"/>
 
 </protocol-ids>
