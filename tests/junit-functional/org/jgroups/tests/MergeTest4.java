@@ -140,10 +140,15 @@ public class MergeTest4 {
     }
 
     protected void createPartition(JChannel ... channels) {
+        long view_id=1; // find the highest view-id +1
+        for(JChannel ch: channels)
+            view_id=Math.max(ch.getView().getViewId().getId(), view_id);
+        view_id++;
+
         List<Address> members=getMembers(channels);
         Collections.sort(members);
         Address coord=members.get(0);
-        View view=new View(coord, 0, members);
+        View view=new View(coord, view_id, members);
         MutableDigest digest=new MutableDigest(view.getMembersRaw());
         for(JChannel ch: channels) {
             NAKACK2 nakack=(NAKACK2)ch.getProtocolStack().findProtocol(NAKACK2.class);
