@@ -60,6 +60,7 @@ public void start(String props, String name) throws Exception {
     sb.append("Run by: ").append(System.getProperty("user.name")).append("\n");
     sb.append("JGroups version: ").append(Version.description).append('\n');
     System.out.println(sb);
+    System.out.println("End of start method>>>>>>>>");
 
     channel=new JChannel(props);
     channel.setName(name);
@@ -70,6 +71,8 @@ public void start(String props, String name) throws Exception {
 
     // send a CONFIG_REQ to the current coordinator, so we can get the current config
     Address coord=channel.getView().getMembers().get(0);
+    System.out.println("End of start method>>>>>>>>");
+
     
 }
 
@@ -131,13 +134,10 @@ public static void main(String[] args) {
 
    
 
-    final ZABBenchmarkThreads test=new ZABBenchmarkThreads();
+    ZABBenchmarkThreads test=new ZABBenchmarkThreads();
     try {
         test.start(props, name);
         test.loop();
-        //test.sendMessages();
-        // this kludge is needed in order to terminate the program gracefully when 'X' is pressed
-        // (otherwise System.in.read() would not terminate)
         
     }
     catch(Exception e) {

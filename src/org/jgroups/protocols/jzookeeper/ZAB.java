@@ -106,6 +106,10 @@ public class ZAB extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
+            	Message m = (Message) evt.getArg();
+            	ZABHeader hdd = (ZABHeader) m.getHeader(this.id);
+            	log.info("[" + local_addr + "] "+"Received msg down "+ m);
+            	log.info("[" + local_addr + "] "+"Received msg down its header"+ hdd);
                 Message msg=(Message)evt.getArg();
                 handleClientRequest(msg);
                 return null; // don't pass down
@@ -133,7 +137,9 @@ public class ZAB extends Protocol {
                 switch(hdr.getType()) {
                 
                    case ZABHeader.START_SENDING:
-	                    return up_prot.up(evt);
+               		    log.info("[" + local_addr + "]" + "Receive START_SENDING UP");
+	                    return up_prot.up(new Event(Event.MSG, msg));
+
                 	case ZABHeader.REQUEST:
                 		//log.info("numbe of requestd recieved="+ (++check));
                 		forwardToLeader(msg);
@@ -202,32 +208,41 @@ public class ZAB extends Protocol {
     /* --------------------------------- Private Methods ----------------------------------- */
 
     
-    private void handleClientRequest(Message message){    	
+    private void handleClientRequest(Message message){
+    	ZABHeader clientHeader = ((ZABHeader) message.getHeader(this.id));
+ 	    log.info("[" + local_addr + "] "+" recieved request from application (handleClientRequest) msg "+message);
+
+ 	    log.info("[" + local_addr + "] "+" recieved request from application (handleClientRequest) header "+clientHeader);
+ 	    //log.info("[" + local_addr + "] "+" recieved request type "+zhdr.getType());
+
  	    //log.info("[" + local_addr + "] "+" recieved request from application (handleClientRequest) from "+message.getSrc());
-    	ZABHeader clientHeader = (ZABHeader) message.getHeader(this.id);
+ 	    log.info("Print all veiw " + view.getMembers());
+
     	if (clientHeader!=null && clientHeader.getType() == ZABHeader.START_SENDING){
-    		for (Address client : zabMembers){
-    			message.setDest(client);
-        		if (!zabMembers.contains(local_addr)){
+    		for (Address client : view.getMembers()){
+    	 	    log.info("Address to check " + client);
+        		if (!zabMembers.contains(client)){
+        	 	    log.info("Address to check is not zab Members, will send start request to" + client+ " "+ getCurrentTimeStamp());
+        			message.setDest(client);
         	        down_prot.down(new Event(Event.MSG, message));    	
         		}
     	}
     	}
-    	else if(clientHeader==null){
+    	else if(!clientHeader.getMessageId().equals(null)){
 	    	 Address destination = null;
-	    	 MessageId messageId = new MessageId(local_addr, localSequence.getAndIncrement()); // Increment localSequence
-	         messageStore.put(messageId, message);
+	    	 //MessageId messageId = new MessageId(local_addr, localSequence.getAndIncrement()); // Increment localSequence
+	         messageStore.put(clientHeader.getMessageId(), message);
 	         
-	        ZABHeader hdrReq=new ZABHeader(ZABHeader.REQUEST, messageId);  
+	        ZABHeader hdrReq=new ZABHeader(ZABHeader.REQUEST, clientHeader.getMessageId());  
 	        ++index;
-	        if (index>3)
+	        if (index>2)
 	        	index=0;
 	        destination = zabMembers.get(index);//Util.pickRandomElement(zabMembers); // Select box at random;
 	        
-	//        if (log.isTraceEnabled())
-	//            log.info("Send ordering request | " + message + " | dest " + destination);
+	        if (log.isTraceEnabled())
+	            log.info("Send ordering request | " + message + " | dest " + destination);
 	        Message requestMessage = new Message(destination).putHeader(this.id, hdrReq);
-	        //requestMessage.setSrc(local_addr);
+	         //requestMessage.setSrc(local_addr);
 	        down_prot.down(new Event(Event.MSG, requestMessage));    
     	}
     	
@@ -426,7 +441,7 @@ private void deliver(Message toDeliver){
 	   }
 		
 		
-		private void handleOrderingResponse(ZABHeader hdrResponse) {
+synchronized private void handleOrderingResponse(ZABHeader hdrResponse) {
 			
 	    	//log.info("[" + local_addr + "] "+ "recieved response message (handleOrderingResponse) for zxid=" + hdrResponse.getZxid()+" "+getCurrentTimeStamp());
 

@@ -1,14 +1,18 @@
 package org.jgroups.protocols.jzookeeper;
 import org.jgroups.*;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.jgroups.protocols.jzookeeper.ZAB;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
@@ -18,9 +22,10 @@ import org.jgroups.Version;
 import org.jgroups.View;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
-public class ZABBenchmarkMultiThreads extends ReceiverAdapter{
+public class ZABTest extends ReceiverAdapter{
 	
     String propsFile = "conf/sequencer.xml";
     String initiator = "";
@@ -36,8 +41,9 @@ public class ZABBenchmarkMultiThreads extends ReceiverAdapter{
     protected View 					view;
     protected List<Address>			zabBox = new ArrayList<Address>();
     final AtomicLong    seqno=new AtomicLong(-1); // monotonically increasing seqno, to be used by all threads
-
+    private Map<MessageId,Stats> latencies = new HashMap<MessageId,Stats>();
     protected static final short                  ID=ClassConfigurator.getProtocolId(ZAB.class);
+    private AtomicLong localSequence = new AtomicLong(); // This nodes sequence number
 
     long start, end;
     int msgReceived =0;
@@ -46,38 +52,41 @@ public class ZABBenchmarkMultiThreads extends ReceiverAdapter{
     
     public void start(String props, String name) throws Exception {
     this.props=props;
-    this.name=name;
+    this.name=null;
     StringBuilder sb=new StringBuilder();
     sb.append("\n\n----------------------- ZABPerf -----------------------\n");
     sb.append("Date: ").append(new Date()).append('\n');
     sb.append("Run by: ").append(System.getProperty("user.name")).append("\n");
     sb.append("JGroups version: ").append(Version.description).append('\n');
     System.out.println(sb);
-
-    channel=new JChannel(props);
-    channel.setName(name);
+    channel=new JChannel("conf/sequencer.xml");
+    if(this.name != null)
+        channel.name(name);
     channel.setReceiver(this);
-    channel.connect("ZABPerf");
+    channel.connect("ChatCluster");
     local_addr=channel.getAddress();
-    JmxConfigurator.registerChannel(channel, Util.getMBeanServer(), "jgroups", "ZABPerf", true);
+    JmxConfigurator.registerChannel(channel, Util.getMBeanServer(), "jgroups", "ChatCluster", true);
 
-    // send a CONFIG_REQ to the current coordinator, so we can get the current config
     Address coord=channel.getView().getMembers().get(0);
     
 }
 
 
 public void viewAccepted(View new_view) {
+    System.out.println("** view: " + new_view);
+	 view = new_view;
 	 List<Address> mbrs=new_view.getMembers();
      if (mbrs.size() == 3){
-     	zabBox.addAll(new_view.getMembers());     	
+     	zabBox.addAll(new_view.getMembers());     
+    	System.out.println("["+ local_addr+ "]"+ "Zab box view = " + zabBox);
+
      }
      
      if (mbrs.size() > 3 && zabBox.isEmpty()){
      	for (int i = 0; i < 3; i++) {
      		zabBox.add(mbrs.get(i));
 			}
-
+    	System.out.println("["+ local_addr+ "]"+ "Zab box view = " + zabBox);
      }
     System.out.println("** view: " + new_view);
 }
@@ -91,7 +100,7 @@ public void sendMessages(long mesNums, int mesSize, int num_threads) {
     final byte[]        payload=new byte[mesSize];
 
     for(int i=0; i < num_threads; i++) {
-        senders[i]=new Sender(barrier, mesNums, num_msgs_sent, actually_sent, seqno, payload);
+        senders[i]=new Sender(barrier, mesNums, localSequence, actually_sent, seqno, payload);
         senders[i].setName("sender-" + i);
         senders[i].start();
     }
@@ -105,11 +114,19 @@ public void sendMessages(long mesNums, int mesSize, int num_threads) {
 }
 
 public void receive(Message msg) {
-
+	Stats stat=null;
     final ZABHeader testHeader = (ZABHeader) msg.getHeader(ID);
-    if (testHeader != null && testHeader.getType()==ZABHeader.START_SENDING)
-        sendMessages(1000, 1000,3);
+    if (testHeader != null && testHeader.getType()==ZABHeader.START_SENDING){
+    	System.out.println("[" + local_addr + "] "+ "Received START_SENDING "+ getCurrentTimeStamp());
+    	msgReceived=0;
+    	sendMessages(100, 1000,1);
+    }
     else{
+    	stat = latencies.get(testHeader.getMessageId());
+    	if(!stat.equals(null)){
+    		stat.end();
+    		System.out.println("latency= "+stat.toString());
+    	}
 		msgReceived++;
 	    String line="[" + msg.getSrc() + "]: " + msg.getObject();
 	    System.out.println(line);
@@ -132,7 +149,7 @@ private String getCurrentTimeStamp(){
 
 public static void main(String[] args) {
     String props="conf/sequencer.xml", name="ZAB";
-     final ZABBenchmarkMultiThreads test=new ZABBenchmarkMultiThreads();
+     final ZABTest test=new ZABTest();
     try {
         test.start(props, name);
         test.loop();
@@ -144,31 +161,57 @@ public static void main(String[] args) {
  }
 public void loop() {
     int c;
-
-    final String INPUT="[1] Send start request to all clients [2] View\n" +"";
+    
+    final String INPUT="[1] Send start request to all clients \n[2] View \n[3] Change number  of message\n"
+    		+ "[4] Chamge size of request \n[5] Change number of threads \n" +"";
 
     while(true) {
         try {
+        	System.out.println("Before for in loop case 1 ");
+    	    System.out.println("zab box = " +zabBox);
+    	    System.out.println("zab box size = " +zabBox.size());
+    	    System.out.println("all view  = " +view.getMembers());
             c=Util.keyPress(String.format(INPUT));
             switch(c) {
                 case '1':
-                	
+                	msgReceived=0;
+                	latencies.clear();
                 	MessageId mid = new MessageId(local_addr, seqno.incrementAndGet());
-                	ZABHeader startHeader = new ZABHeader(ZABHeader.START_SENDING, mid);
-                	Message msg = new Message();
-                	msg.putHeader(ID, startHeader);
-                	
-                	for (Address client : zabBox){
-                		if (!zabBox.contains(local_addr)){
-                			msg.setDest(client);
-                			channel.send(msg);			
-                		}
-                	}
+                	ZABHeader startHeader = new ZABHeader(ZABHeader.START_SENDING,1, mid);
+                	Message msg = new Message(null).putHeader(ID, startHeader);
+                	msg.setObject("req");
+            	    System.out.println("Before for in loop case 1 ");
+            	    System.out.println("zab box = " +zabBox);
+            	    System.out.println("zab box size = " +zabBox.size());
+            	    System.out.println("all view  = " +view.getMembers());
+         			channel.send(msg);
                     break;
                 case '2':
                     System.out.println("view: " + channel.getView() + " (local address=" + channel.getAddress() + ")");
                     break;
-                
+                case '3':
+                	System.out.println("Enter number of message");
+                	num_msgs = read.nextLong();
+                	break;
+                case '4':
+                	System.out.println("Enter Size of message");
+                	msg_size = read.nextInt();
+                	break;
+                case '5':
+                	System.out.println("Enter number of threads");
+                	num_threads = read.nextInt();
+                	break;
+                case '6':
+                    ProtocolStack stack=channel.getProtocolStack();
+                    String cluster_name=channel.getClusterName();
+                    try {
+                        JmxConfigurator.unregisterChannel(channel, Util.getMBeanServer(), "jgroups", "ChatCluster");
+                    }
+                    catch(Exception e) {
+                    }
+                    stack.stopStack(cluster_name);
+                    stack.destroy();
+                    break;               
         }
         }
         catch(Throwable t) {
@@ -179,25 +222,25 @@ public void loop() {
 }
 
 protected class Sender extends Thread {
-    protected final CyclicBarrier barrier;
-    protected final AtomicInteger num_msgs_sent = new AtomicInteger(0);//, actually_sent;
-    protected final AtomicLong    seqno;
-    protected final byte[]        payload;
-    protected final long    numsMsg;
+    private final CyclicBarrier barrier;
+    private  AtomicLong local = new AtomicLong(0);//, actually_sent;
+    private final AtomicLong    seqno;
+    private final byte[]        payload;
+    private final long    numsMsg;
 
 
-    protected Sender(CyclicBarrier barrier, long numsMsg,  AtomicInteger num_msgs_sent, AtomicInteger actually_sent,
+    protected Sender(CyclicBarrier barrier, long numsMsg,  AtomicLong local, AtomicInteger actually_sent,
                      AtomicLong seqno, byte[] payload) {
         this.barrier=barrier;
-       //this.num_msgs_sent=num_msgs_sent;
-       // this.actually_sent=actually_sent;
         this.seqno=seqno;
         this.payload=payload;
         this.numsMsg=numsMsg;
+        this.local=local;
     }
 
     public void run() {
-    	System.out.println("Theard start"+ getName());
+    	Stats stat;
+    	System.out.println("Thread start"+ getName());
         try {
             barrier.await();
         }
@@ -207,21 +250,21 @@ protected class Sender extends Thread {
         }
 
         Address target;
-        //Util.sleep(30000);
-        if (zabBox.contains(local_addr)){
-        	int wait = read.nextInt();
-        }
         start = System.nanoTime();
     	System.out.println("Theard start"+ getName());
 
         for  (int i = 0; i < numsMsg; i++) {
 			
             try {
-                int tmp=num_msgs_sent.incrementAndGet();
-                long new_seqno=seqno.getAndIncrement();
-        		target = Util.pickRandomElement(channel.getView().getMembers());
-
+   	    	    MessageId messageId = new MessageId(local_addr, local.getAndIncrement()); // Increment localSequence
+   	    	    stat = new Stats();
+   	    	    stat.addMessage();
+   	    	    latencies.put(messageId, stat);
+   	    	    ZABHeader hdrReq=new ZABHeader(ZABHeader.REQUEST, messageId);  
+        		target = Util.pickRandomElement(zabBox);
                 Message msg=new Message(target, payload);
+                msg.putHeader(ID, hdrReq);
+                System.out.println("Sending "+i+" out of "+numsMsg);
                 channel.send(msg);
                }
             catch(Exception e) {
