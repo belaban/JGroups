@@ -108,10 +108,9 @@ public class ZAB extends Protocol {
             case Event.MSG:
             	Message m = (Message) evt.getArg();
             	ZABHeader hdd = (ZABHeader) m.getHeader(this.id);
-            	log.info("[" + local_addr + "] "+"Received msg down "+ m);
-            	log.info("[" + local_addr + "] "+"Received msg down its header"+ hdd);
-                Message msg=(Message)evt.getArg();
-                handleClientRequest(msg);
+            	//log.info("[" + local_addr + "] "+"Received msg down "+ m);
+            	//log.info("[" + local_addr + "] "+"Received msg down its header"+ hdd);
+                handleClientRequest(m);
                 return null; // don't pass down
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
@@ -137,7 +136,7 @@ public class ZAB extends Protocol {
                 switch(hdr.getType()) {
                 
                    case ZABHeader.START_SENDING:
-               		    log.info("[" + local_addr + "]" + "Receive START_SENDING UP");
+               		    //log.info("[" + local_addr + "]" + "Receive START_SENDING UP");
 	                    return up_prot.up(new Event(Event.MSG, msg));
 
                 	case ZABHeader.REQUEST:
@@ -213,9 +212,8 @@ public class ZAB extends Protocol {
  	    log.info("[" + local_addr + "] "+" recieved request from application (handleClientRequest) msg "+message);
 
  	    log.info("[" + local_addr + "] "+" recieved request from application (handleClientRequest) header "+clientHeader);
- 	    //log.info("[" + local_addr + "] "+" recieved request type "+zhdr.getType());
 
- 	    //log.info("[" + local_addr + "] "+" recieved request from application (handleClientRequest) from "+message.getSrc());
+ 	    log.info("[" + local_addr + "] "+" recieved request from application (handleClientRequest) from "+message.getSrc());
  	    log.info("Print all veiw " + view.getMembers());
 
     	if (clientHeader!=null && clientHeader.getType() == ZABHeader.START_SENDING){
@@ -256,7 +254,7 @@ public class ZAB extends Protocol {
         }
         if (mbrs.size() == 3){
         	zabMembers.addAll(v.getMembers());
-        	log.info("Zab box view = " + zabMembers);
+        	//log.info("Zab box view = " + zabMembers);
         	
         }
         if (mbrs.size() > 3 && zabMembers.isEmpty()){
@@ -326,10 +324,10 @@ public class ZAB extends Protocol {
     	
     	//log.info("[" + local_addr + "] "+"recieved new proposal(sendACK) zxid="+hdr.getZxid()+" "+getCurrentTimeStamp());
     	if (hdr.getZxid() != lastZxidProposed + 1){
-            log.info("Got zxid 0x"
-                    + Long.toHexString(hdr.getZxid())
-                    + " expected 0x"
-                    + Long.toHexString(lastZxidProposed + 1));
+//            log.info("Got zxid 0x"
+//                    + Long.toHexString(hdr.getZxid())
+//                    + " expected 0x"
+//                    + Long.toHexString(lastZxidProposed + 1));
         }
     	
     	lastZxidProposed = hdr.getZxid();
@@ -354,10 +352,10 @@ synchronized private void processACK(Message msgACK, Address sender){
  	   //log.info("[" + local_addr + "] "+"recieved ack from (processACK) "+sender +" for zxid="+ackZxid+" "+getCurrentTimeStamp());
 
 		if (lastZxidCommitted >= ackZxid) {
-            if (log.isDebugEnabled()) {
+           // if (log.isDebugEnabled()) {
 //                log.info("proposal has already been committed, pzxid: 0x{} zxid: 0x{}",
 //                        lastZxidCommitted, ackZxid);
-            }
+            //}
             return;
         }
         Proposal p = outstandingProposals.get(ackZxid);
@@ -402,15 +400,11 @@ private void commit(long zxid){
 	       Message commitMessage = new Message().putHeader(this.id, hdrCommit);
 	       commitMessage.src(local_addr);
 	       
-	       int count = 0;
-           for (Address address : view.getMembers()) {
-               count++;
+           for (Address address : zabMembers) {
         	   if (address.equals(coord)){
         		   deliver(commitMessage);
         		   continue;
         	   }   		   
-              if (count > 3)
-            	 break;
               Message cpy = commitMessage.copy();
               cpy.setDest(address);
               down_prot.down(new Event(Event.MSG, cpy));     
@@ -430,7 +424,7 @@ private void deliver(Message toDeliver){
 	    	queuedCommitMessage.put(zxid, hdrOrginal);
 
 	    	if (requestQueue.contains(hdrOrginal.getMessageId())){
-	    		log.info("I am the zab request receiver, going to send response back to " + hdrOrginal.getMessageId().getAddress());
+	    		//log.info("I am the zab request receiver, going to send response back to " + hdrOrginal.getMessageId().getAddress());
 		    	ZABHeader hdrResponse = new ZABHeader(ZABHeader.RESPONSE, zxid,  hdrOrginal.getMessageId());
 		    	Message msgResponse = new Message(hdrOrginal.getMessageId().getAddress()).putHeader(this.id, hdrResponse);
 	       		down_prot.down(new Event(Event.MSG, msgResponse));     
@@ -524,13 +518,9 @@ synchronized private void handleOrderingResponse(ZABHeader hdrResponse) {
             		//log.info("[" + local_addr + "] "+" prepar for proposal (run) for zxid="+new_zxid+" "+getCurrentTimeStamp());
 
                  	//log.info("Leader is about to sent a proposal " + ProposalMessage);
-                 	int count = 0;
                  	for (Address address : zabMembers) {
-                        count ++;
                         if(address.equals(coord))
                         	continue;
-                        if (count > 3)
-                        	break;
                         Message cpy = ProposalMessage.copy();
                         cpy.setDest(address);
                 		down_prot.down(new Event(Event.MSG, cpy));     
