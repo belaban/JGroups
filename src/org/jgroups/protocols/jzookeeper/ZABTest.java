@@ -42,7 +42,7 @@ public class ZABTest extends ReceiverAdapter{
     protected List<Address>			zabBox = new ArrayList<Address>();
     final AtomicLong    seqno=new AtomicLong(-1); // monotonically increasing seqno, to be used by all threads
     private Map<MessageId,Stats> latencies = new HashMap<MessageId,Stats>();
-    protected static final short                  ID=ClassConfigurator.getProtocolId(MMZAB.class);
+    protected static final short                  ID=ClassConfigurator.getProtocolId(ZAB.class);
     private AtomicLong localSequence = new AtomicLong(); // This nodes sequence number
 
     long start, end;
@@ -117,7 +117,7 @@ public void receive(Message msg) {
     if (testHeader != null && testHeader.getType()==ZABHeader.START_SENDING){
     	System.out.println("[" + local_addr + "] "+ "Received START_SENDING "+ getCurrentTimeStamp());
     	msgReceived=0;
-    	sendMessages(50, 1000,3);
+    	sendMessages(100, 1000,3);
     }
     else{
     	synchronized(latencies){
