@@ -33,16 +33,16 @@ public class ZABTest extends ReceiverAdapter{
     protected JChannel              channel;
     protected Address               local_addr=null;
     protected String                name;
-    protected long                   num_msgs=1000;
+    protected long                  num_msgs=1000;
     protected int                   msg_size=1000;
     protected int                   num_threads=3;
-    protected long                   log_interval=num_msgs / 10; // log every 10%
-    protected long                   receive_log_interval=Math.max(1, num_msgs / 10);
+    protected long                  log_interval=num_msgs / 10; // log every 10%
+    protected long                  receive_log_interval=Math.max(1, num_msgs / 10);
     protected View 					view;
     protected List<Address>			zabBox = new ArrayList<Address>();
     final AtomicLong    seqno=new AtomicLong(-1); // monotonically increasing seqno, to be used by all threads
     private Map<MessageId,Stats> latencies = new HashMap<MessageId,Stats>();
-    protected static final short                  ID=ClassConfigurator.getProtocolId(ZAB.class);
+    protected static final short                  ID=ClassConfigurator.getProtocolId(MMZAB.class);
     private AtomicLong localSequence = new AtomicLong(); // This nodes sequence number
 
     long start, end;
@@ -71,7 +71,6 @@ public class ZABTest extends ReceiverAdapter{
     
 }
 
-
 public void viewAccepted(View new_view) {
     System.out.println("** view: " + new_view);
 	 view = new_view;
@@ -92,7 +91,6 @@ public void viewAccepted(View new_view) {
 }
 
 public void sendMessages(long mesNums, int mesSize, int num_threads) {
-    final AtomicInteger num_msgs_sent=new AtomicInteger(0); // all threads will increment this
     final AtomicInteger actually_sent=new AtomicInteger(0); // incremented *after* sending a message
     final AtomicLong    seqno=new AtomicLong(1); // monotonically increasing seqno, to be used by all threads
     final Sender[]      senders=new Sender[num_threads];
@@ -119,20 +117,25 @@ public void receive(Message msg) {
     if (testHeader != null && testHeader.getType()==ZABHeader.START_SENDING){
     	System.out.println("[" + local_addr + "] "+ "Received START_SENDING "+ getCurrentTimeStamp());
     	msgReceived=0;
-    	sendMessages(1000, 1000,3);
+    	sendMessages(50, 1000,3);
     }
     else{
-    	stat = latencies.get(testHeader.getMessageId());
-    	if(!stat.equals(null)){
-    		stat.end();
-    		System.out.println("latency= "+stat.toString());
+    	synchronized(latencies){
+	    	stat = latencies.get(testHeader.getMessageId());
+	    	if(!stat.equals(null)){
+	    		stat.end();
+	    		Sender sender = stat.getSender();
+	    		System.out.println("Thread nodfiy name "+ stat.getSender().getName()+" "+getCurrentTimeStamp());
+	    		sender.setSendAllow(true);
+	    		System.out.println("latency= "+stat.toString());
+	    	}
     	}
+    	
 		msgReceived++;
 	    String line="[" + msg.getSrc() + "]: " + msg.getObject();
 	    System.out.println(line);
-	    end = System.nanoTime();
-	    
-	    System.out.println("messgages received is = " + msgReceived + " at "+ getCurrentTimeStamp());
+	    end = System.nanoTime();	    
+	    System.out.println("messgages received = zxid  is = " + testHeader.getZxid()+" "+ msgReceived + " at "+ getCurrentTimeStamp());
 	    System.out.println("Throughput = " + (end - start)/1000000);
 	    System.out.println("Test Done ");
     }
@@ -167,10 +170,6 @@ public void loop() {
 
     while(true) {
         try {
-        	System.out.println("Before for in loop case 1 ");
-    	    System.out.println("zab box = " +zabBox);
-    	    System.out.println("zab box size = " +zabBox.size());
-    	    System.out.println("all view  = " +view.getMembers());
             c=Util.keyPress(String.format(INPUT));
             switch(c) {
                 case '1':
@@ -180,10 +179,6 @@ public void loop() {
                 	ZABHeader startHeader = new ZABHeader(ZABHeader.START_SENDING,1, mid);
                 	Message msg = new Message(null).putHeader(ID, startHeader);
                 	msg.setObject("req");
-            	    System.out.println("Before for in loop case 1 ");
-            	    System.out.println("zab box = " +zabBox);
-            	    System.out.println("zab box size = " +zabBox.size());
-            	    System.out.println("all view  = " +view.getMembers());
          			channel.send(msg);
                     break;
                 case '2':
@@ -221,12 +216,13 @@ public void loop() {
 
 }
 
-protected class Sender extends Thread {
+public class Sender extends Thread {
     private final CyclicBarrier barrier;
     private  AtomicLong local = new AtomicLong(0);//, actually_sent;
     private final AtomicLong    seqno;
     private final byte[]        payload;
     private final long    numsMsg;
+    private volatile boolean sendAllow = false;
 
 
     protected Sender(CyclicBarrier barrier, long numsMsg,  AtomicLong local, AtomicInteger actually_sent,
@@ -237,10 +233,18 @@ protected class Sender extends Thread {
         this.numsMsg=numsMsg;
         this.local=local;
     }
+    
+    public boolean isSendAllow(){
+    	return sendAllow;
+    }
+    
+    public void setSendAllow(boolean sendAllow){
+    	this.sendAllow = sendAllow;
+    }
 
     public void run() {
-    	Stats stat;
     	System.out.println("Thread start"+ getName());
+    	Stats stat;
         try {
             barrier.await();
         }
@@ -251,7 +255,6 @@ protected class Sender extends Thread {
 
         Address target;
         start = System.nanoTime();
-    	System.out.println("Theard start"+ getName());
 
         for  (int i = 0; i < numsMsg; i++) {
 			
@@ -259,6 +262,7 @@ protected class Sender extends Thread {
    	    	    MessageId messageId = new MessageId(local_addr, local.getAndIncrement()); // Increment localSequence
    	    	    stat = new Stats();
    	    	    stat.addMessage();
+   	    	    stat.setSender(this);
    	    	    latencies.put(messageId, stat);
    	    	    ZABHeader hdrReq=new ZABHeader(ZABHeader.REQUEST, messageId);  
         		target = Util.pickRandomElement(zabBox);
@@ -266,6 +270,11 @@ protected class Sender extends Thread {
                 msg.putHeader(ID, hdrReq);
                 System.out.println("Sending "+i+" out of "+numsMsg);
                 channel.send(msg);
+                setSendAllow(false);
+	    		System.out.println("Thread wiil waiting soon name "+ getName());
+	    		while(!sendAllow){
+	    			
+	    		}
                }
             catch(Exception e) {
             }

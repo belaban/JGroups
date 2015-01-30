@@ -90,7 +90,8 @@ import org.jgroups.util.Util;
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             Bits.writeLong(seqno,out);
-            messageId.writeTo(out);
+            Util.writeStreamable(messageId, out);
+            //messageId.writeTo(out);
             //out.writeBoolean(flush_ack);
         }
         
@@ -98,15 +99,16 @@ import org.jgroups.util.Util;
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
             seqno=Bits.readLong(in);
-            messageId = new MessageId();
-            messageId.readFrom(in);
+            //messageId = new MessageId();
+            //messageId.readFrom(in);
+            messageId = (MessageId) Util.readStreamable(MessageId.class, in); 
            // flush_ack=in.readBoolean();
         }
         
         @Override
         public int size() {
         	//(messageInfo != null ? messageInfo.size() : 0)
-            return Global.BYTE_SIZE + Bits.size(seqno) + messageId.serializedSize() + Global.BYTE_SIZE; // type + seqno + flush_ack
-        }
+            return Global.BYTE_SIZE + Bits.size(seqno) + (messageId != null ? messageId.serializedSize(): 0) + Global.BYTE_SIZE; 
+         }
 
     }

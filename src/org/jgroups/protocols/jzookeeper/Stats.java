@@ -1,6 +1,9 @@
 package org.jgroups.protocols.jzookeeper;
 
+import org.jgroups.protocols.jzookeeper.ZABTest.Sender;
+
 public class Stats {
+		private Sender sender = null;
         private long    start=0;
         private long    end=0; // done when > 0
         private long    num_msgs_received=0;
@@ -22,6 +25,14 @@ public class Stats {
          */
         public void addMessage() {
                 start=System.currentTimeMillis();
+        }
+        
+        public Sender getSender(){
+        	return sender;
+        }
+        
+        public void setSender(Sender sender){
+        	this.sender = sender;
         }
 
         public String toString() {
