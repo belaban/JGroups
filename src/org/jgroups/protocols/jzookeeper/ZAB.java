@@ -164,7 +164,7 @@ public class ZAB extends Protocol {
     /* --------------------------------- Private Methods ----------------------------------- */
 
     
-    private synchronized void handleClientRequest(Message message){
+    private void handleClientRequest(Message message){
     	ZABHeader clientHeader = ((ZABHeader) message.getHeader(this.id));
  	  
     	if (clientHeader!=null && clientHeader.getType() == ZABHeader.START_SENDING){
@@ -232,7 +232,7 @@ public class ZAB extends Protocol {
            
    }
 
-    private synchronized void forward(Message msg) {
+    private void forward(Message msg) {
         Address target=leader;
  	    ZABHeader hdrReq = (ZABHeader) msg.getHeader(this.id);
         if(target == null)
@@ -249,7 +249,7 @@ public class ZAB extends Protocol {
       
     }
     
-    private synchronized void sendACK(Message msg){
+    private void sendACK(Message msg){
     	 
     	if (msg == null )
     		return;
@@ -282,7 +282,7 @@ public class ZAB extends Protocol {
     }
     
     
-    private synchronized void processACK(Message msgACK, Address sender){
+    private void processACK(Message msgACK, Address sender){
 	   
     	ZABHeader hdr = (ZABHeader) msgACK.getHeader(this.id);	
     	long ackZxid = hdr.getZxid();
@@ -307,7 +307,7 @@ public class ZAB extends Protocol {
 			
 		}
 		
-    private synchronized void commit(long zxidd){
+    private void commit(long zxidd){
 		   ZABHeader hdrOrginal = null;
 	    	   synchronized(this){
 	    	       lastZxidCommitted = zxidd;
@@ -336,7 +336,7 @@ public class ZAB extends Protocol {
 
 	    }
 		
-    private synchronized void deliver(Message toDeliver){
+    private void deliver(Message toDeliver){
 		    ZABHeader hdrOrginal = null;
 	    	ZABHeader hdr = (ZABHeader) toDeliver.getHeader(this.id);
 	    	long zxid = hdr.getZxid();
@@ -356,7 +356,7 @@ public class ZAB extends Protocol {
 	   }
 		
 		
-    private synchronized void handleOrderingResponse(ZABHeader hdrResponse) {
+    private void handleOrderingResponse(ZABHeader hdrResponse) {
 	        Message message = messageStore.get(hdrResponse.getMessageId());
 	        message.putHeader(this.id, hdrResponse);
 	        up_prot.up(new Event(Event.MSG, message));

@@ -19,6 +19,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
@@ -43,7 +44,7 @@ public class MMZAB extends Protocol {
     private final LinkedBlockingQueue<ZABHeader> queuedMessages =
 	        new LinkedBlockingQueue<ZABHeader>();
 	private ConcurrentMap<Long, Proposal> outstandingProposals = new ConcurrentHashMap<Long, Proposal>();
-	private Map<Long, ZABHeader> queuedProposalMessage = new HashMap<Long, ZABHeader>();
+    private final Map<Long, ZABHeader> queuedProposalMessage = Collections.synchronizedMap(new HashMap<Long, ZABHeader>());
     private final Map<MessageId, Message> messageStore = Collections.synchronizedMap(new HashMap<MessageId, Message>());
 	Calendar cal = Calendar.getInstance();
     protected volatile boolean                  running=true;
@@ -151,7 +152,7 @@ public class MMZAB extends Protocol {
     /* --------------------------------- Private Methods ----------------------------------- */
 
     
-    private synchronized void handleClientRequest(Message message){
+    private void handleClientRequest(Message message){
     	ZABHeader clientHeader = ((ZABHeader) message.getHeader(this.id));
     	if (clientHeader!=null && clientHeader.getType() == ZABHeader.START_SENDING){
     		for (Address client : view.getMembers()){
@@ -205,7 +206,7 @@ public class MMZAB extends Protocol {
     	return zxid.incrementAndGet();
     }
 
-    private synchronized void forwardToLeader(Message msg) {
+    private void forwardToLeader(Message msg) {
 	   ZABHeader hdrReq = (ZABHeader) msg.getHeader(this.id);
 	   requestQueue.add(hdrReq.getMessageId());
 	   if (is_leader){
@@ -218,7 +219,7 @@ public class MMZAB extends Protocol {
            
    }
 
-    private synchronized void forward(Message msg) {
+    private void forward(Message msg) {
         Address target=leader;
  	    ZABHeader hdrReq = (ZABHeader) msg.getHeader(this.id);
         if(target == null)
@@ -235,7 +236,7 @@ public class MMZAB extends Protocol {
     }
     
 
-    private synchronized void sendACK(Message msg){
+    private void sendACK(Message msg){
     	Proposal p;
     	if (msg == null )
     		return;
@@ -340,7 +341,7 @@ public class MMZAB extends Protocol {
 			
 		}
 		
-    private synchronized void commit(long zxid){
+    private void commit(long zxid){
 			
 	       	//log.info("[" + local_addr + "] "+"About to commit the request (commit) for zxid="+zxid+" "+getCurrentTimeStamp());
 
@@ -365,7 +366,7 @@ public class MMZAB extends Protocol {
 
 	    }
 		
-    private synchronized void deliver(Message toDeliver){
+    private void deliver(Message toDeliver){
 				    	ZABHeader hdrOrginal = null;
 	    	ZABHeader hdr = (ZABHeader) toDeliver.getHeader(this.id);
 	    	long zxid = hdr.getZxid();
@@ -386,7 +387,7 @@ public class MMZAB extends Protocol {
 	   }
 		
 		
-    private synchronized void handleOrderingResponse(ZABHeader hdrResponse) {
+    private void handleOrderingResponse(ZABHeader hdrResponse) {
 			
 	    	//log.info("[" + local_addr + "] "+ "recieved response message (handleOrderingResponse) for zxid=" + hdrResponse.getZxid()+" "+getCurrentTimeStamp());
 

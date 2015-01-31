@@ -115,9 +115,9 @@ public void receive(Message msg) {
 	Stats stat=null;
     final ZABHeader testHeader = (ZABHeader) msg.getHeader(ID);
     if (testHeader != null && testHeader.getType()==ZABHeader.START_SENDING){
-    	System.out.println("[" + local_addr + "] "+ "Received START_SENDING "+ getCurrentTimeStamp());
+    	//System.out.println("[" + local_addr + "] "+ "Received START_SENDING "+ getCurrentTimeStamp());
     	msgReceived=0;
-    	sendMessages(100, 1000,3);
+    	sendMessages(5000, 1000,3);
     }
     else{
     	synchronized(latencies){
@@ -125,7 +125,7 @@ public void receive(Message msg) {
 	    	if(!stat.equals(null)){
 	    		stat.end();
 	    		Sender sender = stat.getSender();
-	    		System.out.println("Thread nodfiy name "+ stat.getSender().getName()+" "+getCurrentTimeStamp());
+	    		//System.out.println("Thread nodfiy name "+ stat.getSender().getName()+" "+getCurrentTimeStamp());
 	    		sender.setSendAllow(true);
 	    		System.out.println("latency= "+stat.toString());
 	    	}
@@ -137,7 +137,7 @@ public void receive(Message msg) {
 	    end = System.nanoTime();	    
 	    System.out.println("messgages received = zxid  is = " + testHeader.getZxid()+" "+ msgReceived + " at "+ getCurrentTimeStamp());
 	    System.out.println("Throughput = " + (end - start)/1000000);
-	    System.out.println("Test Done ");
+	    //System.out.println("Test Done ");
     }
 }
 
@@ -268,10 +268,10 @@ public class Sender extends Thread {
         		target = Util.pickRandomElement(zabBox);
                 Message msg=new Message(target, payload);
                 msg.putHeader(ID, hdrReq);
-                System.out.println("Sending "+i+" out of "+numsMsg);
+                //System.out.println("Sending "+i+" out of "+numsMsg);
                 channel.send(msg);
                 setSendAllow(false);
-	    		System.out.println("Thread wiil waiting soon name "+ getName());
+	    		//System.out.println("Thread wiil waiting soon name "+ getName());
 	    		while(!sendAllow){
 	    			
 	    		}
