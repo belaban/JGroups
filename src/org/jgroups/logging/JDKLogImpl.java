@@ -3,6 +3,7 @@ package org.jgroups.logging;
 import java.util.Arrays;
 import java.util.IllegalFormatException;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 /**
@@ -22,6 +23,33 @@ public class JDKLogImpl implements Log {
         logger=Logger.getLogger(category.getName()); // fix for https://jira.jboss.org/browse/JGRP-1224
     }
 
+
+    private void log(Level lv, String msg) {
+        log(lv,msg,null);
+    }
+
+    /**
+     * To correctly attribute the source class/method name to that of the JGroups class,
+     * we can't let JDK compute that. Instead, we do it on our own.
+     */
+    private void log(Level lv, String msg, Throwable e) {
+        if (logger.isLoggable(lv)) {
+            LogRecord r = new LogRecord(lv, msg);
+            r.setThrown(e);
+
+            // find the nearest ancestor that doesn't belong to JDKLogImpl
+            for (StackTraceElement frame : new Exception().getStackTrace()) {
+                if (!frame.getClassName().equals(THIS_CLASS_NAME)) {
+                    r.setSourceClassName(frame.getClassName());
+                    r.setSourceMethodName(frame.getMethodName());
+                    break;
+                }
+            }
+
+            logger.log(r);
+        }
+    }
+    
     public boolean isTraceEnabled() {
         return logger.isLoggable(Level.FINER);
     }
@@ -47,81 +75,81 @@ public class JDKLogImpl implements Log {
     }
 
     public void trace(String msg) {
-        logger.log(Level.FINER, msg);
+        log(Level.FINER, msg);
     }
 
     public void trace(String msg, Object... args) {
         if(isTraceEnabled())
-            logger.log(Level.FINER, format(msg, args));
+            log(Level.FINER, format(msg, args));
     }
 
     public void trace(Object msg) {
-        logger.log(Level.FINER, msg.toString());
+        log(Level.FINER, msg.toString());
     }
 
     public void trace(String msg, Throwable t) {
-        logger.log(Level.FINER, msg, t);
+        log(Level.FINER, msg, t);
     }
 
     public void debug(String msg) {
-        logger.log(Level.FINE, msg);
+        log(Level.FINE, msg);
     }
 
     public void debug(String msg, Object... args) {
         if(isDebugEnabled())
-            logger.log(Level.FINE, format(msg, args));
+            log(Level.FINE, format(msg, args));
     }
 
     public void debug(String msg, Throwable t) {
-        logger.log(Level.FINE, msg, t);
+        log(Level.FINE, msg, t);
     }
 
     public void info(String msg) {
-        logger.log(Level.INFO, msg);
+        log(Level.INFO, msg);
     }
 
     public void info(String msg, Object... args) {
         if(isInfoEnabled())
-            logger.log(Level.INFO, format(msg, args));
+            log(Level.INFO, format(msg, args));
     }
 
     public void warn(String msg) {
-        logger.log(Level.WARNING, msg);
+        log(Level.WARNING, msg);
     }
 
     public void warn(String msg, Object... args) {
         if(isWarnEnabled())
-            logger.log(Level.WARNING, format(msg, args));
+            log(Level.WARNING, format(msg, args));
     }
 
     public void warn(String msg, Throwable t) {
-        logger.log(Level.WARNING, msg, t);
+        log(Level.WARNING, msg, t);
     }
 
     public void error(String msg) {
-        logger.log(Level.SEVERE, msg);
+        log(Level.SEVERE, msg);
     }
 
     public void error(String format, Object... args) {
         if(isErrorEnabled())
-            logger.log(Level.SEVERE, format(format, args));
+            log(Level.SEVERE, format(format, args));
     }
 
     public void error(String msg, Throwable t) {
-        logger.log(Level.SEVERE, msg, t);
+        log(Level.SEVERE, msg, t);
     }
 
     public void fatal(String msg) {
-        logger.log(Level.SEVERE, msg);
+        log(Level.SEVERE, msg);
     }
 
     public void fatal(String msg, Object... args) {
         if(isFatalEnabled())
-            logger.log(Level.SEVERE, format(msg, args));
+            log(Level.SEVERE, format(msg, args));
     }
 
     public void fatal(String msg, Throwable t) {
-        logger.log(Level.SEVERE, msg, t);
+        log(Level.SEVERE, msg, t);
     }
 
     public String getLevel() {
@@ -161,4 +189,5 @@ public class JDKLogImpl implements Log {
         return null;
     }
 
+    private static final String THIS_CLASS_NAME = JDKLogImpl.class.getName();
 }
