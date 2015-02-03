@@ -1,6 +1,6 @@
 package org.jgroups.blocks.atomic;
 
-import org.jgroups.JChannel;
+import org.jgroups.Channel;
 import org.jgroups.protocols.COUNTER;
 
 /**
@@ -9,14 +9,14 @@ import org.jgroups.protocols.COUNTER;
  * @since 3.0.0
  */
 public class CounterService {
-    protected JChannel ch;
+    protected Channel ch;
     protected COUNTER  counter_prot;
 
-    public CounterService(JChannel ch) {
+    public CounterService(Channel ch) {
         setChannel(ch);
     }
 
-    public void setChannel(JChannel ch) {
+    public void setChannel(Channel ch) {
         this.ch=ch;
         counter_prot=(COUNTER)ch.getProtocolStack().findProtocol(COUNTER.class);
         if(counter_prot == null)

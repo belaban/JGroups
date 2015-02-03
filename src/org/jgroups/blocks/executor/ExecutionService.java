@@ -24,7 +24,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.jgroups.JChannel;
+import org.jgroups.Channel;
 import org.jgroups.protocols.Executing;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.NotifyingFuture;
@@ -50,7 +50,7 @@ import org.jgroups.util.Util;
  * @since 2.12.0
  */
 public class ExecutionService extends AbstractExecutorService {
-    protected JChannel ch;
+    protected Channel ch;
     protected Executing _execProt;
     
     protected Lock _unfinishedLock = new ReentrantLock();
@@ -64,11 +64,11 @@ public class ExecutionService extends AbstractExecutorService {
         
     }
 
-    public ExecutionService(JChannel ch) {
+    public ExecutionService(Channel ch) {
         setChannel(ch);
     }
 
-    public void setChannel(JChannel ch) {
+    public void setChannel(Channel ch) {
         this.ch=ch;
         _execProt=(Executing)ch.getProtocolStack().findProtocol(Executing.class);
         if(_execProt == null)
@@ -110,7 +110,7 @@ public class ExecutionService extends AbstractExecutorService {
         protected final Sync<V> sync;
         
         /** The following values are only used on the client side */
-        private final JChannel channel;
+        private final Channel channel;
         private final Set<Future<?>> _unfinishedFutures;
         private final Lock _unfinishedLock;
         private final Condition _unfinishedCondition;
@@ -128,7 +128,7 @@ public class ExecutionService extends AbstractExecutorService {
          *        it is finished. 
          * @param callable The callable to actually run on the server side
          */
-        public DistributedFuture(JChannel channel, Lock unfinishedLock,
+        public DistributedFuture(Channel channel, Lock unfinishedLock,
                           Condition condition,
                           Set<Future<?>> futuresToFinish, 
                           Callable<V> callable) {
@@ -160,7 +160,7 @@ public class ExecutionService extends AbstractExecutorService {
          * <tt>Future&lt;?&gt; f = new FutureTask&lt;Object&gt;(runnable, null)</tt>
          * @throws NullPointerException if runnable is null
          */
-        public DistributedFuture(JChannel channel, Lock unfinishedLock,
+        public DistributedFuture(Channel channel, Lock unfinishedLock,
                           Condition condition, Set<Future<?>> futuresToFinish, 
                           Runnable runnable, V result) {
             sync = new Sync<V>(this, new RunnableAdapter<V>(runnable, result));
