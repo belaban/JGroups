@@ -126,7 +126,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @Property(description="If enabled, multicasts the highest sent seqno every xmit_interval ms. This is skipped if " +
       "a regular message has been multicast, and the task aquiesces if the highest sent seqno hasn't changed for " +
       "resend_last_seqno_max_times times. Used to speed up retransmission of dropped last messages (JGRP-1904)")
-    protected boolean resend_last_seqno=false;
+    protected boolean resend_last_seqno=true;
 
     @Property(description="Max number of times the last seqno is resent before acquiescing if last seqno isn't incremented")
     protected int     resend_last_seqno_max_times=3;
