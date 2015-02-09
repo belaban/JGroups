@@ -295,12 +295,11 @@ public class MMZAB extends Protocol {
 	    Proposal p = null;
     	ZABHeader hdr = (ZABHeader) msgACK.getHeader(this.id);	
     	long ackZxid = hdr.getZxid();
-    	
 //    	if (!(outstandingProposals.containsKey(hdr.getZxid())) && (lastZxidProposed < hdr.getZxid())){
-//		p = new Proposal();
-//        outstandingProposals.put(hdr.getZxid(), p); 
-//		queuedProposalMessage.put(hdr.getZxid(), hdr);
-//        lastZxidProposed = hdr.getZxid();
+//			p = new Proposal();
+//	        outstandingProposals.put(hdr.getZxid(), p); 
+//			queuedProposalMessage.put(hdr.getZxid(), hdr);
+//	        lastZxidProposed = hdr.getZxid();
 //	}
 	
  	  // log.info("[" + local_addr + "] "+"recieved ack from (processACK) "+sender +" for zxid="+ackZxid+" "+getCurrentTimeStamp()+" "+getCurrentTimeStamp());
@@ -314,8 +313,8 @@ public class MMZAB extends Protocol {
         }
         p = outstandingProposals.get(ackZxid);
         if (p == null) {
-            //log.info("Trying to commit future proposal: zxid 0x{} from {}",
-             //       Long.toHexString(ackZxid), sender);
+            log.info("*********************Trying to commit future proposal: zxid 0x{} from {}",
+                    Long.toHexString(ackZxid), sender);
             return;
         }
 		
@@ -326,7 +325,23 @@ public class MMZAB extends Protocol {
         }
 		
 		if(isQuorum(p.getAckCount()) && isFirstZxid(ackZxid)){
-			
+	        	
+//	        	for (ProposalACK proposalPending : outstandingProposals.values()){
+//	        		if (proposalPending.startTime < p.startTime){
+//	        			long pZxid = proposalPending.zxid;
+//	        			proposalPending.count = proposalPending.count + (self.getQuorumVerifier().getMajority() - proposalPending.count);
+//	        			LOG.info("Majority of this zookeeper === "+self.getQuorumVerifier().getMajority());
+//	        			outstandingProposals.remove(pZxid);
+//	                   	LOG.info("Majority is reached for pervious0x "+Long.toHexString(pZxid)+" "+proposalPending.count);
+//	        		    fzk.commit(pZxid);
+//	        		    try {
+//	        		    	Thread.sleep(2);
+//	        		    }catch (InterruptedException e){
+//	        		    	
+//	        		    }
+//	        		   
+//	        		}
+//	        	}
 			//if (ackZxid != lastZxidCommitted+1) {
 //                log.info("Commiting zxid 0x{} from {} not first! "+
 //                        ackZxid+" "+ sender);
@@ -367,13 +382,18 @@ public class MMZAB extends Protocol {
 	    }
 		
     private void deliver(Message toDeliver){
-				    	ZABHeader hdrOrginal = null;
 	    	ZABHeader hdr = (ZABHeader) toDeliver.getHeader(this.id);
 	    	long zxid = hdr.getZxid();
 	    	//log.info("[" + local_addr + "] "+ " delivering message (deliver) for zxid=" + hdr.getZxid()+" "+getCurrentTimeStamp());
 
-	    	hdrOrginal = queuedProposalMessage.remove(zxid);
+	    	ZABHeader hdrOrginal = queuedProposalMessage.remove(zxid);
+	    	if (hdrOrginal == null) {
+				log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
+						+ hdrOrginal + " for zxid " + hdr.getZxid());
+				return;
+			}
 	    	queuedCommitMessage.put(zxid, hdrOrginal);
+			 log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+zxid);
 
 	    	if (requestQueue.contains(hdrOrginal.getMessageId())){
 	    		//log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!I am the zab request receiver, going to send response back to " + hdrOrginal.getMessageId().getAddress());
@@ -472,6 +492,7 @@ public class MMZAB extends Protocol {
             	Proposal p = new Proposal();
             	p.setMessageId(hdrReq.getMessageId());
             	p.AckCount++;
+            	lastZxidProposed=new_zxid;
             	
             	
             	//log.info("Zxid count for zxid = " + new_zxid + " count = "  +p.AckCount+" "+getCurrentTimeStamp());

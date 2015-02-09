@@ -14,6 +14,8 @@ public class Proposal {
 	private MessageId messageId=null;
     
 	private Address messageSrc;
+	
+	private long requestCreated = System.currentTimeMillis();
 
     public Proposal(){
     	
@@ -54,6 +56,14 @@ public class Proposal {
 	public void setMessageSrc(Address messageSrc) {
 		this.messageSrc = messageSrc;
 	}
+	public long getRequestCreated() {
+		return requestCreated;
+	}
+	public void setRequestCreated(long requestCreated) {
+		this.requestCreated = requestCreated;
+	}
+	
+	
     
 
 }

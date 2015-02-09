@@ -11,6 +11,7 @@ import org.jgroups.util.Util;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -21,13 +22,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Bela Ban and Ibrahim EL-Sanosi
  */
 public class SequencerOrder {
-    private JChannel              a, b, c;
-    private MyReceiver            r1, r2, r3;
+    private JChannel              a;
+    private MyReceiver            r1;
     static final String           GROUP="SequencerOrderTest";
     static final int              NUM_MSGS=3; // messages per thread
-    static final int              NUM_THREADS=1;
+    static final int              NUM_THREADS=3;
     static final int              EXPECTED_MSGS=NUM_MSGS * NUM_THREADS;
-    static final String           props="sequencer.xml";
+    static final String           props="conf/sequencer.xml";
     private final Sender[]        senders=new Sender[NUM_THREADS];
     protected final AtomicInteger num=new AtomicInteger(0);
     
@@ -41,31 +42,31 @@ public SequencerOrder(){
         a.connect("SEQ");
         r1=new MyReceiver("A");
         a.setReceiver(r1);
-
-        b=new JChannel(props).name("B");
-        b.connect("SEQ");
-        r2=new MyReceiver("B");
-        b.setReceiver(r2);
-
-        c=new JChannel(props).name("C");
-        c.connect("SEQ");
-        r3=new MyReceiver("C");
-        c.setReceiver(r3);
-        System.setProperty("Djava.net.preferIPv4Stack","true");
-        Util.waitUntilAllChannelsHaveSameSize(10000, 1000,a,b,c);
+//
+//        b=new JChannel(props).name("B");
+//        b.connect("SEQ");
+//        r2=new MyReceiver("B");
+//        b.setReceiver(r2);
+//
+//        c=new JChannel(props).name("C");
+//        c.connect("SEQ");
+//        r3=new MyReceiver("C");
+//        c.setReceiver(r3);
+          System.setProperty("Djava.net.preferIPv4Stack","true");
+//        Util.waitUntilAllChannelsHaveSameSize(10000, 1000,a,b,c);
 
         for(int i=0; i < senders.length; i++)
-            senders[i]=new Sender(NUM_MSGS, num,a,b,c);
+            senders[i]=new Sender(NUM_MSGS, num,a);
     }
 
     
     void tearDown() throws Exception {
-        removeSHUFFLE(c,b,a);
-        Util.close(c,b,a);
+        removeSHUFFLE(a);
+        Util.close(a);
     }
 
     public void testBroadcastSequence() throws Exception {
-        insertShuffle(a,b,c);
+        insertShuffle(a);
         
         // use concurrent senders to send messages to the group
         System.out.println("Starting " + senders.length + " sender threads (each sends " + NUM_MSGS + " messages)");
@@ -77,20 +78,20 @@ public SequencerOrder(){
         System.out.println("Ok, senders have completed");
 
         for(int i=0; i < 10; i++) {
-            if(r1.size() == EXPECTED_MSGS && r2.size() == EXPECTED_MSGS && r3.size() == EXPECTED_MSGS)
+            if(r1.size() == EXPECTED_MSGS)
                 break;
             Util.sleep(1000);
         }
 
         final List<String> l1=r1.getMsgs();
-        final List<String> l2=r2.getMsgs();
-        final List<String> l3=r3.getMsgs();
-        
+//        final List<String> l2=r2.getMsgs();
+//        final List<String> l3=r3.getMsgs();
+//        
         System.out.println("-- verifying messages on A, B and C");
-        System.out.println("Lists Size l1= "+ l1.size()+ " l2= " +l2.size()+ "l3= "+l3.size());
+        System.out.println("Lists Size l1= "+ l1.size());
 
-        verifyNumberOfMessages(EXPECTED_MSGS, l1, l2, l3);
-        verifySameOrder(EXPECTED_MSGS, l1, l2, l3);
+        verifyNumberOfMessages(EXPECTED_MSGS, l1);
+        //verifySameOrder(EXPECTED_MSGS, l1);
     }
 
     protected static void insertShuffle(JChannel... channels) throws Exception {
@@ -111,6 +112,10 @@ public SequencerOrder(){
             if(shuffle != null)
                 shuffle.destroy();
         }
+    }
+    
+    public MyReceiver getReceiver(){
+    	return r1;
     }
 
     private static void verifyNumberOfMessages(int num_msgs, List<String> ... lists) throws Exception {
@@ -166,25 +171,16 @@ public SequencerOrder(){
         }
 
         public void run() {
-        	for(int i=0; i < channels.length; i++) 
-        		System.out.println(channels[i].getName());
-            //for(int i=1; i <= num_msgs; i++) {
+            for(int i=1; i <= num_msgs; i++) {
                 try {
                     JChannel ch=(JChannel)Util.pickRandomElement(channels);
-            		System.out.println("The sendor is " +ch.getName());
                     String channel_name=ch.getName();
                     int number=num.incrementAndGet();
                     ch.send(null, channel_name + number);
-                    JChannel ch1=(JChannel)Util.pickRandomElement(channels);
-            		System.out.println("The sendor is " +ch.getName());
-                    String channel_name1=ch.getName();
-                    int number1=num.incrementAndGet();
-                    ch1.send(null, channel_name1 + number1);
-                    //ch.send(null, channel_name + number);
                 }
                 catch(Exception e) {
                 }
-            //}
+            }
         }
     }
 
@@ -213,18 +209,40 @@ public SequencerOrder(){
         }
     }
 
-
-
-
-
 	public static void main(String[] args) throws Exception {
+		int ch=0;
+		Scanner read = new Scanner(System.in);
 		SequencerOrder so = new SequencerOrder();
 		so.setUp();
-		so.testBroadcastSequence();
-		so.tearDown();
+		while (true){
+			System.out.println("(1) send messages");
+			System.out.println("(2) print messages received size");
+			System.out.println("(3) print all messages received");
+			System.out.println("(4) Finish");
+
+			ch = read.nextInt();
+			switch(ch){
+			case 1:
+				so.testBroadcastSequence();
+				break;
+			case 2:
+				System.out.println("Print msg received "+ so.getReceiver().size());
+				break;
+			case 3:
+				System.out.println("Print all received list "+so.getReceiver().getMsgs());
+				break;
+			case 4:
+				so.tearDown();
+				break;
+				
+			}
+		}
+	}
+			
+			
 
 		
 		
 	}
 
-}
+

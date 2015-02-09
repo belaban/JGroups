@@ -4,6 +4,7 @@ import org.jgroups.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +42,9 @@ public class ZABTest extends ReceiverAdapter{
     protected View 					view;
     protected List<Address>			zabBox = new ArrayList<Address>();
     final AtomicLong    seqno=new AtomicLong(-1); // monotonically increasing seqno, to be used by all threads
-    private Map<MessageId,Stats> latencies = new HashMap<MessageId,Stats>();
+    private final Map<MessageId,Stats> latencies = Collections.synchronizedMap(new HashMap<MessageId,Stats>());
+    //private final Map<MessageId,Stats> latencies = new HashMap<MessageId,Stats>();
+
     protected static final short                  ID=ClassConfigurator.getProtocolId(ZAB.class);
     private AtomicLong localSequence = new AtomicLong(); // This nodes sequence number
 
@@ -112,32 +115,35 @@ public void sendMessages(long mesNums, int mesSize, int num_threads) {
 }
 
 public void receive(Message msg) {
-	Stats stat=null;
     final ZABHeader testHeader = (ZABHeader) msg.getHeader(ID);
-    if (testHeader != null && testHeader.getType()==ZABHeader.START_SENDING){
+    synchronized(this){
+	    if (testHeader.getType()!=ZABHeader.START_SENDING){
+	    	
+	    	//synchronized(latencies){
+		    	Stats stat = latencies.get(testHeader.getMessageId());
+		    	if(!stat.equals(null)){
+		    		stat.end();
+		    		Sender sender = stat.getSender();
+		    		System.out.println("Notify name "+ stat.getSender().getName());
+		    		sender.setSendAllow(true);
+		    		System.out.println("latency= "+stat.toString());
+		    	}
+	    	//}
+	    	
+			msgReceived++;
+		    String line="[" + msg.getSrc() + "]: " + msg.getObject();
+		    System.out.println(line);
+		    end = System.nanoTime();	    
+		    System.out.println("message received = zxid  is = " + testHeader.getZxid()+" "+ msgReceived + " at "+ getCurrentTimeStamp());
+		    System.out.println("Throughput = " + (end - start)/1000000);
+		    //System.out.println("Test Done ");
+    }
+    
+    else {
     	//System.out.println("[" + local_addr + "] "+ "Received START_SENDING "+ getCurrentTimeStamp());
     	msgReceived=0;
-    	sendMessages(5000, 1000,3);
+    	sendMessages(30000, 1000,5);
     }
-    else{
-    	synchronized(latencies){
-	    	stat = latencies.get(testHeader.getMessageId());
-	    	if(!stat.equals(null)){
-	    		stat.end();
-	    		Sender sender = stat.getSender();
-	    		//System.out.println("Thread nodfiy name "+ stat.getSender().getName()+" "+getCurrentTimeStamp());
-	    		sender.setSendAllow(true);
-	    		System.out.println("latency= "+stat.toString());
-	    	}
-    	}
-    	
-		msgReceived++;
-	    String line="[" + msg.getSrc() + "]: " + msg.getObject();
-	    System.out.println(line);
-	    end = System.nanoTime();	    
-	    System.out.println("messgages received = zxid  is = " + testHeader.getZxid()+" "+ msgReceived + " at "+ getCurrentTimeStamp());
-	    System.out.println("Throughput = " + (end - start)/1000000);
-	    //System.out.println("Test Done ");
     }
 }
 
@@ -225,6 +231,7 @@ public class Sender extends Thread {
     private volatile boolean sendAllow = false;
 
 
+
     protected Sender(CyclicBarrier barrier, long numsMsg,  AtomicLong local, AtomicInteger actually_sent,
                      AtomicLong seqno, byte[] payload) {
         this.barrier=barrier;
@@ -260,22 +267,27 @@ public class Sender extends Thread {
 			
             try {
    	    	    MessageId messageId = new MessageId(local_addr, local.getAndIncrement()); // Increment localSequence
-   	    	    stat = new Stats();
-   	    	    stat.addMessage();
-   	    	    stat.setSender(this);
-   	    	    latencies.put(messageId, stat);
+   	    	    
+   	    	    //synchronized(latencies){
+   	    	    	stat = new Stats();
+   	   	    	    stat.addMessage();
+   	   	    	    stat.setSender(this);
+   	   	    	    latencies.put(messageId, stat);
+   	    	   // }
    	    	    ZABHeader hdrReq=new ZABHeader(ZABHeader.REQUEST, messageId);  
         		target = Util.pickRandomElement(zabBox);
                 Message msg=new Message(target, payload);
                 msg.putHeader(ID, hdrReq);
-                //System.out.println("Sending "+i+" out of "+numsMsg);
+                System.out.println("Sending "+i+" out of "+numsMsg);
                 channel.send(msg);
                 setSendAllow(false);
-	    		//System.out.println("Thread wiil waiting soon name "+ getName());
+	    		System.out.println("Waiting name "+ getName());
+	    		//long p =0;
 	    		while(!sendAllow){
-	    			
-	    		}
-               }
+	    			// doing no things
+    			}
+	    		
+	    	}
             catch(Exception e) {
             }
         }

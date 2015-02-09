@@ -13,6 +13,8 @@ public class Stats {
             start=end=num_msgs_received=0;
             seqno=1;
         }
+        
+        
 
         public void    end() {end=System.currentTimeMillis();}
         //public boolean isDone() {return stop > 0;}
