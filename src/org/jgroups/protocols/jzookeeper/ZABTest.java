@@ -45,7 +45,7 @@ public class ZABTest extends ReceiverAdapter{
     private final Map<MessageId,Stats> latencies = Collections.synchronizedMap(new HashMap<MessageId,Stats>());
     //private final Map<MessageId,Stats> latencies = new HashMap<MessageId,Stats>();
 
-    protected static final short                  ID=ClassConfigurator.getProtocolId(ZAB.class);
+    protected static final short                  ID=ClassConfigurator.getProtocolId(MMZAB.class);
     private AtomicLong localSequence = new AtomicLong(); // This nodes sequence number
 
     long start, end;
@@ -142,7 +142,7 @@ public void receive(Message msg) {
     else {
     	//System.out.println("[" + local_addr + "] "+ "Received START_SENDING "+ getCurrentTimeStamp());
     	msgReceived=0;
-    	sendMessages(30000, 1000,5);
+    	sendMessages(10, 1000,5);
     }
     }
 }

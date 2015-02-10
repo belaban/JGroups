@@ -11,14 +11,15 @@ public class Proposal {
 
 	private HashSet<Long> ackSet = new HashSet<Long>();
 
+	private long zxid = -1;
 	private MessageId messageId=null;
     
 	private Address messageSrc;
 	
-	private long requestCreated = System.currentTimeMillis();
+	private long requestCreated ;
 
     public Proposal(){
-    	
+    	requestCreated = System.currentTimeMillis();
     }
 	public Proposal(int count, HashSet<Long> ackSet) {
 
@@ -61,6 +62,12 @@ public class Proposal {
 	}
 	public void setRequestCreated(long requestCreated) {
 		this.requestCreated = requestCreated;
+	}
+	public long getZxid() {
+		return zxid;
+	}
+	public void setZxid(long zxid) {
+		this.zxid = zxid;
 	}
 	
 	
