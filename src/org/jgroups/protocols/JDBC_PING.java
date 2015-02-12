@@ -1,25 +1,18 @@
 package org.jgroups.protocols;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
-
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
-
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.View;
 import org.jgroups.annotations.Property;
-import org.jgroups.protocols.Discovery;
-import org.jgroups.protocols.PingData;
 import org.jgroups.util.Responses;
 import org.jgroups.util.UUID;
+
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
+import java.sql.*;
+import java.util.List;
 
 /**
  * <p>Discovery protocol using a JDBC connection to a shared database.
