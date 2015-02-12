@@ -23,6 +23,11 @@ import java.util.concurrent.ConcurrentMap;
 public class ForkProtocolStack extends ProtocolStack {
     protected Address local_addr;
     protected final ConcurrentMap<String,JChannel> fork_channels=new ConcurrentHashMap<String,JChannel>();
+    private final UnknownForkHandler unknownForkHandler;
+
+    public ForkProtocolStack(UnknownForkHandler unknownForkHandler) {
+        this.unknownForkHandler = unknownForkHandler;
+    }
 
     public JChannel get(String fork_channel_id)                                {return fork_channels.get(fork_channel_id);}
     public JChannel putIfAbsent(String fork_channel_id, JChannel fork_channel) {return fork_channels.putIfAbsent(fork_channel_id, fork_channel);}
@@ -46,12 +51,12 @@ public class ForkProtocolStack extends ProtocolStack {
                 FORK.ForkHeader hdr=(FORK.ForkHeader)msg.getHeader(FORK.ID);
                 if(hdr == null)
                     break;
-                if(hdr.getForkChannelId() == null)
+                String forkId = hdr.getForkChannelId();
+                if(forkId == null)
                     throw new IllegalArgumentException("header has a null fork_channel_id");
-                JChannel fork_channel=get(hdr.getForkChannelId());
+                JChannel fork_channel=get(forkId);
                 if (fork_channel == null) {
-                    log.warn("fork-channel for id=%s not found; discarding message", hdr.getForkChannelId());
-                    return null;
+                    return this.unknownForkHandler.handleUnknownForkChannel(msg, forkId);
                 }
                 return fork_channel.up(evt);
 
