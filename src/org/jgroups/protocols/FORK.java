@@ -10,6 +10,7 @@ import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.fork.ForkConfig;
 import org.jgroups.fork.ForkProtocol;
 import org.jgroups.fork.ForkProtocolStack;
+import org.jgroups.fork.UnknownForkHandler;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -45,13 +46,33 @@ public class FORK extends Protocol {
       "Ignored if null")
     protected String config;
 
+    private UnknownForkHandler unknownForkHandler = new UnknownForkHandler() {
+        @Override
+        public Object handleUnknownForkStack(Message message, String forkStackId) {
+            log.warn("fork-stack for id=%s not found; discarding message", forkStackId);
+            return null;
+        }
+
+        @Override
+        public Object handleUnknownForkChannel(Message message, String forkChannelId) {
+            log.warn("fork-channel for id=%s not found; discarding message", forkChannelId);
+            return null;
+        }
+    };
+
     // mappings between fork-stack-ids and fork-stacks (bottom-most protocol)
     protected final ConcurrentMap<String,Protocol> fork_stacks=new ConcurrentHashMap<String,Protocol>();
 
+    public void setUnknownForkHandler(UnknownForkHandler unknownForkHandler) {
+        this.unknownForkHandler = unknownForkHandler;
+    }
+
+    public UnknownForkHandler getUnknownForkHandler() {
+        return this.unknownForkHandler;
+    }
 
     public Protocol get(String fork_stack_id)                        {return fork_stacks.get(fork_stack_id);}
     public Protocol putIfAbsent(String fork_stack_id, Protocol prot) {return fork_stacks.put(fork_stack_id, prot);}
-
 
     @ManagedAttribute(description="Number of fork-stacks")
     public int getForkStacks() {return fork_stacks.size();}
@@ -61,8 +82,6 @@ public class FORK extends Protocol {
         if(config != null)
             createForkStacks(config, false);
     }
-
-
 
     public Object up(Event evt) {
         switch(evt.getType()) {
@@ -74,7 +93,7 @@ public class FORK extends Protocol {
                 if(hdr.fork_stack_id == null)
                     throw new IllegalArgumentException("header has a null fork_stack_id");
                 Protocol bottom_prot=get(hdr.fork_stack_id);
-                return bottom_prot != null? bottom_prot.up(evt) : null;
+                return bottom_prot != null? bottom_prot.up(evt) : this.unknownForkHandler.handleUnknownForkStack(msg, hdr.fork_stack_id);
 
             case Event.VIEW_CHANGE:
                 for(Protocol bottom: fork_stacks.values())
@@ -135,7 +154,7 @@ public class FORK extends Protocol {
             if(get(fork_stack_id) != null && !replace_existing)
                 continue;
 
-            ProtocolStack  fork_prot_stack=new ForkProtocolStack();
+            ProtocolStack  fork_prot_stack=new ForkProtocolStack(this.unknownForkHandler);
             List<Protocol> prots=createProtocols(fork_prot_stack,entry.getValue());
             createForkStack(fork_stack_id, fork_prot_stack, replace_existing, prots);
         }
