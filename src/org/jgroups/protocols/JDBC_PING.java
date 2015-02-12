@@ -1,18 +1,25 @@
 package org.jgroups.protocols;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
+
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.View;
 import org.jgroups.annotations.Property;
+import org.jgroups.protocols.Discovery;
+import org.jgroups.protocols.PingData;
 import org.jgroups.util.Responses;
 import org.jgroups.util.UUID;
-
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
-import java.sql.*;
-import java.util.List;
 
 /**
  * <p>Discovery protocol using a JDBC connection to a shared database.
@@ -79,6 +86,10 @@ public class JDBC_PING extends Discovery {
         "properties must be empty.")
     protected String datasource_jndi_name;
 
+    @Property(description = "If set, a shutdown hook is registered with the JVM to remove the local address "
+    		+ "from the database. Default is true", writable = false)
+    protected boolean register_shutdown_hook = true;
+
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     private DataSource dataSourceFromJNDI = null;
@@ -94,11 +105,13 @@ public class JDBC_PING extends Discovery {
         else
             dataSourceFromJNDI = getDataSourceFromJNDI(datasource_jndi_name.trim());
         attemptSchemaInitialization();
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                remove(cluster_name, local_addr);
-            }
-        });
+        if (register_shutdown_hook) {
+	        Runtime.getRuntime().addShutdownHook(new Thread() {
+	            public void run() {
+	                remove(cluster_name, local_addr);
+	            }
+	        });
+        }
     }
 
     @Override
