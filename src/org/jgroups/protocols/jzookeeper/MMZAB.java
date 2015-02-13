@@ -305,6 +305,7 @@ public class MMZAB extends Protocol {
     
     
     private synchronized void processACK(Message msgACK, Address sender){
+    	boolean check4LessZxid=false, check4LessZxidFound=false;
 	    Proposal p = null;
     	ZABHeader hdr = (ZABHeader) msgACK.getHeader(this.id);	
     	long ackZxid = hdr.getZxid();
@@ -347,20 +348,24 @@ public class MMZAB extends Protocol {
  				   log.info("KKKKKKKKKKKKKKKKKK compare zxids "+proposalPending.getZxid()+ " with "+p.getZxid());
 
 	        		if (proposalPending.getZxid() < p.getZxid()){
-	        				//&& proposalPending.getRequestCreated() < p.getRequestCreated()){
-	        			//if ((p.getRequestCreated() - proposalPending.getRequestCreated()) > 3){
+	        			check4LessZxidFound = true;
+	        				//&& proposalPending.getRequestCreated() <= p.getRequestCreated()){
+	        			if ((System.currentTimeMillis() - proposalPending.getRequestCreated()) > 3){
+	        				check4LessZxid=true;
 	    				   log.info("KKKKKKKKKKKKKKKKKK putting zxid in wantCommit "+proposalPending.getZxid()+ " "+getCurrentTimeStamp());
 	        				wantCommit.add(proposalPending.getZxid());
      	        			outstandingProposals.remove(proposalPending.getZxid());
-	        			//}
+	        			}
 	        		}
 				}
-				wantCommit.add(ackZxid);
-     			outstandingProposals.remove(ackZxid);
-				log.info("KKKKKKKKKKKKKKKKKK print outstandingProposals "+outstandingProposals.keySet()+" Main one "+ackZxid+ " "+getCurrentTimeStamp());
-				log.info("KKKKKKKKKKKKKKKKKK print wantCommit "+wantCommit+" Main one "+ackZxid+" "+getCurrentTimeStamp());
-				for (long zx:wantCommit)
-					commit(zx);
+				if((check4LessZxid) && (check4LessZxidFound)){
+					wantCommit.add(ackZxid);
+	     			outstandingProposals.remove(ackZxid);
+					log.info("KKKKKKKKKKKKKKKKKK print outstandingProposals "+outstandingProposals.keySet()+" Main one "+ackZxid+ " "+getCurrentTimeStamp());
+					log.info("KKKKKKKKKKKKKKKKKK print wantCommit "+wantCommit+" Main one "+ackZxid+" "+getCurrentTimeStamp());
+					for (long zx:wantCommit)
+						commit(zx);
+				}
 			}
 			wantCommit.clear();
 			
