@@ -309,8 +309,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="Authorization passcode for diagnostics. If specified every probe query will be authorized")
     protected String diagnostics_passcode;
 
-    @Property(description="If assigned enable this transport to be a singleton (shared) transport")
-    protected String singleton_name=null;
+    @Property(description="If assigned enable this transport to be a singleton (shared) transport",
+              deprecatedMessage="Use fork channels instead")
+    @Deprecated
+    /**
+     * @deprecated Will be removed in 4.0. Use fork channels instead
+     */
+    protected String singleton_name;
 
     /** Whether or not warnings about messages from different groups are logged - private flag, not for common use */
     @Property(description="whether or not warnings about messages from different groups are logged")
