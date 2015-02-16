@@ -3,9 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.conf.ProtocolConfiguration;
-import org.jgroups.protocols.FC;
-import org.jgroups.protocols.UDP;
-import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.*;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -13,6 +11,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
 import java.util.List;
 
 /**
@@ -170,7 +169,19 @@ public class ConfiguratorTest {
     }
 
 
+    /** Tests that vars are substituted correctly when creating a channel programmatically (https://issues.jboss.org/browse/JGRP-1908) */
+    public void testProgrammaticCreationAndVariableSubstitution() throws Exception {
+        System.setProperty(Global.EXTERNAL_PORT, "10000");
+        System.setProperty(Global.BIND_ADDR, "127.0.0.1");
+        JChannel ch=new JChannel(
+          new SHARED_LOOPBACK() /* dummy stack */
+        ).name("A");
 
+        TP tp=ch.getProtocolStack().getTransport();
+        assert tp.getValue("external_port").equals(10000);
+        assert tp.getValue("bind_addr").equals(InetAddress.getByName("127.0.0.1"));
+
+    }
 
 
 }

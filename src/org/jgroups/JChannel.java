@@ -188,6 +188,12 @@ public class JChannel extends Channel {
             prot.setProtocolStack(prot_stack);
         }
         prot_stack.init();
+
+        // Substitute vars with defined system props (if any)
+        List<Protocol> prots=prot_stack.getProtocols();
+        Map<String,String> map=new HashMap<>();
+        for(Protocol prot: prots)
+            Configurator.resolveAndAssignFields(prot, map);
     }
 
 

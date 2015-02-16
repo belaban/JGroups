@@ -240,7 +240,7 @@ public class Util {
     public static Protocol[] getTestStack(Protocol... additional_protocols) {
         Protocol[] protocols={
           new SHARED_LOOPBACK(),
-          new SHARED_LOOPBACK_PING().timeout(1000),
+          new SHARED_LOOPBACK_PING(),
           new NAKACK2(),
           new UNICAST3(),
           new STABLE(),
