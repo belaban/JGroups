@@ -618,7 +618,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 return true;
             }
             catch(Throwable ex) {
-                log.warn("%s: creating the client socket to %s failed: %s", local_addr, destAddr, ex);
+                log.warn("%s: creating the client socket to %s failed: %s", local_addr, destAddr, ex.getMessage());
                 return false;
             }
         }
