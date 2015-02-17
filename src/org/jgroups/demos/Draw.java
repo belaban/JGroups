@@ -41,7 +41,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
     private long                   state_timeout=5000;
     private boolean                use_unicasts=false;
     protected boolean              send_own_state_on_merge=true;
-    private final                  List<Address> members=new ArrayList<Address>();
+    private final                  List<Address> members=new ArrayList<>();
 
 
     public Draw(String props, boolean no_channel, boolean jmx, boolean use_state, long state_timeout,
@@ -305,7 +305,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
                         Map<Point,Color> copy=null;
                         if(send_own_state_on_merge) {
                             synchronized(panel.state) {
-                                copy=new LinkedHashMap<Point,Color>(panel.state);
+                                copy=new LinkedHashMap<>(panel.state);
                             }
                         }
                         System.out.println("fetching state from " + coord);
@@ -447,7 +447,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
         public DrawPanel(boolean use_state) {
             if(use_state)
-                state=new LinkedHashMap<Point,Color>();
+                state=new LinkedHashMap<>();
             else
                 state=null;
             createOffscreenImage(false);
@@ -483,7 +483,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
         public void readState(InputStream instream) throws IOException {
             DataInputStream in=new DataInputStream(new BufferedInputStream(instream));
-            Map<Point,Color> new_state=new LinkedHashMap<Point,Color>();
+            Map<Point,Color> new_state=new LinkedHashMap<>();
             int num=in.readInt();
             for(int i=0; i < num; i++) {
                 Point point=new Point(in.readInt(), in.readInt());

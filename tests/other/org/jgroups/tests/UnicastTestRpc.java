@@ -36,7 +36,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
     private int                       num_threads=1;
     private int                       num_msgs=50000, msg_size=1000, print=num_msgs / 10;
     private int                       anycast_count=1;
-    private final Collection<Address> anycast_mbrs=new ArrayList<Address>();
+    private final Collection<Address> anycast_mbrs=new ArrayList<>();
     private Address                   destination=null;
 
     private static final Method       RECEIVE;
@@ -264,7 +264,7 @@ public class UnicastTestRpc extends ReceiverAdapter {
 
     private Address getReceiver() {
         try {
-            List<Address> mbrs=new ArrayList<Address>(channel.getView().getMembers());
+            List<Address> mbrs=new ArrayList<>(channel.getView().getMembers());
             List<String> site_names=getSites(channel);
             for(String site_name: site_names) {
                 try {

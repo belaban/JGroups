@@ -31,7 +31,7 @@ public class SHARED_LOOPBACK extends TP {
     protected volatile boolean is_server=false, is_coord=false;
 
     /** Map of cluster names and address-protocol mappings. Used for routing messages to all or single members */
-    private static final ConcurrentMap<AsciiString,Map<Address,SHARED_LOOPBACK>> routing_table=new ConcurrentHashMap<AsciiString,Map<Address,SHARED_LOOPBACK>>();
+    private static final ConcurrentMap<AsciiString,Map<Address,SHARED_LOOPBACK>> routing_table=new ConcurrentHashMap<>();
 
 
     public boolean supportsMulticasting() {
@@ -102,7 +102,7 @@ public class SHARED_LOOPBACK extends TP {
         if(cluster_name == null)
             return null;
         Map<Address,SHARED_LOOPBACK> mbrs=routing_table.get(new AsciiString(cluster_name));
-        List<PingData> rsps=new ArrayList<PingData>(mbrs != null? mbrs.size() : 0);
+        List<PingData> rsps=new ArrayList<>(mbrs != null? mbrs.size() : 0);
         if(mbrs != null) {
             for(Map.Entry<Address,SHARED_LOOPBACK> entry: mbrs.entrySet()) {
                 Address addr=entry.getKey();
@@ -172,7 +172,7 @@ public class SHARED_LOOPBACK extends TP {
     protected static void register(AsciiString channel_name, Address local_addr, SHARED_LOOPBACK shared_loopback) {
         Map<Address,SHARED_LOOPBACK> map=routing_table.get(channel_name);
         if(map == null) {
-            map=new ConcurrentHashMap<Address,SHARED_LOOPBACK>();
+            map=new ConcurrentHashMap<>();
             Map<Address,SHARED_LOOPBACK> tmp=routing_table.putIfAbsent(channel_name,map);
             if(tmp != null)
                 map=tmp;

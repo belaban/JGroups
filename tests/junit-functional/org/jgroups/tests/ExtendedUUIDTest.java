@@ -237,7 +237,7 @@ public class ExtendedUUIDTest {
         assert hc1 == hc3;
         assert hc1 != hc2;
 
-        Map<SiteMaster,Integer> map=new HashMap<SiteMaster,Integer>(3);
+        Map<SiteMaster,Integer> map=new HashMap<>(3);
         map.put(sm1, 1); map.put(sm2, 2); map.put(sm3, 3);
         System.out.println("map = " + map);
         assert map.size() == 2;

@@ -64,7 +64,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             if(log.isWarnEnabled()) log.warn("I am the coord and I'm suspected -- will probably leave shortly");
             return;
         }        
-        Collection<Request> suspected=new LinkedHashSet<Request>(1);
+        Collection<Request> suspected=new LinkedHashSet<>(1);
         suspected.add(new Request(Request.SUSPECT,mbr,true));
         handleMembershipChange(suspected);
     }
@@ -102,9 +102,9 @@ public class CoordGmsImpl extends ServerGmsImpl {
     public void handleMembershipChange(Collection<Request> requests) {
         boolean joinAndStateTransferInitiated=false;
         boolean useFlushIfPresent=gms.use_flush_if_present;
-        Collection<Address> new_mbrs=new LinkedHashSet<Address>(requests.size());
-        Collection<Address> suspected_mbrs=new LinkedHashSet<Address>(requests.size());
-        Collection<Address> leaving_mbrs=new LinkedHashSet<Address>(requests.size());
+        Collection<Address> new_mbrs=new LinkedHashSet<>(requests.size());
+        Collection<Address> suspected_mbrs=new LinkedHashSet<>(requests.size());
+        Collection<Address> leaving_mbrs=new LinkedHashSet<>(requests.size());
 
         boolean self_leaving=false; // is the coord leaving
 

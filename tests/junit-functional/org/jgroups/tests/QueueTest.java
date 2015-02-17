@@ -132,7 +132,7 @@ public class QueueTest {
 
     public static void testAddAll() throws QueueClosedException {
         final Queue queue=new Queue();
-        List<String> l=new ArrayList<String>();
+        List<String> l=new ArrayList<>();
         l.add("one");
         l.add("two");
         l.add("three");

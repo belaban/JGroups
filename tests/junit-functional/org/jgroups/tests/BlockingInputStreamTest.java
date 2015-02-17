@@ -318,9 +318,9 @@ public class BlockingInputStreamTest {
     public void testObjectStreaming() throws Exception {
         final BlockingInputStream input=new BlockingInputStream(8192);
 
-        Map<String,List<Long>> map=new HashMap<String,List<Long>>(4);
+        Map<String,List<Long>> map=new HashMap<>(4);
         for(String key: Arrays.asList("A", "B", "C", "D")) {
-            List<Long> list=new ArrayList<Long>(1000);
+            List<Long> list=new ArrayList<>(1000);
             map.put(key, list);
             for(int i=1; i <= 1000; i++)
                 list.add((long)i);

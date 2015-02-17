@@ -62,9 +62,9 @@ public class FD_ALL2 extends Protocol {
 
     protected Address                          local_addr;
     
-    protected final List<Address>              members=new ArrayList<Address>();
+    protected final List<Address>              members=new ArrayList<>();
 
-    protected final Set<Address>               suspected_mbrs=new HashSet<Address>();
+    protected final Set<Address>               suspected_mbrs=new HashSet<>();
 
     @ManagedAttribute(description="Shows whether there are currently any suspected members")
     protected volatile boolean                 has_suspected_mbrs;
@@ -81,7 +81,7 @@ public class FD_ALL2 extends Protocol {
 
     protected final Lock                       lock=new ReentrantLock();
 
-    protected final BoundedList<Tuple<Address,Long>> suspect_history=new BoundedList<Tuple<Address,Long>>(20);
+    protected final BoundedList<Tuple<Address,Long>> suspect_history=new BoundedList<>(20);
 
 
 
@@ -333,10 +333,10 @@ public class FD_ALL2 extends Protocol {
 
         num_suspect_events+=suspects.size();
 
-        final List<Address> eligible_mbrs=new ArrayList<Address>();
+        final List<Address> eligible_mbrs=new ArrayList<>();
         synchronized(this) {
             for(Address suspect: suspects) {
-                suspect_history.add(new Tuple<Address,Long>(suspect, System.currentTimeMillis()));
+                suspect_history.add(new Tuple<>(suspect, System.currentTimeMillis()));
                 suspected_mbrs.add(suspect);
             }
             eligible_mbrs.addAll(members);
@@ -407,7 +407,7 @@ public class FD_ALL2 extends Protocol {
     class TimeoutChecker implements Runnable {
 
         public void run() {                        
-            List<Address> suspects=new LinkedList<Address>();
+            List<Address> suspects=new LinkedList<>();
             for(Iterator<Entry<Address,AtomicBoolean>> it=timestamps.entrySet().iterator(); it.hasNext();) {
                 Entry<Address,AtomicBoolean> entry=it.next();
                 Address key=entry.getKey();

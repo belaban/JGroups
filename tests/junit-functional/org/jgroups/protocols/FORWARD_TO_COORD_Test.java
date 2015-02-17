@@ -225,7 +225,7 @@ public class FORWARD_TO_COORD_Test {
 
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected final List<Integer> values=new ArrayList<Integer>();
+        protected final List<Integer> values=new ArrayList<>();
         public int size()                {return values.size();}
         public List<Integer> getValues() {return values;}
 

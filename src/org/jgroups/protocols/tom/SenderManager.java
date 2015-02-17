@@ -16,7 +16,7 @@ public class SenderManager {
 
     public static final long NOT_READY = -1;
 
-    private final ConcurrentMap<MessageID, MessageInfo> sentMessages = new ConcurrentHashMap<MessageID, MessageInfo>();
+    private final ConcurrentMap<MessageID, MessageInfo> sentMessages = new ConcurrentHashMap<>();
 
     /**
      * Add a new message sent
@@ -68,7 +68,7 @@ public class SenderManager {
         MessageInfo messageInfo = sentMessages.get(messageID);
         Set<Address> destination;
         if (messageInfo != null) {
-            destination = new HashSet<Address>(messageInfo.destinations);
+            destination = new HashSet<>(messageInfo.destinations);
         } else {
             destination = Collections.emptySet();
         }
@@ -105,7 +105,7 @@ public class SenderManager {
         private boolean toSelfDeliver = false;
 
         private MessageInfo(Collection<Address> addresses, long sequenceNumber, boolean selfDeliver) {
-            this.destinations = new ArrayList<Address>(addresses);
+            this.destinations = new ArrayList<>(addresses);
             this.highestSequenceNumberReceived = sequenceNumber;
             createNewBitSet(addresses.size());
             this.toSelfDeliver = selfDeliver;

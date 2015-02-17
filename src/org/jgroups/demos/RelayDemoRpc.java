@@ -110,7 +110,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
             // mcast to all local members and N SiteMasters
             else if(line.startsWith("mcast")) {
                 Collection<String> site_masters=parseSiteMasters(line.substring("mcast".length()));
-                Collection<Address> dests=new ArrayList<Address>(site_masters.size());
+                Collection<Address> dests=new ArrayList<>(site_masters.size());
                 for(String site_master: site_masters) {
                     try {
                         dests.add(new SiteMaster(site_master));
@@ -141,7 +141,7 @@ public class RelayDemoRpc extends ReceiverAdapter {
     }
 
     protected static Collection<String> parseSiteMasters(String line) {
-        Set<String> retval=new HashSet<String>();
+        Set<String> retval=new HashSet<>();
         String[] tmp=line.split("\\s");
         for(String s: tmp) {
             String result=s.trim();

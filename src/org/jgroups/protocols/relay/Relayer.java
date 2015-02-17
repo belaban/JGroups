@@ -21,10 +21,10 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class Relayer {
     /** The routing table. Site IDs are the keys (e.g. "sfo", and list of routes are the values */
-    protected ConcurrentMap<String,List<Route>> routes=new ConcurrentHashMap<String,List<Route>>(5);
+    protected ConcurrentMap<String,List<Route>> routes=new ConcurrentHashMap<>(5);
 
     /** The bridges which are used to connect to different sites */
-    protected final Queue<Bridge>               bridges=new ConcurrentLinkedQueue<Bridge>();
+    protected final Queue<Bridge>               bridges=new ConcurrentLinkedQueue<>();
 
     protected final Log                         log;
 
@@ -134,11 +134,11 @@ public class Relayer {
     }
 
     protected List<String> getSiteNames() {
-        return new ArrayList<String>(routes.keySet());
+        return new ArrayList<>(routes.keySet());
     }
 
     protected synchronized List<Route> getRoutes(String ... excluded_sites) {
-        List<Route> retval=new ArrayList<Route>(routes.size());
+        List<Route> retval=new ArrayList<>(routes.size());
         for(List<Route> list: routes.values()) {
             for(Route route: list) {
                 if(route != null) {
@@ -274,7 +274,7 @@ public class Relayer {
 
             RouteStatusListener       listener=relay.getRouteStatusListener();
             Map<String,List<Address>> tmp=extract(new_view);
-            Set<String>               down=listener != null? new HashSet<String>(routes.keySet()) : null;
+            Set<String>               down=listener != null? new HashSet<>(routes.keySet()) : null;
             Set<String>               up=listener != null? new HashSet<String>() : null;
 
             if(listener != null)
@@ -333,13 +333,13 @@ public class Relayer {
 
         /** Returns a map containing the site keys and addresses as values */
         protected Map<String,List<Address>> extract(View view) {
-            Map<String,List<Address>> map=new HashMap<String,List<Address>>(view.size());
+            Map<String,List<Address>> map=new HashMap<>(view.size());
             for(Address mbr: view) {
                 SiteAddress member=(SiteAddress)mbr;
                 String key=member.getSite();
                 List<Address> list=map.get(key);
                 if(list == null) {
-                    list=new ArrayList<Address>();
+                    list=new ArrayList<>();
                     map.put(key, list);
                 }
                 if(!list.contains(member))

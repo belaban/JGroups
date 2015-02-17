@@ -192,7 +192,7 @@ public class RetransmitTableTest {
         addAndGet(table, 55, "hello-55");
 
         // now we have elements 40-49 in row 1 and 55 in row 2:
-        List<String> list=new ArrayList<String>(20);
+        List<String> list=new ArrayList<>(20);
         for(int i=16; i < 50; i++)
             list.add("hello-" + i);
         list.add("hello-55");

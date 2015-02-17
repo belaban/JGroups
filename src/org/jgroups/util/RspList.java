@@ -12,7 +12,7 @@ import java.util.*;
  * A RspList is a response list used in peer-to-peer protocols. This class is unsynchronized
  */
 public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<Rsp<T>> {
-    final Map<Address,Rsp<T>> rsps=new HashMap<Address,Rsp<T>>();
+    final Map<Address,Rsp<T>> rsps=new HashMap<>();
 
 
     public RspList() {
@@ -98,7 +98,7 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
             rsp.setValue(retval);
             return;
         }
-        rsps.put(sender, new Rsp<T>(sender, retval));
+        rsps.put(sender, new Rsp<>(sender, retval));
     }
 
 
@@ -149,7 +149,7 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
      * Returns the results from non-suspected members that are not null.
      */
     public List<T> getResults() {
-        List<T> ret=new ArrayList<T>(size());
+        List<T> ret=new ArrayList<>(size());
 
         T val;
         for(Rsp<T> rsp: values()) {
@@ -161,7 +161,7 @@ public class RspList<T extends Object> implements Map<Address,Rsp<T>>, Iterable<
 
 
     public List<Address> getSuspectedMembers() {
-        List<Address> retval=new ArrayList<Address>();
+        List<Address> retval=new ArrayList<>();
         for(Rsp<T> rsp: values()) {
             if(rsp.wasSuspected())
                 retval.add(rsp.getSender());

@@ -102,9 +102,9 @@ public class MergeTest2 {
 
     public void testMergeWithMissingMergeResponse() {
         JChannel merge_leader=findMergeLeader(a,b,c,d);
-        List<Address> non_faulty_members=new ArrayList<Address>();
+        List<Address> non_faulty_members=new ArrayList<>();
         non_faulty_members.addAll(Arrays.asList(a.getAddress(),b.getAddress(),c.getAddress(),d.getAddress()));
-        List<Address> tmp=new ArrayList<Address>(non_faulty_members);
+        List<Address> tmp=new ArrayList<>(non_faulty_members);
         tmp.remove(merge_leader.getAddress());
         Address faulty_member=Util.pickRandomElement(tmp);
         non_faulty_members.remove(faulty_member);
@@ -120,7 +120,7 @@ public class MergeTest2 {
             discard.setDiscardAll(false);
         }
 
-        Map<Address,View> merge_views=new HashMap<Address,View>(4);
+        Map<Address,View> merge_views=new HashMap<>(4);
         for(JChannel ch: new JChannel[]{a,b,c,d}) {
             merge_views.put(ch.getAddress(), ch.getView()); // here, we include D
         }
@@ -156,7 +156,7 @@ public class MergeTest2 {
     }
 
     protected JChannel findMergeLeader(JChannel ... channels) {
-        Set<Address> tmp=new TreeSet<Address>();
+        Set<Address> tmp=new TreeSet<>();
         for(JChannel ch: channels)
             tmp.add(ch.getAddress());
         Address leader=tmp.iterator().next();

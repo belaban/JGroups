@@ -70,7 +70,7 @@ public class Seqno {
     }
 
     public Collection<Range> getMessagesToRetransmit() {
-        final Collection<Range> retval=new ArrayList<Range>(1);
+        final Collection<Range> retval=new ArrayList<>(1);
         if(!received())
             retval.add(new Range(low, low));
         return retval;

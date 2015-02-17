@@ -20,7 +20,7 @@ import java.util.List;
  * @author Bela Ban June 13 2001
  */
 public class SIZE extends Protocol {
-    protected final List<Address> members=new ArrayList<Address>();
+    protected final List<Address> members=new ArrayList<>();
     @Property protected boolean   print_msg=false;
     @Property protected boolean   raw_buffer=false; // just print the payload size of the message
 

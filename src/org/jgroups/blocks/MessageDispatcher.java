@@ -45,7 +45,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     protected RequestHandler                        req_handler;
     protected boolean                               async_dispatching;
     protected ProtocolAdapter                       prot_adapter;
-    protected volatile Collection<Address>          members=new HashSet<Address>();
+    protected volatile Collection<Address>          members=new HashSet<>();
     protected Address                               local_addr;
     protected final Log                             log=LogFactory.getLog(getClass());
     protected boolean                               hardware_multicast_supported=false;
@@ -55,7 +55,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     protected final AtomicInteger                   async_multicasts=new AtomicInteger(0);
     protected final AtomicInteger                   sync_anycasts=new AtomicInteger(0);
     protected final AtomicInteger                   async_anycasts=new AtomicInteger(0);
-    protected final Set<ChannelListener>            channel_listeners=new CopyOnWriteArraySet<ChannelListener>();
+    protected final Set<ChannelListener>            channel_listeners=new CopyOnWriteArraySet<>();
     protected final DiagnosticsHandler.ProbeHandler probe_handler=new MyProbeHandler();
 
 
@@ -109,7 +109,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
      */
     protected void setMembers(List<Address> new_mbrs) {
         if(new_mbrs != null)
-            members=new HashSet<Address>(new_mbrs); // volatile write - seen by a subsequent read
+            members=new HashSet<>(new_mbrs); // volatile write - seen by a subsequent read
     }
 
 
@@ -274,7 +274,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
                                                                  RequestOptions options,
                                                                  FutureListener<RspList<T>> listener) throws Exception {
         GroupRequest<T> req=cast(dests,msg,options,false, listener);
-        return req != null? req : new NullFuture<RspList<T>>(new RspList<T>());
+        return req != null? req : new NullFuture<>(new RspList<T>());
     }
 
     /**
@@ -307,7 +307,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         List<Address> real_dests;
         // we need to clone because we don't want to modify the original
         if(dests != null) {
-            real_dests=new ArrayList<Address>();
+            real_dests=new ArrayList<>();
             for(Address dest: dests) {
                 if(dest instanceof SiteAddress || this.members.contains(dest)) {
                     if(!real_dests.contains(dest))
@@ -316,7 +316,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
             }
         }
         else
-            real_dests=new ArrayList<Address>(members);
+            real_dests=new ArrayList<>(members);
 
         // if local delivery is off, then we should not wait for the message from the local member.
         // therefore remove it from the membership
@@ -356,7 +356,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
             }
         }
 
-        GroupRequest<T> req=new GroupRequest<T>(msg, corr, real_dests, options);
+        GroupRequest<T> req=new GroupRequest<>(msg, corr, real_dests, options);
         if(listener != null)
             req.setListener(listener);
         if(options != null) {
@@ -403,7 +403,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
                 sync_unicasts.incrementAndGet();
         }
 
-        UnicastRequest<T> req=new UnicastRequest<T>(msg, corr, dest, opts);
+        UnicastRequest<T> req=new UnicastRequest<>(msg, corr, dest, opts);
         req.execute();
 
         if(opts != null && opts.getMode() == ResponseMode.GET_NONE)
@@ -455,13 +455,13 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
                 sync_unicasts.incrementAndGet();
         }
 
-        UnicastRequest<T> req=new UnicastRequest<T>(msg, corr, dest, options);
+        UnicastRequest<T> req=new UnicastRequest<>(msg, corr, dest, options);
         if(listener != null)
             req.setListener(listener);
         req.setBlockForResults(false);
         req.execute();
         if(options != null && options.getMode() == ResponseMode.GET_NONE)
-            return new NullFuture<T>(null);
+            return new NullFuture<>(null);
         return req;
     }
 
@@ -628,7 +628,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     class MyProbeHandler implements DiagnosticsHandler.ProbeHandler {
 
         public Map<String,String> handleProbe(String... keys) {
-            Map<String,String> retval=new HashMap<String,String>();
+            Map<String,String> retval=new HashMap<>();
             for(String key: keys) {
                 if("rpcs".equals(key)) {
                     String channel_name = channel != null ? channel.getClusterName() : "";

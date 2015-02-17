@@ -758,7 +758,7 @@ public class Table<T> {
         public boolean visit(long seqno, T element, int row, int column) {
             if(element != null) {
                 if(list == null)
-                    list=new LinkedList<T>();
+                    list=new LinkedList<>();
                 list.add(element);
             }
             return true;
@@ -790,7 +790,7 @@ public class Table<T> {
             if(element != null) {
                 if(filter == null || filter.accept(element)) {
                     if(list == null)
-                        list=new LinkedList<T>();
+                        list=new LinkedList<>();
                     list.add(element);
                     num_results++;
                 }

@@ -148,7 +148,7 @@ public class PrioTest extends ChannelTestBase {
 
     
     protected static class PrioReceiver extends ReceiverAdapter {
-        protected final List<Integer> msgs=new LinkedList<Integer>();
+        protected final List<Integer> msgs=new LinkedList<>();
 
         public List<Integer> getMsgs() {
             return msgs;

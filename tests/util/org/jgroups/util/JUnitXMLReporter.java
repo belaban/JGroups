@@ -29,10 +29,10 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
     protected PrintStream old_stdout=System.out;
     protected PrintStream old_stderr=System.err;
 
-    protected final ConcurrentMap<Class<?>, DataOutputStream> tests=new ConcurrentHashMap<Class<?>,DataOutputStream>(100);
+    protected final ConcurrentMap<Class<?>, DataOutputStream> tests=new ConcurrentHashMap<>(100);
 
-    public static final InheritableThreadLocal<PrintStream>   stdout=new InheritableThreadLocal<PrintStream>();
-    public static final InheritableThreadLocal<PrintStream>   stderr=new InheritableThreadLocal<PrintStream>();
+    public static final InheritableThreadLocal<PrintStream>   stdout=new InheritableThreadLocal<>();
+    public static final InheritableThreadLocal<PrintStream>   stderr=new InheritableThreadLocal<>();
 
 
 
@@ -237,7 +237,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
         File file=new File(dir, TESTS);
         if(!file.exists())
             throw new IOException(file + " not found");
-        List<TestCase> test_cases=new ArrayList<TestCase>();
+        List<TestCase> test_cases=new ArrayList<>();
         DataInputStream input=new DataInputStream(new FileInputStream(file));
         try {
             for(;;) {

@@ -357,7 +357,7 @@ public class Relay2Test {
 
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected final List<Integer> list=new ArrayList<Integer>(5);
+        protected final List<Integer> list=new ArrayList<>(5);
 
         public List<Integer> getList()            {return list;}
         public void          clear()              {list.clear();}

@@ -372,9 +372,9 @@ public class TOA extends Protocol implements DeliveryProtocol {
     private List<Address> extract(AnycastAddress anycastAddress) {
         Collection<Address> addresses = anycastAddress.getAddresses();
         if (addresses == null) {
-            return new ArrayList<Address>(currentView.getMembers());
+            return new ArrayList<>(currentView.getMembers());
         } else {
-            return new ArrayList<Address>(addresses);
+            return new ArrayList<>(addresses);
         }
     }
 

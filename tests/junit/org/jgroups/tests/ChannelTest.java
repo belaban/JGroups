@@ -250,7 +250,7 @@ public class ChannelTest extends ChannelTestBase {
 
 
     private static class MyReceiver extends ReceiverAdapter {
-        final List<Integer> nums=new LinkedList<Integer>();
+        final List<Integer> nums=new LinkedList<>();
         final int expected;
 
         public MyReceiver(int expected) {

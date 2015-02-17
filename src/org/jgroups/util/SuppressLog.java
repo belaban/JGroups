@@ -17,7 +17,7 @@ public class SuppressLog<T> {
 
     public SuppressLog(Log log, String message_key, String suppress_msg) {
         this.log=log;
-        cache=new SuppressCache<T>();
+        cache=new SuppressCache<>();
         message_format=Util.getMessage(message_key);
         suppress_format=Util.getMessage(suppress_msg); // "(received {3} identical messages from {2} in the last {4} ms)"
     }

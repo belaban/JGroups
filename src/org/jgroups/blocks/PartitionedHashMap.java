@@ -40,7 +40,7 @@ import java.util.*;
 public class PartitionedHashMap<K,V> implements MembershipListener {
 
     /** The cache in which all partitioned entries are located */
-    private Cache<K,V> l2_cache=new Cache<K,V>();
+    private Cache<K,V> l2_cache=new Cache<>();
 
     /** The local bounded cache, to speed up access to frequently accessed entries. Can be disabled or enabled */
     private Cache<K,V> l1_cache=null;
@@ -59,7 +59,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     @ManagedAttribute(writable=true)
     private long caching_time=30000L; // in milliseconds. -1 means don't cache, 0 means cache forever (or until changed)
     private HashFunction<K> hash_function=null;
-    private Set<MembershipListener> membership_listeners=new HashSet<MembershipListener>();
+    private Set<MembershipListener> membership_listeners=new HashSet<>();
 
     /** On a view change, if a member P1 detects that for any given key K, P1 is not the owner of K, then
      * it will compute the new owner P2 and transfer ownership for all Ks for which P2 is the new owner. P1
@@ -208,7 +208,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
     @ManagedOperation
     public void start() throws Exception {
-        hash_function=new ConsistentHashFunction<K>();
+        hash_function=new ConsistentHashFunction<>();
         addMembershipListener((MembershipListener)hash_function);
         ch=new JChannel(props);
         disp=new RpcDispatcher(ch, null, this, this);
@@ -231,7 +231,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         if(l1_cache != null)
             l1_cache.stop();
         if(migrate_data) {
-            List<Address> members_without_me=new ArrayList<Address>(view.getMembers());
+            List<Address> members_without_me=new ArrayList<>(view.getMembers());
             members_without_me.remove(local_addr);
 
             for(Map.Entry<K,Cache.Value<V>> entry: l2_cache.entrySet()) {
@@ -431,13 +431,13 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
 
     public static class ConsistentHashFunction<K> implements MembershipListener, HashFunction<K> {
-        private SortedMap<Short,Address> nodes=new TreeMap<Short,Address>();
+        private SortedMap<Short,Address> nodes=new TreeMap<>();
         private final static int HASH_SPACE=2048; // must be > max number of nodes in a cluster, and a power of 2
 
         public Address hash(K key, List<Address> members) {
             int index=Math.abs(key.hashCode() & (HASH_SPACE - 1));
             if(members != null && !members.isEmpty()) {
-                SortedMap<Short,Address> tmp=new TreeMap<Short,Address>(nodes);
+                SortedMap<Short,Address> tmp=new TreeMap<>(nodes);
                 for(Iterator<Map.Entry<Short,Address>> it=tmp.entrySet().iterator(); it.hasNext();) {
                     Map.Entry<Short, Address> entry=it.next();
                     if(!members.contains(entry.getValue())) {

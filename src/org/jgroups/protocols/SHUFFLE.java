@@ -24,8 +24,8 @@ import java.util.concurrent.TimeUnit;
 @Experimental
 public class SHUFFLE extends Protocol {
     protected TimeScheduler       timer=null;
-    protected final List<Message> up_msgs=new LinkedList<Message>();
-    protected final List<Message> down_msgs=new LinkedList<Message>();
+    protected final List<Message> up_msgs=new LinkedList<>();
+    protected final List<Message> down_msgs=new LinkedList<>();
     protected Future<?>           task=null;
 
 

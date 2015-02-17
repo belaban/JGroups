@@ -49,12 +49,12 @@ public class RSVP extends Protocol {
 
     protected TimeScheduler                    timer;
 
-    protected volatile List<Address>           members=new ArrayList<Address>();
+    protected volatile List<Address>           members=new ArrayList<>();
 
     protected Address                          local_addr;
 
     /** Used to store IDs and their acks */
-    protected final ConcurrentMap<Short,Entry> ids=new ConcurrentHashMap<Short,Entry>();
+    protected final ConcurrentMap<Short,Entry> ids=new ConcurrentHashMap<>();
 
     protected Future<?>                        resend_task;
 
@@ -219,7 +219,7 @@ public class RSVP extends Protocol {
                         sendResponse(batch.sender(), hdr.id);
                     else {
                         if(response_ids == null)
-                            response_ids=new ArrayList<Short>();
+                            response_ids=new ArrayList<>();
                         response_ids.add(hdr.id);
                     }
                     break;
@@ -332,7 +332,7 @@ public class RSVP extends Protocol {
     protected class ResendTask implements Runnable {
 
         public void run() {
-            Set<Address> sent=new HashSet<Address>(); // list of all unicast dests we already sent a beacon msg
+            Set<Address> sent=new HashSet<>(); // list of all unicast dests we already sent a beacon msg
             boolean      mcast_sent=false;
 
             for(Map.Entry<Short,Entry> entry: ids.entrySet()) {

@@ -17,7 +17,7 @@ public class SuppressCacheTest {
 
 
     public void testPut() {
-        SuppressCache<String> cache=new SuppressCache<String>();
+        SuppressCache<String> cache=new SuppressCache<>();
 
         SuppressCache.Value val=cache.putIfAbsent("Bela", 5000);
         System.out.println("cache = " + cache);
@@ -48,7 +48,7 @@ public class SuppressCacheTest {
 
 
     public void testNullKey() {
-        SuppressCache<String> cache=new SuppressCache<String>();
+        SuppressCache<String> cache=new SuppressCache<>();
         cache.putIfAbsent(null, 10);
 
         cache.removeAll(Arrays.asList("Bela", "Michi"));

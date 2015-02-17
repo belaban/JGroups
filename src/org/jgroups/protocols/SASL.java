@@ -52,7 +52,7 @@ public class SASL extends Protocol {
     protected String mech;
 
     @Property(name = "sasl_props", description = "Properties specific to the chosen mech", converter = PropertyConverters.StringProperties.class)
-    protected Map<String, String> sasl_props = new HashMap<String, String>();
+    protected Map<String, String> sasl_props = new HashMap<>();
 
     @Property(name = "server_name", description = "The fully qualified server name")
     protected String server_name;
@@ -70,7 +70,7 @@ public class SASL extends Protocol {
     protected Subject server_subject;
 
     protected Address local_addr;
-    protected final Map<Address, SaslContext> sasl_context = new HashMap<Address, SaslContext>();
+    protected final Map<Address, SaslContext> sasl_context = new HashMap<>();
     private SaslServerFactory saslServerFactory;
     private SaslClientFactory saslClientFactory;
 

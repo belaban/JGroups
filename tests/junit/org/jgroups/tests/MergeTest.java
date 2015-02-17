@@ -140,7 +140,7 @@ public class MergeTest extends ChannelTestBase {
     }
 
     private static void injectMergeEvent(JChannel[] channels, Address leader_addr, String ... coordinators) {
-        Map<Address,View> views=new HashMap<Address,View>();
+        Map<Address,View> views=new HashMap<>();
         for(String tmp: coordinators) {
             Address coord=findAddress(tmp, channels);
             views.put(coord, findView(tmp, channels));

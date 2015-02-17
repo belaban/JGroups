@@ -85,7 +85,7 @@ public class PEER_LOCK extends Locking {
      * Lock implementation which grants a lock when all non faulty cluster members OK it.
      */
     protected class PeerLock extends ClientLock {
-        protected final List<Address> grants=new ArrayList<Address>(view.getMembers());
+        protected final List<Address> grants=new ArrayList<>(view.getMembers());
 
         public PeerLock(String name) {
             super(name);

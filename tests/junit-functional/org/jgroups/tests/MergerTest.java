@@ -32,7 +32,7 @@ public class MergerTest {
      * D: CD
      */
     public void testSimpleMerge() {
-        Map<Address,View> map=new HashMap<Address,View>();
+        Map<Address,View> map=new HashMap<>();
         map.put(a, makeView(a, a,b));
         map.put(b, makeView(a, a,b));
         map.put(c, makeView(c, c,d));
@@ -51,7 +51,7 @@ public class MergerTest {
     }
 
     public void testSimpleMerge2() {
-        Map<Address,View> map=new HashMap<Address,View>();
+        Map<Address,View> map=new HashMap<>();
         map.put(a, makeView(a, a,b));
         map.put(b, makeView(a, a,b));
         map.put(c, makeView(c, c,d));
@@ -77,7 +77,7 @@ public class MergerTest {
      * C: BC
      */
     public void testOverlappingMerge() {
-        Map<Address,View> map=new HashMap<Address,View>();
+        Map<Address,View> map=new HashMap<>();
         map.put(a, makeView(a, a,b,c));
         map.put(b, makeView(b, b,c));
         map.put(c, makeView(b, b,c));
@@ -99,7 +99,7 @@ public class MergerTest {
      * C: BC
      */
     public void testOverlappingMerge1() {
-        Map<Address,View> map=new HashMap<Address,View>();
+        Map<Address,View> map=new HashMap<>();
         map.put(a, makeView(b, b,a,c));
         map.put(b, makeView(b, b,c));
         map.put(c, makeView(b, b,c));
@@ -120,7 +120,7 @@ public class MergerTest {
      * X: XYZ
      */
     public void testOverlappingMerge2() {
-        Map<Address,View> map=new HashMap<Address,View>();
+        Map<Address,View> map=new HashMap<>();
         map.put(a, makeView(a, a,b,c,d,e,f));
         map.put(x, makeView(x, x,y,z));
         System.out.println("map:\n" + print(map));
@@ -143,7 +143,7 @@ public class MergerTest {
      * D: DE
      */
     public void testOverlappingMerge3() {
-        Map<Address,View> map=new HashMap<Address,View>();
+        Map<Address,View> map=new HashMap<>();
         map.put(a, makeView(a, a,b));
         map.put(b, makeView(b, b,c));
         map.put(c, makeView(c, c,d));
@@ -169,7 +169,7 @@ public class MergerTest {
      * Test case is https://issues.jboss.org/browse/JGRP-1451
      */
     public void testOverlappingMerge4() {
-        Map<Address,View> map=new HashMap<Address,View>();
+        Map<Address,View> map=new HashMap<>();
         map.put(a, makeView(a, a,c,b));
         map.put(b, makeView(a, a,c,b));
         map.put(c, makeView(a, a,c,b));
@@ -189,7 +189,7 @@ public class MergerTest {
 
 
     private static <T> Collection<T> makeList(T ... elements) {
-        return new ArrayList<T>(Arrays.asList(elements));
+        return new ArrayList<>(Arrays.asList(elements));
     }
 
     private static View makeView(Address coord, Address ... members) {

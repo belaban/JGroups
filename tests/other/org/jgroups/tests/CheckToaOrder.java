@@ -52,7 +52,7 @@ public class CheckToaOrder {
         
         ComparingFiles[] threads = new ComparingFiles[numberOfThreads];
         
-        List<Pair> allCombinations = new LinkedList<Pair>();
+        List<Pair> allCombinations = new LinkedList<>();
         
         for (int x = startIdx; x < args.length; ++x) {
             for (int y = x + 1; y < args.length; ++y) {
@@ -261,7 +261,7 @@ public class CheckToaOrder {
     
     private static class ComparingFiles extends Thread {
         private final Iterator<Pair> filesToCompare;
-        private ArrayList<String> messageDeliverOrder = new ArrayList<String>();
+        private ArrayList<String> messageDeliverOrder = new ArrayList<>();
         private String[] args;
 
         private ComparingFiles(final Iterator<Pair> filesToCompare, final String[] args, String threadName) {

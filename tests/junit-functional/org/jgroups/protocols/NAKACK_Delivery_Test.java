@@ -56,7 +56,7 @@ public class NAKACK_Delivery_Test {
 
         nak.start();
 
-        List<Address> members=new ArrayList<Address>(2);
+        List<Address> members=new ArrayList<>(2);
         members.add(a); members.add(b);
         View view=new View(a, 1, members);
 
@@ -101,7 +101,7 @@ public class NAKACK_Delivery_Test {
         seqnos.addAll(generateRandomNumbers(2, NUM_MSGS));
         seqnos.addAll(generateRandomNumbers(5, Math.max(5, NUM_MSGS - 10)));
 
-        Set<Integer> no_duplicates=new HashSet<Integer>(seqnos);
+        Set<Integer> no_duplicates=new HashSet<>(seqnos);
 
         System.out.println("sending " + seqnos.size() + " msgs (including duplicates); size excluding duplicates=" +
                 no_duplicates.size());
@@ -139,7 +139,7 @@ public class NAKACK_Delivery_Test {
     }
 
     private static List<Integer> generateRandomNumbers(int from, int to) {
-        List<Integer> retval=new ArrayList<Integer>(20);
+        List<Integer> retval=new ArrayList<>(20);
         for(int i=from; i <= to; i++)
             retval.add(i);
         Collections.shuffle(retval);
@@ -164,7 +164,7 @@ public class NAKACK_Delivery_Test {
 
 
     static class MyReceiver extends Protocol {
-        final ConcurrentMap<Address, Collection<Message>> msgs=new ConcurrentHashMap<Address,Collection<Message>>();
+        final ConcurrentMap<Address, Collection<Message>> msgs=new ConcurrentHashMap<>();
 
         public ConcurrentMap<Address, Collection<Message>> getMsgs() {
             return msgs;
@@ -181,7 +181,7 @@ public class NAKACK_Delivery_Test {
                 Address sender=msg.getSrc();
                 Collection<Message> list=msgs.get(sender);
                 if(list == null) {
-                    list=new ConcurrentLinkedQueue<Message>();
+                    list=new ConcurrentLinkedQueue<>();
                     Collection<Message> tmp=msgs.putIfAbsent(sender, list);
                     if(tmp != null)
                         list=tmp;
@@ -196,7 +196,7 @@ public class NAKACK_Delivery_Test {
             for(Message msg: batch) {
                 Collection<Message> list=msgs.get(sender);
                 if(list == null) {
-                    list=new ConcurrentLinkedQueue<Message>();
+                    list=new ConcurrentLinkedQueue<>();
                     Collection<Message> tmp=msgs.putIfAbsent(sender, list);
                     if(tmp != null)
                         list=tmp;

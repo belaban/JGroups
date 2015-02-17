@@ -57,13 +57,13 @@ public class BARRIER extends Protocol {
     protected Address                    local_addr;
 
     // mbrs from which unicasts should be accepted even if BARRIER is closed (PUNCH_HOLE adds, CLOSE_HOLE removes mbrs)
-    protected final Set<Address>         holes=new HashSet<Address>();
+    protected final Set<Address>         holes=new HashSet<>();
 
     // queues multicast messages or message batches (dest == null)
-    protected final Map<Address,Message> mcast_queue=new ConcurrentHashMap<Address,Message>();
+    protected final Map<Address,Message> mcast_queue=new ConcurrentHashMap<>();
 
     // queues unicast messages or message batches (dest != null)
-    protected final Map<Address,Message> ucast_queue=new ConcurrentHashMap<Address,Message>();
+    protected final Map<Address,Message> ucast_queue=new ConcurrentHashMap<>();
 
     protected TP                         transport;
 

@@ -615,7 +615,7 @@ public class TCPConnectionMap {
 
             public Sender(ThreadFactory tf, int send_queue_size) {
                 this.runner=tf.newThread(this, "Connection.Sender [" + getSockAddress() + "]");
-                this.send_queue=new LinkedBlockingQueue<byte[]>(send_queue_size);
+                this.send_queue=new LinkedBlockingQueue<>(send_queue_size);
             }
             
             public void addToQueue(byte[] data) throws Exception{

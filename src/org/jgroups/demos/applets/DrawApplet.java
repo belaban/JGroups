@@ -34,7 +34,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
 
     private String props="tunnel.xml";
 
-    private final List<Address> members=new ArrayList<Address>();
+    private final List<Address> members=new ArrayList<>();
     private boolean fl=true;
     Log log=LogFactory.getLog(getClass());
 

@@ -139,7 +139,7 @@ public class SizeTest {
 
         IpAddress a1=new IpAddress("127.0.0.1", 5555);
         IpAddress a2=new IpAddress("127.0.0.1", 6666);
-        List<Address> suspects=new ArrayList<Address>();
+        List<Address> suspects=new ArrayList<>();
         suspects.add(a1);
         suspects.add(a2);
         hdr=new FD.FdHeader(FD.FdHeader.SUSPECT, suspects, a1);
@@ -151,14 +151,14 @@ public class SizeTest {
         sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, new IpAddress("127.0.0.1", 5555));
         _testSize(sockhdr);
 
-        Set<Address> tmp=new HashSet<Address>();
+        Set<Address> tmp=new HashSet<>();
         tmp.add(a1);
         tmp.add(a2);
         sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, tmp);
         _testSize(sockhdr);
 
 
-        Map<Address,IpAddress> cache=new HashMap<Address,IpAddress>();
+        Map<Address,IpAddress> cache=new HashMap<>();
         cache.put(a1, a2);
         cache.put(a2, a1);
         sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT);
@@ -174,7 +174,7 @@ public class SizeTest {
         hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE, new IpAddress("127.0.0.1", 4567));
         _testSize(hdr);
 
-        Set<Address> set=new HashSet<Address>();
+        Set<Address> set=new HashSet<>();
         set.add(new IpAddress(3452));
         set.add(new IpAddress("127.0.0.1", 5000));
 
@@ -299,7 +299,7 @@ public class SizeTest {
 
 
     public static void testAddressVector() throws Exception {
-        List<Address> v=new ArrayList<Address>();
+        List<Address> v=new ArrayList<>();
         _testSize(v);
         v.add(new IpAddress(1111));
         _testSize(v);
@@ -349,7 +349,7 @@ public class SizeTest {
     public static void testView() throws Exception {
         Address one=Util.createRandomAddress("A");
         ViewId vid=new ViewId(one, 322649);
-        List<Address> mbrs=new ArrayList<Address>();
+        List<Address> mbrs=new ArrayList<>();
         mbrs.add(one);
         View v=new View(vid, mbrs);
         _testSize(v);
@@ -406,7 +406,7 @@ public class SizeTest {
 
     public static void testMergeView() throws Exception {
         ViewId vid=new ViewId(Util.createRandomAddress("A"), 322649);
-        List<Address> mbrs=new ArrayList<Address>();
+        List<Address> mbrs=new ArrayList<>();
         View v=new MergeView(vid, mbrs, null);
         _testSize(v);
 
@@ -428,7 +428,7 @@ public class SizeTest {
         View v2=View.create(d, 2, d);
         View v3=View.create(e, 3, e,f);
 
-        ArrayList<View> subgroups=new ArrayList<View>();
+        ArrayList<View> subgroups=new ArrayList<>();
         subgroups.add(v1);
         subgroups.add(v2);
         subgroups.add(v3);
@@ -452,8 +452,8 @@ public class SizeTest {
         e=new IpAddress(5000);
         f=new IpAddress(6000);
 
-        m1=new ArrayList<Address>(); m2=new ArrayList<Address>(); m3=new ArrayList<Address>(); all=new ArrayList<Address>();
-        subgroups=new ArrayList<View>();
+        m1=new ArrayList<>(); m2=new ArrayList<>(); m3=new ArrayList<>(); all=new ArrayList<>();
+        subgroups=new ArrayList<>();
         m1.add(a); m1.add(b); m1.add(c);
         m2.add(d);
         m3.add(e); m3.add(f);
@@ -593,13 +593,13 @@ public class SizeTest {
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, addr);
         _testSize(hdr);
 
-        List<Address> members=new ArrayList<Address>();
+        List<Address> members=new ArrayList<>();
         members.add(addr);
         members.add(addr);
         hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP);
         _testSize(hdr);
 
-        Collection<Address> mbrs=new ArrayList<Address>();
+        Collection<Address> mbrs=new ArrayList<>();
         Collections.addAll(mbrs, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
         hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
         _testSize(hdr);
@@ -660,7 +660,7 @@ public class SizeTest {
         hdr=RELAY.RelayHeader.createDisseminateHeader(Util.createRandomAddress("A"));
         _testSize(hdr);
 
-        Map<Address,String> uuid_cache=new HashMap<Address,String>();
+        Map<Address,String> uuid_cache=new HashMap<>();
         uuid_cache.put(Util.createRandomAddress("A"), "A");
         uuid_cache.put(Util.createRandomAddress("B"), "B");
         uuid_cache.put(Util.createRandomAddress("B"), "B");
@@ -765,7 +765,7 @@ public class SizeTest {
 
 
     public static void testWriteAddresses() throws Exception {
-        List<Address> list=new ArrayList<Address>();
+        List<Address> list=new ArrayList<>();
         for(int i=0; i < 3; i++)
             list.add(UUID.randomUUID());
         _testWriteAddresses(list);

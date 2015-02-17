@@ -27,10 +27,10 @@ public class ReplicatedTree extends ReceiverAdapter {
     public static final String SEPARATOR="/";
     final static int INDENT=4;
     Node root=new Node(SEPARATOR, SEPARATOR, null, null);
-    final List<ReplicatedTreeListener> listeners=new ArrayList<ReplicatedTreeListener>();
+    final List<ReplicatedTreeListener> listeners=new ArrayList<>();
     JChannel channel=null;
     String groupname="ReplicatedTree-Group";
-    final List<Address> members=new ArrayList<Address>();
+    final List<Address> members=new ArrayList<>();
     long state_fetch_timeout=10000;
     boolean jmx=false;
 
@@ -702,20 +702,20 @@ public class ReplicatedTree extends ReceiverAdapter {
             name=child_name;
             this.fqn=fqn;
             this.parent=parent;
-            if(data == null) data=new HashMap<String,Object>();
+            if(data == null) data=new HashMap<>();
             data.put(key, value);
         }
 
         void setData(Map data) {
             if(data == null) return;
             if(this.data == null)
-                this.data=new HashMap<String,Object>();
+                this.data=new HashMap<>();
             this.data.putAll(data);
         }
 
         void setData(String key, Object value) {
             if(this.data == null)
-                this.data=new HashMap<String,Object>();
+                this.data=new HashMap<>();
             this.data.put(key, value);
         }
 
@@ -737,7 +737,7 @@ public class ReplicatedTree extends ReceiverAdapter {
             Node child=null;
 
             if(child_name == null) return null;
-            if(children == null) children=new TreeMap<String,Node>();
+            if(children == null) children=new TreeMap<>();
             child=children.get(child_name);
             if(child != null)
                 child.setData(data);
@@ -752,7 +752,7 @@ public class ReplicatedTree extends ReceiverAdapter {
             Node child=null;
 
             if(child_name == null) return null;
-            if(children == null) children=new TreeMap<String,Node>();
+            if(children == null) children=new TreeMap<>();
             child=children.get(child_name);
             if(child != null)
                 child.setData(key, value);

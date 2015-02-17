@@ -41,7 +41,7 @@ public class MergeTest4 {
         // Isolate the coord
         Address coord = a.getView().getCreator();
         System.out.println("Isolating coord: " + coord);
-        List<Address> members = new ArrayList<Address>();
+        List<Address> members = new ArrayList<>();
         members.add(coord);
         View coord_view=new View(coord, 4, members);
         System.out.println("coord_view: " + coord_view);
@@ -67,7 +67,7 @@ public class MergeTest4 {
         System.out.println("merge_leader: " + merge_leader.getAddressAsString());
         
         System.out.println("Injecting MERGE event into merge leader " + merge_leader.getAddress());
-        Map<Address,View> merge_views=new HashMap<Address,View>(4);
+        Map<Address,View> merge_views=new HashMap<>(4);
         merge_views.put(a.getAddress(), a.getView());
         merge_views.put(b.getAddress(), b.getView());
         merge_views.put(c.getAddress(), c.getView());
@@ -162,7 +162,7 @@ public class MergeTest4 {
     }
 
     protected List<Address> getMembers(JChannel ... channels) {
-        List<Address> members=new ArrayList<Address>(channels.length);
+        List<Address> members=new ArrayList<>(channels.length);
         for(JChannel ch: channels)
             members.add(ch.getAddress());
         return members;

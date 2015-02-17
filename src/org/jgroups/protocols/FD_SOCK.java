@@ -89,21 +89,21 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     protected int num_suspect_events=0;
 
-    protected final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
+    protected final BoundedList<Address> suspect_history=new BoundedList<>(20);
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
 
-    protected volatile List<Address> members=new ArrayList<Address>(11); // volatile eliminates the lock
+    protected volatile List<Address> members=new ArrayList<>(11); // volatile eliminates the lock
 
-    protected final Set<Address>     suspected_mbrs=new CopyOnWriteArraySet<Address>();
+    protected final Set<Address>     suspected_mbrs=new CopyOnWriteArraySet<>();
 
-    protected final List<Address>    pingable_mbrs=new CopyOnWriteArrayList<Address>();
+    protected final List<Address>    pingable_mbrs=new CopyOnWriteArrayList<>();
 
     protected volatile boolean srv_sock_sent=false; // has own socket been broadcast yet ?
     /** Used to rendezvous on GET_CACHE and GET_CACHE_RSP */
-    protected final Promise<Map<Address,IpAddress>> get_cache_promise=new Promise<Map<Address,IpAddress>>();
+    protected final Promise<Map<Address,IpAddress>> get_cache_promise=new Promise<>();
     protected volatile boolean got_cache_from_coord=false; // was cache already fetched ?
     protected Address local_addr=null; // our own address
     protected ServerSocket srv_sock=null; // server socket to which another member connects to monitor me
@@ -119,7 +119,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     /** Cache of member addresses and their ServerSocket addresses */
     protected final ConcurrentMap<Address,IpAddress> cache=Util.createConcurrentMap(11);
 
-    protected final Promise<IpAddress> ping_addr_promise=new Promise<IpAddress>(); // to fetch the ping_addr for ping_dest
+    protected final Promise<IpAddress> ping_addr_promise=new Promise<>(); // to fetch the ping_addr for ping_dest
     protected final Object sock_mutex=new Object(); // for access to ping_sock, ping_input
     protected TimeScheduler timer=null;
     protected final BroadcastTask bcast_task=new BroadcastTask(); // to transmit SUSPECT message (until view change)
@@ -454,7 +454,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         if(suspects == null)
             return;
 
-        final List<Address> eligible_mbrs=new ArrayList<Address>();
+        final List<Address> eligible_mbrs=new ArrayList<>();
         for(Address suspect: suspects)
             suspect_history.add(suspect);
         suspected_mbrs.addAll(suspects);
@@ -694,7 +694,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         // 1. Send a SUSPECT message right away; the broadcast task will take some time to send it (sleeps first)
         hdr=new FdHeader(FdHeader.SUSPECT);
-        hdr.mbrs=new HashSet<Address>(1);
+        hdr.mbrs=new HashSet<>(1);
         hdr.mbrs.add(suspected_mbr);
         suspect_msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(this.id, hdr);
         down_prot.down(new Event(Event.MSG, suspect_msg));
@@ -826,7 +826,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         try {
             int size=in.readInt();
             if(size > 0) {
-                addrs=new HashMap<Address,IpAddress>(size);
+                addrs=new HashMap<>(size);
                 for(int i=0; i < size; i++) {
                     Address key=Util.readAddress(in);
                     IpAddress val=(IpAddress)Util.readStreamable(IpAddress.class, in);
@@ -970,7 +970,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             int size=in.readInt();
             if(size > 0) {
                 if(mbrs == null)
-                    mbrs=new HashSet<Address>();
+                    mbrs=new HashSet<>();
                 for(int i=0; i < size; i++)
                     mbrs.add(Util.readAddress(in));
             }
@@ -989,7 +989,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     protected class ServerSocketHandler implements Runnable {
         Thread acceptor=null;
         /** List<ClientConnectionHandler> */
-        final List<ClientConnectionHandler> clients=new LinkedList<ClientConnectionHandler>();
+        final List<ClientConnectionHandler> clients=new LinkedList<>();
 
 
         String getName() {
@@ -1126,7 +1126,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      * any longer. Then the task terminates.
      */
     protected class BroadcastTask implements Runnable {
-        final Set<Address>    suspects=new HashSet<Address>();
+        final Set<Address>    suspects=new HashSet<>();
         Future<?>             future;
 
 
@@ -1204,7 +1204,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 }
 
                 hdr=new FdHeader(FdHeader.SUSPECT);
-                hdr.mbrs=new HashSet<Address>(suspects);
+                hdr.mbrs=new HashSet<>(suspects);
             }
             Message suspect_msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(id, hdr); // mcast SUSPECT to all members
             down_prot.down(new Event(Event.MSG, suspect_msg));

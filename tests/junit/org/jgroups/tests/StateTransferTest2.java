@@ -26,7 +26,7 @@ public class StateTransferTest2 extends ChannelTestBase {
 
     @DataProvider(name="createChannels")
     protected Iterator<Class<?>[]> createChannels() {
-        return new ArrayIterator<Class<?>[]>(new Class<?>[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
+        return new ArrayIterator<>(new Class<?>[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
     }
 
 

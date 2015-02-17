@@ -24,7 +24,7 @@ public class MakeUnique {
         StringTokenizer tok=new StringTokenizer(input, delims, true);
         FileOutputStream output=new FileOutputStream(outputfile);
 
-        Map<String,String> map=new HashMap<String,String>();
+        Map<String,String> map=new HashMap<>();
 
 
         while(tok.hasMoreTokens()) {
@@ -57,7 +57,7 @@ public class MakeUnique {
         if(dump) {
             System.out.println("map:");
             // new map, sorted by *value*
-            Map<String,String> tmp=new TreeMap<String,String>();
+            Map<String,String> tmp=new TreeMap<>();
             for(Map.Entry<String,String> entry: map.entrySet())
                 tmp.put(entry.getValue(), entry.getKey());
             for(Map.Entry<String,String> entry: tmp.entrySet())
@@ -98,7 +98,7 @@ public class MakeUnique {
         String input=null;
         String output="output.txt";
         String delims=null;
-        Set<String> keywords=new HashSet<String>();
+        Set<String> keywords=new HashSet<>();
         boolean dump=false;
 
         for(int i=0; i < args.length; i++) {

@@ -117,7 +117,7 @@ public class TUNNEL_Test extends ChannelTestBase{
      * to multicast messages.
      **/
     public void testDisconnectConnectSendTwo_Default() throws Exception {
-        final Promise<Message> msgPromise=new Promise<Message>();
+        final Promise<Message> msgPromise=new Promise<>();
         coordinator=createTunnelChannel("B");
         coordinator.connect(GROUP);
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
@@ -229,7 +229,7 @@ public class TUNNEL_Test extends ChannelTestBase{
       * multicast messages.
       **/
      public void testDisconnectConnectSendTwo_TUNNEL() throws Exception {
-        final Promise<Message> msgPromise=new Promise<Message>();
+        final Promise<Message> msgPromise=new Promise<>();
         coordinator=createTunnelChannel("B");
         coordinator.connect(GROUP);
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
@@ -254,7 +254,7 @@ public class TUNNEL_Test extends ChannelTestBase{
     protected JChannel createTunnelChannel(String name, boolean include_failure_detection) throws Exception {
         TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("bind_addr", bind_addr);
         tunnel.setGossipRouterHosts(gossip_router_hosts);
-        List<Protocol> protocols=new ArrayList<Protocol>();
+        List<Protocol> protocols=new ArrayList<>();
         protocols.addAll(Arrays.asList(tunnel, new PING(), new MERGE3().setValue("min_interval", 1000).setValue("max_interval", 3000)));
         if(include_failure_detection)
             protocols.addAll(Arrays.asList(new FD().setValue("timeout", 2000).setValue("max_tries", 2), new VERIFY_SUSPECT()));

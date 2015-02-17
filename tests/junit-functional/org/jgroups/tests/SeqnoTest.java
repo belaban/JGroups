@@ -220,7 +220,7 @@ public class SeqnoTest {
     
     
     public static void testCompareTo() {
-        TreeMap<Seqno,Seqno> map=new TreeMap<Seqno,Seqno>(new SeqnoComparator());
+        TreeMap<Seqno,Seqno> map=new TreeMap<>(new SeqnoComparator());
 
         Seqno[] ranges={new SeqnoRange(900,905), new Seqno(222), new SeqnoRange(700,800), new SeqnoRange(23,200)};
 
@@ -244,7 +244,7 @@ public class SeqnoTest {
 
 
     public static void testCompareTo2() {
-        TreeMap<Seqno,Seqno> map=new TreeMap<Seqno,Seqno>(new SeqnoComparator());
+        TreeMap<Seqno,Seqno> map=new TreeMap<>(new SeqnoComparator());
 
         Seqno[] ranges={new SeqnoRange(900,905), new Seqno(550), new Seqno(222),
           new SeqnoRange(700,800), new Seqno(650), new SeqnoRange(23,200)};
@@ -275,7 +275,7 @@ public class SeqnoTest {
     public static void testLargeRange() {
         SeqnoRange range=new SeqnoRange(0, 1500);
 
-        Set<Integer> sorted_set=new TreeSet<Integer>();
+        Set<Integer> sorted_set=new TreeSet<>();
         for(int i=0; i < 500; i++) {
             int num=(int)Util.random(1499);
             sorted_set.add(num);
@@ -293,7 +293,7 @@ public class SeqnoTest {
 
 
     public static void testRemovalFromTreeMap() {
-        Map<Seqno,Seqno> map=new TreeMap<Seqno,Seqno>(new SeqnoComparator());
+        Map<Seqno,Seqno> map=new TreeMap<>(new SeqnoComparator());
 
         Seqno[] ranges=new Seqno[]{new SeqnoRange(900,905), new Seqno(222), new Seqno(500),
                 new SeqnoRange(700,800), new Seqno(801), new SeqnoRange(23,200)};
@@ -321,7 +321,7 @@ public class SeqnoTest {
 
 
     public static void testRemovalFromHashMap() {
-        Map<Seqno,Seqno> map=new ConcurrentHashMap<Seqno,Seqno>();
+        Map<Seqno,Seqno> map=new ConcurrentHashMap<>();
 
         Seqno[] ranges=new Seqno[]{new SeqnoRange(900,905), new Seqno(222), new SeqnoRange(700,800),
                 new SeqnoRange(23,200), new Seqno(201), new Seqno(205)};

@@ -183,8 +183,8 @@ public class ENCRYPTKeystoreTest {
 
 
     protected static class MockProtocol extends Protocol {
-        private final Map<String,Event> upMessages=new HashMap<String,Event>();
-        private final Map<String,Event> downMessages=new HashMap<String,Event>();
+        private final Map<String,Event> upMessages=new HashMap<>();
+        private final Map<String,Event> downMessages=new HashMap<>();
         private int                     counter;
 
         public Map<String,Event> getDownMessages() {return downMessages;}

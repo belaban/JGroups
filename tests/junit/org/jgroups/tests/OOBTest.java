@@ -341,7 +341,7 @@ public class OOBTest extends ChannelTestBase {
     private static void check(final int num_expected_msgs, Collection<Integer> list, String name) {
         System.out.println(name  + ": " + list);
 
-        Collection<Integer> missing=new TreeSet<Integer>();
+        Collection<Integer> missing=new TreeSet<>();
         if(list.size() != num_expected_msgs) {
             for(int i=1; i <= num_expected_msgs; i++)
                 missing.add(i);
@@ -406,7 +406,7 @@ public class OOBTest extends ChannelTestBase {
     }
 
     private static class MyReceiver extends ReceiverAdapter {
-        private final Collection<Integer> msgs=new ConcurrentLinkedQueue<Integer>();
+        private final Collection<Integer> msgs=new ConcurrentLinkedQueue<>();
         final String name;
 
         public MyReceiver(String name) {this.name=name;}

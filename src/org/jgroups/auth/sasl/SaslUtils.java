@@ -78,13 +78,13 @@ public final class SaslUtils {
     }
 
     private static <T> Iterator<T> getFactories(Class<T> type, ClassLoader classLoader, boolean includeGlobal) {
-        Set<T> factories = new LinkedHashSet<T>();
+        Set<T> factories = new LinkedHashSet<>();
         final ServiceLoader<T> loader = ServiceLoader.load(type, classLoader);
         for (T factory : loader) {
             factories.add(factory);
         }
         if (includeGlobal) {
-            Set<String> loadedClasses = new HashSet<String>();
+            Set<String> loadedClasses = new HashSet<>();
             final String filter = type.getSimpleName() + ".";
 
             Provider[] providers = Security.getProviders();

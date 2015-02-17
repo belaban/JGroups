@@ -120,7 +120,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
     private void sendAndCheckMessages(int num_msgs, JChannel ... channels) throws Exception {
         ra.clear(); rb.clear(); rc.clear();
         // 1. send unicast messages
-        Set<Address> mbrs=new HashSet<Address>(channels.length);
+        Set<Address> mbrs=new HashSet<>(channels.length);
         for(JChannel ch: channels)
             mbrs.add(ch.getAddress());
 
@@ -180,7 +180,7 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
 
     private static class MyReceiver extends ReceiverAdapter {
         final String name;
-        final List<Message> ucasts=new ArrayList<Message>(20);
+        final List<Message> ucasts=new ArrayList<>(20);
 
         public MyReceiver(String name) {
             this.name=name;

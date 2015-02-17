@@ -37,15 +37,15 @@ public class SUPERVISOR extends Protocol {
     protected TimeScheduler               timer;
 
     // The last 50 executions, can be retrieved with executions()
-    protected final BoundedList<String>   executions=new BoundedList<String>(50);
+    protected final BoundedList<String>   executions=new BoundedList<>(50);
 
     @Property(description="Location of an XML file listing the rules to be installed")
     protected String                      config;
 
     // hashmap of rules, keys are rule names and values futures to the rules
-    protected final Map<String,Tuple<Rule,Future<?>>> rules=new HashMap<String,Tuple<Rule,Future<?>>>();
+    protected final Map<String,Tuple<Rule,Future<?>>> rules=new HashMap<>();
 
-    protected final List<EventHandler>    event_handlers=new ArrayList<EventHandler>();
+    protected final List<EventHandler>    event_handlers=new ArrayList<>();
 
     @ManagedAttribute(description="The number of registered EventHandler")
     protected volatile int                num_event_handlers;

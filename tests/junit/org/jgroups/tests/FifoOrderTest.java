@@ -83,7 +83,7 @@ public class FifoOrderTest extends ChannelTestBase {
         Map<Address,List<Integer>> map=r.getMessages();
 
         boolean fifo=true;
-        List<Address> incorrect_receivers=new LinkedList<Address>();
+        List<Address> incorrect_receivers=new LinkedList<>();
         System.out.println("Checking FIFO for " + r.getName() + ":");
         for(Map.Entry<Address,List<Integer>> addressListEntry : map.entrySet()) {
             List<Integer> list=addressListEntry.getValue();
@@ -101,7 +101,7 @@ public class FifoOrderTest extends ChannelTestBase {
 
 
     private static boolean verifyFIFO(List<Integer> list) {
-        List<Integer> list2=new LinkedList<Integer>(list);
+        List<Integer> list2=new LinkedList<>(list);
         Collections.sort(list2);
         return list.equals(list2);
     }
@@ -149,7 +149,7 @@ public class FifoOrderTest extends ChannelTestBase {
 
     protected static class MyReceiver extends ReceiverAdapter {
         final String name;
-        final ConcurrentMap<Address,List<Integer>> msgs=new ConcurrentHashMap<Address,List<Integer>>();
+        final ConcurrentMap<Address,List<Integer>> msgs=new ConcurrentHashMap<>();
         AtomicInteger count=new AtomicInteger(0);
 
         public MyReceiver(String name) {
@@ -162,7 +162,7 @@ public class FifoOrderTest extends ChannelTestBase {
             Address sender=msg.getSrc();
             List<Integer> list=msgs.get(sender);
             if(list == null) {
-                list=new LinkedList<Integer>();
+                list=new LinkedList<>();
                 List<Integer> tmp=msgs.putIfAbsent(sender, list);
                 if(tmp != null)
                     list=tmp;

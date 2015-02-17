@@ -28,7 +28,7 @@ public class TestToaOrder {
     private MyReceiver receiver;
     private int numberOfNodes;
     private int numberOfMessages;
-    private final List<Address> members = new LinkedList<Address>();
+    private final List<Address> members = new LinkedList<>();
 
     private long start;
     private long stop;
@@ -208,7 +208,7 @@ public class TestToaOrder {
         public MyReceiver(int expectedMembers, TestToaOrder testGroupMulticastOrder) {
             this.expectedMembers = expectedMembers;
             this.testGroupMulticastOrder = testGroupMulticastOrder;
-            this.messageList = new LinkedList<String>();
+            this.messageList = new LinkedList<>();
         }
 
         @Override

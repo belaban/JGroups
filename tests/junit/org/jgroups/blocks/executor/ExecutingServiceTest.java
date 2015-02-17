@@ -149,7 +149,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         }
         
         public static final AtomicReference<CyclicBarrier> requestBlocker = 
-            new AtomicReference<CyclicBarrier>();
+            new AtomicReference<>();
     }
 
     /**
@@ -194,7 +194,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         
         // These have to be static, since they cannot be serialized and the
         // test calls back to the same jvm so they will hit the same barrier
-        public static BlockingQueue<Thread> canceledThreads = new LinkedBlockingQueue<Thread>();
+        public static BlockingQueue<Thread> canceledThreads = new LinkedBlockingQueue<>();
         public static CyclicBarrier barrier = new CyclicBarrier(2);
         
         public SleepingStreamableCallable() {
@@ -291,7 +291,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
     public void testSimpleSerializableCallableSubmit() 
             throws InterruptedException, ExecutionException, TimeoutException {
         long value =100;
-        Callable<Long> callable = new SimpleStreamableCallable<Long>(value);
+        Callable<Long> callable = new SimpleStreamableCallable<>(value);
         Thread consumer = new Thread(er2);
         consumer.start();
         NotifyingFuture<Long> future = e1.submit(callable);
@@ -509,7 +509,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         Thread consumer2 = new Thread(er3);
         consumer2.start();
         
-        ExecutionCompletionService<Void> service = new ExecutionCompletionService<Void>(e1);
+        ExecutionCompletionService<Void> service = new ExecutionCompletionService<>(e1);
         
         // The sleeps will not occur until both threads get there due to barrier
         // This should result in future2 always ending first since the sleep
@@ -544,7 +544,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         ExposedExecutingProtocol.requestBlocker.set(barrier);
         
         int value = 23;
-        final Callable<Integer> callable = new SimpleStreamableCallable<Integer>(value);
+        final Callable<Integer> callable = new SimpleStreamableCallable<>(value);
         ExecutorService service = Executors.newCachedThreadPool();
         Future<Integer> future = service.submit(new Callable<Integer>() {
 
@@ -619,10 +619,10 @@ public class ExecutingServiceTest extends ChannelTestBase {
         Thread consumer2 = new Thread(er3);
         consumer2.start();
         
-        Collection<Callable<Long>> callables = new ArrayList<Callable<Long>>();
+        Collection<Callable<Long>> callables = new ArrayList<>();
         
-        callables.add(new SimpleStreamableCallable<Long>((long)10));
-        callables.add(new SimpleStreamableCallable<Long>((long)100));
+        callables.add(new SimpleStreamableCallable<>((long)10));
+        callables.add(new SimpleStreamableCallable<>((long)100));
         Long value = e1.invokeAny(callables);
         
         assert value == 10 || value == 100 : "The task didn't return the right value";
@@ -659,7 +659,7 @@ public class ExecutingServiceTest extends ChannelTestBase {
         Thread consumer1 = new Thread(er2);
         consumer1.start();
         
-        Future<Object> future = e1.submit(new SimpleStreamableCallable<Object>(new Object()));
+        Future<Object> future = e1.submit(new SimpleStreamableCallable<>(new Object()));
         try {
             future.get(10, TimeUnit.SECONDS);
         }

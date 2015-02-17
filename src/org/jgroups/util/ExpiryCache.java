@@ -15,7 +15,7 @@ public class ExpiryCache<K> {
     protected long                        timeout; // in nanoseconds
 
     // Maintains keys and timestamps (in nanoseconds)
-    protected final ConcurrentMap<K,Long> map=new ConcurrentHashMap<K,Long>();
+    protected final ConcurrentMap<K,Long> map=new ConcurrentHashMap<>();
 
     /**
      * Creates a new instance

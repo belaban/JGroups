@@ -70,7 +70,7 @@ public class ResourceManager {
 
 	public static synchronized List<Short> getNextTcpPorts(InetAddress bind_addr, int num_requested_ports) throws Exception {
 		short port = tcp_port++;
-		List<Short> retval = new ArrayList<Short>(num_requested_ports);
+		List<Short> retval = new ArrayList<>(num_requested_ports);
 
 		for (int i = 0; i < num_requested_ports; i++) {
 			ServerSocket sock = Util.createServerSocket(socket_factory, "jgroups.temp.resourcemgr.srv_sock", bind_addr, port);

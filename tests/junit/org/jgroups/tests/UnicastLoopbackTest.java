@@ -33,7 +33,7 @@ public class UnicastLoopbackTest extends ChannelTestBase {
         long num_msgs_sent_before = 0 ;
         long num_msgs_sent_after = 0 ;
 
-        Promise<Boolean> promise = new Promise<Boolean>() ;
+        Promise<Boolean> promise = new Promise<>() ;
         MyReceiver receiver = new MyReceiver(NUM, promise) ;
         channel.setReceiver(receiver) ;
         channel.connect("UnicastLoopbackTest") ;

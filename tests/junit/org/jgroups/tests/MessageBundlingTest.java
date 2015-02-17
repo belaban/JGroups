@@ -50,7 +50,7 @@ public class MessageBundlingTest extends ChannelTestBase {
     
 
     public void testSimple() throws Exception {
-        final Promise<Boolean> promise=new Promise<Boolean>();
+        final Promise<Boolean> promise=new Promise<>();
         SimpleReceiver receiver=new SimpleReceiver(promise);
         b.setReceiver(receiver);
         long start=System.currentTimeMillis();
@@ -65,7 +65,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         Message tmp=new Message().setFlag(Message.Flag.DONT_BUNDLE);
         setBundling(a, MAX_BYTES, 30);
         r2.setNumExpectedMesssages(1);
-        Promise<Integer> promise=new Promise<Integer>();
+        Promise<Integer> promise=new Promise<>();
         r2.setPromise(promise);
         long time=System.currentTimeMillis();
         a.send(tmp);
@@ -83,7 +83,7 @@ public class MessageBundlingTest extends ChannelTestBase {
     public void testLatencyWithMessageBundling() throws Exception {
         Message tmp=new Message();
         r2.setNumExpectedMesssages(1);
-        Promise<Integer> promise=new Promise<Integer>();
+        Promise<Integer> promise=new Promise<>();
         r2.setPromise(promise);
         long time=System.currentTimeMillis();
         a.send(tmp);
@@ -103,7 +103,7 @@ public class MessageBundlingTest extends ChannelTestBase {
     public void testLatencyWithMessageBundlingAndLoopback() throws Exception {
         Message tmp=new Message();
         r2.setNumExpectedMesssages(1);
-        Promise<Integer> promise=new Promise<Integer>();
+        Promise<Integer> promise=new Promise<>();
         r2.setPromise(promise);
         long time=System.currentTimeMillis();
         System.out.println(">>> sending message at " + new Date());
@@ -121,7 +121,7 @@ public class MessageBundlingTest extends ChannelTestBase {
 
     public void testLatencyWithMessageBundlingAndMaxBytes() throws Exception {
         r2.setNumExpectedMesssages(10);
-        Promise<Integer> promise=new Promise<Integer>();
+        Promise<Integer> promise=new Promise<>();
         r2.setPromise(promise);
         Util.sleep(LATENCY * 2);
         System.out.println(">>> sending 10 messages at " + new Date());
@@ -165,7 +165,7 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
     private static class MyReceiver extends ReceiverAdapter {
-        private final List<Long> times=new LinkedList<Long>();
+        private final List<Long> times=new LinkedList<>();
         private int num_expected_msgs;
         private Promise<Integer> promise;
 

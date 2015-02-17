@@ -10,7 +10,7 @@ import java.util.concurrent.*;
 public class AgeOutCache<K> {
     private final TimeScheduler           timer;
     private long                          timeout;
-    private final ConcurrentMap<K,Future> map=new ConcurrentHashMap<K,Future>();
+    private final ConcurrentMap<K,Future> map=new ConcurrentHashMap<>();
     private Handler                       handler;
 
     public interface Handler<K> {

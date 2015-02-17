@@ -78,7 +78,7 @@ public class NakackUnitTest {
                 break;
             Util.sleep(500);
         }
-        List<Integer> expected=new ArrayList<Integer>(num.length);
+        List<Integer> expected=new ArrayList<>(num.length);
         for(int n: num) expected.add(n);
         System.out.println("received=" + received + ", expected=" + expected);
         assert received.size() == expected.size() : "list=" + received + ", expected=" + expected;
@@ -114,7 +114,7 @@ public class NakackUnitTest {
 
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected final List<Integer> list=new ArrayList<Integer>();
+        protected final List<Integer> list=new ArrayList<>();
 
         public List<Integer> list()       {return list;}
 

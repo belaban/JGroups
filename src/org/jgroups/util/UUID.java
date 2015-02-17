@@ -61,7 +61,7 @@ public class UUID implements Address {
         catch(Throwable t) {
         }
 
-        cache=new LazyRemovalCache<Address,String>(max_elements, max_age);
+        cache=new LazyRemovalCache<>(max_elements, max_age);
 
 
         /* Trying to get value of jgroups.print_uuids. PropertyPermission not granted if

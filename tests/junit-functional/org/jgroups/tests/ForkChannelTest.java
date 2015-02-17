@@ -85,7 +85,7 @@ public class ForkChannelTest {
     public void testNullForkStack() throws Exception {
         fc1=new ForkChannel(ch, "stack", "fc1");
         fc2=new ForkChannel(ch, "stack", "fc2");
-        MyReceiver<Integer> r1=new MyReceiver<Integer>(), r2=new MyReceiver<Integer>();
+        MyReceiver<Integer> r1=new MyReceiver<>(), r2=new MyReceiver<>();
         fc1.setReceiver(r1); fc2.setReceiver(r2);
         ch.connect(CLUSTER);
         fc1.connect("foo");

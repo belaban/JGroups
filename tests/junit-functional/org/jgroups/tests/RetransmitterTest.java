@@ -148,7 +148,7 @@ public class RetransmitterTest {
     @Test(dataProvider="createRetransmitter")
     public void testAddAndRemoveIndividualSeqnos(Retransmitter xmitter) {
         int NUM=100;
-        List<Long> seqnos=new ArrayList<Long>(NUM);
+        List<Long> seqnos=new ArrayList<>(NUM);
         for(long i=1; i <= NUM; i++) {
             seqnos.add(i);
             xmitter.add(i, i);
@@ -169,7 +169,7 @@ public class RetransmitterTest {
     @Test(dataProvider="createRetransmitter")
     public void testAddAndRemoveRanges(Retransmitter xmitter) {
         int NUM=100;
-        List<Long> seqnos=new ArrayList<Long>(NUM);
+        List<Long> seqnos=new ArrayList<>(NUM);
         for(long i=1; i <= NUM; i++)
             seqnos.add(i);
 

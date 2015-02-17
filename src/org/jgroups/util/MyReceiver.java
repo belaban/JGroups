@@ -12,7 +12,7 @@ import java.util.List;
  * @since  3.3
  */
 public class MyReceiver<T> extends ReceiverAdapter {
-    protected final List<T> list=new ArrayList<T>();
+    protected final List<T> list=new ArrayList<>();
     protected String        name;
     protected boolean       verbose;
 

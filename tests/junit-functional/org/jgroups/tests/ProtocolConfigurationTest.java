@@ -37,7 +37,7 @@ public class ProtocolConfigurationTest {
 	                                "config_object_class=org.jgroups.tests.ProtocolConfigurationTest$ConfigurableObject;" +
 	                                "string_property=test)" ;
 	          
-	List<String> order = new LinkedList<String>() ;
+	List<String> order = new LinkedList<>() ;
 
 	@BeforeMethod
 	void setUp() {
@@ -66,7 +66,7 @@ public class ProtocolConfigurationTest {
 	 */
 	public void testDependencyOrdering() throws Exception {
 		// create a List describing correct Property ordering
-		List<String> correctOrder = new LinkedList<String>() ;
+		List<String> correctOrder = new LinkedList<>() ;
 		correctOrder.add("c") ;
 		correctOrder.add("b") ;
 		correctOrder.add("a") ;
@@ -85,8 +85,8 @@ public class ProtocolConfigurationTest {
 	 */
 	public void testDefaultAssignment() throws Exception {
 
-		Vector<ProtocolConfiguration> protocol_configs = new Vector<ProtocolConfiguration>() ;
-		Vector<Protocol> protocols = new Vector<Protocol>() ;
+		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
+		Vector<Protocol> protocols = new Vector<>() ;
 		
 		// create the layer described by DEFAULTS
 		protocol = Configurator.createProtocol(defaultProps, stack) ;
@@ -118,8 +118,8 @@ public class ProtocolConfigurationTest {
 	 */
 	public void testAssignmentInetAddresses() throws Exception {
 
-		Vector<ProtocolConfiguration> protocol_configs = new Vector<ProtocolConfiguration>() ;
-		Vector<Protocol> protocols = new Vector<Protocol>() ;
+		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
+		Vector<Protocol> protocols = new Vector<>() ;
 		
 		// create the layer described by INETADDRESSES
 		protocol = Configurator.createProtocol(addressProps, stack) ;
@@ -147,8 +147,8 @@ public class ProtocolConfigurationTest {
 	 */
 	public void testConfigurableObject() throws Exception {
 
-		Vector<ProtocolConfiguration> protocol_configs = new Vector<ProtocolConfiguration>() ;
-		Vector<Protocol> protocols = new Vector<Protocol>() ;
+		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
+		Vector<Protocol> protocols = new Vector<>() ;
 		
 		// create the layer described by INETADDRESSES
 		protocol = Configurator.createProtocol(configurableObjectsProps, stack) ;
@@ -168,7 +168,7 @@ public class ProtocolConfigurationTest {
 
 	
 	public static class ORDERING extends Protocol {
-		List<String> list = new LinkedList<String>() ;
+		List<String> list = new LinkedList<>() ;
 		
 		@Property(name="a", dependsUpon="b") 
 		public void setA(int a) {
@@ -317,7 +317,7 @@ public class ProtocolConfigurationTest {
 	    }
 	    
 	    protected List<Object> getConfigurableObjects() {
-	        List<Object> retval=new LinkedList<Object>();
+	        List<Object> retval=new LinkedList<>();
 	        if(configObjInstance != null)
 	            retval.add(configObjInstance);
 	        return retval;

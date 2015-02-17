@@ -81,7 +81,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
     protected volatile Address    state_provider;
 
     @GuardedBy("members")
-    protected final List<Address> members=new ArrayList<Address>();
+    protected final List<Address> members=new ArrayList<>();
 
 
     /* Set to true if the FLUSH protocol is detected in the protocol stack */
@@ -103,7 +103,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
     @ManagedAttribute public long   getThreadPoolCompletedTasks() {return thread_pool.getCompletedTaskCount();}
 
     public List<Integer> requiredDownServices() {
-        List<Integer> retval=new ArrayList<Integer>(2);
+        List<Integer> retval=new ArrayList<>(2);
         retval.add(Event.GET_DIGEST);
         retval.add(Event.OVERWRITE_DIGEST);
         return retval;
@@ -128,7 +128,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
     }
 
     public void start() throws Exception {
-        Map<String,Object> map=new HashMap<String,Object>();
+        Map<String,Object> map=new HashMap<>();
         map.put("state_transfer", true);
         map.put("protocol_class", getClass().getName());
         up_prot.up(new Event(Event.CONFIG, map));

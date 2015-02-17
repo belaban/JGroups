@@ -59,7 +59,7 @@ public class NakReceiverWindowTest2 {
     @Test(invocationCount=10)
     public void testConcurrentInsertions() throws BrokenBarrierException, InterruptedException {
         Sender[] senders=new Sender[NUM_THREADS];
-        ConcurrentMap<Long,AtomicInteger> successful_adds=new ConcurrentHashMap<Long,AtomicInteger>();
+        ConcurrentMap<Long,AtomicInteger> successful_adds=new ConcurrentHashMap<>();
         for(int i=1; i <= NUM_MSGS; i++)
             successful_adds.put((long)i, new AtomicInteger(0));
 
@@ -96,7 +96,7 @@ public class NakReceiverWindowTest2 {
     @Test(invocationCount=5)
     public void testConcurrentRandomInsertions() throws BrokenBarrierException, InterruptedException {
         Sender[] senders=new RandomSender[NUM_THREADS];
-        ConcurrentMap<Long,AtomicInteger> successful_adds=new ConcurrentHashMap<Long,AtomicInteger>();
+        ConcurrentMap<Long,AtomicInteger> successful_adds=new ConcurrentHashMap<>();
         for(int i=1; i <= NUM_MSGS; i++)
             successful_adds.put((long)i, new AtomicInteger(0));
 
@@ -133,7 +133,7 @@ public class NakReceiverWindowTest2 {
     @Test(invocationCount=5)
     public void testConcurrentInsertionOfSameSeqno() throws BrokenBarrierException, InterruptedException {
         Sender[] senders=new SameSeqnoSender[NUM_THREADS];
-        ConcurrentMap<Long,AtomicInteger> successful_adds=new ConcurrentHashMap<Long,AtomicInteger>();
+        ConcurrentMap<Long,AtomicInteger> successful_adds=new ConcurrentHashMap<>();
         for(int i=1; i <= NUM_MSGS; i++)
             successful_adds.put((long)i, new AtomicInteger(0));
 
@@ -214,7 +214,7 @@ public class NakReceiverWindowTest2 {
 
         public void run() {
             final List<Long> seqnos;
-            seqnos=new ArrayList<Long>(num);
+            seqnos=new ArrayList<>(num);
             for(long i=1; i <= num; i++)
                 seqnos.add(i);
 

@@ -94,7 +94,7 @@ public class FixedMembershipToken extends AuthToken {
 
     @Property(name = "fixed_members_value")
     public void setMemberList(String list) {
-        memberList = new ArrayList<String>();
+        memberList = new ArrayList<>();
         StringTokenizer memberListTokenizer = new StringTokenizer(list, fixed_members_seperator);
         while (memberListTokenizer.hasMoreTokens()) {
             memberList.add(memberListTokenizer.nextToken().replace('/', ':'));

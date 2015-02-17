@@ -24,10 +24,10 @@ public class Merger {
     private final MergeTask                    merge_task=new MergeTask();
 
     /** For MERGE_REQ/MERGE_RSP correlation, contains MergeData elements */
-    private final ResponseCollector<MergeData> merge_rsps=new ResponseCollector<MergeData>();
+    private final ResponseCollector<MergeData> merge_rsps=new ResponseCollector<>();
 
     /** For GET_DIGEST / DIGEST_RSP correlation */
-    private final ResponseCollector<Digest>    digest_collector=new ResponseCollector<Digest>();
+    private final ResponseCollector<Digest>    digest_collector=new ResponseCollector<>();
 
     /** To serialize access to merge_id */
     private final Lock                         merge_lock=new ReentrantLock();
@@ -35,7 +35,7 @@ public class Merger {
     @GuardedBy("merge_lock")
     private MergeId                            merge_id=null;
 
-    protected final BoundedList<MergeId>       merge_id_history=new BoundedList<MergeId>(20);
+    protected final BoundedList<MergeId>       merge_id_history=new BoundedList<>(20);
 
     @GuardedBy("merge_killer_lock")
     private Future<?>                          merge_killer=null;
@@ -119,7 +119,7 @@ public class Merger {
         log.trace("%s: got merge request from %s, merge_id=%s, mbrs=%s", gms.local_addr, sender, merge_id, mbrs);
 
         // merge the membership of the current view with mbrs
-        List<Address> members=new ArrayList<Address>(mbrs != null? mbrs.size() : 32);
+        List<Address> members=new ArrayList<>(mbrs != null? mbrs.size() : 32);
         if(mbrs != null) // didn't use a set because we didn't want to change the membership order at this time (although not incorrect)
             for(Address mbr: mbrs)
                 if(!members.contains(mbr))
@@ -170,7 +170,7 @@ public class Merger {
 
         // only send to our *current* members, if we have A and B being merged (we are B), then we would *not*
         // want to block on a VIEW_ACK from A because A doesn't see us in the pre-merge view yet and discards the view
-        List<Address> newViewMembers=new ArrayList<Address>(data.view.getMembers());
+        List<Address> newViewMembers=new ArrayList<>(data.view.getMembers());
         newViewMembers.removeAll(gms.members.getMembers());
 
         try {
@@ -225,7 +225,7 @@ public class Merger {
             return;
         for(Map.Entry<Address,View> entry: map.entrySet()) {
             Address key=entry.getKey();
-            List<Address> members=new ArrayList<Address>(entry.getValue().getMembers());
+            List<Address> members=new ArrayList<>(entry.getValue().getMembers());
             boolean modified=false;
             for(Iterator<Address> it=members.iterator(); it.hasNext();) {
                 Address val=it.next();
@@ -354,13 +354,13 @@ public class Merger {
                           gms.local_addr, max_wait_time, current_mbrs);
         }
 
-        List<Address> valid_rsps=new ArrayList<Address>(current_mbrs);
+        List<Address> valid_rsps=new ArrayList<>(current_mbrs);
         valid_rsps.removeAll(digest_collector.getMissing());
 
         Address[] tmp=new Address[valid_rsps.size()];
         valid_rsps.toArray(tmp);
         MutableDigest retval=new MutableDigest(tmp);
-        Map<Address,Digest> responses=new HashMap<Address,Digest>(digest_collector.getResults());
+        Map<Address,Digest> responses=new HashMap<>(digest_collector.getResults());
         for(Digest dig: responses.values())
             retval.set(dig);
         return retval;
@@ -509,7 +509,7 @@ public class Merger {
 
         /** List of all subpartition coordinators and their members */
         protected final ConcurrentMap<Address,Collection<Address>> coords=Util.createConcurrentMap(8, 0.75f, 8);
-        protected final Set<View>                                  subviews=new HashSet<View>();
+        protected final Set<View>                                  subviews=new HashSet<>();
 
 
         /**
@@ -532,7 +532,7 @@ public class Merger {
             for(Address coord: coordinators) {
                 View view=views.get(coord);
                 if(view != null)
-                    this.coords.put(coord, new ArrayList<Address>(view.getMembers()));
+                    this.coords.put(coord, new ArrayList<>(view.getMembers()));
             }
 
             // For the merge participants which are not coordinator, we simply add them, and the associated
@@ -540,7 +540,7 @@ public class Merger {
             Collection<Address> merge_participants=Util.determineMergeParticipants(views);
             merge_participants.removeAll(coordinators);
             for(Address merge_participant: merge_participants) {
-                Collection<Address> tmp=new ArrayList<Address>();
+                Collection<Address> tmp=new ArrayList<>();
                 tmp.add(merge_participant);
                 coords.putIfAbsent(merge_participant, tmp);
             }
@@ -567,7 +567,7 @@ public class Merger {
         public void run() {
             // 1. Generate merge_id
             final MergeId new_merge_id=MergeId.create(gms.local_addr);
-            final Collection<Address> coordsCopy=new ArrayList<Address>(coords.keySet());
+            final Collection<Address> coordsCopy=new ArrayList<>(coords.keySet());
 
             long start=System.currentTimeMillis();
 
@@ -628,8 +628,8 @@ public class Merger {
                 throw new Exception("merge leader rejected merge request");
 
             /* 4. Combine all views and digests into 1 View/1 Digest */
-            List<MergeData> merge_data=new ArrayList<MergeData>(merge_rsps.getResults().values());
-            MergeData combined_merge_data=consolidateMergeData(merge_data, new ArrayList<View>(subviews));
+            List<MergeData> merge_data=new ArrayList<>(merge_rsps.getResults().values());
+            MergeData combined_merge_data=consolidateMergeData(merge_data, new ArrayList<>(subviews));
             if(combined_merge_data == null)
                 throw new Exception("could not consolidate merge");
 
@@ -705,8 +705,8 @@ public class Merger {
          */
         protected MergeData consolidateMergeData(List<MergeData> merge_rsps, List<View> subviews) {
             long                            logical_time=0; // for new_vid
-            Collection<Collection<Address>> sub_mbrships=new ArrayList<Collection<Address>>();
-            Set<Address>                    digest_membership=new HashSet<Address>(); // members as seen by the digests
+            Collection<Collection<Address>> sub_mbrships=new ArrayList<>();
+            Set<Address>                    digest_membership=new HashSet<>(); // members as seen by the digests
 
             for(MergeData tmp_data: merge_rsps) {
                 View tmp_view=tmp_data.getView();
@@ -716,7 +716,7 @@ public class Merger {
                         logical_time=Math.max(logical_time, tmp_vid.getId()); // compute the new view id (max of all vids +1)
 
                     // merge all membership lists into one (prevent duplicates)
-                    sub_mbrships.add(new ArrayList<Address>(tmp_view.getMembers()));
+                    sub_mbrships.add(new ArrayList<>(tmp_view.getMembers()));
                 }
                 Digest digest=tmp_data.getDigest();
                 if(digest != null)
@@ -735,7 +735,7 @@ public class Merger {
             // remove all members from the (future) MergeView that are not in the digest
             // Usually not needed, but a second line of defense in case the membership change policy above
             // computed the new view incorrectly, e.g. not removing dupes
-            Set<Address> all_members=new HashSet<Address>();
+            Set<Address> all_members=new HashSet<>();
             for(Collection<Address> coll: sub_mbrships)
                 all_members.addAll(coll);
             merged_mbrs.retainAll(all_members);

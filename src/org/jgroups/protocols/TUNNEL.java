@@ -55,7 +55,7 @@ public class TUNNEL extends TP {
     * ------------------------------------------------------
     */
 
-   private final List<InetSocketAddress> gossip_router_hosts = new ArrayList<InetSocketAddress>();
+   private final List<InetSocketAddress> gossip_router_hosts = new ArrayList<>();
 
    private TUNNELPolicy tunnel_policy = new DefaultTUNNELPolicy();
 

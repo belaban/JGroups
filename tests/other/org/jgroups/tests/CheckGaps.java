@@ -12,7 +12,7 @@ public class CheckGaps {
 
 
     public static void main(String[] args) {
-        SortedSet<Integer> set=new TreeSet<Integer>();
+        SortedSet<Integer> set=new TreeSet<>();
 
         for(int i=0; i < args.length; i++) {
             set.add(Integer.parseInt(args[i]));
@@ -21,7 +21,7 @@ public class CheckGaps {
         int low=set.first(), high=set.last();
         System.out.println("input has " + set.size() + " numbers, low=" + low + ", high=" + high);
 
-        Set<Integer> correct_set=new HashSet<Integer>();
+        Set<Integer> correct_set=new HashSet<>();
         for(int i=low; i < high; i++) {
             correct_set.add(i);
         }

@@ -43,7 +43,7 @@ public class AsciiStringTest {
         str2=new AsciiString("hello world");
         assert str.hashCode() != str2.hashCode();
 
-        Map<AsciiString,Integer> map=new HashMap<AsciiString,Integer>(5);
+        Map<AsciiString,Integer> map=new HashMap<>(5);
         map.put(new AsciiString("a"), 1);
         assert map.get(new AsciiString("a")) == 1;
 

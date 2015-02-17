@@ -44,7 +44,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    private Executor m_requestProcessors;
    private volatile boolean serverStopping=false;
 
-   private final List<Thread> m_backGroundThreads = new LinkedList<Thread>();  // Collection of all created threads
+   private final List<Thread> m_backGroundThreads = new LinkedList<>();  // Collection of all created threads
 
    private int m_reader_threads = 3;
 
@@ -646,7 +646,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    // ReadHandler has selector to deal with read, it runs in seperated thread
    private static class ReadHandler implements Runnable {
       private final Selector selector= initHandler();
-      private final LinkedBlockingQueue<Object> queue= new LinkedBlockingQueue<Object>();
+      private final LinkedBlockingQueue<Object> queue= new LinkedBlockingQueue<>();
       private final ConnectionTableNIO connectTable;
        private final Log log;
 
@@ -1046,7 +1046,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
     */
    private static class WriteHandler implements Runnable {
       // Create a queue for write requests (unbounded)
-      private final LinkedBlockingQueue<Object> queue= new LinkedBlockingQueue<Object>();
+      private final LinkedBlockingQueue<Object> queue= new LinkedBlockingQueue<>();
 
       private final Selector selector= initSelector();
       private int m_pendingChannels;                 // count of the number of channels that have pending writes
@@ -1270,7 +1270,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    // mapped to a Selector.
    public static class SelectorWriteHandler {
 
-      private final List<WriteRequest> m_writeRequests = new LinkedList<WriteRequest>();  // Collection of writeRequests
+      private final List<WriteRequest> m_writeRequests = new LinkedList<>();  // Collection of writeRequests
       private boolean m_headerSent = false;
       private SocketChannel m_channel;
       private SelectionKey m_key;

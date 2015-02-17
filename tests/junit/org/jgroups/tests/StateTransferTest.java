@@ -41,7 +41,7 @@ public class StateTransferTest extends ChannelTestBase {
 
     @DataProvider(name="createChannels")
     protected Iterator<Class<?>[]> createChannels() {
-        return new ArrayIterator<Class<?>[]>(new Class<?>[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
+        return new ArrayIterator<>(new Class<?>[][]{{STATE_TRANSFER.class}, {STATE.class}, {STATE_SOCK.class}});
     }
 
 
@@ -226,9 +226,9 @@ public class StateTransferTest extends ChannelTestBase {
 
 
     protected class StateTransferApplication extends ReceiverAdapter implements Runnable {
-        protected final Map<String,List<Long>>         map=new HashMap<String,List<Long>>(MSG_SEND_COUNT * APP_COUNT);
+        protected final Map<String,List<Long>>         map=new HashMap<>(MSG_SEND_COUNT * APP_COUNT);
         protected final int                            from, to;
-        protected ConcurrentMap<Address,AtomicInteger> count=new ConcurrentHashMap<Address,AtomicInteger>();
+        protected ConcurrentMap<Address,AtomicInteger> count=new ConcurrentHashMap<>();
         protected final Semaphore                      semaphore;
         protected final JChannel                       channel;
         protected long                                 start_time;

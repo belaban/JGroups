@@ -106,7 +106,7 @@ public class ForwardToCoordFailoverTest extends BMNGRunner {
 
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected final List<Integer> list=new LinkedList<Integer>();
+        protected final List<Integer> list=new LinkedList<>();
         protected final String name;
 
         public MyReceiver(String name) {

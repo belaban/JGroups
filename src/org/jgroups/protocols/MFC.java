@@ -149,7 +149,7 @@ public class MFC extends FlowControl {
     protected void handleViewChange(List<Address> mbrs) {
         super.handleViewChange(mbrs);
 
-        Set<Address> keys=new HashSet<Address>(credits.keys());
+        Set<Address> keys=new HashSet<>(credits.keys());
         for(Address key: keys) {
             if(!mbrs.contains(key))
                 credits.remove(key);

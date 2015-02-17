@@ -39,7 +39,7 @@ public class RouterStubTest {
         RouterStub stub2=new RouterStub("192.168.1.5", 5001, null, null);
         RouterStub stub3=new RouterStub("192.168.1.4", 5000, null, null);
         RouterStub stub4=new RouterStub("192.168.1.5", 5000, null, null);
-        Map<RouterStub,Integer> stubs=new HashMap<RouterStub,Integer>();
+        Map<RouterStub,Integer> stubs=new HashMap<>();
 
         stubs.put(stub1, 1);
         stubs.put(stub2, 2);
@@ -56,7 +56,7 @@ public class RouterStubTest {
 
 
     public void testList() {
-        Set<RouterStub> stubs=new CopyOnWriteArraySet<RouterStub>();
+        Set<RouterStub> stubs=new CopyOnWriteArraySet<>();
         RouterStub stub1=new RouterStub("192.168.1.5", 5000, null, null);
         RouterStub stub2=new RouterStub("192.168.1.5", 5001, null, null);
         RouterStub stub3=new RouterStub("192.168.1.4", 5000, null, null);

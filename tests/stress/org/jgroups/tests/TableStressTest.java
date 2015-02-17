@@ -36,7 +36,7 @@ public class TableStressTest {
             }
         }
 
-        Table<Integer> buf=new Table<Integer>(10000, 10240, 0);
+        Table<Integer> buf=new Table<>(10000, 10240, 0);
 
         final CountDownLatch latch=new CountDownLatch(1);
 

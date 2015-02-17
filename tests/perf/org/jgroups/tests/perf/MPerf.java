@@ -50,11 +50,11 @@ public class MPerf extends ReceiverAdapter {
     /** Maintains stats per sender, will be sent to perf originator when all messages have been received */
     protected final ConcurrentMap<Address,Stats>  received_msgs=Util.createConcurrentMap();
     protected final AtomicLong                    total_received_msgs=new AtomicLong(0);
-    protected final List<Address>                 members=new CopyOnWriteArrayList<Address>();
+    protected final List<Address>                 members=new CopyOnWriteArrayList<>();
     protected final Log                           log=LogFactory.getLog(getClass());
     protected boolean                             looping=true;
     protected long                                last_interval=0;
-    protected final ResponseCollector<Result>     results=new ResponseCollector<Result>();
+    protected final ResponseCollector<Result>     results=new ResponseCollector<>();
 
     // the member which will collect and display the overall results
     protected volatile Address                    result_collector=null;
@@ -420,8 +420,8 @@ public class MPerf extends ReceiverAdapter {
     /** Returns all members if num_senders <= 0, or the members with rank <= num_senders */
     protected List<Address> getSenders() {
         if(num_senders <= 0)
-            return new ArrayList<Address>(members);
-        List<Address> retval=new ArrayList<Address>();
+            return new ArrayList<>(members);
+        List<Address> retval=new ArrayList<>();
         for(int i=0; i < num_senders; i++)
             retval.add(members.get(i));
         return retval;
@@ -628,7 +628,7 @@ public class MPerf extends ReceiverAdapter {
 
 
     protected static class Configuration implements Streamable {
-        protected List<ConfigChange> changes=new ArrayList<ConfigChange>();
+        protected List<ConfigChange> changes=new ArrayList<>();
 
         public Configuration() {
         }

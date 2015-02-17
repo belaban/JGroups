@@ -55,7 +55,7 @@ public class FRAG extends Protocol {
     private final FragmentationList  fragment_list=new FragmentationList();
 
     private AtomicInteger            curr_id=new AtomicInteger(1);
-    private final List<Address>      members=new ArrayList<Address>(11);
+    private final List<Address>      members=new ArrayList<>(11);
     
     
  
@@ -80,7 +80,7 @@ public class FRAG extends Protocol {
 
     public void init() throws Exception {
         super.init();
-        Map<String,Object> info=new HashMap<String,Object>(1);
+        Map<String,Object> info=new HashMap<>(1);
         info.put("frag_size", frag_size);
         down_prot.down(new Event(Event.CONFIG, info));
     }
@@ -285,7 +285,7 @@ public class FRAG extends Protocol {
          * 11 is the best growth capacity to start with<br/>
          * HashMap<Address,FragmentationTable>
          */
-        private final HashMap<Address,FragmentationTable> frag_tables=new HashMap<Address,FragmentationTable>(11);
+        private final HashMap<Address,FragmentationTable> frag_tables=new HashMap<>(11);
 
 
         /**
@@ -388,7 +388,7 @@ public class FRAG extends Protocol {
     static class FragmentationTable {
         private final Address sender;
         /* the hashtable that holds the fragmentation entries for this sender*/
-        private final Map<Long,FragEntry> table=new HashMap<Long,FragEntry>(11);  // keys: frag_ids, vals: Entrys
+        private final Map<Long,FragEntry> table=new HashMap<>(11);  // keys: frag_ids, vals: Entrys
 
 
         FragmentationTable(Address sender) {

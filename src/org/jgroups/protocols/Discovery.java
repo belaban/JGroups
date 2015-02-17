@@ -107,13 +107,13 @@ public abstract class Discovery extends Protocol {
     protected volatile boolean           is_leaving=false;
     protected TimeScheduler              timer;
     protected View                       view;
-    protected final List<Address>        members=new ArrayList<Address>(11);
+    protected final List<Address>        members=new ArrayList<>(11);
     @ManagedAttribute(description="Whether this member is the current coordinator")
     protected boolean                    is_coord=false;
     protected Address                    local_addr=null;
     protected Address                    current_coord;
     protected String                     cluster_name;
-    protected final Map<Long,Responses>  ping_responses=new HashMap<Long,Responses>();
+    protected final Map<Long,Responses>  ping_responses=new HashMap<>();
     @ManagedAttribute(description="Whether the transport supports multicasting")
     protected boolean                    transport_supports_multicasting=true;
     protected static final byte[]        WHITESPACE=" \t".getBytes();
@@ -188,7 +188,7 @@ public abstract class Discovery extends Protocol {
     public void sendCacheInformation() {
         List<Address> current_members=null;
         synchronized(members) {
-            current_members=new ArrayList<Address>(members);
+            current_members=new ArrayList<>(members);
         }
         disseminateDiscoveryInformation(current_members, null, current_members);
     }
@@ -270,7 +270,7 @@ public abstract class Discovery extends Protocol {
         Map<Address,PhysicalAddress> cache_contents=
           (Map<Address,PhysicalAddress>)down_prot.down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS, false));
 
-        List<PingData> list=new ArrayList<PingData>(cache_contents.size());
+        List<PingData> list=new ArrayList<>(cache_contents.size());
         for(Map.Entry<Address,PhysicalAddress> entry: cache_contents.entrySet()) {
             Address         addr=entry.getKey();
             PhysicalAddress phys_addr=entry.getValue();
@@ -399,7 +399,7 @@ public abstract class Discovery extends Protocol {
                 if(send_cache_on_join && !isDynamic() && is_coord) {
                     List<Address> curr_mbrs, left_mbrs, new_mbrs;
                     synchronized(members) {
-                        curr_mbrs=new ArrayList<Address>(members);
+                        curr_mbrs=new ArrayList<>(members);
                         left_mbrs=old_view != null? Util.leftMembers(old_view.getMembers(), members) : null;
                         new_mbrs=old_view != null? Util.newMembers(old_view.getMembers(), members) : null;
                     }
@@ -465,7 +465,7 @@ public abstract class Discovery extends Protocol {
                     boolean is_coordinator=coord_str.trim().equals("T") || coord_str.trim().equals("t");
 
                     if(retval == null)
-                        retval=new ArrayList<PingData>();
+                        retval=new ArrayList<>();
                     retval.add(new PingData(uuid, true, name_str, phys_addr).coord(is_coordinator));
                 }
                 catch(Throwable t) {
@@ -526,7 +526,7 @@ public abstract class Discovery extends Protocol {
         if(logical_name != null)
             UUID.add(mbr, logical_name);
         if(physical_addr != null)
-            return (Boolean)down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(mbr, physical_addr)));
+            return (Boolean)down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<>(mbr, physical_addr)));
         return false;
     }
 

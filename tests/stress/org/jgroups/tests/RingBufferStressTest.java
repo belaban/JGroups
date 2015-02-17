@@ -34,7 +34,7 @@ public class RingBufferStressTest {
             }
         }
 
-        RingBuffer<Message> buf=new RingBuffer<Message>(NUM_MSGS, 0);
+        RingBuffer<Message> buf=new RingBuffer<>(NUM_MSGS, 0);
 
         final CountDownLatch latch=new CountDownLatch(1);
 

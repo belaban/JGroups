@@ -25,7 +25,7 @@ import static org.testng.AssertJUnit.assertTrue;
 @Test(groups = Global.FUNCTIONAL, singleThreaded = true)
 public class TOATest {
 
-    private final List<TOANode> registeredToaNodes = new ArrayList<TOANode>(4);
+    private final List<TOANode> registeredToaNodes = new ArrayList<>(4);
 
     @AfterMethod(alwaysRun = true)
     public void closeAndDisconnect() {
@@ -151,7 +151,7 @@ public class TOATest {
         final ExecutorService executor = Executors.newFixedThreadPool(numberOfMembers);
         final CyclicBarrier barrier = new CyclicBarrier(numberOfMembers);
         final CountDownLatch shutdown = new CountDownLatch(numberOfMembers);
-        final Map<Address, AtomicInteger> perAddressCounter = new ConcurrentHashMap<Address, AtomicInteger>();
+        final Map<Address, AtomicInteger> perAddressCounter = new ConcurrentHashMap<>();
         boolean first = true;
         for (TOANode node : registeredToaNodes) {
             if (first) {
@@ -214,7 +214,7 @@ public class TOATest {
             AtomicInteger singleMessages = perAddressCounter.get(node.localAddress());
             node.waitMessages(totalMessages + (singleMessages == null ? 0 : singleMessages.get()), 30, TimeUnit.SECONDS);
         }
-        Map<Address, AtomicInteger> perAddressCounter2 = new ConcurrentHashMap<Address, AtomicInteger>();
+        Map<Address, AtomicInteger> perAddressCounter2 = new ConcurrentHashMap<>();
         for (int i = 0; i < totalMessages; ++i) {
             Iterator<TOANode> iterator = registeredToaNodes.iterator();
             TOANode firstNode = iterator.next();
@@ -359,7 +359,7 @@ public class TOATest {
             }
             this.channel = channel;
             this.channel.setReceiver(this);
-            this.messages = new ArrayList<String>();
+            this.messages = new ArrayList<>();
         }
 
         public void start(String clusterName) throws Exception {
@@ -405,7 +405,7 @@ public class TOATest {
         }
 
         public void waitAllMembers(Collection<TOANode> members, int timeout, TimeUnit timeUnit) throws InterruptedException {
-            List<Address> addresses = new ArrayList<Address>(members.size());
+            List<Address> addresses = new ArrayList<>(members.size());
             for (TOANode member : members) {
                 addresses.add(member.localAddress());
             }

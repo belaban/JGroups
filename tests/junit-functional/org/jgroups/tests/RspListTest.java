@@ -48,7 +48,7 @@ public class RspListTest {
 
 
     public void testConstructor() {
-        Collection<Rsp> c=new LinkedList<Rsp>();
+        Collection<Rsp> c=new LinkedList<>();
         c.add(rsp1); c.add(rsp2); c.add(rsp3);
         RspList tmp=new RspList(c);
         Assert.assertEquals(c.size(), tmp.size());
@@ -175,7 +175,7 @@ public class RspListTest {
 
 
     public void testElementAt() {
-        Set<Address> s=new HashSet<Address>();
+        Set<Address> s=new HashSet<>();
         s.addAll(rl.keySet());
         System.out.println("-- set is " + s);
         Assert.assertEquals(rl.size(), s.size());

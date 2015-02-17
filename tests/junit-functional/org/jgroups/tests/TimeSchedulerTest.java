@@ -42,7 +42,7 @@ public class TimeSchedulerTest {
     @Test(dataProvider="createTimer")
     public void testExecute(TimeScheduler timer) {
         try {
-            Promise<Boolean> promise=new Promise<Boolean>();
+            Promise<Boolean> promise=new Promise<>();
             long start=System.currentTimeMillis();
             timer.execute(new ImmediateTask(promise));
             promise.getResult(2000);
@@ -442,7 +442,7 @@ public class TimeSchedulerTest {
     @Test(dataProvider="createTimer")
     public void testImmediateExecution(TimeScheduler timer) throws InterruptedException {
         try {
-            Promise<Boolean> p=new Promise<Boolean>();
+            Promise<Boolean> p=new Promise<>();
             ImmediateTask task=new ImmediateTask(p);
             timer.execute(task);
             try {
@@ -513,7 +513,7 @@ public class TimeSchedulerTest {
     public void testRetransmits(TimeScheduler timer) throws InterruptedException {
         Entry entry;
         int num_non_correct_entries=0;
-        Map<Long,Entry> msgs=new ConcurrentHashMap<Long,Entry>(); // keys=seqnos (Long), values=Entries
+        Map<Long,Entry> msgs=new ConcurrentHashMap<>(); // keys=seqnos (Long), values=Entries
 
         try {
             // 1. Add NUM_MSGS messages:
@@ -555,7 +555,7 @@ public class TimeSchedulerTest {
      */
     @Test(dataProvider="createTimer")
     public void testTasksPreemptingEachOther(TimeScheduler timer) {
-        final List<Integer> results=new ArrayList<Integer>(3);
+        final List<Integer> results=new ArrayList<>(3);
 
         long execution_time=4000;
         final long base=System.currentTimeMillis();
@@ -736,7 +736,7 @@ public class TimeSchedulerTest {
 
     static class RepeatingTask extends OneTimeTask {
         int num=0;
-        List<Long> execution_times=new LinkedList<Long>();
+        List<Long> execution_times=new LinkedList<>();
         private long base=0;
 
         RepeatingTask(long timeout) {

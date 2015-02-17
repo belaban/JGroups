@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Test(groups={Global.FUNCTIONAL,Global.EAP_EXCLUDED}, singleThreaded=true)
 public class ExecutingServiceTest2 {
 
-    Set<Thread> threads=new HashSet<Thread>();
-    Set<Channel> channels=new HashSet<Channel>();
+    Set<Thread> threads=new HashSet<>();
+    Set<Channel> channels=new HashSet<>();
 
     @AfterMethod
     public void tearDown() {

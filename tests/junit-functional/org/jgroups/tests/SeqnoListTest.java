@@ -130,7 +130,7 @@ public class SeqnoListTest {
     protected static void _testIteration(SeqnoList list, List<Long> expected) {
         System.out.println("list = " + list);
         assert list.size() == expected.size();
-        List<Long> actual=new ArrayList<Long>(expected.size());
+        List<Long> actual=new ArrayList<>(expected.size());
         for(long i: list)
             actual.add(i);
         System.out.println("expected=" + expected + "\nactual:  " + actual);

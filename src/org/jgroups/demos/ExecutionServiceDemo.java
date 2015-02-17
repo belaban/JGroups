@@ -39,7 +39,7 @@ public class ExecutionServiceDemo {
     public ExecutionServiceDemo(String props, String name, int size) {
         this.props=props;
         this.name=name;
-        queue=new ArrayDeque<Future<?>>();
+        queue=new ArrayDeque<>();
         executor = Executors.newCachedThreadPool(new ThreadFactory() {
             
             @Override
@@ -242,7 +242,7 @@ public class ExecutionServiceDemo {
                         Arrays.toString(numbers));
                 
                 ExecutionCompletionService<ByteBufferStreamable> completion = 
-                    new ExecutionCompletionService<ByteBufferStreamable>(execution_service);
+                    new ExecutionCompletionService<>(execution_service);
                 
                 long beginDistributed = System.nanoTime();
                 int chunks = numbers.length / size;

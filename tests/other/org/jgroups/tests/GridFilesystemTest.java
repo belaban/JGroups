@@ -15,7 +15,7 @@ import java.util.Map;
  * todo: recursive up and down
  */
 public class GridFilesystemTest {
-    static final Map<String,Command> commands=new HashMap<String,Command>();
+    static final Map<String,Command> commands=new HashMap<>();
     static String current_dir="/";
     static final String HOME=System.getProperty("user.home");
 
@@ -64,8 +64,8 @@ public class GridFilesystemTest {
             return;
         }
 
-        ReplCache<String,byte[]> data=new ReplCache<String,byte[]>(props, cluster_name);
-        ReplCache<String, GridFile.Metadata> metadata=new ReplCache<String, GridFile.Metadata>(props, metadata_cluster_name);
+        ReplCache<String,byte[]> data=new ReplCache<>(props, cluster_name);
+        ReplCache<String, GridFile.Metadata> metadata=new ReplCache<>(props, metadata_cluster_name);
         data.start();
         metadata.start();
 

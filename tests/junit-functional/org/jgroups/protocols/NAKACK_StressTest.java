@@ -49,7 +49,7 @@ public class NAKACK_StressTest {
         final AtomicInteger delivered_msgs=new AtomicInteger(0);
         final Lock lock=new ReentrantLock();
         final Condition all_msgs_delivered=lock.newCondition();
-        final ConcurrentLinkedQueue<Long> delivered_msg_list=new ConcurrentLinkedQueue<Long>();
+        final ConcurrentLinkedQueue<Long> delivered_msg_list=new ConcurrentLinkedQueue<>();
         final Address local_addr=Util.createRandomAddress("A");
         final Address sender=Util.createRandomAddress("B");
 
@@ -144,7 +144,7 @@ public class NAKACK_StressTest {
 
         nak.stop();
 
-        List<Long> results=new ArrayList<Long>(delivered_msg_list);
+        List<Long> results=new ArrayList<>(delivered_msg_list);
 
         if(oob)
             Collections.sort(results);

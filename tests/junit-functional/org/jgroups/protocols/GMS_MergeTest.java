@@ -531,7 +531,7 @@ public class GMS_MergeTest {
 
     private static void createPartitions(JChannel[] channels, String[]... partitions) throws Exception {
         checkUniqueness(partitions);
-        List<View> views=new ArrayList<View>(partitions.length);
+        List<View> views=new ArrayList<>(partitions.length);
         for(String[] partition: partitions) {
             View view=createView(partition, channels);
             views.add(view);
@@ -545,7 +545,7 @@ public class GMS_MergeTest {
     }
 
     private static void injectMergeEvent(JChannel[] channels, Address leader_addr, String ... coordinators) {
-        Map<Address,View> views=new HashMap<Address,View>();
+        Map<Address,View> views=new HashMap<>();
         for(String tmp: coordinators) {
             Address coord=findAddress(tmp, channels);
             views.put(coord, findView(tmp, channels));
@@ -573,7 +573,7 @@ public class GMS_MergeTest {
     }
 
     private static void checkUniqueness(String[] ... partitions) throws Exception {
-        Set<String> set=new HashSet<String>();
+        Set<String> set=new HashSet<>();
         for(String[] partition: partitions) {
             for(String tmp: partition) {
                 if(!set.add(tmp))
@@ -590,7 +590,7 @@ public class GMS_MergeTest {
     }
 
     private static View createView(String[] partition, JChannel[] channels) throws Exception {
-        List<Address> members=new ArrayList<Address>(partition.length);
+        List<Address> members=new ArrayList<>(partition.length);
         for(String tmp: partition) {
             Address addr=findAddress(tmp, channels);
             if(addr == null)

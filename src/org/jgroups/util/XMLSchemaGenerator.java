@@ -113,7 +113,7 @@ public class XMLSchemaGenerator {
     private static Set<Class<?>> getClasses(Class<?> assignableFrom, String packageName)
       throws IOException, ClassNotFoundException {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        Set<Class<?>> classes = new HashSet<Class<?>>();
+        Set<Class<?>> classes = new HashSet<>();
         String path = packageName.replace('.', '/');
         URL resource = loader.getResource(path);
         if (resource != null) {
@@ -198,7 +198,7 @@ public class XMLSchemaGenerator {
         if(xml_attr != null) {
             String[] attrs=xml_attr.attrs();
             if(attrs != null && attrs.length > 0) {
-                Set<String> set=new HashSet<String>(Arrays.asList(attrs)); // to weed out dupes
+                Set<String> set=new HashSet<>(Arrays.asList(attrs)); // to weed out dupes
                 for(String attr: set) {
                     Element attributeElement = xmldoc.createElement("xs:attribute");
                     attributeElement.setAttribute("name", attr);

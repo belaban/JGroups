@@ -21,7 +21,7 @@ public class ResponseCollectorTest {
 
 
     public static void testAdd() {
-        ResponseCollector<Integer> coll=new ResponseCollector<Integer>(a, b, c);
+        ResponseCollector<Integer> coll=new ResponseCollector<>(a, b, c);
         coll.add(a, 1);
         System.out.println("coll = " + coll);
         assert coll.size() == 3;
@@ -34,7 +34,7 @@ public class ResponseCollectorTest {
     }
 
     public static void testAddNonExistentKeys() {
-        ResponseCollector<Integer> coll=new ResponseCollector<Integer>(a, b);
+        ResponseCollector<Integer> coll=new ResponseCollector<>(a, b);
         coll.add(a, 1);
         System.out.println("coll = " + coll);
         assert coll.size() == 2;
@@ -48,7 +48,7 @@ public class ResponseCollectorTest {
 
 
     public static void testWaitForAllResponses() {
-        final ResponseCollector<Integer> coll=new ResponseCollector<Integer>(a, b, c);
+        final ResponseCollector<Integer> coll=new ResponseCollector<>(a, b, c);
         boolean rc=coll.waitForAllResponses(500);
         assert !rc;
 
@@ -68,7 +68,7 @@ public class ResponseCollectorTest {
     }
 
     public static void testWaitForAllResponsesAndTimeout() {
-        final ResponseCollector<Integer> coll=new ResponseCollector<Integer>(a, b, c);
+        final ResponseCollector<Integer> coll=new ResponseCollector<>(a, b, c);
 
         new Thread() {
             public void run() {
@@ -87,7 +87,7 @@ public class ResponseCollectorTest {
     }
 
     public static void testWaitForAllResponsesAndReset() {
-        final ResponseCollector<Integer> coll=new ResponseCollector<Integer>(a, b, c);
+        final ResponseCollector<Integer> coll=new ResponseCollector<>(a, b, c);
 
         new Thread() {
             public void run() {
@@ -105,7 +105,7 @@ public class ResponseCollectorTest {
 
 
     public static void testWaitForAllResponsesAndGetResults() throws InterruptedException {
-        final ResponseCollector<Integer> coll=new ResponseCollector<Integer>(a, b, c);
+        final ResponseCollector<Integer> coll=new ResponseCollector<>(a, b, c);
 
         coll.add(a, 1); coll.add(b, 2); coll.add(c, 3);
         Map<Address, Integer> results=coll.getResults();

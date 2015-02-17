@@ -36,8 +36,8 @@ public class StatsCollector {
     private EnumMap<Duration, AtomicLong> durations;
 
     public StatsCollector() {
-        counters = new EnumMap<Counter, AtomicInteger>(Counter.class);
-        durations = new EnumMap<Duration, AtomicLong>(Duration.class);
+        counters = new EnumMap<>(Counter.class);
+        durations = new EnumMap<>(Duration.class);
 
         for (Counter counter : Counter.values()) {
             counters.put(counter, new AtomicInteger(0));

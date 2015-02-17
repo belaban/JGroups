@@ -28,7 +28,7 @@ public class ParseMessages {
     }
 
     public List<Message> parse() {
-        List<Message>   retval=new ArrayList<Message>();
+        List<Message>   retval=new ArrayList<>();
         DataInputStream dis=null;
         try {
             dis=new DataInputStream(input);

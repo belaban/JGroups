@@ -125,7 +125,7 @@ public class Deadlock2Test extends ChannelTestBase {
         obj2.setRpcDispatcher(disp2);
         c2.connect(name);
 
-        Vector<Address> dests=new Vector<Address>();
+        Vector<Address> dests=new Vector<>();
         dests.add(c1.getAddress());
         dests.add(c2.getAddress());
 

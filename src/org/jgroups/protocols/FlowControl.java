@@ -162,7 +162,7 @@ public abstract class FlowControl extends Protocol {
         Long prev_key=null, prev_val=null;
         List<String> vals=Util.parseCommaDelimitedStrings(str);
         if(max_block_times == null)
-            max_block_times=new TreeMap<Long,Long>();
+            max_block_times=new TreeMap<>();
         for(String tmp: vals) {
             int index=tmp.indexOf(':');
             if(index == -1)

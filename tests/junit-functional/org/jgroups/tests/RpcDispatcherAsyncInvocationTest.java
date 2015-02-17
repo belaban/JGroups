@@ -86,7 +86,7 @@ public class RpcDispatcherAsyncInvocationTest {
         if(use_oob)
             opts.setFlags(Message.Flag.OOB);
 
-        final List<Integer> results=new ArrayList<Integer>(num_invocations);
+        final List<Integer> results=new ArrayList<>(num_invocations);
 
         FutureListener<Integer> listener=new FutureListener<Integer>() {
             public void futureDone(Future<Integer> future) {

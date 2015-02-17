@@ -59,21 +59,21 @@ public class DuplicateTest extends ChannelTestBase {
     public void testRegularUnicastsToSelf() throws Exception {
         send(a, a.getAddress(), false, 10);
         sendStableMessages(a,b, c);
-        check(r1, 1, false, new Tuple<Address,Integer>(a1, 10));
+        check(r1, 1, false, new Tuple<>(a1, 10));
     }
 
     public void testOOBUnicastsToSelf() throws Exception {
         send(a, a.getAddress(), true, 10);
         sendStableMessages(a,b,c);
-        check(r1, 1, true, new Tuple<Address,Integer>(a1, 10));
+        check(r1, 1, true, new Tuple<>(a1, 10));
     }
 
     public void testRegularUnicastsToOthers() throws Exception {
         send(a, b.getAddress(), false, 10);
         send(a, c.getAddress(), false, 10);
         sendStableMessages(a,b,c);
-        check(r2, 1, false, new Tuple<Address,Integer>(a1, 10));
-        check(r3, 1, false, new Tuple<Address,Integer>(a1, 10));
+        check(r2, 1, false, new Tuple<>(a1, 10));
+        check(r3, 1, false, new Tuple<>(a1, 10));
     }
 
     @Test(invocationCount=10)
@@ -81,26 +81,26 @@ public class DuplicateTest extends ChannelTestBase {
         send(a, b.getAddress(), true, 10);
         send(a, c.getAddress(), true, 10);
         sendStableMessages(a,b,c);
-        check(r2, 1, true, new Tuple<Address,Integer>(a1, 10));
-        check(r3, 1, true, new Tuple<Address,Integer>(a1, 10));
+        check(r2, 1, true, new Tuple<>(a1, 10));
+        check(r3, 1, true, new Tuple<>(a1, 10));
     }
 
 
     public void testRegularMulticastToAll() throws Exception {
         send(a, null /** multicast */, false, 10);
         sendStableMessages(a,b,c);
-        check(r1, 1, false, new Tuple<Address,Integer>(a1, 10));
-        check(r2, 1, false, new Tuple<Address,Integer>(a1, 10));
-        check(r3, 1, false, new Tuple<Address,Integer>(a1, 10));
+        check(r1, 1, false, new Tuple<>(a1, 10));
+        check(r2, 1, false, new Tuple<>(a1, 10));
+        check(r3, 1, false, new Tuple<>(a1, 10));
     }
 
 
     public void testOOBMulticastToAll() throws Exception {
         send(a, null /** multicast */, true, 10);
         sendStableMessages(a,b,c);
-        check(r1,1,true,new Tuple<Address,Integer>(a1,10));
-        check(r2, 1, true, new Tuple<Address,Integer>(a1, 10));
-        check(r3, 1, true, new Tuple<Address,Integer>(a1, 10));
+        check(r1,1,true,new Tuple<>(a1,10));
+        check(r2, 1, true, new Tuple<>(a1, 10));
+        check(r3, 1, true, new Tuple<>(a1, 10));
     }
 
 
@@ -109,9 +109,9 @@ public class DuplicateTest extends ChannelTestBase {
         send(b, null /** multicast */, false, 10);
         send(c, null /** multicast */, false, 10);
         sendStableMessages(a,b,c);
-        check(r1, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-        check(r2, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-        check(r3, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r1, 3, false, new Tuple<>(a1, 10), new Tuple<>(a2, 10), new Tuple<>(a3, 10));
+        check(r2, 3, false, new Tuple<>(a1, 10), new Tuple<>(a2, 10), new Tuple<>(a3, 10));
+        check(r3, 3, false, new Tuple<>(a1, 10), new Tuple<>(a2, 10), new Tuple<>(a3, 10));
     }
 
     @Test(invocationCount=5)
@@ -120,9 +120,9 @@ public class DuplicateTest extends ChannelTestBase {
         send(b, null /** multicast */, true, 10);
         send(c, null /** multicast */, true, 10);
         sendStableMessages(a,b,c);
-        check(r1, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-        check(r2, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-        check(r3, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r1, 3, true, new Tuple<>(a1, 10), new Tuple<>(a2, 10), new Tuple<>(a3, 10));
+        check(r2, 3, true, new Tuple<>(a1, 10), new Tuple<>(a2, 10), new Tuple<>(a3, 10));
+        check(r3, 3, true, new Tuple<>(a1, 10), new Tuple<>(a2, 10), new Tuple<>(a3, 10));
     }
 
     public void testMixedMulticastsToAll3Members() throws Exception {
@@ -130,9 +130,9 @@ public class DuplicateTest extends ChannelTestBase {
         send(b, null /** multicast */, false, true, 10);
         send(c, null /** multicast */, false, true, 10);
         sendStableMessages(a,b,c);
-        check(r1, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-        check(r2, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-        check(r3, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r1, 3, true, new Tuple<>(a1, 10), new Tuple<>(a2, 10), new Tuple<>(a3, 10));
+        check(r2, 3, true, new Tuple<>(a1, 10), new Tuple<>(a2, 10), new Tuple<>(a3, 10));
+        check(r3, 3, true, new Tuple<>(a1, 10), new Tuple<>(a2, 10), new Tuple<>(a3, 10));
     }
 
 
@@ -256,7 +256,7 @@ public class DuplicateTest extends ChannelTestBase {
 
     private static class MyReceiver extends ReceiverAdapter {
         final String name;
-        private final ConcurrentMap<Address, Collection<Long>> msgs=new ConcurrentHashMap<Address,Collection<Long>>();
+        private final ConcurrentMap<Address, Collection<Long>> msgs=new ConcurrentHashMap<>();
 
         public MyReceiver(String name) {
             this.name=name;
@@ -276,7 +276,7 @@ public class DuplicateTest extends ChannelTestBase {
 
             Collection<Long> list=msgs.get(addr);
             if(list == null) {
-                list=new ConcurrentLinkedQueue<Long>();
+                list=new ConcurrentLinkedQueue<>();
                 Collection<Long> tmp=msgs.putIfAbsent(addr, list);
                 if(tmp != null)
                     list=tmp;

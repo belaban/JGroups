@@ -131,8 +131,8 @@ public class ReconciliationTest {
 
         // create channels and setup receivers
         int channelCount=names.length;
-        channels=new ArrayList<JChannel>(names.length);
-        receivers=new ArrayList<MyReceiver>(names.length);
+        channels=new ArrayList<>(names.length);
+        receivers=new ArrayList<>(names.length);
         for(int i=0;i < channelCount;i++) {
             JChannel channel=createChannel(names[i]);
             modifyNAKACK(channel);
@@ -268,7 +268,7 @@ public class ReconciliationTest {
     }
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected final Map<Address,List<Integer>> msgs=new HashMap<Address,List<Integer>>(10);
+        protected final Map<Address,List<Integer>> msgs=new HashMap<>(10);
         protected final Channel channel;
         protected final String  name;
 
@@ -283,7 +283,7 @@ public class ReconciliationTest {
         public void receive(Message msg) {
             List<Integer> list=msgs.get(msg.getSrc());
             if(list == null) {
-                list=new ArrayList<Integer>();
+                list=new ArrayList<>();
                 msgs.put(msg.getSrc(), list);
             }
             list.add((Integer)msg.getObject());
@@ -344,7 +344,7 @@ public class ReconciliationTest {
         protected String                   name;
 
         public Cache(Channel ch,String name) {
-            this.data=new HashMap<Object,Object>();
+            this.data=new HashMap<>();
             this.ch=ch;
             this.name=name;
             this.ch.setReceiver(this);
@@ -391,7 +391,7 @@ public class ReconciliationTest {
 
         public String toString() {
             synchronized(data) {
-                TreeMap<Object,Object> map=new TreeMap<Object,Object>(data);
+                TreeMap<Object,Object> map=new TreeMap<>(data);
                 return map.keySet().toString();
             }
         }

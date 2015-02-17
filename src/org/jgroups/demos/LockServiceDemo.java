@@ -147,7 +147,7 @@ public class LockServiceDemo implements LockNotification {
     }
 
     protected static List<String> parseLockNames(String line) {
-        List<String> lock_names=new ArrayList<String>();
+        List<String> lock_names=new ArrayList<>();
         if(line == null || line.isEmpty())
             return lock_names;
         StringTokenizer tokenizer=new StringTokenizer(line);

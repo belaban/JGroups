@@ -23,7 +23,7 @@ public class AgeOutCacheTest {
 
     @Test(dataProvider="timerCreator")
     public void testExpiration(TimeScheduler timer) {
-        AgeOutCache<Integer> cache=new AgeOutCache<Integer>(timer, 2000L,
+        AgeOutCache<Integer> cache=new AgeOutCache<>(timer, 2000L,
                                                             new AgeOutCache.Handler<Integer>() {
                                                                 public void expired(Integer key) {
                                                                     System.out.println(key + " expired");
@@ -49,7 +49,7 @@ public class AgeOutCacheTest {
 
     @Test(dataProvider="timerCreator")
     public void testRemoveAndExpiration(TimeScheduler timer) {
-        AgeOutCache<Integer> cache = new AgeOutCache<Integer>(timer, 2000L);
+        AgeOutCache<Integer> cache = new AgeOutCache<>(timer, 2000L);
         for (int i = 1; i <= 5; i++)
             cache.add(i);
         System.out.println("cache:\n" + cache);
@@ -84,7 +84,7 @@ public class AgeOutCacheTest {
 
     @Test(dataProvider="timerCreator")
     public void testContains(TimeScheduler timer) {
-        AgeOutCache<Integer> cache = new AgeOutCache<Integer>(timer, 5000L);
+        AgeOutCache<Integer> cache = new AgeOutCache<>(timer, 5000L);
         for (int i = 1; i <= 5; i++)
             cache.add(i);
         System.out.println("cache:\n" + cache);
@@ -101,7 +101,7 @@ public class AgeOutCacheTest {
 
     @Test(dataProvider="timerCreator")
     public void testGradualExpiration(TimeScheduler timer) {
-        AgeOutCache<Integer> cache = new AgeOutCache<Integer>(timer, 5000L,
+        AgeOutCache<Integer> cache = new AgeOutCache<>(timer, 5000L,
                                                               new AgeOutCache.Handler<Integer>() {
                                                                   public void expired(Integer key) {
                                                                       System.out.println(key + " expired");

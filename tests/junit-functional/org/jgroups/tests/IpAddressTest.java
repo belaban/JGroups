@@ -99,12 +99,12 @@ public class IpAddressTest {
         Assert.assertEquals(x1, x2);
         Assert.assertEquals(x3, x1);
 
-        Set<Address> s=new HashSet<Address>();
+        Set<Address> s=new HashSet<>();
         Collections.addAll(s, x1, x2, x3);
         System.out.println("s=" + s);
         Assert.assertEquals(1, s.size());
 
-        Map<Address,String> m=new HashMap<Address,String>();
+        Map<Address,String> m=new HashMap<>();
         m.put(x1, "Bela");
         m.put(x2, "Michelle");
         m.put(x3, "Nicole");

@@ -17,7 +17,7 @@ public class CreditMap {
     protected final long              max_credits;
 
     @GuardedBy("lock")
-    protected final Map<Address,Long> credits=new HashMap<Address,Long>();
+    protected final Map<Address,Long> credits=new HashMap<>();
     protected long                    min_credits;
     protected long                    accumulated_credits;
     protected final Lock              lock=new ReentrantLock();
@@ -87,7 +87,7 @@ public class CreditMap {
 
 
     public List<Address> getMembersWithInsufficientCredits(long credit_needed) {
-        List<Address> retval=new LinkedList<Address>();
+        List<Address> retval=new LinkedList<>();
 
         lock.lock();
         try {
@@ -107,14 +107,14 @@ public class CreditMap {
 
 
     public List<Tuple<Address,Long>> getMembersWithCreditsLessThan(long min_credits) {
-        List<Tuple<Address,Long>> retval=new LinkedList<Tuple<Address,Long>>();
+        List<Tuple<Address,Long>> retval=new LinkedList<>();
 
         lock.lock();
         try {
             flushAccumulatedCredits();
             for(Map.Entry<Address,Long> entry: credits.entrySet()) {
                 if(entry.getValue() <= min_credits )
-                    retval.add(new Tuple<Address,Long>(entry.getKey(), entry.getValue()));
+                    retval.add(new Tuple<>(entry.getKey(), entry.getValue()));
             }
             return retval;
         }

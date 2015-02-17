@@ -21,7 +21,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
     protected final ThreadPoolExecutor                pool;
 
     /** DelayQueue with tasks being sorted according to execution times (next execution first) */
-    protected final BlockingQueue<Task>               queue=new DelayQueue<Task>();
+    protected final BlockingQueue<Task>               queue=new DelayQueue<>();
 
     /** Thread which removes tasks ready to be executed from the queue and submits them to the pool for execution */
     protected volatile Thread                         runner;

@@ -179,7 +179,7 @@ public class SequencerFailoverTest extends BMNGRunner {
 
         // check that the first messages (11, 21, 31, 41, 51) are in the first half of both lists
         List<Integer> expected_list=Arrays.asList(11, 21, 31, 41, 51);
-        List<Integer> list_bb=new ArrayList<Integer>();
+        List<Integer> list_bb=new ArrayList<>();
         for(int i=0; i < num_senders; i++)
             list_bb.add(list_b.get(i));
 
@@ -188,7 +188,7 @@ public class SequencerFailoverTest extends BMNGRunner {
         System.out.println("Expected first half: " + expected_list + ", received: " + list_bb);
         assert expected_list.equals(list_bb);
 
-        List<Integer> list_cc=new ArrayList<Integer>();
+        List<Integer> list_cc=new ArrayList<>();
         for(int i=0; i < num_senders; i++)
             list_cc.add(list_c.get(i));
 
@@ -275,7 +275,7 @@ public class SequencerFailoverTest extends BMNGRunner {
 
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected final List<Integer> list=new LinkedList<Integer>();
+        protected final List<Integer> list=new LinkedList<>();
         protected final String name;
 
         public MyReceiver(String name) {

@@ -59,7 +59,7 @@ public class AnycastAddress implements Address {
 
     private void initCollection(int estimatedSize) {
         if (destinations == null) {
-            destinations = new ArrayList<Address>(estimatedSize);
+            destinations = new ArrayList<>(estimatedSize);
         }
     }
 

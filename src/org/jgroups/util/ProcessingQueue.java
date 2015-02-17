@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since  3.5
  */
 public class ProcessingQueue<T> {
-    protected final java.util.Queue<T>  queue=new ConcurrentLinkedQueue<T>();
+    protected final java.util.Queue<T>  queue=new ConcurrentLinkedQueue<>();
     protected final ReentrantLock       producer_lock=new ReentrantLock(), consumer_lock=new ReentrantLock();
     protected int                       count=0;
     protected Handler<T>                handler;

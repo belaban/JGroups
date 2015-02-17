@@ -28,10 +28,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class RangeBasedRetransmitter extends Retransmitter {
 
     /** Sorted hashmap storing the ranges */
-    private final Map<Seqno,Seqno> ranges=new ConcurrentSkipListMap<Seqno,Seqno>(new SeqnoComparator());
+    private final Map<Seqno,Seqno> ranges=new ConcurrentSkipListMap<>(new SeqnoComparator());
 
     /** Association between ranges and retransmission tasks */
-    private final Map<Seqno,Task> tasks=new ConcurrentHashMap<Seqno,Task>();
+    private final Map<Seqno,Task> tasks=new ConcurrentHashMap<>();
 
 
     private final AtomicLong num_missing_seqnos=new AtomicLong(0);
@@ -153,7 +153,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
         StringBuilder sb=new StringBuilder();
         sb.append(missing_msgs).append(" messages to retransmit");
         if(size < 50) {
-            Collection<Range> all_missing_msgs=new LinkedList<Range>();
+            Collection<Range> all_missing_msgs=new LinkedList<>();
             for(Seqno range: ranges.keySet()) {
                 all_missing_msgs.addAll(range.getMessagesToRetransmit());
             }

@@ -78,13 +78,13 @@ public class GroupRequest<T> extends Request {
     public GroupRequest(Message msg, RequestCorrelator corr, Collection<Address> targets, RequestOptions options) {
         super(msg, corr, options);
         int size=targets.size();
-        requests=new HashMap<Address,Rsp<T>>(size);
+        requests=new HashMap<>(size);
         setTargets(targets);
     }
 
     public GroupRequest(Message msg, RequestCorrelator corr, Address target, RequestOptions options) {
         super(msg, corr, options);
-        requests=new HashMap<Address,Rsp<T>>(1);
+        requests=new HashMap<>(1);
         setTarget(target);
     }
 
@@ -293,7 +293,7 @@ public class GroupRequest<T> extends Request {
     /** Returns the results as a RspList */
     public RspList<T> getResults() {
         Collection<Rsp<T>> rsps=requests.values();
-        return new RspList<T>(rsps);
+        return new RspList<>(rsps);
     }
 
 

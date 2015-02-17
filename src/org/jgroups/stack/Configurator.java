@@ -234,7 +234,7 @@ public class Configurator {
      * @return Vector of strings
      */
     private static List<String> parseProtocols(String config_str) throws IOException {
-        List<String> retval=new LinkedList<String>();
+        List<String> retval=new LinkedList<>();
         PushbackReader reader=new PushbackReader(new StringReader(config_str));
         int ch;
         StringBuilder sb;
@@ -298,7 +298,7 @@ public class Configurator {
      * @return List of ProtocolConfigurations
      */
     public static List<ProtocolConfiguration> parseConfigurations(String configuration) throws Exception {
-        List<ProtocolConfiguration> retval=new ArrayList<ProtocolConfiguration>();
+        List<ProtocolConfiguration> retval=new ArrayList<>();
         List<String> protocol_string=parseProtocols(configuration);
 
         if(protocol_string == null)
@@ -365,7 +365,7 @@ public class Configurator {
      * @return List of Protocols
      */
     public static List<Protocol> createProtocols(List<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
-        List<Protocol> retval=new LinkedList<Protocol>();
+        List<Protocol> retval=new LinkedList<>();
         ProtocolConfiguration protocol_config;
         Protocol layer;
         String singleton_name;
@@ -389,7 +389,7 @@ public class Configurator {
                         layer=createLayer(stack, protocol_config);
                         if(layer == null)
                             return null;
-                        singleton_transports.put(singleton_name, new Tuple<TP, ProtocolStack.RefCounter>((TP)layer,new ProtocolStack.RefCounter((short)0,(short)0)));
+                        singleton_transports.put(singleton_name, new Tuple<>((TP)layer,new ProtocolStack.RefCounter((short)0,(short)0)));
                         retval.add(layer);
                     }
                 }
@@ -406,7 +406,7 @@ public class Configurator {
 
     protected static Protocol createLayer(ProtocolStack stack, ProtocolConfiguration config) throws Exception {
         String              protocol_name=config.getProtocolName();
-        Map<String, String> properties=new HashMap<String,String>(config.getProperties());
+        Map<String, String> properties=new HashMap<>(config.getProperties());
         Protocol            retval=null;
 
         if(protocol_name == null || properties == null)
@@ -479,7 +479,7 @@ public class Configurator {
     public static void sanityCheck(List<Protocol> protocols) throws Exception {
 
         // check for unique IDs
-        Set<Short> ids=new HashSet<Short>();
+        Set<Short> ids=new HashSet<>();
         for(Protocol protocol: protocols) {
             short id=protocol.getId();
             if(id > 0 && !ids.add(id))
@@ -496,7 +496,7 @@ public class Configurator {
             if(required_down_services != null && !required_down_services.isEmpty()) {
 
                 // the protocols below 'protocol' have to provide the services listed in required_down_services
-                List<Integer> tmp=new ArrayList<Integer>(required_down_services);
+                List<Integer> tmp=new ArrayList<>(required_down_services);
                 removeProvidedUpServices(protocol, tmp);
                 if(!tmp.isEmpty())
                     throw new Exception("events " + printEvents(tmp) + " are required by " + protocol.getName() +
@@ -506,7 +506,7 @@ public class Configurator {
             if(required_up_services != null && !required_up_services.isEmpty()) {
 
                 // the protocols above 'protocol' have to provide the services listed in required_up_services
-                List<Integer> tmp=new ArrayList<Integer>(required_up_services);
+                List<Integer> tmp=new ArrayList<>(required_up_services);
                 removeProvidedDownServices(protocol, tmp);
                 if(!tmp.isEmpty())
                     throw new Exception("events " + printEvents(tmp) + " are required by " + protocol.getName() +
@@ -558,7 +558,7 @@ public class Configurator {
      * Returns all inet addresses found
      */
     public static Collection<InetAddress> getAddresses(Map<String, Map<String, InetAddressInfo>> inetAddressMap) throws Exception {
-        Set<InetAddress> addrs=new HashSet<InetAddress>();
+        Set<InetAddress> addrs=new HashSet<>();
 
         for(Map.Entry<String, Map<String, InetAddressInfo>> inetAddressMapEntry : inetAddressMap.entrySet()) {
             Map<String, InetAddressInfo> protocolInetAddressMap=inetAddressMapEntry.getValue();
@@ -587,8 +587,8 @@ public class Configurator {
      * @return StackType.IPv4 for IPv4, StackType.IPv6 for IPv6, StackType.Unknown if the version cannot be determined
      */
     public static StackType determineIpVersionFromAddresses(Collection<InetAddress> addrs) throws Exception {
-    	Set<InetAddress> ipv4_addrs= new HashSet<InetAddress>() ;
-    	Set<InetAddress> ipv6_addrs= new HashSet<InetAddress>() ;
+    	Set<InetAddress> ipv4_addrs= new HashSet<>() ;
+    	Set<InetAddress> ipv6_addrs= new HashSet<>() ;
 
         for(InetAddress address: addrs) {
             if (address instanceof Inet4Address)
@@ -626,7 +626,7 @@ public class Configurator {
     public static Map<String, Map<String,InetAddressInfo>> createInetAddressMap(List<ProtocolConfiguration> protocol_configs,
                                                                                 List<Protocol> protocols) throws Exception {
     	// Map protocol -> Map<String, InetAddressInfo>, where the latter is protocol specific
-    	Map<String, Map<String,InetAddressInfo>> inetAddressMap = new HashMap<String, Map<String, InetAddressInfo>>() ;
+    	Map<String, Map<String,InetAddressInfo>> inetAddressMap = new HashMap<>() ;
 
     	// collect InetAddressInfo
     	for (int i = 0; i < protocol_configs.size(); i++) {    		        	
@@ -635,7 +635,7 @@ public class Configurator {
     		String protocolName = protocol.getName();
 
     		// regenerate the Properties which were destroyed during basic property processing
-    		Map<String,String> properties = new HashMap<String,String>(protocol_config.getProperties());
+    		Map<String,String> properties = new HashMap<>(protocol_config.getProperties());
 
     		// check which InetAddress-related properties are ***non-null ***, and
     		// create an InetAddressInfo structure for them
@@ -664,7 +664,7 @@ public class Configurator {
 
                         Map<String, InetAddressInfo> protocolInetAddressMap=inetAddressMap.get(protocolName);
                         if(protocolInetAddressMap == null) {
-                            protocolInetAddressMap = new HashMap<String,InetAddressInfo>() ;
+                            protocolInetAddressMap = new HashMap<>() ;
                             inetAddressMap.put(protocolName, protocolInetAddressMap) ;
                         }
     					protocolInetAddressMap.put(propertyName, inetinfo) ; 
@@ -699,7 +699,7 @@ public class Configurator {
 
                             Map<String, InetAddressInfo> protocolInetAddressMap=inetAddressMap.get(protocolName);
                             if(protocolInetAddressMap == null) {
-                                protocolInetAddressMap = new HashMap<String,InetAddressInfo>() ;
+                                protocolInetAddressMap = new HashMap<>() ;
                                 inetAddressMap.put(protocolName, protocolInetAddressMap) ;
                             }
     						protocolInetAddressMap.put(propertyName, inetinfo) ;
@@ -713,7 +713,7 @@ public class Configurator {
 
 
     public static List<InetAddress> getInetAddresses(List<Protocol> protocols) throws Exception {
-        List<InetAddress> retval=new LinkedList<InetAddress>();
+        List<InetAddress> retval=new LinkedList<>();
 
         // collect InetAddressInfo
         for(Protocol protocol : protocols) {
@@ -760,7 +760,7 @@ public class Configurator {
             String protocolName=protocol.getName();
 
             // regenerate the Properties which were destroyed during basic property processing
-            Map<String,String> properties=new HashMap<String,String>(protocol_config.getProperties());
+            Map<String,String> properties=new HashMap<>(protocol_config.getProperties());
 
             Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(protocol.getClass(), Property.class);
             for(int j=0; j < methods.length; j++) {
@@ -933,10 +933,10 @@ public class Configurator {
     static AccessibleObject[] computePropertyDependencies(Object obj, Map<String,String> properties) {
     	
     	// List of Fields and Methods of the protocol annotated with @Property
-    	List<AccessibleObject> unorderedFieldsAndMethods = new LinkedList<AccessibleObject>() ;
-    	List<AccessibleObject> orderedFieldsAndMethods = new LinkedList<AccessibleObject>() ;
+    	List<AccessibleObject> unorderedFieldsAndMethods = new LinkedList<>() ;
+    	List<AccessibleObject> orderedFieldsAndMethods = new LinkedList<>() ;
     	// Maps property name to property object
-    	Map<String, AccessibleObject> propertiesInventory = new HashMap<String, AccessibleObject>() ;
+    	Map<String, AccessibleObject> propertiesInventory = new HashMap<>() ;
     	
     	// get the methods for this class and add them to the list if annotated with @Property
     	Method[] methods=obj.getClass().getMethods();
@@ -979,9 +979,9 @@ public class Configurator {
     static List<AccessibleObject> orderFieldsAndMethodsByDependency(List<AccessibleObject> unorderedList, 
     									Map<String, AccessibleObject> propertiesMap) {
     	// Stack to detect cycle in depends relation
-    	Stack<AccessibleObject> stack = new Stack<AccessibleObject>() ;
+    	Stack<AccessibleObject> stack = new Stack<>() ;
     	// the result list
-    	List<AccessibleObject> orderedList = new LinkedList<AccessibleObject>() ;
+    	List<AccessibleObject> orderedList = new LinkedList<>() ;
 
     	// add the elements from the unordered list to the ordered list
     	// any dependencies will be checked and added first, in recursive manner
@@ -1379,7 +1379,7 @@ public class Configurator {
     	 * a zero length list in some cases.
     	 */
     	public List<InetAddress> getInetAddresses() {
-    		List<InetAddress> addresses = new ArrayList<InetAddress>() ;
+    		List<InetAddress> addresses = new ArrayList<>() ;
     		if (getConvertedValue() == null)
     			return addresses ;
     		// if we take only an InetAddress argument

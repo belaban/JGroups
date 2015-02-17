@@ -67,7 +67,7 @@ public class TCPGOSSIP extends Discovery {
 
     
     // (list of IpAddresses) hosts to be contacted for the initial membership
-    private final List<InetSocketAddress> initial_hosts = new CopyOnWriteArrayList<InetSocketAddress>();
+    private final List<InetSocketAddress> initial_hosts = new CopyOnWriteArrayList<>();
     
     protected volatile RouterStubManager stubManager;
 
@@ -125,7 +125,7 @@ public class TCPGOSSIP extends Discovery {
         PhysicalAddress      physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
         PingData             data=new PingData(local_addr, false, org.jgroups.util.UUID.get(local_addr), physical_addr);
         PingHeader           hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name);
-        Set<PhysicalAddress> physical_addrs=new HashSet<PhysicalAddress>();
+        Set<PhysicalAddress> physical_addrs=new HashSet<>();
 
         log.trace("fetching members from GossipRouter(s)");
         for(RouterStub stub: stubManager.getStubs()) {

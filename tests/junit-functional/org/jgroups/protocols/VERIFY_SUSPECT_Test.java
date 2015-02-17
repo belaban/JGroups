@@ -102,7 +102,7 @@ public class VERIFY_SUSPECT_Test {
 
 
     protected class ProtImpl extends Protocol {
-        protected final Map<Address,Long> map=new HashMap<Address,Long>();
+        protected final Map<Address,Long> map=new HashMap<>();
 
         public Map<Address,Long> getMap() {
             return map;

@@ -21,18 +21,18 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ReplicatedHashMapTest extends ChannelTestBase {
     private ReplicatedHashMap<String,String> map1;
     private ReplicatedHashMap<String,String> map2;
-    private ConcurrentHashMap<String,String> wrap=new ConcurrentHashMap<String,String>();
+    private ConcurrentHashMap<String,String> wrap=new ConcurrentHashMap<>();
 
     @BeforeClass
     protected void setUp() throws Exception {
         JChannel c1=createChannel(true, 2);
-        this.map1=new ReplicatedHashMap<String,String>(c1);
+        this.map1=new ReplicatedHashMap<>(c1);
         map1.setBlockingUpdates(true);
         c1.connect("ReplicatedHashMapTest");
         this.map1.start(5000);
 
         JChannel c2=createChannel(c1);
-        this.map2=new ReplicatedHashMap<String,String>(wrap, c2);
+        this.map2=new ReplicatedHashMap<>(wrap, c2);
         map2.setBlockingUpdates(true);
         c2.connect("ReplicatedHashMapTest");
         this.map2.start(5000);
@@ -189,10 +189,10 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
     }
 
     public void testPutAll() {
-        Map<String,String> all1=new HashMap<String,String>();
+        Map<String,String> all1=new HashMap<>();
         all1.put("key1", "value1");
         all1.put("key2", "value2");
-        Map<String,String> all2=new HashMap<String,String>();
+        Map<String,String> all2=new HashMap<>();
         all2.put("key3", "value3");
         all2.put("key4", "value4");
 
@@ -235,10 +235,10 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
     }
 
     public void testKeySet() {
-        Map<String,String> all1=new HashMap<String,String>();
+        Map<String,String> all1=new HashMap<>();
         all1.put("key1", "value1");
         all1.put("key2", "value2");
-        Map<String,String> all2=new HashMap<String,String>();
+        Map<String,String> all2=new HashMap<>();
         all2.put("key3", "value3");
         all2.put("key4", "value4");
 
@@ -253,10 +253,10 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
     }
 
     public void testValues() {
-        Map<String,String> all1=new HashMap<String,String>();
+        Map<String,String> all1=new HashMap<>();
         all1.put("key1", "value1");
         all1.put("key2", "value2");
-        Map<String,String> all2=new HashMap<String,String>();
+        Map<String,String> all2=new HashMap<>();
         all2.put("key3", "value3");
         all2.put("key4", "value4");
 

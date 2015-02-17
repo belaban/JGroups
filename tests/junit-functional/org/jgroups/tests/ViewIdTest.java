@@ -63,7 +63,7 @@ public class ViewIdTest {
     }
 
     public void testHashCode() {
-        Map<ViewId,Integer> map=new HashMap<ViewId,Integer>();
+        Map<ViewId,Integer> map=new HashMap<>();
         map.put(v1, 1);
         assert map.size() == 1;
 

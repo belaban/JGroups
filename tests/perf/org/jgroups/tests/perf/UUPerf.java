@@ -32,7 +32,7 @@ public class UUPerf extends ReceiverAdapter {
     private Address local_addr;
     private RpcDispatcher disp;
     static final String groupname="uuperf";
-    private final List<Address> members=new ArrayList<Address>();
+    private final List<Address> members=new ArrayList<>();
 
 
     // ============ configurable properties ==================
@@ -362,7 +362,7 @@ public class UUPerf extends ReceiverAdapter {
     }
 
     private class Invoker extends Thread {
-        private final List<Address> dests=new ArrayList<Address>();
+        private final List<Address> dests=new ArrayList<>();
         private final int num_msgs_to_send;
         private final AtomicInteger num_msgs_sent;
 

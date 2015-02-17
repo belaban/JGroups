@@ -22,7 +22,7 @@ public class CountTests {
     public static void main(String[] args) throws ClassNotFoundException, IOException {
         List<Class<?>> list=Util.findClassesAnnotatedWith("org.jgroups",Test.class);
         int total=0, disabled=0;
-        Map<String,Integer> group_count=new HashMap<String,Integer>(list.size());
+        Map<String,Integer> group_count=new HashMap<>(list.size());
         String group=null;
         boolean details=false;
 

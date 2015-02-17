@@ -17,7 +17,7 @@ public class ProtocolConfiguration {
     private final String              protocol_name;
     private final ClassLoader         loader;
     private String                    properties_str;
-    private final Map<String, String> properties=new HashMap<String, String>();
+    private final Map<String, String> properties=new HashMap<>();
     private List<Node>                subtrees; // roots to DOM elements, passed to protocol on creation
     public static final String        protocol_prefix="org.jgroups.protocols";
     public static final Log           log=LogFactory.getLog(ProtocolConfiguration.class);
@@ -67,7 +67,7 @@ public class ProtocolConfiguration {
         if(node == null)
             return;
         if(subtrees == null)
-            subtrees=new ArrayList<Node>();
+            subtrees=new ArrayList<>();
         subtrees.add(node);
     }
 
@@ -92,7 +92,7 @@ public class ProtocolConfiguration {
     }
 
     public Map<String, String> getOriginalProperties() throws Exception {
-        Map<String, String> props=new HashMap<String, String>();
+        Map<String, String> props=new HashMap<>();
         parsePropertiesString(props);
         return props;
     }

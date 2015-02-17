@@ -54,10 +54,10 @@ public class COMPRESS extends Protocol {
 
 
     public void init() throws Exception {
-        deflater_pool=new ArrayBlockingQueue<Deflater>(pool_size);
+        deflater_pool=new ArrayBlockingQueue<>(pool_size);
         for(int i=0; i < pool_size; i++)
             deflater_pool.add(new Deflater(compression_level));
-        inflater_pool=new ArrayBlockingQueue<Inflater>(pool_size);
+        inflater_pool=new ArrayBlockingQueue<>(pool_size);
         for(int i=0; i < pool_size; i++)
             inflater_pool.add(new Inflater());
     }

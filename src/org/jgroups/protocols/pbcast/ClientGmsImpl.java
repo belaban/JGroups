@@ -28,7 +28,7 @@ import java.util.TreeSet;
  * @version $Revision: 1.78 $
  */
 public class ClientGmsImpl extends GmsImpl {
-    protected final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
+    protected final Promise<JoinRsp> join_promise=new Promise<>();
 
 
     public ClientGmsImpl(GMS g) {
@@ -165,7 +165,7 @@ public class ClientGmsImpl extends GmsImpl {
         log.trace("%s: could not determine coordinator from rsps %s", gms.local_addr, rsps);
 
         // so the member to become singleton member (and thus coord) is the first of all clients
-        SortedSet<Address> clients=new TreeSet<Address>();
+        SortedSet<Address> clients=new TreeSet<>();
         clients.add(joiner); // add myself again (was removed by findInitialMembers())
         for(PingData response: rsps)
             clients.add(response.getAddress());
@@ -261,7 +261,7 @@ public class ClientGmsImpl extends GmsImpl {
         for(PingData mbr: mbrs) {
             if(mbr.isCoord()) {
                 if(coords == null)
-                    coords=new ArrayList<Address>();
+                    coords=new ArrayList<>();
                 if(!coords.contains(mbr.getAddress()))
                     coords.add(mbr.getAddress());
             }

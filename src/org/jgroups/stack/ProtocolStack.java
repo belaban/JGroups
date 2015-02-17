@@ -43,7 +43,7 @@ public class ProtocolStack extends Protocol {
      * Holds the shared transports, keyed by 'TP.singleton_name'. The values are the transport and the use count for
      * init() (decremented by destroy()) and start() (decremented by stop()
      */
-    protected static final ConcurrentMap<String,Tuple<TP,RefCounter>> singleton_transports=new ConcurrentHashMap<String,Tuple<TP,RefCounter>>();
+    protected static final ConcurrentMap<String,Tuple<TP,RefCounter>> singleton_transports=new ConcurrentHashMap<>();
 
     protected Protocol                      top_prot;
     protected Protocol                      bottom_prot;
@@ -60,7 +60,7 @@ public class ProtocolStack extends Protocol {
             for(String key: keys) {
                 if(key.equals("props")) {
                     String tmp=printProtocolSpec(true);
-                    HashMap<String, String> map=new HashMap<String, String>(1);
+                    HashMap<String, String> map=new HashMap<>(1);
                     map.put("props", tmp);
                     return map;
                 }
@@ -69,7 +69,7 @@ public class ProtocolStack extends Protocol {
                     if(index >= 0) {
                         Util.MAX_LIST_PRINT_SIZE=Integer.valueOf(key.substring(index+1));
                     }
-                    HashMap<String, String> map=new HashMap<String, String>(1);
+                    HashMap<String, String> map=new HashMap<>(1);
                     map.put(max_list_print_size, String.valueOf(Util.MAX_LIST_PRINT_SIZE));
                     return map;
                 }
@@ -79,7 +79,7 @@ public class ProtocolStack extends Protocol {
                     StringBuilder sb=new StringBuilder();
                     for(Protocol prot: prots)
                         sb.append(prot.getName()).append("\n");
-                    HashMap<String, String> map=new HashMap<String, String>(1);
+                    HashMap<String, String> map=new HashMap<>(1);
                     map.put("protocols", sb.toString());
                     return map;
                 }
@@ -192,7 +192,7 @@ public class ProtocolStack extends Protocol {
     /** Returns all protocols in a list, from top to bottom. <em>These are not copies of protocols,
      so modifications will affect the actual instances !</em> */
     public List<Protocol> getProtocols() {
-        List<Protocol> v=new ArrayList<Protocol>(15);
+        List<Protocol> v=new ArrayList<>(15);
         Protocol p=top_prot;
         while(p != null) {
             v.add(p);
@@ -204,7 +204,7 @@ public class ProtocolStack extends Protocol {
 
     public List<Protocol> copyProtocols(ProtocolStack targetStack) throws IllegalAccessException, InstantiationException {
         List<Protocol> list=getProtocols();
-        List<Protocol> retval=new ArrayList<Protocol>(list.size());
+        List<Protocol> retval=new ArrayList<>(list.size());
         for(Protocol prot: list) {
             Protocol new_prot=prot.getClass().newInstance();
             new_prot.setProtocolStack(targetStack);
@@ -227,7 +227,7 @@ public class ProtocolStack extends Protocol {
                     String methodName=method.getName();
                     if(method.isAnnotationPresent(Property.class) && Configurator.isSetPropertyMethod(method)) {
                         Property annotation=method.getAnnotation(Property.class);
-                        List<String> possible_names=new LinkedList<String>();
+                        List<String> possible_names=new LinkedList<>();
                         if(annotation.name() != null)
                             possible_names.add(annotation.name());
                         possible_names.add(Util.methodNameToAttributeName(methodName));
@@ -261,7 +261,7 @@ public class ProtocolStack extends Protocol {
      */
     public Map<String,Object> dumpStats() {
         Protocol p;
-        Map<String,Object> retval=new HashMap<String,Object>(), tmp;
+        Map<String,Object> retval=new HashMap<>(), tmp;
         String prot_name;
 
         p=top_prot;
@@ -285,7 +285,7 @@ public class ProtocolStack extends Protocol {
         if(prot == null)
             return null;
 
-        Map<String,Object> retval=new HashMap<String,Object>(), tmp;
+        Map<String,Object> retval=new HashMap<>(), tmp;
         tmp=prot.dumpStats();
         if(tmp != null) {
             if(attrs != null && !attrs.isEmpty()) {
@@ -415,7 +415,7 @@ public class ProtocolStack extends Protocol {
     }
 
     private static Map<String,String> getProps(Protocol prot) {
-        Map<String,String> retval=new HashMap<String,String>();
+        Map<String,String> retval=new HashMap<>();
 
         for(Class<?> clazz=prot.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
 
@@ -446,7 +446,7 @@ public class ProtocolStack extends Protocol {
                 String methodName=method.getName();
                 if(method.isAnnotationPresent(Property.class) && Configurator.isSetPropertyMethod(method)) {
                     annotation=method.getAnnotation(Property.class);
-                    List<String> possible_names=new LinkedList<String>();
+                    List<String> possible_names=new LinkedList<>();
                     if(annotation.name() != null)
                         possible_names.add(annotation.name());
                     possible_names.add(Util.methodNameToAttributeName(methodName));
@@ -845,7 +845,7 @@ public class ProtocolStack extends Protocol {
                     synchronized(singleton_transports) {
                         Tuple<TP,RefCounter> val=singleton_transports.get(singleton_name);
                         if(val == null)
-                            singleton_transports.put(singleton_name, new Tuple<TP,RefCounter>(transport,new RefCounter((short)1, (short)0)));
+                            singleton_transports.put(singleton_name, new Tuple<>(transport,new RefCounter((short)1, (short)0)));
                         else {
                             RefCounter counter=val.getVal2();
                             short num_inits=counter.incrementInitCount();

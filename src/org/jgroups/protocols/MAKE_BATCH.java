@@ -35,11 +35,11 @@ public class MAKE_BATCH extends Protocol {
     protected long sleep_time=100;
 
     // all maps have sender and msg list pairs
-    protected final Map<Address,List<Message>> reg_map_mcast=new HashMap<Address,List<Message>>();
-    protected final Map<Address,List<Message>> reg_map_ucast=new HashMap<Address,List<Message>>();
+    protected final Map<Address,List<Message>> reg_map_mcast=new HashMap<>();
+    protected final Map<Address,List<Message>> reg_map_ucast=new HashMap<>();
 
-    protected final Map<Address,List<Message>> oob_map_mcast=new HashMap<Address,List<Message>>();
-    protected final Map<Address,List<Message>> oob_map_ucast=new HashMap<Address,List<Message>>();
+    protected final Map<Address,List<Message>> oob_map_mcast=new HashMap<>();
+    protected final Map<Address,List<Message>> oob_map_ucast=new HashMap<>();
 
     protected TimeScheduler                     timer;
     protected AsciiString                       cluster_name;
@@ -104,7 +104,7 @@ public class MAKE_BATCH extends Protocol {
         synchronized(map) {
             List<Message> list=map.get(sender);
             if(list == null)
-                map.put(sender, list=new ArrayList<Message>());
+                map.put(sender, list=new ArrayList<>());
             list.add(msg);
         }
     }
@@ -126,7 +126,7 @@ public class MAKE_BATCH extends Protocol {
     protected class Batcher implements Runnable {
 
         public void run() {
-            List<MessageBatch> batches=new ArrayList<MessageBatch>();
+            List<MessageBatch> batches=new ArrayList<>();
 
             synchronized(oob_map_mcast) {
                 for(Map.Entry<Address,List<Message>> entry: oob_map_mcast.entrySet()) {

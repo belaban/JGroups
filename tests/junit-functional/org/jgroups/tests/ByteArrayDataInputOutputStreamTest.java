@@ -402,7 +402,7 @@ public class ByteArrayDataInputOutputStreamTest {
           "\ntertiam qui ipsorum lingua Celtae, nostra Galli appellantur";
         byte[] buf=str.getBytes();
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
-        List<String> lines=new ArrayList<String>(4);
+        List<String> lines=new ArrayList<>(4);
         String line;
         while((line=in.readLine()) !=  null) {
             System.out.println(line);

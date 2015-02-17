@@ -394,7 +394,7 @@ public class RELAY extends Protocol {
     }
 
     protected View generateGlobalView(View local_view, View remote_view, boolean merge) {
-        List<View> views=new ArrayList<View>(2);
+        List<View> views=new ArrayList<>(2);
         if(local_view != null) views.add(local_view);
         if(remote_view != null) views.add(remote_view);
         Collections.sort(views, new Comparator<View>() {
@@ -409,7 +409,7 @@ public class RELAY extends Protocol {
             }
         });
 
-        List<Address> combined_members=new ArrayList<Address>();
+        List<Address> combined_members=new ArrayList<>();
         for(View view: views)
             combined_members.addAll(view.getMembers());
 
@@ -478,7 +478,7 @@ public class RELAY extends Protocol {
     protected void sendViewOnLocalCluster(ViewData data, boolean use_seperate_thread, final List<Address> new_mbrs) {
         try {
             final byte[] buffer=Util.streamableToByteBuffer(data);
-            final List<Address> destinations=new ArrayList<Address>();
+            final List<Address> destinations=new ArrayList<>();
             destinations.add(null); // send to all
             if(new_mbrs != null)
                 destinations.addAll(new_mbrs);
@@ -556,7 +556,7 @@ public class RELAY extends Protocol {
                                                                               msg.getOffset(), msg.getLength());
                         // replace addrs with proxies
                         if(data.remote_view != null) {
-                            List<Address> mbrs=new LinkedList<Address>();
+                            List<Address> mbrs=new LinkedList<>();
                             for(Address mbr: data.remote_view.getMembers()) {
                                 mbrs.add(mbr);
                             }
@@ -736,7 +736,7 @@ public class RELAY extends Protocol {
             remote_view=Util.readView(in);
             global_view=Util.readView(in);
             int size=in.readInt();
-            uuids=new HashMap<Address,String>();
+            uuids=new HashMap<>();
             for(int i=0; i < size; i++) {
                 Address addr=Util.readAddress(in);
                 String name=in.readUTF();

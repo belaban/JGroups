@@ -22,7 +22,7 @@ import java.util.List;
 @Unsupported
 @MBean(description="Sample protocol")
 public class EXAMPLE extends Protocol {
-    final List<Address> members=new ArrayList<Address>();
+    final List<Address> members=new ArrayList<>();
 
 
     /**

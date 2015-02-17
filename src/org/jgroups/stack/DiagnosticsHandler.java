@@ -27,7 +27,7 @@ public class DiagnosticsHandler implements Runnable {
     protected int                     diagnostics_port=7500;
     protected int                     ttl=8;
     protected List<NetworkInterface>  bind_interfaces=null;
-    protected final Set<ProbeHandler> handlers=new CopyOnWriteArraySet<ProbeHandler>();
+    protected final Set<ProbeHandler> handlers=new CopyOnWriteArraySet<>();
     protected final Log               log;
     protected final SocketFactory     socket_factory;
     protected final ThreadFactory     thread_factory;
@@ -136,7 +136,7 @@ public class DiagnosticsHandler implements Runnable {
 
     protected void handleDiagnosticProbe(SocketAddress sender, DatagramSocket sock, String request) {
         StringTokenizer tok=new StringTokenizer(request);
-        List<String> list=new ArrayList<String>(10);
+        List<String> list=new ArrayList<>(10);
 
         while(tok.hasMoreTokens()) {
             String req=tok.nextToken().trim();

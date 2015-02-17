@@ -30,7 +30,7 @@ public class MessageBeforeConnectedTest extends BMNGRunner {
     protected static final String HELLO1="hello-1";
     protected static final String HELLO2="hello-2";
     protected Throwable           ex;
-    protected final List<String>  msgs=new ArrayList<String>();
+    protected final List<String>  msgs=new ArrayList<>();
 
     @AfterMethod
     protected void cleanup() {

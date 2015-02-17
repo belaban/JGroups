@@ -271,7 +271,7 @@ public class Relay2RpcDispatcherTest {
 
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected final List<Integer> list=new ArrayList<Integer>(5);
+        protected final List<Integer> list=new ArrayList<>(5);
         String chName;
         MyReceiver(String chName) {
         	this.chName = chName;

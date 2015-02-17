@@ -33,7 +33,7 @@ public class ResponseCollector<T> implements org.jgroups.util.Condition {
     }
 
     public ResponseCollector() {
-        responses=new HashMap<Address,T>();
+        responses=new HashMap<>();
     }
 
     public void add(Address member, T data) {
@@ -132,7 +132,7 @@ public class ResponseCollector<T> implements org.jgroups.util.Condition {
 
     /** Returns a list of members which didn't send a valid response */
     public List<Address> getMissing() {
-        List<Address> retval=new ArrayList<Address>();
+        List<Address> retval=new ArrayList<>();
         for(Map.Entry<Address,T> entry: responses.entrySet()) {
             if(entry.getValue() == null)
                 retval.add(entry.getKey());
@@ -141,7 +141,7 @@ public class ResponseCollector<T> implements org.jgroups.util.Condition {
     }
 
     public List<Address> getValidResults() {
-        List<Address> retval=new ArrayList<Address>();
+        List<Address> retval=new ArrayList<>();
         for(Map.Entry<Address,T> entry: responses.entrySet()) {
             if(entry.getValue() != null)
                 retval.add(entry.getKey());

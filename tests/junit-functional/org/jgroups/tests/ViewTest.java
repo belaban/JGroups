@@ -91,10 +91,10 @@ public class ViewTest {
     }
 
     public void testEquals2() {
-        View v1=new View(new ViewId(a, 12345), new ArrayList<Address>(members));
-        View v2=new View(a, 12345, new ArrayList<Address>(members));
+        View v1=new View(new ViewId(a, 12345), new ArrayList<>(members));
+        View v2=new View(a, 12345, new ArrayList<>(members));
         assert v1.equals(v2);
-        View v3=new View(a, 12543, new ArrayList<Address>(members));
+        View v3=new View(a, 12543, new ArrayList<>(members));
         assert !v1.equals(v3);
     }
  
@@ -164,7 +164,7 @@ public class ViewTest {
 
 
     public void testIterator() {
-        List<Address> mbrs=new ArrayList<Address>(members.size());
+        List<Address> mbrs=new ArrayList<>(members.size());
         for(Address addr: view)
             mbrs.add(addr);
 

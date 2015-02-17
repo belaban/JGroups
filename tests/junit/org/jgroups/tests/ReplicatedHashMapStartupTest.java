@@ -33,13 +33,13 @@ public class ReplicatedHashMapStartupTest {
 
 
     protected void concurrentStartupHelper(int channelCount) throws Exception {
-        List<ReplicatedHashMap<Address,Integer>> maps=new ArrayList<ReplicatedHashMap<Address,Integer>>(channelCount);
+        List<ReplicatedHashMap<Address,Integer>> maps=new ArrayList<>(channelCount);
         JChannel[] channels=new JChannel[channelCount];
         try {
             for(int i=0;i < channelCount;i++) {
                 channels[i]=createChannel(String.valueOf((char)('A' + i)));
                 modifyGMS(channels[i]);
-                ReplicatedHashMap<Address,Integer> map=new ReplicatedHashMap<Address,Integer>(channels[i]);
+                ReplicatedHashMap<Address,Integer> map=new ReplicatedHashMap<>(channels[i]);
                 maps.add(map);
                 map.setBlockingUpdates(true);
             }

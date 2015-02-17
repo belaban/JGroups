@@ -106,7 +106,7 @@ public class DUPL extends Protocol {
     public void up(MessageBatch batch) {
         boolean copy=(copy_multicast_msgs || copy_unicast_msgs) && incoming_copies > 0;
         if(copy) {
-            List<Message> copies=new ArrayList<Message>();
+            List<Message> copies=new ArrayList<>();
             for(Message msg: batch) {
                 Address dest=msg.getDest();
                 boolean multicast=dest == null;

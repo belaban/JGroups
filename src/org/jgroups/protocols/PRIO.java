@@ -59,13 +59,13 @@ public class PRIO extends Protocol {
      */
     public void start() throws Exception {
 		if (prioritize_down) {
-			downMessageQueue = new PriorityBlockingQueue<PriorityMessage>( 100, new PriorityCompare() );
+			downMessageQueue = new PriorityBlockingQueue<>( 100, new PriorityCompare() );
 			downMessageThread = new DownMessageThread( this, downMessageQueue );
 			downMessageThread.start();
 		}
 
 		if (prioritize_up) {
-			upMessageQueue = new PriorityBlockingQueue<PriorityMessage>( 100, new PriorityCompare() );
+			upMessageQueue = new PriorityBlockingQueue<>( 100, new PriorityCompare() );
 			upMessageThread = new UpMessageThread( this, upMessageQueue );
 			upMessageThread.start();
 		}

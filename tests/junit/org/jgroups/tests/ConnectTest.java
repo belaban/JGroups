@@ -103,7 +103,7 @@ public class ConnectTest extends ChannelTestBase {
      **/
     @Test
     public void testDisconnectConnectSendTwo() throws Exception {
-        final Promise<Message> msgPromise=new Promise<Message>();
+        final Promise<Message> msgPromise=new Promise<>();
         coordinator=createChannel(true);
         changeProps(coordinator);
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));

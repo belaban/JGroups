@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class XmlConfigurator implements ProtocolStackConfigurator {
     private static final String               JAXP_SCHEMA_LANGUAGE = "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
     private static final String               W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
-    private final List<ProtocolConfiguration> configuration=new ArrayList<ProtocolConfiguration>();
+    private final List<ProtocolConfiguration> configuration=new ArrayList<>();
     protected static final Log                log=LogFactory.getLog(XmlConfigurator.class);
 
     
@@ -144,7 +144,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             });
             // Use AtomicReference to allow make variable final, not for atomicity
             // We store only last exception
-            final AtomicReference<SAXParseException> exceptionRef = new AtomicReference<SAXParseException>();
+            final AtomicReference<SAXParseException> exceptionRef = new AtomicReference<>();
             builder.setErrorHandler(new ErrorHandler() {
 
                 public void warning(SAXParseException exception) throws SAXException {
@@ -199,7 +199,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         if(!"config".equals(root_name))
             throw new IOException("the configuration does not start with a <config> element: " + root_name);
 
-        final List<ProtocolConfiguration> prot_data=new ArrayList<ProtocolConfiguration>();
+        final List<ProtocolConfiguration> prot_data=new ArrayList<>();
         NodeList prots=root_element.getChildNodes();
         for(int i=0;i < prots.getLength();i++) {
             Node node=prots.item(i);
@@ -208,7 +208,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
 
             Element tag=(Element)node;
             String  protocol=tag.getTagName();
-            Map<String,String> params=new HashMap<String,String>();
+            Map<String,String> params=new HashMap<>();
 
             NamedNodeMap attrs=tag.getAttributes();
             int attrLength=attrs.getLength();

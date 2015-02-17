@@ -29,13 +29,13 @@ public class TimeServiceTest {
 
 
     public void testSimpleGetTime() {
-        List<Long> times=new ArrayList<Long>(20);
+        List<Long> times=new ArrayList<>(20);
         for(int i=0; i < 20; i++)
             times.add(time_service.timestamp());
 
         System.out.println("times=" + times);
 
-        Set<Long> set=new HashSet<Long>(times);
+        Set<Long> set=new HashSet<>(times);
         System.out.println("set = " + set);
 
         assert set.size() < times.size();

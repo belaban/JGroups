@@ -27,7 +27,7 @@ import java.io.OutputStream;
 @Test(groups={Global.STACK_DEPENDENT,Global.EAP_EXCLUDED}, singleThreaded=true)
 public class LargeStateTransferTest extends ChannelTestBase {
     JChannel          provider, requester;
-    Promise<Integer>  p=new Promise<Integer>();
+    Promise<Integer>  p=new Promise<>();
     final static int  SIZE_1=100000, SIZE_2=1000000, SIZE_3=5000000, SIZE_4=10000000;
 
 

@@ -225,7 +225,7 @@ public class FILE_PING extends Discovery {
         Map<Address,PhysicalAddress> cache_contents=
           (Map<Address,PhysicalAddress>)down_prot.down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS, false));
 
-        List<PingData> list=new ArrayList<PingData>(cache_contents.size());
+        List<PingData> list=new ArrayList<>(cache_contents.size());
         for(Map.Entry<Address,PhysicalAddress> entry: cache_contents.entrySet()) {
             Address         addr=entry.getKey();
             PhysicalAddress phys_addr=entry.getValue();

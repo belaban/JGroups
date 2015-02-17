@@ -42,14 +42,14 @@ abstract public class Executing extends Protocol {
      * are awaiting a consumer to pick them up
      */
     protected final Queue<Runnable> _awaitingConsumer = 
-        new ConcurrentLinkedQueue<Runnable>();
+        new ConcurrentLinkedQueue<>();
     
     /**
      * This is a map on the client side showing for all of the current pending
      * requests
      */
     protected final ConcurrentMap<Runnable, Long> _requestId = 
-        new ConcurrentHashMap<Runnable, Long>();
+        new ConcurrentHashMap<>();
     
     /**
      * This is essentially a set on the consumer side of id's of all the threads 
@@ -57,10 +57,10 @@ abstract public class Executing extends Protocol {
      * there is no ConcurrentHashSet we use a phoney value
      */
     protected final ConcurrentMap<Long, Object> _consumerId = 
-        new ConcurrentHashMap<Long, Object>();
+        new ConcurrentHashMap<>();
 
     protected final ConcurrentMap<Future<?>, ExecutorNotification> notifiers = 
-        new ConcurrentHashMap<Future<?>, ExecutorNotification>();
+        new ConcurrentHashMap<>();
     
     /**
      * This is a map on the server side that shows which owner is currently
@@ -81,7 +81,7 @@ abstract public class Executing extends Protocol {
      * awaking the task with the latch.  This map should only be retrieved after
      * first waiting on the latch for a consumer
      */
-    protected ConcurrentMap<Long, Runnable> _tasks = new ConcurrentHashMap<Long, Runnable>();
+    protected ConcurrentMap<Long, Runnable> _tasks = new ConcurrentHashMap<>();
     
     /**
      * This is a server side store of all the barriers for respective tasks 
@@ -92,14 +92,14 @@ abstract public class Executing extends Protocol {
      * and notify the consumer
      */
     protected ConcurrentMap<Long, CyclicBarrier> _taskBarriers = 
-            new ConcurrentHashMap<Long, CyclicBarrier>();
+            new ConcurrentHashMap<>();
     
     /**
      * This is a server side map to show which threads are running for a
      * given runnable.  This is used to interrupt those threads if needed.
      */
     protected final ConcurrentMap<Runnable, Thread> _runnableThreads = 
-        new ConcurrentHashMap<Runnable, Thread>();
+        new ConcurrentHashMap<>();
     
     /**
      * This lock is to protect the incoming run requests and the incoming
@@ -112,14 +112,14 @@ abstract public class Executing extends Protocol {
      * addresses that currently want to run something.  If this queue has
      * elements the consumer queue must be empty.
      */
-    protected Queue<Owner> _runRequests = new ArrayDeque<Owner>();
+    protected Queue<Owner> _runRequests = new ArrayDeque<>();
     
     /**
      * This is stored on the coordinator side.  This queue holds all of the
      * addresses that currently are able to run something.  If this queue has
      * elements the run request queue must be empty.
      */
-    protected Queue<Owner> _consumersAvailable = new ArrayDeque<Owner>();
+    protected Queue<Owner> _consumersAvailable = new ArrayDeque<>();
     
     protected static enum Type {
         RUN_REQUEST,            // request to coordinator from client to tell of a new task request
@@ -398,7 +398,7 @@ abstract public class Executing extends Protocol {
                 Set<Runnable> runnables = (Set<Runnable>)array[0];
                 Boolean booleanValue = (Boolean)array[1];
                 
-                List<Runnable> notRan = new ArrayList<Runnable>();
+                List<Runnable> notRan = new ArrayList<>();
                 
                 for (Runnable cancelRunnable : runnables) {
                     // Removed from the consumer
@@ -488,7 +488,7 @@ abstract public class Executing extends Protocol {
                         else if (objectToRun instanceof Callable) {
                             @SuppressWarnings("unchecked")
                             Callable<Object> callable = (Callable<Object>)objectToRun;
-                            runnable = new FutureTask<Object>(callable);
+                            runnable = new FutureTask<>(callable);
                         }
                         else {
                             log.error("Request of type " + req.type + 

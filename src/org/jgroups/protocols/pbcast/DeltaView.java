@@ -83,7 +83,7 @@ public class DeltaView extends View {
         int left_len=left_members.length;
         System.arraycopy(left_members, 0, combined, 0, left_len);
         System.arraycopy(new_members, 0, combined, left_len, new_members.length);
-        return new ArrayIterator<Address>(combined);
+        return new ArrayIterator<>(combined);
     }
 
     public String toString() {

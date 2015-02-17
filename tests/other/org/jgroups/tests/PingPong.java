@@ -24,7 +24,7 @@ public class PingPong extends ReceiverAdapter {
 
     long start=0;
 
-    final List<Address> members=new ArrayList<Address>();
+    final List<Address> members=new ArrayList<>();
 
 
     public void start(String props, String name, boolean unicast) throws Exception {

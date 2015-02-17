@@ -128,7 +128,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected GmsImpl                   impl;
     protected final Object              impl_mutex=new Object(); // synchronizes event entry into impl
-    protected final Map<String,GmsImpl> impls=new HashMap<String,GmsImpl>(3);
+    protected final Map<String,GmsImpl> impls=new HashMap<>(3);
 
     // Handles merge related tasks
     protected final Merger         merger=new Merger(this);
@@ -142,10 +142,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected MembershipChangePolicy membership_change_policy=new DefaultMembershipPolicy();
 
     /** Members joined but for which no view has been received yet */
-    protected final List<Address>  joining=new ArrayList<Address>(7);
+    protected final List<Address>  joining=new ArrayList<>(7);
 
     /** Members excluded from group, but for which no view has been received yet */
-    protected final List<Address>  leaving=new ArrayList<Address>(7);
+    protected final List<Address>  leaving=new ArrayList<>(7);
 
     /** Keeps track of old members (up to num_prev_mbrs) */
     protected BoundedList<Address> prev_members;
@@ -382,8 +382,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             throw new IllegalArgumentException("view_ack_collection_timeout has to be greater than 0");
         if(merge_timeout <= 0)
             throw new IllegalArgumentException("merge_timeout has to be greater than 0");
-        prev_members=new BoundedList<Address>(num_prev_mbrs);
-        prev_views=new BoundedList<String>(num_prev_views);
+        prev_members=new BoundedList<>(num_prev_mbrs);
+        prev_views=new BoundedList<>(num_prev_views);
         TP transport=getTransport();
         timer=transport.getTimer();
         if(timer == null)
@@ -526,9 +526,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected List<Address> computeNewMembership(final List<Address> current_members, final Collection<Address> joiners,
                                                  final Collection<Address> leavers, final Collection<Address> suspects) {
         List<Address> joiners_copy, leavers_copy, suspects_copy;
-        joiners_copy=joiners == null? Collections.<Address>emptyList() : new ArrayList<Address>(joiners);
-        leavers_copy=leavers == null? Collections.<Address>emptyList() : new ArrayList<Address>(leavers);
-        suspects_copy=suspects == null? Collections.<Address>emptyList() : new ArrayList<Address>(suspects);
+        joiners_copy=joiners == null? Collections.<Address>emptyList() : new ArrayList<>(joiners);
+        leavers_copy=leavers == null? Collections.<Address>emptyList() : new ArrayList<>(leavers);
+        suspects_copy=suspects == null? Collections.<Address>emptyList() : new ArrayList<>(suspects);
 
         try {
             List<Address> retval=membership_change_policy.getNewMembership(current_members,joiners_copy,leavers_copy,suspects_copy);
@@ -585,7 +585,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         up_prot.up(new Event(Event.TMP_VIEW, new_view));
         down_prot.down(new Event(Event.TMP_VIEW, new_view));
 
-        List<Address> ackMembers=new ArrayList<Address>(new_view.getMembers());
+        List<Address> ackMembers=new ArrayList<>(new_view.getMembers());
         if(newMembers != null && !newMembers.isEmpty())
             ackMembers.removeAll(newMembers);
 
@@ -633,7 +633,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public void sendJoinResponses(JoinRsp jr, Collection<Address> newMembers) {
         if(jr != null && newMembers != null && !newMembers.isEmpty()) {
             final ViewId view_id=jr.getView().getViewId();
-            ack_collector.reset(new ArrayList<Address>(newMembers));
+            ack_collector.reset(new ArrayList<>(newMembers));
             for(Address joiner: newMembers)
                 sendJoinResponse(jr, joiner);
             try {
@@ -816,7 +816,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                    if (attemptCount > 0)
                        Util.sleepRandom(randomFloor, randomCeiling);
                    try {
-                       up_prot.up(new Event(Event.SUSPEND, new ArrayList<Address>(new_view.getMembers())));
+                       up_prot.up(new Event(Event.SUSPEND, new ArrayList<>(new_view.getMembers())));
                        successfulFlush = true;
                        break;
                    } catch (Exception e) {
@@ -830,7 +830,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                }
                else {
                   if (resumeIfFailed) {
-                     up(new Event(Event.RESUME, new ArrayList<Address>(new_view.getMembers())));
+                     up(new Event(Event.RESUME, new ArrayList<>(new_view.getMembers())));
                   }
                   if (log.isWarnEnabled())
                      log.warn(local_addr + ": GMS flush by coordinator failed");
@@ -1284,7 +1284,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 digest.readFrom(in,false);
             }
         }
-        return new Tuple<View,Digest>(tmp_view, digest);
+        return new Tuple<>(tmp_view, digest);
     }
 
     protected ViewId readViewId(byte[] buffer, int offset, int length) {
@@ -1533,7 +1533,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         final static long                   INTERVAL=5000;
         private static final long           MAX_COMPLETION_TIME=10000;
         /** Maintains a list of the last 20 requests */
-        private final BoundedList<String>   history=new BoundedList<String>(20);
+        private final BoundedList<String>   history=new BoundedList<>(20);
 
         /** Current Resumer task */
         private Future<?>                   resumer;
@@ -1625,7 +1625,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         public void run() {
             long start_time, wait_time;  // ns
             long timeout=TimeUnit.NANOSECONDS.convert(max_bundling_time, TimeUnit.MILLISECONDS);
-            List<Request> requests=new LinkedList<Request>();
+            List<Request> requests=new LinkedList<>();
             while(Thread.currentThread().equals(thread) && !suspended) {
                 try {
                     boolean keepGoing=false;

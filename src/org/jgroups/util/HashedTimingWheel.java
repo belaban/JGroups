@@ -322,7 +322,7 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
 
     protected void init() {
         for(int i=0; i < wheel.length; i++)
-            wheel[i]=new LinkedList<MyTask>();
+            wheel[i]=new LinkedList<>();
         startRunner();
     }
 

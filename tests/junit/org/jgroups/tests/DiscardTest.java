@@ -26,8 +26,8 @@ public class DiscardTest extends ChannelTestBase {
     static final long NUM_MSGS=10000;
     static final int MSG_SIZE=1000;
     private static final String GROUP="DiscardTest";
-    final Promise<Long> ch1_all_received=new Promise<Long>();
-    final Promise<Long> ch2_all_received=new Promise<Long>();
+    final Promise<Long> ch1_all_received=new Promise<>();
+    final Promise<Long> ch2_all_received=new Promise<>();
 
 
 

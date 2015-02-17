@@ -56,7 +56,7 @@ public class AUTH extends Protocol {
     protected static final short    gms_id=ClassConfigurator.getProtocolId(GMS.class);
 
     /** List of UpHandler which are called when an up event has been received. Usually used by AuthToken impls */
-    protected final List<UpHandler> up_handlers=new ArrayList<UpHandler>();
+    protected final List<UpHandler> up_handlers=new ArrayList<>();
 
     protected Address               local_addr;
 
@@ -86,7 +86,7 @@ public class AUTH extends Protocol {
 
 
     protected List<Object> getConfigurableObjects() {
-        List<Object> retval=new LinkedList<Object>();
+        List<Object> retval=new LinkedList<>();
         if(auth_token != null)
             retval.add(auth_token);
         return retval;

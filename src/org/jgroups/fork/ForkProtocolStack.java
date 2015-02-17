@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class ForkProtocolStack extends ProtocolStack {
     protected Address local_addr;
-    protected final ConcurrentMap<String,JChannel> fork_channels=new ConcurrentHashMap<String,JChannel>();
+    protected final ConcurrentMap<String,JChannel> fork_channels=new ConcurrentHashMap<>();
     private final UnknownForkHandler unknownForkHandler;
 
     public ForkProtocolStack(UnknownForkHandler unknownForkHandler) {
@@ -70,14 +70,14 @@ public class ForkProtocolStack extends ProtocolStack {
 
     public void up(MessageBatch batch) {
         // Sort fork messages by fork-channel-id
-        Map<String,List<Message>> map=new HashMap<String,List<Message>>();
+        Map<String,List<Message>> map=new HashMap<>();
         for(Message msg: batch) {
             FORK.ForkHeader hdr=(FORK.ForkHeader)msg.getHeader(FORK.ID);
             if(hdr != null) {
                 batch.remove(msg);
                 List<Message> list=map.get(hdr.getForkChannelId());
                 if(list == null) {
-                    list=new ArrayList<Message>();
+                    list=new ArrayList<>();
                     map.put(hdr.getForkChannelId(), list);
                 }
                 list.add(msg);

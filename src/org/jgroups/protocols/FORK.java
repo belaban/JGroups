@@ -61,7 +61,7 @@ public class FORK extends Protocol {
     };
 
     // mappings between fork-stack-ids and fork-stacks (bottom-most protocol)
-    protected final ConcurrentMap<String,Protocol> fork_stacks=new ConcurrentHashMap<String,Protocol>();
+    protected final ConcurrentMap<String,Protocol> fork_stacks=new ConcurrentHashMap<>();
 
     public void setUnknownForkHandler(UnknownForkHandler unknownForkHandler) {
         this.unknownForkHandler = unknownForkHandler;
@@ -105,14 +105,14 @@ public class FORK extends Protocol {
 
     public void up(MessageBatch batch) {
         // Sort fork messages by fork-stack-id
-        Map<String,List<Message>> map=new HashMap<String,List<Message>>();
+        Map<String,List<Message>> map=new HashMap<>();
         for(Message msg: batch) {
             ForkHeader hdr=(ForkHeader)msg.getHeader(id);
             if(hdr != null) {
                 batch.remove(msg);
                 List<Message> list=map.get(hdr.fork_stack_id);
                 if(list == null) {
-                    list=new ArrayList<Message>();
+                    list=new ArrayList<>();
                     map.put(hdr.fork_stack_id, list);
                 }
                 list.add(msg);

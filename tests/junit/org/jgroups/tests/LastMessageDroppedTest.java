@@ -73,7 +73,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
 
 
     protected static class MyReceiver extends ReceiverAdapter {
-        private final List<Integer> msgs=new ArrayList<Integer>(3);
+        private final List<Integer> msgs=new ArrayList<>(3);
 
         public List<Integer> getMsgs() {
             return msgs;

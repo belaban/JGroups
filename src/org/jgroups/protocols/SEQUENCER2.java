@@ -43,7 +43,7 @@ public class SEQUENCER2 extends Protocol {
 
     // messages to be multicast are added to this queue; when seqnos are received from the sequencer, we remove and
     // send messages from the queue
-    protected final BlockingQueue<Message>      fwd_queue=new LinkedBlockingQueue<Message>(20000); // make this configurable
+    protected final BlockingQueue<Message>      fwd_queue=new LinkedBlockingQueue<>(20000); // make this configurable
 
     // the number of seqno requests sent to the sequencer
     protected final AtomicInteger               seqno_reqs=new AtomicInteger(0);
@@ -66,7 +66,7 @@ public class SEQUENCER2 extends Protocol {
     protected long sent_responses=0;
     protected long received_responses=0;
 
-    protected Table<Message>  received_msgs = new Table<Message>();
+    protected Table<Message>  received_msgs = new Table<>();
     private int max_msg_batch_size = 100;
 
     @ManagedAttribute

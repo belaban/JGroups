@@ -54,7 +54,7 @@ public class JChannel extends Channel {
     /*the protocol stack, used to send and receive messages from the protocol stack*/
     protected ProtocolStack                         prot_stack;
 
-    protected final Promise<StateTransferResult>    state_promise=new Promise<StateTransferResult>();
+    protected final Promise<StateTransferResult>    state_promise=new Promise<>();
 
 
     /** True if a state transfer protocol is available, false otherwise (set by CONFIG event from STATE_TRANSFER protocol) */
@@ -298,7 +298,7 @@ public class JChannel extends Channel {
     }
 
     public synchronized void connect(String cluster_name, Address target, long timeout) throws Exception {
-    	connect(cluster_name, target, timeout,true);
+    	connect(cluster_name, target, timeout, true);
     }
 
     
@@ -410,7 +410,7 @@ public class JChannel extends Channel {
     }
 
     protected Map<String,Long> dumpChannelStats() {
-        Map<String,Long> retval=new HashMap<String,Long>();
+        Map<String,Long> retval=new HashMap<>();
         retval.put("sent_msgs",      sent_msgs);
         retval.put("sent_bytes",     sent_bytes);
         retval.put("received_msgs",  received_msgs);
@@ -514,7 +514,7 @@ public class JChannel extends Channel {
         if(address_generator == null)
             return;
         if(address_generators == null)
-            address_generators=new ArrayList<AddressGenerator>(3);
+            address_generators=new ArrayList<>(3);
         address_generators.add(address_generator);
     }
 
@@ -891,7 +891,7 @@ public class JChannel extends Channel {
         prot_stack.startStack(cluster_name, local_addr); // calls start() in all protocols, from top to bottom
 
         /*create a temporary view, assume this channel is the only member and is the coordinator*/
-        List<Address> t=new ArrayList<Address>(1);
+        List<Address> t=new ArrayList<>(1);
         t.add(local_addr);
         my_view=new View(local_addr, 0, t);  // create a dummy view
 
@@ -1089,7 +1089,7 @@ public class JChannel extends Channel {
     class MyProbeHandler implements DiagnosticsHandler.ProbeHandler {
 
         public Map<String, String> handleProbe(String... keys) {
-            Map<String, String> map=new HashMap<String, String>(2);
+            Map<String, String> map=new HashMap<>(2);
             for(String key: keys) {
                 if(key.startsWith("jmx")) {
                     handleJmx(map, key);

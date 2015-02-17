@@ -80,7 +80,7 @@ public class TransportThreadPoolTest extends ChannelTestBase {
 
 
     private static class Receiver extends ReceiverAdapter {
-        Collection<Message> msgs=new ConcurrentLinkedQueue<Message>();
+        Collection<Message> msgs=new ConcurrentLinkedQueue<>();
         
         final CountDownLatch latch = new CountDownLatch(4);
 

@@ -180,7 +180,7 @@ public class SWIFT_PING extends FILE_PING {
 
         KEYSTONE_V_2_0("keystone_v_2_0");
 
-        private static final Map<String, AUTH_TYPE> LOOKUP = new HashMap<String, AUTH_TYPE>();
+        private static final Map<String, AUTH_TYPE> LOOKUP = new HashMap<>();
 
         static {
             for (AUTH_TYPE type : EnumSet.allOf(AUTH_TYPE.class))
@@ -378,7 +378,7 @@ public class SWIFT_PING extends FILE_PING {
         }
 
         public List<String> payloadAsLines() {
-            List<String> lines = new ArrayList<String>();
+            List<String> lines = new ArrayList<>();
             BufferedReader in;
             try {
                 String line;

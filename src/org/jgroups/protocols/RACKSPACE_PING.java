@@ -460,7 +460,7 @@ public class RACKSPACE_PING extends FILE_PING {
             }
 
             public List<String> payloadAsLines() {
-                List<String> lines = new ArrayList<String>();
+                List<String> lines = new ArrayList<>();
                 BufferedReader in;
                 try {
                     String line;

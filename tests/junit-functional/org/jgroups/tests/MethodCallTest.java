@@ -24,7 +24,7 @@ import java.util.Map;
 public class MethodCallTest {
 
     protected static final Method CALL;
-    protected static final Map<Short,Method> methods=new HashMap<Short,Method>();
+    protected static final Map<Short,Method> methods=new HashMap<>();
 
     static {
         try {

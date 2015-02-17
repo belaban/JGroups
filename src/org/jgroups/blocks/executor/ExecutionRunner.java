@@ -92,7 +92,7 @@ public class ExecutionRunner implements Runnable {
                     finally {
                         shutdownLock.unlock();
                     }
-                    _runnables.put(currentThread, new Holder<Runnable>(
+                    _runnables.put(currentThread, new Holder<>(
                             runnable));
                     
                     Throwable throwable = null;
@@ -155,7 +155,7 @@ public class ExecutionRunner implements Runnable {
      *         populated otherwise null would mean the thread is waiting
      */
     public Map<Thread, Runnable> getCurrentRunningTasks() {
-        Map<Thread, Runnable> map = new HashMap<Thread, Runnable>();
+        Map<Thread, Runnable> map = new HashMap<>();
         for (Entry<Thread, Holder<Runnable>> entry : _runnables.entrySet()) {
             map.put(entry.getKey(), entry.getValue().value);
         }
@@ -163,7 +163,7 @@ public class ExecutionRunner implements Runnable {
     }
     
     private final Map<Thread, Holder<Runnable>> _runnables = 
-            new ConcurrentHashMap<Thread, Holder<Runnable>>();
+            new ConcurrentHashMap<>();
     
     protected static final Log _logger = LogFactory.getLog(ExecutionRunner.class);
 }

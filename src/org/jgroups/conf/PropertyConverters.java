@@ -317,7 +317,7 @@ public class PropertyConverters {
             if(addr == null)
                 return null;
             Enumeration<NetworkInterface> en;
-            List<InetAddress> retval=new ArrayList<InetAddress>();
+            List<InetAddress> retval=new ArrayList<>();
 
             try {
                 en=NetworkInterface.getNetworkInterfaces();

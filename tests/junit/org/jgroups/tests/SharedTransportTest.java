@@ -589,7 +589,7 @@ public class SharedTransportTest extends ChannelTestBase {
             if(ping == null)
                 throw new IllegalStateException("TCP stack must consist of TCP:TCPPING - other config are not supported");
 
-            List<String> initial_hosts=new LinkedList<String>();
+            List<String> initial_hosts=new LinkedList<>();
             for(short port: ports) {
                 initial_hosts.add(bind_addr + "[" + port + "]");
             }
@@ -612,7 +612,7 @@ public class SharedTransportTest extends ChannelTestBase {
 
 
     private static class MyReceiver extends ReceiverAdapter {
-        final List<Message> list=new LinkedList<Message>();
+        final List<Message> list=new LinkedList<>();
         final String name;
 
         private MyReceiver(String name) {

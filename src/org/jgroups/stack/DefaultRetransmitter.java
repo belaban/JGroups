@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * @author Bela Ban
  */
 public class DefaultRetransmitter extends Retransmitter {
-    private final ConcurrentNavigableMap<Long,Task> msgs=new ConcurrentSkipListMap<Long,Task>();
+    private final ConcurrentNavigableMap<Long,Task> msgs=new ConcurrentSkipListMap<>();
 
 
     /**

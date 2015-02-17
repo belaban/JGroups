@@ -77,12 +77,12 @@ public class GossipRouter {
     private long expiryTime=0;
 
     // Maintains associations between groups and their members
-    private final ConcurrentMap<String, ConcurrentMap<Address, ConnectionHandler>> routingTable=new ConcurrentHashMap<String, ConcurrentMap<Address, ConnectionHandler>>();
+    private final ConcurrentMap<String, ConcurrentMap<Address, ConnectionHandler>> routingTable=new ConcurrentHashMap<>();
 
     /**
      * Store physical address associated with a logical address. Used mainly by TCPGOSSIP
      */
-    private final Map<Address, PhysicalAddress> address_mappings=new ConcurrentHashMap<Address,PhysicalAddress>();
+    private final Map<Address, PhysicalAddress> address_mappings=new ConcurrentHashMap<>();
 
     private ServerSocket srvSock=null;
     private InetAddress bindAddress=null;
@@ -101,7 +101,7 @@ public class GossipRouter {
     @ManagedAttribute(description="whether to discard message sent to self", writable=true)
     private boolean discard_loopbacks=false;
 
-    protected List<ConnectionTearListener> connectionTearListeners=new CopyOnWriteArrayList<ConnectionTearListener>();
+    protected List<ConnectionTearListener> connectionTearListeners=new CopyOnWriteArrayList<>();
 
     protected ThreadFactory default_thread_factory=new DefaultThreadFactory("gossip-handlers", true, true);
 
@@ -410,7 +410,7 @@ public class GossipRouter {
      */
     private void sweep() {
         long diff, currentTime = System.currentTimeMillis();       
-        List <ConnectionHandler> victims = new ArrayList<ConnectionHandler>();
+        List <ConnectionHandler> victims = new ArrayList<>();
         for (Iterator<Entry<String, ConcurrentMap<Address, ConnectionHandler>>> it = routingTable.entrySet().iterator(); it.hasNext();) {
             Map<Address, ConnectionHandler> map = it.next().getValue();            
             if (map == null || map.isEmpty()) {
@@ -616,8 +616,8 @@ public class GossipRouter {
         private final Socket sock;
         private final DataOutputStream output;
         private final DataInputStream input;
-        private final List<Address> logical_addrs=new ArrayList<Address>();
-        Set<String> known_groups = new HashSet<String>();
+        private final List<Address> logical_addrs=new ArrayList<>();
+        Set<String> known_groups = new HashSet<>();
         private long timestamp;
 
         public ConnectionHandler(Socket sock) throws IOException {
@@ -692,7 +692,7 @@ public class GossipRouter {
                             break;
 
                         case GossipRouter.GOSSIP_GET:
-                            List<PingData> mbrs=new ArrayList<PingData>();
+                            List<PingData> mbrs=new ArrayList<>();
                             ConcurrentMap<Address,ConnectionHandler> map=routingTable.get(group);
                             if(map != null) {
                                 for(Address logical_addr: map.keySet()) {
@@ -774,7 +774,7 @@ public class GossipRouter {
             synchronized(routingTable) {
                 ConcurrentMap<Address,ConnectionHandler> map=routingTable.get(group);
                 if(map == null) {
-                    map=new ConcurrentHashMap<Address, ConnectionHandler>();
+                    map=new ConcurrentHashMap<>();
                     routingTable.put(group, map);
                 }
                 map.put(addr, this);

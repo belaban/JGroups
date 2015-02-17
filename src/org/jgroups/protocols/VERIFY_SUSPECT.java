@@ -63,7 +63,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     protected Address local_addr=null;
 
     // a list of suspects, ordered by time when a SUSPECT event needs to be sent up
-    protected final DelayQueue<Entry> suspects=new DelayQueue<Entry>();
+    protected final DelayQueue<Entry> suspects=new DelayQueue<>();
 
     @ManagedAttribute(description = "List of currently suspected members")
     public String getSuspects() {

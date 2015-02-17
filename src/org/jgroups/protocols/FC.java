@@ -73,7 +73,7 @@ public class FC extends Protocol {
     private Map<Long,Long> max_block_times=null;
 
     /** Keeps track of the end time after which a message should not get blocked anymore */
-    private static final ThreadLocal<Long> end_time=new ThreadLocal<Long>();
+    private static final ThreadLocal<Long> end_time=new ThreadLocal<>();
 
 
     /**
@@ -114,7 +114,7 @@ public class FC extends Protocol {
     private int num_credit_responses_sent=0, num_credit_responses_received=0;
     private long total_time_blocking=0;
 
-    private final BoundedList<Long> last_blockings=new BoundedList<Long>(50);
+    private final BoundedList<Long> last_blockings=new BoundedList<>(50);
     
     
     
@@ -142,7 +142,7 @@ public class FC extends Protocol {
      * List of members from whom we expect credits
      */
     @GuardedBy("lock")
-    private final Set<Address> creditors=new HashSet<Address>(11);
+    private final Set<Address> creditors=new HashSet<>(11);
 
     
     /**
@@ -225,7 +225,7 @@ public class FC extends Protocol {
         Long prev_key=null, prev_val=null;
         List<String> vals=Util.parseCommaDelimitedStrings(str);
         if(max_block_times == null)
-            max_block_times=new TreeMap<Long,Long>();
+            max_block_times=new TreeMap<>();
         for(String tmp: vals) {
             int index=tmp.indexOf(':');
             if(index == -1)
@@ -583,7 +583,7 @@ public class FC extends Protocol {
 
                             // we need to send the credit requests down *without* holding the lock, otherwise we might
                             // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
-                            Map<Address,Credit> sent_copy=new HashMap<Address,Credit>(sent);
+                            Map<Address,Credit> sent_copy=new HashMap<>(sent);
                             sent_copy.keySet().retainAll(creditors);
                             lock.unlock();
                             try {

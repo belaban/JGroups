@@ -53,7 +53,7 @@ public class MessageBatchTest {
     }
 
     public void testCreationWithFilter() {
-        List<Message> msgs=new ArrayList<Message>(10);
+        List<Message> msgs=new ArrayList<>(10);
         for(int i=1; i <= 10; i++)
             msgs.add(new Message(null, i));
         MessageBatch batch=new MessageBatch(null, null, null, true, msgs, new Filter<Message>() {
@@ -69,7 +69,7 @@ public class MessageBatchTest {
 
 
     public void testCreationWithFilter2() {
-        List<Message> msgs=new ArrayList<Message>(20);
+        List<Message> msgs=new ArrayList<>(20);
         for(int i=1; i <= 20; i++) {
             Message msg=new Message(null, i);
             if(i <= 10) {
@@ -180,7 +180,7 @@ public class MessageBatchTest {
                 batch.replace(msg, msg); // tests replacing the message with itself (with changed buffer though)
             }
         }
-        Queue<String> names=new LinkedBlockingQueue<String>(Arrays.asList("Bela", "Michelle", "Nicole"));
+        Queue<String> names=new LinkedBlockingQueue<>(Arrays.asList("Bela", "Michelle", "Nicole"));
         for(Message msg: batch) {
             String expected=names.poll();
             String name=(String)msg.getObject();
@@ -192,7 +192,7 @@ public class MessageBatchTest {
 
     public void testReplaceDuplicates() {
         Filter<Message> filter=new Filter<Message>() {
-            protected final Set<Integer> dupes=new HashSet<Integer>(5);
+            protected final Set<Integer> dupes=new HashSet<>(5);
             public boolean accept(Message msg) {
                 Integer num=(Integer)msg.getObject();
                 return dupes.add(num) == false;
@@ -504,7 +504,7 @@ public class MessageBatchTest {
 
 
     protected List<Message> createMessages() {
-        List<Message> retval=new ArrayList<Message>(10);
+        List<Message> retval=new ArrayList<>(10);
 
         for(long seqno=1; seqno <= 5; seqno++)
             retval.add(new Message(b).putHeader(UNICAST2_ID, UNICAST2.Unicast2Header.createDataHeader(seqno, (short)22, false)));

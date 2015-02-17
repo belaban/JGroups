@@ -29,7 +29,7 @@ public class InetAddressChecksTest {
 	static final String ipCheckConsistentProps="org.jgroups.tests.InetAddressChecksTest$IPCHECK(" + 
 								"inetAddress1=127.0.0.1;inetAddress2=127.0.0.1;inetAddress3=192.168.0.100;i=3)" ;
 	          
-	List<String> order = new LinkedList<String>() ;
+	List<String> order = new LinkedList<>() ;
 
 	@BeforeMethod
 	void setUp() {
@@ -42,8 +42,8 @@ public class InetAddressChecksTest {
 	@Test(expectedExceptions=RuntimeException.class)
 	public void testIPVersionCheckingNoConsistentVersion() throws Exception {
 
-		Vector<ProtocolConfiguration> protocol_configs = new Vector<ProtocolConfiguration>() ;
-		Vector<Protocol> protocols = new Vector<Protocol>() ;
+		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
+		Vector<Protocol> protocols = new Vector<>() ;
 		
 		// create the layer described by IPCHECK
 		protocol = Configurator.createProtocol(ipCheckNoConsistentProps, stack) ;
@@ -79,8 +79,8 @@ public class InetAddressChecksTest {
 	 */
 	public void testIPVersionCheckingConsistentVersion() throws Exception {
 
-		Vector<ProtocolConfiguration> protocol_configs = new Vector<ProtocolConfiguration>() ;
-		Vector<Protocol> protocols = new Vector<Protocol>() ;
+		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
+		Vector<Protocol> protocols = new Vector<>() ;
 		
 		// create the layer described by IPCHECK
 		protocol = Configurator.createProtocol(ipCheckConsistentProps, stack) ;

@@ -204,7 +204,7 @@ public class MessageBatch implements Iterable<Message> {
                 T result=visitor.visit(messages[i], this);
                 if(result != null) {
                     if(retval == null)
-                        retval=new ArrayList<T>();
+                        retval=new ArrayList<>();
                     retval.add(result);
                 }
             }

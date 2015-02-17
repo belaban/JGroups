@@ -98,7 +98,7 @@ public class TimeSchedulerStressTest {
 
 
     class MyTask implements Runnable {
-        final Promise<Boolean> result=new Promise<Boolean>();
+        final Promise<Boolean> result=new Promise<>();
 
         public void run() {
             total_task_invocations.incrementAndGet();

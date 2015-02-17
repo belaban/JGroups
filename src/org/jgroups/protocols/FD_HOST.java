@@ -64,26 +64,26 @@ public class FD_HOST extends Protocol {
     @ManagedAttribute(description="Number of suspected events received")
     protected int                                        num_suspect_events;
 
-    protected final Set<Address>                         suspected_mbrs=new HashSet<Address>();
+    protected final Set<Address>                         suspected_mbrs=new HashSet<>();
 
     @ManagedAttribute(description="Shows whether there are currently any suspected members")
     protected volatile boolean                           has_suspected_mbrs;
 
-    protected final BoundedList<Tuple<InetAddress,Long>> suspect_history=new BoundedList<Tuple<InetAddress,Long>>(20);
+    protected final BoundedList<Tuple<InetAddress,Long>> suspect_history=new BoundedList<>(20);
 
     protected Address                                    local_addr;
     protected InetAddress                                local_host;
-    protected final List<Address>                        members=new ArrayList<Address>();
+    protected final List<Address>                        members=new ArrayList<>();
 
     /** The command to detect whether a target is alive */
     protected PingCommand                                ping_command=new IsReachablePingCommand();
 
     /** Map of hosts and their cluster members, updated on view changes. Used to suspect all members
      of a suspected host */
-    protected final Map<InetAddress,List<Address>>       hosts=new HashMap<InetAddress,List<Address>>();
+    protected final Map<InetAddress,List<Address>>       hosts=new HashMap<>();
 
     // Map of hosts and timestamps of last updates (ns)
-    protected final ConcurrentMap<InetAddress, Long>     timestamps=new ConcurrentHashMap<InetAddress,Long>();
+    protected final ConcurrentMap<InetAddress, Long>     timestamps=new ConcurrentHashMap<>();
 
     /** Timer used to run the ping task on */
     protected TimeScheduler                              timer;
@@ -218,11 +218,11 @@ public class FD_HOST extends Protocol {
                     continue;
                 List<Address> mbrs=hosts.get(key);
                 if(mbrs == null)
-                    hosts.put(key, mbrs=new ArrayList<Address>());
+                    hosts.put(key, mbrs=new ArrayList<>());
                 mbrs.add(mbr);
             }
             is_pinger=isPinger(local_addr);
-            current_hosts=new ArrayList<InetAddress>(hosts.keySet());
+            current_hosts=new ArrayList<>(hosts.keySet());
         }
 
         if(suspected_mbrs.retainAll(view.getMembers()))
@@ -273,10 +273,10 @@ public class FD_HOST extends Protocol {
     /** Called by ping task; will result in all members of host getting suspected */
     protected void suspect(InetAddress host) {
         List<Address> suspects;
-        suspect_history.add(new Tuple<InetAddress,Long>(host, System.currentTimeMillis())); // we need wall clock time here
+        suspect_history.add(new Tuple<>(host, System.currentTimeMillis())); // we need wall clock time here
         synchronized(hosts) {
             List<Address> tmp=hosts.get(host);
-            suspects=tmp != null? new ArrayList<Address>(tmp) : null;
+            suspects=tmp != null? new ArrayList<>(tmp) : null;
         }
         if(suspects != null) {
             log.debug("%s: suspecting host %s; suspected members: %s", local_addr, host, Util.printListWithDelimiter(suspects, ","));
@@ -291,7 +291,7 @@ public class FD_HOST extends Protocol {
 
         num_suspect_events+=suspects.size();
 
-        final List<Address> eligible_mbrs=new ArrayList<Address>();
+        final List<Address> eligible_mbrs=new ArrayList<>();
         synchronized(this) {
             suspected_mbrs.addAll(suspects);
             eligible_mbrs.addAll(members);
@@ -377,7 +377,7 @@ public class FD_HOST extends Protocol {
         public void run() {
             List<InetAddress> targets;
             synchronized(hosts) {
-                targets=new ArrayList<InetAddress>(hosts.keySet());
+                targets=new ArrayList<>(hosts.keySet());
             }
             targets.remove(local_host);
 

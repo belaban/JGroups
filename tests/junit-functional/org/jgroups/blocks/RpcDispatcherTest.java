@@ -306,7 +306,7 @@ public class RpcDispatcherTest {
 
     public void testNotifyingFuture() throws Exception {
         MethodCall sleep=new MethodCall("sleep", new Object[]{1000L}, new Class[]{long.class});
-        MyFutureListener<RspList<Long>> listener=new MyFutureListener<RspList<Long>>();
+        MyFutureListener<RspList<Long>> listener=new MyFutureListener<>();
         Future<RspList<Long>> future=disp1.callRemoteMethodsWithFuture(null, sleep,
                                                                        new RequestOptions(ResponseMode.GET_ALL,5000L),
                                                                        listener);
@@ -335,7 +335,7 @@ public class RpcDispatcherTest {
 
     public void testNotifyingFutureWithDelayedListener() throws Exception {
         MethodCall sleep=new MethodCall("sleep", new Object[]{1000L}, new Class[]{long.class});
-        MyFutureListener<RspList<Long>> listener=new MyFutureListener<RspList<Long>>();
+        MyFutureListener<RspList<Long>> listener=new MyFutureListener<>();
         Future<RspList<Long>> future=disp1.callRemoteMethodsWithFuture(null, sleep,
                                                                        new RequestOptions(ResponseMode.GET_ALL,5000L),
                                                                        listener);
@@ -354,7 +354,7 @@ public class RpcDispatcherTest {
 
     public void testMultipleFutures() throws Exception {
         MethodCall sleep=new MethodCall("sleep", new Object[]{100L}, new Class[]{long.class});
-        List<Future<RspList<Long>>> futures=new ArrayList<Future<RspList<Long>>>();
+        List<Future<RspList<Long>>> futures=new ArrayList<>();
         long target=System.currentTimeMillis() + 30000L;
 
         Future<RspList<Long>> future;
@@ -364,7 +364,7 @@ public class RpcDispatcherTest {
             futures.add(future);
         }
 
-        List<Future<RspList<Long>>> rsps=new ArrayList<Future<RspList<Long>>>();
+        List<Future<RspList<Long>>> rsps=new ArrayList<>();
         while(!futures.isEmpty() && System.currentTimeMillis() < target) {
             for(Iterator<Future<RspList<Long>>> it=futures.iterator(); it.hasNext();) {
                 future=it.next();
@@ -384,10 +384,10 @@ public class RpcDispatcherTest {
 
     public void testMultipleNotifyingFutures() throws Exception {
         MethodCall sleep=new MethodCall("sleep", new Object[]{100L}, new Class[]{long.class});
-        List<MyFutureListener<RspList<Long>>> listeners=new ArrayList<MyFutureListener<RspList<Long>>>();
+        List<MyFutureListener<RspList<Long>>> listeners=new ArrayList<>();
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 30000L);
         for(int i=0; i < 10; i++) {
-            MyFutureListener<RspList<Long>> listener=new MyFutureListener<RspList<Long>>();
+            MyFutureListener<RspList<Long>> listener=new MyFutureListener<>();
             listeners.add(listener);
             disp1.callRemoteMethodsWithFuture(null, sleep, options, listener);
         }

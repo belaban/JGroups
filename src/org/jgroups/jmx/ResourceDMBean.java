@@ -38,10 +38,10 @@ public class ResourceDMBean implements DynamicMBean {
     protected final Object                         obj;
     protected final MBeanAttributeInfo[]           attrInfo;
     protected final MBeanOperationInfo[]           opInfo;
-    protected final HashMap<String,AttributeEntry> atts=new HashMap<String,AttributeEntry>();
-    protected final List<MBeanOperationInfo>       ops=new ArrayList<MBeanOperationInfo>();
+    protected final HashMap<String,AttributeEntry> atts=new HashMap<>();
+    protected final List<MBeanOperationInfo>       ops=new ArrayList<>();
 
-    static {OBJECT_METHODS=new ArrayList<Method>(Arrays.asList(Object.class.getMethods()));}
+    static {OBJECT_METHODS=new ArrayList<>(Arrays.asList(Object.class.getMethods()));}
 
 
     public ResourceDMBean(Object instance) {
@@ -158,7 +158,7 @@ public class ResourceDMBean implements DynamicMBean {
 
     protected void findMethods() {
         // find all methods but don't include methods from Object class
-        List<Method> methods = new ArrayList<Method>(Arrays.asList(obj.getClass().getMethods()));
+        List<Method> methods = new ArrayList<>(Arrays.asList(obj.getClass().getMethods()));
         methods.removeAll(OBJECT_METHODS);
 
         for(Method method: methods) {
@@ -286,7 +286,7 @@ public class ResourceDMBean implements DynamicMBean {
         }
 
         // Find all methods but don't include methods from Object class
-        List<Method> methods=new ArrayList<Method>(Arrays.asList(clazz.getMethods()));
+        List<Method> methods=new ArrayList<>(Arrays.asList(clazz.getMethods()));
         methods.removeAll(OBJECT_METHODS);
 
         for(Method method: methods) {

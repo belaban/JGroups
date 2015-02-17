@@ -92,7 +92,7 @@ public class ConcurrentStartupTest {
     }
 
     protected static class Joiner extends ReceiverAdapter {
-        protected final List<Integer> state=new ArrayList<Integer>(10);
+        protected final List<Integer> state=new ArrayList<>(10);
         protected final JChannel      ch;
 
         public Joiner(JChannel ch) {

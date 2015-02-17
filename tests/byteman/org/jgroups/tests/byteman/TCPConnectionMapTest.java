@@ -204,7 +204,7 @@ public class TCPConnectionMapTest extends BMNGRunner {
 
     protected static class MyReceiver implements TCPConnectionMap.Receiver {
         protected final String        name;
-        protected final List<String>  reqs=new ArrayList<String>();
+        protected final List<String>  reqs=new ArrayList<>();
 
         public MyReceiver(String name) {
             this.name=name;

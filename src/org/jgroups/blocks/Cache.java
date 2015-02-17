@@ -27,7 +27,7 @@ public class Cache<K,V> {
     private Future task=null;
     private final AtomicBoolean is_reaping=new AtomicBoolean(false);
 
-    private Set<ChangeListener> change_listeners=new HashSet<ChangeListener>();
+    private Set<ChangeListener> change_listeners=new HashSet<>();
 
     /** The maximum number of keys, When this value is exceeded we evict older entries, until we drop below this 
      * mark again. This effectively maintains a bounded cache. A value of 0 means don't bound the cache.
@@ -103,7 +103,7 @@ public class Cache<K,V> {
     public V put(K key, V val, long caching_time) {
         if(log.isTraceEnabled())
             log.trace("put(" + key + ", " + val + ", " + caching_time + ")");
-        Value<V> value=new Value<V>(val, caching_time);
+        Value<V> value=new Value<>(val, caching_time);
         Value<V> retval=map.put(key, value);
 
         if(max_num_entries > 0 && map.size() > max_num_entries) {
@@ -121,7 +121,7 @@ public class Cache<K,V> {
                                 if(map.size() > max_num_entries) {
                                     // still too many entries: now evict entries based on insertion time: oldest first
                                     int diff=map.size() - max_num_entries; // we have to evict diff entries
-                                    SortedMap<Long,K> tmp=new TreeMap<Long,K>();
+                                    SortedMap<Long,K> tmp=new TreeMap<>();
                                     for(Map.Entry<K,Value<V>> entry: map.entrySet()) {
                                         tmp.put(entry.getValue().insertion_time, entry.getKey());
                                     }

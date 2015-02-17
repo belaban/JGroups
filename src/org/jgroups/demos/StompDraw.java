@@ -30,8 +30,8 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
     private final Color            draw_color=selectColor();
     private static final Color     background_color=Color.white;
-    private final                  List<String> servers=new ArrayList<String>();
-    private final Set<String>      clients=new HashSet<String>();
+    private final                  List<String> servers=new ArrayList<>();
+    private final Set<String>      clients=new HashSet<>();
 
     protected StompConnection      stomp_client;
     protected static final String  draw_dest="/topics/draw-demo";
@@ -319,7 +319,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
 
         public DrawPanel(boolean use_state) {
             if(use_state)
-                state=new LinkedHashMap<Point,Color>();
+                state=new LinkedHashMap<>();
             else
                 state=null;
             createOffscreenImage(false);
@@ -356,7 +356,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
 
         public void readState(InputStream instream) throws IOException {
             DataInputStream in=new DataInputStream(instream);
-            Map<Point,Color> new_state=new HashMap<Point,Color>();
+            Map<Point,Color> new_state=new HashMap<>();
             int num=in.readInt();
             Point point;
             Color col;

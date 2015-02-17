@@ -27,7 +27,7 @@ public class RpcDispatcherAnycastServerObject extends ReceiverAdapter {
     public void callRemote(boolean useAnycast, boolean excludeSelf) throws Exception {
         // we need to copy the vector, otherwise the modification below will throw an exception because the underlying
         // vector is unmodifiable
-        List<Address> v=new ArrayList<Address>(c.getView().getMembers());
+        List<Address> v=new ArrayList<>(c.getView().getMembers());
         if(excludeSelf) v.remove(c.getAddress());
         RspList rsps=d.callRemoteMethods(v, "doSomething", new Object[]{}, new Class[]{}, new RequestOptions(ResponseMode.GET_ALL, 20000, useAnycast));
         Map.Entry entry;

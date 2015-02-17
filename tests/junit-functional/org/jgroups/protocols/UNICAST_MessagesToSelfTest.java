@@ -141,7 +141,7 @@ public class UNICAST_MessagesToSelfTest {
     protected static class Receiver extends ReceiverAdapter {
         int num_mgs_received=0, next=1;
         Throwable exception=null;
-        protected final List<Integer> list=new ArrayList<Integer>(NUM_MSGS);
+        protected final List<Integer> list=new ArrayList<>(NUM_MSGS);
 
         public void receive(Message msg) {
             if(exception != null)

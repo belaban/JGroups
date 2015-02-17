@@ -58,7 +58,7 @@ public class FRAG2 extends Protocol {
     /** Used to assign fragmentation-specific sequence IDs (monotonically increasing) */
     protected int                 curr_id=1;
 
-    protected final List<Address> members=new ArrayList<Address>(11);
+    protected final List<Address> members=new ArrayList<>(11);
 
     protected Address             local_addr;
 
@@ -94,7 +94,7 @@ public class FRAG2 extends Protocol {
                                                      max_bundle_size + ")");
         }
 
-        Map<String,Object> info=new HashMap<String,Object>(1);
+        Map<String,Object> info=new HashMap<>(1);
         info.put("frag_size", frag_size);
         down_prot.down(new Event(Event.CONFIG, info));
     }

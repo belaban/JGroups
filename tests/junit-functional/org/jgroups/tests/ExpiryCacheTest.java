@@ -13,7 +13,7 @@ import org.testng.annotations.Test;
 public class ExpiryCacheTest {
 
     public void testAdd() {
-        ExpiryCache<String> cache=new ExpiryCache<String>(10000);
+        ExpiryCache<String> cache=new ExpiryCache<>(10000);
         boolean added=add(cache, "Bela");
         assert added;
 
@@ -32,7 +32,7 @@ public class ExpiryCacheTest {
 
 
     public void testReplaceExpiredElement() {
-        ExpiryCache<String> cache=new ExpiryCache<String>(200);
+        ExpiryCache<String> cache=new ExpiryCache<>(200);
         add(cache, "Bela");
         for(int i=0; i < 20; i++) {
             if(cache.hasExpired("Bela"))
@@ -47,7 +47,7 @@ public class ExpiryCacheTest {
 
 
     public void testRemovedExpiredElements() {
-        ExpiryCache<String> cache=new ExpiryCache<String>(200);
+        ExpiryCache<String> cache=new ExpiryCache<>(200);
         add(cache, "Bela");
         add(cache, "Michelle");
         add(cache, "Nicole");

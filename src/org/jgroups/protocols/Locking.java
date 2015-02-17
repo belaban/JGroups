@@ -59,7 +59,7 @@ abstract public class Locking extends Protocol {
     // client side locks
     protected final ClientLockTable       client_lock_table=new ClientLockTable();
 
-    protected final Set<LockNotification> lock_listeners=new HashSet<LockNotification>();
+    protected final Set<LockNotification> lock_listeners=new HashSet<>();
 
     protected final static AtomicInteger  current_lock_id=new AtomicInteger(1);
     
@@ -299,7 +299,7 @@ abstract public class Locking extends Protocol {
         this.view=view;
         log.debug("view=%s", view);
         List<Address> members=view.getMembers();
-        List<Response> responses=new ArrayList<Response>();
+        List<Response> responses=new ArrayList<>();
         for(Map.Entry<String,ServerLock> entry: server_locks.entrySet()) {
             String lock_name=entry.getKey();
             ServerLock server_lock=entry.getValue();
@@ -619,7 +619,7 @@ abstract public class Locking extends Protocol {
     protected class ServerLock {
         protected final String          lock_name;
         protected Owner                 current_owner;
-        protected final List<Request>   queue=new ArrayList<Request>();
+        protected final List<Request>   queue=new ArrayList<>();
         protected final ServerCondition condition;
 
         public ServerLock(String lock_name) {
@@ -796,7 +796,7 @@ abstract public class Locking extends Protocol {
 
     protected class ServerCondition {
         protected final ServerLock   lock;
-        protected final Queue<Owner> queue=new ArrayDeque<Owner>();
+        protected final Queue<Owner> queue=new ArrayDeque<>();
         
         public ServerCondition(ServerLock lock) {
             this.lock = lock;
@@ -1035,7 +1035,7 @@ abstract public class Locking extends Protocol {
             if(owners == null) {
                 if(!create_if_absent)
                     return null;
-                owners=new HashMap<Owner,ClientLock>();
+                owners=new HashMap<>();
                 Map<Owner,ClientLock> existing=table.putIfAbsent(name,owners);
                 if(existing != null)
                     owners=existing;
@@ -1062,7 +1062,7 @@ abstract public class Locking extends Protocol {
         }
 
         protected void unlockAll() {
-            List<ClientLock> lock_list=new ArrayList<ClientLock>();
+            List<ClientLock> lock_list=new ArrayList<>();
             synchronized(this) {
                 Collection<Map<Owner,ClientLock>> maps=table.values();
                 for(Map<Owner,ClientLock> map: maps)
@@ -1123,7 +1123,7 @@ abstract public class Locking extends Protocol {
          * This is okay only having 1 since a client condition is 1 per 
          * lock_name, thread id combination.
          */
-        protected volatile AtomicReference<Thread> parker=new AtomicReference<Thread>();
+        protected volatile AtomicReference<Thread> parker=new AtomicReference<>();
         
         public ClientCondition(ClientLock lock) {
             this.lock = lock;

@@ -13,7 +13,7 @@ import java.util.concurrent.*;
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class RejectionPoliciesTest {
     public void testCustomPolicy() {
-        BlockingQueue<Runnable> queue = new SynchronousQueue<Runnable>();
+        BlockingQueue<Runnable> queue = new SynchronousQueue<>();
         ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, queue);
         RejectedExecutionHandler handler = Util.parseRejectionPolicy("custom=org.jgroups.tests.RejectionPoliciesTest$FooPolicy");
         executor.setRejectedExecutionHandler(handler);
@@ -33,7 +33,7 @@ public class RejectionPoliciesTest {
     }
 
     public void testDeadlockDetectionPolicy1() {
-        BlockingQueue<Runnable> queue = new SynchronousQueue<Runnable>();
+        BlockingQueue<Runnable> queue = new SynchronousQueue<>();
         ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, queue);
         RejectedExecutionHandler handler = Util.parseRejectionPolicy("progress_check");
         executor.setRejectedExecutionHandler(handler);
@@ -59,7 +59,7 @@ public class RejectionPoliciesTest {
     }
 
     public void testDeadlockDetectionPolicy2() {
-        BlockingQueue<Runnable> queue = new SynchronousQueue<Runnable>();
+        BlockingQueue<Runnable> queue = new SynchronousQueue<>();
         ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, queue);
         RejectedExecutionHandler handler = Util.parseRejectionPolicy(
                 "progress_check=period:15000,fallback:custom=org.jgroups.tests.RejectionPoliciesTest$FooPolicy");

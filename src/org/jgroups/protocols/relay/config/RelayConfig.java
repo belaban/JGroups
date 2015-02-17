@@ -159,8 +159,8 @@ public class RelayConfig {
 
     public static class SiteConfig {
         protected final String              name;
-        protected final List<BridgeConfig>  bridges=new ArrayList<BridgeConfig>();
-        protected final List<ForwardConfig> forwards=new ArrayList<ForwardConfig>();
+        protected final List<BridgeConfig>  bridges=new ArrayList<>();
+        protected final List<ForwardConfig> forwards=new ArrayList<>();
 
         public SiteConfig(String name) {
             this.name=name;
@@ -262,7 +262,7 @@ public class RelayConfig {
 
     public static void main(String[] args) throws Exception {
         InputStream input=new FileInputStream("/home/bela/relay2.xml");
-        Map<String,SiteConfig> sites=new HashMap<String,SiteConfig>();
+        Map<String,SiteConfig> sites=new HashMap<>();
         RelayConfig.parse(input, sites);
         System.out.println("sites:");
         for(Map.Entry<String,SiteConfig> entry: sites.entrySet())

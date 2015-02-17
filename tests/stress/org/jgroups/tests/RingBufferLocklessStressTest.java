@@ -34,7 +34,7 @@ public class RingBufferLocklessStressTest {
             }
         }
 
-        RingBufferLockless<Message> buf=new RingBufferLockless<Message>(NUM_MSGS, 0);
+        RingBufferLockless<Message> buf=new RingBufferLockless<>(NUM_MSGS, 0);
 
         final CountDownLatch latch=new CountDownLatch(1);
 

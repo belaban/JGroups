@@ -96,7 +96,7 @@ public class TCPPING extends Discovery {
 
     public void init() throws Exception {
         super.init();
-        dynamic_hosts=new BoundedList<PhysicalAddress>(max_dynamic_hosts);
+        dynamic_hosts=new BoundedList<>(max_dynamic_hosts);
     }
 
     public Object down(Event evt) {
@@ -136,7 +136,7 @@ public class TCPPING extends Discovery {
         PingData data=new PingData(local_addr, false, org.jgroups.util.UUID.get(local_addr), physical_addr);
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name);
 
-        Set<PhysicalAddress> cluster_members=new HashSet<PhysicalAddress>(initial_hosts);
+        Set<PhysicalAddress> cluster_members=new HashSet<>(initial_hosts);
         cluster_members.addAll(dynamic_hosts);
 
         if(use_disk_cache) {

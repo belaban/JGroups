@@ -89,7 +89,7 @@ public class MergeTest3 {
         }
 
         System.out.println("Injecting MERGE event into merge leader " + merge_leader.getAddress());
-        Map<Address,View> merge_views=new HashMap<Address,View>(6);
+        Map<Address,View> merge_views=new HashMap<>(6);
         merge_views.put(first_coord, findChannel(first_coord).getView());
         merge_views.put(second_coord, findChannel(second_coord).getView());
 
@@ -130,7 +130,7 @@ public class MergeTest3 {
         cancelMerge(busy_second);
 
         System.out.println("Injecting MERGE event into merge leader " + merge_leader.getAddress());
-        merge_views=new HashMap<Address,View>(6);
+        merge_views=new HashMap<>(6);
         merge_views.put(merge_leader.getAddress(), merge_leader.getView());
         merge_views.put(busy_first, findChannel(busy_first).getView());
         merge_views.put(busy_second, findChannel(busy_second).getView());
@@ -220,14 +220,14 @@ public class MergeTest3 {
     }
 
     protected List<Address> getMembers(JChannel ... channels) {
-        List<Address> members=new ArrayList<Address>(channels.length);
+        List<Address> members=new ArrayList<>(channels.length);
         for(JChannel ch: channels)
             members.add(ch.getAddress());
         return members;
     }
 
     protected Address determineCoordinator(JChannel ... channels) {
-        List<Address> list=new ArrayList<Address>(channels.length);
+        List<Address> list=new ArrayList<>(channels.length);
         for(JChannel ch: channels)
             list.add(ch.getAddress());
         Collections.sort(list);
@@ -235,7 +235,7 @@ public class MergeTest3 {
     }
 
     protected JChannel findMergeLeader(JChannel ... channels) {
-        Set<Address> tmp=new TreeSet<Address>();
+        Set<Address> tmp=new TreeSet<>();
         for(JChannel ch: channels)
             tmp.add(ch.getAddress());
         Address leader=tmp.iterator().next();

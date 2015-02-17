@@ -37,18 +37,18 @@ public class ClassConfigurator {
     private static final short MIN_CUSTOM_PROTOCOL_ID=512;
 
     // this is where we store magic numbers; contains data from jg-magic-map.xml;  key=Class, value=magic number
-    private static final Map<Class,Short> classMap=new IdentityHashMap<Class,Short>(MAX_MAGIC_VALUE);
+    private static final Map<Class,Short> classMap=new IdentityHashMap<>(MAX_MAGIC_VALUE);
 
 
     // Magic map for all values defined in jg-magic-map.xml
     private static final Class[] magicMap=new Class[MAX_MAGIC_VALUE]; /// simple array, IDs are the indices
 
     // Magic map for user-defined IDs / classes
-    private static final Map<Short,Class> magicMapUser=new HashMap<Short,Class>(); // key=magic number, value=Class
+    private static final Map<Short,Class> magicMapUser=new HashMap<>(); // key=magic number, value=Class
 
     /** Contains data read from jg-protocol-ids.xml */
-    private static final Map<Class,Short> protocol_ids=new HashMap<Class,Short>(MAX_MAGIC_VALUE);
-    private static final Map<Short,Class> protocol_names=new HashMap<Short,Class>(MAX_MAGIC_VALUE);
+    private static final Map<Class,Short> protocol_ids=new HashMap<>(MAX_MAGIC_VALUE);
+    private static final Map<Short,Class> protocol_names=new HashMap<>(MAX_MAGIC_VALUE);
 
 
     static {
@@ -194,7 +194,7 @@ public class ClassConfigurator {
 
     public static String printMagicMap() {
         StringBuilder sb=new StringBuilder();
-        SortedSet<Short> keys=new TreeSet<Short>(magicMapUser.keySet());
+        SortedSet<Short> keys=new TreeSet<>(magicMapUser.keySet());
         for(short i=0; i < magicMap.length; i++) {
             if(magicMap[i] != null)
                 keys.add(i);
@@ -239,7 +239,7 @@ public class ClassConfigurator {
         DocumentBuilder builder=factory.newDocumentBuilder();
         Document document=builder.parse(stream);
         NodeList class_list=document.getElementsByTagName("class");
-        List<Tuple<Short,String>> list=new LinkedList<Tuple<Short,String>>();
+        List<Tuple<Short,String>> list=new LinkedList<>();
         for(int i=0; i < class_list.getLength(); i++) {
             if(class_list.item(i).getNodeType() == Node.ELEMENT_NODE) {
                 list.add(parseClassData(class_list.item(i)));
@@ -256,7 +256,7 @@ public class ClassConfigurator {
 
         magicnumber=attrs.getNamedItem("id").getNodeValue();
         clazzname=attrs.getNamedItem("name").getNodeValue();
-        return new Tuple<Short,String>(Short.valueOf(magicnumber), clazzname);
+        return new Tuple<>(Short.valueOf(magicnumber), clazzname);
     }
 
 

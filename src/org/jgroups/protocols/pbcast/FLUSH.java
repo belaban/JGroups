@@ -95,21 +95,21 @@ public class FLUSH extends Protocol {
     private Address flushCoordinator;
 
     @GuardedBy("sharedLock")
-    private final List<Address> flushMembers=new ArrayList<Address>();
+    private final List<Address> flushMembers=new ArrayList<>();
 
     private final AtomicInteger viewCounter = new AtomicInteger(0);
 
     @GuardedBy("sharedLock")
-    private final Map<Address, Digest> flushCompletedMap=new HashMap<Address, Digest>();
+    private final Map<Address, Digest> flushCompletedMap=new HashMap<>();
 
     @GuardedBy("sharedLock")
-    private final List<Address> flushNotCompletedMap=new ArrayList<Address>();
+    private final List<Address> flushNotCompletedMap=new ArrayList<>();
 
     @GuardedBy("sharedLock")
-    private final Set<Address> suspected=new TreeSet<Address>();
+    private final Set<Address> suspected=new TreeSet<>();
 
     @GuardedBy("sharedLock")
-    private final List<Address> reconcileOks=new ArrayList<Address>();
+    private final List<Address> reconcileOks=new ArrayList<>();
 
     private final Object sharedLock = new Object();
 
@@ -128,9 +128,9 @@ public class FLUSH extends Protocol {
     @GuardedBy("sharedLock")
     private boolean flushCompleted = false;
 
-    private final Promise<FlushStartResult> flush_promise = new Promise<FlushStartResult>();
+    private final Promise<FlushStartResult> flush_promise = new Promise<>();
 
-    private final Promise<Boolean> flush_unblock_promise = new Promise<Boolean>();
+    private final Promise<Boolean> flush_unblock_promise = new Promise<>();
 
     private final AtomicBoolean flushInProgress = new AtomicBoolean(false);
 
@@ -156,7 +156,7 @@ public class FLUSH extends Protocol {
     }
 
     public void start() throws Exception {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put("flush_supported", Boolean.TRUE);
         up_prot.up(new Event(Event.CONFIG, map));
         down_prot.down(new Event(Event.CONFIG, map));
@@ -221,7 +221,7 @@ public class FLUSH extends Protocol {
             flush_promise.reset();
             synchronized(sharedLock) {
                 if(flushParticipants == null)
-                    flushParticipants=new ArrayList<Address>(currentView.getMembers());
+                    flushParticipants=new ArrayList<>(currentView.getMembers());
             }
             onSuspend(flushParticipants);
             try {
@@ -229,7 +229,7 @@ public class FLUSH extends Protocol {
                 if(r.failed())
                     throw new RuntimeException(r.getFailureCause());
             } catch (TimeoutException e) {
-                Set<Address> missingMembers = new HashSet<Address>();
+                Set<Address> missingMembers = new HashSet<>();
                 synchronized(sharedLock) {
                     missingMembers.addAll(flushMembers);
                     missingMembers.removeAll(flushCompletedMap.keySet());
@@ -296,7 +296,7 @@ public class FLUSH extends Protocol {
                        flush_promise.reset();
                        ArrayList<Address> flushParticipants = null;
                        synchronized (sharedLock) {
-                           flushParticipants = new ArrayList<Address>(currentView.getMembers());
+                           flushParticipants = new ArrayList<>(currentView.getMembers());
                        }
                        onSuspend(flushParticipants);
                    }
@@ -593,7 +593,7 @@ public class FLUSH extends Protocol {
     }
 
     public List<Integer> providedDownServices() {
-        List<Integer> retval=new ArrayList<Integer>(2);
+        List<Integer> retval=new ArrayList<>(2);
         retval.add(Event.SUSPEND);
         retval.add(Event.RESUME);
         return retval;
@@ -850,7 +850,7 @@ public class FLUSH extends Protocol {
     }
 
     private boolean hasVirtualSynchronyGaps() {
-        ArrayList<Digest> digests = new ArrayList<Digest>();
+        ArrayList<Digest> digests = new ArrayList<>();
         digests.addAll(flushCompletedMap.values());
         return !same(digests);
     }
@@ -867,7 +867,7 @@ public class FLUSH extends Protocol {
     }
 
     private Digest findHighestSequences(View view) {
-        List<Digest> digests = new ArrayList<Digest>(flushCompletedMap.values());
+        List<Digest> digests = new ArrayList<>(flushCompletedMap.values());
         return maxSeqnos(view,digests);
     }
 
@@ -899,7 +899,7 @@ public class FLUSH extends Protocol {
                 int diff = myIndex - indexOfCoordinator;
                 amINeighbourOfCrashedFlushCoordinator = (diff == 1 || (myIndex == 0 && indexOfCoordinator == flushMembers.size()));
                 if (amINeighbourOfCrashedFlushCoordinator) {
-                    flushMembersCopy = new ArrayList<Address>(flushMembers);
+                    flushMembersCopy = new ArrayList<>(flushMembers);
                 }
             }
         }

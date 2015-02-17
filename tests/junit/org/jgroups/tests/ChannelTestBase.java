@@ -210,7 +210,7 @@ public class ChannelTestBase {
                 if (ping == null)
                     throw new IllegalStateException("TCP stack must consist of TCP:TCPPING - other config are not supported");
 
-                List<String> initial_hosts = new LinkedList<String>();
+                List<String> initial_hosts = new LinkedList<>();
                 for (short port : ports) {
                     initial_hosts.add(bind_addr + "[" + port + "]");
                 }

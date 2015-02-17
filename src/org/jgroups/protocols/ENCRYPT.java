@@ -179,17 +179,17 @@ public class ENCRYPT extends Protocol {
     protected SecretKey secretKey;
 
     // map to hold previous keys so we can decrypt some earlier messages if we need to
-    final Map<AsciiString,Cipher> keyMap=new WeakHashMap<AsciiString,Cipher>();
+    final Map<AsciiString,Cipher> keyMap=new WeakHashMap<>();
 
     // queues to buffer data while we are swapping shared key or obtaining key for first time
     private boolean queue_up=true;
     private boolean queue_down=false;
 
     // queue to hold upcoming messages while key negotiation is happening
-    private BlockingQueue<Message> upMessageQueue=new LinkedBlockingQueue<Message>();
+    private BlockingQueue<Message> upMessageQueue=new LinkedBlockingQueue<>();
 
     //	 queue to hold downcoming messages while key negotiation is happening
-    private BlockingQueue<Message> downMessageQueue=new LinkedBlockingQueue<Message>();
+    private BlockingQueue<Message> downMessageQueue=new LinkedBlockingQueue<>();
     // decrypting cypher for secret key requests
     private Cipher asymCipher;
 

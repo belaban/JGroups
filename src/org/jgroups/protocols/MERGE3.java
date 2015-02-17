@@ -67,9 +67,9 @@ public class MERGE3 extends Protocol {
     protected Future<?>      view_consistency_checker;
 
     // hashmap to keep track of view-id sent in INFO messages
-    protected final ConcurrentMap<ViewId,Set<Address>> views=new ConcurrentHashMap<ViewId,Set<Address>>(view != null? view.size() : 16);
+    protected final ConcurrentMap<ViewId,Set<Address>> views=new ConcurrentHashMap<>(view != null? view.size() : 16);
 
-    protected final ResponseCollector<View> view_rsps=new ResponseCollector<View>();
+    protected final ResponseCollector<View> view_rsps=new ResponseCollector<>();
 
     protected boolean        transport_supports_multicasting=true;
 
@@ -290,7 +290,7 @@ public class MERGE3 extends Protocol {
 
 
     public static List<View> detectDifferentViews(Map<Address,View> map) {
-        final List<View> ret=new ArrayList<View>();
+        final List<View> ret=new ArrayList<>();
         for(View view: map.values()) {
             if(view == null)
                 continue;
@@ -326,10 +326,10 @@ public class MERGE3 extends Protocol {
         if(logical_name != null && sender instanceof UUID)
             UUID.add(sender, logical_name);
         if(physical_addr != null)
-            down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<Address,PhysicalAddress>(sender, physical_addr)));
+            down(new Event(Event.SET_PHYSICAL_ADDRESS, new Tuple<>(sender, physical_addr)));
         Set<Address> existing=views.get(view_id);
         if(existing == null) {
-            existing=new ConcurrentSkipListSet<Address>();
+            existing=new ConcurrentSkipListSet<>();
             Set<Address> tmp=views.putIfAbsent(view_id, existing);
             if(tmp != null)
                 existing=tmp;
@@ -407,7 +407,7 @@ public class MERGE3 extends Protocol {
         }
 
         protected void _run() {
-            SortedSet<Address> coords=new TreeSet<Address>();
+            SortedSet<Address> coords=new TreeSet<>();
 
             // Only add view creators which *are* actually in the set as well, e.g.
             // A|4: {A,B,C} and
@@ -465,7 +465,7 @@ public class MERGE3 extends Protocol {
             }
             view_rsps.waitForAllResponses(check_interval / 10);
             Map<Address,View> results=view_rsps.getResults();
-            Map<Address,View> merge_views=new HashMap<Address,View>();
+            Map<Address,View> merge_views=new HashMap<>();
 
             for(Map.Entry<Address,View> entry: results.entrySet())
                 if(entry.getValue() != null)

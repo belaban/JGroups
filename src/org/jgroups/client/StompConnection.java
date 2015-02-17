@@ -39,13 +39,13 @@ public class StompConnection implements Runnable {
     protected DataOutputStream out;
 
     // collection of server addresses, we can pick any one to connect to
-    protected final Set<String> server_destinations=new HashSet<String>();
+    protected final Set<String> server_destinations=new HashSet<>();
 
-    protected final Set<Listener> listeners=new HashSet<Listener>();
+    protected final Set<Listener> listeners=new HashSet<>();
 
-    protected final Set<String> subscriptions=new HashSet<String>();
+    protected final Set<String> subscriptions=new HashSet<>();
 
-    protected final Set<ConnectionCallback> callbacks =new HashSet<ConnectionCallback>();
+    protected final Set<ConnectionCallback> callbacks =new HashSet<>();
 
     protected Thread runner;
 

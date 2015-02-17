@@ -185,7 +185,7 @@ public class OrderingTest {
     }
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected final ConcurrentMap<Address,Integer> map=new ConcurrentHashMap<Address,Integer>();
+        protected final ConcurrentMap<Address,Integer> map=new ConcurrentHashMap<>();
         final AtomicInteger received=new AtomicInteger(0);
         protected int num_errors=0;
 

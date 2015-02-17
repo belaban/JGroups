@@ -180,7 +180,7 @@ public class Responses implements Iterable<PingData>, org.jgroups.util.Condition
     }
 
     @GuardedBy("lock") protected List<PingData> toList() {
-        List<PingData> retval=new ArrayList<PingData>();
+        List<PingData> retval=new ArrayList<>();
         for(int i=0; i < index; i++)
             retval.add(ping_rsps[i]);
         return retval;

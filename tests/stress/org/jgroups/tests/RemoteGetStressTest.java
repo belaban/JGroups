@@ -146,7 +146,7 @@ public class RemoteGetStressTest {
         }
 
         public void run() {
-            ArrayList<Address> targets = new ArrayList<Address>(channels[0].getView().getMembers());
+            ArrayList<Address> targets = new ArrayList<>(channels[0].getView().getMembers());
             targets.remove(random.nextInt(targets.size()));
             Collections.rotate(targets, random.nextInt(targets.size()));
 

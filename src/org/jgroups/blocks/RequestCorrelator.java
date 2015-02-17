@@ -676,7 +676,7 @@ public class RequestCorrelator {
         public Map<String, String> handleProbe(String... keys) {
             if(requests == null)
                 return null;
-            Map<String,String> retval=new HashMap<String,String>();
+            Map<String,String> retval=new HashMap<>();
             for(String key: keys) {
                 if(key.equals("requests")) {
                     StringBuilder sb=new StringBuilder();

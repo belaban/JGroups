@@ -366,7 +366,7 @@ public abstract class Channel implements Closeable {
         if(listener == null)
             return;
         if(channel_listeners == null)
-            channel_listeners=new CopyOnWriteArraySet<ChannelListener>();
+            channel_listeners=new CopyOnWriteArraySet<>();
         channel_listeners.add(listener);
     }
 

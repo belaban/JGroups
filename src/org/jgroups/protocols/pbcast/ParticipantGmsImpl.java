@@ -15,8 +15,8 @@ import java.util.List;
  * @author Bela Ban
  */
 public class ParticipantGmsImpl extends ServerGmsImpl {
-    private final List<Address>     suspected_mbrs=new ArrayList<Address>(11);
-    private final Promise<Boolean>  leave_promise=new Promise<Boolean>();
+    private final List<Address>     suspected_mbrs=new ArrayList<>(11);
+    private final Promise<Boolean>  leave_promise=new Promise<>();
 
 
     public ParticipantGmsImpl(GMS g) {
@@ -93,7 +93,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
 
 
     public void suspect(Address mbr) {
-        Collection<Request> suspected=new LinkedHashSet<Request>(1);
+        Collection<Request> suspected=new LinkedHashSet<>(1);
         suspected.add(new Request(Request.SUSPECT,mbr,true));
         handleMembershipChange(suspected);
     }
@@ -107,7 +107,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
 
 
     public void handleMembershipChange(Collection<Request> requests) {
-        Collection<Address> suspectedMembers=new LinkedHashSet<Address>(requests.size());
+        Collection<Address> suspectedMembers=new LinkedHashSet<>(requests.size());
         for(Request req: requests)
             if(req.type == Request.SUSPECT)
                 suspectedMembers.add(req.mbr);

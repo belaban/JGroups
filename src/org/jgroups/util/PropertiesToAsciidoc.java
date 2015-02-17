@@ -90,7 +90,7 @@ public class PropertiesToAsciidoc {
 
     protected static void convertUnsupportedToAsciidocTable(Properties props, List<Class<?>> clazzes, String title)
       throws ParserConfigurationException, TransformerException {
-        List<String[]> rows=new ArrayList<String[]>(clazzes.size() +1);
+        List<String[]> rows=new ArrayList<>(clazzes.size() +1);
         rows.add(new String[]{"Package","Class"}); // add column titles first
         for(Class<?> clazz: clazzes)
             rows.add(new String[]{clazz.getPackage().getName(), clazz.getSimpleName()});
@@ -125,7 +125,7 @@ public class PropertiesToAsciidoc {
         if (isUnsupported)
             return;
 
-        Map<String, String> nameToDescription = new TreeMap<String, String>();
+        Map<String, String> nameToDescription = new TreeMap<>();
 
         Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields) {
@@ -161,7 +161,7 @@ public class PropertiesToAsciidoc {
         if (nameToDescription.isEmpty())
             return;
 
-        List<String[]> rows=new ArrayList<String[]>(nameToDescription.size() +1);
+        List<String[]> rows=new ArrayList<>(nameToDescription.size() +1);
         rows.add(new String[]{"Name", "Description"});
         for(Map.Entry<String,String> entry: nameToDescription.entrySet())
             rows.add(new String[]{entry.getKey(), entry.getValue()});

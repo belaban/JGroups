@@ -87,7 +87,7 @@ public class ExecutionCompletionService<V> implements CompletionService<V> {
         this.executor = executor;
         
         if (completionQueue == null) {
-            this.completionQueue = new LinkedBlockingQueue<NotifyingFuture<V>>();
+            this.completionQueue = new LinkedBlockingQueue<>();
         }
         else {
             this.completionQueue = completionQueue;

@@ -237,7 +237,7 @@ public class FlushTest {
             b.setReceiver(new SimpleReplier(b,false));
             b.connect("testPartialFlush");
 
-            List<Address> members = new ArrayList<Address>();
+            List<Address> members = new ArrayList<>();
             members.add(b.getAddress());
             assert Util.startFlush(b, members);
             b.stopFlush(members);
@@ -267,7 +267,7 @@ public class FlushTest {
     private void _testChannels(String names[], int connectType) throws Exception {
         int count = names.length;
 
-        List<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);
+        List<FlushTestReceiver> channels = new ArrayList<>(count);
         try {
             // Create a semaphore and take all its permits
             Semaphore semaphore = new Semaphore(count);

@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class TimeScheduler2 implements TimeScheduler, Runnable  {
     private final ThreadPoolExecutor pool;
 
-    private final ConcurrentSkipListMap<Long,Entry> tasks=new ConcurrentSkipListMap<Long,Entry>();
+    private final ConcurrentSkipListMap<Long,Entry> tasks=new ConcurrentSkipListMap<>();
 
     private Thread runner=null;
 
@@ -253,7 +253,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     protected void _run() {
         ConcurrentNavigableMap<Long,Entry> head_map; // head_map = entries which are <= curr time (ready to be executed)
         if(!(head_map=tasks.headMap(System.currentTimeMillis(), true)).isEmpty()) {
-            final List<Long> keys=new LinkedList<Long>();
+            final List<Long> keys=new LinkedList<>();
             for(Map.Entry<Long,Entry> entry: head_map.entrySet()) {
                 final Long key=entry.getKey();
                 final Entry val=entry.getValue();

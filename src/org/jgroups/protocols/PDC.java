@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 @MBean(description="Persistent Discovery Cache. Caches discovery information on disk.")
 public class PDC extends Protocol {
-    protected final ConcurrentMap<Address,PhysicalAddress> cache=new ConcurrentHashMap<Address,PhysicalAddress>();
+    protected final ConcurrentMap<Address,PhysicalAddress> cache=new ConcurrentHashMap<>();
 
     /* -----------------------------------------    Properties     ----------------------------------------------- */
     @Property(description="The absolute path of the directory for the disk cache. The mappings will be stored as " +
@@ -72,13 +72,13 @@ public class PDC extends Protocol {
 
             case Event.GET_PHYSICAL_ADDRESSES:
                 Collection<PhysicalAddress> addrs=(Collection<PhysicalAddress>)down_prot.down(evt);
-                Collection<PhysicalAddress> tmp=new HashSet<PhysicalAddress>(addrs);
+                Collection<PhysicalAddress> tmp=new HashSet<>(addrs);
                 tmp.addAll(cache.values());
                 return tmp;
 
             case Event.GET_LOGICAL_PHYSICAL_MAPPINGS:
                 Map<Address,PhysicalAddress> map=(Map<Address, PhysicalAddress>)down_prot.down(evt);
-                Map<Address,PhysicalAddress> new_map=new HashMap<Address,PhysicalAddress>(map);
+                Map<Address,PhysicalAddress> new_map=new HashMap<>(map);
                 new_map.putAll(cache);
                 return new_map;
 

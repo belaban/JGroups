@@ -56,7 +56,7 @@ public class ExecutionService extends AbstractExecutorService {
     protected Lock _unfinishedLock = new ReentrantLock();
     protected Condition _unfinishedCondition = _unfinishedLock.newCondition();
     
-    protected Set<Future<?>> _unfinishedFutures = new HashSet<Future<?>>();
+    protected Set<Future<?>> _unfinishedFutures = new HashSet<>();
     
     protected AtomicBoolean _shutdown = new AtomicBoolean(false);
 
@@ -134,7 +134,7 @@ public class ExecutionService extends AbstractExecutorService {
                           Callable<V> callable) {
             if (callable == null)
                 throw new NullPointerException();
-            sync = new Sync<V>(this, callable);
+            sync = new Sync<>(this, callable);
             this.channel = channel;
             // We keep the real copy to update the outside
             _unfinishedFutures = futuresToFinish;
@@ -163,7 +163,7 @@ public class ExecutionService extends AbstractExecutorService {
         public DistributedFuture(Channel channel, Lock unfinishedLock,
                           Condition condition, Set<Future<?>> futuresToFinish, 
                           Runnable runnable, V result) {
-            sync = new Sync<V>(this, new RunnableAdapter<V>(runnable, result));
+            sync = new Sync<>(this, new RunnableAdapter<>(runnable, result));
             this.channel = channel;
             // We keep the real copy to update the outside
             _unfinishedFutures = futuresToFinish;
@@ -505,7 +505,7 @@ public class ExecutionService extends AbstractExecutorService {
         _unfinishedLock.lock();
         Set<Future<?>> futures;
         try {
-             futures = new HashSet<Future<?>>(_unfinishedFutures);
+             futures = new HashSet<>(_unfinishedFutures);
         }
         finally {
             _unfinishedLock.unlock();
@@ -596,9 +596,9 @@ public class ExecutionService extends AbstractExecutorService {
         int ntasks = tasks.size();
         if (ntasks == 0)
             throw new IllegalArgumentException();
-        List<Future<T>> futures= new ArrayList<Future<T>>(ntasks);
+        List<Future<T>> futures= new ArrayList<>(ntasks);
         CompletionService<T> ecs =
-            new ExecutionCompletionService<T>(this);
+            new ExecutionCompletionService<>(this);
 
         // For efficiency, especially in executors with limited
         // parallelism, check to see if previously submitted tasks are
@@ -781,7 +781,7 @@ public class ExecutionService extends AbstractExecutorService {
     // @see java.util.concurrent.AbstractExecutorService#newTaskFor(java.lang.Runnable, java.lang.Object)
     @Override
     protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
-        DistributedFuture<T> future = new DistributedFuture<T>(ch, _unfinishedLock, 
+        DistributedFuture<T> future = new DistributedFuture<>(ch, _unfinishedLock,
                 _unfinishedCondition, _unfinishedFutures, runnable, value);
         return future;
     }
@@ -789,7 +789,7 @@ public class ExecutionService extends AbstractExecutorService {
     // @see java.util.concurrent.AbstractExecutorService#newTaskFor(java.util.concurrent.Callable)
     @Override
     protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
-        DistributedFuture<T> future = new DistributedFuture<T>(ch, _unfinishedLock, 
+        DistributedFuture<T> future = new DistributedFuture<>(ch, _unfinishedLock,
                 _unfinishedCondition, _unfinishedFutures, callable);
         return future;
     }

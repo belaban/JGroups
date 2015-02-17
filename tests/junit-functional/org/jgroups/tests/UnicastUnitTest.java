@@ -149,7 +149,7 @@ public class UnicastUnitTest {
                 break;
             Util.sleep(500);
         }
-        List<Integer> expected=new ArrayList<Integer>(num.length);
+        List<Integer> expected=new ArrayList<>(num.length);
         for(int n: num) expected.add(n);
         System.out.println("received=" + received + ", expected=" + expected);
         assert received.size() == expected.size() : "list=" + received + ", expected=" + expected;
@@ -185,7 +185,7 @@ public class UnicastUnitTest {
     protected static class MyReceiver extends ReceiverAdapter {
         protected Channel             channel;
         protected Throwable           ex;
-        protected final List<Integer> list=new ArrayList<Integer>();
+        protected final List<Integer> list=new ArrayList<>();
 
         public               MyReceiver()           {this(null);}
         public               MyReceiver(Channel ch) {this.channel=ch;}
@@ -206,7 +206,7 @@ public class UnicastUnitTest {
             Address local_addr=channel.getAddress();
             assert local_addr != null;
             System.out.println("[" + local_addr + "]: " + new_view);
-            List<Address> members=new LinkedList<Address>(new_view.getMembers());
+            List<Address> members=new LinkedList<>(new_view.getMembers());
             assert 2 == members.size() : "members=" + members + ", local_addr=" + local_addr + ", view=" + new_view;
             Address dest=members.get(0);
             Message unicast_msg=new Message(dest, null, null);

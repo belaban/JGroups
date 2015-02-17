@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @author Bela Ban
  */
 public class LazyThreadFactory extends DefaultThreadFactory {
-    private final Collection<WeakReference<Thread>> threads=new ConcurrentLinkedQueue<WeakReference<Thread>>();
+    private final Collection<WeakReference<Thread>> threads=new ConcurrentLinkedQueue<>();
     private static final String                     ADDR="<ADDR>";
     private static final String                     CLUSTER="<CLUSTER>";
 
@@ -38,7 +38,7 @@ public class LazyThreadFactory extends DefaultThreadFactory {
             cluster_name=CLUSTER;
 
         retval=super.newThread(r, name, addr, cluster_name);
-        threads.add(new WeakReference<Thread>(retval));
+        threads.add(new WeakReference<>(retval));
         return retval;
     }
 

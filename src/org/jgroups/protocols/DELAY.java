@@ -42,7 +42,7 @@ public class DELAY extends Protocol {
     protected boolean constant_delay;
 
     protected DelayedMessageHandler delayed_message_handler;
-    protected DelayQueue<DelayedMessage> delayed_messages = new DelayQueue<DelayedMessage>();
+    protected DelayQueue<DelayedMessage> delayed_messages = new DelayQueue<>();
 
     public int  getInDelay()               {return in_delay;}
     public void setInDelay(int in_delay)   {this.in_delay=in_delay;}
@@ -139,7 +139,7 @@ public class DELAY extends Protocol {
 
     private class DelayedMessageHandler extends Thread {
 
-        private List<DelayedMessage> buffer = new ArrayList<DelayedMessage>();
+        private List<DelayedMessage> buffer = new ArrayList<>();
 
         @Override
         public void run() {

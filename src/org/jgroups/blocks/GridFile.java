@@ -199,7 +199,7 @@ public class GridFile extends File {
         Set<String> keys=internal_cache.getInternalMap().keySet();
         if(keys == null)
             return null;
-        Collection<String> list=new ArrayList<String>(keys.size());
+        Collection<String> list=new ArrayList<>(keys.size());
         for(String str: keys) {
             if(isChildOf(getPath(), str)) {
                 if(filter instanceof FilenameFilter &&  !((FilenameFilter)filter).accept(new File(name), filename(str)))

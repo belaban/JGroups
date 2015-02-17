@@ -68,7 +68,7 @@ public class Headers {
     }
 
     public Map<Short,Header> getHeaders() {
-        Map<Short,Header> retval=new HashMap<Short,Header>(ids.length);
+        Map<Short,Header> retval=new HashMap<>(ids.length);
         for(int i=0; i < ids.length; i++) {
             if(ids[i] > 0)
                 retval.put(ids[i], hdrs[i]);

@@ -21,7 +21,7 @@ import java.util.concurrent.*;
 public class RouterStubManager implements RouterStub.ConnectionListener {
 
     @GuardedBy("reconnectorLock")
-    private final ConcurrentMap<RouterStub,Future<?>> futures=new ConcurrentHashMap<RouterStub,Future<?>>();
+    private final ConcurrentMap<RouterStub,Future<?>> futures=new ConcurrentHashMap<>();
     private final List<RouterStub> stubs;
     
     private final Protocol owner;
@@ -34,7 +34,7 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
 
     public RouterStubManager(Protocol owner, String channelName, Address logicalAddress, long interval) {
         this.owner = owner;
-        this.stubs = new CopyOnWriteArrayList<RouterStub>();
+        this.stubs = new CopyOnWriteArrayList<>();
         this.log = LogFactory.getLog(owner.getClass());     
         this.timer = owner.getTransport().getTimer();
         this.channelName = channelName;

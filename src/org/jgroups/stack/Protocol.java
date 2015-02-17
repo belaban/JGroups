@@ -149,7 +149,7 @@ public abstract class Protocol {
     /** Returns the protocol IDs of all protocols above this one (excluding the current protocol) */
     public short[] getIdsAbove() {
         short[]     retval;
-        List<Short> ids=new ArrayList<Short>();
+        List<Short> ids=new ArrayList<>();
         Protocol    current=up_prot;
         while(current != null) {
             ids.add(current.getId());
@@ -211,7 +211,7 @@ public abstract class Protocol {
     }
 
     public Map<String,Object> dumpStats() {
-        HashMap<String,Object> map=new HashMap<String,Object>();
+        HashMap<String,Object> map=new HashMap<>();
         for(Class<?> clazz=this.getClass();clazz != null;clazz=clazz.getSuperclass()) {
             Field[] fields=clazz.getDeclaredFields();
             for(Field field: fields) {
@@ -335,7 +335,7 @@ public abstract class Protocol {
 
     /** Returns all services provided by protocols below the current protocol */
     public final List<Integer> getDownServices() {
-        List<Integer> retval=new ArrayList<Integer>();
+        List<Integer> retval=new ArrayList<>();
         Protocol prot=down_prot;
         while(prot != null) {
             List<Integer> tmp=prot.providedUpServices();
@@ -348,7 +348,7 @@ public abstract class Protocol {
 
     /** Returns all services provided by the protocols above the current protocol */
     public final List<Integer> getUpServices() {
-        List<Integer> retval=new ArrayList<Integer>();
+        List<Integer> retval=new ArrayList<>();
         Protocol prot=up_prot;
         while(prot != null) {
             List<Integer> tmp=prot.providedDownServices();

@@ -12,8 +12,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractConnectionMap<V extends Connection> implements ConnectionMap<V> {
         
-    protected final List<ConnectionMapListener<V>> conn_listeners=new ArrayList<ConnectionMapListener<V>>();
-    protected final Map<Address,V>                 conns=new HashMap<Address,V>();
+    protected final List<ConnectionMapListener<V>> conn_listeners=new ArrayList<>();
+    protected final Map<Address,V>                 conns=new HashMap<>();
     protected final Lock                           lock = new ReentrantLock(); // syncs conns
     protected final Lock                           sock_creation_lock= new ReentrantLock(true); // syncs socket establishment
     protected final ThreadFactory                  factory;
@@ -131,7 +131,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
         Map<Address,V> copy=null;
         lock.lock();
         try {
-            copy=new HashMap<Address,V>(conns);
+            copy=new HashMap<>(conns);
             conns.keySet().retainAll(current_mbrs);
         }
         finally {

@@ -16,7 +16,7 @@ import java.util.*;
  */
 public class Membership {
     /* private vector to hold all the addresses */
-    private final List<Address> members=new LinkedList<Address>();
+    private final List<Address> members=new LinkedList<>();
 
     
    /**
@@ -51,7 +51,7 @@ public class Membership {
     public List<Address> getMembers() {
         /*clone so that this objects members can not be manipulated from the outside*/
         synchronized(members) {
-            return new ArrayList<Address>(members);
+            return new ArrayList<>(members);
         }
     }
 

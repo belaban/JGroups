@@ -122,7 +122,7 @@ public class NAKACK_RetransmitTest {
 
 
     protected static class MyReceiver extends ReceiverAdapter {
-        protected final List<Integer> list=new ArrayList<Integer>();
+        protected final List<Integer> list=new ArrayList<>();
 
         public void receive(Message msg) {
             Integer num=(Integer)msg.getObject();

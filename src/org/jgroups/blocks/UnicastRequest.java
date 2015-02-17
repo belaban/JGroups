@@ -27,13 +27,13 @@ public class UnicastRequest<T> extends Request {
     public UnicastRequest(Message msg, RequestCorrelator corr, Address target, RequestOptions options) {
         super(msg, corr, options);
         this.target=target;
-        result=new Rsp<T>(target);
+        result=new Rsp<>(target);
     }
 
     public UnicastRequest(Message msg, Address target, RequestOptions options) {
         super(msg, null, options);
         this.target=target;
-        result=new Rsp<T>(target);
+        result=new Rsp<>(target);
     }
 
 

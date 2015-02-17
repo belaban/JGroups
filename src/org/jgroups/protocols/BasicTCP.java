@@ -142,7 +142,7 @@ public abstract class BasicTCP extends TP {
     protected Object handleDownEvent(Event evt) {
         Object ret=super.handleDownEvent(evt);
         if(evt.getType() == Event.VIEW_CHANGE) {
-            Set<Address> physical_mbrs=new HashSet<Address>();
+            Set<Address> physical_mbrs=new HashSet<>();
             for(Address addr: members) {
                 PhysicalAddress physical_addr=getPhysicalAddressFromCache(addr);
                 if(physical_addr != null)

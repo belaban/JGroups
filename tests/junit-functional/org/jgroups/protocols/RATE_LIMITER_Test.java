@@ -47,7 +47,7 @@ public class RATE_LIMITER_Test {
         sendMessages(limiter, TimeUnit.MILLISECONDS.convert(10, TimeUnit.SECONDS), num_threads);
         throughput.stop();
 
-        List<Long> list=new ArrayList<Long>(throughput.getMeasurements());
+        List<Long> list=new ArrayList<>(throughput.getMeasurements());
         if(list.size()  > 10)
             list.remove(list.size()-1);
         int second=1;
@@ -116,7 +116,7 @@ public class RATE_LIMITER_Test {
 
     protected static class Throughput extends Protocol implements Runnable {
         protected final AtomicInteger    bytes_in_period=new AtomicInteger(0);
-        protected final Collection<Long> measurements=new ConcurrentLinkedQueue<Long>(); // measurement taken every second
+        protected final Collection<Long> measurements=new ConcurrentLinkedQueue<>(); // measurement taken every second
         protected Thread                 runner;
         protected volatile boolean       running=true;
         protected final CountDownLatch   latch;

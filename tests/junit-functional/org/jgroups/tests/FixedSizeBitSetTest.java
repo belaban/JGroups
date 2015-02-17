@@ -212,7 +212,7 @@ public class FixedSizeBitSetTest {
 
     public static void testLargeSet() {
         FixedSizeBitSet set=new FixedSizeBitSet(1500);
-        Set<Integer> sorted_set=new TreeSet<Integer>();
+        Set<Integer> sorted_set=new TreeSet<>();
         for(int i=0; i < 500; i++) {
             int num=(int)Util.random(1499);
             sorted_set.add(num);

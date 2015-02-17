@@ -12,7 +12,7 @@ public class BoundedListTest {
 
 
     public static void testAdd() throws Exception {
-        BoundedList<Integer> list=new BoundedList<Integer>(3);
+        BoundedList<Integer> list=new BoundedList<>(3);
         Assert.assertEquals(0, list.size());
         list.add(new Integer(1));
         System.out.println(list);
@@ -45,7 +45,7 @@ public class BoundedListTest {
 
 
     public static void testContains() throws Exception {
-        BoundedList<String> strlist=new BoundedList<String>(3);
+        BoundedList<String> strlist=new BoundedList<>(3);
         strlist.add("Bela");
         System.out.println(strlist);
 
@@ -65,7 +65,7 @@ public class BoundedListTest {
 
     
     public static void testWithManyElements() {
-        BoundedList<Integer> list=new BoundedList<Integer>(3);
+        BoundedList<Integer> list=new BoundedList<>(3);
         for(int i=0; i < 100000; i++) {
             list.add(i);
         }

@@ -184,7 +184,7 @@ public class RetransmitTable {
             Message msg=get(seqno);
             if(msg != null) {
                 if(retval == null)
-                    retval=new LinkedList<Message>();
+                    retval=new LinkedList<>();
                 retval.add(msg);
             }
         }

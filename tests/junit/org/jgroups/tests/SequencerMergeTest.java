@@ -107,7 +107,7 @@ public class SequencerMergeTest {
 
         for(int i=0; i < 20; i++) {
             boolean all_ok=true;
-            for(List<String> list: new ArrayList<List<String>>(Arrays.asList(list_a, list_b, list_c, list_d))) {
+            for(List<String> list: new ArrayList<>(Arrays.asList(list_a, list_b, list_c, list_d))) {
                 if(!list.equals(expected)) {
                     all_ok=false;
                     break;
@@ -176,7 +176,7 @@ public class SequencerMergeTest {
         assert !Util.isCoordinator(d);
 
         // start merging
-        final Map<Address,View> views=new HashMap<Address,View>();
+        final Map<Address,View> views=new HashMap<>();
         views.put(a.getAddress(), a.getView());
         views.put(b.getAddress(), b.getView());
         views.put(c.getAddress(), c.getView());
@@ -259,7 +259,7 @@ public class SequencerMergeTest {
 
     protected static class MyReceiver extends ReceiverAdapter {
         protected final String name;
-        protected final List<String> list=new ArrayList<String>();
+        protected final List<String> list=new ArrayList<>();
 
         public MyReceiver(String name) {
             this.name=name;

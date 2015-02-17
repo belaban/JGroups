@@ -56,11 +56,11 @@ public class Pool<T> {
             Lock lock=locks[index];
             if(lock.tryLock()) {
                 if(pool[index] != null)
-                    return new Element<T>(pool[index], lock);
-                return new Element<T>(pool[index]=creator.create(), lock);
+                    return new Element<>(pool[index], lock);
+                return new Element<>(pool[index]=creator.create(), lock);
             }
         }
-        return new Element<T>(creator.create(), null);
+        return new Element<>(creator.create(), null);
     }
 
 
@@ -89,7 +89,7 @@ public class Pool<T> {
 
     public static void main(String[] args) {
         final int length=8;
-        final Map<Integer,Integer> map=new HashMap<Integer,Integer>(length);
+        final Map<Integer,Integer> map=new HashMap<>(length);
         for(int i=0; i < 100; i++) {
             int index=((int)(Math.random() * length)) & (length - 1);
             System.out.println("index = " + index);

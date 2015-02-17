@@ -61,7 +61,7 @@ public class RingBufferTest extends BMNGRunner {
      */
     @BMScript(dir="scripts/RingBufferTest", value="testRemoveAndConcurrentAdd")
     public void testRemoveAndConcurrentAdd() throws InterruptedException {
-        final RingBufferLockless<Integer> buf=new RingBufferLockless<Integer>(10, 0);
+        final RingBufferLockless<Integer> buf=new RingBufferLockless<>(10, 0);
         for(int i=1; i <= 5; i++)
             buf.add(i, i);
         buf.removeMany(true,4);
@@ -90,7 +90,7 @@ public class RingBufferTest extends BMNGRunner {
      */
     @BMScript(dir="scripts/RingBufferTest", value="testRemoveAndConcurrentAdd2")
     public void testRemoveAndConcurrentAdd2() throws InterruptedException {
-        final RingBufferLockless<Integer> buf=new RingBufferLockless<Integer>(10, 0);
+        final RingBufferLockless<Integer> buf=new RingBufferLockless<>(10, 0);
         for(int i=1; i <= 10; i++)
             buf.add(i, i);
         buf.removeMany(true, 4);

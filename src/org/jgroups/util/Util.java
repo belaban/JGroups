@@ -45,7 +45,7 @@ public class Util {
 
     private static final NumberFormat f;
 
-    private static final Map<Class<? extends Object>,Byte> PRIMITIVE_TYPES=new HashMap<Class<? extends Object>,Byte>(15);
+    private static final Map<Class<? extends Object>,Byte> PRIMITIVE_TYPES=new HashMap<>(15);
     private static final byte TYPE_NULL=0;
     private static final byte TYPE_STREAMABLE=1;
     private static final byte TYPE_SERIALIZABLE=2;
@@ -1564,7 +1564,7 @@ public class Util {
                     if(type == Event.MSG) {
                         s+="[";
                         Message m=(Message)event.getArg();
-                        Map<Short,Header> headers=new HashMap<Short,Header>(m.getHeaders());
+                        Map<Short,Header> headers=new HashMap<>(m.getHeaders());
                         for(Map.Entry<Short,Header> entry : headers.entrySet()) {
                             short id=entry.getKey();
                             Header value=entry.getValue();
@@ -1702,7 +1702,7 @@ public class Util {
             factor=1000000000;
 
         String str=index != -1? input.substring(0,index) : input;
-        return new Tuple<String,Long>(str,factor);
+        return new Tuple<>(str,factor);
     }
 
     public static String printBytes(double bytes) {
@@ -1781,7 +1781,7 @@ public class Util {
      * @return List. A List<Range> of offset/length pairs
      */
     public static List<Range> computeFragOffsets(int offset,int length,int frag_size) {
-        List<Range> retval=new ArrayList<Range>();
+        List<Range> retval=new ArrayList<>();
         long total_size=length + offset;
         int index=offset;
         int tmp_size=0;
@@ -1919,7 +1919,7 @@ public class Util {
     public static List<Address> leftMembers(Collection<Address> old_list,Collection<Address> new_list) {
         if(old_list == null || new_list == null)
             return null;
-        List<Address> retval=new ArrayList<Address>(old_list);
+        List<Address> retval=new ArrayList<>(old_list);
         retval.removeAll(new_list);
         return retval;
     }
@@ -1927,15 +1927,15 @@ public class Util {
     public static List<Address> newMembers(List<Address> old_list,List<Address> new_list) {
         if(old_list == null || new_list == null)
             return null;
-        List<Address> retval=new ArrayList<Address>(new_list);
+        List<Address> retval=new ArrayList<>(new_list);
         retval.removeAll(old_list);
         return retval;
     }
 
     public static <T> List<T> newElements(List<T> old_list,List<T> new_list) {
         if(new_list == null)
-            return new ArrayList<T>();
-        List<T> retval=new ArrayList<T>(new_list);
+            return new ArrayList<>();
+        List<T> retval=new ArrayList<>(new_list);
         if(old_list != null)
             retval.removeAll(old_list);
         return retval;
@@ -1947,13 +1947,13 @@ public class Util {
      * Picks no member twice from the same membership. If the percentage is smaller than 1 -> picks 1 member.
      */
     public static List<Address> pickSubset(List<Address> members,double subset_percentage) {
-        List<Address> ret=new ArrayList<Address>(), tmp_mbrs;
+        List<Address> ret=new ArrayList<>(), tmp_mbrs;
         int num_mbrs=members.size(), subset_size, index;
 
         if(num_mbrs == 0) return ret;
         subset_size=(int)Math.ceil(num_mbrs * subset_percentage);
 
-        tmp_mbrs=new ArrayList<Address>(members);
+        tmp_mbrs=new ArrayList<>(members);
 
         for(int i=subset_size; i > 0 && !tmp_mbrs.isEmpty(); i--) {
             index=(int)((Math.random() * num_mbrs) % tmp_mbrs.size());
@@ -1994,7 +1994,7 @@ public class Util {
 
 
     public static List<View> detectDifferentViews(Map<Address,View> map) {
-        final List<View> ret=new ArrayList<View>();
+        final List<View> ret=new ArrayList<>();
         for(View view : map.values()) {
             if(view == null)
                 continue;
@@ -2014,8 +2014,8 @@ public class Util {
      * @return
      */
     public static Collection<Address> determineMergeParticipants(Map<Address,View> map) {
-        Set<Address> coords=new HashSet<Address>();
-        Set<Address> all_addrs=new HashSet<Address>();
+        Set<Address> coords=new HashSet<>();
+        Set<Address> all_addrs=new HashSet<>();
 
         if(map == null)
             return Collections.emptyList();
@@ -2047,7 +2047,7 @@ public class Util {
      * @return
      */
     public static Collection<Address> determineMergeCoords(Map<Address,View> map) {
-        Set<Address> retval=new HashSet<Address>();
+        Set<Address> retval=new HashSet<>();
         if(map != null) {
             for(View view : map.values()) {
                 Address coord=view.getCreator();
@@ -2065,7 +2065,7 @@ public class Util {
      * @return
      */
     public static Collection<Address> determineActualMergeCoords(Map<Address,View> map) {
-        Set<Address> retval=new HashSet<Address>();
+        Set<Address> retval=new HashSet<>();
         if(map != null) {
             for(Map.Entry<Address,View> entry : map.entrySet()) {
                 Address sender=entry.getKey();
@@ -2147,7 +2147,7 @@ public class Util {
 
     /** Returns the next min(N,list.size()) elements after obj */
     public static <T> List<T> pickNext(List<T> list,T obj,int num) {
-        List<T> retval=new ArrayList<T>();
+        List<T> retval=new ArrayList<>();
         if(list == null || list.size() < 2)
             return retval;
         int index=list.indexOf(obj);
@@ -2213,7 +2213,7 @@ public class Util {
      * new_mbrs are returned.
      */
     public static List<Address> determineLeftMembers(List<Address> old_mbrs,List<Address> new_mbrs) {
-        List<Address> retval=new ArrayList<Address>();
+        List<Address> retval=new ArrayList<>();
         if(old_mbrs == null || new_mbrs == null)
             return retval;
 
@@ -2325,7 +2325,7 @@ public class Util {
     }
 
     public static Field[] getAllDeclaredFieldsWithAnnotations(final Class clazz,Class<? extends Annotation>... annotations) {
-        List<Field> list=new ArrayList<Field>(30);
+        List<Field> list=new ArrayList<>(30);
         for(Class curr=clazz; curr != null; curr=curr.getSuperclass()) {
             Field[] fields=curr.getDeclaredFields();
             if(fields != null) {
@@ -2349,7 +2349,7 @@ public class Util {
     }
 
     public static Method[] getAllDeclaredMethodsWithAnnotations(final Class clazz,Class<? extends Annotation>... annotations) {
-        List<Method> list=new ArrayList<Method>(30);
+        List<Method> list=new ArrayList<>(30);
         for(Class curr=clazz; curr != null; curr=curr.getSuperclass()) {
             Method[] methods=curr.getDeclaredMethods();
             if(methods != null) {
@@ -2462,7 +2462,7 @@ public class Util {
     public static <T> Set<Class<T>> findClassesAssignableFrom(String packageName,Class<T> assignableFrom)
       throws IOException, ClassNotFoundException {
         ClassLoader loader=Thread.currentThread().getContextClassLoader();
-        Set<Class<T>> classes=new HashSet<Class<T>>();
+        Set<Class<T>> classes=new HashSet<>();
         String path=packageName.replace('.','/');
         URL resource=loader.getResource(path);
         if(resource != null) {
@@ -2482,7 +2482,7 @@ public class Util {
     }
 
     public static List<Class<?>> findClassesAnnotatedWith(String packageName,Class<? extends Annotation> a) throws IOException, ClassNotFoundException {
-        List<Class<?>> classes=new ArrayList<Class<?>>();
+        List<Class<?>> classes=new ArrayList<>();
         recurse(classes,packageName,a);
         return classes;
     }
@@ -2598,7 +2598,7 @@ public class Util {
      */
     public static int[] parseCommaDelimitedInts(String s) {
         StringTokenizer tok;
-        List<Integer> v=new ArrayList<Integer>();
+        List<Integer> v=new ArrayList<>();
         Integer l;
         int[] retval=null;
 
@@ -2621,7 +2621,7 @@ public class Util {
      */
     public static long[] parseCommaDelimitedLongs(String s) {
         StringTokenizer tok;
-        List<Long> v=new ArrayList<Long>();
+        List<Long> v=new ArrayList<>();
         Long l;
         long[] retval=null;
 
@@ -2650,7 +2650,7 @@ public class Util {
         StringTokenizer tok=new StringTokenizer(hosts,",");
         String t;
         IpAddress addr;
-        Set<PhysicalAddress> retval=new HashSet<PhysicalAddress>();
+        Set<PhysicalAddress> retval=new HashSet<>();
 
         while(tok.hasMoreTokens()) {
             t=tok.nextToken().trim();
@@ -2662,7 +2662,7 @@ public class Util {
                 retval.add(addr);
             }
         }
-        return new LinkedList<PhysicalAddress>(retval);
+        return new LinkedList<>(retval);
     }
 
 
@@ -2675,7 +2675,7 @@ public class Util {
         StringTokenizer tok=new StringTokenizer(hosts,",");
         String t;
         InetSocketAddress addr;
-        Set<InetSocketAddress> retval=new HashSet<InetSocketAddress>();
+        Set<InetSocketAddress> retval=new HashSet<>();
 
         while(tok.hasMoreTokens()) {
             t=tok.nextToken().trim();
@@ -2687,11 +2687,11 @@ public class Util {
                 retval.add(addr);
             }
         }
-        return new LinkedList<InetSocketAddress>(retval);
+        return new LinkedList<>(retval);
     }
 
     public static List<String> parseStringList(String l,String separator) {
-        List<String> tmp=new LinkedList<String>();
+        List<String> tmp=new LinkedList<>();
         StringTokenizer tok=new StringTokenizer(l,separator);
         String t;
 
@@ -2706,7 +2706,7 @@ public class Util {
     public static Map<String,String> parseCommaDelimitedProps(String s) {
         if (s == null)
             return null;
-        Map<String,String> props=new HashMap<String,String>();
+        Map<String,String> props=new HashMap<>();
         Pattern p=Pattern.compile("\\s*([^=\\s]+)\\s*=\\s*([^=\\s,]+)\\s*,?"); //Pattern.compile("\\s*([^=\\s]+)\\s*=\\s([^=\\s]+)\\s*,?");
         Matcher matcher=p.matcher(s);
         while(matcher.find()) {
@@ -2777,7 +2777,7 @@ public class Util {
      * @return List<NetworkInterface>
      */
     public static List<NetworkInterface> parseInterfaceList(String s) throws Exception {
-        List<NetworkInterface> interfaces=new ArrayList<NetworkInterface>(10);
+        List<NetworkInterface> interfaces=new ArrayList<>(10);
         if(s == null)
             return null;
 
@@ -2936,15 +2936,15 @@ public class Util {
 
 
     public static <K,V> ConcurrentMap<K,V> createConcurrentMap(int initial_capacity,float load_factor,int concurrency_level) {
-        return new ConcurrentHashMap<K,V>(initial_capacity,load_factor,concurrency_level);
+        return new ConcurrentHashMap<>(initial_capacity,load_factor,concurrency_level);
     }
 
     public static <K,V> ConcurrentMap<K,V> createConcurrentMap(int initial_capacity) {
-        return new ConcurrentHashMap<K,V>(initial_capacity);
+        return new ConcurrentHashMap<>(initial_capacity);
     }
 
     public static <K,V> ConcurrentMap<K,V> createConcurrentMap() {
-        return new ConcurrentHashMap<K,V>(CCHM_INITIAL_CAPACITY,CCHM_LOAD_FACTOR,CCHM_CONCURRENCY_LEVEL);
+        return new ConcurrentHashMap<>(CCHM_INITIAL_CAPACITY,CCHM_LOAD_FACTOR,CCHM_CONCURRENCY_LEVEL);
     }
 
     public static ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr, int start_port) {
@@ -3438,7 +3438,7 @@ public class Util {
 
 
     public static List<NetworkInterface> getAllAvailableInterfaces() throws SocketException {
-        List<NetworkInterface> retval=new ArrayList<NetworkInterface>(10);
+        List<NetworkInterface> retval=new ArrayList<>(10);
         NetworkInterface intf;
         for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
             intf=(NetworkInterface)en.nextElement();
@@ -3448,7 +3448,7 @@ public class Util {
     }
 
     public static Collection<InetAddress> getAllAvailableAddresses() {
-        Set<InetAddress> retval=new HashSet<InetAddress>();
+        Set<InetAddress> retval=new HashSet<>();
         Enumeration en;
 
         try {
@@ -3842,7 +3842,7 @@ public class Util {
             return null;
         List<String> list=parseCommaDelimitedStrings(var);
         if(list == null || list.isEmpty()) {
-            list=new ArrayList<String>(1);
+            list=new ArrayList<>(1);
             list.add(var);
         }
         String retval=null;

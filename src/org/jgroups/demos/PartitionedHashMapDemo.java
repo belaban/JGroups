@@ -31,8 +31,8 @@ public class PartitionedHashMapDemo {
 
 
 
-        PartitionedHashMap<String,String> map=new PartitionedHashMap<String,String>(props, "demo-cluster");
-        Cache<String,String> l1_cache=new Cache<String,String>();
+        PartitionedHashMap<String,String> map=new PartitionedHashMap<>(props, "demo-cluster");
+        Cache<String,String> l1_cache=new Cache<>();
         l1_cache.setMaxNumberOfEntries(5);
         l1_cache.disableReaping();
         map.setL1Cache(l1_cache);

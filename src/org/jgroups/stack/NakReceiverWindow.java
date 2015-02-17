@@ -302,7 +302,7 @@ public class NakReceiverWindow {
                 if(msg != null) { // message exists and is ready for delivery
                     highest_delivered=next;
                     if(retval == null)
-                        retval=new LinkedList<Message>();
+                        retval=new LinkedList<>();
                     retval.add(msg);
                     if(max_results <= 0 || ++num_results < max_results)
                         continue;

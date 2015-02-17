@@ -183,7 +183,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
     private volatile boolean    is_server=false;
     private Address             local_addr=null;
-    private final List<Address> members=new CopyOnWriteArrayList<Address>();
+    private final List<Address> members=new CopyOnWriteArrayList<>();
     private View                view;
     private final AtomicLong    seqno=new AtomicLong(0); // current message sequence number (starts with 1)
 
@@ -206,10 +206,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private Digest rebroadcast_digest=null;
 
     /** Keeps the last 10 stability messages */
-    protected final BoundedList<String> stability_msgs=new BoundedList<String>(10);
+    protected final BoundedList<String> stability_msgs=new BoundedList<>(10);
 
     /** Keeps a bounded list of the last N digest sets */
-    protected final BoundedList<String> digest_history=new BoundedList<String>(10);
+    protected final BoundedList<String> digest_history=new BoundedList<>(10);
 
     protected BoundedList<Message>      become_server_queue;
 
@@ -335,10 +335,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         if(become_server_queue_size > 0)
-            become_server_queue=new BoundedList<Message>(become_server_queue_size);
+            become_server_queue=new BoundedList<>(become_server_queue_size);
 
         if(suppress_time_non_member_warnings > 0)
-            suppress_log_non_member=new SuppressLog<Address>(log, "MsgDroppedNak", "SuppressMsg");
+            suppress_log_non_member=new SuppressLog<>(log, "MsgDroppedNak", "SuppressMsg");
     }
 
 
@@ -1108,7 +1108,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Returns a message digest: for each member P the highest delivered and received seqno is added
      */
     public Digest getDigest() {
-        final Map<Address,long[]> map=new HashMap<Address,long[]>();
+        final Map<Address,long[]> map=new HashMap<>();
         for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
             Address sender=entry.getKey(); // guaranteed to be non-null (CCHM)
             NakReceiverWindow win=entry.getValue(); // guaranteed to be non-null (CCHM)
@@ -1387,7 +1387,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     // ProbeHandler interface
     public Map<String, String> handleProbe(String... keys) {
-        Map<String,String> retval=new HashMap<String,String>();
+        Map<String,String> retval=new HashMap<>();
         for(String key: keys) {
             if(key.equals("digest-history"))
                 retval.put(key, printDigestHistory());

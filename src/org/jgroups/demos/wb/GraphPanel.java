@@ -21,7 +21,7 @@ import java.util.List;
 
 public class GraphPanel extends Panel implements MouseListener, MouseMotionListener {
     final Whiteboard wb;
-    final java.util.List<Node> nodes=new ArrayList<Node>();
+    final java.util.List<Node> nodes=new ArrayList<>();
     String myname=null;
     public Object my_addr=null;
     Node pick;

@@ -186,7 +186,7 @@ public class SCOPE_Test extends ChannelTestBase {
 
 
     public static class MyScopedReceiver extends ReceiverAdapter {
-        final ConcurrentMap<Short,List<Long>> msgs=new ConcurrentHashMap<Short,List<Long>>();
+        final ConcurrentMap<Short,List<Long>> msgs=new ConcurrentHashMap<>();
 
         public void receive(Message msg) {
             Util.sleep(SLEEP_TIME);
@@ -194,7 +194,7 @@ public class SCOPE_Test extends ChannelTestBase {
             if(scope > 0) {
                 List<Long> list=msgs.get(scope);
                 if(list == null) {
-                    list=new ArrayList<Long>(5);
+                    list=new ArrayList<>(5);
                     List<Long> tmp=msgs.putIfAbsent(scope, list);
                     if(tmp != null)
                         list=tmp;

@@ -115,7 +115,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
         System.out.println("\n ==== Digests are:\n" + dumpDigests(a,b,c));
 
         // start merging
-        Map<Address,View> views=new HashMap<Address,View>();
+        Map<Address,View> views=new HashMap<>();
         views.put(a.getAddress(), a.getView());
         views.put(b.getAddress(), b.getView());
         views.put(c.getAddress(), c.getView());
@@ -182,7 +182,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
 
         // start merging
-        Map<Address,View> views=new HashMap<Address,View>();
+        Map<Address,View> views=new HashMap<>();
         views.put(a.getAddress(),a.getView());
         views.put(b.getAddress(), b.getView());
         views.put(c.getAddress(),c.getView());
@@ -262,7 +262,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
 
         // start merging
-        Map<Address,View> views=new HashMap<Address,View>();
+        Map<Address,View> views=new HashMap<>();
         views.put(a.getAddress(), a.getView());
         views.put(b.getAddress(), b.getView());
         views.put(c.getAddress(),c.getView());
@@ -482,7 +482,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
     @SuppressWarnings("unchecked")
     protected Tuple<MyReceiver,Integer> make(MyReceiver r, int expected_msgs) {
-        return new Tuple<MyReceiver,Integer>(r, expected_msgs);
+        return new Tuple<>(r, expected_msgs);
     }
 
 
@@ -516,7 +516,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
     protected static class MyReceiver extends ReceiverAdapter {
         final String name;
         final JChannel ch;
-        final List<Message> mcasts=new ArrayList<Message>(20);
+        final List<Message> mcasts=new ArrayList<>(20);
 
         public MyReceiver(String name, JChannel ch) {
             this.name=name;

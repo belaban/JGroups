@@ -28,7 +28,7 @@ import java.util.ArrayList;
  * @author Bela Ban
  */
 public class Topology extends Frame implements WindowListener {
-    private final java.util.List<Address> members=new ArrayList<Address>();
+    private final java.util.List<Address> members=new ArrayList<>();
     private final Font myFont;
     private final FontMetrics fm;
     private final Color node_color=new Color(250, 220, 100);

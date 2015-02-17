@@ -37,7 +37,7 @@ public class MemcachedServer {
         JmxConfigurator.register(cache.getL2Cache(), server, BASENAME + ":name=l2-cache");
 
         if(use_l1_cache) {
-            Cache<String,byte[]> l1_cache=new Cache<String,byte[]>();
+            Cache<String,byte[]> l1_cache=new Cache<>();
             cache.setL1Cache(l1_cache);
             if(l1_reaping_interval > 0)
                 l1_cache.enableReaping(l1_reaping_interval);

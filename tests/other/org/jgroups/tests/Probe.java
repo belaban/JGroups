@@ -15,7 +15,7 @@ import java.util.*;
 public class Probe {
     MulticastSocket mcast_sock;
     volatile boolean running=true;
-    final Set<String> senders=new HashSet<String>();
+    final Set<String> senders=new HashSet<>();
 
 
     public Probe() {
@@ -90,7 +90,7 @@ public class Probe {
             }
         }.start();
 
-        Collection<InetAddress> retval=new ArrayList<InetAddress>();
+        Collection<InetAddress> retval=new ArrayList<>();
         long end_time=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() < end_time) {
             byte[] buf=new byte[70000];
@@ -185,7 +185,7 @@ public class Probe {
         final String DEFAULT_DIAG_ADDR="224.0.75.75";
         final String DEFAULT_DIAG_ADDR_IPv6="ff0e::0:75:75";
         final int    DEFAULT_DIAG_PORT=7500;
-        List<String> query=new ArrayList<String>();
+        List<String> query=new ArrayList<>();
         String       match=null;
         boolean      weed_out_duplicates=false;
         String       passcode=null;

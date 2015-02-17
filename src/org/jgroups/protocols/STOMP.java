@@ -74,8 +74,8 @@ public class STOMP extends Protocol implements Runnable {
     @ManagedAttribute(writable=false)
     protected String                    endpoint;
     protected Thread                    acceptor;
-    protected final List<Connection>    connections=new LinkedList<Connection>();
-    protected final Map<Address,String> endpoints=new HashMap<Address,String>();
+    protected final List<Connection>    connections=new LinkedList<>();
+    protected final Map<Address,String> endpoints=new HashMap<>();
 
     protected View view;
 
@@ -176,7 +176,7 @@ public class STOMP extends Protocol implements Runnable {
                 StompHeader hdr=(StompHeader)msg.getHeader(id);
                 if(hdr == null) {
                     if(forward_non_client_generated_msgs) {
-                        HashMap<String, String> hdrs=new HashMap<String, String>();
+                        HashMap<String, String> hdrs=new HashMap<>();
                         hdrs.put("sender", msg.getSrc().toString());
                         sendToClients(hdrs, msg.getRawBuffer(), msg.getOffset(), msg.getLength());
                     }
@@ -244,7 +244,7 @@ public class STOMP extends Protocol implements Runnable {
             return null;
         verb=verb.trim();
         
-        Map<String,String> headers=new HashMap<String,String>();
+        Map<String,String> headers=new HashMap<>();
         byte[] body=null;
 
         for(;;) {
@@ -377,7 +377,7 @@ public class STOMP extends Protocol implements Runnable {
         }
         buf.put(NULL_BYTE);
 
-        final Set<Connection> target_connections=new HashSet<Connection>();
+        final Set<Connection> target_connections=new HashSet<>();
         String destination=headers != null? headers.get("destination") : null;
         if(destination == null) {
             synchronized(connections) {
@@ -489,7 +489,7 @@ public class STOMP extends Protocol implements Runnable {
                     if(destination != null) {
                         Set<Connection> conns=subscriptions.get(destination);
                         if(conns == null) {
-                            conns=new HashSet<Connection>();
+                            conns=new HashSet<>();
                             Set<Connection> tmp=subscriptions.putIfAbsent(destination, conns);
                             if(tmp != null)
                                 conns=tmp;
@@ -616,7 +616,7 @@ public class STOMP extends Protocol implements Runnable {
         public static enum Type {MESSAGE, ENDPOINT}
 
         protected Type                      type;
-        protected final Map<String,String>  headers=new HashMap<String,String>();
+        protected final Map<String,String>  headers=new HashMap<>();
 
 
         public StompHeader() {

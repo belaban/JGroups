@@ -190,7 +190,7 @@ public class UNICAST_ConnectionTests {
 
         int NUM=10;
 
-        final List<Message> msgs=new ArrayList<Message>(NUM);
+        final List<Message> msgs=new ArrayList<>(NUM);
 
         for(int i=1; i <= NUM; i++) {
             Message msg=new Message(b_addr, a_addr, i);
@@ -230,7 +230,7 @@ public class UNICAST_ConnectionTests {
 
     @Test(dataProvider="configProvider")
     public void testMessageToNonExistingMember(Class<? extends Protocol> unicast) throws Exception {
-        Map<String,Object> props=new HashMap<String,Object>(1);
+        Map<String,Object> props=new HashMap<>(1);
         props.put("max_retransmit_time",5000);
         setup(unicast,props);
         Address target=Util.createRandomAddress("FakeAddress");
@@ -336,7 +336,7 @@ public class UNICAST_ConnectionTests {
 
     protected static class MyReceiver extends ReceiverAdapter {
         final String        name;
-        final List<Integer> msgs=new ArrayList<Integer>(20);
+        final List<Integer> msgs=new ArrayList<>(20);
 
         public MyReceiver(String name) {
             this.name=name;

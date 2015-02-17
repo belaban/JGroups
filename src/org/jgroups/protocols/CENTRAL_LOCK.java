@@ -44,7 +44,7 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
     @ManagedAttribute
     protected boolean             is_coord;
 
-    protected final List<Address> backups=new ArrayList<Address>();
+    protected final List<Address> backups=new ArrayList<>();
 
 
     public CENTRAL_LOCK() {
@@ -130,7 +130,7 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
             List<Address> copy_locks_list=null;
             synchronized(backups) {
                 if(!backups.equals(new_backups)) {
-                    copy_locks_list=new ArrayList<Address>(new_backups);
+                    copy_locks_list=new ArrayList<>(new_backups);
                     copy_locks_list.removeAll(backups);
                     backups.clear();
                     backups.addAll(new_backups);
@@ -185,7 +185,7 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
         Map<String,ServerLock> copy;
 
         synchronized(server_locks) {
-            copy=new HashMap<String,ServerLock>(server_locks);
+            copy=new HashMap<>(server_locks);
         }
 
         if(log.isTraceEnabled())

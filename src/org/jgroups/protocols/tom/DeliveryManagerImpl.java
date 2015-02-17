@@ -14,8 +14,8 @@ import java.util.concurrent.ConcurrentMap;
  * @since 3.1
  */
 public class DeliveryManagerImpl implements DeliveryManager {
-    private final SortedSet<MessageInfo> deliverySet = new TreeSet<MessageInfo>();
-    private final ConcurrentMap<MessageID, MessageInfo> messageCache = new ConcurrentHashMap<MessageID, MessageInfo>(8192, .75f, 64);
+    private final SortedSet<MessageInfo> deliverySet = new TreeSet<>();
+    private final ConcurrentMap<MessageID, MessageInfo> messageCache = new ConcurrentHashMap<>(8192, .75f, 64);
     private final SequenceNumberManager sequenceNumberManager = new SequenceNumberManager();
 
     public long addLocalMessageToDeliver(MessageID messageID, Message message, ToaHeader header) {
@@ -89,7 +89,7 @@ public class DeliveryManagerImpl implements DeliveryManager {
         if (leavers == null) {
             return;
         }
-        List<MessageInfo> toRemove = new LinkedList<MessageInfo>();
+        List<MessageInfo> toRemove = new LinkedList<>();
         synchronized (deliverySet) {
             for (MessageInfo messageInfo : deliverySet) {
                 if (leavers.contains(messageInfo.getMessage().getSrc()) && !messageInfo.isReadyToDeliver()) {
@@ -109,7 +109,7 @@ public class DeliveryManagerImpl implements DeliveryManager {
     //see the interface javadoc
     @Override
     public List<Message> getNextMessagesToDeliver() throws InterruptedException {
-        LinkedList<Message> toDeliver = new LinkedList<Message>();
+        LinkedList<Message> toDeliver = new LinkedList<>();
         synchronized (deliverySet) {
             while (deliverySet.isEmpty() || !deliverySet.first().isReadyToDeliver()) {
                 deliverySet.wait();

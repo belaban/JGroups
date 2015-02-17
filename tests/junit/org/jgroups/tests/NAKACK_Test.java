@@ -113,7 +113,7 @@ public class NAKACK_Test extends ChannelTestBase {
 
     public static class MyReceiver extends ReceiverAdapter {
         /** List<Long> of unicast sequence numbers */
-        Collection<Long> seqnos=new ConcurrentLinkedQueue<Long>();
+        Collection<Long> seqnos=new ConcurrentLinkedQueue<>();
 
         public MyReceiver() {
         }

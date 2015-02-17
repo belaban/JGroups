@@ -82,8 +82,8 @@ public class MERGE2 extends Protocol {
 
     protected Address                 local_addr;
     protected volatile View           view;
-    protected final Set<Address>      members=new HashSet<Address>();
-    protected final Set<Address>      merge_candidates=new CopyOnWriteArraySet<Address>();
+    protected final Set<Address>      members=new HashSet<>();
+    protected final Set<Address>      merge_candidates=new CopyOnWriteArraySet<>();
     protected final FindSubgroupsTask task=new FindSubgroupsTask();
     @ManagedAttribute(description="Whether this member is the current coordinator")
     protected volatile boolean        is_coord=false;
@@ -96,7 +96,7 @@ public class MERGE2 extends Protocol {
     @ManagedAttribute(description="Number of times a MERGE event was sent up the stack")
     protected int                     num_merge_events;
 
-    protected final Map<Address,View> views=new ConcurrentHashMap<Address,View>();
+    protected final Map<Address,View> views=new ConcurrentHashMap<>();
     protected final Lock              discovery_lock=new ReentrantLock();
     protected final CondVar           discovery_cond=new CondVar(discovery_lock);
     protected volatile boolean        fetching_done=false;

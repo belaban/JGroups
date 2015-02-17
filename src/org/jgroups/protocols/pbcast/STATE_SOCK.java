@@ -115,7 +115,7 @@ public class STATE_SOCK extends StreamingStateTransfer {
 
     protected Tuple<InputStream,Object> createStreamToProvider(Address provider, StateHeader hdr) throws Exception {
         IpAddress address=hdr.bind_addr;
-        Tuple<InputStream,Object> retval=new Tuple<InputStream,Object>(null,null);
+        Tuple<InputStream,Object> retval=new Tuple<>(null,null);
         Socket socket=null;
         try {
             socket=getSocketFactory().createSocket("jgroups.state_sock.sock");

@@ -18,7 +18,7 @@ import org.testng.annotations.Test;
 public class PromiseTest {
 
     public static void testGetWithResultAvailable() {
-        final Promise<Integer> p=new Promise<Integer>();
+        final Promise<Integer> p=new Promise<>();
         p.setResult(22);
         assert p.getResult() == 22;
     }
@@ -32,7 +32,7 @@ public class PromiseTest {
     }
 
     public static void testGetResultWithReset() {
-        final Promise<Integer> p=new Promise<Integer>();
+        final Promise<Integer> p=new Promise<>();
         p.setResult(22);
         assert p.getResult() == 22;
         assert p.getResult(1, true) == 22;
@@ -42,7 +42,7 @@ public class PromiseTest {
 
 
     public static final void testRepeatedGet() {
-        final Promise<Integer> p=new Promise<Integer>();
+        final Promise<Integer> p=new Promise<>();
         p.setResult(10);
         System.out.println("p: " + p);
         Integer result=p.getResult(100);

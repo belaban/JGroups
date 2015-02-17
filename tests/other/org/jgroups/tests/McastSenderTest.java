@@ -67,7 +67,7 @@ public class McastSenderTest {
 
 
         try {
-            List<InetAddress> v=new ArrayList<InetAddress>();
+            List<InetAddress> v=new ArrayList<>();
 
             for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
                 NetworkInterface intf=(NetworkInterface)en.nextElement();

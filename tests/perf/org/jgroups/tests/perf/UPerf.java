@@ -32,9 +32,9 @@ public class UPerf extends ReceiverAdapter {
     private Address                local_addr;
     private RpcDispatcher          disp;
     static final String            groupname="uperf";
-    protected final List<Address>  members=new ArrayList<Address>();
+    protected final List<Address>  members=new ArrayList<>();
     protected volatile View        view;
-    protected final List<Address>  site_masters=new ArrayList<Address>();
+    protected final List<Address>  site_masters=new ArrayList<>();
     protected volatile boolean     looping=true;
     protected Thread               event_loop_thread;
 
@@ -434,7 +434,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
     private class Invoker extends Thread {
-        private final List<Address>  dests=new ArrayList<Address>();
+        private final List<Address>  dests=new ArrayList<>();
         private final int            num_msgs_to_send;
         private final AtomicInteger  num_msgs_sent;
         private int                  num_gets=0;
@@ -523,7 +523,7 @@ public class UPerf extends ReceiverAdapter {
         }
 
         private Collection<Address> pickAnycastTargets() {
-            Collection<Address> anycast_targets=new ArrayList<Address>(anycast_count);
+            Collection<Address> anycast_targets=new ArrayList<>(anycast_count);
             int index=dests.indexOf(local_addr);
             for(int i=index + 1; i < index + 1 + anycast_count; i++) {
                 int new_index=i % dests.size();
@@ -572,7 +572,7 @@ public class UPerf extends ReceiverAdapter {
 
 
     public static class Config implements Streamable {
-        protected Map<String,Object> values=new HashMap<String,Object>();
+        protected Map<String,Object> values=new HashMap<>();
 
         public Config() {
         }

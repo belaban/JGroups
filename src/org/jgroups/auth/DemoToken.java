@@ -26,7 +26,7 @@ public class DemoToken extends AuthToken implements AUTH.UpHandler {
     protected long block_time=5000;
 
     // Used to correlate pending challenge requests sent with responses received
-    protected final Map<Address,Entry> pending_requests=new HashMap<Address,Entry>();
+    protected final Map<Address,Entry> pending_requests=new HashMap<>();
 
 
     static {

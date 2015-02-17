@@ -129,7 +129,7 @@ public class LargeMergeTest {
             merge_completed=true;
             System.out.println();
 
-            Map<ViewId,Integer> views=new HashMap<ViewId,Integer>();
+            Map<ViewId,Integer> views=new HashMap<>();
 
             for(JChannel ch: channels) {
                 ViewId view_id=ch.getView().getViewId();

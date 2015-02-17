@@ -19,7 +19,7 @@ import java.util.Map;
  * @since 3.0
  */
 public class PubSub {
-    final Map<String,JChannel> topics=new HashMap<String,JChannel>();
+    final Map<String,JChannel> topics=new HashMap<>();
 
 
     void start(String props) throws Exception {

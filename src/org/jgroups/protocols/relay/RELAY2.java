@@ -65,7 +65,7 @@ public class RELAY2 extends Protocol {
     /* ---------------------------------------------    Fields    ------------------------------------------------ */
 
     /** A map containing site names (e.g. "LON") as keys and SiteConfigs as values */
-    protected final Map<String,RelayConfig.SiteConfig> sites=new HashMap<String,RelayConfig.SiteConfig>();
+    protected final Map<String,RelayConfig.SiteConfig> sites=new HashMap<>();
 
     protected RelayConfig.SiteConfig                   site_config;
 
@@ -81,7 +81,7 @@ public class RELAY2 extends Protocol {
 
     protected volatile Address                         local_addr;
 
-    protected volatile List<Address>                   members=new ArrayList<Address>(11);
+    protected volatile List<Address>                   members=new ArrayList<>(11);
 
     /** Whether or not FORWARD_TO_COORD is on the stack */
     @ManagedAttribute(description="FORWARD_TO_COORD protocol is present below the current protocol")
@@ -219,7 +219,7 @@ public class RELAY2 extends Protocol {
     }
 
     public List<String> getSites() {
-        return sites.isEmpty()? Collections.<String>emptyList() : new ArrayList<String>(sites.keySet());
+        return sites.isEmpty()? Collections.<String>emptyList() : new ArrayList<>(sites.keySet());
     }
 
 
@@ -693,7 +693,7 @@ public class RELAY2 extends Protocol {
      * the first member of the view will be returned (even if it has can_become_site_master == false)
      */
     protected List<Address> determineSiteMasters(View view) {
-        List<Address> retval=new ArrayList<Address>(view.size());
+        List<Address> retval=new ArrayList<>(view.size());
         int selected=0;
 
         for(Address member: view) {

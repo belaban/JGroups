@@ -41,7 +41,7 @@ public class ForkConfig {
         if(children == null || children.getLength() == 0)
             return null;
 
-        Map<String,List<ProtocolConfiguration>> map=new HashMap<String,List<ProtocolConfiguration>>();
+        Map<String,List<ProtocolConfiguration>> map=new HashMap<>();
         for(int i=0; i < children.getLength(); i++) {
             Node node=children.item(i);
             if(node.getNodeType() != Node.ELEMENT_NODE)

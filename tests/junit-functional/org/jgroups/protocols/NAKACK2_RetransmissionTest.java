@@ -123,7 +123,7 @@ public class NAKACK2_RetransmissionTest {
 
     /** Used to catch retransmit requests sent by NAKACK to the transport */
     protected static class MockTransport extends TP {
-        protected final List<Long> xmit_requests=new LinkedList<Long>();
+        protected final List<Long> xmit_requests=new LinkedList<>();
 
         public List<Long>         getXmitRequests() {return xmit_requests;}
         public void               clear() {xmit_requests.clear();}
@@ -156,7 +156,7 @@ public class NAKACK2_RetransmissionTest {
     }
 
     protected static class MockProtocol extends Protocol {
-        protected final List<Long> msgs=new LinkedList<Long>();
+        protected final List<Long> msgs=new LinkedList<>();
 
         public List<Long> getMsgs() {return msgs;}
         public void       clear()   {msgs.clear();}

@@ -146,7 +146,7 @@ public class SCOPE extends Protocol {
     public String dumpScopes() {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<Address,ConcurrentMap<Short,MessageQueue>> entry: queues.entrySet()) {
-            sb.append(entry.getKey()).append(": ").append(new TreeSet<Short>(entry.getValue().keySet())).append("\n");
+            sb.append(entry.getKey()).append(": ").append(new TreeSet<>(entry.getValue().keySet())).append("\n");
         }
         return sb.toString();
     }
@@ -345,7 +345,7 @@ public class SCOPE extends Protocol {
         List<Address> members=view.getMembers();
 
         // Remove all non members from receiver_table
-        Set<Address> keys=new HashSet<Address>(queues.keySet());
+        Set<Address> keys=new HashSet<>(queues.keySet());
         keys.removeAll(members);
         for(Address key: keys)
             clearQueue(key);
@@ -365,7 +365,7 @@ public class SCOPE extends Protocol {
 
 
     protected static class MessageQueue {
-        private final Queue<Message> queue=new ConcurrentLinkedQueue<Message>();
+        private final Queue<Message> queue=new ConcurrentLinkedQueue<>();
         private final AtomicBoolean  processing=new AtomicBoolean(false);
         private long                 last_update=System.currentTimeMillis();
 

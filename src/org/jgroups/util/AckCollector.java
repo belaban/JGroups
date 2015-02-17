@@ -14,23 +14,23 @@ import java.util.List;
 public class AckCollector {
     /** List of members from whom we haven't received an ACK yet */
     protected final List<Address>     missing_acks;
-    protected final Promise<Boolean>  all_acks_received=new Promise<Boolean>();
-    protected final List<Address>     suspected_mbrs=new ArrayList<Address>(5);
+    protected final Promise<Boolean>  all_acks_received=new Promise<>();
+    protected final List<Address>     suspected_mbrs=new ArrayList<>(5);
     protected int                     expected_acks;
 
 
     public AckCollector() {
-        missing_acks=new ArrayList<Address>();
+        missing_acks=new ArrayList<>();
         expected_acks=0;
     }
 
     public AckCollector(Collection<Address> members) {
-        missing_acks=new ArrayList<Address>(members != null? members.size() : 10);
+        missing_acks=new ArrayList<>(members != null? members.size() : 10);
         addAll(members);
     }
 
     public AckCollector(Address ... members) {
-        missing_acks=new ArrayList<Address>(members != null? members.length : 10);
+        missing_acks=new ArrayList<>(members != null? members.length : 10);
         addAll(members);
     }
 

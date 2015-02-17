@@ -76,7 +76,7 @@ public class RingBufferLockless<T> implements Iterable<T> {
         while (capacity > cap)
            cap <<= 1;
 
-        this.buf=new AtomicReferenceArray<T>(cap);
+        this.buf=new AtomicReferenceArray<>(cap);
         this.low=this.hd=this.offset=offset;
         this.hr.set(offset);
     }
@@ -197,7 +197,7 @@ public class RingBufferLockless<T> implements Iterable<T> {
         T element;
         while(start+1 <= end && (element=buf.get(index(start+1))) != null) {
             if(list == null)
-                list=new ArrayList<T>(max_results > 0? max_results : 20);
+                list=new ArrayList<>(max_results > 0? max_results : 20);
             list.add(element);
             start++;
             if(max_results > 0 && ++num_results >= max_results)
@@ -262,7 +262,7 @@ public class RingBufferLockless<T> implements Iterable<T> {
             T element=get(i);
             if(element != null) {
                 if(retval == null)
-                    retval=new ArrayList<T>();
+                    retval=new ArrayList<>();
                 retval.add(element);
             }
         }

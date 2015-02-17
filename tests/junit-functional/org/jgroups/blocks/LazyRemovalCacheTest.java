@@ -16,7 +16,7 @@ import java.util.List;
 public class LazyRemovalCacheTest {
 
     public static void testAdd() {
-        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<UUID, String>();
+        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<>();
         UUID uuid=UUID.randomUUID();
         cache.add(uuid, "node-1");
         System.out.println("cache = " + cache);
@@ -29,7 +29,7 @@ public class LazyRemovalCacheTest {
     }
 
     public static void testRemoveAll() {
-        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<UUID, String>(10, 0);
+        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<>(10, 0);
         List<UUID> list=Arrays.asList(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
         int cnt=1;
         for(UUID uuid: list)
@@ -56,7 +56,7 @@ public class LazyRemovalCacheTest {
     }
 
     public static void testRetainAll() {
-        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<UUID, String>(10, 0);
+        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<>(10, 0);
         List<UUID> list=Arrays.asList(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
         int cnt=1;
         for(UUID uuid: list)
@@ -85,7 +85,7 @@ public class LazyRemovalCacheTest {
 
 
     public static void testRemovalOnExceedingMaxSize() {
-        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<UUID, String>(2, 0);
+        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<>(2, 0);
         UUID u1=UUID.randomUUID(), u2=UUID.randomUUID(), u3=UUID.randomUUID(), u4=UUID.randomUUID();
         cache.add(u1, "u1"); cache.add(u2, "u2");
         assert cache.size() == 2;
@@ -112,7 +112,7 @@ public class LazyRemovalCacheTest {
 
 
     public static void testRemovalOnExceedingMaxSizeAndMaxTime() {
-        LazyRemovalCache<Address, String> cache=new LazyRemovalCache<Address, String>(2, 1000);
+        LazyRemovalCache<Address, String> cache=new LazyRemovalCache<>(2, 1000);
         Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B"),
           c=Util.createRandomAddress("C"), d=Util.createRandomAddress("D");
         cache.add(a, "A"); cache.add(b, "B");
@@ -144,7 +144,7 @@ public class LazyRemovalCacheTest {
     }
 
     public void testValuesIterator() {
-        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<UUID, String>(10, 10000);
+        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<>(10, 10000);
         UUID u1=UUID.randomUUID(), u2=UUID.randomUUID(), u3=UUID.randomUUID(), u4=UUID.randomUUID();
         cache.add(u1, "u1"); cache.add(u2, "u2");
         cache.add(u3, "u3"); cache.add(u4, "u4");

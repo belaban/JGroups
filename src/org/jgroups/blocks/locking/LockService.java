@@ -88,7 +88,7 @@ public class LockService {
      */
     protected class LockImpl implements Lock {
         protected final String name;
-        protected final AtomicReference<Thread> holder=new AtomicReference<Thread>();
+        protected final AtomicReference<Thread> holder=new AtomicReference<>();
 
         public LockImpl(String name) {
             this.name=name;

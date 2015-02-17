@@ -159,7 +159,7 @@ public class FragTest {
     }
 
     protected static class OrderingReceiver extends ReceiverAdapter {
-        protected final List<Integer> list=new ArrayList<Integer>();
+        protected final List<Integer> list=new ArrayList<>();
 
         public List<Integer> getList() {return list;}
 

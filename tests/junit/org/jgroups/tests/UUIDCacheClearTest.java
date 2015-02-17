@@ -107,7 +107,7 @@ public class UUIDCacheClearTest extends ChannelTestBase {
     }
 
     private static class MyReceiver extends ReceiverAdapter {
-        private final List<Message> msgs=new ArrayList<Message>(4);
+        private final List<Message> msgs=new ArrayList<>(4);
         private boolean             print_msgs=false;
 
         public void receive(Message msg) {

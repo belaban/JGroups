@@ -259,7 +259,7 @@ public class UDP extends TP {
     public void init() throws Exception {
         super.init();
         if(is_mac && suppress_time_out_of_buffer_space > 0)
-            suppress_log_out_of_buffer_space=new SuppressLog<InetAddress>(log, "FailureSendingToPhysAddr", "SuppressMsg");
+            suppress_log_out_of_buffer_space=new SuppressLog<>(log, "FailureSendingToPhysAddr", "SuppressMsg");
     }
 
     /**

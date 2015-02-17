@@ -37,7 +37,7 @@ public class SingletonAddressTest {
         SingletonAddress sa=new SingletonAddress("cluster".getBytes(), a);
         SingletonAddress sb=new SingletonAddress("cluster".getBytes(), b);
         SingletonAddress sc=new SingletonAddress("cluster".getBytes(), a);
-        Map<Address,Integer> map=new HashMap<Address,Integer>(3);
+        Map<Address,Integer> map=new HashMap<>(3);
         map.put(sa, 1);
         map.put(sb,2);
         map.put(sc,3);

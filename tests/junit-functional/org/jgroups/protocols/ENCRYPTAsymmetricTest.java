@@ -452,8 +452,8 @@ public class ENCRYPTAsymmetricTest {
 
     
     static class MockProtocol extends Protocol {
-        private final TreeMap<String, Event> upMessages=new TreeMap<String, Event>();
-        private final TreeMap<String, Event> downMessages=new TreeMap<String, Event>();
+        private final TreeMap<String, Event> upMessages=new TreeMap<>();
+        private final TreeMap<String, Event> downMessages=new TreeMap<>();
         private int counter;
 
 

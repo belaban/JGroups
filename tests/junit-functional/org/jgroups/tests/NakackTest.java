@@ -139,7 +139,7 @@ public class NakackTest {
      */
     protected class Receiver extends ReceiverAdapter {
         final JChannel               channel;
-        ConcurrentMap<Address, Long> senders=new ConcurrentHashMap<Address, Long>();
+        ConcurrentMap<Address, Long> senders=new ConcurrentHashMap<>();
 
         public Receiver(JChannel channel) {
             this.channel=channel;

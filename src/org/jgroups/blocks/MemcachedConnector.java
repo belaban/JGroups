@@ -116,7 +116,7 @@ public class MemcachedConnector implements Runnable {
 
 
     public Map<String, Object> getStats() {
-        Map<String,Object> stats=new HashMap<String,Object>();
+        Map<String,Object> stats=new HashMap<>();
         stats.put("time", System.currentTimeMillis());
         stats.put("uptime", (System.currentTimeMillis() - start_time) / 1000L);
         return stats;
@@ -335,7 +335,7 @@ public class MemcachedConnector implements Runnable {
                     break;
                 case GET:
                 case GETS:
-                    req.keys=new ArrayList<String>(5);
+                    req.keys=new ArrayList<>(5);
                     req.keys.addAll(Arrays.asList(args).subList(1, args.length));
                     break;
 

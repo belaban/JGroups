@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentMap;
  * @since 3.2
  */
 public class SuppressCache<T> {
-    protected final ConcurrentMap<T,Value> map=new ConcurrentHashMap<T,Value>();
+    protected final ConcurrentMap<T,Value> map=new ConcurrentHashMap<>();
     protected final T NULL_KEY=(T)new Object();
 
 

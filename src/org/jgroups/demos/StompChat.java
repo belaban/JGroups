@@ -26,9 +26,9 @@ public class StompChat implements StompConnection.Listener {
     private int                    num_servers=1;
     private int                    num_clients=0;
     protected String               username=null;
-    protected final Set<String>    users=new HashSet<String>();
-    private final List<String>     servers=new ArrayList<String>();
-    private final Set<String>      clients=new HashSet<String>();
+    protected final Set<String>    users=new HashSet<>();
+    private final List<String>     servers=new ArrayList<>();
+    private final Set<String>      clients=new HashSet<>();
     protected StompConnection      stomp_client;
 
     static enum Destination {

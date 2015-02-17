@@ -106,12 +106,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected final ReentrantLock          recv_table_lock=new ReentrantLock();
 
     /** Used by the retransmit task to keep the last retransmitted seqno per sender (https://issues.jboss.org/browse/JGRP-1539) */
-    protected final Map<Address,Long>      xmit_task_map=new HashMap<Address,Long>();
+    protected final Map<Address,Long>      xmit_task_map=new HashMap<>();
 
     /** RetransmitTask running every xmit_interval ms */
     protected Future<?>                    xmit_task;
 
-    protected volatile List<Address>       members=new ArrayList<Address>(11);
+    protected volatile List<Address>       members=new ArrayList<>(11);
 
     protected Address                      local_addr;
 
@@ -373,7 +373,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         time_service=getTransport().getTimeService();
         if(time_service == null)
             throw new IllegalStateException("time service from transport is null");
-        last_sync_sent=new ExpiryCache<Address>(sync_min_interval);
+        last_sync_sent=new ExpiryCache<>(sync_min_interval);
 
         // max bundle size (minus overhead) divided by <long size> times bits per long
         int estimated_max_msgs_in_xmit_req=(getTransport().getMaxBundleSize() -50) * Global.LONG_SIZE;
@@ -391,7 +391,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(timer == null)
             throw new Exception("timer is null");
         if(max_retransmit_time > 0)
-            cache=new AgeOutCache<Address>(timer, max_retransmit_time, this);
+            cache=new AgeOutCache<>(timer, max_retransmit_time, this);
         running=true;
         startRetransmitTask();
     }
@@ -483,7 +483,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
 
         int size=batch.size();
-        Map<Short,List<Tuple<Long,Message>>> msgs=new LinkedHashMap<Short,List<Tuple<Long,Message>>>();
+        Map<Short,List<Tuple<Long,Message>>> msgs=new LinkedHashMap<>();
         ReceiverEntry entry=recv_table.get(batch.sender());
 
         for(Message msg: batch) {
@@ -499,8 +499,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
             List<Tuple<Long,Message>> list=msgs.get(hdr.conn_id);
             if(list == null)
-                msgs.put(hdr.conn_id, list=new ArrayList<Tuple<Long,Message>>(size));
-            list.add(new Tuple<Long,Message>(hdr.seqno(), msg));
+                msgs.put(hdr.conn_id, list=new ArrayList<>(size));
+            list.add(new Tuple<>(hdr.seqno(), msg));
 
             if(hdr.first)
                 entry=getReceiverEntry(batch.sender(), hdr.seqno(), hdr.first, hdr.connId());
@@ -524,7 +524,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     protected void handleBatchFromSelf(MessageBatch batch, Entry entry) {
-        List<Tuple<Long,Message>> list=new ArrayList<Tuple<Long,Message>>(batch.size());
+        List<Tuple<Long,Message>> list=new ArrayList<>(batch.size());
 
         for(Message msg: batch) {
             Header hdr;
@@ -541,7 +541,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 batch.remove(msg);
                 continue;
             }
-            list.add(new Tuple<Long,Message>(hdr.seqno(), msg));
+            list.add(new Tuple<>(hdr.seqno(), msg));
         }
 
         if(!list.isEmpty()) {
@@ -635,7 +635,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             case Event.VIEW_CHANGE:  // remove connections to peers that are not members anymore !
                 View view=(View)evt.getArg();
                 List<Address> new_members=view.getMembers();
-                Set<Address> non_members=new HashSet<Address>(send_table.keySet());
+                Set<Address> non_members=new HashSet<>(send_table.keySet());
                 non_members.addAll(recv_table.keySet());
                 members=new_members;
                 non_members.removeAll(new_members);
@@ -975,7 +975,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     protected ReceiverEntry createReceiverEntry(Address sender, long seqno, short conn_id) {
-        Table<Message> table=new Table<Message>(xmit_table_num_rows, xmit_table_msgs_per_row, seqno-1,
+        Table<Message> table=new Table<>(xmit_table_num_rows, xmit_table_msgs_per_row, seqno-1,
                                                 xmit_table_resize_factor, xmit_table_max_compaction_time);
         ReceiverEntry entry=new ReceiverEntry(table, conn_id);
         ReceiverEntry entry2=recv_table.putIfAbsent(sender, entry);

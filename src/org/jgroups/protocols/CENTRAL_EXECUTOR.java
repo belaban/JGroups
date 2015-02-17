@@ -29,7 +29,7 @@ public class CENTRAL_EXECUTOR extends Executing {
     @ManagedAttribute
     protected boolean is_coord;
 
-    protected final List<Address> backups=new ArrayList<Address>();
+    protected final List<Address> backups=new ArrayList<>();
 
 
     public CENTRAL_EXECUTOR() {
@@ -95,7 +95,7 @@ public class CENTRAL_EXECUTOR extends Executing {
                 List<Address> new_members=null;
                 synchronized(backups) {
                     if(!backups.equals(new_backups)) {
-                        new_members=new ArrayList<Address>(new_backups);
+                        new_members=new ArrayList<>(new_backups);
                         new_members.removeAll(backups);
                         backups.clear();
                         backups.addAll(new_backups);
@@ -114,7 +114,7 @@ public class CENTRAL_EXECUTOR extends Executing {
                     coord, num_backups);
                 
                 boolean foundMyself = false;
-                List<Address> myBackups = new ArrayList<Address>();
+                List<Address> myBackups = new ArrayList<>();
                 for (Address backup : possiblebackups) {
                     if (foundMyself) {
                         myBackups.add(backup);
@@ -148,8 +148,8 @@ public class CENTRAL_EXECUTOR extends Executing {
         
         _consumerLock.lock();
         try {
-            copyRequests = new HashSet<Owner>(_runRequests);
-            copyConsumers = new HashSet<Owner>(_consumersAvailable);
+            copyRequests = new HashSet<>(_runRequests);
+            copyConsumers = new HashSet<>(_consumersAvailable);
         }
         finally {
             _consumerLock.unlock();

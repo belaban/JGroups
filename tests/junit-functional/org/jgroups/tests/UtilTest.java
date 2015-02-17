@@ -263,7 +263,7 @@ public class UtilTest {
     public static void testObjectToFromByteBuffer() throws Exception {
         byte[] buf;
         Address addr=Util.createRandomAddress(), addr2;
-        List<String> list=new ArrayList<String>(), list2;
+        List<String> list=new ArrayList<>(), list2;
         list.add("Bela");
         list.add("Jeannette");
 
@@ -401,7 +401,7 @@ public class UtilTest {
 
 
     public static void testWriteView() throws Exception {
-        List<Address> members=new ArrayList<Address>();
+        List<Address> members=new ArrayList<>();
         View v;
         Address a1=Util.createRandomAddress();
         Address a2=Util.createRandomAddress();
@@ -575,13 +575,13 @@ public class UtilTest {
     public static void testLeftMembers() {
         final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
 
-        List<Address> v1=new ArrayList<Address>();
+        List<Address> v1=new ArrayList<>();
         v1.add(a);
         v1.add(b);
         v1.add(c);
         v1.add(d);
 
-        List<Address> v2=new ArrayList<Address>();
+        List<Address> v2=new ArrayList<>();
         v2.add(c);
         v2.add(d);
 
@@ -598,13 +598,13 @@ public class UtilTest {
     public static void testLeftMembers2() {
         final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(), d=Util.createRandomAddress();
 
-        List<Address> v1=new ArrayList<Address>();
+        List<Address> v1=new ArrayList<>();
         v1.add(a);
         v1.add(b);
         v1.add(c);
         v1.add(d);
 
-        List<Address> v2=new ArrayList<Address>();
+        List<Address> v2=new ArrayList<>();
         v2.add(c);
         v2.add(d);
         v2.add(a);
@@ -622,8 +622,8 @@ public class UtilTest {
     public static void testNewMembers() {
         final Address a=Util.createRandomAddress(), b=Util.createRandomAddress(), c=Util.createRandomAddress(),
                 d=Util.createRandomAddress(), e=Util.createRandomAddress();
-        List<Address> old=new ArrayList<Address>();
-        List<Address> new_list=new ArrayList<Address>();
+        List<Address> old=new ArrayList<>();
+        List<Address> new_list=new ArrayList<>();
 
         old.add(a); old.add(b); old.add(c);
         new_list.add(b);
@@ -643,7 +643,7 @@ public class UtilTest {
     }
 
     public static void testPickRandomElement() {
-        List<Integer> v=new ArrayList<Integer>();
+        List<Integer> v=new ArrayList<>();
         for(int i=0; i < 10; i++) {
             v.add(i);
         }
@@ -657,7 +657,7 @@ public class UtilTest {
 
 
     public static void testPickNext() {
-        List<Integer> list=new ArrayList<Integer>(10);
+        List<Integer> list=new ArrayList<>(10);
         for(int i=0; i < 10; i++)
             list.add(i);
         Integer num=Util.pickNext(list, 5);
@@ -698,7 +698,7 @@ public class UtilTest {
 
 
     public static void testAll() {
-        List<String> l=new ArrayList<String>();
+        List<String> l=new ArrayList<>();
         l.add("one"); l.add("two"); l.add("one");
         System.out.println("-- list is " + l);
         assert !(Util.all(l, "one"));
@@ -743,7 +743,7 @@ public class UtilTest {
         final String input="   hello world\nthis is \r\n just an example\r\nthis is line 2 \r\n";
         String line;
         InputStream in=new BufferedInputStream(new ByteArrayInputStream(input.getBytes()));
-        List<String> list=new ArrayList<String>(4);
+        List<String> list=new ArrayList<>(4);
 
         for(int i=0; i < 4; i++) {
             line=Util.readLine(in);
@@ -800,7 +800,7 @@ public class UtilTest {
         View v2=View.create(b, 2, b, c);
         View v3=View.create(b, 2, b, c);
 
-        Map<Address,View> map=new HashMap<Address,View>();
+        Map<Address,View> map=new HashMap<>();
         map.put(a, v1); map.put(b, v2); map.put(c, v3);
         StringBuilder sb=new StringBuilder("map:\n");
         for(Map.Entry<Address,View> entry: map.entrySet())
@@ -831,7 +831,7 @@ public class UtilTest {
         View v3=View.create(c, 2, c, d);
         View v4=View.create(c, 2, c, d);
 
-        Map<Address,View> map=new HashMap<Address,View>();
+        Map<Address,View> map=new HashMap<>();
         map.put(a, v1); map.put(b, v2); map.put(c, v3); map.put(d, v4);
 
         StringBuilder sb=new StringBuilder("map:\n");
@@ -863,7 +863,7 @@ public class UtilTest {
         View v3=View.create(a, 2, a, b, c, d);
         View v4=View.create(a, 3, a, b, c, d);
 
-        Map<Address,View> map=new HashMap<Address,View>();
+        Map<Address,View> map=new HashMap<>();
         map.put(a, v1); map.put(b, v2); map.put(c, v3); map.put(d, v4);
 
         StringBuilder sb=new StringBuilder("map:\n");
@@ -892,7 +892,7 @@ public class UtilTest {
         View v1=View.create(a, 1, a, b);
         View v2=View.create(c, 1, c, d);
 
-        Map<Address,View> map=new HashMap<Address,View>();
+        Map<Address,View> map=new HashMap<>();
         map.put(a, v1); map.put(b, v1); map.put(d, v2);
 
         StringBuilder sb=new StringBuilder("map:\n");

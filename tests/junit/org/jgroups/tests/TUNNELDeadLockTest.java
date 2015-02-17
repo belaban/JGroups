@@ -51,7 +51,7 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
             bind_addr="::1";
         else
             bind_addr="127.0.0.1";
-        promise=new Promise<Boolean>();
+        promise=new Promise<>();
         gossip_router_port=ResourceManager.getNextTcpPort(InetAddress.getByName(bind_addr));
         gossip_router_hosts=bind_addr + "[" + gossip_router_port + "]";
         gossipRouter=new GossipRouter(gossip_router_port, bind_addr);

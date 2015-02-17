@@ -143,7 +143,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
                        int l2_max_entries, long l2_reaping_interval) throws Exception {
         MBeanServer server=ManagementFactory.getPlatformMBeanServer();
 
-        cache=new ReplCache<String,String>(props, cluster_name);
+        cache=new ReplCache<>(props, cluster_name);
         cache.setCallTimeout(rpc_timeout);
         cache.setCachingTime(caching_time);
         cache.setMigrateData(migrate_data);
@@ -151,7 +151,7 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         JmxConfigurator.register(cache.getL2Cache(), server, BASENAME + ":name=l2-cache");
 
         if(use_l1_cache) {
-            Cache<String,String> l1_cache=new Cache<String,String>();
+            Cache<String,String> l1_cache=new Cache<>();
             cache.setL1Cache(l1_cache);
             if(l1_reaping_interval > 0)
                 l1_cache.enableReaping(l1_reaping_interval);

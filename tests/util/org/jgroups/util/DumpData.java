@@ -24,7 +24,7 @@ public class DumpData {
             System.err.println(file + " not found");
             return;
         }
-        List<JUnitXMLReporter.TestCase> test_cases=new ArrayList<JUnitXMLReporter.TestCase>();
+        List<JUnitXMLReporter.TestCase> test_cases=new ArrayList<>();
         DataInputStream input=new DataInputStream(new FileInputStream(file));
         try {
             for(;;) {

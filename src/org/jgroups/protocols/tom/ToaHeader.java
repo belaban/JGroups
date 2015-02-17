@@ -119,7 +119,7 @@ public class ToaHeader extends Header {
 
     public static ToaHeader newDataMessageHeader(MessageID messageID, Collection<Address> destinations) {
         assertMessageIDNotNull(messageID);
-        return new ToaHeader(messageID, DATA_MESSAGE).setDestinations(new ArrayList<Address>(destinations));
+        return new ToaHeader(messageID, DATA_MESSAGE).setDestinations(new ArrayList<>(destinations));
     }
 
     public static ToaHeader newProposeMessageHeader(MessageID messageID, long sequencerNumber) {
