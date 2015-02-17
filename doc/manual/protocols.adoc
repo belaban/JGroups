@@ -517,8 +517,6 @@ ${PDC}
 === Merging after a network partition
 
 [[MERGE2]]
-
-
 ==== MERGE2
 
 If a cluster gets split for some reasons (e.g. network partition), this protocol merges the subclusters
@@ -528,7 +526,6 @@ receives this message, it will initiate a merge process. Note that this merges s
 +{A,B}+ and +{C,D,E}+ back into +{A,B,C,D,E}+,
 but it does _not merge state_. The application has to handle the  callback to merge
 state. See <<HandlingNetworkPartitions>> for suggestion on merging states.
-            
 
 Following a merge, the coordinator of the merged group can shift from the typical case of
 "the coordinator is the member who has been up the longest."  During the merge process, the coordinators
@@ -547,231 +544,253 @@ coordinator.
 Note that "A", "B" and so on are just logical names, attached to UUIDs, but the actual sorting is done
                 on the actual UUIDs.
             
-
 ${MERGE2}
 
+NOTE: `MERGE2` is deprecated and will be removed in 4.0. Users of it should switch to `MERGE3`.
+
+
+
 [[MERGE3]]
-
-
 ==== MERGE3
 
-MERGE3 was added in JGroups 3.1.
-            
+If a cluster gets split for some reasons (e.g. network partition), this protocol merges the subclusters
+back into one cluster.
 
-In MERGE3, all members periodically send an INFO message with their address (UUID), logical name,
-                physical address and ViewId. The ViewId (<<ViewId>>) is used to see if we have diverging
-                views among the cluster members: periodically, every coordinator looks at the INFO messages received so
-                far and checks if there are any inconsistencies.
-            
+All members periodically send an INFO message with their address (UUID), logical name,
+physical address and ViewId. The ViewId (<<ViewId>>) is used to see if we have diverging
+views among the cluster members: periodically, every coordinator looks at the INFO messages received so
+far and checks if there are any inconsistencies.
 
-When inconsistencies are found, the merge leader will be the member with the lowest address (UUID). This
-                is deterministic, and therefore we should at most times only have 1 merge going on.
-            
+If inconsistencies are found, the _merge leader_ will be the member with the lowest address (UUID).
 
-The merge leader then asks the senders of the inconsistent ViewIds for their full Views. Once received,
-                it simply passes a MERGE event up the stack, where the merge will be handled (by GMS) in exactly the same
-                way as if MERGE2 has generated the MERGE event.
-            
+The merge leader then asks the senders of the inconsistent ViewIds for their full views. Once received,
+it simply passes a `MERGE` event up the stack, where the merge will be handled (by `GMS`) in exactly the same
+way as if `MERGE2` has generated the `MERGE` event.
 
-The advantages of MERGE3 compared to MERGE2 are:
-                
-* Sending of INFO messages is spread out over time, preventing messgage peaks which might cause
+The advantages of `MERGE3` compared to `MERGE2` are:
+
+* Sending of INFO messages is spread out over time, preventing message peaks which might cause
   packet loss. This is especially important in large clusters.
-* Only 1 merge should be running at any time. Competing merges, as happening with MERGE2, slow
+* Only 1 merge should be running at any time. Competing merges, as happening with `MERGE2`, slow
   down the merge process, and don't scale to large clusters.
-* An INFO message carries the logical name and physical address of a member. Compared to MERGE2,
+* An INFO message carries the logical name and physical address of a member. Compared to `MERGE2`,
   this allows us to immediately send messages to newly merged members, and not have to solicit
   this information first.
-* On the downside, MERGE3 has constant (small) traffic by all members.
-* MERGE3 was written for an IP multicast capable transport (UDP), but it also works with other
-  transports (such as TCP), although it isn't as efficient on TCP as on UDP.
-                    
-            
+* On the downside, `MERGE3` has constant (small) traffic by all members.
+* `MERGE3` was written for an IP multicast capable transport (`UDP`), but it also works with other
+  transports (such as `TCP`), although it isn't as efficient on `TCP` as on `UDP`.
+
+
+===== Example
+
+[source,xml]
+----
+<MERGE3 max_interval="10000" min_interval="5000" check_interval="15000"/>
+----
+
+This means that every member sends out an INFO message at a random interval in range [5000 .. 10000] ms. Every
+15 seconds (`check_interval`), every coordinator checks if it received a ViewId differing from its own, and initiates
+a merge if true.
+
+* We have subclusters `{A,B,C}`, `{D,E}` and `{F}`. The subcluster coordinators are `A`, `D` and `F`
+* The network partition now heals
+* `D` checks its received ViewIds, and sees entries from itself and `A`
+** Since broadcasting of INFO messages is unreliable (as `MERGE3` is underneath `NAKACK2` in the stack), the last
+   INFO message from `F` might have been dropped
+* `D` or `A` initiates a merge, which results in view `{A,B,C,D,E}`
+* A bit later, on the next check, `F` sees that its ViewId diverges from the ViewId sent in an INFO message by `C`
+* `F` and `A` initiate a new merge which results in merge view `{A,B,C,D,E,F}`
+
+Increasing `check_interval` decreases the chance of partial merges (as shown above), but doesn't entirely eliminate them:
+members are not started at exactly the same time, and therefore their check intervals overlap.
+If a member's interval elapsed just after receiving INFO messages from a subset of the subclusters
+(e.g. briefly after a partition healed), then we will still have a partial merge.
 
 ${MERGE3}
 
+
+
+
+
+
 [[FailureDetection]]
-
-
 === Failure Detection
 
 The task of failure detection is to probe members of a group and see whether they are alive. When a member is
-            suspected (= deemed dead), then a SUSPECT message is sent to all nodes of the cluster. It is not the task of the
-            failure detection layer to exclude a crashed member (this is done by the group membership protocol, GMS), but
-            simply to notify everyone that a node in the cluster is suspected of having crashed.
-        
+suspected of having failed, then a SUSPECT message is sent to all nodes of the cluster. It is not the task of the
+failure detection layer to exclude a crashed member (this is done by the group membership protocol, GMS), but
+simply to notify everyone that a node in the cluster is suspected of having crashed.
 
-The SUSPECT message is handled by the GMS protocol of the current coordinator only; all other members
-            ignore it.
+The SUSPECT message is handled by the GMS protocol of the current coordinator only; all other members ignore it.
         
 
 [[FD]]
-
-
 ==== FD
 
-Failure detection based on heartbeat messages. If reply is not
-                received without +timeout+ ms, +$$max_tries$$+ times, a member is declared
-                suspected, and will be excluded by GMS
-            
+Failure detection based on a logical ring and heartbeat messages.
 
-Each member send a message containing a "FD" - HEARTBEAT header to
-                its neighbor to the right (identified by the ping_dest address). The
-                heartbeats are sent by the inner class Monitor. When the neighbor
-                receives the HEARTBEAT, it replies with a message containing a "FD" -
-                HEARTBEAT_ACK header. The first member watches for "FD" - HEARTBEAT_ACK
-                replies from its neigbor. For each received reply, it resets the
-                last_ack timestamp (sets it to current time) and num_tries counter (sets
-                it to 0). The same Monitor instance that sends heartbeats whatches the
-                difference between current time and last_ack. If this difference grows
-                over timeout, the Monitor cycles several more times (until max_tries) is
-                reached) and then sends a SUSPECT message for the neighbor's address.
-                The SUSPECT message is sent down the stack, is addressed to all members,
-                and is as a regular message with a FdHeader.SUSPECT header.
-            
+Members form a logical ring; e.g. in view `{A,B,C,D}`, `A` pings `B`, which pings `C`, which pings `D`, which pings `A`.
+'Pinging' means sending a heartbeat.
+
+Each member sends this heartbeat every `timeout` ms to the neighbor to its right. When a member receives a heartbeat, it
+sends back an ack. When the ack is received the timestamp of when a member last heard from its neighbor is reset.
+
+When a member doesn't receive any heartbeat acks from its neighbor for `timeout` * `max_tries` ms,
+that member is declared suspected, and will be excluded by GMS.
+
+This is done by `FD` multicasting a `SUSPECT(P)` message which is handled by the current coordinator by double-checking
+the health of `P` (using `VERIFY_SUSPECT`) and - if `P` still doesn't reply - by excluding `P` from the membership.
+
+Note that setting `msg_counts_as_heartbeat` in `P` to true causes the timestamp of `P` in the pinging member to be
+reset.
+
+===== Example
+
+[source,xml]
+----
+<FD timeout="3000" max_tries="4" />
+----
+* The membership is `{A,B,C,D,E}`.
+* Now C and D crash at the same time
+* B's next heartbeats won't get an ack
+* After roughly 12 seconds (4 * 3 secs), B suspects C
+** B now starts sending heartbeats to D
+* A (the coordinator) handles the `SUSPECT(C)` message from B and uses `VERIFY_SUSPECT` to double-check that C is really dead
+* After `VERIFY_SUSPECT.timeout` ms, A creates a new view `{A,B,D,E}` excluding C
+* After ca. 12 seconds, B sends a `SUSPECT(D)` message to the coordinator, which eventually also excludes `D`
+
+
 
 ${FD}
 
+
+
 [[FD_ALL]]
-
-
 ==== FD_ALL
 
-Failure detection based on simple heartbeat protocol. Every member periodically multicasts a
-                heartbeat.
-                Every member also maintains a table of all members (minus itself). When data or a heartbeat from P are
-                received, we reset the timestamp for P to the current time.
-                Periodically, we check for expired members, and suspect those.
-            
+Failure detection based on simple heartbeat protocol. Every member periodically multicasts a heartbeat.
+Every member also maintains a table of all members (minus itself). When data or a heartbeat from P are
+received, we reset the timestamp for P to the current time.
+Periodically, we check for expired members whose timestamp is greater than the timeout, and suspect those.
 
-Example: &lt;FD_ALL interval="3000" timeout="10000"/&gt;
-            
+===== Example
 
-In the example above, we send a heartbeat every 3 seconds and suspect members if we haven't received a
-                heartbeat (or traffic) for more than 10 seconds. Note that since we check the timestamps every
-                'interval'
-                milliseconds, we will suspect a member after roughly 4 * 3s == 12 seconds. If we set the timeout to
-                8500,
-                then we would suspect a member after 3 * 3 secs == 9 seconds.
-            
+[source,xml]
+----
+<FD_ALL timeout="12000" interval="3000" timeout_check_interval="2000"/>
+----
+* The membership is `{A,B,C,D,E}`.
+* Every member broadcasts a heartbeat every 3 seconds. When received, the sender's timestamp in the table
+  is set to the current time
+* Every member also checks every 2 seconds if any member's timestamp exceeds the timeout and suspects
+  that member if this is the case
+* Now C and D crash at the same time
+* After roughly 12-13 seconds, `A`, `B` and `E` broadcast a `SUSPECT(C,D)` message
+* The coordinator (`A`) uses `VERIFY_SUSPECT` to double check if `C` and `D` are dead
+* `A` creates a new view `{A,B,E}` which excludes `C` and `D`
+
+NOTE: Contrary to `FD` which suspects adjacent crashed members `C` and `D` one by one, `FD_ALL` suspects `C` and `D` in
+constant time. `FD` takes `N` * (`timeout` * `max_tries`) ms, whereas `FD_ALL` takes `timeout` ms
 
 ${FD_ALL}
 
+
+
 [[FD_ALL2]]
-
-
 ==== FD_ALL2
 
-Similar to FD_ALL, but doesn't use any timestamps. Instead, a boolean flag is associated with each
-                member. When a message or heartbeat (sent every interval ms) from P is received, P's flag is set to true.
-                The heartbeat checker checks every timeout ms for members whose flag is false, suspects those, and
-                - when done - resets all flags to false again.
+Similar to `FD_ALL`, but doesn't use any timestamps. Instead, a boolean flag is associated with each
+member. When a message or heartbeat (sent every `interval` ms) from P is received, P's flag is set to true.
+The heartbeat checker checks every `timeout` ms for members whose flag is false, suspects those, and
+- when done - resets all flags to false again.
+The times it takes to suspect a member are the same as for `FD_ALL`
             
 
 ${FD_ALL2}
 
+
+
 [[FD_SOCK]]
-
-
 ==== FD_SOCK
 
-Failure detection protocol based on a ring of TCP sockets created
-                between cluster members. Each member in a cluster connects to its neighbor
-                (the last member connects to the first), thus forming a ring. Member B is
-                suspected when its neighbor A detects abnormally closing of its TCP socket
-                (presumably due to a node B crash). However, if a member B is about to
-                leave gracefully, it lets its neighbor A know, so that it does not become suspected.
-            
+Failure detection protocol based on a ring of TCP sockets created between cluster members, similar to `FD` but
+not using heartbeat messages.
 
-If you are using a multi NIC machine note that JGroups versions
-                prior to 2.2.8 have FD_SOCK implementation that does not assume this
-                possibility. Therefore JVM can possibly select NIC unreachable to its
-                neighbor and setup FD_SOCK server socket on it. Neighbor would be unable
-                to connect to that server socket thus resulting in immediate suspecting
-                of a member. Suspected member is kicked out of the group, tries to
-                rejoin, and thus goes into join/leave loop. JGroups version 2.2.8
-                introduces srv_sock_bind_addr property so you can specify network
-                interface where FD_SOCK TCP server socket should be bound. This network
-                interface is most likely the same interface used for other JGroups
-                traffic. JGroups versions 2.2.9 and newer consult bind.address system
-                property or you can specify network interface directly as FD_SOCK
-                bind_addr property.
+Each member in a cluster connects to its neighbor (the last member connects to the first), thus forming a ring.
+Member `B` is suspected when its neighbor `A` detects abnormal closing of its TCP socket
+(presumably due to a crash of `B`). However, if `B` is about to leave gracefully, it lets its neighbor `A`
+know, so that `A` doesn't suspect `B`.
+            
+===== Example
+* The membership is `{A,B,C,D,E}`.
+* Members `C` and `D` are killed at the same time
+* `B` notices that `C` abnormally closed its TCP socket and broadcasts a `SUSPECT(C)` message
+* The current coordinator (`A`) asks `VERIFY_SUSPECT` to double check that `C` is dead
+* Meanwhile, `B` tries to create a TCP socket to the next-in-line (`D`) but fails. It therefore broadcasts a
+  `SUSPECT(D)` message
+* `A` also handles this message and asks `VERIFY_SUSPECT` to double check if `D` is dead
+* After `VERIFY_SUSPECT` can't verify that `C` and `D` are still alive, `A` creates a new view
+  `{A,B,E}` and installs it
+* The time taken for `FD_SOCK` to suspect a member is very small (a few ms)
+
+NOTE: It is recommended to use `FD_SOCK` and `FD` or `FD_ALL` together in the same stack: `FD_SOCK` detects killed
+nodes immediately, and `FD_ALL` (with a higher timeout) detects hung members or kernel panics / crashed switches
+(which don't close the TCP connection) after the timeout.
             
 
 ${FD_SOCK}
 
 
-
-==== FD_PING
-
-FD_PING uses a script or command that is
-                run with 1 argument (the host to be pinged) and needs to return 0
-                (success) or 1 (failure). The default command is /sbin/ping (ping.exe on
-                Windows), but this is user configurable and can be replaced with any
-                user-provided script or executable.
-            
-
-${FD_PING}
-
-
-
+[[FD_HOST]]
 ==== FD_HOST
 
-To detect the crash or freeze of entire hosts and all of the cluster members running on them, FD_HOST
-                can be used. It is not meant to be used in isolation, as it doesn't detect crashed members on the
-                local host, but in conjunction with other failure detection protocols, such as FD_ALL or FD_SOCK.
-            
+To detect the crash or freeze of entire hosts and all of the cluster members running on them, `FD_HOST`
+can be used. It is not meant to be used in isolation, as it doesn't detect crashed members on the
+local host, but in conjunction with other failure detection protocols, such as `FD_ALL` or `FD_SOCK`.
 
-FD_HOST can be used when we have multiple cluster members running on a physical box. For example,
-                if we have members {A,B,C,D} running on host 1 and {M,N,O,P} running on host 2, and host 1 is
-                powered down, then A, B, C and D are suspected and removed from the cluster together, typically
-                in one view change.
-            
+`FD_HOST` can be used when we have multiple cluster members running on a physical box. For example,
+if we have members `{A,B,C,D}` running on host 1 and `{M,N,O,P}` running on host 2, and host 1 is
+powered down, then `A`, `B`, `C` and `D` are suspected and removed from the cluster together, typically
+in one view change.
 
-By default, FD_HOST uses InetAddress.isReachable() to perform liveness checking of other hosts, but
-                if property cmd is set, then any script or command can be used. FD_HOST will launch the command and
-                pass the IP address ot the host to be checked as argument. Example: cmd="ping -c 3".
-            
+By default, `FD_HOST` uses `InetAddress.isReachable()` to perform liveness checking of other hosts, but
+if property `cmd` is set, then any script or command can be used. `FD_HOST` will launch the command and
+pass the IP address ot the host to be checked as argument. Example: `cmd="ping -c 3"`.
 
 A typical failure detection configuration would look like this:
-            
-
 
 [source,xml]
 ----
-
 ...
 <FD_SOCK/>
 <FD_ALL timeout="60000" interval="20000"/>
 <FD_HOST interval="10000" timeout="35000" />
 ...
-            
 ----
 
-If we have members {A,B,C} on host 192.168.1.3, {M,N,O} on 192.168.1.4 and {X,Y,Z} on 192.168.1.5, then
-                the behavior is as follows:
-            
+If we have members `{A,B,C}` on host `192.168.1.3`, `{M,N,O}` on `192.168.1.4` and `{X,Y,Z}` on `192.168.1.5`, then
+the behavior is as follows:
 
 .Failure detection behavior
 [options="header"]
 |===============
 |Scenario|Behavior
-|Any member (say O) crashes|
-                                FD_SOCK detects this immediately (as the TCP socket was closed). O is suspected and
+|Any member (say `O`) crashes|
+                               `FD_SOCK` detects this immediately (as the TCP socket was closed). `O` is suspected and
                                 removed
                             
-|Member Y hangs|
-                                FD_ALL starts missing heartbeats from Y (note that host 192.168.1.5 is up) and suspects
-                                Y after 60 seconds. Y is removed from the view.
+|Member `Y` hangs|
+                                `FD_ALL` starts missing heartbeats from `Y` (note that host `192.168.1.5` is up) and suspects
+                                `Y` after 60 seconds. `Y` is removed from the view.
                             
-|Host 192.168.1.3 is shutdown (shutdown -h now)|
-                                Since this is a graceful shutdown, the OS closes all sockets. FD_SOCK therefore
-                                suspects A, B and C and removes them from the view immediately.
+|Host `192.168.1.3` is shutdown (`shutdown -h now`)|
+                                Since this is a graceful shutdown, the OS closes all sockets. `FD_SOCK` therefore
+                                suspects `A`, `B` and `C` and removes them from the view immediately.
                             
-|The power supply to host 192.168.1.3 is cut, or 192.168.1.3 panicked|
-                                FD_HOST detects that 192.168.1.3 is not alive and suspects A, B and C after ~35 to 45s.
+|The power supply to host `192.168.1.3` is cut, or `192.168.1.3` panicked|
+                                `FD_HOST` detects that `192.168.1.3` is not alive and suspects `A`, `B` and `C` after ~35 to 45s.
                             
-|Member N leaves|
+|Member `N` leaves|
                                 Since this is a graceful leave, none of the failure detection protocols kick in
                             
 
