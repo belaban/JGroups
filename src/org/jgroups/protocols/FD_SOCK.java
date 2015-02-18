@@ -124,7 +124,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     protected TimeScheduler timer=null;
     protected final BroadcastTask bcast_task=new BroadcastTask(); // to transmit SUSPECT message (until view change)
     protected volatile boolean regular_sock_close=false; // used by interruptPingerThread() when new ping_dest is computed
-
+    protected volatile boolean shuttin_down;
     protected boolean log_suspected_msgs=true;
 
 
@@ -185,6 +185,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
     public void init() throws Exception {
+        shuttin_down=false;
         srv_sock_handler=new ServerSocketHandler();
         timer=getTransport().getTimer();
         if(timer == null)
@@ -193,10 +194,11 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     public void start() throws Exception {
-        super.start();
+        shuttin_down=false; super.start();
     }
 
     public void stop() {
+        shuttin_down=true;
         pingable_mbrs.clear();
         stopPingerThread();
         stopServerSocket(true); // graceful close
@@ -309,6 +311,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             case Event.CONNECT_WITH_STATE_TRANSFER:
             case Event.CONNECT_USE_FLUSH:
             case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                shuttin_down=false;
                 Object ret=down_prot.down(evt);
                 try {
                     startServerSocket();
@@ -319,6 +322,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 return ret;
 
             case Event.DISCONNECT:
+                shuttin_down=true;
                 stopServerSocket(true); // graceful close
                 break;
 
@@ -618,7 +622,8 @@ public class FD_SOCK extends Protocol implements Runnable {
                 return true;
             }
             catch(Throwable ex) {
-                log.warn("%s: creating the client socket to %s failed: %s", local_addr, destAddr, ex.getMessage());
+                if(!shuttin_down)
+                    log.warn("%s: creating the client socket to %s failed: %s", local_addr, destAddr, ex.getMessage());
                 return false;
             }
         }
