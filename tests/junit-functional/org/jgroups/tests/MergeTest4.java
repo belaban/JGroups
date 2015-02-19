@@ -76,7 +76,7 @@ public class MergeTest4 {
         gms=(GMS)merge_leader.getProtocolStack().findProtocol(GMS.class);
         gms.up(new Event(Event.MERGE, merge_views));
         
-        Util.waitUntilAllChannelsHaveSameSize(10000000, 1000, a,b,c,d);
+        Util.waitUntilAllChannelsHaveSameSize(10000000, 1000, a, b, c, d);
         
         System.out.println("Views are:");
         for(JChannel ch: Arrays.asList(a,b,c,d)) {
@@ -91,6 +91,30 @@ public class MergeTest4 {
 
         for(View v: merge_view.getSubgroups())
             assert contains(v, a.getAddress()) || contains(v, b.getAddress(), c.getAddress(), d.getAddress());
+    }
+
+    /**
+     * Tests a merge between ViewIds of the same coord, e.g. A|3, A|4, A|5
+     */
+    public void testViewsBySameCoord() {
+        Map<Address,View> merge_views=new HashMap<>(4);
+        View v1=View.create(a.getAddress(), 3, a.getAddress(),b.getAddress(),c.getAddress(),d.getAddress()); // {A,B,C,D}
+        View v2=View.create(a.getAddress(), 4, a.getAddress(),b.getAddress(),c.getAddress());                // {A,B,C}
+        View v3=View.create(a.getAddress(), 5, a.getAddress(),b.getAddress());                               // {A,B}
+        View v4=View.create(a.getAddress(), 6, a.getAddress());                                              // {A}
+        merge_views.put(a.getAddress(), v1);
+        merge_views.put(b.getAddress(), v2);
+        merge_views.put(c.getAddress(), v3);
+        merge_views.put(d.getAddress(), v4);
+
+        Util.close(b,c,d);
+
+        GMS gms=(GMS)a.getProtocolStack().findProtocol(GMS.class);
+        gms.up(new Event(Event.MERGE, merge_views));
+        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a);
+        System.out.println("A's view: " + a.getView());
+        assert a.getView().size() == 1;
+        assert a.getView().containsMember(a.getAddress());
     }
 
     protected static boolean contains(View view, Address ... members) {
