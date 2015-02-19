@@ -83,13 +83,17 @@ public class CENTRAL_LOCK extends Locking implements LockNotification {
     }
 
     protected void sendGrantLockRequest(String lock_name, int lock_id, Owner owner, long timeout, boolean is_trylock) {
-        if(coord != null)
-            sendRequest(coord, Type.GRANT_LOCK, lock_name, lock_id, owner, timeout, is_trylock);
+        Address dest=coord;
+        if(dest == null)
+            throw new IllegalStateException("No coordinator available, cannot send GRANT-LOCK request");
+        sendRequest(dest, Type.GRANT_LOCK, lock_name, lock_id, owner, timeout, is_trylock);
     }
 
     protected void sendReleaseLockRequest(String lock_name, Owner owner) {
-        if(coord != null)
-            sendRequest(coord, Type.RELEASE_LOCK, lock_name, owner, 0, false);
+        Address dest=coord;
+        if(dest == null)
+            throw new IllegalStateException("No coordinator available, cannot send RELEASE-LOCK request");
+        sendRequest(dest, Type.RELEASE_LOCK, lock_name, owner, 0, false);
     }
 
     protected void sendCreateLockRequest(Address dest, String lock_name, Owner owner) {

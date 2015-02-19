@@ -691,7 +691,7 @@ the thread ID. This means that different threads inside the same JVM trying to a
 will compete for it. If `thread-22` grabs the lock first, then `thread-5` will block until `thread-23`
 releases the lock.
 
-NOTE: if we want the lock owner to only be the address (and not the thread-id), then property
+NOTE: If we want the lock owner to only be the address (and not the thread-id), then property
 +use_thread_id_for_lock_owner+ can be set to false. This means that all threads in a given node can lock or unlock
 a given lock. Example: thread T1 locks "lock", but thread T2 can unlock it. This is _not_ the same semantics as
 +java.util.concurrent.locks.Lock+, but nevertheless useful in some scenarios. (Introduced in 3.6)
@@ -700,8 +700,10 @@ JGroups includes a demo (`org.jgroups.demos.LockServiceDemo`), which can be used
 with distributed locks. `LockServiceDemo -h` dumps all command line options.
         
 Currently (Jan 2011), there are 2 protocols which provide locking:
-<<PEER_LOCK>> (deprecated) and <<CENTRAL_LOCK>> (recommended). The locking
-protocol has to be placed at or towards the top of the stack (close to the channel).
+<<PEER_LOCK>> (deprecated) and <<CENTRAL_LOCK>> (recommended).
+
+Note that the locking protocol has to be placed at or towards the top of the stack (close to the channel), because it
+requires reliable unicasts and multicasts (e.g. provided by `UNICAST3` and `NAKACK2`).
         
 
 [[LockingAndMerges]]
