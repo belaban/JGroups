@@ -31,7 +31,7 @@ JG_FLAGS="-Djgroups.bind_addr=$IP_ADDR -Djboss.tcpping.initial_hosts=$IP_ADDR[78
 JG_FLAGS="$JG_FLAGS -Djava.net.preferIPv4Stack=true"
 FLAGS="-server -Xmx600M -Xms600M"
 FLAGS="$FLAGS -XX:CompileThreshold=10000 -XX:+AggressiveHeap -XX:ThreadStackSize=64K -XX:SurvivorRatio=8"
-FLAGS="$FLAGS -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=31"
+FLAGS="$FLAGS -XX:TargetSurvivorRatio=90"
 FLAGS="$FLAGS -Xshare:off"
 # JMX="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=7777 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
 JMX="-Dcom.sun.management.jmxremote"
