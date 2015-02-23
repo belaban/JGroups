@@ -35,7 +35,7 @@ public class HeadersTest {
     public static void testContructor2() {
         Headers old=createHeaders(3);
 
-        Headers hdrs=new Headers(old);
+        Headers hdrs=old.copy();
         System.out.println("hdrs = " + hdrs);
         assert hdrs.capacity() == 3 : "capacity must be 3 but was " + hdrs.capacity();
 

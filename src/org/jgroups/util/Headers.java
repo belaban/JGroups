@@ -22,7 +22,7 @@ import java.util.Map;
  * putting a new key/header are operations with O(n) cost, so this implementation is <em>not</em> recommended for
  * a large number of elements.
  * <br/>
- * This class is not synchronized
+ * This class is synchronized for writes (put(), resize()), but not for reads (size(), get())
  * @author Bela Ban
  */
 public class Headers {
@@ -33,15 +33,10 @@ public class Headers {
     private static final int RESIZE_INCR=3;
 
     public Headers(int capacity) {
-        ids=new short[capacity];
-        hdrs=new Header[capacity];
+        init(capacity);
     }
 
-    public Headers(Headers other) {
-        this(other.ids.length);
-        System.arraycopy(other.ids, 0, this.ids, 0, other.ids.length);
-        System.arraycopy(other.hdrs, 0, this.hdrs, 0, other.hdrs.length);
-    }
+    protected Headers() {}
 
     public short[] getRawIDs() {
         return ids;
@@ -49,6 +44,15 @@ public class Headers {
 
     public Header[] getRawHeaders() {
         return hdrs;
+    }
+
+    public synchronized Headers copy() {
+        if(ids == null || hdrs == null)
+            return new Headers();
+        Headers retval=new Headers(ids.length);
+        System.arraycopy(ids, 0, retval.ids, 0, ids.length);
+        System.arraycopy(hdrs, 0, retval.hdrs, 0, hdrs.length);
+        return retval;
     }
 
     /**
@@ -121,10 +125,6 @@ public class Headers {
     }
 
 
-    public Headers copy() {
-        return new Headers(this);
-    }
-
     public int marshalledSize() {
         int retval=0;
         for(int i=0; i < ids.length; i++) {
@@ -182,6 +182,11 @@ public class Headers {
     }
 
 
+    protected void init(int length) {
+        ids=new short[length];
+        hdrs=new Header[length];
+    }
+
     /**
      * Increases the capacity of the array and copies the contents of the old into the new array
      */
@@ -199,7 +204,7 @@ public class Headers {
     }
 
 
-    private Header _putHeader(short id, Header hdr, int start_index, boolean replace_if_present) {
+    private synchronized Header _putHeader(short id, Header hdr, int start_index, boolean replace_if_present) {
         int i=start_index;
         while(i < ids.length) {
             if(ids[i] == 0) {

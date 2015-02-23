@@ -578,7 +578,7 @@ public class Message implements Streamable {
             retval.setBuffer(buf, offset, length);
         }
 
-        retval.headers=copy_headers? createHeaders(headers) : createHeaders(3);
+        retval.headers=copy_headers && headers != null? headers.copy() : createHeaders(3);
         return retval;
     }
 
@@ -948,10 +948,6 @@ public class Message implements Streamable {
         return size > 0? new Headers(size) : new Headers(3);
     }
 
-
-    protected static Headers createHeaders(Headers m) {
-        return new Headers(m);
-    }
 
     /* ------------------------------- End of Private methods ---------------------------- */
 
