@@ -142,7 +142,7 @@ public class MERGE3 extends Protocol {
         stopInfoSender();
     }
 
-    public long getMinInterval() {
+    @Property public long getMinInterval() {
         return min_interval;
     }
 
@@ -153,7 +153,7 @@ public class MERGE3 extends Protocol {
         min_interval=i;
     }
 
-    public long getMaxInterval() {
+    @Property public long getMaxInterval() {
         return max_interval;
     }
 
