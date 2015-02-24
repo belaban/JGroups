@@ -59,17 +59,19 @@ public class Membership {
     * Adds a new member to this membership. If the member already exist (Address.equals(Object)
     * returns true then the member will not be added to the membership
     */
-    public void add(Address new_member) {
+    public Membership add(Address new_member) {
         synchronized(members) {
             if(new_member != null && !members.contains(new_member)) {
                 members.add(new_member);
             }
         }
+        return this;
     }
 
-    public void add(Address ... mbrs) {
+    public Membership add(Address ... mbrs) {
         for(Address mbr: mbrs)
             add(mbr);
+        return this;
     }
 
    /**
@@ -81,10 +83,11 @@ public class Membership {
     *            if v contains objects that don't implement the Address interface
     * 
     */
-    public final void add(Collection<Address> v) {
+    public Membership add(Collection<Address> v) {
         if(v != null)
             for(Address addr: v)
                 add(addr);
+        return this;
     }
 
 
@@ -95,12 +98,13 @@ public class Membership {
     * @param old_member
     *           - the member to be removed
     */
-    public void remove(Address old_member) {
+    public Membership remove(Address old_member) {
         if(old_member != null) {
             synchronized(members) {
                 members.remove(old_member);
             }
         }
+        return this;
     }
 
 
@@ -109,31 +113,34 @@ public class Membership {
     * 
     * @param v a list of all the members to be removed
     */
-    public void remove(Collection<Address> v) {
+    public Membership remove(Collection<Address> v) {
         if(v != null) {
             synchronized(members) {
                 members.removeAll(v);
             }
         }
+        return this;
     }
 
 
-    public void retainAll(Collection<Address> v) {
+    public Membership retainAll(Collection<Address> v) {
         if(v != null) {
             synchronized(members) {
                 members.retainAll(v);
             }
         }
+        return this;
     }
 
 
     /**
      * Removes all the members from this membership
      */
-    public void clear() {
+    public Membership clear() {
         synchronized(members) {
             members.clear();
         }
+        return this;
     }
 
    /**
@@ -144,9 +151,9 @@ public class Membership {
     * @param v
     *           - a vector containing all the members this membership will contain
     */
-    public void set(Collection<Address> v) {
+    public Membership set(Collection<Address> v) {
         clear();
-        add(v);
+        return add(v);
     }
 
 
@@ -158,10 +165,11 @@ public class Membership {
     * @param m
     *           - a membership containing all the members this membership will contain
     */
-    public void set(Membership m) {
+    public Membership set(Membership m) {
         clear();
         if(m != null)
             add(m.getMembers());
+        return this;
     }
 
 
@@ -176,9 +184,9 @@ public class Membership {
      * @param new_mems - a vector containing a list of members (Address) to be added to this membership
      * @param suspects - a vector containing a list of members (Address) to be removed from this membership
      */
-    public void merge(Collection<Address> new_mems, Collection<Address> suspects) {
+    public Membership merge(Collection<Address> new_mems, Collection<Address> suspects) {
         remove(suspects);
-        add(new_mems);
+        return add(new_mems);
     }
 
 
@@ -196,10 +204,11 @@ public class Membership {
     }
 
 
-    public void sort() {
+    public Membership sort() {
         synchronized(members) {
             Collections.sort(members);
         }
+        return this;
     }
 
 

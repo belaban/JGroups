@@ -3,28 +3,18 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.ViewId;
-import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.*;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import javax.management.MBeanServer;
-import java.io.IOException;
-import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -33,71 +23,38 @@ import java.util.concurrent.TimeUnit;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class LargeMergeTest {
-    static final int NUM=50; // number of members
-    static final int MAX_PARTICIPANTS_IN_MERGE=NUM / 3;
-
+    static final int               NUM=50; // number of members
     protected final JChannel[]     channels=new JChannel[NUM];
-    protected MyDiagnosticsHandler handler;
-    protected ThreadPoolExecutor   oob_thread_pool;
-    protected ThreadPoolExecutor   thread_pool;
-
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        handler=new MyDiagnosticsHandler(InetAddress.getByName("224.0.75.75"), 7500,
-                                         LogFactory.getLog(DiagnosticsHandler.class),
-                                         new DefaultSocketFactory(),
-                                         new DefaultThreadFactory("", false));
-        handler.start();
-        
-        TimeScheduler timer=new TimeScheduler3(new DefaultThreadFactory("Timer", true, true),
-                                               5,20,
-                                               3000, 5000, "abort");
-
-        oob_thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/4), 3000, TimeUnit.MILLISECONDS,
-                                                                  new ArrayBlockingQueue<Runnable>(NUM * NUM));
-        oob_thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
-
-        thread_pool=new ThreadPoolExecutor(5, Math.max(5, NUM/4), 3000, TimeUnit.MILLISECONDS,
-                                                              new ArrayBlockingQueue<Runnable>(NUM * NUM));
-        thread_pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-
-
-        MBeanServer server=Util.getMBeanServer();
-
         System.out.print("Connecting channels: ");
         for(int i=0; i < NUM; i++) {
-            SHARED_LOOPBACK shared_loopback=new SHARED_LOOPBACK();
-            shared_loopback.setTimer(timer);
-            shared_loopback.setOOBThreadPool(oob_thread_pool);
-            shared_loopback.setDefaultThreadPool(thread_pool);
-            shared_loopback.setDiagnosticsHandler(handler);
-
-            channels[i]=Util.createChannel(shared_loopback,
-                                           new DISCARD().setValue("discard_all",true),
-                                           new SHARED_LOOPBACK_PING().setValue("force_sending_discovery_rsps", true),
-                                           new MERGE3().setValue("min_interval",1000)
-                                             .setValue("max_interval",5000)
-                                             .setValue("max_participants_in_merge", MAX_PARTICIPANTS_IN_MERGE),
-                                           new NAKACK2().setValue("use_mcast_xmit",false)
-                                             .setValue("discard_delivered_msgs",true)
-                                             .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false)
-                                             .setValue("xmit_table_num_rows",5)
-                                             .setValue("xmit_table_msgs_per_row",10),
-                                           new UNICAST3().setValue("xmit_table_num_rows",5)
-                                             .setValue("xmit_table_msgs_per_row",10)
-                                             .setValue("conn_expiry_timeout", 10000),
-                                           new STABLE().setValue("max_bytes",500000),
-                                           new GMS().setValue("print_local_addr",false)
-                                             .setValue("join_timeout", 1)
-                                             .setValue("leave_timeout",100)
-                                             .setValue("log_view_warnings",false)
-                                             .setValue("view_ack_collection_timeout",2000)
-                                             .setValue("log_collect_msgs",false));
+            channels[i]=new JChannel(new SHARED_LOOPBACK(),
+                                     new DISCARD().setValue("discard_all",true),
+                                     new SHARED_LOOPBACK_PING(),
+                                     new MERGE3().setValue("min_interval",1000)
+                                       .setValue("max_interval",3000)
+                                       .setValue("check_interval", 6000)
+                                       .setValue("max_participants_in_merge", NUM),
+                                     new NAKACK2().setValue("use_mcast_xmit",false)
+                                       .setValue("discard_delivered_msgs",true)
+                                       .setValue("log_discard_msgs",false).setValue("log_not_found_msgs",false)
+                                       .setValue("xmit_table_num_rows",5)
+                                       .setValue("xmit_table_msgs_per_row",10),
+                                     new UNICAST3().setValue("xmit_table_num_rows",5)
+                                       .setValue("xmit_table_msgs_per_row",10)
+                                       .setValue("conn_expiry_timeout", 10000),
+                                     new STABLE().setValue("max_bytes",500000),
+                                     new GMS().setValue("print_local_addr",false)
+                                       .setValue("use_merger2", true)
+                                       .setValue("join_timeout", 1)
+                                       .setValue("leave_timeout",100)
+                                       .setValue("log_view_warnings",false)
+                                       .setValue("view_ack_collection_timeout",2000)
+                                       .setValue("log_collect_msgs",false));
             channels[i].setName(String.valueOf((i + 1)));
-
-            JmxConfigurator.registerChannel(channels[i], server, "channel-" + (i+1), "LargeMergeTest", true);
             channels[i].connect("LargeMergeTest");
             System.out.print(i + 1 + " ");
         }
@@ -112,7 +69,6 @@ public class LargeMergeTest {
             stack.stopStack(cluster_name);
             stack.destroy();
         }
-        handler.destroy();
     }
 
 
@@ -199,30 +155,9 @@ public class LargeMergeTest {
         sb.append("merge killers running: " + merge_canceller_running).append("\n");
         sb.append("merge in progress: " + merge_in_progress).append("\n");
         sb.append("gms.merge tasks running: " + gms_merge_task_running).append("\n");
-        sb.append("thread_pool: threads=" + thread_pool.getPoolSize() + ", queue=" + thread_pool.getQueue().size() +
-                    ", largest threads=" + thread_pool.getLargestPoolSize() + "\n");
-        sb.append("oob_thread_pool: threads=" + oob_thread_pool.getPoolSize() + ", queue=" + oob_thread_pool.getQueue().size() +
-                    ", largest threads=" + oob_thread_pool.getLargestPoolSize() + "\n");
         return sb.toString();
     }
 
-    protected static class MyDiagnosticsHandler extends DiagnosticsHandler {
-
-        protected MyDiagnosticsHandler(InetAddress diagnostics_addr, int diagnostics_port, Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
-            super(diagnostics_addr,diagnostics_port,log,socket_factory,thread_factory);
-        }
-
-        public void start() throws IOException {
-            super.start();
-        }
-
-        public void stop() {
-        }
-
-        public void destroy() {
-            super.stop();
-        }
-    }
 
 
     @Test(enabled=false)

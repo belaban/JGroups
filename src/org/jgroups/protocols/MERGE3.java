@@ -370,6 +370,7 @@ public class MERGE3 extends Protocol {
             }
 
             MergeHeader hdr=createInfo();
+            // not needed; this is done below in ViewConsistencyChecker
             // addInfo(local_addr, hdr.view_id, hdr.logical_name, hdr.physical_addr);
             if(transport_supports_multicasting) { // mcast the discovery request to all but self
                 Message msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(getId(), hdr)

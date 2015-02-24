@@ -544,12 +544,13 @@
     <!--
 =============================== TestNG ======================================== -->
 
-    <target name="all-tests-eap" description="Runs all tests except those which are excluded from EAP">
+    <target name="all-tests-eap" depends="delete-reports"
+            description="Runs all tests except those which are excluded from EAP">
         <property name="default-excludes" value="eap-excluded"/>
         <antcall target="all-tests"/>
     </target>
 
-    <target name="all-tests" description="Runs all tests">
+    <target name="all-tests" depends="delete-reports" description="Runs all tests">
         <sequential>
         	<antcall target="functional"/>
             <antcall target="udp"/>
@@ -659,6 +660,10 @@
         <echo message="******************************************************************"/>
         <echo message="The test report is ${tmp.dir}/test-results/html/index.html"/>
         <echo message="******************************************************************"/>
+    </target>
+
+    <target name="delete-reports" description="Removes the dir for the test reports">
+        <delete dir="${tmp.dir}/test-results" failonerror="false"/>
     </target>
 
 

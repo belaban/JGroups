@@ -91,9 +91,7 @@ public class MembershipTest {
 
     public void testAddVectorDupl() {
         v1=Arrays.asList(a1, a2, a3, a4, a5);
-
-        m1.add(a5, a1);
-        m1.add(v1);
+        m1.add(a5, a1).add(v1);
         assert m1.size() == 4;
         assert m1.contains(a1);
         assert m1.contains(a2);
@@ -103,8 +101,7 @@ public class MembershipTest {
 
 
     public void testRemove() {
-        m1.add(a1, a2, a3, a4, a5);
-        m1.remove(a2);
+        m1.add(a1, a2, a3, a4, a5).remove(a2);
         assert m1.size() == 3;
     }
 
@@ -119,8 +116,7 @@ public class MembershipTest {
 
     public void testSet() {
         v1=Arrays.asList(a1, a2);
-        m1.add(a1, a2, a4, a5);
-        m1.set(v1);
+        m1.add(a1, a2, a4, a5).set(v1);
         assert m1.size() == 2;
         assert m1.contains(a1);
         assert m1.contains(a2);
@@ -132,8 +128,7 @@ public class MembershipTest {
         m1=new Membership();
         m2=new Membership();
         m1.add(a1, a2, a4);
-        m2.add(a5);
-        m2.set(m1);
+        m2.add(a5).set(m1);
         assert m2.size() == 3;
         assert m2.contains(a1);
         assert m2.contains(a2);
@@ -147,7 +142,6 @@ public class MembershipTest {
         v1=Arrays.asList(a5);
         v2=Arrays.asList(a2, a3);
         m1.add(a1, a2, a3, a4);
-
         m1.merge(v1, v2);
         assert m1.size() == 3;
         assert m1.contains(a1);

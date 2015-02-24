@@ -187,8 +187,7 @@ public class MergeTest extends ChannelTestBase {
         Membership membership=new Membership();
         for(String coord: coords)
             membership.add(findAddress(coord, channels));
-        membership.sort();
-        return membership.elementAt(0);
+        return membership.sort().elementAt(0);
     }
 
      private static Address findAddress(String tmp, JChannel[] channels) {

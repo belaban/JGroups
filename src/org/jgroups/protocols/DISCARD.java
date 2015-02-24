@@ -1,29 +1,20 @@
 
 package org.jgroups.protocols;
 
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import javax.swing.*;
-
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
-import org.jgroups.annotations.Unsupported;
+import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.*;
+import java.util.List;
 
 /**
  * Discards up or down messages based on a percentage; e.g., setting property 'up' to 0.1 causes 10%
@@ -81,38 +72,39 @@ public class DISCARD extends Protocol {
         return discard_all;
     }
 
-    public void setDiscardAll(boolean discard_all) {
-        this.discard_all=discard_all;
+    public DISCARD setDiscardAll(boolean discard_all) {
+        this.discard_all=discard_all; return this;
     }
 
     public boolean isExcludeItself() {
         return excludeItself;
     }
 
-    public void setLocalAddress(Address localAddress){
+    public DISCARD setLocalAddress(Address localAddress){
         this.localAddress =localAddress;
         if(discard_dialog != null)
             discard_dialog.setTitle(localAddress != null? localAddress.toString() : "n/a");
+        return this;
     }
 
-    public void setExcludeItself(boolean excludeItself) {
-        this.excludeItself=excludeItself;
+    public DISCARD setExcludeItself(boolean excludeItself) {
+        this.excludeItself=excludeItself; return this;
     }
 
     public double getUpDiscardRate() {
         return up;
     }
 
-    public void setUpDiscardRate(double up) {
-        this.up=up;
+    public DISCARD setUpDiscardRate(double up) {
+        this.up=up; return this;
     }
 
     public double getDownDiscardRate() {
         return down;
     }
 
-    public void setDownDiscardRate(double down) {
-        this.down=down;
+    public DISCARD setDownDiscardRate(double down) {
+        this.down=down; return this;
     }
 
     public int getDropDownUnicasts() {
@@ -123,24 +115,24 @@ public class DISCARD extends Protocol {
      * Drop the next N unicasts down the stack
      * @param drop_down_unicasts
      */
-    public void setDropDownUnicasts(int drop_down_unicasts) {
-        this.drop_down_unicasts=drop_down_unicasts;
+    public DISCARD setDropDownUnicasts(int drop_down_unicasts) {
+        this.drop_down_unicasts=drop_down_unicasts; return this;
     }
 
     public int getDropDownMulticasts() {
         return drop_down_multicasts;
     }
 
-    public void setDropDownMulticasts(int drop_down_multicasts) {
-        this.drop_down_multicasts=drop_down_multicasts;
+    public DISCARD setDropDownMulticasts(int drop_down_multicasts) {
+        this.drop_down_multicasts=drop_down_multicasts; return this;
     }
 
     /** Messages from this sender will get dropped */
-    public void addIgnoreMember(Address sender) {ignoredMembers.add(sender);}
+    public DISCARD addIgnoreMember(Address sender) {ignoredMembers.add(sender); return this;}
 
-    public void removeIgnoredMember(Address member) {ignoredMembers.remove(member);}
+    public DISCARD removeIgnoredMember(Address member) {ignoredMembers.remove(member); return this;}
 
-    public void resetIgnoredMembers() {ignoredMembers.clear();}
+    public DISCARD resetIgnoredMembers() {ignoredMembers.clear(); return this;}
 
 
     @ManagedOperation
