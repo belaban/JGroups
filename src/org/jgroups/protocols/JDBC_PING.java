@@ -79,6 +79,10 @@ public class JDBC_PING extends Discovery {
         "properties must be empty.")
     protected String datasource_jndi_name;
 
+    @Property(description = "If set, a shutdown hook is registered with the JVM to remove the local address "
+    		+ "from the database. Default is true", writable = false)
+    protected boolean register_shutdown_hook = true;
+
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     private DataSource dataSourceFromJNDI = null;
@@ -94,11 +98,13 @@ public class JDBC_PING extends Discovery {
         else
             dataSourceFromJNDI = getDataSourceFromJNDI(datasource_jndi_name.trim());
         attemptSchemaInitialization();
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                remove(cluster_name, local_addr);
-            }
-        });
+        if (register_shutdown_hook) {
+	        Runtime.getRuntime().addShutdownHook(new Thread() {
+	            public void run() {
+	                remove(cluster_name, local_addr);
+	            }
+	        });
+        }
     }
 
     @Override
