@@ -94,7 +94,7 @@ public class FD_ALL2 extends Protocol {
     @ManagedAttribute(description="Lists members of a cluster")
     public String getMembers() {return Util.printListWithDelimiter(members, ",");}
     @ManagedAttribute(description="Currently suspected members")
-    public String getSuspectedMembers() {return suspected_mbrs.toString();}
+    public synchronized String getSuspectedMembers() {return suspected_mbrs.toString();}
     public int getHeartbeatsSent() {return num_heartbeats_sent;}
     public int getHeartbeatsReceived() {return num_heartbeats_received;}
     public int getSuspectEventsSent() {return num_suspect_events;}
@@ -156,7 +156,7 @@ public class FD_ALL2 extends Protocol {
     }
 
 
-    public void stop() {
+    public synchronized void stop() {
         stopHeartbeatSender();
         stopTimeoutChecker();
         suspected_mbrs.clear();
@@ -349,7 +349,7 @@ public class FD_ALL2 extends Protocol {
             Address first=eligible_mbrs.get(0);
             if(local_addr.equals(first)) {
                 if(log.isDebugEnabled())
-                    log.debug("suspecting " + suspected_mbrs);
+                    log.debug("suspecting " + getSuspectedMembers());
                 for(Address suspect: suspects) {
                     up_prot.up(new Event(Event.SUSPECT, suspect));
                     down_prot.down(new Event(Event.SUSPECT, suspect));
