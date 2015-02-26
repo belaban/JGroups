@@ -11,10 +11,7 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 
 /**
@@ -102,8 +99,10 @@ public class ClientGmsImpl extends GmsImpl {
                 continue;
             }
 
-            if(coords.size() > 1)
+            if(coords.size() > 1) {
                 log.debug("%s: found multiple coords: %s", gms.local_addr, coords);
+                Collections.shuffle(coords); // so the code below doesn't always pick the same coord
+            }
 
             join_attempts++;
             for(Address coord: coords) {
