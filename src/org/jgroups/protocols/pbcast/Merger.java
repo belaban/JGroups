@@ -239,9 +239,11 @@ public class Merger {
         Collection<Address> merge_participants=Util.determineMergeParticipants(views);
         merge_participants.removeAll(coordinators);
         for(Address merge_participant: merge_participants) {
-            Collection<Address> tmp=new ArrayList<>();
-            tmp.add(merge_participant);
-            retval.putIfAbsent(merge_participant, tmp);
+            if(!retval.containsKey(merge_participant)) {
+                Collection<Address> tmp=new ArrayList<>();
+                tmp.add(merge_participant);
+                retval.put(merge_participant, tmp);
+            }
         }
         return retval;
     }
