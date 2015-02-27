@@ -358,18 +358,21 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
     public void actionPerformed(ActionEvent e) {
         String     command=e.getActionCommand();
-        if("Clear".equals(command)) {
-            if(no_channel) {
-                clearPanel();
-                return;
-            }
-            sendClearPanelMsg();
+        switch(command) {
+            case "Clear":
+                if(no_channel) {
+                    clearPanel();
+                    return;
+                }
+                sendClearPanelMsg();
+                break;
+            case "Leave":
+                stop();
+                break;
+            default:
+                System.out.println("Unknown action");
+                break;
         }
-        else if("Leave".equals(command)) {
-            stop();
-        }
-        else
-            System.out.println("Unknown action");
     }
 
 
@@ -500,7 +503,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         }
 
 
-        final void createOffscreenImage(boolean discard_image) {
+        void createOffscreenImage(boolean discard_image) {
             d=getSize();
             if(discard_image) {
                 img=null;

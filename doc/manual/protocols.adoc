@@ -316,7 +316,41 @@ ${FILE_PING}
 
 ==== JDBC_PING
 
-JDBC_PING is an alternative to S3_PING by using Amazon RDS instead of S3.
+JDBC_PING uses a DB to store information about cluster nodes used for discovery. All cluster nodes are supposed to be
+able to access the same DB.
+
+When a node starts, it queries information about existing members from the database, determines the coordinator and
+then asks the coord to join the cluster. It also inserts information about itself into the table, so others can
+subsequently find it.
+
+When a node P has crashed, the current coordinator removes P's information from the DB. However, if there is a network
+split, then this can be problematic, as crashed members cannot be told from partitioned-away members.
+
+For instance, if we have `{A,B,C,D}`, and the split creates 2 subclusters `{A,B}` and `{C,D}`,
+then `A` would remove `{C,D}` because it thinks they crashed, and - likewise - `C` would remove `{A,B}`.
+
+To solve this, every member re-inserts its information into the DB after a _view change_. So when `C` and `D`'s view
+changes from `{A,B,C,D}` to `{C,D}`, both sides of the split re-insert their information.
+Ditto for the other side of the network split.
+
+The re-insertion is governed by attributes `info_writer_max_writes_after_view` and `info_writer_sleep_time`: the former
+defines the number of times re-insertion should be done (in a timer task) after each view change and the latter is the
+sleep time (in ms) between re-insertions.
+
+The value of this is that dead members are removed from the DB (because they cannot do re-insertion), but network splits
+are handled, too.
+
+Another attribute `clear_table_on_view_change` governs how zombies are handled. Zombies are table entries for members
+which crashed, but weren't removed for some reason. E.g. if we have a single member `A` and kill it (via kill -9), then
+it won't get removed from the table.
+
+If `clear_table_on_view_change` is set to true, then the coordinator _clears_ the table after a view change (instead of
+only removing the crashed members), and everybody re-inserts its own information. This attribute can be set to true if
+automatic removal of zombies is desired. However, it is costly, therefore if no zombies ever occur (e.g. because processes
+are never killed with kill -9), or zombies are removed by a system admin, then it should be set to false.
+
+NOTE: Processes killed with kill -3 are removed from the DB as a shutdown handler will be called on kill -3
+(but not on kill -9).
             
 
 ${JDBC_PING}
