@@ -18,6 +18,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,7 +60,7 @@ abstract public class Locking extends Protocol {
     // client side locks
     protected final ClientLockTable       client_lock_table=new ClientLockTable();
 
-    protected final Set<LockNotification> lock_listeners=new HashSet<>();
+    protected final Set<LockNotification> lock_listeners=new CopyOnWriteArraySet<>();
 
     protected final static AtomicInteger  current_lock_id=new AtomicInteger(1);
     
