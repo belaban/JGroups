@@ -1,7 +1,5 @@
 package org.jgroups.protocols;
 
-import org.jgroups.annotations.Property;
-
 /**
  * Discovery protocol for Google Cloud Storage. Very simple first shot at an impl, based on a simple migration of
  * S3_PING, as discussed in [1].<p/>
@@ -12,15 +10,15 @@ import org.jgroups.annotations.Property;
  */
 public class GOOGLE_PING extends S3_PING {
 
-    @Property(description="The name of the Google Cloud Storage server")
-    protected String host="storage.googleapis.com";
-
     public void init() throws Exception {
+        if(host == null)
+            host="storage.googleapis.com";
         super.init();
     }
 
     protected AWSAuthConnection createConnection() {
-        return new AWSAuthConnection(access_key, secret_access_key, false, host);
+        return port > 0? new AWSAuthConnection(access_key, secret_access_key, use_ssl, host, port)
+          : new AWSAuthConnection(access_key, secret_access_key, use_ssl, host, Utils.INSECURE_PORT);
     }
 }
 

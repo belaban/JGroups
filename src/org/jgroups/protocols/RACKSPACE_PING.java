@@ -112,6 +112,13 @@ public class RACKSPACE_PING extends FILE_PING {
         rackspaceClient.deleteObject(container, fileName);
     }
 
+    @Override
+    protected void removeAll(String clustername) {
+        List<String> objects = rackspaceClient.listObjects(container);
+        for(String objName: objects) {
+            rackspaceClient.deleteObject(container, objName);
+        }
+    }
 
     /**
      * A thread safe Rackspace ReST client

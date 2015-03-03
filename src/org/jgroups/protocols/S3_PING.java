@@ -32,6 +32,15 @@ import static java.lang.String.valueOf;
  */
 public class S3_PING extends FILE_PING {
 
+    @Property(description="The name of the AWS server")
+    protected String host;
+
+    @Property(description="The port at which AWS is listening")
+    protected int port;
+
+    @Property(description="Whether or not to use SSL to connect to host:port")
+    protected boolean use_ssl=true;
+
     @Property(description="The access key to AWS (S3)",exposeAsManagedAttribute=false)
     protected String access_key;
 
@@ -56,9 +65,9 @@ public class S3_PING extends FILE_PING {
   
     public void init() throws Exception {
         super.init();
-
+        if(host == null)
+            host=Utils.DEFAULT_HOST;
         validateProperties();
-
         conn=createConnection();
 
         if(prefix != null && !prefix.isEmpty()) {
@@ -92,7 +101,8 @@ public class S3_PING extends FILE_PING {
     }
 
     protected AWSAuthConnection createConnection() {
-        return new AWSAuthConnection(access_key, secret_access_key);
+        return port > 0? new AWSAuthConnection(access_key, secret_access_key, use_ssl, host, port)
+          : new AWSAuthConnection(access_key, secret_access_key, use_ssl, host);
     }
 
     @Override
@@ -207,6 +217,36 @@ public class S3_PING extends FILE_PING {
         }
     }
 
+    @Override
+    protected void removeAll(String clustername) {
+        if(clustername == null)
+            return;
+
+        try {
+            Map headers=new TreeMap();
+            headers.put("Content-Type", Arrays.asList("text/plain"));
+            clustername=sanitize(clustername);
+            ListBucketResponse rsp=conn.listBucket(location, clustername, null, null, null);
+            if(rsp.entries != null) {
+                for(Iterator<ListEntry> it=rsp.entries.iterator(); it.hasNext();) {
+                    ListEntry key=it.next();
+                    try {
+                        if (usingPreSignedUrls())
+                            conn.delete(pre_signed_delete_url).connection.getResponseMessage();
+                        else
+                            conn.delete(location, key.key, headers).connection.getResponseMessage();
+                        log.trace("removing %s/%s", location, key.key);
+                    }
+                    catch(Throwable t) {
+                        log.error("failed deleting object %s/%s: %s", location, key.key, t);
+                    }
+                }
+            }
+        }
+        catch(IOException ex) {
+            log.error("failed deleting all objects", ex);
+        }
+    }
 
     protected void validateProperties() {
         if (pre_signed_put_url != null && pre_signed_delete_url != null) {

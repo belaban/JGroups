@@ -151,6 +151,18 @@ public class SWIFT_PING extends FILE_PING {
     }
 
 
+    @Override
+    protected void removeAll(String clustername) {
+        try {
+            List<String> objects=swiftClient.listObjects(container);
+            for(String objName : objects) {
+                swiftClient.deleteObject(container, objName);
+            }
+        }
+        catch(Exception t) {
+            log.error("failed removing objects", t);
+        }
+    }
 
 
 

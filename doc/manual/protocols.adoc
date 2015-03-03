@@ -300,15 +300,41 @@ that node.
                 
 When the coordinator changes, or members not listed in the file join, the current coordinator
 writes the file again, so all members have access to the updated information when needed.
-                
 
 If a bootstrap discovery file is to be used, it needs to be placed into the file system or cloud
 store in the correct location and with the right name (see the Discovery section for naming details).
-                
 
 The design is discussed in more detail in
 link:$$https://github.com/belaban/JGroups/blob/master/doc/design/CloudBasedDiscovery.txt$$[CloudBasedDiscovery.txt]
-                
+
+
+===== Removal of zombie files
+
+By default, a new coordinator C never removes a file created by an old coordinator `A`. E.g. in `{A,B,C,D}` (with
+coordinator `A`), if `C` becomes coordinator on a split `{A,B} | {C,D}`, then `C` doesn't remove `A`'s file, as there
+is no way for `C` to know whether `A` crashed or whether `A` was partitioned away.
+
+Every coordinator `P` installs a shutdown hook which removes `P`'s file on termination. However, this doesn't apply
+to a process killed ungracefully, e.g. by `kill -9`. In this case, no shutdown hook will get called. If we had view
+`{A,B,C}`, and `A` was killed via kill -9, and `B` takes over, we'd have files `A.list` and `B.list`.
+
+To change this, attribute `remove_old_coords_on_view_change` can be set to true. In this case, files created by old
+coordinators will be removed. In the scenario above, where `A` crashed, `B` would remove `A.list`.
+
+However, if we have a split between `{A,B}` and `{C,D}`, `C` would remove `A.list`. To prevent this, every coordinator
+writes its file again on a view change that has left members or in which the coordinator changed.
+
+There is still a case which can end up with a zombie file that's never removed: when we have a single member `A` and
+it is killed via `kill -9`. In this case, file `A.list` will never get cleaned up and subsequent joiners will ask
+`A` to join, up to `GMS.max_join_attempts` times.
+
+Zombie cleanup can be solved by setting `remove_all_files_on_view_change` to true. In this case, a coordinator
+removes _all files_ on a view change that has members leaving or changes the coordinator.
+
+NOTE: Setting `remove_old_coords_on_view_change` or `remove_all_files_on_view_change` to true generates more traffic
+to the file system or cloud store. If members are always shut down gracefully, or never killed via `kill -9`, then
+it is recommended to set both attributes to false.
+
 
 ${FILE_PING}
 
