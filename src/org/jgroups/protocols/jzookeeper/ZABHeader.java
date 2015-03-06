@@ -18,6 +18,8 @@ import org.jgroups.util.Util;
          public static final byte RESPONSE      = 6;
          public static final byte DELIVER       = 7;
          public static final byte START_SENDING = 8;
+         public static final byte COMMITOUTSTANDINGREQUESTS = 9;
+
          
 
          private byte        type=0;
@@ -74,6 +76,7 @@ import org.jgroups.util.Util;
             case RESPONSE:       return "RESPONSE";
             case DELIVER:        return "DELIVER";
             case START_SENDING:  return "START_SENDING";
+            case COMMITOUTSTANDINGREQUESTS:  return "COMMITOUTSTANDINGREQUESTS";
             default:             return "n/a";
         }
            
