@@ -34,7 +34,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
 public class MMZAB extends Protocol {
-	
+	// d
 	protected final AtomicLong        zxid=new AtomicLong(0);
     private ExecutorService executor;
     protected Address                           local_addr;
