@@ -1,0 +1,53 @@
+
+
+Design of Alternating Bit Protocol (ABP)
+========================================
+
+Properties
+----------
+- Reliable message sending from sender A to receiver B
+- Tolerates message loss and duplicate messages
+- Does *not* tolerate message reordering (c.f. [1], section 22.3)
+
+
+State
+-----
+
+- bit = 0;
+- send-queue<Message>; // queue of msgs, client adds at end to send
+
+
+Sender
+------
+
+Send msg MSG:
+------------
+- while true:
+    - If msg=send-queue.peek() == null --> return
+    - Send MSG(msg, bit) to receiver
+    - Sleep
+
+
+On reception of ACK(bit) from receiver
+--------------------------------------
+- If ACK(bit) == bit:
+     - bit = ^bit
+     - send-queue.pop() // removes element from send-queue
+
+
+Receiver
+--------
+
+On reception of MSG(bit) from sender P
+--------------------------------------
+- If MSG(bit) == bit:
+     - bit = ^bit
+     - deliver MSG
+- Send ACK(^bit) to P
+
+
+
+Refs
+----
+
+[1] Lynch, Nancy. Distributed Algorithms, Morgan Kaufmann
