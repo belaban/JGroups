@@ -36,7 +36,7 @@ public class ZABTest extends ReceiverAdapter{
     protected String                name;
     protected long                  num_msgs=1000;
     protected int                   msg_size=1000;
-    protected int                   num_threads=3;
+    protected int                   num_threads=32;
     protected long                  log_interval=num_msgs / 10; // log every 10%
     protected long                  receive_log_interval=Math.max(1, num_msgs / 10);
     protected View 					view;
@@ -106,7 +106,7 @@ public void sendMessages(long mesNums, int mesSize, int num_threads) {
         senders[i].start();
     }
     try {
-        System.out.println("-- sending " + num_msgs);
+        System.out.println("-- sending " + mesNums);
         barrier.await();
     }
     catch(Exception e) {
@@ -142,7 +142,7 @@ public void receive(Message msg) {
     else {
     	//System.out.println("[" + local_addr + "] "+ "Received START_SENDING "+ getCurrentTimeStamp());
     	msgReceived=0;
-    	sendMessages(10, 1000,5);
+    	sendMessages(4500, 1000,32);
     }
     }
 }

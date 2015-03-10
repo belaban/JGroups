@@ -55,7 +55,7 @@ public class MMZAB extends Protocol {
     private int index=-1;
     //private Map<Long, Boolean> notACK = new HashMap<Long, Boolean>();
     SortedSet<Long> wantCommit = new TreeSet<Long>();
-    private long timeDiff;
+    private long lastRequestRecieved;
     private Timer _timer;
     private boolean startSending = false;
 
@@ -95,12 +95,12 @@ public class MMZAB extends Protocol {
 //				this.cancel();
 //				return;
 //			}
-			if ((currentTime - timeDiff) > 1000){
+			if ((currentTime - lastRequestRecieved) > 1000){
 				this.cancel();
 				return;
 			}
 			
-			if (startSending && (currentTime - timeDiff) >500) {
+			if (startSending && (currentTime - lastRequestRecieved) >500) {
         		this.cancel();
 				log.info("Comit Alllllllllllllllllllllllllllllllllll");
     			ZABHeader commitPending = new ZABHeader(ZABHeader.COMMITOUTSTANDINGREQUESTS);
@@ -156,7 +156,7 @@ public class MMZAB extends Protocol {
         					_timer.scheduleAtFixedRate(new FinishTask(this.id), 200, 200);
         					startSending = true;
                     	}
-                    	timeDiff = System.currentTimeMillis();
+                    	lastRequestRecieved = System.currentTimeMillis();
                 		queuedMessages.add(hdr);
                 		break;
                     case ZABHeader.PROPOSAL:
@@ -413,17 +413,14 @@ public class MMZAB extends Protocol {
 					wantCommit.add(ackZxid);					
 //					log.info("Before kkkk  outstandingProposals "+outstandingProposals.keySet());
 //					log.info("Before KKKk  wantCommit "+wantCommit+" Main one "+ackZxid+" "+getCurrentTimeStamp());
-					boolean checkForPrior = true;
 	     			//outstandingProposals.remove(ackZxid);
 					for (long zx:wantCommit){
-						if (!isFirstZxid(zx)){
-							checkForPrior=false;
-							
-						}
-						else{
+						if (isFirstZxid(zx)){
 							commit(zx);
-							outstandingProposals.remove(zx);
+							outstandingProposals.remove(zx);							
 						}
+						else
+							break;
 					}
 					//log.info("After kkkkkkkkkkKKKKKK print outstandingProposals "+outstandingProposals.keySet()+" Main one "+ackZxid+ " "+getCurrentTimeStamp());
 					
@@ -588,7 +585,7 @@ public class MMZAB extends Protocol {
             
                 	 try {
                 		 
-                		 log.info("Queue Size "+queuedMessages.size()+" "+getCurrentTimeStamp());
+                		 //log.info("Queue Size "+queuedMessages.size()+" "+getCurrentTimeStamp());
                 		 //if ((hdrReq=queuedMessages.poll(30, TimeUnit.MILLISECONDS))==null){
                 			// if (test){
 //	                			 log.info("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW Reach 30M");
