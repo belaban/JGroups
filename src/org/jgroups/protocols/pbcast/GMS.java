@@ -402,11 +402,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public void start() throws Exception {
         if(impl != null) impl.start();
         Protocol state_transfer_prot=stack.findProtocol(STATE_TRANSFER.class, StreamingStateTransfer.class);
-        if(state_transfer_prot != null) {
-            log.debug("%s: found state transfer protocol %s, setting install_view_locally_first to true",
-                      local_addr, state_transfer_prot.getClass().getSimpleName());
+        if(state_transfer_prot != null)
             install_view_locally_first=true;
-        }
     }
 
     public void stop() {
