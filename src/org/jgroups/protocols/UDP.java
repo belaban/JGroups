@@ -66,7 +66,7 @@ public class UDP extends TP {
     protected int tos=8; // valid values: 2, 4, 8 (default), 16
 
     @Property(name="mcast_addr", description="The multicast address used for sending and receiving packets",
-              defaultValueIPv4="232.5.5.5", defaultValueIPv6=" 0:0:0:0:0:ffff:e805:505 ",
+              defaultValueIPv4="228.8.8.8", defaultValueIPv6="ff0e::8:8:8",
               systemProperty=Global.UDP_MCAST_ADDR,writable=false)
     protected InetAddress mcast_group_addr=null;
 
