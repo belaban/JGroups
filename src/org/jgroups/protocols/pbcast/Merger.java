@@ -268,6 +268,13 @@ public class Merger {
                 if(!members.contains(mbr))
                     members.add(mbr);
 
+        // Now remove members that are not in our current view:
+        members.retainAll(gms.view().getMembers());
+
+        // Add myself if not present
+        if(!members.contains(gms.local_addr))
+            members.add(gms.local_addr);
+
         ViewId tmp_vid=gms.getViewId();
         if(tmp_vid == null)
             throw new Exception("view ID is null; cannot return merge response");
