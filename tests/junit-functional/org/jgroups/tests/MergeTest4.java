@@ -516,10 +516,12 @@ public class MergeTest4 {
         different_views.put(t.getAddress(), v2);
         different_views.put(v.getAddress(), v3);
 
-        Collection<Address> coords=Util.determineActualMergeCoords(different_views);
+        GMS gms=(GMS)s.getProtocolStack().findProtocol(GMS.class);
+        Collection<Address> coords=gms.useAllViewsToDetermineMergeLeaders()? Util.determineMergeCoords(different_views)
+          : Util.determineActualMergeCoords(different_views);
         Address merge_leader=new Membership().add(coords).sort().elementAt(0);
         System.out.printf("--> coords=%s, merge_leader=%s\n", coords, merge_leader);
-        GMS gms=(GMS)findChannel(merge_leader).getProtocolStack().findProtocol(GMS.class);
+        gms=(GMS)findChannel(merge_leader).getProtocolStack().findProtocol(GMS.class);
         gms.up(new Event(Event.MERGE, different_views));
 
         Util.waitUntilAllChannelsHaveSameSize(30000, 1000, s,t,u,v);

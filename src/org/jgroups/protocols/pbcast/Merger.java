@@ -69,7 +69,7 @@ public class Merger {
     /**
      * Invoked upon receiving a MERGE event from the MERGE layer. Starts the merge protocol.
      * See description of protocol in DESIGN.
-     * @param views A List of <em>different</em> views detected by the merge protocol
+     * @param views A List of <em>different</em> views detected by the merge protocol, keyed by sender
      */
     public void merge(Map<Address, View> views) {
         if(isMergeInProgress()) {
@@ -82,7 +82,7 @@ public class Merger {
             return;
 
         if(merge_leader.equals(gms.local_addr)) {
-            log.debug("%s: I will be the merge leader. Starting the merge task", gms.local_addr);
+            log.debug("%s: I will be the merge leader. Starting the merge task. Views: %s", gms.local_addr, views);
             merge_task.start(views);
         }
         else
@@ -540,7 +540,7 @@ public class Merger {
                 return;
             }
 
-            log.debug("%s: merge task %s started with %d coords", gms.local_addr, merge_id, coords.keySet().size());
+            log.debug("%s: merge task %s started with %d participants", gms.local_addr, merge_id, coords.keySet().size());
 
             /* 2. Fetch the current views and digests from all subgroup coordinators into merge_rsps */
             success=getMergeDataFromSubgroupCoordinators(coords, new_merge_id, gms.merge_timeout);

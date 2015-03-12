@@ -1,6 +1,7 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.Address;
+import org.jgroups.Membership;
 import org.jgroups.View;
 import org.jgroups.util.Util;
 
@@ -18,6 +19,21 @@ public class Merger2 extends Merger {
 
     public Merger2(GMS gms) {
         super(gms);
+    }
+
+
+
+    /** Returns the address of the merge leader based on view ids */
+    protected Address determineMergeLeader(Map<Address,View> views) {
+        if(!gms.use_all_views_to_determine_merge_leaders)
+            return super.determineMergeLeader(views);
+        // we need the merge *coordinators* not merge participants because not everyone can lead a merge !
+        Collection<Address> coords=Util.determineMergeCoords(views);
+        if(coords.isEmpty()) {
+            log.error("%s: unable to determine merge leader from %s; not starting a merge", gms.local_addr, views);
+            return null;
+        }
+        return new Membership(coords).sort().elementAt(0); // establish a deterministic order, so that coords can elect leader
     }
 
 
