@@ -116,10 +116,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Property(description="Use Merger2 instead of Merger for merge handling. Will be removed soon (don't use)")
     protected boolean use_merger2=true;
 
-    @Property(description="If true, the merge leader is selected among all different view creators. If false, only" +
-      "view creators which actually sent the view are selected")
-    protected boolean use_all_views_to_determine_merge_leaders=true;
-
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
 
@@ -210,7 +206,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public void setMergeTimeout(long timeout) {merge_timeout=timeout;}
     public long getMaxJoinAttempts() {return max_join_attempts;}
     public void setMaxJoinAttempts(long t) {max_join_attempts=t;}
-    public boolean useAllViewsToDetermineMergeLeaders() {return use_all_views_to_determine_merge_leaders;}
 
     @ManagedAttribute(description="impl")
     public String getImplementation() {
