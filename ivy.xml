@@ -2,7 +2,7 @@
 <ivy-module version="2.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd"
             xmlns:e="http://ant.apache.org/ivy/extra">
-    <info organisation="org.jgroups" module="jgroups" revision="3.6.2.Final"/>
+    <info organisation="org.jgroups" module="jgroups" revision="3.6.3.Final"/>
 
     <publications>
         <artifact name="jgroups" type="pom" />
