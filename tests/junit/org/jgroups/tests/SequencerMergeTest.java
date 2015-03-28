@@ -116,6 +116,10 @@ public class SequencerMergeTest {
             if(all_ok)
                 break;
             Util.sleep(500);
+            list_a=ra.getList();
+            list_b=rb.getList();
+            list_c=rc.getList();
+            list_d=rd.getList();
         }
 
         System.out.println("A: " + list_a + "\nB: " + list_b + "\nC: " + list_c + "\nD: " + list_d);
