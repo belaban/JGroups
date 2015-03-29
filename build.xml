@@ -134,7 +134,7 @@
     <!-- =================================
           target: publish-local
          ================================= -->
-    <target name="publish-local" depends="define-ivy-task"
+    <target name="publish-local" depends="define-ivy-task,jar"
             description="Publishes this project to the local ivy repo (artifacts need to be in ./dist)">
         <property name="revision" value="${version}"/>
 
@@ -158,6 +158,8 @@
 
         <!-- artifactspattern="${dist.dir}/[artifact]-[revision](-[classifier]).[ext]" -->
         <delete file="${dist.dir}/README"/>
+
+        <ivy:resolve file="ivy.xml"/>
 
         <ivy:publish artifactspattern="${dist.dir}/[artifact]-[revision](-[classifier]).[ext]"
                      publishivy="false"
