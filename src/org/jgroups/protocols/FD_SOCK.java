@@ -137,6 +137,10 @@ public class FD_SOCK extends Protocol implements Runnable {
     public String getMembers() {return Util.printListWithDelimiter(members, ",");}
     @ManagedAttribute(description="List of pingable members of a cluster")
     public String getPingableMembers() {return pingable_mbrs.toString();}
+    @ManagedAttribute(description="List of currently suspected members")
+    public String getSuspectedMembers() {return suspected_mbrs.toString();}
+    @ManagedAttribute(description="The number of currently suspected members")
+    public int getNumSuspectedMembers() {return suspected_mbrs.size();}
     @ManagedAttribute(description="Ping destination")
     public String getPingDest() {return ping_dest != null? ping_dest.toString() : "null";}
     @ManagedAttribute(description="Number of suspect event generated")
@@ -231,6 +235,14 @@ public class FD_SOCK extends Protocol implements Runnable {
                         }
                         break;
 
+                    case FdHeader.UNSUSPECT:
+                        if(hdr.mbrs != null) {
+                            log.trace("%s: received UNSUSPECT message from %s: mbrs=%s", local_addr, msg.getSrc(), hdr.mbrs);
+                            for(Address tmp: hdr.mbrs)
+                                unsuspect(tmp);
+                        }
+                        break;
+
                     // If I have the sock for 'hdr.mbr', return it. Otherwise look it up in my cache and return it
                     case FdHeader.WHO_HAS_SOCK:
                         if(local_addr != null && local_addr.equals(msg.getSrc()))
@@ -304,7 +316,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         switch(evt.getType()) {
 
             case Event.UNSUSPECT:
-                bcast_task.removeSuspectedMember((Address)evt.getArg());
+                broadcastUnuspectMessage((Address)evt.getArg());
                 break;
 
             case Event.CONNECT:
@@ -458,11 +470,12 @@ public class FD_SOCK extends Protocol implements Runnable {
         if(suspects == null)
             return;
 
+        suspects.remove(local_addr);
         final List<Address> eligible_mbrs=new ArrayList<>();
         for(Address suspect: suspects)
             suspect_history.add(suspect);
         suspected_mbrs.addAll(suspects);
-        eligible_mbrs.addAll(members);
+        eligible_mbrs.addAll(this.members);
         eligible_mbrs.removeAll(suspected_mbrs);
 
         // Check if we're coord, then send up the stack
@@ -478,6 +491,12 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
     }
 
+    protected void unsuspect(Address mbr) {
+        if(mbr == null)
+            return;
+        suspected_mbrs.remove(mbr);
+        bcast_task.removeSuspectedMember(mbr);
+    }
 
     protected void handleSocketClose(Exception ex) {
         teardownPingSocket();     // make sure we have no leftovers
@@ -690,18 +709,15 @@ public class FD_SOCK extends Protocol implements Runnable {
      * react to the SUSPECT message and issue a new view, at which point the broadcast task stops.
      */
     protected void broadcastSuspectMessage(Address suspected_mbr) {
-        Message suspect_msg;
-        FdHeader hdr;
-
         if(suspected_mbr == null) return;
 
         log.debug("%s: suspecting %s", local_addr, suspected_mbr);
 
         // 1. Send a SUSPECT message right away; the broadcast task will take some time to send it (sleeps first)
-        hdr=new FdHeader(FdHeader.SUSPECT);
+        FdHeader hdr=new FdHeader(FdHeader.SUSPECT);
         hdr.mbrs=new HashSet<>(1);
         hdr.mbrs.add(suspected_mbr);
-        suspect_msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(this.id, hdr);
+        Message suspect_msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(this.id, hdr);
         down_prot.down(new Event(Event.MSG, suspect_msg));
 
         // 2. Add to broadcast task and start latter (if not yet running). The task will end when
@@ -713,6 +729,19 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
     }
 
+
+    protected void broadcastUnuspectMessage(Address mbr) {
+        if(mbr == null) return;
+
+        log.debug("%s: unsuspecting %s", local_addr, mbr);
+
+        // 1. Send a SUSPECT message right away; the broadcast task will take some time to send it (sleeps first)
+        FdHeader hdr=new FdHeader(FdHeader.UNSUSPECT);
+        hdr.mbrs=new HashSet<>(1);
+        hdr.mbrs.add(mbr);
+        Message suspect_msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(this.id, hdr);
+        down_prot.down(new Event(Event.MSG, suspect_msg));
+    }
 
 
 
@@ -870,10 +899,11 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     public static class FdHeader extends Header {
         public static final byte SUSPECT       = 10;
-        public static final byte WHO_HAS_SOCK  = 11;
-        public static final byte I_HAVE_SOCK   = 12;
-        public static final byte GET_CACHE     = 13; // sent by joining member to coordinator
-        public static final byte GET_CACHE_RSP = 14; // sent by coordinator to joining member in response to GET_CACHE
+        public static final byte UNSUSPECT     = 11;
+        public static final byte WHO_HAS_SOCK  = 12;
+        public static final byte I_HAVE_SOCK   = 13;
+        public static final byte GET_CACHE     = 14; // sent by joining member to coordinator
+        public static final byte GET_CACHE_RSP = 15; // sent by coordinator to joining member in response to GET_CACHE
 
 
         byte                      type=SUSPECT;
@@ -921,18 +951,13 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         public static String type2String(byte type) {
             switch(type) {
-                case SUSPECT:
-                    return "SUSPECT";
-                case WHO_HAS_SOCK:
-                    return "WHO_HAS_SOCK";
-                case I_HAVE_SOCK:
-                    return "I_HAVE_SOCK";
-                case GET_CACHE:
-                    return "GET_CACHE";
-                case GET_CACHE_RSP:
-                    return "GET_CACHE_RSP";
-                default:
-                    return "unknown type (" + type + ')';
+                case SUSPECT:       return "SUSPECT";
+                case UNSUSPECT:     return "UNSUSPECT";
+                case WHO_HAS_SOCK:  return "WHO_HAS_SOCK";
+                case I_HAVE_SOCK:   return "I_HAVE_SOCK";
+                case GET_CACHE:     return "GET_CACHE";
+                case GET_CACHE_RSP: return "GET_CACHE_RSP";
+                default:            return "unknown type (" + type + ')';
             }
         }
 
@@ -1149,10 +1174,8 @@ public class FD_SOCK extends Protocol implements Runnable {
         public void removeSuspectedMember(Address suspected_mbr) {
             if(suspected_mbr == null) return;
             synchronized(suspects) {
-                suspects.remove(suspected_mbr);
-                if(suspects.isEmpty()) {
+                if(suspects.remove(suspected_mbr) && suspects.isEmpty())
                     stopTask();
-                }
             }
         }
 

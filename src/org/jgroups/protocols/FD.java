@@ -247,6 +247,13 @@ public class FD extends Protocol {
                             down_prot.down(new Event(Event.SUSPECT, mbr));
                         }
                         break;
+                    case FdHeader.UNSUSPECT:
+                        if(hdr.mbrs == null)
+                            return null;
+                        log.trace("%s: received unsuspect message: %s", local_addr, hdr);
+                        for(Address tmp: hdr.mbrs)
+                            unsuspect(tmp);
+                        break;
                 }
                 return null;
         }
@@ -295,7 +302,13 @@ public class FD extends Protocol {
                 return retval;
 
             case Event.UNSUSPECT:
-                unsuspect((Address)evt.getArg());
+                FdHeader hdr=new FdHeader(FdHeader.UNSUSPECT);
+                hdr.mbrs=new ArrayList<>();
+                hdr.mbrs.add((Address)evt.getArg());
+                hdr.from=local_addr;
+                Message unsuspect_msg=new Message().setFlag(Message.Flag.INTERNAL).putHeader(id, hdr);
+                log.trace("%s: broadcasting UNSUSPECT message (mbrs=%s)", local_addr, hdr.mbrs);
+                down_prot.down(new Event(Event.MSG, unsuspect_msg));
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
@@ -359,9 +372,10 @@ public class FD extends Protocol {
 
 
     public static class FdHeader extends Header {
-        public static final byte HEARTBEAT=0;
-        public static final byte HEARTBEAT_ACK=1;
-        public static final byte SUSPECT=2;
+        public static final byte HEARTBEAT     = 0;
+        public static final byte HEARTBEAT_ACK = 1;
+        public static final byte SUSPECT       = 2;
+        public static final byte UNSUSPECT     = 3;
 
 
         protected byte                 type=HEARTBEAT;
@@ -390,7 +404,9 @@ public class FD extends Protocol {
                 case HEARTBEAT_ACK:
                     return "heartbeat ack";
                 case SUSPECT:
-                    return "SUSPECT (suspected_mbrs=" + mbrs + ", from=" + from + ")";
+                    return "SUSPECT (suspected_mbrs=" + mbrs + "), from=" + from;
+                case UNSUSPECT:
+                    return "UNSUSPECT (mbrs=" + mbrs + "), from=" + from;
                 default:
                     return "unknown type (" + type + ")";
             }
