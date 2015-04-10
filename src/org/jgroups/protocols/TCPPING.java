@@ -151,11 +151,23 @@ public class TCPPING extends Discovery {
         for(final PhysicalAddress addr: cluster_members) {
             if(physical_addr != null && addr.equals(physical_addr)) // no need to send the request to myself
                 continue;
+
             // the message needs to be DONT_BUNDLE, see explanation above
             final Message msg=new Message(addr).setFlag(Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE, Message.Flag.OOB)
               .putHeader(this.id,hdr).setBuffer(marshal(data));
-            log.trace("%s: sending discovery request to %s", local_addr, msg.getDest());
-            down_prot.down(new Event(Event.MSG, msg));
+
+            if(async_discovery_use_separate_thread_per_request) {
+                timer.execute(new Runnable() {
+                    public void run() {
+                        log.trace("%s: sending discovery request to %s", local_addr, msg.getDest());
+                        down_prot.down(new Event(Event.MSG, msg));
+                    }
+                });
+            }
+            else {
+                log.trace("%s: sending discovery request to %s", local_addr, msg.getDest());
+                down_prot.down(new Event(Event.MSG, msg));
+            }
         }
     }
 }

@@ -85,6 +85,10 @@ public abstract class Discovery extends Protocol {
       "discovery is blocking and/or takes more than a few milliseconds")
     protected boolean                    async_discovery=false;
 
+    @Property(description="If enabled, use a separate thread for every discovery request. Can be used with or without " +
+      "async_discovery")
+    protected boolean                    async_discovery_use_separate_thread_per_request;
+
     @Property(description="When a new node joins, and we have a static discovery protocol (TCPPING), then send the " +
       "contents of the discovery cache to new and existing members if true (and we're the coord). Addresses JGRP-1903")
     protected boolean                    send_cache_on_join=false;
