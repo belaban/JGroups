@@ -5,6 +5,12 @@ package org.jgroups;
 
 import org.jgroups.annotations.Immutable;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * We're using the scheme described at http://www.jboss.com/index.html?module=bb&op=viewtopic&t=77231
  * for major, minor and micro version numbers. We have 5 bits for major and minor version numbers each and
@@ -19,10 +25,40 @@ import org.jgroups.annotations.Immutable;
  */
 @Immutable
 public class Version {
-    public static final short  major = 3;
-    public static final short  minor = 6;
-    public static final short  micro = 3;
-    public static final String description=major + "." + minor + "." + micro + ".Final";
+
+    private static final String VERSION_PROPERTY = "version";
+    private static final Pattern VERSION_REGEXP = Pattern.compile("((\\d+)\\.(\\d+)\\.(\\d+)\\..*)");
+
+    public static final short  major;
+    public static final short  minor;
+
+    public static final short  micro;
+
+    public static final String description;
+
+    static {
+        Properties properties = new Properties();
+
+        InputStream manifestAsStream = null;
+        try {
+            manifestAsStream = Version.class.getResourceAsStream("/jgroups-version.properties");
+            if (manifestAsStream != null) {
+                properties.load(manifestAsStream);
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not initialize version", e);
+        } finally {
+            closeSilently(manifestAsStream);
+        }
+
+        Matcher versionMatcher = VERSION_REGEXP.matcher(properties.getProperty(VERSION_PROPERTY));
+        versionMatcher.find();
+
+        description = versionMatcher.group(1);
+        major = Short.parseShort(versionMatcher.group(2));
+        minor = Short.parseShort(versionMatcher.group(3));
+        micro = Short.parseShort(versionMatcher.group(4));
+    }
 
     public static final short  version=encode(major, minor, micro);
     public static final String string_version=print(version);
@@ -32,8 +68,6 @@ public class Version {
     private static final int   MAJOR_MASK  = 0x00f800; // 1111100000000000 bit mask
     private static final int   MINOR_MASK  = 0x0007c0; //      11111000000 bit mask
     private static final int   MICRO_MASK  = 0x00003f; //           111111 bit mask
-    
-
 
     /**
      * Prints the value of the description and cvs fields to System.out.
@@ -114,6 +148,15 @@ public class Version {
         tmp=decode(ver2);
         short tmp_major2=tmp[0], tmp_minor2=tmp[1];
         return tmp_major == tmp_major2 && tmp_minor == tmp_minor2;
+    }
+
+    private static void closeSilently(InputStream stream) {
+        try {
+            if(stream != null) {
+                stream.close();
+            }
+        } catch (IOException e) {
+        }
     }
 
 }
