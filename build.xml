@@ -310,6 +310,7 @@
                 <include name="INSTALL.html"/>
                 <include name="LICENSE"/>
                 <include name="README"/>
+                <include name="VERSION"/>
             </fileset>
             <fileset dir="${lib.dir}">
                 <include name="licenses/thirdparty*"/>
