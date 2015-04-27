@@ -196,7 +196,7 @@ public class Headers {
             }
             if(ids[i] == id) {
                 Header retval=hdrs[i];
-                if(replace_if_present) {
+                if(replace_if_present || retval == null) {
                     hdrs[i]=hdr;
                 }
                 return retval;
