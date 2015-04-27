@@ -6,7 +6,8 @@
         Ant/ivy based build.xml file for JGroups. Needs ant to run
     </description>
 
-    <property name="version"               value="3.6.3.Final"/>
+    <property file="VERSION"/> <!-- Defines jgroups.version -->
+    <property name="version"               value="${jgroups.version}"/>
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
     <property name="root.dir"              value="${basedir}"/>
