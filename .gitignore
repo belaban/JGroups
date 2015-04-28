@@ -23,5 +23,6 @@ doc/tutorial/*.css
 conf/MANIFEST.MF
 target/
 lib/
+pom.xml
 
 

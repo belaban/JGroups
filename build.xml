@@ -41,6 +41,7 @@
     <!-- Also available: colony.css, github.css etc -->
     <property name="asciidoctor-style"     value="./asciidoctor.css"/>
     <property name="ivy.version"           value="2.4.0" />
+    <property name="pom.template"          value="${conf.dir}/pom.template.xml"/>
 
 
 	<!-- 5 minutes per test suite timeout -->
@@ -208,7 +209,7 @@
                  uri="antlib:org.apache.ivy.ant" classpathref="jg.classpath"/>
     </target>
 
-    <target name="prepare" depends="retrieve">
+    <target name="prepare" depends="retrieve,make-pom">
         <property environment="env"/>
         <mkdir dir="${compile.dir}"/>
     	<copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
@@ -443,6 +444,16 @@
         <echo message="manual.up-to-date=${manual.up-to-date}"/>
     </target>
 
+    <target name="make-pom" description="Copies conf/pom-xml.template to pom.xml and replaces version">
+        <copy file="${pom.template}"
+              tofile="${root.dir}/pom.xml"
+              overwrite="false" verbose="false">
+            <filterset>
+                <filter token="VERSION" value="${version}"/>
+            </filterset>
+        </copy>
+    </target>
+
     <target name="make-schema" description="Creates XML schema for this version of JGroups"
             depends="create-schema">
     </target>
@@ -476,6 +487,7 @@
         <delete dir="${root.dir}/target" failonerror="false"/>
         <delete dir="${keystore.dir}" failonerror="false"/>
         <delete file="${root.dir}/velocity.log*" failonerror="false"/>
+        <delete file="${root.dir}/pom.xml" failonerror="false"/>
         <delete file="${conf.dir}/MANIFEST.MF" failonerror="false"/>
         <delete>
             <fileset dir="${root.dir}" defaultexcludes="no">
