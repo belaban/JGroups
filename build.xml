@@ -40,7 +40,7 @@
     <property name="asciidoc.executable"   value="asciidoctor"/>
     <!-- Also available: colony.css, github.css etc -->
     <property name="asciidoctor-style"     value="./asciidoctor.css"/>
-    <property name="ivy.version"           value="2.4.0-rc1" />
+    <property name="ivy.version"           value="2.4.0" />
 
 
 	<!-- 5 minutes per test suite timeout -->
