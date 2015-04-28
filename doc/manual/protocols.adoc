@@ -276,7 +276,7 @@ The name of a file is always UUID.logical_name.list, e.g. `0000-0000-00000000000
 a UUID of 1, a logical name of "m1.1" and the suffix ".list".
             
 
-[[BootstrpConfiguration]]
+[[BootstrapConfiguration]]
 ===== Configuration with a preconfigured bootstrap file
 
 To speed up the discovery process when starting a large cluster, a predefined bootstrap file
@@ -477,6 +477,19 @@ ${S3_PING}
 
 
 
+==== AWS_PING
+
+This is a protocol written by Meltmedia, which uses the AWS API. It is not part of JGroups, but can be
+downloaded at link:$$http://meltmedia.github.io/jgroups-aws/$$[].
+
+
+==== Native S3 PING
+
+This implementation by Zalando uses the AWS SDK. It is not part of JGroups, but can be found at
+link:$$https://github.com/zalando/jgroups-native-s3-ping/$$[].
+
+
+
 ==== GOOGLE_PING
 
 GOOGLE_PING is a subclass of S3_PING and inherits most of the functionality. It uses Google Cloud
@@ -537,12 +550,6 @@ Currently only Openstack Keystone authentication is supported. Here is a sample 
 ${SWIFT_PING}
 
 
-
-==== AWS_PING
-
-This is a protocol written by Meltmedia, which uses the AWS API. It is not part of JGroups, but can be
-downloaded at link:$$http://meltmedia.github.io/jgroups-aws/$$[].
-            
 
 
 
