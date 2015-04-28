@@ -1,8 +1,14 @@
 package org.jgroups.tests;
 
-import org.jgroups.Version;
 import org.jgroups.Global;
+import org.jgroups.Version;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
+
+import java.util.Properties;
+
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 /**
  * @author Bela Ban April 4 2003
@@ -12,12 +18,20 @@ import org.testng.annotations.Test;
 public class VersionTest {
 
 
-
-    public static void testVersionPrint() {
-        System.out.println("version is " +Version.printVersion());
-        assert true;
+    public void testIfManifestContainsImplementationVersion() throws Exception {
+        Properties properties=new Properties();
+        properties.load(Util.getResourceAsStream(Version.VERSION_FILE, getClass()));
+        String version=properties.getProperty(Version.VERSION_PROPERTY);
+        assertNotNull(version);
     }
 
+    public void testIfVersionWasExtracted() throws Exception {
+        String version=Version.printDescription();
+        assertTrue(version.matches("JGroups [1-9].\\d.\\d\\..*"), "Extracted version: " + version);
+    }
+    public void testVersionPrint() {
+        assertNotNull(Version.printVersion());
+    }
 
     public static void testNullVersion() {
         assert !(Version.isSame((short)0));

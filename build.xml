@@ -6,11 +6,12 @@
         Ant/ivy based build.xml file for JGroups. Needs ant to run
     </description>
 
-    <property file="VERSION"/> <!-- Defines jgroups.version -->
+    <property name="root.dir"              value="${basedir}"/>
+    <property name="conf.dir"              value="${root.dir}/conf"/>
+    <property file="${conf.dir}/VERSION.properties"/> <!-- Defines jgroups.version -->
     <property name="version"               value="${jgroups.version}"/>
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
-    <property name="root.dir"              value="${basedir}"/>
     <property name="src.dir"               value="${root.dir}/src"/>
     <property name="tests.dir"             value="${root.dir}/tests"/>
     <property name="other.dir"             value="${tests.dir}/other"/>
@@ -29,7 +30,6 @@
     <property name="manual.dir"            value="${doc.dir}/manual"/>
     <property name="tutorial.dir"          value="${doc.dir}/tutorial"/>
     <property name="javadoc.dir"           value="${dist.dir}/javadoc"/>
-    <property name="conf.dir"              value="${root.dir}/conf"/>
     <property name="bin.dir"               value="${root.dir}/bin"/>
     <property name="keystore.dir"          value="${root.dir}/keystore"/>
     <property name="javadoc.packages"      value="org.jgroups.*"/>
@@ -302,7 +302,7 @@
              basedir="${compile.dir}"
              manifest="${conf.dir}/MANIFEST.MF"
              includes="org/jgroups/**">
-            <fileset dir="${conf.dir}" includes="*.xml, jg-messages*.properties"/>
+            <fileset dir="${conf.dir}" includes="*.xml, jg-messages*.properties, VERSION.properties"/>
             <fileset dir="${compile.dir}/schema">
                 <include name="*.xsd"/>
             </fileset>
@@ -310,7 +310,6 @@
                 <include name="INSTALL.html"/>
                 <include name="LICENSE"/>
                 <include name="README"/>
-                <include name="VERSION"/>
             </fileset>
             <fileset dir="${lib.dir}">
                 <include name="licenses/thirdparty*"/>
@@ -340,8 +339,6 @@
     </target>
 
 
-
-    <!-- generate java doc -->
     <target name="javadoc"
             depends="prepare,check-javadoc" unless="javadoc.exists"
             description="Creates Javadoc documentation in ./dist/javadoc">
@@ -353,7 +350,7 @@
                  author="true"
                  version="true"
                  use="true"
-                 bottom="Copyright &#169; 1998-2014 Bela Ban / Red Hat. All Rights Reserved."
+                 bottom="Copyright &#169; 1998-2020 Red Hat. All Rights Reserved."
                  useexternalfile="yes"
                  doctitle="JGroups"
                  overview="${src.dir}/org/jgroups/overview.html">

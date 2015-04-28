@@ -1,7 +1,7 @@
 <ivysettings>
     <settings defaultResolver="default"/>
     <credentials  host="repository.jboss.org" realm="jboss-releases-repository" username="${username}" passwd="${password}"/>
-    <properties file="VERSION"/>
+    <properties file="conf/VERSION.properties"/>
 
     <property name="nexus-public"
               value="https://repository.jboss.org/nexus/service/local/staging/deploy/maven2"/>

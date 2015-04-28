@@ -4,6 +4,13 @@
 package org.jgroups;
 
 import org.jgroups.annotations.Immutable;
+import org.jgroups.util.Util;
+
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * We're using the scheme described at http://www.jboss.com/index.html?module=bb&op=viewtopic&t=77231
@@ -19,20 +26,54 @@ import org.jgroups.annotations.Immutable;
  */
 @Immutable
 public class Version {
-    public static final short  major = 3;
-    public static final short  minor = 6;
-    public static final short  micro = 3;
-    public static final String description=major + "." + minor + "." + micro + ".Final";
+    public static final short    major;
+    public static final short    minor;
+    public static final short    micro;
+    public static final String   description;
 
-    public static final short  version=encode(major, minor, micro);
-    public static final String string_version=print(version);
+    public static final short    version;
+    public static final String   string_version;
 
-    private static final int   MAJOR_SHIFT = 11;
-    private static final int   MINOR_SHIFT = 6;
-    private static final int   MAJOR_MASK  = 0x00f800; // 1111100000000000 bit mask
-    private static final int   MINOR_MASK  = 0x0007c0; //      11111000000 bit mask
-    private static final int   MICRO_MASK  = 0x00003f; //           111111 bit mask
+    private static final int     MAJOR_SHIFT = 11;
+    private static final int     MINOR_SHIFT = 6;
+    private static final int     MAJOR_MASK  = 0x00f800; // 1111100000000000 bit mask
+    private static final int     MINOR_MASK  = 0x0007c0; //      11111000000 bit mask
+    private static final int     MICRO_MASK  = 0x00003f; //           111111 bit mask
+
+    public static final String  VERSION_FILE="VERSION.properties";
+    public static final String  VERSION_PROPERTY = "jgroups.version";
+    private static final Pattern VERSION_REGEXP = Pattern.compile("((\\d+)\\.(\\d+)\\.(\\d+)\\..*)");
+
     
+
+    static {
+        Properties properties=new Properties();
+        String value=null;
+        InputStream manifestAsStream=null;
+        try {
+            manifestAsStream=Util.getResourceAsStream(VERSION_FILE, Version.class);
+            if(manifestAsStream == null)
+                throw new FileNotFoundException(VERSION_FILE);
+            properties.load(manifestAsStream);
+            value=properties.getProperty(VERSION_PROPERTY);
+            if(value == null)
+                throw new Exception("value for " + VERSION_PROPERTY + " not found in " + VERSION_FILE);
+        } catch(Exception e) {
+            throw new IllegalStateException("Could not initialize version", e);
+        } finally {
+            Util.close(manifestAsStream);
+        }
+
+        Matcher versionMatcher = VERSION_REGEXP.matcher(value);
+        versionMatcher.find();
+
+        description = value;
+        major = Short.parseShort(versionMatcher.group(2));
+        minor = Short.parseShort(versionMatcher.group(3));
+        micro = Short.parseShort(versionMatcher.group(4));
+        version=encode(major, minor, micro);
+        string_version=print(version);
+    }
 
 
     /**
