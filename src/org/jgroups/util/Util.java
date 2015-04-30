@@ -446,12 +446,8 @@ public class Util {
         return objectFromByteBuffer(buffer, 0, buffer.length);
     }
 
-    public static Object objectFromByteBuffer(byte[] buffer,int offset,int length) throws Exception {
-        return objectFromByteBuffer(buffer, offset, length, null);
-    }
 
-
-    public static Object objectFromByteBuffer(byte[] buffer,int offset,int length, ClassLoader loader) throws Exception {
+    public static Object objectFromByteBuffer(byte[] buffer, int offset, int length) throws Exception {
         if(buffer == null) return null;
         Object retval=null;
         byte type=buffer[offset];
@@ -463,11 +459,11 @@ public class Util {
             case TYPE_STREAMABLE:
                 ByteArrayInputStream in_stream=new ExposedByteArrayInputStream(buffer, offset+1, length-1);
                 InputStream in=new DataInputStream(in_stream);
-                retval=readGenericStreamable((DataInputStream)in, loader);
+                retval=readGenericStreamable((DataInputStream)in);
                 break;
             case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
                 in_stream=new ExposedByteArrayInputStream(buffer, offset+1, length-1);
-                in=new ObjectInputStreamWithClassloader(in_stream, loader); // changed Nov 29 2004 (bela)
+                in=new ObjectInputStream(in_stream); // changed Nov 29 2004 (bela)
                 try {
                     retval=((ObjectInputStream)in).readObject();
                 }
@@ -646,11 +642,9 @@ public class Util {
         }
     }
 
-    public static Object objectFromStream(DataInput in) throws Exception {
-        return objectFromStream(in, null);
-    }
 
-    public static Object objectFromStream(DataInput in, ClassLoader loader) throws Exception {
+
+    public static Object objectFromStream(DataInput in) throws Exception {
         if(in == null) return null;
         Object retval=null;
         byte b=in.readByte();
@@ -659,10 +653,10 @@ public class Util {
             case TYPE_NULL:
                 return null;
             case TYPE_STREAMABLE:
-                retval=readGenericStreamable(in, loader);
+                retval=readGenericStreamable(in);
                 break;
             case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
-                ObjectInputStream tmp=new ObjectInputStreamWithClassloader((InputStream)in, loader);
+                ObjectInputStream tmp=new ObjectInputStream((InputStream)in);
                 retval=tmp.readObject();
                 break;
             case TYPE_BOOLEAN:
@@ -1050,11 +1044,9 @@ public class Util {
         obj.writeTo(out);
     }
 
-    public static Streamable readGenericStreamable(DataInput in) throws Exception {
-        return readGenericStreamable(in, null);
-    }
 
-    public static Streamable readGenericStreamable(DataInput in, ClassLoader loader) throws Exception {
+
+    public static Streamable readGenericStreamable(DataInput in) throws Exception {
         Streamable retval=null;
         int b=in.readByte();
         if(b == 0)
@@ -1072,7 +1064,7 @@ public class Util {
         }
         else {
             classname=in.readUTF();
-            clazz=ClassConfigurator.get(classname, loader);
+            clazz=ClassConfigurator.get(classname);
             if (clazz==null)
                 throw new ClassNotFoundException(classname);
         }
@@ -2653,7 +2645,7 @@ public class Util {
         byte[] data;
 
         try {
-            inst=Util.loadClass(classname, (Class)null).newInstance();
+            inst=Util.loadClass(classname, null).newInstance();
             data=Util.objectToByteBuffer(inst);
             return data.length;
         }
@@ -2689,41 +2681,6 @@ public class Util {
         }
     }
 
-    /**
-     * Tries to load the class from the current thread's context class loader. If
-     * not successful, tries to load the class from the current instance.
-     * @param classname Desired class.
-     * @param clazz     Class object used to obtain a class loader
-     *                  if no context class loader is available.
-     * @return Class, or null on failure.
-     */
-    public static Class loadClass(String classname,Class clazz) throws ClassNotFoundException {
-        return loadClass(classname, clazz.getClassLoader());
-    }
-
-    /**
-     * Tries to load the class from the preferred loader.  If not successful, tries to
-     * load the class from the current thread's context class loader or system class loader.
-     * @param classname Desired class name.
-     * @param preferredLoader The preferred class loader
-     * @return the loaded class.
-     * @throws ClassNotFoundException if the class could not be loaded by any loader
-     */
-    public static Class<?> loadClass(String classname, ClassLoader preferredLoader) throws ClassNotFoundException {
-        ClassNotFoundException exception = null;
-        for (ClassLoader loader: Arrays.asList(preferredLoader, Thread.currentThread().getContextClassLoader(), ClassLoader.getSystemClassLoader())) {
-            try {
-                return loader.loadClass(classname);
-            } catch (ClassNotFoundException e) {
-                if (exception == null) {
-                    exception = e;
-                }
-            }
-        }
-        throw exception;
-    }
-
-
 
 
     /**
@@ -2733,7 +2690,7 @@ public class Util {
      * @param clazz Class object used to obtain a class loader
      * 				if no context class loader is available.
      * @return Class, or null on failure.
-     *//*
+     */
     public static Class loadClass(String classname, Class clazz) throws ClassNotFoundException {
         ClassLoader loader;
 
@@ -2767,7 +2724,7 @@ public class Util {
         }
 
         throw new ClassNotFoundException(classname);
-    }*/
+    }
 
 
     public static Field[] getAllDeclaredFields(final Class clazz) {

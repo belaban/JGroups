@@ -346,26 +346,19 @@ public class Message implements Streamable {
         }
     }
 
-
-    final public Object getObject() {
-        return getObject(null);
-    }
-
     /**
      * Uses custom serialization to create an object from the buffer of the message. Note that this
      * is dangerous when using your own classloader, e.g. inside of an application server ! Most
      * likely, JGroups will use the system classloader to deserialize the buffer into an object,
      * whereas (for example) a web application will want to use the webapp's classloader, resulting
      * in a ClassCastException. The recommended way is for the application to use their own
-     * serialization and only pass byte[] buffer to JGroups.<p/>
-     * As of 3.5, a classloader can be passed in. It will be used first to find a class, before contacting
-     * the other classloaders in the list. If null, the default list of classloaders will be used.
+     * serialization and only pass byte[] buffer to JGroups.
      *
-     * @return the object
+     * @return
      */
-    final public Object getObject(ClassLoader loader) {
+    final public Object getObject() {
         try {
-            return Util.objectFromByteBuffer(buf, offset, length, loader);
+            return Util.objectFromByteBuffer(buf, offset, length);
         }
         catch(Exception ex) {
             throw new IllegalArgumentException(ex);

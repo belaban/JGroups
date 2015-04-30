@@ -159,12 +159,15 @@ public class ClassConfigurator {
      * @param clazzname a fully classified class name to be loaded
      * @return a Class object that represents a class that implements java.io.Externalizable
      */
-    public static Class get(String clazzname, ClassLoader loader) throws ClassNotFoundException {
-        return Util.loadClass(clazzname, loader != null? loader : ClassConfigurator.class.getClassLoader());
-    }
-
-    public static Class get(String clazzname) throws ClassNotFoundException {
-        return Util.loadClass(clazzname, ClassConfigurator.class);
+    public static Class get(String clazzname) {
+        try {
+            // return ClassConfigurator.class.getClassLoader().loadClass(clazzname);
+            return Util.loadClass(clazzname, ClassConfigurator.class);
+        }
+        catch(Exception x) {
+            if(log.isErrorEnabled()) log.error("failed loading class " + clazzname, x);
+        }
+        return null;
     }
 
     /**
