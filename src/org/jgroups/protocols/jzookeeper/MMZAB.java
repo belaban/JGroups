@@ -32,7 +32,10 @@ import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
-
+/*
+ * 
+ * 
+ */
 public class MMZAB extends Protocol {
 	// d
 	protected final AtomicLong        zxid=new AtomicLong(0);
