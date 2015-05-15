@@ -419,32 +419,42 @@ public class MMZAB extends Protocol {
         //}
 		
 		if (isQuorum(p.getAckCount())) {
-			if (isFirstZxid(ackZxid)) {
-				//log.info(" if (isQuorum(p.getAckCount())) commiting " + ackZxid);
+			if (ackZxid == lastZxidCommitted+1){
 				commit(ackZxid);
-				outstandingProposals.remove(ackZxid);
+				outstandingProposals.remove(ackZxid);				
+			//}
+			//if (isFirstZxid(ackZxid)) {
+				//log.info(" if (isQuorum(p.getAckCount())) commiting " + ackZxid);
+				//commit(ackZxid);
+				//outstandingProposals.remove(ackZxid);
 			} else {
-				for (Proposal proposalPending : outstandingProposals.values()) {
-					if (proposalPending.getZxid() < p.getZxid()) {
+				long zxidCommiting = lastZxidCommitted +1;
+				for (long z = zxidCommiting; z < ackZxid+1; z++){
+					commit(z);
+					outstandingProposals.remove(z);
+				}
+			}
+				//for (Proposal proposalPending : outstandingProposals.values()) {
+					//if (proposalPending.getZxid() < p.getZxid()) {
 						//log.info(" inside proposalPending.getZxid() < p.getZxid() "
 								//+ proposalPending.getZxid() + " " + p.getZxid());
-						wantCommit.add(proposalPending.getZxid());
+						//wantCommit.add(proposalPending.getZxid());
 						//log.info(" wantCommit size " + wantCommit.size());
-					}
-				}
-				wantCommit.add(ackZxid);
+					//}
+				//}
+				//wantCommit.add(ackZxid);
 				
-				log.info(" processAck Commiting allwantCommit) commiting " + wantCommit + " before "+ackZxid);
-				for (long zx : wantCommit) {
-					if (isFirstZxid(zx)) {
-						commit(zx);
-						//log.info(" for (long zx : wantCommit) commiting " + zx);
-						outstandingProposals.remove(zx);
-					} else
-						break;
-				}
-				wantCommit.clear();
-			}
+//				log.info(" processAck Commiting allwantCommit) commiting " + wantCommit + " before "+ackZxid);
+//				for (long zx : wantCommit) {
+//					if (isFirstZxid(zx)) {
+//						commit(zx);
+//						//log.info(" for (long zx : wantCommit) commiting " + zx);
+//						outstandingProposals.remove(zx);
+//					} else
+//						break;
+//				}
+//				wantCommit.clear();
+//			}
 		}
 		
 		// }
