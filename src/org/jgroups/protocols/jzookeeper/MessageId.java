@@ -20,12 +20,24 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
     private static final long serialVersionUID = 878801547232534461L;
     private Address address = null;
     private long id = -1;
+    private long startSend = 0;
+    private long zxid = -1;
 
     public MessageId() {}
 
     public MessageId(Address address, long id) {
         this.address = address;
         this.id = id;
+    }
+    
+    public MessageId(Address address, long id, long startSend) {
+        this.address = address;
+        this.id = id;
+        this.startSend = startSend;
+    }
+    
+    public MessageId(long zxid) {
+        this.zxid = zxid;
     }
 
     @Override
@@ -42,10 +54,26 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
     public Address getAddress() {
         return address;
     }
+    
+    public long getStartTime(){
+    	return startSend;
+    }
 
+    public void setStartTime(long startSend){
+    	this.startSend = startSend;
+    }
+    
+    public long getZxid(){
+    	return zxid;
+    }
+
+    public void setZxid(long zxid){
+    	this.zxid = zxid;
+    }
+    
     @Override
     public String toString() {
-        return "MessageId{" + address + ":" + id + "}";
+        return "MessageId{" + address + ":" + id + ":" + zxid +"}";
     }
 
     public Object clone() {
@@ -63,10 +91,10 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        MessageId MessageId = (MessageId) o;
+        MessageId messageId = (MessageId) o;
 
-        return id == MessageId.id &&
-                !(address != null ? !address.equals(MessageId.address) : MessageId.address != null);
+        return  id == messageId.id &&
+                !(address != null ? !address.equals(messageId.address) : messageId.address != null);
 
     }
 
@@ -78,19 +106,24 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
     }
 
     public int serializedSize() {
-        return Bits.size(id) + Util.size(address);
+        return Bits.size(id) + Util.size(address) + Bits.size(startSend) + Bits.size(zxid);
     }
 
     @Override
     public void writeTo(DataOutput out) throws Exception {
         Util.writeAddress(address, out);
         Bits.writeLong(id, out);
+        Bits.writeLong(startSend, out);
+        Bits.writeLong(zxid, out);
+
     }
 
     @Override
     public void readFrom(DataInput in) throws Exception {
         address = Util.readAddress(in);
         id = Bits.readLong(in);
+        startSend = Bits.readLong(in);
+        zxid = Bits.readLong(in);
     }
 
     @Override

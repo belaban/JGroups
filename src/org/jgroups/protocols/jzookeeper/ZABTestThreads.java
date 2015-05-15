@@ -48,7 +48,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 	private static long num_msgs = 100000;
 	private static long num_msgsPerThreads = 10000;
 	private static int msg_size = 20000;
-	private static int numOfClients = 5;
+	private static int numOfClients = 10;
 	private static int num_threads = 10;
 	private long log_interval = num_msgs / 10; 
 	private long receive_log_interval = Math.max(1, num_msgs / 10);
@@ -207,14 +207,14 @@ public class ZABTestThreads extends ReceiverAdapter {
 			avg+=lat;			
 		}
 		outFile.println("Sender " + sender.getName()+ " Finished "+
-				numOpsRecieved + " Throughput per sender "+(numOpsRecieved/TimeUnit.MILLISECONDS.toSeconds(timeElapsed))+" ops/sec"
-				+" /Latency-----> Min = " + min + " /Avg = "+ (avg/latencies.size())+
-		        " /Max = " +max);
+				numOpsRecieved + " Throughput per sender "+(numOpsRecieved));//TimeUnit.MILLISECONDS.toSeconds(timeElapsed))+" ops/sec"
+				//+" /Latency-----> Min = " + min + " /Avg = "+ (avg/latencies.size())+
+		        //" /Max = " +max);
 		if (numsThreadFinished >= num_threads){
 			avgTimeElpased/=numsThreadFinished;
-			outFile.println("Throughput Per Client " +(avgRecievedOps/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))+" ops/sec");
-			outFile.println("Throughput All Cluster " +((avgRecievedOps*numOfClients)/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))
-					+" ops/sec");
+			outFile.println("Throughput Per Client " +(avgRecievedOps));///TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))+" ops/sec");
+			outFile.println("Throughput All Cluster " +((avgRecievedOps*numOfClients)));///TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))
+					//+" ops/sec");
 		    outFile.println("Test Generated at "+ new Date()+ " Lasted for " + TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased)); 
 			System.out.println("File closed" +"############################################"); 
 			outFile.close();	
