@@ -3470,8 +3470,9 @@ public class Util {
     }
 
     public static void checkIfValidAddress(InetAddress bind_addr,String prot_name) throws Exception {
-        //if(bind_addr.isAnyLocalAddress() || bind_addr.isLoopbackAddress())
-          //  return;
+        // N.B. bind_addr.isAnyLocalAddress() is not OK
+        if (bind_addr.isLoopbackAddress())
+            return;
         Collection<InetAddress> addrs=getAllAvailableAddresses();
         for(InetAddress addr : addrs) {
             if(addr.equals(bind_addr))
