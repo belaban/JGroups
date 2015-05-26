@@ -1647,6 +1647,16 @@ The +mech+ property specifies the SASL mech you want to use, as defined by RFC-4
                     callback handlers, one used when the node is running as coordinator (++$$server_callback_handler$$++) and one used in all other 
                     cases (++$$client_callback_handler$$++). Refer to the JDK's SASL reference guide for more details: link:$$http://docs.oracle.com/javase/7/docs/technotes/guides/security/sasl/sasl-refguide.html$$[] 
                 
+The JGroups package comes with a simple properties-based CallbackHandler which can be used when a more complex Kerberos/LDAP approach is not needed. To use this set both the (++$$server_callback_handler$$++) and
+                    the (++$$client_callback_handler$$++) to org.jgroups.auth.sasl.SimpleAuthorizingCallbackHandler. This CallbackHandler can be configured either programmatically by passing to the constructor an
+                    instance of java.util.Properties containing the appropriate properties, or via standard Java system properties (i.e. set on the command-line using the -DpropertyName=propertyValue notation.
+                    The following properties are available:
+
+* sasl.credentials.properties - the path to a property file which contains principal/credential mappings represented as principal=password
+* sasl.local.principal - the name of the principal that is used to identify the local node. It must exist in the sasl.credentials.properties file
+* sasl.roles.properties - (optional) the path to a property file which contains principal/roles mappings represented as principal=role1,role2,role3
+* sasl.role - (optional) if present, authorizes joining nodes only if their principal is
+* sasl.realm - (optional) the name of the realm to use for the SASL mechanisms that require it
 
 ${SASL}
 
