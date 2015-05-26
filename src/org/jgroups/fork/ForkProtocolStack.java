@@ -1,10 +1,8 @@
 package org.jgroups.fork;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.protocols.FORK;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MessageBatch;
 
@@ -21,17 +19,36 @@ import java.util.concurrent.ConcurrentMap;
  * @since  3.4
  */
 public class ForkProtocolStack extends ProtocolStack {
-    protected Address local_addr;
+    protected       Address                        local_addr;
+    protected final String                         fork_stack_id;
     protected final ConcurrentMap<String,JChannel> fork_channels=new ConcurrentHashMap<>();
-    private final UnknownForkHandler unknownForkHandler;
+    protected final UnknownForkHandler             unknownForkHandler;
+    protected final List<Protocol>                 protocols;
 
-    public ForkProtocolStack(UnknownForkHandler unknownForkHandler) {
+    // init() increments and destroy() decrements
+    // 1 -> 0: destroy the stack and remove it from FORK. Calls destroy() in all fork stack protocols before
+    protected int                                  inits;
+
+    // connect() increments and disconnect decrements.
+    // 0 -> 1: connect the stack (calls start() in all protocols of the fork stack)
+    // 1 -> 0: disconnect the stack (calls stop() in all protocols of the fork stack)
+    protected int                                  connects;
+
+
+    public ForkProtocolStack(UnknownForkHandler unknownForkHandler, List<Protocol> protocols, String fork_stack_id) {
         this.unknownForkHandler = unknownForkHandler;
+        this.fork_stack_id=fork_stack_id;
+        this.protocols=new ArrayList<>(protocols != null? protocols.size() : 0);
+        if(protocols != null)
+            for(int i=protocols.size()-1; i >= 0; i--)
+                this.protocols.add(protocols.get(i));
     }
 
     public JChannel get(String fork_channel_id)                                {return fork_channels.get(fork_channel_id);}
     public JChannel putIfAbsent(String fork_channel_id, JChannel fork_channel) {return fork_channels.putIfAbsent(fork_channel_id, fork_channel);}
     public void     remove(String fork_channel_id)                             {fork_channels.remove(fork_channel_id);}
+    public synchronized int getInits()                                         {return inits;}
+    public synchronized int getConnects()                                      {return connects;}
 
     public Object down(Event evt) {
         return down_prot.down(evt);
@@ -43,6 +60,46 @@ public class ForkProtocolStack extends ProtocolStack {
         this.local_addr=addr;
         down_prot.down(new Event(Event.SET_LOCAL_ADDRESS, addr));
     }
+
+    @Override
+    public List<Protocol> getProtocols() {
+        return new ArrayList<>(protocols); // copy because Collections.reverse() will be called on the return value
+    }
+
+    public synchronized ForkProtocolStack incrInits() {
+        ++inits;
+        return this;
+    }
+
+
+    @Override
+    public void init() throws Exception {
+        super.init();
+    }
+
+    @Override
+    public synchronized void startStack(String cluster, Address local_addr) throws Exception {
+        if(++connects == 1)
+            super.startStack(cluster, local_addr);
+    }
+
+    @Override
+    public synchronized void stopStack(String cluster) {
+        if(--connects == 0)
+            super.stopStack(cluster);
+    }
+
+    @Override
+    public synchronized void destroy() {
+        if(--inits == 0) {
+            super.destroy();
+            this.protocols.clear();
+            FORK fork=(FORK)findProtocol(FORK.class);
+            fork.remove(this.fork_stack_id);
+        }
+    }
+
+
 
     public Object up(Event evt) {
         switch(evt.getType()) {

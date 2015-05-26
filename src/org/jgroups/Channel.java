@@ -56,7 +56,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 @MBean(description="Channel")
 public abstract class Channel implements Closeable {
 
-    public static enum State {
+    public enum State {
         OPEN,       // initial state, after channel has been created, or after a disconnect()
         CONNECTING, // when connect() is called
         CONNECTED,  // after successful connect()

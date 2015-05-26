@@ -73,14 +73,21 @@ public class FORK extends Protocol {
 
     public Protocol get(String fork_stack_id)                        {return fork_stacks.get(fork_stack_id);}
     public Protocol putIfAbsent(String fork_stack_id, Protocol prot) {return fork_stacks.put(fork_stack_id, prot);}
+    public void     remove(String fork_stack_id)                     {fork_stacks.remove(fork_stack_id);}
 
     @ManagedAttribute(description="Number of fork-stacks")
     public int getForkStacks() {return fork_stacks.size();}
 
+    public static ForkProtocolStack getForkStack(Protocol prot) {
+        while(prot != null && !(prot instanceof ForkProtocolStack))
+            prot=prot.getUpProtocol();
+        return prot instanceof ForkProtocolStack? (ForkProtocolStack)prot : null;
+    }
+
     public void init() throws Exception {
         super.init();
         if(config != null)
-            createForkStacks(config, false);
+            createForkStacks(config);
     }
 
     public Object up(Event evt) {
@@ -140,75 +147,61 @@ public class FORK extends Protocol {
     }
 
 
-    protected void createForkStacks(String config, boolean replace_existing) throws Exception {
+    protected void createForkStacks(String config) throws Exception {
         InputStream in=getForkStream(config);
         if(in == null)
             throw new FileNotFoundException("fork stacks config " + config + " not found");
         Map<String,List<ProtocolConfiguration>> protocols=ForkConfig.parse(in);
-        createForkStacks(protocols, replace_existing);
+        createForkStacks(protocols);
     }
 
-    protected void createForkStacks(Map<String,List<ProtocolConfiguration>> protocols, boolean replace_existing) throws Exception {
+    protected void createForkStacks(Map<String,List<ProtocolConfiguration>> protocols) throws Exception {
         for(Map.Entry<String,List<ProtocolConfiguration>> entry: protocols.entrySet()) {
             String fork_stack_id=entry.getKey();
-            if(get(fork_stack_id) != null && !replace_existing)
+            if(get(fork_stack_id) != null)
                 continue;
 
-            ProtocolStack  fork_prot_stack=new ForkProtocolStack(this.unknownForkHandler);
-            List<Protocol> prots=createProtocols(fork_prot_stack,entry.getValue());
-            createForkStack(fork_stack_id, fork_prot_stack, replace_existing, prots);
+            List<Protocol> prots=createProtocols(null,entry.getValue());
+            createForkStack(fork_stack_id, prots, false);
         }
     }
 
     public void parse(Node node) throws Exception {
         Map<String,List<ProtocolConfiguration>> protocols=ForkConfig.parse(node);
-        createForkStacks(protocols, false);
+        createForkStacks(protocols);
     }
 
     /**
-     * Creates a new fork-stack from protocols and adds it into the hashmap of fork-stack (key is fork_stack_id).
+     * Returns the fork stack for fork_stack_id (if exitstent), or creates a new fork-stack from protocols and adds it
+     * into the hashmap of fork-stack (key is fork_stack_id).
      * Method init() will be called on each protocol, from bottom to top.
      * @param fork_stack_id The key under which the new fork-stack should be added to the fork-stacks hashmap
-     * @param stack The protocol stack under which to create the protocols
-     * @param replace_existing If true, and existing fork-stack is simply replaced (de-initializing it first).
-     *                         Otherwise, if the stack already exists, the new fork-stack will not be created.
      * @param protocols A list of protocols from <em>bottom to top</em> to be inserted. They will be sandwiched
      *                  between ForkProtocolStack (top) and ForkProtocol (bottom). The list can be empty (or null) in
      *                  which case we won't create any protocols, but still have a separate fork-stack inserted.
-     * @return The bottom-most protocol of the new stack, or the existing stack (if present)
+     * @param initialize If false, the ref count 'inits' will not get incremented and init() won't be called. This is
+     *                   needed when creating a fork stack from an XML config inside of the FORK protocol. The protocols
+     *                   in the fork stack will only get initialized on the first ForkChannel creation
+     * @return The new {@link ForkProtocolStack}, or the existing stack (if present)
      */
-    public Protocol createForkStack(String fork_stack_id, final ProtocolStack stack, boolean replace_existing,
-                                    List<Protocol> protocols) throws Exception {
+    public synchronized ProtocolStack createForkStack(String fork_stack_id, List<Protocol> protocols, boolean initialize) throws Exception {
         Protocol bottom;
-        if((bottom=get(fork_stack_id)) != null && !replace_existing) {
-            log.warn("fork-stack %s is already present, won't replace it", fork_stack_id);
-            return bottom;
+        if((bottom=get(fork_stack_id)) != null) {
+            ForkProtocolStack retval=getForkStack(bottom);
+            return initialize? retval.incrInits() : retval;
         }
 
-        Protocol current=stack;                          // top
-        if(protocols != null && !protocols.isEmpty()) {
-            for(int i=protocols.size()-1; i >= 0; i--) {
-                Protocol prot=protocols.get(i);
-                current.setDownProtocol(prot);
-                prot.setUpProtocol(current);
-                current=prot;
-            }
-        }
+        List<Protocol> prots=new ArrayList<>();
+        prots.add(bottom=new ForkProtocol(fork_stack_id).setDownProtocol(this)); // add a ForkProtocol as bottom protocol
+        if(protocols != null)
+            prots.addAll(protocols);
 
-        bottom=new ForkProtocol(fork_stack_id); // bottom
-        current.setDownProtocol(bottom);
-        bottom.setUpProtocol(current);
-        bottom.setDownProtocol(this);
-        stack.topProtocol(stack.getDownProtocol()).bottomProtocol(bottom);
+        ForkProtocolStack fork_stack=(ForkProtocolStack)new ForkProtocolStack(getUnknownForkHandler(), prots, fork_stack_id).setChannel(this.stack.getChannel());
+        fork_stack.init();
+        if(initialize)
+            fork_stack.incrInits();
         fork_stacks.put(fork_stack_id, bottom);
-
-        // call init() on the created protocols, from bottom to top
-        //current=bottom;
-        while(current != null && !(current instanceof ProtocolStack)) {
-            current.init();
-            current=current.getUpProtocol();
-        }
-        return bottom;
+        return fork_stack;
     }
 
 
@@ -226,9 +219,7 @@ public class FORK extends Protocol {
         try {
             configStream=new FileInputStream(config);
         }
-        catch(FileNotFoundException fnfe) {
-        }
-        catch(AccessControlException access_ex) { // fixes http://jira.jboss.com/jira/browse/JGRP-94
+        catch(FileNotFoundException | AccessControlException fnfe) { // catching ACE fixes http://jira.jboss.com/jira/browse/JGRP-94
         }
 
         // Check to see if the properties string is a URL.

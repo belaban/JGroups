@@ -2295,7 +2295,7 @@ public class Util {
      * @return Class, or null on failure.
      */
     public static Class loadClass(String classname,Class clazz) throws ClassNotFoundException {
-        return loadClass(classname, clazz.getClassLoader());
+        return loadClass(classname, clazz != null? clazz.getClassLoader() : null);
     }
 
     /**
@@ -2308,13 +2308,16 @@ public class Util {
      */
     public static Class<?> loadClass(String classname, ClassLoader preferredLoader) throws ClassNotFoundException {
         ClassNotFoundException exception = null;
-        for (ClassLoader loader: Arrays.asList(preferredLoader, Thread.currentThread().getContextClassLoader(), ClassLoader.getSystemClassLoader())) {
+        List<ClassLoader> list=preferredLoader != null?
+          Arrays.asList(preferredLoader, Thread.currentThread().getContextClassLoader(), ClassLoader.getSystemClassLoader()) :
+          Arrays.asList(Thread.currentThread().getContextClassLoader(), ClassLoader.getSystemClassLoader());
+        for(ClassLoader loader: list) {
             try {
                 return loader.loadClass(classname);
-            } catch (ClassNotFoundException e) {
-                if (exception == null) {
-                    exception = e;
-                }
+            }
+            catch (ClassNotFoundException e) {
+                if(exception == null)
+                    exception=e;
             }
         }
         throw exception;

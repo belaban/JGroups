@@ -184,8 +184,8 @@ public class ProtocolStack extends Protocol {
 
     public JChannel getChannel() {return channel;}
 
-    public void setChannel(JChannel ch) {
-        this.channel=ch;
+    public ProtocolStack setChannel(JChannel ch) {
+        this.channel=ch; return this;
     }
 
 

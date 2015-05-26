@@ -416,7 +416,7 @@ public class Configurator {
         Class<?> clazz=null;
 
         try {
-            clazz=Util.loadClass(defaultProtocolName, stack.getClass());
+            clazz=Util.loadClass(defaultProtocolName, stack != null? stack.getClass() : null);
         }
         catch(ClassNotFoundException e) {
         }
@@ -433,7 +433,8 @@ public class Configurator {
 
         try {
             retval=(Protocol)clazz.newInstance();
-            retval.setProtocolStack(stack);
+            if(stack != null)
+                retval.setProtocolStack(stack);
 
             removeDeprecatedProperties(retval, properties);
             // before processing Field and Method based properties, take dependencies specified
