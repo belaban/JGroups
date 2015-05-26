@@ -103,11 +103,12 @@ public class ForkChannel extends JChannel implements ChannelListener {
         this(main_channel, fork_stack_id, fork_channel_id, false, 0, null, protocols);
     }
 
-
+    @Override
     public void setName(String name) {
         log.error("name (%s) cannot be set in a fork-channel", name);
     }
 
+    @Override
     public JChannel name(String name) {
         log.error("name (%s) cannot be set in a fork-channel", name);
         return this;
@@ -138,6 +139,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
      * @param cluster_name Ignored, will be the same as the main-channel's cluster name
      * @throws Exception
      */
+    @Override
     public void connect(String cluster_name) throws Exception {
         this.main_channel.addChannelListener(this);
         copyFields();
@@ -153,12 +155,14 @@ public class ForkChannel extends JChannel implements ChannelListener {
         notifyChannelConnected(this);
     }
 
+    @Override
     public void connect(String cluster_name, Address target, long timeout) throws Exception {
         throw new UnsupportedOperationException("connect() with state transfer is not supported by a fork-channel");
     }
 
     /** Removes the fork-channel from the fork-stack's hashmap and resets its state. Does <em>not</em> affect the
      * main-channel */
+    @Override
     public void disconnect() {
         ((ForkProtocolStack)prot_stack).remove(fork_channel_id);
         nullFields();
@@ -168,6 +172,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
 
     /** Closes the fork-channel, essentially setting its state to CLOSED. Note that - contrary to a regular channel -
      * a closed fork-channel can be connected again: this means re-attaching the fork-channel to the main-channel*/
+    @Override
     public void close() {
         ((ForkProtocolStack)prot_stack).remove(fork_channel_id);
         if(state == State.CLOSED)
@@ -177,12 +182,14 @@ public class ForkChannel extends JChannel implements ChannelListener {
         notifyChannelClosed(this);
     }
 
+    @Override
     public Object down(Event evt) {
         if(evt.getType() == Event.MSG)
             setHeader((Message)evt.getArg());
         return super.down(evt);
     }
 
+    @Override
     public void send(Message msg) throws Exception {
         checkClosedOrNotConnected();
         FORK.ForkHeader hdr=(FORK.ForkHeader)msg.getHeader(FORK.ID);
@@ -195,27 +202,32 @@ public class ForkChannel extends JChannel implements ChannelListener {
         prot_stack.down(new Event(Event.MSG, msg));
     }
 
-
+    @Override
     public void startFlush(List<Address> flushParticipants, boolean automatic_resume) throws Exception {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void startFlush(boolean automatic_resume) throws Exception {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void stopFlush() {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void stopFlush(List<Address> flushParticipants) {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void getState(Address target, long timeout) throws Exception {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void addAddressGenerator(AddressGenerator address_generator) {
         log.warn("setting of address generator is not supported by fork-channel; address generator is ignored");
     }
