@@ -4,7 +4,7 @@ import java.util.Random;
 
 public class ZUtil {
 	
- 	static final double  PROP = 0.6339745962155613;
+ 	static final double  PROP = 0.5;
  	static double randomValue;
  	static Random random = new Random();
  	static boolean sendAck = false;
