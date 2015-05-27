@@ -21,7 +21,7 @@ public class SaslClientCallbackHandler implements CallbackHandler {
     private final String realm;
 
     public SaslClientCallbackHandler(String name, char[] password) {
-        int realmSep = name.indexOf('@');
+        int realmSep = name != null ? name.indexOf('@') : -1;
         this.realm = realmSep < 0 ? "" : name.substring(realmSep+1);
         this.name = realmSep < 0 ? name : name.substring(0, realmSep);
         this.password = password;
