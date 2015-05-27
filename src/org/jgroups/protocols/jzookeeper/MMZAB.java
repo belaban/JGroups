@@ -99,7 +99,6 @@ public class MMZAB extends Protocol {
 		public void run() {
 			//this can be used to measure rate of each thread
 			//at this moment, it is not necessary
-			 current = System.currentTimeMillis();
 			//log.info("cccccccall FinishTask diff time "+(currentTime - timeDiff));
 //			if (outstandingProposals.isEmpty()){
 //				this.cancel();
@@ -110,15 +109,16 @@ public class MMZAB extends Protocol {
 //				return;
 //			}
 			
+			 current = System.currentTimeMillis();
 
-        	if ((current - lastTimeQueueChecked) > 20 
-        		   	 && (current -laslAckRecieved) > 20
-                     && (current - lastRequestRecieved) > 20
+        	if ((current -laslAckRecieved) > 50
+                     && (current - lastRequestRecieved) > 50
                      && !outstandingProposals.isEmpty()){
         		//if (log.isInfoEnabled()){
 			//if (!outstandingProposals.isEmpty() && (currentTime - lastRequestRecieved) >500) {
         		this.cancel();
-				log.info("Comit Alllllllllllllllllllllllllllllllllll");
+        		if (log.isInfoEnabled())
+        			log.info("Comit Alllllllllllllllllllllllllllllllllll");
     			ZABHeader commitPending = new ZABHeader(ZABHeader.COMMITOUTSTANDINGREQUESTS);
 				for (Address address : zabMembers) {
                     Message commitALL = new Message(address).putHeader(this.idd, commitPending);
@@ -369,7 +369,7 @@ public class MMZAB extends Protocol {
 				//log.info("*********** makeAllFollowersAck Probability not working "+(++countACKNoProb));
 			ZABHeader hdrACK = new ZABHeader(ZABHeader.ACK, hdr.getZxid());
 			Message ackMessage = new Message().putHeader(this.id, hdrACK);
-			log.info("Sending ACK for " + hdr.getZxid()+" "+getCurrentTimeStamp()+ " " +getCurrentTimeStamp());
+			//log.info("Sending ACK for " + hdr.getZxid()+" "+getCurrentTimeStamp()+ " " +getCurrentTimeStamp());
 			//notACK.put(hdr.getZxid(), true);
 
 			try{
@@ -383,7 +383,7 @@ public class MMZAB extends Protocol {
     	}    
 		}
 		else{
-			log.info("Not Sending ACK for " + hdr.getZxid()+" "+getCurrentTimeStamp()+ " " +getCurrentTimeStamp());
+			//log.info("Not Sending ACK for " + hdr.getZxid()+" "+getCurrentTimeStamp()+ " " +getCurrentTimeStamp());
 			//notACK.put(hdr.getZxid(), false);
 		}
 	
@@ -395,7 +395,7 @@ public class MMZAB extends Protocol {
 	    Proposal p = null;
     	ZABHeader hdr = (ZABHeader) msgACK.getHeader(this.id);	
     	long ackZxid = hdr.getZxid();
-    	log.info("Reciving Ack zxid " + ackZxid + " sender " + sender+ " " +getCurrentTimeStamp());
+    	//log.info("Reciving Ack zxid " + ackZxid + " sender " + sender+ " " +getCurrentTimeStamp());
 
 //    	if (!(outstandingProposals.containsKey(hdr.getZxid())) && (lastZxidProposed < hdr.getZxid())){
 //			p = new Proposal();
@@ -407,10 +407,10 @@ public class MMZAB extends Protocol {
  	    //log.info("recieved ack "+ackZxid+" "+ sender + " "+getCurrentTimeStamp());
 
 		if (lastZxidCommitted >= ackZxid) {
-            if (log.isDebugEnabled()) {
-                log.info("proposal has already been committed, pzxid: 0x{} zxid: 0x{}",
-                        lastZxidCommitted, ackZxid);
-            }
+            //if (log.isDebugEnabled()) {
+                //log.info("proposal has already been committed, pzxid: 0x{} zxid: 0x{}",
+                        //lastZxidCommitted, ackZxid);
+            //}
             return;
         }
         p = outstandingProposals.get(ackZxid);
@@ -479,9 +479,9 @@ public class MMZAB extends Protocol {
 			//log.info("Before Finished wantCommit "+wantCommit);
 	
 		
-	    	log.info("Commiting all  "+wantCommit);
+	    	//log.info("Commiting all  "+wantCommit);
 	    	for (long zx:wantCommit){
-				log.info("Commiting "+outstandingProposals.keySet());
+				//log.info("Commiting "+outstandingProposals.keySet());
 					commit(zx);
 					outstandingProposals.remove(zx);
 				}
@@ -536,7 +536,7 @@ public class MMZAB extends Protocol {
 				return;
 			}
 	    	queuedCommitMessage.put(zxid, hdrOrginal);
-			   //if (log.isInfoEnabled())
+			   if (log.isInfoEnabled())
 					log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+zxid);
 
 	    	if (requestQueue.contains(hdrOrginal.getMessageId())){
@@ -706,3 +706,5 @@ public class MMZAB extends Protocol {
     }
 
 }
+
+

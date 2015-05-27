@@ -174,9 +174,11 @@ public class ZAB extends Protocol {
  	  
     	if (clientHeader!=null && clientHeader.getType() == ZABHeader.START_SENDING){
     		for (Address client : view.getMembers()){
-    	 	    log.info("Address to check " + client);
+    			if (log.isInfoEnabled())
+    				log.info("Address to check " + client);
         		if (!zabMembers.contains(client)){
-        	 	    log.info("Address to check is not zab Members, will send start request to" + client+ " "+ getCurrentTimeStamp());
+        			if (log.isInfoEnabled())
+        				log.info("Address to check is not zab Members, will send start request to" + client+ " "+ getCurrentTimeStamp());
         			message.setDest(client);
         	        down_prot.down(new Event(Event.MSG, message));    	
         		}
@@ -320,7 +322,8 @@ public class ZAB extends Protocol {
 
 		   hdrOrginal = queuedProposalMessage.get(zxidd);
 		   if (hdrOrginal == null){
-			   log.info("??????????????????????????? Header is null (commit)"+ hdrOrginal + " for zxid "+zxidd);
+			   if (log.isInfoEnabled())
+				   log.info("??????????????????????????? Header is null (commit)"+ hdrOrginal + " for zxid "+zxidd);
 			   return;
 		   }
    	       MessageId mid = hdrOrginal.getMessageId();
@@ -354,7 +357,8 @@ public class ZAB extends Protocol {
 		//log.info("Dzxid = "+ hdr.getZxid() + " " + getCurrentTimeStamp());
 		ZABHeader hdrOrginal = queuedProposalMessage.remove(zxid);
 		if (hdrOrginal == null) {
-			log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
+			if (log.isInfoEnabled())
+				log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
 					+ hdrOrginal + " for zxid " + hdr.getZxid());
 			return;
 		}
@@ -362,7 +366,8 @@ public class ZAB extends Protocol {
 //				+ requestQueue.contains(hdrOrginal.getMessageId()));
 
 		queuedCommitMessage.put(zxid, hdrOrginal);
-		 log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+zxid);
+		 if (log.isInfoEnabled())
+			 log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+zxid);
 		if (requestQueue.contains(hdrOrginal.getMessageId())) {
 			//log.info("I am the zab request receiver, "+ hdr.getZxid());
 					//+ hdrOrginal.getMessageId().getAddress());
