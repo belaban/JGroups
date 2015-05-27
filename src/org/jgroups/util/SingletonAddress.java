@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import org.jgroups.Address;
+import org.jgroups.protocols.relay.SiteUUID;
 
 import java.io.*;
 
@@ -82,6 +83,12 @@ public class SingletonAddress implements Address {
             return -1;
         if(addr != null && other.addr == null)
             return 1;
+
+        if (addr instanceof SiteUUID && !(other.addr instanceof SiteUUID)) {
+            return 1;
+        } else if (!(addr instanceof SiteUUID) &&  other.addr instanceof SiteUUID) {
+            return -1;
+        }
 
         assert addr != null; // this is here to make the (incorrect) 'addr' NPE warning below disappear !
         return addr.compareTo(other.addr);
