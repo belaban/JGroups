@@ -1,5 +1,6 @@
 package org.jgroups.protocols.relay;
 
+import org.jgroups.Address;
 import org.jgroups.util.AsciiString;
 import org.jgroups.util.ExtendedUUID;
 import org.jgroups.util.UUID;
@@ -57,6 +58,16 @@ public class SiteUUID extends ExtendedUUID implements SiteAddress {
     @Override
     public String toString() {
         return print(false);
+    }
+
+    @Override
+    public int compareTo(Address other) {
+        if (other instanceof SiteUUID) {
+            int siteCompare = Util.compare(get(SITE_NAME), ((SiteUUID) other).get(SITE_NAME));
+            //compareTo will check the bits.
+            return siteCompare == 0 ? super.compareTo(other) : siteCompare;
+        }
+        return super.compareTo(other);
     }
 
     public String print(boolean detailed) {

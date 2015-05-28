@@ -2,12 +2,13 @@ package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.util.SingletonAddress;
-import org.jgroups.util.Util;
+import org.jgroups.protocols.relay.SiteMaster;
+import org.jgroups.protocols.relay.SiteUUID;
+import org.jgroups.util.*;
+import org.jgroups.util.UUID;
 import org.testng.annotations.Test;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Tests {@link SingletonAddress}
@@ -46,4 +47,34 @@ public class SingletonAddressTest {
         assert map.keySet().contains(sa);
         assert map.keySet().contains(sc);
     }
+
+    @Test
+    public void testBundlingWithSiteAddress() {
+        final Map<SingletonAddress, List<Object>> msgs = new HashMap<>(24);
+        final byte[] cname = new AsciiString("cluster").chars();
+        final Object randomObject = new Object();
+
+        for (Address address : Arrays.asList(
+                new UUID(1, 0),
+                new ExtendedUUID(1, 0),
+                new SiteUUID(1, 0, "name", "site1"),
+                new SiteUUID(1, 0, null, "site1"),
+                new SiteUUID(1, 0, "name", "site2"),
+                new SiteUUID(1, 0, null, "site2")
+        )) {
+            SingletonAddress dest = new SingletonAddress(cname, address);
+            List<Object> tmp = msgs.get(dest);
+            if (tmp == null) {
+                tmp = new LinkedList<>();
+                msgs.put(dest, tmp);
+            }
+            tmp.add(randomObject);
+        }
+
+        assert msgs.size() == 3;
+        assert msgs.get(new SingletonAddress(cname, new UUID(1, 0))).size() == 2;
+        assert msgs.get(new SingletonAddress(cname, new SiteUUID(1, 0, null, "site1"))).size() == 2;
+        assert msgs.get(new SingletonAddress(cname, new SiteUUID(1, 0, null, "site2"))).size() == 2;
+    }
+
 }
