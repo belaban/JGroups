@@ -245,7 +245,8 @@ public class ForkChannel extends JChannel implements ChannelListener {
 
     @Override
     public void addAddressGenerator(AddressGenerator address_generator) {
-        log.warn("setting of address generator is not supported by fork-channel; address generator is ignored");
+        if(main_channel instanceof JChannel)
+            ((JChannel)main_channel).addAddressGenerator(address_generator);
     }
 
     protected void setLocalAddress(Address local_addr) {
