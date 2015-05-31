@@ -133,7 +133,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 			for (int i = 0; i < clientThreads.length; i++) {
 				try {
 					clientThreads[i].start();
-					Thread.sleep(3000);
+					Thread.sleep(1000);
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -146,12 +146,21 @@ public class ZABTestThreads extends ReceiverAdapter {
 	}
 
 	public void sendStartSign() throws Exception {
-		System.out.println("inside sendStartSign");
+		//System.out.println("inside sendStartSign");
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
 		ZABHeader startHeader = new ZABHeader(ZABHeader.START_SENDING, 1, mid);
 		Message msg = new Message(null).putHeader(ID, startHeader);
 		msg.setObject("req");
+		channel.send(msg);
+	}
+	
+	public void resetProtocol() throws Exception {
+		//System.out.println("inside sendStartSign");
+		MessageId mid = new MessageId(local_addr,
+				localSequence.incrementAndGet());
+		ZABHeader resetProtocol = new ZABHeader(ZABHeader.RESET, 1, mid);
+		Message msg = new Message(null).putHeader(ID, resetProtocol);
 		channel.send(msg);
 	}
 
@@ -292,7 +301,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 	public void loop() {
 		int c;
 
-		final String INPUT = "[1] Send start request to all clients \n[2] View \n[3] Change number  of message\n"
+		final String INPUT = "[1] Send start request to all clients \n[2] Reset the protocol \n[3] print Throughput and Min/Avg/Max latency \n[4] Change number  of message\n"
 				+ "[4] Change size of request \n[5] Change number of threads \n"
 				+ "";
 
@@ -308,6 +317,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 					sendStartSign();
 					break;
 				case '2':
+					resetProtocol();
 					// System.out.println("view: " + channel.getView() +
 					// " (local address=" + channel.getAddress() + ")");
 					break;

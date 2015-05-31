@@ -19,6 +19,7 @@ import org.jgroups.util.Util;
          public static final byte DELIVER       = 7;
          public static final byte START_SENDING = 8;
          public static final byte COMMITOUTSTANDINGREQUESTS = 9;
+         public static final byte RESET = 10;
 
          
 
@@ -77,6 +78,8 @@ import org.jgroups.util.Util;
             case DELIVER:        return "DELIVER";
             case START_SENDING:  return "START_SENDING";
             case COMMITOUTSTANDINGREQUESTS:  return "COMMITOUTSTANDINGREQUESTS";
+            case RESET:          return "RESET";
+
             default:             return "n/a";
         }
            

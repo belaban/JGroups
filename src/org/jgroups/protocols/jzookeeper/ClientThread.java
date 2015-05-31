@@ -189,7 +189,7 @@ public class ClientThread extends ReceiverAdapter {
 
 			for (int i = 0; i < num_msgsPerThreads; i++) {
 				numSendMsg = i;
-				while ((numSendMsg - msgReceived) > 20){
+				while ((numSendMsg - msgReceived) > 100){
 					//System.out.println("Outstanding is ----> "+(numSendMsg - msgReceived));
 					try {
 						this.sleep(1);

@@ -75,6 +75,21 @@ public class ZAB extends Protocol {
 	    log.setLevel("trace");
 	    
     }
+    
+    public void reset() {
+       
+    	lastZxidProposed=0;
+    	lastZxidCommitted=0;
+        requestQueue.clear();
+    	queuedCommitMessage.clear();
+        queuedProposalMessage.clear(); 
+        queuedMessages.clear();
+        outstandingProposals.clear();
+        messageStore.clear();
+        if(log.isInfoEnabled())
+        	log.info("Reset Done");
+	    
+    }
 
     @Override
     public void stop() {
@@ -110,6 +125,9 @@ public class ZAB extends Protocol {
                 switch(hdr.getType()) {                
                    case ZABHeader.START_SENDING:
 	                    return up_prot.up(new Event(Event.MSG, msg));
+                   case ZABHeader.RESET:
+	                    reset();
+	                	break;
                 	case ZABHeader.REQUEST:
                 		forwardToLeader(msg);
                 		break;
@@ -184,6 +202,16 @@ public class ZAB extends Protocol {
         		}
     	}
     	}
+    	
+    	else if (clientHeader!=null && clientHeader.getType() == ZABHeader.RESET){
+    		for (Address server : view.getMembers()){
+        		if (zabMembers.contains(server)){
+        			message.setDest(server);
+        	        down_prot.down(new Event(Event.MSG, message));    	
+        		}
+    	}
+    	}
+    	
     	else if(!clientHeader.getMessageId().equals(null)){
 	    	 Address destination = null;
 	         messageStore.put(clientHeader.getMessageId(), message);         
@@ -287,7 +315,7 @@ public class ZAB extends Protocol {
     }
     
     
-    private void processACK(Message msgACK, Address sender){
+    private synchronized void processACK(Message msgACK, Address sender){
 	   
     	ZABHeader hdr = (ZABHeader) msgACK.getHeader(this.id);	
     	long ackZxid = hdr.getZxid();
@@ -322,8 +350,8 @@ public class ZAB extends Protocol {
 
 		   hdrOrginal = queuedProposalMessage.get(zxidd);
 		   if (hdrOrginal == null){
-			   if (log.isInfoEnabled())
-				   log.info("??????????????????????????? Header is null (commit)"+ hdrOrginal + " for zxid "+zxidd);
+			   //if (log.isInfoEnabled())
+				   //log.info("??????????????????????????? Header is null (commit)"+ hdrOrginal + " for zxid "+zxidd);
 			   return;
 		   }
    	       MessageId mid = hdrOrginal.getMessageId();

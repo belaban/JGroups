@@ -55,20 +55,15 @@ public class MMZAB extends Protocol {
     private int index=-1;
     //private Map<Long, Boolean> notACK = new HashMap<Long, Boolean>();
     SortedSet<Long> wantCommit = new TreeSet<Long>();
-   
+	private List<Long> latencies = new ArrayList<Long>();
+	private long numReqDeviverd=0, numRequest=0;
+
     private Timer _timer;
     private boolean startSending = false;
-    private boolean makeAllFollowersAck = false;
     private long lastRequestRecieved=0;
     private long laslAckRecieved=0;
-    private volatile long lastTimeQueueChecked=0;
     private boolean recievedFirstRequest = false;
     private long current = 0;
-
-
-
-
-
 
     public MMZAB(){
     	
@@ -87,6 +82,30 @@ public class MMZAB extends Protocol {
 	        running=true;        
 		    executor = Executors.newSingleThreadExecutor();
 		    executor.execute(new FollowerMessageHandler(this.id));	    
+    }
+    
+    
+    public void reset() {
+        
+    	lastZxidProposed=0;
+    	lastZxidCommitted=0;
+        requestQueue.clear();
+    	queuedCommitMessage.clear();
+        queuedProposalMessage.clear(); 
+        queuedMessages.clear();
+        outstandingProposals.clear();
+        messageStore.clear();
+        startSending=false;
+        wantCommit.clear();
+        lastRequestRecieved=0;
+        laslAckRecieved=0;
+        recievedFirstRequest = false;
+        latencies.clear();
+        numReqDeviverd=0;
+        numRequest=0;
+       // if(log.isInfoEnabled())
+        log.info("Reset Done");
+	    
     }
     // For sending Dummy request
     
@@ -167,14 +186,14 @@ public class MMZAB extends Protocol {
                 }
                 switch(hdr.getType()) {                
                     case ZABHeader.START_SENDING:
-//                    	if(zabMembers.contains(local_addr)){
-//                			//log.info("$$$$$$$$$$$$$$$$$ initiale startSending and makeAllFollowersAck = false");
-//                			startSending=false;
-//                			makeAllFollowersAck=false;
-//                    	}
-//                    	else
-                    		return up_prot.up(new Event(Event.MSG, msg));
+                    	return up_prot.up(new Event(Event.MSG, msg));
+                    case ZABHeader.RESET:
+                    	//     if(log.isInfoEnabled())
+                        log.info("Recieved Reset request");
+	                    reset();
+	                	break;
                 	case ZABHeader.REQUEST:
+                	    numRequest++;
                 		forwardToLeader(msg);
                 		break;
                     case ZABHeader.FORWARD:
@@ -253,6 +272,18 @@ public class MMZAB extends Protocol {
         		
     	}
     	}
+    	
+
+    	else if (clientHeader!=null && clientHeader.getType() == ZABHeader.RESET){
+	        log.info("Reset will send " + local_addr);
+
+    		for (Address server : zabMembers){
+        			message.setDest(server);
+        	        log.info("Reset will send " + server);
+        	        down_prot.down(new Event(Event.MSG, message));    	
+        	}
+    	}
+    	
     	else if(!clientHeader.getMessageId().equals(null)){
 	    	 Address destination = null;
 	         messageStore.put(clientHeader.getMessageId(), message);
@@ -495,53 +526,54 @@ public class MMZAB extends Protocol {
     	
     }
 		
-    private void commit(long zxid){
+    private void commit(long zxidd){
 			
 	       	//log.info("[" + local_addr + "] "+"About to commit the request (commit) for zxid="+zxid+" "+getCurrentTimeStamp());
 
 		    ZABHeader hdrOrginal = null;
 	    	   synchronized(this){
-	    	       lastZxidCommitted = zxid;
+	    	       lastZxidCommitted = zxidd;
 	    	   }
 	    	   
-		   hdrOrginal = queuedProposalMessage.get(zxid);
+		   hdrOrginal = queuedProposalMessage.get(zxidd);
 		   if (hdrOrginal == null){
-			   if (log.isInfoEnabled())
-				   log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!! Header is null (commit)"+ hdrOrginal + " for zxid "+zxid);
+			   //if (log.isInfoEnabled())
+				   //log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!! Header is null (commit)"+ hdrOrginal + " for zxid "+zxid);
 			   return;
 		   }
-   	       MessageId mid = hdrOrginal.getMessageId();
+   	      //MessageId mid = hdrOrginal.getMessageId();
 //		   if (mid == null){
 //			   log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!! Message is null (commit)"+ mid + " for zxid "+zxid);
 //			   return;
 //		   }
-	       ZABHeader hdrCommit = new ZABHeader(ZABHeader.COMMIT, zxid, mid);
-	       Message commitMessage = new Message().putHeader(this.id, hdrCommit);
-	       commitMessage.src(local_addr);
-		   deliver(commitMessage);
+	       //ZABHeader hdrCommit = new ZABHeader(ZABHeader.COMMIT, zxid, mid);
+	       //Message commitMessage = new Message().putHeader(this.id, hdrCommit);
+	       //commitMessage.src(local_addr);
+		   deliver(zxidd);
 
 	    }
     
 		
-    private void deliver(Message toDeliver){
-	    	ZABHeader hdr = (ZABHeader) toDeliver.getHeader(this.id);
-	    	long zxid = hdr.getZxid();
+    private void deliver(long committedZxid){
+	    	//ZABHeader hdr = (ZABHeader) toDeliver.getHeader(this.id);
+	    	//long zxid = hdr.getZxid();
 	    	//log.info("[" + local_addr + "] "+ " delivering message (deliver) for zxid=" + hdr.getZxid()+" "+getCurrentTimeStamp());
 
-	    	ZABHeader hdrOrginal = queuedProposalMessage.remove(zxid);
+	    	ZABHeader hdrOrginal = queuedProposalMessage.remove(committedZxid);
 	    	if (hdrOrginal == null) {
 				 if (log.isInfoEnabled())
 					 log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
-						+ hdrOrginal + " for zxid " + hdr.getZxid());
+						+ hdrOrginal + " for zxid " + committedZxid);
 				return;
 			}
-	    	queuedCommitMessage.put(zxid, hdrOrginal);
+	    	queuedCommitMessage.put(committedZxid, hdrOrginal);
 			   if (log.isInfoEnabled())
-					log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+zxid);
+					log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+committedZxid);
 
 	    	if (requestQueue.contains(hdrOrginal.getMessageId())){
+       		 	numReqDeviverd++;
 	    		//log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!I am the zab request receiver, going to send response back to " + hdrOrginal.getMessageId().getAddress());
-		    	ZABHeader hdrResponse = new ZABHeader(ZABHeader.RESPONSE, zxid,  hdrOrginal.getMessageId());
+		    	ZABHeader hdrResponse = new ZABHeader(ZABHeader.RESPONSE, committedZxid,  hdrOrginal.getMessageId());
 		    	Message msgResponse = new Message(hdrOrginal.getMessageId().getAddress()).putHeader(this.id, hdrResponse);
 	       		down_prot.down(new Event(Event.MSG, msgResponse));     
 
