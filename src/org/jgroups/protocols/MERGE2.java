@@ -434,6 +434,12 @@ public class MERGE2 extends Protocol {
                 Message discovery_req=new Message(null).putHeader(id, new MergeHeader(MergeHeader.REQ, null))
                   .setTransientFlag(Message.TransientFlag.DONT_LOOPBACK);
                 down_prot.down(new Event(Event.MSG, discovery_req));
+                try {
+                    discovery_cond.waitFor(this, discovery_timeout, TimeUnit.MILLISECONDS);
+                }
+                finally {
+                    fetching_done=true;
+                }
                 return;
             }
 
