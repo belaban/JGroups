@@ -20,6 +20,10 @@ import org.jgroups.util.Util;
          public static final byte START_SENDING = 8;
          public static final byte COMMITOUTSTANDINGREQUESTS = 9;
          public static final byte RESET = 10;
+         public static final byte STATS = 11;
+         public static final byte COUNTMESSAGE = 12;
+
+
 
          
 
@@ -79,7 +83,9 @@ import org.jgroups.util.Util;
             case START_SENDING:  return "START_SENDING";
             case COMMITOUTSTANDINGREQUESTS:  return "COMMITOUTSTANDINGREQUESTS";
             case RESET:          return "RESET";
-
+            case STATS:			 return "STATS";
+            case COUNTMESSAGE:			 return "COUNTMESSAGE";
+            
             default:             return "n/a";
         }
            

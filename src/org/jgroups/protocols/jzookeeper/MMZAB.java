@@ -1,6 +1,10 @@
 package org.jgroups.protocols.jzookeeper;
 
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -55,7 +59,7 @@ public class MMZAB extends Protocol {
     private int index=-1;
     //private Map<Long, Boolean> notACK = new HashMap<Long, Boolean>();
     SortedSet<Long> wantCommit = new TreeSet<Long>();
-	private List<Long> latencies = new ArrayList<Long>();
+	private List<Integer> latencies = new ArrayList<Integer>();
 	private long numReqDeviverd=0, numRequest=0;
 
     private Timer _timer;
@@ -64,6 +68,14 @@ public class MMZAB extends Protocol {
     private long laslAckRecieved=0;
     private boolean recievedFirstRequest = false;
     private long current = 0;
+    private long startThroughputTime = 0;
+    private long endThroughputTime = 0;
+    private boolean startThroughput = false;
+    private static PrintWriter outFile;
+    private final static String outDir="/home/pg/p13/a6915654/MMZAB/";
+
+
+
 
     public MMZAB(){
     	
@@ -81,12 +93,14 @@ public class MMZAB extends Protocol {
         //if (zabMembers.contains(local_addr)){
 	        running=true;        
 		    executor = Executors.newSingleThreadExecutor();
-		    executor.execute(new FollowerMessageHandler(this.id));	    
+		    executor.execute(new FollowerMessageHandler(this.id));	   
+		    this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
+					(outDir+InetAddress.getLocalHost().getHostName()+"MZAB.log",true)));
     }
     
     
     public void reset() {
-        
+    	zxid.set(0);
     	lastZxidProposed=0;
     	lastZxidCommitted=0;
         requestQueue.clear();
@@ -103,8 +117,9 @@ public class MMZAB extends Protocol {
         latencies.clear();
         numReqDeviverd=0;
         numRequest=0;
-       // if(log.isInfoEnabled())
-        log.info("Reset Done");
+        startThroughputTime = 0;
+        endThroughputTime = 0;
+        startThroughput = false;
 	    
     }
     // For sending Dummy request
@@ -188,12 +203,16 @@ public class MMZAB extends Protocol {
                     case ZABHeader.START_SENDING:
                     	return up_prot.up(new Event(Event.MSG, msg));
                     case ZABHeader.RESET:
-                    	//     if(log.isInfoEnabled())
-                        log.info("Recieved Reset request");
 	                    reset();
 	                	break;
                 	case ZABHeader.REQUEST:
+                		if (!startThroughput){
+                			startThroughputTime = System.currentTimeMillis();
+                			startThroughput = true;
+                		}
+                		
                 	    numRequest++;
+                	    hdr.getMessageId().setStartTime(System.currentTimeMillis());
                 		forwardToLeader(msg);
                 		break;
                     case ZABHeader.FORWARD:
@@ -221,11 +240,16 @@ public class MMZAB extends Protocol {
             			commitPendingRequest();
             			//startSending = false;
             		break;
+                    case ZABHeader.STATS:
+                    	printMZabStats();
+                    	break;
                     case ZABHeader.RESPONSE:
                     	handleOrderingResponse(hdr);
                     	
+                    	
             }                
                 return null;
+                
               case Event.VIEW_CHANGE:
               handleViewChange((View)evt.getArg());
               break;
@@ -275,16 +299,24 @@ public class MMZAB extends Protocol {
     	
 
     	else if (clientHeader!=null && clientHeader.getType() == ZABHeader.RESET){
-	        log.info("Reset will send " + local_addr);
 
     		for (Address server : zabMembers){
-        			message.setDest(server);
-        	        log.info("Reset will send " + server);
-        	        down_prot.down(new Event(Event.MSG, message));    	
+        			//message.setDest(server);
+        	        Message resetMessage = new Message(server).putHeader(this.id, clientHeader);
+        	        down_prot.down(new Event(Event.MSG, resetMessage));    	
         	}
     	}
     	
-    	else if(!clientHeader.getMessageId().equals(null)){
+    	else if (clientHeader!=null && clientHeader.getType() == ZABHeader.STATS){
+
+    		for (Address server : zabMembers){
+        			//message.setDest(server);
+        	        Message statsMessage = new Message(server).putHeader(this.id, clientHeader);
+        	        down_prot.down(new Event(Event.MSG, statsMessage));    	
+        	}
+    	}
+    	
+    	else if(!clientHeader.getMessageId().equals(null) && clientHeader.getType() == ZABHeader.REQUEST){
 	    	 Address destination = null;
 	         messageStore.put(clientHeader.getMessageId(), message);
 	        ZABHeader hdrReq=new ZABHeader(ZABHeader.REQUEST, clientHeader.getMessageId());  
@@ -567,11 +599,14 @@ public class MMZAB extends Protocol {
 				return;
 			}
 	    	queuedCommitMessage.put(committedZxid, hdrOrginal);
+	    	numReqDeviverd++;
+			endThroughputTime = System.currentTimeMillis();
+			long startTime  = hdrOrginal.getMessageId().getStartTime();
+			latencies.add((int)(System.currentTimeMillis() - startTime));
 			   if (log.isInfoEnabled())
 					log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+committedZxid);
 
 	    	if (requestQueue.contains(hdrOrginal.getMessageId())){
-       		 	numReqDeviverd++;
 	    		//log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!I am the zab request receiver, going to send response back to " + hdrOrginal.getMessageId().getAddress());
 		    	ZABHeader hdrResponse = new ZABHeader(ZABHeader.RESPONSE, committedZxid,  hdrOrginal.getMessageId());
 		    	Message msgResponse = new Message(hdrOrginal.getMessageId().getAddress()).putHeader(this.id, hdrResponse);
@@ -614,6 +649,89 @@ public class MMZAB extends Protocol {
 			}       		
 			
 			return find;
+		}
+		
+		private void printMZabStats(){
+			
+			
+			// print Min, Avg, and Max latency
+			long min = Long.MAX_VALUE, avg =0, max = Long.MIN_VALUE;
+			for (long lat : latencies){
+				if (lat < min){
+					min = lat;
+				}
+				if (lat > max){
+					max = lat;
+				}
+				avg+=lat;			
+			}
+			outFile.println("Mzab");
+			
+
+			outFile.println("Number of Request Recieved = "+(numRequest));
+			outFile.println("Number of Request Deliever = " + numReqDeviverd);
+			outFile.println("Throughput = " + (numReqDeviverd/(TimeUnit.MILLISECONDS.toSeconds(endThroughputTime-startThroughputTime))));
+			outFile.println("Latency /Min= " + min + " /Avg= "+ (avg/latencies.size())+
+			        " /Max= " +max);			
+			outFile.println("Test Generated at "+ new Date() + " /Lasted for = "
+					 	+ TimeUnit.MILLISECONDS.toSeconds((endThroughputTime-startThroughputTime)));			
+				
+			
+			Collections.sort(latencies);
+			int x50=0, x100=0, x150=0, x200=0, x250=0, x300=0, x350=0,x400=0, x450=0, x500=0, x550=0, x600=0, x650=0, x700=0, xLager700=0;
+			
+			for (Integer l:latencies){
+				if (l<51)
+					x50++;
+				else if(l>50 && l<101)
+					x100++;
+				else if(l>100 && l<151)
+					x150++;
+				else if(l>150 && l<201)
+					x200++;
+				else if(l>200 && l<251)
+					x250++;
+				else if(l>250 && l<301)
+					x300++;
+				else if(l>300 && l<351)
+					x350++;
+				else if(l>350 && l<401)
+					x400++;
+				else if(l>400 && l<451)
+					x450++;
+				else if(l>450 && l<501)
+					x500++;
+				else if(l>500 && l<551)
+					x550++;
+				else if(l>560 && l<601)
+					x600++;
+				else if(l>600 && l<651)
+					x650++;
+				else if(l>650 && l<701)
+					x700++;
+				else
+					xLager700++;
+				
+				outFile.println("Distribution contains latencies form (0-50) " + x50);
+			    outFile.println("Distribution contains latencies form (51-100) " + x100);
+			    outFile.println("Distribution contains latencies form (101-150) " + x150);
+			    outFile.println("Distribution contains latencies form (151-200) " + x200);
+			    outFile.println("Distribution contains latencies form (201-250) " + x250);
+			    outFile.println("Distribution contains latencies form (251-300) " + x300);
+			    outFile.println("Distribution contains latencies form (301-350) " + x350);
+			    outFile.println("Distribution contains latencies form (351-400) " + x400);
+			    outFile.println("Distribution contains latencies form (401-450) " + x450);
+			    outFile.println("Distribution contains latencies form (451-500) " + x500);
+			    outFile.println("Distribution contains latencies form (501-550) " + x550);
+			    outFile.println("Distribution contains latencies form (551-600) " + x600);
+			    outFile.println("Distribution contains latencies form (601-650) " + x650);
+			    outFile.println("Distribution contains latencies form (651-700) " + x700);
+			    outFile.println("Distribution contains latencies form (  > 700) " + xLager700);
+		
+				outFile.println();	
+				outFile.close();
+			}
+
 		}
 		
 		private String getCurrentTimeStamp(){
@@ -736,6 +854,13 @@ public class MMZAB extends Protocol {
 
        
     }
+ 
+ public class StatsThread extends Thread{
+	 
+	 public void run(){
+		 
+	 }
+ }
 
 }
 

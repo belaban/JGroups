@@ -1,5 +1,9 @@
 package org.jgroups.protocols.jzookeeper;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -10,13 +14,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jgroups.Address;
@@ -30,28 +37,49 @@ import org.jgroups.util.MessageBatch;
 
 public class ZAB extends Protocol {
 	
-	protected final AtomicLong                  zxid=new AtomicLong(0);
+	private final AtomicLong                  zxid=new AtomicLong(0);
     private ExecutorService                     executor;
-    protected Address                           local_addr;
-    protected volatile Address                  leader;
+    private Address                           local_addr;
+    private volatile Address                  leader;
     private int QUEUE_CAPACITY = 500;
-    protected volatile View                     view;
-    protected volatile boolean                  is_leader=false;
+    private volatile View                     view;
+    private volatile boolean                  is_leader=false;
     private List<Address>                       zabMembers = Collections.synchronizedList(new ArrayList<Address>());
 	private long                                lastZxidProposed=0, lastZxidCommitted=0;
     private final Set<MessageId>                requestQueue =Collections.synchronizedSet(new HashSet<MessageId>());
-	private Map<Long, ZABHeader>                queuedCommitMessage = Collections.synchronizedMap(new HashMap<Long, ZABHeader>());
-    private final Map<Long, ZABHeader> queuedProposalMessage = Collections.synchronizedMap(new HashMap<Long, ZABHeader>());
-   // private final LinkedBlockingQueue<ZABHeader> queuedMessages =
-	       // new LinkedBlockingQueue<ZABHeader>();
-    private final BlockingQueue<ZABHeader> queuedMessages = new ArrayBlockingQueue<ZABHeader>(QUEUE_CAPACITY);
+	private Map<Long, ZABHeader> queuedCommitMessage = new HashMap<Long, ZABHeader>();
+	private List<Integer> latencies = new ArrayList<Integer>();
+	private List<Integer> avgLatencies = new ArrayList<Integer>();
+	private List<String> avgLatenciesTimer = new ArrayList<String>();
 
+    private final Map<Long, ZABHeader> queuedProposalMessage = Collections.synchronizedMap(new HashMap<Long, ZABHeader>());
+    private final LinkedBlockingQueue<ZABHeader> queuedMessages =
+	        new LinkedBlockingQueue<ZABHeader>();
 	private ConcurrentMap<Long, Proposal> outstandingProposals = new ConcurrentHashMap<Long, Proposal>();
     private final Map<MessageId, Message> messageStore = Collections.synchronizedMap(new HashMap<MessageId, Message>());
     private Calendar cal = Calendar.getInstance();
     private int index=-1;
-    protected volatile boolean                  running=true;
- 
+    private volatile boolean                  running=true;
+    private long startThroughputTime = 0;
+    private long endThroughputTime = 0;
+    private volatile boolean startThroughput = false;
+    private static PrintWriter outFile;
+    private final static String outDir="/home/pg/p13/a6915654/ZAB/";
+	private  AtomicInteger                  numReqDeviverd=new AtomicInteger(0);
+	private  AtomicInteger                  numRequest=new AtomicInteger(0);
+	private long rateInterval = 10000;
+	private long rateCount = 0;
+	private long currentCpuTime = 0, rateCountTime = 0, lastTimer = 0, lastCpuTime = 0;
+	private int lastArrayIndex = 0, lastArrayIndexUsingTime = 0 ;
+	private long timeInterval = 200;
+	private int lastFinished = 0;
+	private Timer timer;
+	private AtomicLong countMessageLeader = new AtomicLong(0);
+	private long countMessageFollower = 0;
+	private long countTotalMessagesFollowers = 0;
+	private AtomicLong warmUpRequest = new AtomicLong(0);
+	private static long warmUp = 10000;
+
     public ZAB(){
     	
     }
@@ -73,11 +101,14 @@ public class ZAB extends Protocol {
 	    executor = Executors.newSingleThreadExecutor();
 	    executor.execute(new FollowerMessageHandler(this.id));
 	    log.setLevel("trace");
+	    this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
+				(outDir+InetAddress.getLocalHost().getHostName()+"Zab.log",true)));
 	    
     }
-    
+
+
     public void reset() {
-       
+    	zxid.set(0);
     	lastZxidProposed=0;
     	lastZxidCommitted=0;
         requestQueue.clear();
@@ -86,11 +117,24 @@ public class ZAB extends Protocol {
         queuedMessages.clear();
         outstandingProposals.clear();
         messageStore.clear();
-        if(log.isInfoEnabled())
-        	log.info("Reset Done");
+        latencies.clear();
+        avgLatencies.clear();
+        avgLatenciesTimer.clear();
+        numReqDeviverd= new AtomicInteger(0);
+        numRequest= new AtomicInteger(0);
+        startThroughputTime = 0;
+        endThroughputTime = 0;
+        startThroughput = false;
+        currentCpuTime = 0;
+        rateCountTime = 0;
+        lastTimer = 0;
+        lastCpuTime = 0;
+    	lastArrayIndex = 0;
+    	lastArrayIndexUsingTime = 0 ;
+    	lastFinished = 0;
+    	countMessageLeader = new AtomicLong(0);
 	    
     }
-
     @Override
     public void stop() {
         running=false;
@@ -125,22 +169,49 @@ public class ZAB extends Protocol {
                 switch(hdr.getType()) {                
                    case ZABHeader.START_SENDING:
 	                    return up_prot.up(new Event(Event.MSG, msg));
-                   case ZABHeader.RESET:
-	                    reset();
-	                	break;
-                	case ZABHeader.REQUEST:
-                		forwardToLeader(msg);
+                	case ZABHeader.REQUEST:        
+                		if (!startThroughput){
+                			startThroughput = true;
+                			startThroughputTime = System.currentTimeMillis();
+                		      timer = new Timer();
+                			  timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
+	                	    //numRequest.incrementAndGet();
+                    		//queuedMessages.add(hdr);
+                		}
+	                		forwardToLeader(msg);                		
                 		break;
-                    case ZABHeader.FORWARD:                    	
+                	case ZABHeader.RESET:
+  	                    reset();
+  	                	break;
+                    case ZABHeader.FORWARD:   
+//                    	if (warmUpRequest.get() <= warmUp){
+//                    		warmUpRequest.incrementAndGet();
+//                    		queuedMessages.add(hdr);
+//                		}
+                		// if (warmUpRequest.get() > warmUp && !startThroughput){
+//                    	`startThroughputTime = System.currentTimeMillis();
+//                		   // timer = new Timer();
+//                			//timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
+	                	    //numRequest.incrementAndGet();
+                    		//queuedMessages.add(hdr);
+                		//}
+                		//else if (startThroughput){
+	              	    numRequest.incrementAndGet();
+                   		queuedMessages.add(hdr);
+
+                		//}
 //                    	if(!is_leader) {
 //                			if(log.isErrorEnabled())
 //                				//log.error("[" + local_addr + "] "+ ": non-Leader; dropping FORWARD request from " + msg.getSrc());
 //                			break;
-//                		 }                    	 
-                		queuedMessages.add(hdr);
+//                		 }         
+                    	
+                	    //hdr.getMessageId().setStartTime(System.currentTimeMillis());
+                		//queuedMessages.add(hdr);
                 		break;
                     case ZABHeader.PROPOSAL:
 	                   	if (!is_leader){
+	                   		hdr.getMessageId().setStartTime(System.currentTimeMillis());
 	            			sendACK(msg);
 	            		}
 	                   	break;           		
@@ -152,6 +223,14 @@ public class ZAB extends Protocol {
                     case ZABHeader.COMMIT:
                 		 deliver(msg);
                 		 break;
+                    case ZABHeader.STATS:
+                    	//if(is_leader)
+                    		printMZabStats();
+                    	break;
+                    case ZABHeader.COUNTMESSAGE:
+                    		sendTotalABMwssages(hdr);  
+                    		log.info("Yes, I recieved count request");
+                    	break;
                     case ZABHeader.RESPONSE:
                     	handleOrderingResponse(hdr);
                     	
@@ -187,44 +266,74 @@ public class ZAB extends Protocol {
     /* --------------------------------- Private Methods ----------------------------------- */
 
     
-    private void handleClientRequest(Message message){
-    	ZABHeader clientHeader = ((ZABHeader) message.getHeader(this.id));
- 	  
-    	if (clientHeader!=null && clientHeader.getType() == ZABHeader.START_SENDING){
-    		for (Address client : view.getMembers()){
-    			if (log.isInfoEnabled())
-    				log.info("Address to check " + client);
-        		if (!zabMembers.contains(client)){
-        			if (log.isInfoEnabled())
-        				log.info("Address to check is not zab Members, will send start request to" + client+ " "+ getCurrentTimeStamp());
-        			message.setDest(client);
-        	        down_prot.down(new Event(Event.MSG, message));    	
-        		}
-    	}
-    	}
-    	
-    	else if (clientHeader!=null && clientHeader.getType() == ZABHeader.RESET){
-    		for (Address server : view.getMembers()){
-        		if (zabMembers.contains(server)){
-        			message.setDest(server);
-        	        down_prot.down(new Event(Event.MSG, message));    	
-        		}
-    	}
-    	}
-    	
-    	else if(!clientHeader.getMessageId().equals(null)){
-	    	 Address destination = null;
-	         messageStore.put(clientHeader.getMessageId(), message);         
-	        ZABHeader hdrReq=new ZABHeader(ZABHeader.REQUEST, clientHeader.getMessageId());  
-	        ++index;
-	        if (index>2)
-	        	index=0;
-	        destination = zabMembers.get(index);	        
-	        Message requestMessage = new Message(destination).putHeader(this.id, hdrReq);
-	        down_prot.down(new Event(Event.MSG, requestMessage));    
-    	}
-    	
-    }
+	private void handleClientRequest(Message message) {
+		ZABHeader clientHeader = ((ZABHeader) message.getHeader(this.id));
+
+		if (clientHeader != null
+				&& clientHeader.getType() == ZABHeader.START_SENDING) {
+			for (Address client : view.getMembers()) {
+				if (log.isDebugEnabled())
+					log.info("Address to check " + client);
+				if (!zabMembers.contains(client)) {
+					if (log.isDebugEnabled())
+						log.info("Address to check is not zab Members, will send start request to"
+								+ client + " " + getCurrentTimeStamp());
+					message.setDest(client);
+					down_prot.down(new Event(Event.MSG, message));
+				}
+			}
+		}
+
+		else if (clientHeader != null
+				&& clientHeader.getType() == ZABHeader.RESET) {
+
+			for (Address server : zabMembers) {
+				// message.setDest(server);
+				Message resetMessage = new Message(server).putHeader(this.id,
+						clientHeader);
+				down_prot.down(new Event(Event.MSG, resetMessage));
+			}
+		}
+
+		else if (clientHeader != null
+				&& clientHeader.getType() == ZABHeader.STATS) {
+
+			for (Address server : zabMembers) {
+				// message.setDest(server);
+				Message statsMessage = new Message(server).putHeader(this.id,
+						clientHeader);
+				down_prot.down(new Event(Event.MSG, statsMessage));
+			}
+		}
+
+		else if (clientHeader != null
+				&& clientHeader.getType() == ZABHeader.COUNTMESSAGE) {
+			for (Address server : zabMembers) {
+				if(!server.equals(zabMembers.get(0))){
+					Message countMessages = new Message(server).putHeader(this.id,
+							clientHeader);
+					down_prot.down(new Event(Event.MSG, countMessages));
+				}
+			}
+			
+		}
+
+		else if (!clientHeader.getMessageId().equals(null)
+				&& clientHeader.getType() == ZABHeader.REQUEST) {
+			Address destination = null;
+			messageStore.put(clientHeader.getMessageId(), message);
+			ZABHeader hdrReq = new ZABHeader(ZABHeader.REQUEST,
+					clientHeader.getMessageId());
+			++index;
+			if (index > 2)
+				index = 0;
+			destination = zabMembers.get(index);
+			Message requestMessage = new Message(destination).putHeader(
+					this.id, hdrReq);
+			down_prot.down(new Event(Event.MSG, requestMessage));
+		}
+
+	}
     
     private void handleViewChange(View v) {
         List<Address> mbrs=v.getMembers();
@@ -293,20 +402,21 @@ public class ZAB extends Protocol {
     	if (hdr == null)
     		return;
     	
-    	if (hdr.getZxid() != lastZxidProposed + 1){
+    	//if (hdr.getZxid() != lastZxidProposed + 1){
 //            log.info("Got zxid 0x"
 //                    + Long.toHexString(hdr.getZxid())
 //                    + " expected 0x"
 //                    + Long.toHexString(lastZxidProposed + 1));
-        }
+        //}
     	
     	lastZxidProposed = hdr.getZxid();
     	queuedProposalMessage.put(hdr.getZxid(), hdr);
 		ZABHeader hdrACK = new ZABHeader(ZABHeader.ACK, hdr.getZxid(), hdr.getMessageId());
 		Message ACKMessage = new Message(leader).putHeader(this.id, hdrACK);
-		
+		//if(startThroughput)
+			countMessageFollower++;
 		try{
-    		down_prot.down(new Event(Event.MSG, ACKMessage));     
+    		down_prot.down(new Event(Event.MSG, ACKMessage));   
          }catch(Exception ex) {
     		log.error("failed sending ACK message to Leader");
     	} 
@@ -340,41 +450,35 @@ public class ZAB extends Protocol {
 			
 		}
 		
-    private synchronized void commit(long zxidd){
+    private void commit(long zxidd){
 	    ZABHeader hdrOrg = queuedProposalMessage.get(zxidd);
    	    //log.info("Czxid = "+ hdrOrg.getZxid() + " " + getCurrentTimeStamp());
-		   ZABHeader hdrOrginal = null;
 	       synchronized(this){
 	    	   lastZxidCommitted = zxidd;
 	       }
 
-		   hdrOrginal = queuedProposalMessage.get(zxidd);
-		   if (hdrOrginal == null){
-			   //if (log.isInfoEnabled())
-				   //log.info("??????????????????????????? Header is null (commit)"+ hdrOrginal + " for zxid "+zxidd);
+		   if (hdrOrg == null){
+			   log.info("??????????????????????????? Header is null (commit)"+ hdrOrg + " for zxid "+zxidd);
 			   return;
 		   }
-   	       MessageId mid = hdrOrginal.getMessageId();
-//		   if (mid == null){
-//			   log.info("%%%%%%%%%%%%%%%%%%%%%%%%%%% Message is null (commit)"+ mid + " for zxid "+zxidd);
-//			   return;
-//		   }
-	       ZABHeader hdrCommit = new ZABHeader(ZABHeader.COMMIT, zxidd, mid);
+
+	       ZABHeader hdrCommit = new ZABHeader(ZABHeader.COMMIT, zxidd);
 	       Message commitMessage = new Message().putHeader(this.id, hdrCommit);	       
            for (Address address : zabMembers) {
-//        	   if (address.equals(leader)){
-//        		   deliver(commitMessage);
-//        		   continue;
-//        	   }   		   
+        	   //if(!address.equals(leader) && startThroughput)
+        	   if(!address.equals(leader))
+
+             	  countMessageLeader.incrementAndGet();
               Message cpy = commitMessage.copy();
               cpy.setDest(address);
    		      //log.info("[" + local_addr + "] "+ "YYYYYYYY sending comit message zxid to = "+zxidd+":"+address);
-              down_prot.down(new Event(Event.MSG, cpy));     
+              down_prot.down(new Event(Event.MSG, cpy));   
+              
            }
 
 	    }
 		
-    private synchronized void deliver(Message toDeliver){
+    private void deliver(Message toDeliver){
 		//ZABHeader hdrOrginal = null;
 		ZABHeader hdr = (ZABHeader) toDeliver.getHeader(this.id);
 		long zxid = hdr.getZxid();
@@ -385,8 +489,8 @@ public class ZAB extends Protocol {
 		//log.info("Dzxid = "+ hdr.getZxid() + " " + getCurrentTimeStamp());
 		ZABHeader hdrOrginal = queuedProposalMessage.remove(zxid);
 		if (hdrOrginal == null) {
-			if (log.isInfoEnabled())
-				log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
+			 if (log.isInfoEnabled())
+				 log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
 					+ hdrOrginal + " for zxid " + hdr.getZxid());
 			return;
 		}
@@ -394,9 +498,27 @@ public class ZAB extends Protocol {
 //				+ requestQueue.contains(hdrOrginal.getMessageId()));
 
 		queuedCommitMessage.put(zxid, hdrOrginal);
-		 if (log.isInfoEnabled())
-			 log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+zxid);
+		//synchronized(latencies){
+			//if(startThroughput){
+				numReqDeviverd.incrementAndGet();
+				endThroughputTime = System.currentTimeMillis();
+				long startTime  = hdrOrginal.getMessageId().getStartTime();
+				latencies.add((int)(System.currentTimeMillis() - startTime));
+				rateCount++;
+	//		if (rateCount == rateInterval){
+	//			StatsThread st = new StatsThread();
+	//			st.start();
+	//			rateCount=0;
+	//		}
+				if (numReqDeviverd.get()>=1000000)
+					timer.cancel();
+			//}
+		//}
+		
+		if (log.isInfoEnabled())
+			log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+zxid);
 		if (requestQueue.contains(hdrOrginal.getMessageId())) {
+			
 			//log.info("I am the zab request receiver, "+ hdr.getZxid());
 					//+ hdrOrginal.getMessageId().getAddress());
 			ZABHeader hdrResponse = new ZABHeader(ZABHeader.RESPONSE, hdr.getZxid(),
@@ -428,6 +550,122 @@ public class ZAB extends Protocol {
 				   new SimpleDateFormat("HH:mm:ss:SSS").format(cal.getTime());
 
 			return timeString;
+		}
+		
+		private void sendTotalABMwssages(ZABHeader CarryCountMessageLeader){
+			if(!is_leader){
+			    ZABHeader followerMsgCount = new ZABHeader(ZABHeader.COUNTMESSAGE, countMessageFollower);
+		   	    Message requestMessage = new Message(leader).putHeader(this.id, followerMsgCount);
+		        down_prot.down(new Event(Event.MSG, requestMessage)); 
+			}
+			else{
+				long followerMsg = CarryCountMessageLeader.getZxid();
+				countTotalMessagesFollowers += followerMsg;
+			}
+				
+		}
+		
+		
+		private void printMZabStats(){	
+			// print Min, Avg, and Max latency
+			long min = Long.MAX_VALUE, avg =0, max = Long.MIN_VALUE;
+			for (long lat : latencies){
+				if (lat < min){
+					min = lat;
+				}
+				if (lat > max){
+					max = lat;
+				}
+				avg+=lat;	
+				
+			}
+
+			outFile.println("Number of Request Recieved = "+(numRequest));
+			outFile.println("Number of Request Deliever = " + numReqDeviverd);
+			outFile.println("Total ZAB Messages = " + (countMessageLeader.get() + countTotalMessagesFollowers));
+			outFile.println("Throughput = " + (numReqDeviverd.get()/(TimeUnit.MILLISECONDS.toSeconds(endThroughputTime-startThroughputTime))));
+			outFile.println("Latency /Min= " + min + " /Avg= "+ (avg/latencies.size())+
+			        " /Max= " +max);	
+			outFile.println("Latency average rate with interval 100000 = " + 
+			        avgLatencies);
+			outFile.println("Latency average rate with interval 200 MillSec = " + 
+			        avgLatenciesTimer);
+			
+					
+				
+			 
+			Collections.sort(latencies);
+			
+			int x50=0, x100=0, x150=0, x200=0, x250=0, x300=0, x350=0,x400=0, x450=0, x500=0, x550=0, x600=0, x650=0, x700=0, xLager700=0;
+			
+			for (Integer l:latencies){
+				if (l<51)
+					x50++;
+				else if(l>50 && l<101)
+					x100++;
+				else if(l>100 && l<151)
+					x150++;
+				else if(l>150 && l<201)
+					x200++;
+				else if(l>200 && l<251)
+					x250++;
+				else if(l>250 && l<301)
+					x300++;
+				else if(l>300 && l<351)
+					x350++;
+				else if(l>350 && l<401)
+					x400++;
+				else if(l>400 && l<451)
+					x450++;
+				else if(l>450 && l<501)
+					x500++;
+				else if(l>500 && l<551)
+					x550++;
+				else if(l>560 && l<601)
+					x600++;
+				else if(l>600 && l<651)
+					x650++;
+				else if(l>650 && l<701)
+					x700++;
+				else
+					xLager700++;
+			}
+				outFile.println("Distribution contains latencies form (0-50) " + x50);
+			    outFile.println("Distribution contains latencies form (51-100) " + x100);
+			    outFile.println("Distribution contains latencies form (101-150) " + x150);
+			    outFile.println("Distribution contains latencies form (151-200) " + x200);
+			    outFile.println("Distribution contains latencies form (201-250) " + x250);
+			    outFile.println("Distribution contains latencies form (251-300) " + x300);
+			    outFile.println("Distribution contains latencies form (301-350) " + x350);
+			    outFile.println("Distribution contains latencies form (351-400) " + x400);
+			    outFile.println("Distribution contains latencies form (401-450) " + x450);
+			    outFile.println("Distribution contains latencies form (451-500) " + x500);
+			    outFile.println("Distribution contains latencies form (501-550) " + x550);
+			    outFile.println("Distribution contains latencies form (551-600) " + x600);
+			    outFile.println("Distribution contains latencies form (601-650) " + x650);
+			    outFile.println("Distribution contains latencies form (651-700) " + x700);
+			    outFile.println("Distribution contains latencies form (  > 700) " + xLager700);
+		
+			
+//			final int groupRange = 50;
+//
+//			ListMultimap<Integer, Integer> map = Multimaps.index(latencies, new Function<Integer, Integer>() {
+//			    public Integer apply(Integer i) {
+//			        //work out which group the value belongs in
+//			        return (i / groupRange) + (i % groupRange == 0 ? 0 : 1);
+//			    }
+//			});
+//			for (Integer key : map.keySet()) {
+//			    List<Integer> value = map.get(key);
+//			    outFile.println("Distribution contains " + value.size() + " items from " + value.get(0) + " to " + value.get(value.size() - 1));
+//			}
+			
+			    outFile.println("Test Generated at "+ new Date() + " /Lasted for = "
+					 	+ TimeUnit.MILLISECONDS.toSeconds((endThroughputTime-startThroughputTime)));	
+			 outFile.println();	
+
+			outFile.close();	
+		
 		}
 		
 /* ----------------------------- End of Private Methods -------------------------------- */
@@ -470,6 +708,7 @@ public class ZAB extends Protocol {
             	p.setMessageId(hdrReq.getMessageId());
             	p.AckCount++;            	            	
             	outstandingProposals.put(new_zxid, p);
+            	hdrProposal.getMessageId().setStartTime(System.currentTimeMillis());
             	queuedProposalMessage.put(new_zxid, hdrProposal);
             	
             	          	
@@ -478,6 +717,8 @@ public class ZAB extends Protocol {
                  	for (Address address : zabMembers) {
                         if(address.equals(leader))
                         	continue;
+                        //if(startThroughput)
+                		countMessageLeader.incrementAndGet();
                         Message cpy = ProposalMessage.copy();
                         cpy.setDest(address);
                 		down_prot.down(new Event(Event.MSG, cpy));     
@@ -493,4 +734,46 @@ public class ZAB extends Protocol {
        
     }
 
+
+	 public class StatsThread extends Thread{
+		 public void run(){
+			 int avg = 0, elementCount = 0;
+			 for (int i =  lastArrayIndex; i < latencies.size(); i++){
+				 avg+=latencies.get(i);
+				 elementCount++;
+			 }
+			 
+			 lastArrayIndex = latencies.size() - 1;
+			 avg= avg/elementCount;
+			 avgLatencies.add(avg);
+		 }
+	 }
+	 
+	 class ResubmitTimer extends TimerTask{
+
+		@Override
+		public void run() {
+			int finished = numReqDeviverd.get();
+			currentCpuTime = System.currentTimeMillis();
+			
+			//Find average latency
+			 int avg = 0, elementCount = 0;
+			 
+			 //List<Integer> latCopy = new ArrayList<Integer>(latencies);
+			 for (int i =  lastArrayIndexUsingTime; i < latencies.size(); i++){
+				 avg+=latencies.get(i);
+				 elementCount++;
+			 }
+			 
+			 lastArrayIndexUsingTime = latencies.size() - 1;
+			 avg= avg/elementCount;
+		 
+			String mgsLat = (currentCpuTime - startThroughputTime) + "/" +
+			                ((finished - lastFinished) + "/" + avg);// (TimeUnit.MILLISECONDS.toSeconds(currentCpuTime - lastCpuTime)));
+			avgLatenciesTimer.add(mgsLat);
+			lastFinished = finished;
+			lastCpuTime = currentCpuTime;
+		}
+		 
+	 }
 }

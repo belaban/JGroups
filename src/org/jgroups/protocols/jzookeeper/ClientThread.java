@@ -36,23 +36,23 @@ public class ClientThread extends ReceiverAdapter {
 	private long num_msgsPerThreads;
 	private boolean startReset = true;
 	private Sender sender;
-	long start, end, startTh, st=0;
-	long  msgReceived = 0;
+	private long start, end, startTh, st=0;
+	private volatile long  msgReceived = 0;
 	private List<Address> zabBox = new ArrayList<Address>();
 	private List<Long> latencies = new ArrayList<Long>();
 	private View view;
-	Scanner read = new Scanner(System.in);
-	Calendar cal = Calendar.getInstance();
+	private static Scanner read = new Scanner(System.in);
+	private static Calendar cal = Calendar.getInstance();
 	private  short ID = ClassConfigurator
 			.getProtocolId(ZAB.class);
-	
+	private static int load = 1;
 	private static int count = 0;
 	private long numSendMsg=0;
 	private volatile  boolean isSend = false;
 
 
 	public ClientThread(List<Address> zabbox, CyclicBarrier barrier, long numsMsg, AtomicLong local,
-			byte[] payload, String ProtocotName, long num_msgsPerThreads, String propsFile) {
+			byte[] payload, String ProtocotName, long num_msgsPerThreads, String propsFile, int load) {
 		this.barrier = barrier;
 		this.local = local;
 		this.payload = payload;
@@ -61,7 +61,7 @@ public class ClientThread extends ReceiverAdapter {
 		this.ProtocotName = ProtocotName;
 		this.num_msgsPerThreads = num_msgsPerThreads;
 		this.props = propsFile;
-
+		this.load = load;
 		this.ID = ClassConfigurator
 				.getProtocolId((this.ProtocotName.equals("ZAB"))?ZAB.class:MMZAB.class);
 		
@@ -103,7 +103,7 @@ public class ClientThread extends ReceiverAdapter {
 	public void sendMessages() {
 		msgReceived=0;
 		this.sender = new Sender(this.barrier, this.numsMsg, this.local,
-				this.payload, num_msgsPerThreads);
+				this.payload, num_msgsPerThreads, load);
 		System.out.println("Start sending "+ sender.getName());
 		sender.start();
 	}
@@ -163,15 +163,19 @@ public class ClientThread extends ReceiverAdapter {
 		private final byte[] payload;
 		private final long numsMsg;
 		private long num_msgsPerThreads;
+		private int load=1;
+
 
 		protected Sender(CyclicBarrier barrier, long numsMsg, AtomicLong local,
-				byte[] payload, long num_msgsPerThreads) {
+				byte[] payload, long num_msgsPerThreads, int load) {
 			super("" + (count++));
 			this.barrier = barrier;
 			this.payload = payload;
 			this.numsMsg = numsMsg;
 			this.local = local;
 			this.num_msgsPerThreads = num_msgsPerThreads;
+			this.load = load;
+
 		}
 
 		public void run() {
@@ -187,20 +191,12 @@ public class ClientThread extends ReceiverAdapter {
 			st = System.currentTimeMillis();
 			startTh = System.currentTimeMillis();
 
-			for (int i = 0; i < num_msgsPerThreads; i++) {
+			for (int i = 1; i < (num_msgsPerThreads+1); i++) {
 				numSendMsg = i;
-				while ((numSendMsg - msgReceived) > 100){
-					//System.out.println("Outstanding is ----> "+(numSendMsg - msgReceived));
-					try {
-						this.sleep(1);
-					} catch (InterruptedException e1) {
-						e1.printStackTrace();
-					}
-				}
 				try {
 					MessageId messageId = new MessageId(local_addr,
 							local.getAndIncrement(), System.currentTimeMillis());
-
+	
 					ZABHeader hdrReq = new ZABHeader(ZABHeader.REQUEST,
 							messageId);
 					target = Util.pickRandomElement(zabBox);
@@ -208,15 +204,21 @@ public class ClientThread extends ReceiverAdapter {
 					msg.putHeader(ID, hdrReq);
 					System.out.println("sender " + this.getName()+ " Sending " + i + " out of " + num_msgsPerThreads);
 					channel.send(msg);
-					//isSend = true;
-					//while (isSend){
-						//wait until notify
-					//}
-
 				} catch (Exception e) {
 				}
-				numSendMsg =0;
+				//numSendMsg =0;
+			
+				while ((numSendMsg - msgReceived) > load){
+					//System.out.println("Outstanding is ----> "+(numSendMsg - msgReceived));
+//					try {
+//						this.sleep(1);
+//					} catch (InterruptedException e1) {
+//						e1.printStackTrace();
+//					}
+				}
 			}
+				
+				
 		}
 	}
 }
