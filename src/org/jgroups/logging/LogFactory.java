@@ -11,8 +11,7 @@ import org.jgroups.Global;
  * @since 4.0
  */
 public class LogFactory {
-    public static final boolean    IS_LOG4J2_AVAILABLE; // log4j2 is preferred over log4j
-    public static final boolean    IS_LOG4J_AVAILABLE;
+    public static final boolean    IS_LOG4J2_AVAILABLE; // log4j2 is the default
     protected static final boolean USE_JDK_LOGGER;
 
     protected static CustomLogFactory custom_log_factory;
@@ -31,7 +30,6 @@ public class LogFactory {
 
         custom_log_factory=customLogFactoryX;
         USE_JDK_LOGGER=isPropertySet(Global.USE_JDK_LOGGER);
-        IS_LOG4J_AVAILABLE=isAvailable("org.apache.log4j.Logger");
         IS_LOG4J2_AVAILABLE=isAvailable("org.apache.logging.log4j.core.Logger");
     }
 
@@ -46,7 +44,6 @@ public class LogFactory {
     public static String loggerType() {
         if(USE_JDK_LOGGER)      return "jdk";
         if(IS_LOG4J2_AVAILABLE) return "log4j2";
-        if(IS_LOG4J_AVAILABLE)  return "log4j";
         return "jdk";
     }
 
@@ -78,9 +75,6 @@ public class LogFactory {
         if(IS_LOG4J2_AVAILABLE)
             return new Log4J2LogImpl(clazz);
 
-        if(IS_LOG4J_AVAILABLE)
-            return new Log4JLogImpl(clazz);
-
         return new JDKLogImpl(clazz);
     }
 
@@ -93,9 +87,6 @@ public class LogFactory {
 
         if(IS_LOG4J2_AVAILABLE)
             return new Log4J2LogImpl(category);
-
-        if(IS_LOG4J_AVAILABLE)
-            return new Log4JLogImpl(category);
 
         return new JDKLogImpl(category);
     }
