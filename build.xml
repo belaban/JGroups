@@ -444,7 +444,7 @@
         <echo message="manual.up-to-date=${manual.up-to-date}"/>
     </target>
 
-    <target name="make-pom" description="Copies conf/pom-xml.template to pom.xml and replaces version">
+    <!--target name="make-pom" description="Copies conf/pom-xml.template to pom.xml and replaces version">
         <copy file="${pom.template}"
               tofile="${root.dir}/pom.xml"
               overwrite="false" verbose="false">
@@ -452,7 +452,7 @@
                 <filter token="VERSION" value="${version}"/>
             </filterset>
         </copy>
-    </target>
+    </target-->
 
     <target name="make-schema" description="Creates XML schema for this version of JGroups"
             depends="create-schema">

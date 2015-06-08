@@ -5,7 +5,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>bundle</packaging>
     <name>JGroups</name>
-    <version>@VERSION@</version>
+    <version>3.6.4</version>
     <url>http://www.jgroups.org</url>
     <description>
         Reliable cluster communication toolkit
@@ -281,6 +281,7 @@
                     <instructions>
                         <Main-Class>org.jgroups.Version</Main-Class>
                         <Implementation-Version>${project.version}</Implementation-Version>
+                        <DynamicImport-Package>*</DynamicImport-Package>
                         <Export-Package>
                             schema;version=${project.version},
                             ${project.groupId}.*;version=${project.version}
