@@ -395,6 +395,8 @@ public abstract class Channel implements Closeable {
     * 
     * */
     public void setReceiver(Receiver r) {
+        if(receiver != null && r != null)
+            log.warn("%s: receiver already set");
         receiver=r;
     }
 
