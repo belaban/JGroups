@@ -49,7 +49,7 @@ with method
         
 [source,java]
 ----
-ClassConfigurator.getInstance().put(1899, MyHeader.class)
+ClassConfigurator.add((short) 1889, MyHeader.class);
 ----
 
 The code below shows how an application defines a custom header, `MyHeader`, and uses it to attach additional
@@ -70,7 +70,7 @@ public class bla {
             }
         });
 
-        ClassConfigurator.getInstance().add((short)1900, MyHeader.class);
+        ClassConfigurator.add((short)1900, MyHeader.class);
 
         int cnt=1;
         for(int i=0; i < 5; i++) {
