@@ -4,7 +4,6 @@ import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.MembershipListener;
 import org.jgroups.View;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.logging.Log;
@@ -23,7 +22,6 @@ import java.util.concurrent.TimeUnit;
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
  */
-@Experimental
 public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener {
 
     /** The cache in which all entries are located. The value is a tuple, consisting of the replication count and the

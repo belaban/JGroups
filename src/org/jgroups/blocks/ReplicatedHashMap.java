@@ -1,7 +1,6 @@
 package org.jgroups.blocks;
 
 import org.jgroups.*;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
@@ -26,7 +25,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
  *
  * @author Bela Ban
  */
-@Experimental
 public class ReplicatedHashMap<K, V> extends
         AbstractMap<K,V> implements ConcurrentMap<K,V>, Receiver, ReplicatedMap<K,V> {
 
