@@ -3,8 +3,10 @@ package org.jgroups.protocols.jzookeeper;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -118,7 +120,7 @@ public class MMZAB extends Protocol {
     }
     
     
-    public void reset() {
+    public void reset(){
     	zxid.set(0);
     	lastZxidProposed=0;
     	lastZxidCommitted=0;
@@ -139,6 +141,25 @@ public class MMZAB extends Protocol {
         startThroughputTime = 0;
         endThroughputTime = 0;
         startThroughput = false;
+        rateInterval = 10000;
+    	rateCount = 0;
+    	largeLatCount = 0;
+    	largeLatencies.clear();
+    	lastArrayIndex = 0;
+    	lastArrayIndexUsingTime = 0 ;
+    	try {
+			this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
+					(outDir+InetAddress.getLocalHost().getHostName()+"MZAB.log",true)));
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	avgLatencies.clear();
+    	avgLatenciesTimer.clear();
+    	currentCpuTime=0;
 	    
     }
     // For sending Dummy request
@@ -925,7 +946,7 @@ public class MMZAB extends Protocol {
             	//log.info("Zxid count for zxid = " + new_zxid + " count = "  +p.AckCount+" "+getCurrentTimeStamp());
             	outstandingProposals.put(new_zxid, p);
             	queuedProposalMessage.put(new_zxid, hdrProposal);
-            	          	
+            	numRequest.incrementAndGet();       	
             	
             	try{
             		
@@ -978,7 +999,7 @@ public class MMZAB extends Protocol {
 		 
 		 //List<Integer> latCopy = new ArrayList<Integer>(latencies);
 		 for (int i =  lastArrayIndexUsingTime; i < latencies.size(); i++){
-			 if (latencies.get(i)>199){
+			 if (latencies.get(i)>50){
 				 largeLatCount++;
 				 largeLatencies.add((currentCpuTime - startThroughputTime) + "/" + latencies.get(i));
 			 }
