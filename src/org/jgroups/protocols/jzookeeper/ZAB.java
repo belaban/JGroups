@@ -79,6 +79,8 @@ public class ZAB extends Protocol {
 	private long countTotalMessagesFollowers = 0;
 	private AtomicLong warmUpRequest = new AtomicLong(0);
 	private static long warmUp = 10000;
+    private int largeLatCount = 0;
+    private List<String> largeLatencies = new ArrayList<String>();
 
     public ZAB(){
     	
@@ -170,7 +172,7 @@ public class ZAB extends Protocol {
                    case ZABHeader.START_SENDING:
 	                    return up_prot.up(new Event(Event.MSG, msg));
                 	case ZABHeader.REQUEST:        
-                		if (!startThroughput){
+                		if (!is_leader && !startThroughput){
                 			startThroughput = true;
                 			startThroughputTime = System.currentTimeMillis();
                 		      timer = new Timer();
@@ -196,7 +198,7 @@ public class ZAB extends Protocol {
                     		//queuedMessages.add(hdr);
                 		//}
                 		//else if (startThroughput){
-	              	    numRequest.incrementAndGet();
+	              	    //numRequest.incrementAndGet();
                    		queuedMessages.add(hdr);
 
                 		//}
@@ -363,9 +365,17 @@ public class ZAB extends Protocol {
     }
 
     private void forwardToLeader(Message msg) {
-	
-	   ZABHeader hdrReq = (ZABHeader) msg.getHeader(this.id);
-	   requestQueue.add(hdrReq.getMessageId());
+    	ZABHeader hdrReq = (ZABHeader) msg.getHeader(this.id);
+ 	   requestQueue.add(hdrReq.getMessageId());
+    	if (is_leader && !startThroughput){
+			startThroughput = true;
+			startThroughputTime = System.currentTimeMillis();
+		      timer = new Timer();
+			  timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
+    	    //numRequest.incrementAndGet();
+    		//queuedMessages.add(hdr);
+		}
+	   
 	   if (is_leader){
 		  queuedMessages.add((ZABHeader)msg.getHeader(this.id));
        }	   
@@ -394,7 +404,8 @@ public class ZAB extends Protocol {
     }
     
     private void sendACK(Message msg){
-    	 
+   		numRequest.incrementAndGet();
+
     	if (msg == null )
     		return;
     	
@@ -467,7 +478,6 @@ public class ZAB extends Protocol {
            for (Address address : zabMembers) {
         	   //if(!address.equals(leader) && startThroughput)
         	   if(!address.equals(leader))
-
              	  countMessageLeader.incrementAndGet();
               Message cpy = commitMessage.copy();
               cpy.setDest(address);
@@ -584,6 +594,8 @@ public class ZAB extends Protocol {
 			outFile.println("Number of Request Deliever = " + numReqDeviverd);
 			outFile.println("Total ZAB Messages = " + (countMessageLeader.get() + countTotalMessagesFollowers));
 			outFile.println("Throughput = " + (numReqDeviverd.get()/(TimeUnit.MILLISECONDS.toSeconds(endThroughputTime-startThroughputTime))));
+			outFile.println("Large Latencies count " + largeLatCount);	
+			outFile.println("Large Latencies " + largeLatencies);	
 			outFile.println("Latency /Min= " + min + " /Avg= "+ (avg/latencies.size())+
 			        " /Max= " +max);	
 			outFile.println("Latency average rate with interval 100000 = " + 
@@ -700,6 +712,8 @@ public class ZAB extends Protocol {
 					}
                
             	long new_zxid = getNewZxid();
+          	    numRequest.incrementAndGet();
+
             	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, new_zxid, hdrReq.getMessageId());                
                 Message ProposalMessage=new Message().putHeader(this.id, hdrProposal);
 
@@ -761,11 +775,15 @@ public class ZAB extends Protocol {
 			 
 			 //List<Integer> latCopy = new ArrayList<Integer>(latencies);
 			 for (int i =  lastArrayIndexUsingTime; i < latencies.size(); i++){
+				 if (latencies.get(i)>199){
+					 largeLatCount++;
+					 largeLatencies.add((currentCpuTime - startThroughputTime) + "/" + latencies.get(i));
+				 }
 				 avg+=latencies.get(i);
 				 elementCount++;
 			 }
 			 
-			 lastArrayIndexUsingTime = latencies.size() - 1;
+			 lastArrayIndexUsingTime = latencies.size()-1;
 			 avg= avg/elementCount;
 		 
 			String mgsLat = (currentCpuTime - startThroughputTime) + "/" +

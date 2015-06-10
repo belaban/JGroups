@@ -126,7 +126,9 @@ public class ZABTestThreads extends ReceiverAdapter {
 		System.out.println("Host name for client"+ local_addr.toString().split("-")[0]);
 		clientThreads = new ClientThread[num_threads];
 		if (!zabboxInit.contains(local_addr.toString().split("-")[0])) {
+			System.out.println("Check for>>>>>>>" + (!zabboxInit.contains(local_addr.toString().split("-")[0])));
 			for (int i = 0; i < clientThreads.length; i++) {
+				System.out.println("Check for>>>>>>>" + (!zabboxInit.contains(local_addr.toString().split("-")[0])));
 				clientThreads[i] = new ClientThread(zabBox, barrier, num_msgs,
 						localSequence, payload, ProtocotName, num_msgsPerThreads, propsFile, load);
 			}
@@ -259,7 +261,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 		String propsFile = "conf/sequencer.xml";
 		String name ="ZAB";
 		String outputDir= "/home/pg/p13/a6915654/"+name+"/";
-		String [] zabboxInits= new String[4];
+		String [] zabboxInits= new String[3];
         int msgSize = 1000;
         int load = 1;
         int numsThreads= 10;
@@ -330,9 +332,9 @@ public class ZABTestThreads extends ReceiverAdapter {
 	
 	public void loop() {
 		int c;
-
+		System.out.println("Zab members are "+ zabBox);;
 		final String INPUT = "[1] Send start request to all clients \n[2] Reset the protocol \n[3] print Throughput and Min/Avg/Max latency \n[4] Change number  of message\n"
-				+ "[4] calculate AB Message \n[5] Change number of threads \n"
+				+ "[4] calculate AB Message \n[5] Print Zab meberes \n"
 				+ "";
 
 		while (true) {
@@ -362,7 +364,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 					//msg_size = read.nextInt();
 					break;
 				case '5':
-					System.out.println("Enter number of threads");
+					System.out.println("Zab members are "+ zabBox);
 					// num_threads = read.nextInt();
 					break;
 				case '6':

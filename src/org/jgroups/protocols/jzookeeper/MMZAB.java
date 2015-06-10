@@ -34,6 +34,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.protocols.jzookeeper.ZAB.ResubmitTimer;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
@@ -59,8 +60,10 @@ public class MMZAB extends Protocol {
     private int index=-1;
     //private Map<Long, Boolean> notACK = new HashMap<Long, Boolean>();
     SortedSet<Long> wantCommit = new TreeSet<Long>();
-	private List<Integer> latencies = new ArrayList<Integer>();
-	private long numReqDeviverd=0, numRequest=0;
+    private List<Integer> latencies = new ArrayList<Integer>();
+	private List<Integer> avgLatencies = new ArrayList<Integer>();
+	private List<String> avgLatenciesTimer = new ArrayList<String>();
+	private long currentCpuTime = 0, rateCountTime = 0, lastTimer = 0, lastCpuTime = 0;
 
     private Timer _timer;
     private boolean startSending = false;
@@ -73,6 +76,22 @@ public class MMZAB extends Protocol {
     private boolean startThroughput = false;
     private static PrintWriter outFile;
     private final static String outDir="/home/pg/p13/a6915654/MMZAB/";
+    
+    private int lastArrayIndex = 0, lastArrayIndexUsingTime = 0 ;
+	private long timeInterval = 200;
+	private int lastFinished = 0;
+	private Timer timer;
+	private AtomicLong countMessageLeader = new AtomicLong(0);
+	private long countMessageFollower = 0;
+	private long countTotalMessagesFollowers = 0;
+	private AtomicLong warmUpRequest = new AtomicLong(0);
+	private static long warmUp = 10000;
+    private int largeLatCount = 0;
+    private List<String> largeLatencies = new ArrayList<String>();
+    private  AtomicInteger                  numReqDeviverd=new AtomicInteger(0);
+	private  AtomicInteger                  numRequest=new AtomicInteger(0);
+	private long rateInterval = 10000;
+	private long rateCount = 0;
 
 
 
@@ -115,8 +134,8 @@ public class MMZAB extends Protocol {
         laslAckRecieved=0;
         recievedFirstRequest = false;
         latencies.clear();
-        numReqDeviverd=0;
-        numRequest=0;
+        numReqDeviverd= new AtomicInteger(0);
+        numRequest= new AtomicInteger(0);
         startThroughputTime = 0;
         endThroughputTime = 0;
         startThroughput = false;
@@ -206,13 +225,13 @@ public class MMZAB extends Protocol {
 	                    reset();
 	                	break;
                 	case ZABHeader.REQUEST:
-                		if (!startThroughput){
-                			startThroughputTime = System.currentTimeMillis();
+                		if (!is_leader && !startThroughput){
                 			startThroughput = true;
+                			startThroughputTime = System.currentTimeMillis();
+                		      timer = new Timer();
+                			  timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
+
                 		}
-                		
-                	    numRequest++;
-                	    hdr.getMessageId().setStartTime(System.currentTimeMillis());
                 		forwardToLeader(msg);
                 		break;
                     case ZABHeader.FORWARD:
@@ -229,6 +248,7 @@ public class MMZAB extends Protocol {
                 		break;
                     case ZABHeader.PROPOSAL:
 	                   	if (!is_leader){
+	                   		hdr.getMessageId().setStartTime(System.currentTimeMillis());
 	            			sendACK(msg);
 	            		}
 	                   	break;           		
@@ -243,6 +263,10 @@ public class MMZAB extends Protocol {
                     case ZABHeader.STATS:
                     	printMZabStats();
                     	break;
+                    case ZABHeader.COUNTMESSAGE:
+                		sendTotalABMwssages(hdr);  
+                		log.info("Yes, I recieved count request");
+                	break;
                     case ZABHeader.RESPONSE:
                     	handleOrderingResponse(hdr);
                     	
@@ -316,6 +340,18 @@ public class MMZAB extends Protocol {
         	}
     	}
     	
+
+		else if (clientHeader != null
+				&& clientHeader.getType() == ZABHeader.COUNTMESSAGE) {
+			for (Address server : zabMembers) {
+				if(!server.equals(zabMembers.get(0))){
+					Message countMessages = new Message(server).putHeader(this.id,
+							clientHeader);
+					down_prot.down(new Event(Event.MSG, countMessages));
+				}
+			}
+		}
+    	
     	else if(!clientHeader.getMessageId().equals(null) && clientHeader.getType() == ZABHeader.REQUEST){
 	    	 Address destination = null;
 	         messageStore.put(clientHeader.getMessageId(), message);
@@ -362,6 +398,14 @@ public class MMZAB extends Protocol {
     private void forwardToLeader(Message msg) {
 	   ZABHeader hdrReq = (ZABHeader) msg.getHeader(this.id);
 	   requestQueue.add(hdrReq.getMessageId());
+	   if (is_leader && !startThroughput){
+			startThroughput = true;
+			startThroughputTime = System.currentTimeMillis();
+		      timer = new Timer();
+			  timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
+   	    //numRequest.incrementAndGet();
+   		//queuedMessages.add(hdr);
+		}
 	   if (is_leader){
 		  queuedMessages.add((ZABHeader)msg.getHeader(this.id));
        }	   
@@ -390,6 +434,7 @@ public class MMZAB extends Protocol {
     
 
     private void sendACK(Message msg){
+   		numRequest.incrementAndGet();
     	Proposal p;
     	if (msg == null )
     		return;
@@ -424,6 +469,7 @@ public class MMZAB extends Protocol {
 
 		//}
 		if (ZUtil.SendAckOrNoSend()){// || makeAllFollowersAck) {
+
 //			log.info("["
 //					+ local_addr
 //					+ "] "
@@ -437,6 +483,8 @@ public class MMZAB extends Protocol {
 
 			try{
 			for (Address address : zabMembers) {
+				if (address.equals(local_addr))
+					countMessageFollower++;
                 Message cpy = ackMessage.copy();
                 cpy.setDest(address);
         		down_prot.down(new Event(Event.MSG, cpy));     
@@ -599,10 +647,23 @@ public class MMZAB extends Protocol {
 				return;
 			}
 	    	queuedCommitMessage.put(committedZxid, hdrOrginal);
-	    	numReqDeviverd++;
+	    	
+	    	numReqDeviverd.incrementAndGet();
 			endThroughputTime = System.currentTimeMillis();
 			long startTime  = hdrOrginal.getMessageId().getStartTime();
 			latencies.add((int)(System.currentTimeMillis() - startTime));
+			rateCount++;
+//		if (rateCount == rateInterval){
+//			StatsThread st = new StatsThread();
+//			st.start();
+//			rateCount=0;
+//		}
+			if (numReqDeviverd.get()>=1000000)
+				timer.cancel();
+		//}
+	//}			endThroughputTime = System.currentTimeMillis();
+			//long startTimes  = hdrOrginal.getMessageId().getStartTime();
+			//latencies.add((int)(System.currentTimeMillis() - startTimes));
 			   if (log.isInfoEnabled())
 					log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+committedZxid);
 
@@ -651,9 +712,20 @@ public class MMZAB extends Protocol {
 			return find;
 		}
 		
-		private void printMZabStats(){
-			
-			
+		private void sendTotalABMwssages(ZABHeader CarryCountMessageLeader){
+			if(!is_leader){
+			    ZABHeader followerMsgCount = new ZABHeader(ZABHeader.COUNTMESSAGE, countMessageFollower);
+		   	    Message requestMessage = new Message(leader).putHeader(this.id, followerMsgCount);
+		        down_prot.down(new Event(Event.MSG, requestMessage)); 
+			}
+			else{
+				long followerMsg = CarryCountMessageLeader.getZxid();
+				countTotalMessagesFollowers += followerMsg;
+			}
+				
+		}
+		
+		private void printMZabStats(){	
 			// print Min, Avg, and Max latency
 			long min = Long.MAX_VALUE, avg =0, max = Long.MIN_VALUE;
 			for (long lat : latencies){
@@ -663,21 +735,28 @@ public class MMZAB extends Protocol {
 				if (lat > max){
 					max = lat;
 				}
-				avg+=lat;			
+				avg+=lat;	
+				
 			}
-			outFile.println("Mzab");
-			
 
 			outFile.println("Number of Request Recieved = "+(numRequest));
 			outFile.println("Number of Request Deliever = " + numReqDeviverd);
-			outFile.println("Throughput = " + (numReqDeviverd/(TimeUnit.MILLISECONDS.toSeconds(endThroughputTime-startThroughputTime))));
+			outFile.println("Total ZAB Messages = " + (countMessageLeader.get() + countTotalMessagesFollowers));
+			outFile.println("Throughput = " + (numReqDeviverd.get()/(TimeUnit.MILLISECONDS.toSeconds(endThroughputTime-startThroughputTime))));
+			outFile.println("Large Latencies count " + largeLatCount);	
+			outFile.println("Large Latencies " + largeLatencies);	
 			outFile.println("Latency /Min= " + min + " /Avg= "+ (avg/latencies.size())+
-			        " /Max= " +max);			
-			outFile.println("Test Generated at "+ new Date() + " /Lasted for = "
-					 	+ TimeUnit.MILLISECONDS.toSeconds((endThroughputTime-startThroughputTime)));			
-				
+			        " /Max= " +max);	
+			outFile.println("Latency average rate with interval 100000 = " + 
+			        avgLatencies);
+			outFile.println("Latency average rate with interval 200 MillSec = " + 
+			        avgLatenciesTimer);
 			
+					
+				
+			 
 			Collections.sort(latencies);
+			
 			int x50=0, x100=0, x150=0, x200=0, x250=0, x300=0, x350=0,x400=0, x450=0, x500=0, x550=0, x600=0, x650=0, x700=0, xLager700=0;
 			
 			for (Integer l:latencies){
@@ -711,7 +790,7 @@ public class MMZAB extends Protocol {
 					x700++;
 				else
 					xLager700++;
-				
+			}
 				outFile.println("Distribution contains latencies form (0-50) " + x50);
 			    outFile.println("Distribution contains latencies form (51-100) " + x100);
 			    outFile.println("Distribution contains latencies form (101-150) " + x150);
@@ -728,10 +807,26 @@ public class MMZAB extends Protocol {
 			    outFile.println("Distribution contains latencies form (651-700) " + x700);
 			    outFile.println("Distribution contains latencies form (  > 700) " + xLager700);
 		
-				outFile.println();	
-				outFile.close();
-			}
+			
+//			final int groupRange = 50;
+//
+//			ListMultimap<Integer, Integer> map = Multimaps.index(latencies, new Function<Integer, Integer>() {
+//			    public Integer apply(Integer i) {
+//			        //work out which group the value belongs in
+//			        return (i / groupRange) + (i % groupRange == 0 ? 0 : 1);
+//			    }
+//			});
+//			for (Integer key : map.keySet()) {
+//			    List<Integer> value = map.get(key);
+//			    outFile.println("Distribution contains " + value.size() + " items from " + value.get(0) + " to " + value.get(value.size() - 1));
+//			}
+			
+			    outFile.println("Test Generated at "+ new Date() + " /Lasted for = "
+					 	+ TimeUnit.MILLISECONDS.toSeconds((endThroughputTime-startThroughputTime)));	
+			 outFile.println();	
 
+			outFile.close();	
+		
 		}
 		
 		private String getCurrentTimeStamp(){
@@ -825,7 +920,8 @@ public class MMZAB extends Protocol {
             	p.AckCount++;
             	lastZxidProposed=new_zxid;
             	
-            	
+            	hdrProposal.getMessageId().setStartTime(System.currentTimeMillis());
+
             	//log.info("Zxid count for zxid = " + new_zxid + " count = "  +p.AckCount+" "+getCurrentTimeStamp());
             	outstandingProposals.put(new_zxid, p);
             	queuedProposalMessage.put(new_zxid, hdrProposal);
@@ -839,6 +935,7 @@ public class MMZAB extends Protocol {
                  	for (Address address : zabMembers) {
                         if(address.equals(leader))
                         	continue;  
+                		countMessageLeader.incrementAndGet();
                         Message cpy = ProposalMessage.copy();
                         cpy.setDest(address);
                 		down_prot.down(new Event(Event.MSG, cpy));     
@@ -854,14 +951,50 @@ public class MMZAB extends Protocol {
 
        
     }
- 
+
  public class StatsThread extends Thread{
-	 
 	 public void run(){
+		 int avg = 0, elementCount = 0;
+		 for (int i =  lastArrayIndex; i < latencies.size(); i++){
+			 avg+=latencies.get(i);
+			 elementCount++;
+		 }
 		 
+		 lastArrayIndex = latencies.size() - 1;
+		 avg= avg/elementCount;
+		 avgLatencies.add(avg);
 	 }
  }
+ 
+ class ResubmitTimer extends TimerTask{
 
+	@Override
+	public void run() {
+		int finished = numReqDeviverd.get();
+		currentCpuTime = System.currentTimeMillis();
+		
+		//Find average latency
+		 int avg = 0, elementCount = 0;
+		 
+		 //List<Integer> latCopy = new ArrayList<Integer>(latencies);
+		 for (int i =  lastArrayIndexUsingTime; i < latencies.size(); i++){
+			 if (latencies.get(i)>199){
+				 largeLatCount++;
+				 largeLatencies.add((currentCpuTime - startThroughputTime) + "/" + latencies.get(i));
+			 }
+			 avg+=latencies.get(i);
+			 elementCount++;
+		 }
+		 
+		 lastArrayIndexUsingTime = latencies.size()-1;
+		 avg= avg/elementCount;
+	 
+		String mgsLat = (currentCpuTime - startThroughputTime) + "/" +
+		                ((finished - lastFinished) + "/" + avg);// (TimeUnit.MILLISECONDS.toSeconds(currentCpuTime - lastCpuTime)));
+		avgLatenciesTimer.add(mgsLat);
+		lastFinished = finished;
+		lastCpuTime = currentCpuTime;
+	}
+	 
+ }
 }
-
-
