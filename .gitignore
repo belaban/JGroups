@@ -23,5 +23,4 @@ doc/tutorial/*.css
 conf/MANIFEST.MF
 target/
 lib/
-
-
+hs_err_pid*.log
