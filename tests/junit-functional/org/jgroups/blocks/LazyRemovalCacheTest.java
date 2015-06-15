@@ -28,6 +28,20 @@ public class LazyRemovalCacheTest {
         System.out.println("cache = " + cache);
     }
 
+    public static void testRemoveAndAdd() {
+        LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<>();
+        UUID uuid=UUID.randomUUID();
+        cache.add(uuid, "val");
+        cache.remove(uuid);
+        assert cache.size() == 1;
+        String val=cache.get(uuid);
+        assert val.equals("val");
+
+        cache.add(uuid, "val2");
+        val=cache.get(uuid);
+        assert val.equals("val2");
+    }
+
     public static void testRemoveAll() {
         LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<>(10, 0);
         List<UUID> list=Arrays.asList(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());

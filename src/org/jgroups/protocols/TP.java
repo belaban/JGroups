@@ -1909,7 +1909,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(who_has_cache.addIfAbsentOrExpired(dest)) { // true if address was added
             // FIND_MBRS must return quickly
-            Responses responses=fetchResponsesFromDiscoveryProtocol(Arrays.asList(dest));
+            Responses responses=fetchResponsesFromDiscoveryProtocol(Collections.singletonList(dest));
             try {
                 for(PingData data : responses) {
                     if(data.getAddress() != null && data.getAddress().equals(dest)) {
@@ -2391,9 +2391,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     protected boolean addPhysicalAddressToCache(Address logical_addr, PhysicalAddress physical_addr) {
-        if(logical_addr != null && physical_addr != null)
-            return logical_addr_cache.add(logical_addr, physical_addr);
-        return false;
+        return logical_addr != null && physical_addr != null && logical_addr_cache.add(logical_addr, physical_addr);
     }
 
     protected PhysicalAddress getPhysicalAddressFromCache(Address logical_addr) {
