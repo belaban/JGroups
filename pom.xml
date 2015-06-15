@@ -7,6 +7,14 @@
     <name>JGroups</name>
     <version>3.6.4</version>
     <url>http://www.jgroups.org</url>
+
+    <properties>
+        <!-- nexus-staging-maven-plugin -->
+        <autoReleaseAfterClose>true</autoReleaseAfterClose>
+        <nexus.server.id>jboss-releases-repository</nexus.server.id>
+        <nexus.server.url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</nexus.server.url>
+    </properties>
+
     <description>
         Reliable cluster communication toolkit
     </description>
@@ -43,9 +51,9 @@
 
     <distributionManagement>
         <repository>
-            <id>jboss-releases-repository</id>
+            <id>${nexus.server.id}</id>
             <name>JBoss Releases Repository</name>
-            <url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</url>
+            <url>${nexus.server.url}</url>
         </repository>
     </distributionManagement>
 
@@ -137,6 +145,16 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <!-- See configuration details at http://books.sonatype.com/nexus-book/reference/staging-deployment.html -->
+                    <nexusUrl>${nexus.server.url}</nexusUrl>
+                    <serverId>${nexus.server.id}</serverId>
+                </configuration>
+            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
@@ -307,6 +325,16 @@
         </plugins>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.5.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonatype.plugins</groupId>
+                    <artifactId>nexus-staging-maven-plugin</artifactId>
+                    <version>1.6.5</version>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.felix</groupId>
                     <artifactId>maven-bundle-plugin</artifactId>
