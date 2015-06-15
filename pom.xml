@@ -147,6 +147,8 @@
                     <!-- See configuration details at http://books.sonatype.com/nexus-book/reference/staging-deployment.html -->
                     <nexusUrl>${nexus.server.url}</nexusUrl>
                     <serverId>${nexus.server.id}</serverId>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                    <skipLocalStaging>true</skipLocalStaging>
                 </configuration>
             </plugin>
             <plugin>
