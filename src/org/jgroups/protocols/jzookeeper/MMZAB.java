@@ -244,8 +244,8 @@ public class MMZAB extends Protocol {
                 		if (!is_warmUp && !is_leader && !startThroughput){
                 			startThroughput = true;
                 			startThroughputTime = System.currentTimeMillis();
-                		   // timer = new Timer();
-                			//timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
+                		    timer = new Timer();
+                			timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
 
                 		}
                 		forwardToLeader(msg);
@@ -264,7 +264,7 @@ public class MMZAB extends Protocol {
                 		break;
                     case ZABHeader.PROPOSAL:
 	                   	if (!is_leader){
-	                   		hdr.getMessageId().setStartTime(System.nanoTime());
+	                   		hdr.getMessageId().setStartTime(System.currentTimeMillis());
 	            			sendACK(msg, hdr);
 	            		}
 	                   	break;           		
@@ -422,8 +422,8 @@ public class MMZAB extends Protocol {
 	   if (!is_warmUp && is_leader && !startThroughput){
 			startThroughput = true;
 			startThroughputTime = System.currentTimeMillis();
-		      //timer = new Timer();
-			  //timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
+		      timer = new Timer();
+			  timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
    	    //numRequest.incrementAndGet();
    		//queuedMessages.add(hdr);
 		}
@@ -694,14 +694,14 @@ public class MMZAB extends Protocol {
 		    	numReqDeviverd.incrementAndGet();
 				endThroughputTime = System.currentTimeMillis();
 				long startTime  = hdrOrginal.getMessageId().getStartTime();
-				latencies.add((int)(System.nanoTime() - startTime));
+				latencies.add((int)(System.currentTimeMillis() - startTime));
 				rateCount++;
 			if (rateCount == rateInterval){
 				new StatsThread().start();
 				rateCount=0;
 			}		
 				if (numReqDeviverd.get()>=1000000){
-					//timer.cancel();
+					timer.cancel();
 					//_timer.cancel();
 				}
 		}
@@ -767,9 +767,6 @@ public class MMZAB extends Protocol {
 		
 		private void printMZabStats(){	
 			// print Min, Avg, and Max latency
-			List<Long> latAvg = new ArrayList<Long>();
-			int count =0;
-			long avgTemp =0;
 			long min = Long.MAX_VALUE, avg =0, max = Long.MIN_VALUE;
 			for (long lat : latencies){
 				if (lat < min){
@@ -778,14 +775,7 @@ public class MMZAB extends Protocol {
 				if (lat > max){
 					max = lat;
 				}
-				avg+=lat;
-				avgTemp+=lat;
-				count++;
-				if(count>10000){
-					latAvg.add(avgTemp/count);
-					count=0;
-					avgTemp=0;
-				}
+				avg+=lat;	
 				
 			}
 
@@ -794,15 +784,13 @@ public class MMZAB extends Protocol {
 			outFile.println("Total ZAB Messages = " + (countMessageLeader.get() + countTotalMessagesFollowers));
 			outFile.println("Throughput = " + (numReqDeviverd.get()/(TimeUnit.MILLISECONDS.toSeconds(endThroughputTime-startThroughputTime)))+ " ops/sec");
 			outFile.println("Large Latencies count " + largeLatCount);	
-			//outFile.println("Large Latencies " + largeLatencies);	
+			outFile.println("Large Latencies " + largeLatencies);	
 			outFile.println("Latency /Min= " + min + " /Avg= "+ (avg/latencies.size())+
 			        " /Max= " +max);	
 			outFile.println("Latency average rate with interval 100000 = " + 
 			        avgLatencies + " numbers avg = " + avgLatencies.size());
-			outFile.println("Latency average rate with No intervel = " + 
-					latAvg + " numbers avg = " + latAvg.size());
-			//outFile.println("Latency average rate with interval 200 MillSec = " + 
-			       // avgLatenciesTimer);
+			outFile.println("Latency average rate with interval 200 MillSec = " + 
+			        avgLatenciesTimer);
 			outFile.println("Longest wait time for commit = " + longWait);
 			Collections.sort(latencies);
 			
@@ -960,7 +948,7 @@ public class MMZAB extends Protocol {
     			 //log.info("Queue Size------> "+ queuedMessages.size());
 
             	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, new_zxid, hdrReq.getMessageId()); 
-            	hdrProposal.getMessageId().setStartTime(System.nanoTime());
+            	hdrProposal.getMessageId().setStartTime(System.currentTimeMillis());
                 Message ProposalMessage=new Message().putHeader(this.id, hdrProposal);
 
                 ProposalMessage.setSrc(local_addr);

@@ -218,12 +218,12 @@ public class ZAB extends Protocol {
 	                   		if (!is_warmUp && !startThroughput){
 	                			startThroughput = true;
 	                			startThroughputTime = System.currentTimeMillis();
-	                		    //timer = new Timer();
-	                			//timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
+	                		    timer = new Timer();
+	                			timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
 		                	    //numRequest.incrementAndGet();
 	                    		//queuedMessages.add(hdr);
 	                		}
-	                   		hdr.getMessageId().setStartTime(System.nanoTime());
+	                   		hdr.getMessageId().setStartTime(System.currentTimeMillis());
 	            			sendACK(msg, hdr);
 	            		}
 	                   	break;           		
@@ -385,8 +385,8 @@ public class ZAB extends Protocol {
     	if (!is_warmUp && is_leader && !startThroughput){
 			startThroughput = true;
 			startThroughputTime = System.currentTimeMillis();
-		      //timer = new Timer();
-			  //timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
+		      timer = new Timer();
+			  timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
 		}
 	   
 	   if (is_leader){
@@ -526,15 +526,14 @@ public class ZAB extends Protocol {
 				numReqDeviverd.incrementAndGet();
 				endThroughputTime = System.currentTimeMillis();
 				long startTime  = hdrOrginal.getMessageId().getStartTime();
-				latencies.add((int)(System.nanoTime() - startTime));
+				latencies.add((int)(System.currentTimeMillis() - startTime));
 				rateCount++;
 			if (rateCount == rateInterval){
 				new StatsThread().start();;
 				rateCount=0;
 			}
-				if (numReqDeviverd.get()>=1000000){
-					//timer.cancel();
-				}
+				if (numReqDeviverd.get()>=1000000)
+					timer.cancel();
 			}
 	//	}
 		
@@ -591,9 +590,6 @@ public class ZAB extends Protocol {
 		
 		private void printMZabStats(){	
 			// print Min, Avg, and Max latency
-			List<Long> latAvg = new ArrayList<Long>();
-			int count =0;
-			long avgTemp =0;
 			long min = Long.MAX_VALUE, avg =0, max = Long.MIN_VALUE;
 			for (long lat : latencies){
 				if (lat < min){
@@ -602,14 +598,7 @@ public class ZAB extends Protocol {
 				if (lat > max){
 					max = lat;
 				}
-				avg+=lat;
-				avgTemp+=lat;
-				count++;
-				if(count>10000){
-					latAvg.add(avgTemp/count);
-					count=0;
-					avgTemp=0;
-				}
+				avg+=lat;	
 				
 			}
 
@@ -619,15 +608,13 @@ public class ZAB extends Protocol {
 			outFile.println("Throughput = " + (numReqDeviverd.get()/(TimeUnit.MILLISECONDS.toSeconds(endThroughputTime-startThroughputTime))));
 			outFile.println("Large Latencies count " + largeLatCount);	
 		
-			//outFile.println("Large Latencies " + largeLatencies);	
+			outFile.println("Large Latencies " + largeLatencies);	
 			outFile.println("Latency /Min= " + min + " /Avg= "+ (avg/latencies.size())+
 			        " /Max= " +max);	
 			outFile.println("Latency average rate with interval 100000 = " + 
 			        avgLatencies);
-			outFile.println("Latency average rate with No intervel = " + 
-					latAvg + " numbers avg = " + latAvg.size());
-			//outFile.println("Latency average rate with interval 200 MillSec = " + 
-			        //avgLatenciesTimer);
+			outFile.println("Latency average rate with interval 200 MillSec = " + 
+			        avgLatenciesTimer);
 			
 					
 				
@@ -741,7 +728,7 @@ public class ZAB extends Protocol {
           	    numRequest.incrementAndGet();
 
             	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, new_zxid, hdrReq.getMessageId()); 
-            	hdrProposal.getMessageId().setStartTime(System.nanoTime());
+            	hdrProposal.getMessageId().setStartTime(System.currentTimeMillis());
 
                 Message ProposalMessage=new Message().putHeader(this.id, hdrProposal);
 
@@ -780,12 +767,12 @@ public class ZAB extends Protocol {
 		 public void run(){
 			 int avg = 0, elementCount = 0;
 			 List<Integer> copyLat = new ArrayList<Integer>(latencies);
-			 for (int i =  lastArrayIndex; i < latencies.size(); i++){
-				 avg+=latencies.get(i);
+			 for (int i =  lastArrayIndex; i < copyLat.size(); i++){
+				 avg+=copyLat.get(i);
 				 elementCount++;
 			 }
 			 
-			 lastArrayIndex = latencies.size() - 1;
+			 lastArrayIndex = copyLat.size() - 1;
 			 avg= avg/elementCount;
 			 avgLatencies.add(avg);
 		 }
