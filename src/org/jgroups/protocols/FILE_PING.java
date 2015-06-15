@@ -202,7 +202,7 @@ public class FILE_PING extends Discovery {
         deleteFile(file);
     }
 
-    /** Removes all files except the member passed as argument (can be null) */
+    /** Removes all files for the given cluster name */
     protected void removeAll(String clustername) {
         if(clustername == null)
             return;

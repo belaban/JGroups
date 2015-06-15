@@ -48,7 +48,7 @@ public class S3_PING extends FILE_PING {
     protected String secret_access_key;
 
     @Property(description="When non-null, we set location to prefix-UUID")
-    protected String  prefix;
+    protected String prefix;
 
     @Property(description="When non-null, we use this pre-signed URL for PUTs",exposeAsManagedAttribute=false)
     protected String pre_signed_put_url;
@@ -61,8 +61,7 @@ public class S3_PING extends FILE_PING {
 
     protected AWSAuthConnection conn=null;
 
-
-  
+    @Override
     public void init() throws Exception {
         super.init();
         if(host == null)
