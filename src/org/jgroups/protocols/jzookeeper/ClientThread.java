@@ -49,10 +49,15 @@ public class ClientThread extends ReceiverAdapter {
 	private static int count = 0;
 	private long numSendMsg=0;
 	private volatile  boolean isSend = false;
+    private static boolean is_warmUp = false;
+    private int msgReceivedWarmUp = 0;
+    private long warmUpRequests = 0;
+    private long currentLoad = 0;
+    private ZABTestThreads zabTest= new ZABTestThreads();
 
 
 	public ClientThread(List<Address> zabbox, CyclicBarrier barrier, long numsMsg, AtomicLong local,
-			byte[] payload, String ProtocotName, long num_msgsPerThreads, String propsFile, int load) {
+			byte[] payload, String ProtocotName, long num_msgsPerThreads, String propsFile, int load, long warmUpRequests, ZABTestThreads zabTest ) {
 		this.barrier = barrier;
 		this.local = local;
 		this.payload = payload;
@@ -60,8 +65,10 @@ public class ClientThread extends ReceiverAdapter {
 		this.zabBox =zabbox;
 		this.ProtocotName = ProtocotName;
 		this.num_msgsPerThreads = num_msgsPerThreads;
+		this.warmUpRequests = warmUpRequests;
 		this.props = propsFile;
 		this.load = load;
+		this.zabTest = zabTest;
 		this.ID = ClassConfigurator
 				.getProtocolId((this.ProtocotName.equals("ZAB"))?ZAB.class:MMZAB.class);
 		
@@ -73,7 +80,12 @@ public class ClientThread extends ReceiverAdapter {
 		 msgReceived = 0;
 		 startReset = true;
 		 numSendMsg=0;
+		 msgReceivedWarmUp=0;
 		 latencies.clear();
+	}
+	
+	public void setWarmUp(boolean warmUp){
+		is_warmUp= warmUp;
 	}
 
 	public void viewAccepted(View new_view) {
@@ -100,10 +112,11 @@ public class ClientThread extends ReceiverAdapter {
 
 	}
 
-	public void sendMessages() {
+	public void sendMessages(long numMsgs) {
 		msgReceived=0;
-		this.sender = new Sender(this.barrier, this.numsMsg, this.local,
-				this.payload, num_msgsPerThreads, load);
+		this.currentLoad = numMsgs;
+		this.sender = new Sender(this.barrier, this.local,
+				this.payload, numMsgs, load);
 		System.out.println("Start sending "+ sender.getName());
 		sender.start();
 	}
@@ -124,32 +137,44 @@ public class ClientThread extends ReceiverAdapter {
 			if (testHeader.getType() != ZABHeader.START_SENDING) {
 				// System.out.println("senter " + sender.getName()+
 				// " has finished "+msgReceived+" ops");
-				msgReceived++;
+				if (is_warmUp){
+					msgReceived++;
+					if(msgReceived>=warmUpRequests){
+						try {
+							zabTest.finishedSend();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
 				//System.out.println("Current NumMsg = " + msgReceived);
 				//notify send thread
 				//isSend = false;
-				latencies.add((System.currentTimeMillis() - message.getStartTime()));
-				// if (startReset) {
-				// st = System.currentTimeMillis();
-				// startReset = false;
-				// }
-				//System.out.println(sender.getName() + " "
-				//		+ "Time interval -----> "
-				//		+ (System.currentTimeMillis() - st));
-				//if ((System.currentTimeMillis() - st) > 50) {
-					//System.out.println("senter " + sender.getName()
-					//		+ " has finished " + msgReceived + " ops");
-					//ZABTestThreads.finishedopsSoFar(msgReceived, sender);
-					//st = System.currentTimeMillis();
-					// startReset = true;
-				//}
-				//System.out.println(sender.getName() + " "
-				//		+ "msgReceived / numsMsg -----> " + msgReceived + " / "
-				//		+ numsMsg);
-				if (msgReceived >= num_msgsPerThreads) {
-					ZABTestThreads.result(msgReceived, sender,
-							(System.currentTimeMillis() - startTh), latencies);
-
+				else if(testHeader.getType()==ZABHeader.RESPONSE){
+					latencies.add((System.currentTimeMillis() - message.getStartTime()));
+					// if (startReset) {
+					// st = System.currentTimeMillis();
+					// startReset = false;
+					// }
+					//System.out.println(sender.getName() + " "
+					//		+ "Time interval -----> "
+					//		+ (System.currentTimeMillis() - st));
+					//if ((System.currentTimeMillis() - st) > 50) {
+						//System.out.println("senter " + sender.getName()
+						//		+ " has finished " + msgReceived + " ops");
+						//ZABTestThreads.finishedopsSoFar(msgReceived, sender);
+						//st = System.currentTimeMillis();
+						// startReset = true;
+					//}
+					//System.out.println(sender.getName() + " "
+					//		+ "msgReceived / numsMsg -----> " + msgReceived + " / "
+					//		+ numsMsg);
+					msgReceived++;
+					if (msgReceived >= currentLoad) {
+						ZABTestThreads.result(msgReceived, sender,
+								(System.currentTimeMillis() - startTh), latencies);
+	
+					}
 				}
 
 			}
@@ -161,17 +186,15 @@ public class ClientThread extends ReceiverAdapter {
 		private final CyclicBarrier barrier;
 		private AtomicLong local = new AtomicLong(0);// , actually_sent;
 		private final byte[] payload;
-		private final long numsMsg;
 		private long num_msgsPerThreads;
 		private int load=1;
 
 
-		protected Sender(CyclicBarrier barrier, long numsMsg, AtomicLong local,
+		protected Sender(CyclicBarrier barrier, AtomicLong local,
 				byte[] payload, long num_msgsPerThreads, int load) {
 			super("" + (count++));
 			this.barrier = barrier;
 			this.payload = payload;
-			this.numsMsg = numsMsg;
 			this.local = local;
 			this.num_msgsPerThreads = num_msgsPerThreads;
 			this.load = load;
@@ -190,13 +213,21 @@ public class ClientThread extends ReceiverAdapter {
 			Address target;
 			st = System.currentTimeMillis();
 			startTh = System.currentTimeMillis();
-
-			for (int i = 1; i < (num_msgsPerThreads+1); i++) {
+			numSendMsg =0;
+			for (int i = 0; i < num_msgsPerThreads; i++) {
 				numSendMsg = i;
+				while ((numSendMsg - msgReceived) > load){
+					//System.out.println("Outstanding is ----> "+(numSendMsg - msgReceived));
+					try {
+						this.sleep(0,1);
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
+				}
 				try {
 					MessageId messageId = new MessageId(local_addr,
 							local.getAndIncrement(), System.currentTimeMillis());
-	
+
 					ZABHeader hdrReq = new ZABHeader(ZABHeader.REQUEST,
 							messageId);
 					target = Util.pickRandomElement(zabBox);
@@ -204,21 +235,14 @@ public class ClientThread extends ReceiverAdapter {
 					msg.putHeader(ID, hdrReq);
 					System.out.println("sender " + this.getName()+ " Sending " + i + " out of " + num_msgsPerThreads);
 					channel.send(msg);
+					//isSend = true;
+					//while (isSend){
+						//wait until notify
+					//}
+
 				} catch (Exception e) {
 				}
-				//numSendMsg =0;
-			
-				while ((numSendMsg - msgReceived) > load){
-					//System.out.println("Outstanding is ----> "+(numSendMsg - msgReceived));
-//					try {
-//						this.sleep(1);
-//					} catch (InterruptedException e1) {
-//						e1.printStackTrace();
-//					}
-				}
 			}
-				
-				
 		}
 	}
 }

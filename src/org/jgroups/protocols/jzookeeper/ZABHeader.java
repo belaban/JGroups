@@ -2,7 +2,6 @@ package org.jgroups.protocols.jzookeeper;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.jgroups.Global;
 import org.jgroups.Header;
@@ -23,13 +22,15 @@ import org.jgroups.util.Util;
          public static final byte RESET = 10;
          public static final byte STATS = 11;
          public static final byte COUNTMESSAGE = 12;
+         public static final byte STARTREALTEST = 13;
+
 
 
 
          
 
          private byte        type=0;
-         private AtomicLong        seqno=new AtomicLong(0);
+         private long        seqno=0;
          private MessageId   messageId=null;
 
         public ZABHeader() {
@@ -45,11 +46,11 @@ import org.jgroups.util.Util;
 
         public ZABHeader(byte type, long seqno) {
             this(type);
-            this.seqno.set(seqno);
+            this.seqno=seqno;
         }
         public ZABHeader(byte type, long seqno, MessageId messageId) {
             this(type);
-            this.seqno.set(seqno);
+            this.seqno=seqno;
             this.messageId=messageId;
         }
     
@@ -64,8 +65,8 @@ import org.jgroups.util.Util;
 		public String toString() {
             StringBuilder sb=new StringBuilder(64);
             sb.append(printType());
-            if(seqno.get() >= 0)
-                sb.append(" seqno=" + seqno.get());
+            if(seqno >= 0)
+                sb.append(" seqno=" + seqno);
             if(messageId!=null)
             	sb.append(", message_id=" + messageId);
             return sb.toString();
@@ -86,14 +87,14 @@ import org.jgroups.util.Util;
             case RESET:          return "RESET";
             case STATS:			 return "STATS";
             case COUNTMESSAGE:			 return "COUNTMESSAGE";
-            
+            case STARTREALTEST:			 return "STARTREALTEST";
             default:             return "n/a";
         }
            
         }
         
         public long getZxid() {
-            return seqno.get();
+            return seqno;
         }
         
         public MessageId getMessageId(){
@@ -102,7 +103,7 @@ import org.jgroups.util.Util;
         @Override
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
-            Bits.writeLong(seqno.get(),out);
+            Bits.writeLong(seqno,out);
             Util.writeStreamable(messageId, out);
             //messageId.writeTo(out);
             //out.writeBoolean(flush_ack);
@@ -111,7 +112,7 @@ import org.jgroups.util.Util;
         @Override
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
-            seqno.set(Bits.readLong(in));
+            seqno=Bits.readLong(in);
             //messageId = new MessageId();
             //messageId.readFrom(in);
             messageId = (MessageId) Util.readStreamable(MessageId.class, in); 
@@ -121,7 +122,7 @@ import org.jgroups.util.Util;
         @Override
         public int size() {
         	//(messageInfo != null ? messageInfo.size() : 0)
-            return Global.BYTE_SIZE + Bits.size(seqno.get()) + (messageId != null ? messageId.serializedSize(): 0) + Global.BYTE_SIZE; 
+            return Global.BYTE_SIZE + Bits.size(seqno) + (messageId != null ? messageId.serializedSize(): 0) + Global.BYTE_SIZE; 
          }
 
     }

@@ -55,6 +55,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 	private ClientThread[] clientThreads;
 	private final byte[] payload = new byte[msg_size];
 	private AtomicLong localSequence = new AtomicLong(); 
+	private long incMainRequest = 0;
 	private short ID;
 	
     private String outputDir;
@@ -63,13 +64,14 @@ public class ZABTestThreads extends ReceiverAdapter {
     private static int avgTimeElpased = 0;
     private static long avgRecievedOps = 0;
     private static int load = 1;
-
-
+    private static boolean is_warmUp = false;
+    private long numsOfWarmUpPerThread = 0;
+    private int countRecieved = 0;
 
 
 	public ZABTestThreads(String [] zabHosts, String protocolName, String props,
 						 int totalNum_msgs, int totalPerThreads, int num_threads,
-						 int msg_size, String outputDir, int numOfClients, int load){
+						 int msg_size, String outputDir, int numOfClients, int load, int numsOfWarmUpPerThread){
 		this.zabboxInit =  Arrays.asList(zabHosts);
 		this.ProtocotName = protocolName;
 		this.propsFile = props;
@@ -80,10 +82,14 @@ public class ZABTestThreads extends ReceiverAdapter {
 		this.outputDir = outputDir;
 		this.numOfClients = numOfClients;
 		this.load = load;
+		this.numsOfWarmUpPerThread = numsOfWarmUpPerThread;
 
 		this.ID = ClassConfigurator
 					.getProtocolId((this.ProtocotName.equals("ZAB"))?ZAB.class:MMZAB.class);
 		
+	}
+
+	public ZABTestThreads() {
 	}
 
 	public void viewAccepted(View new_view) {
@@ -117,7 +123,6 @@ public class ZABTestThreads extends ReceiverAdapter {
 		JmxConfigurator.registerChannel(channel, Util.getMBeanServer(),
 				"jgroups", "ZABCluster", true);
 		Address coord = channel.getView().getMembers().get(0);
-
 	}
 	
 	public void setupClientThreads(){
@@ -126,11 +131,9 @@ public class ZABTestThreads extends ReceiverAdapter {
 		System.out.println("Host name for client"+ local_addr.toString().split("-")[0]);
 		clientThreads = new ClientThread[num_threads];
 		if (!zabboxInit.contains(local_addr.toString().split("-")[0])) {
-			System.out.println("Check for>>>>>>>" + (!zabboxInit.contains(local_addr.toString().split("-")[0])));
 			for (int i = 0; i < clientThreads.length; i++) {
-				System.out.println("Check for>>>>>>>" + (!zabboxInit.contains(local_addr.toString().split("-")[0])));
 				clientThreads[i] = new ClientThread(zabBox, barrier, num_msgs,
-						localSequence, payload, ProtocotName, num_msgsPerThreads, propsFile, load);
+						localSequence, payload, ProtocotName, num_msgsPerThreads, propsFile, load, numsOfWarmUpPerThread, this);
 			}
 		}
 
@@ -155,16 +158,22 @@ public class ZABTestThreads extends ReceiverAdapter {
 		//System.out.println("inside sendStartSign");
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZABHeader startHeader = new ZABHeader(ZABHeader.START_SENDING, 1, mid);
+		ZABHeader startHeader = new ZABHeader(ZABHeader.START_SENDING, -5, mid);
 		Message msg = new Message(null).putHeader(ID, startHeader);
 		msg.setObject("req");
 		channel.send(msg);
 	}
 	
 	public void resetProtocol() throws Exception {
+		numsThreadFinished=0;
+		avgTimeElpased =0;
+		avgRecievedOps=0;
+		is_warmUp =false;
+		this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
+				(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZABHeader resetProtocol = new ZABHeader(ZABHeader.RESET, 0, mid);
+		ZABHeader resetProtocol = new ZABHeader(ZABHeader.RESET, -4,  mid);
 		Message msg = new Message(null).putHeader(ID, resetProtocol);
 		channel.send(msg);
 	}
@@ -172,7 +181,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 	public void callRemotePrintStats() throws Exception{
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZABHeader stats = new ZABHeader(ZABHeader.STATS, -1, mid);
+		ZABHeader stats = new ZABHeader(ZABHeader.STATS, -3, mid);
 		Message msg = new Message(null).putHeader(ID, stats);
 		channel.send(msg);
 		
@@ -192,14 +201,16 @@ public class ZABTestThreads extends ReceiverAdapter {
 		final ZABHeader testHeader = (ZABHeader) msg.getHeader(ID);
 		
 			if (testHeader.getType() == ZABHeader.START_SENDING) {
-      	numsThreadFinished=0;
-	    	avgTimeElpased =0;
-		    avgRecievedOps=0;
-				System.out.println("I recieved START_SENDING");
+				numsThreadFinished=0;
+				avgTimeElpased =0;
+				avgRecievedOps=0;
+				is_warmUp = true;
+				System.out.println("Warm up starts");
 
 				for (int i = 0; i < clientThreads.length; i++) {
 					System.out.println("inside for i = "+i);
-					clientThreads[i].sendMessages();				
+					clientThreads[i].setWarmUp(true);
+					clientThreads[i].sendMessages(numsOfWarmUpPerThread);				
 			    }
 				try {
 					this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
@@ -209,16 +220,47 @@ public class ZABTestThreads extends ReceiverAdapter {
 					e.printStackTrace();
 				}
 	        }
+			else if (testHeader.getType() == ZABHeader.STARTREALTEST){
+				System.out.println("Recieved STARTREALTEST from "+msg.getSrc());
+
+				synchronized(this){
+					countRecieved++;
+					if (countRecieved==zabBox.size())
+						startRealTest();
+				}
+			}
 	}
+	
+	
 	
 	public synchronized static void finishedopsSoFar(long opNums, Sender sender){
 		//System.out.println("senter " + sender.getName()+ " has finished "+opNums+" ops");
 	}
 	
+	public synchronized void finishedSend() throws Exception{
+		numsThreadFinished++;
+		if (numsThreadFinished >= num_threads)
+			resetProtocol();
 	
+	}
+	
+	public void startRealTest(){
+		System.out.println("Real test starts");
+
+		for (int i = 0; i < clientThreads.length; i++) {
+			clientThreads[i].init();
+		}
+
+		for (int i = 0; i < clientThreads.length; i++) {
+			System.out.println("inside for i = "+i);
+			clientThreads[i].setWarmUp(false);
+			clientThreads[i].sendMessages(num_msgsPerThreads);				
+	    }
+	}
 
 	public synchronized static void result(long numOpsRecieved, Sender sender,
 			                              long timeElapsed, List<Long> latencies){
+		
 		numsThreadFinished++;
 		avgTimeElpased +=timeElapsed;
 		avgRecievedOps+=numOpsRecieved;
@@ -268,12 +310,21 @@ public class ZABTestThreads extends ReceiverAdapter {
         int numberOfMessages= 100000; // #Msgs to be executed by this node
         int totalMessages= 1000000; // #Msgs to be sent by the whole cluster
         int numOfClients= 10; 
+        int numWarmUp= 10000; 
+
 
         for (int i = 0; i < args.length; i++) {
 
-
+             	 
+        	if("-warmup".equals(args[i])) {
+                numWarmUp = Integer.parseInt(args[++i]);
+                System.out.println(numWarmUp);
+                continue;
+            }
+        	
         	if("-load".equals(args[i])) {
                 load = Integer.parseInt(args[++i]);
+                System.out.println(load);
                 continue;
             }
         	
@@ -318,7 +369,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 		try {
 			final ZABTestThreads test = new ZABTestThreads(zabboxInits, name, propsFile, totalMessages,
 															numberOfMessages, numsThreads, msgSize, 
-															outputDir, numOfClients, load);
+															outputDir, numOfClients, load, numWarmUp);
 			
 			test.setup();
 			test.setupClientThreads();
