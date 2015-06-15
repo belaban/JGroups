@@ -21,7 +21,6 @@
         <dependency org="org.apache.logging.log4j" name="log4j-core"      rev="2.+"/>
         <dependency org="org.testng"               name="testng"          rev="6.8.+"/>
         <dependency org="com.beust"                name="jcommander"      rev="1.+"/>
-        <dependency org="com.microsoft.azure"      name="azure-storage"   rev="2.2.0"/>
     </dependencies>
 
 </ivy-module>
