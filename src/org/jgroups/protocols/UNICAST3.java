@@ -510,7 +510,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             if(entry == null)
                 sendRequestForFirstSeqno(batch.sender());
             else {
-                if(msgs.keySet().retainAll(Arrays.asList(entry.connId()))) // remove all conn-ids that don't match
+                if(msgs.keySet().retainAll(Collections.singletonList(entry.connId()))) // remove all conn-ids that don't match
                     sendRequestForFirstSeqno(batch.sender());
                 List<Tuple<Long,Message>> list=msgs.get(entry.connId());
                 if(list != null && !list.isEmpty())
@@ -1229,7 +1229,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
-    protected static enum State {OPEN, CLOSING, CLOSED}
+    protected enum State {OPEN, CLOSING, CLOSED}
 
 
     /**
