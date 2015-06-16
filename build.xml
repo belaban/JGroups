@@ -79,11 +79,11 @@
 
     <!-- properties to determine IP version used -->
     <condition property="java.net.preferIPv4Stack" value="true" else="false">
-      <isfalse value="${jgroups.useIPv6}"/>
+        <isfalse value="${jgroups.useIPv6}"/>
     </condition>
 
     <condition property="java.net.preferIPv6Addresses" value="true" else="false">
-      <istrue value="${jgroups.useIPv6}"/>
+        <istrue value="${jgroups.useIPv6}"/>
     </condition>
 
 
@@ -200,6 +200,43 @@
 -->
 
 
+
+   <!-- <target name="publish" description="Publish to the staging Nexus repo" depends="define-staging-task">
+
+        <staging:nexusStagingInfo id="target-nexus"
+                                  stagingDirectory="${root.dir}/staging">
+            <staging:projectInfo groupId="org.jgroups"
+                                 artifactId="jgroups"
+                                 version="${jgroups.version}" />
+            <staging:connectionInfo
+                    baseUrl="${nexus.url}">
+                <staging:authentication
+                        username="${nexus.user}"
+                        password="${nexus.password}" />
+            </staging:connectionInfo>
+        </staging:nexusStagingInfo>
+
+
+        <echo message="use is ${nexus.user} and pwd is ${nexus.password}"/>
+
+        <staging:stageLocally>
+             <staging:nexusStagingInfo refid="target-nexus"/>
+            <fileset refid="artifacts"/>
+        </staging:stageLocally>
+        &lt;!&ndash;<staging:stageLocally>
+            <fileset dir="${dist.dir}/" includes="**/*.*"/>
+        </staging:stageLocally>&ndash;&gt;
+        <staging:stageRemotely>
+            <staging:nexusStagingInfo refid="target-nexus"/>
+        </staging:stageRemotely>
+        <staging:releaseStagingRepository autoDropAfterRelease="true">
+            <staging:nexusStagingInfo refid="target-nexus"/>
+        </staging:releaseStagingRepository>
+
+
+    </target>-->
+
+
     <target name="define-testng-task">
         <taskdef resource="testngtasks" classpathref="jg.classpath"/>
     </target>
@@ -209,6 +246,12 @@
                  uri="antlib:org.apache.ivy.ant" classpathref="jg.classpath"/>
     </target>
 
+   <!-- <target name="define-staging-task">
+        <taskdef uri="antlib:org.sonatype.nexus.ant.staging"
+                 resource="org/sonatype/nexus/ant/staging/antlib.xml" classpathref="jg.classpath">
+        </taskdef>
+    </target>
+-->
     <target name="prepare" depends="retrieve">
         <property environment="env"/>
         <mkdir dir="${compile.dir}"/>
@@ -487,7 +530,6 @@
         <delete dir="${root.dir}/target" failonerror="false"/>
         <delete dir="${keystore.dir}" failonerror="false"/>
         <delete file="${root.dir}/velocity.log*" failonerror="false"/>
-        <delete file="${root.dir}/pom.xml" failonerror="false"/>
         <delete file="${conf.dir}/MANIFEST.MF" failonerror="false"/>
         <delete>
             <fileset dir="${root.dir}" defaultexcludes="no">
