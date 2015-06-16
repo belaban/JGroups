@@ -58,13 +58,19 @@ public class McastReceiverTest {
         }
 
         try {
-            for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
-                NetworkInterface intf=(NetworkInterface)en.nextElement();
-                for(Enumeration e2=intf.getInetAddresses(); e2.hasMoreElements();) {
-                    bind_addr=(InetAddress)e2.nextElement();
-                    // System.out.println("Binding multicast socket to " + bind_addr);
-                    Receiver r=new Receiver(mcast_addr, bind_addr, port);
-                    r.start();
+            if (bind_addr != null) {
+                Receiver r=new Receiver(mcast_addr, bind_addr, port);
+                r.start();
+            }
+            else {
+                for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                    NetworkInterface intf=(NetworkInterface)en.nextElement();
+                    for(Enumeration e2=intf.getInetAddresses(); e2.hasMoreElements();) {
+                        bind_addr=(InetAddress)e2.nextElement();
+                        // System.out.println("Binding multicast socket to " + bind_addr);
+                        Receiver r=new Receiver(mcast_addr, bind_addr, port);
+                        r.start();
+                    }
                 }
             }
         }
