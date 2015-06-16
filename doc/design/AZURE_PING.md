@@ -21,12 +21,12 @@ following properties needed to authenticate and use the Azure Storage service:
  * storage_access_key - the secret access key
  * container - the name of the container to use for PING data
 
- To find out these values, do the following:
+To find out these values, do the following:
 
- # Navigate to the Azure management portal at [https://manage.windowsazure.com/](https://manage.windowsazure.com/)
- # Create new storage service via NEW &gt; DATA SERVICES &gt; STORAGE &gt; QUICK CREATE and provide desired
+ * Navigate to the Azure management portal at [https://manage.windowsazure.com/](https://manage.windowsazure.com/)
+ * Create new storage service via NEW &gt; DATA SERVICES &gt; STORAGE &gt; QUICK CREATE and provide desired
    configuration
- # Navigate to STORAGE &gt; (storage account name) &gt; MANAGE ACCESS KEYS
+ * Navigate to STORAGE &gt; (storage account name) &gt; MANAGE ACCESS KEYS
 
  _Described as of Azure console version June 2015._
 
