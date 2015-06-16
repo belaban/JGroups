@@ -15,4 +15,9 @@ jgroups.useIPv6=false
 # Override for manual and tutorial generation
 asciidoctor-style=./asciidoctor.css
 
+# Information to publish to Nexus
+nexus.url=https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/
+nexus.user=username
+nexus.password=password123
+
 
