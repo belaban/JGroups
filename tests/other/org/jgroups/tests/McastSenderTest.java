@@ -69,13 +69,19 @@ public class McastSenderTest {
         try {
             List<InetAddress> v=new ArrayList<>();
 
-            for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
-                NetworkInterface intf=(NetworkInterface)en.nextElement();
-                for(Enumeration e2=intf.getInetAddresses(); e2.hasMoreElements();) {
-                    bind_addr=(InetAddress)e2.nextElement();
-                    v.add(bind_addr);
+            if (bind_addr != null) {
+                v.add(bind_addr);
+            }
+            else {
+                for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                    NetworkInterface intf=(NetworkInterface)en.nextElement();
+                    for(Enumeration e2=intf.getInetAddresses(); e2.hasMoreElements();) {
+                        bind_addr=(InetAddress)e2.nextElement();
+                        v.add(bind_addr);
+                    }
                 }
             }
+
             sockets=new MulticastSocket[v.size()];
             for(int i=0; i < v.size(); i++) {
                 sock=new MulticastSocket(port);
@@ -130,7 +136,7 @@ public class McastSenderTest {
     static void help() {
         System.out.println("McastSenderTest [-bind_addr <bind address>] [-help] [-mcast_addr <multicast address>] " +
                 "[-port <multicast port that receivers are listening on>] " +
-                "[-ttl <time to live for mcast packets>] [-use_all_interfaces]");
+                "[-ttl <time to live for mcast packets>]");
     }
 
 
