@@ -2,7 +2,7 @@
         xmlns="urn:org:jgroups"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
     <UDP bind_addr="localhost"
-         bind_port="47000"/>
+         bind_port="1025"/>
     <PING            />
     <MERGE3         />
     <FD             />
@@ -12,7 +12,7 @@
     <pbcast.STABLE  />
     <FRAG           />
     <AUTH auth_class="org.jgroups.auth.FixedMembershipToken"
-          fixed_members_value="localhost/1010*localhost/1011"
+          fixed_members_value="localhost/1025*localhost/1026"
           fixed_members_seperator="*" />
     <pbcast.GMS     />
 </config>

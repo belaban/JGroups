@@ -22,7 +22,10 @@ public abstract class AuthToken implements Streamable {
         this.auth = auth;
     }
 
-    public void init() {}
+    public void init() throws Exception {}
+    public void start() throws Exception {}
+    public void stop() {}
+    public void destroy() {}
 
     /**
      * Used to return the full package and class name of the implementation. This is used by the

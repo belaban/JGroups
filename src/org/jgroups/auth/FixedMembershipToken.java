@@ -55,6 +55,14 @@ public class FixedMembershipToken extends AuthToken {
         fixed_members_seperator = value;
     }
 
+    /** Check if I'm in memberList, too */
+    /*public void start() throws Exception {
+        super.start();
+        IpAddress self=(IpAddress)auth.getPhysicalAddress();
+        if(!isInMembersList(self))
+            throw new IllegalStateException("own physical address " + self + " is not in members (" + memberList + ")");
+    } */
+
     public boolean authenticate(AuthToken token, Message msg) {
         if ((token != null) && (token instanceof FixedMembershipToken) && (this.memberList != null)) {
             PhysicalAddress src = (PhysicalAddress) auth.down(new Event(Event.GET_PHYSICAL_ADDRESS, msg.getSrc()));
@@ -88,10 +96,6 @@ public class FixedMembershipToken extends AuthToken {
     }
 
 
-    private static boolean hasPort(String member) {
-        return member.contains(":");
-    }
-
     @Property(name = "fixed_members_value")
     public void setMemberList(String list) throws UnknownHostException {
         memberList.clear();
@@ -106,25 +110,11 @@ public class FixedMembershipToken extends AuthToken {
         }
     }
 
-    /**
-     * Required to serialize the object to pass across the wire
-     * @param out
-     * @throws java.io.IOException
-     */
     public void writeTo(DataOutput out) throws Exception {
-        if (log.isDebugEnabled())
-            log.debug("SimpleToken writeTo()");
         Bits.writeString(this.token,out);
     }
 
-    /**
-     * Required to deserialize the object when read in from the wire
-     * @param in
-     * @throws Exception
-     */
     public void readFrom(DataInput in) throws Exception {
-        if (log.isDebugEnabled())
-            log.debug("SimpleToken readFrom()");
         this.token = Bits.readString(in);
     }
 

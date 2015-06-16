@@ -44,7 +44,7 @@ public class RegexMembership extends AuthToken {
     }
 
 
-    public void init() {
+    public void init() throws Exception {
         super.init();
         if(!match_ip_address && !match_logical_name)
             throw new IllegalArgumentException("either match_ip_address or match_logical_address has to be true");
