@@ -12,7 +12,7 @@
         <!-- nexus-staging-maven-plugin -->
         <autoReleaseAfterClose>true</autoReleaseAfterClose>
         <nexus.server.id>jboss-releases-repository</nexus.server.id>
-        <nexus.server.url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</nexus.server.url>
+        <nexus.server.url>https://repository.jboss.org/nexus</nexus.server.url>
     </properties>
 
     <description>
@@ -148,7 +148,6 @@
                     <nexusUrl>${nexus.server.url}</nexusUrl>
                     <serverId>${nexus.server.id}</serverId>
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                    <skipLocalStaging>true</skipLocalStaging>
                 </configuration>
             </plugin>
             <plugin>
