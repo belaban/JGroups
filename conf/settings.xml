@@ -18,6 +18,29 @@
 
     <profiles>
 
+
+
+        <profile>
+            <id>jboss-releases-repository</id>
+            <repositories>
+                <repository>
+                    <id>jboss-releases-repository</id>
+                    <name>JBoss Public Maven Repository Staging</name>
+                    <url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2</url>
+                    <layout>default</layout>
+                    <releases>
+                        <enabled>true</enabled>
+                        <updatePolicy>never</updatePolicy>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                        <updatePolicy>never</updatePolicy>
+                    </snapshots>
+                </repository>
+            </repositories>
+        </profile>
+
+
         <profile>
             <id>jboss-public-repository</id>
             <repositories>
