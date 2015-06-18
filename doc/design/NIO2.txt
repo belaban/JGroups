@@ -1,0 +1,17 @@
+
+
+NIO.2
+=====
+
+
+Gathering writes and scattering reads are not supported in DatagramChannel
+--------------------------------------------------------------------------
+- DatagramChannel.read() and write() are only possible if the channel is *connected*
+- However, we cannot connect a DatagramChannel as this defeats the purpose of having 1 channels for all sends and receives
+- So we have to resort to DatagramChannel.send() and receive(), which work on unconnected channels, but provide no
+  support for gathering writes and scattering reads
+
+
+Direct buffers
+--------------
+- With the above restriction, they cannot be supported at the DatagramChannel level, only for SocketChannels
