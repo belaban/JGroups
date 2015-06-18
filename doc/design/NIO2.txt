@@ -14,4 +14,28 @@ Gathering writes and scattering reads are not supported in DatagramChannel
 
 Direct buffers
 --------------
-- With the above restriction, they cannot be supported at the DatagramChannel level, only for SocketChannels
+- With the above restriction, direct buffers (ByteBuffer.allocateDirect()) cannot be supported for DatagramChannels,
+  only for SocketChannels
+
+
+
+Scattering reads on the receiving side
+--------------------------------------
+- We could write the JGroups metadata first (e.g. length, version etc), then the Infinispan metadata (put/get), then the
+  Infinispan data (key/value, as direct buffer) and do a scattering read into 3 buffers on the receiving side
+- However, since scattering reads are not supported by datagram channels, we have to read the *entire* UDP datagram
+  packet into a fixed size (65K) buffer
+  - If the packet's size is much smaller than 65K (e.g. 10K) we can copy it and pass only the 10K up
+
+
+Direct buffers and fragmentation
+--------------------------------
+- Fragmentation _might_ defeat the purpose of direct buffers
+- Investigate whether a direct buffer can be broken into multiple direct buffers with different
+  offsets and lengths (should be possible)
+
+
+Async Invocation API and buffer copying
+---------------------------------------
+- AIA can probably hold on to a buffer since that buffer was read into a new buffer in the transport
+- If the JGroups transport reused buffers, this would require a copy at the AIA level
