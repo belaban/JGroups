@@ -67,8 +67,7 @@ public class Relayer {
     public void start(List<RelayConfig.BridgeConfig> bridge_configs, String bridge_name, final String my_site_id)
       throws Throwable {
         if(done) {
-            if(log.isTraceEnabled())
-                log.trace(relay.getLocalAddress() + ": will not start the Relayer as stop() has been called");
+            log.trace(relay.getLocalAddress() + ": will not start the Relayer as stop() has been called");
             return;
         }
         try {
@@ -91,8 +90,7 @@ public class Relayer {
         }
         finally {
             if(done) {
-                if(log.isTraceEnabled())
-                    log.trace(relay.getLocalAddress() + ": stop() was called while starting the relayer; stopping the relayer now");
+                log.trace(relay.getLocalAddress() + ": stop() was called while starting the relayer; stopping the relayer now");
                 stop();
             }
         }
@@ -269,8 +267,7 @@ public class Relayer {
          */
         public void viewAccepted(View new_view) {
             this.view=new_view;
-            if(log.isTraceEnabled())
-                log.trace("[Relayer " + channel.getAddress() + "] view: " + new_view);
+            log.trace("[Relayer " + channel.getAddress() + "] view: " + new_view);
 
             RouteStatusListener       listener=relay.getRouteStatusListener();
             Map<String,List<Address>> tmp=extract(new_view);
