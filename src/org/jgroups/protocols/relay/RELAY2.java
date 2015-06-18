@@ -242,8 +242,7 @@ public class RELAY2 extends Protocol {
         site_config=sites.get(site);
         if(site_config == null)
             throw new Exception("site configuration for \"" + site + "\" not found in " + config);
-        if(log.isTraceEnabled())
-            log.trace(local_addr + ": site configuration:\n" + site_config);
+        log.trace(local_addr + ": site configuration:\n" + site_config);
 
         if(!site_config.getForwards().isEmpty())
             log.warn(local_addr + ": forwarding routes are currently not supported and will be ignored. This will change " +
@@ -274,8 +273,7 @@ public class RELAY2 extends Protocol {
     public void stop() {
         super.stop();
         is_site_master=false;
-        if(log.isTraceEnabled())
-            log.trace(local_addr + ": ceased to be site master; closing bridges");
+        log.trace(local_addr + ": ceased to be site master; closing bridges");
         if(relayer != null)
             relayer.stop();
     }
@@ -665,8 +663,7 @@ public class RELAY2 extends Protocol {
         else {
             if(cease_site_master) { // ceased being the site master: stop the relayer
                 is_site_master=false;
-                if(log.isTraceEnabled())
-                    log.trace(local_addr + ": ceased to be site master; closing bridges");
+                log.trace(local_addr + ": ceased to be site master; closing bridges");
                 if(relayer != null)
                     relayer.stop();
             }
@@ -676,8 +673,7 @@ public class RELAY2 extends Protocol {
 
     protected void startRelayer(Relayer rel, String bridge_name) {
         try {
-            if(log.isTraceEnabled())
-                log.trace(local_addr + ": became site master; starting bridges");
+            log.trace(local_addr + ": became site master; starting bridges");
             rel.start(site_config.getBridges(), bridge_name, site);
         }
         catch(Throwable t) {
