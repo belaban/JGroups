@@ -34,7 +34,11 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
-
+/* 
+ * Zab_0 is the same implemetation as Zab_0, but the follower will ack locally
+ * but the leader still sends commit message to follower, but it is ignored by follower
+ * 
+ */
 public class ZAB extends Protocol {
 	
 	private final AtomicLong                  zxid=new AtomicLong(0);
