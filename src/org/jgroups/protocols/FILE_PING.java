@@ -149,7 +149,8 @@ public class FILE_PING extends Discovery {
 
     protected static String addressToFilename(Address mbr) {
         String logical_name=UUID.get(mbr);
-        return addressAsString(mbr) + (logical_name != null? "." + logical_name + SUFFIX : SUFFIX);
+        return (addressAsString(mbr) + (logical_name != null? "." + logical_name + SUFFIX : SUFFIX))
+            .replace(File.separatorChar, '-');
     }
 
     protected void createRootDir() {
