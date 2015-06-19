@@ -43,6 +43,19 @@ Async Invocation API and buffer copying
 - If the JGroups transport reused buffers, this would require a copy at the AIA level
 
 
+Non-blocking reads and writes
+-----------------------------
+- Non-blocking reads reduce the number of threads to be used: currently we use 1 thread per connection in TCP for
+  reading. With non-blocking reads, we can use 1 thread to handle reading data off the sockets of *all* members
+  (we'll probably use a thread pool instead of 1 thread).
+- Non-blocking writes, however, return immediately and the select() returns with an OP_WRITE key for a channel when
+  more data can be written.
+- This is problematic, as writers would never block, even if the TCP socket's send buffer is full. Writes would
+  probably be added to a queue, off of which the thread woken up in select() would dequeue and send messages.
+  --> This can cause out-of-memory exceptions, as too much data is buffered in memory
+  --> The heap-based queue is yet another buffer, but the socket already has a buffer of its own (the send window)
+  --> I suggest we leave writes blocking
+  --> Issue: we cannot do non-blocking reads and blocking writes on the same channel !
 
 
 
@@ -58,6 +71,8 @@ Summary
 #1 The biggest advantage of NIO2 is its *asynchronous nature*: non-blocking reads/writes reduce the number of threads
    used for *TCP*. NIO2 doesn't apply to UDP, as we only have 2 sockets (DatagramSocket, MulticastSocket) and 1 thread
    servicing each.
+   - Note that, while non-blocking reads make sense because they don't occupy a thread, non-blocking writes don't make
+     sense (see above)
 
 #2 ByteBuffers have no advantage over {byte[],offset,length} tuples; as a matter of fact, each ByteBuffer carries
    additional variables which occupy memory if many ByteBuffers are used
