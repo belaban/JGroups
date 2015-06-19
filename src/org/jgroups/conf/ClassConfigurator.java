@@ -3,7 +3,7 @@ package org.jgroups.conf;
 
 
 import org.jgroups.Global;
-import org.jgroups.util.Tuple;
+import org.jgroups.util.Triple;
 import org.jgroups.util.Util;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -78,12 +78,19 @@ public class ClassConfigurator {
         }
 
         // Read jg-magic-map.xml
-        List<Tuple<Short,String>> mapping=readMappings(magic_number_file);
-        for(Tuple<Short,String> tuple: mapping) {
+        List<Triple<Short,String,Boolean>> mapping=readMappings(magic_number_file);
+        for(Triple<Short,String,Boolean> tuple: mapping) {
             short m=tuple.getVal1();
             if(m >= MAX_MAGIC_VALUE)
                 throw new IllegalArgumentException("ID " + m + " is bigger than MAX_MAGIC_VALUE (" +
                                                      MAX_MAGIC_VALUE + "); increase MAX_MAGIC_VALUE");
+            boolean external=tuple.getVal3();
+            if(external) {
+                if(magicMap[m] != null)
+                    throw new Exception("ID " + m + " (" + tuple.getVal2() + ')' +
+                                          " is already in magic map; make sure that all keys are unique");
+                continue;
+            }
             Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
             if(magicMap[m] != null)
                 throw new Exception("key " + m + " (" + clazz.getName() + ')' +
@@ -93,12 +100,20 @@ public class ClassConfigurator {
         }
 
         mapping=readMappings(protocol_id_file); // Read jg-protocol-ids.xml
-        for(Tuple<Short,String> tuple: mapping) {
+        for(Triple<Short,String,Boolean> tuple: mapping) {
             short m=tuple.getVal1();
+            boolean external=tuple.getVal3();
+            if(external) {
+                if(protocol_names.containsKey(m))
+                    throw new Exception("ID " + m + " (" + tuple.getVal2() + ')' +
+                                          " is already in protocol-ids map; make sure that all protocol IDs are unique");
+                continue;
+            }
+
             Class clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
             if(protocol_ids.containsKey(clazz))
                 throw new Exception("ID " + m + " (" + clazz.getName() + ')' +
-                                      " is already in protocol-id map; make sure that all protocol IDs are unique");
+                                      " is already in protocol-ids map; make sure that all protocol IDs are unique");
             protocol_ids.put(clazz, m);
             protocol_names.put(m, clazz);
         }
@@ -224,7 +239,7 @@ public class ClassConfigurator {
      *
      * @return an array of ClassMap objects that where parsed from the file (if found) or an empty array if file not found or had en exception
      */
-    protected static List<Tuple<Short,String>> readMappings(String name) throws Exception {
+    protected static List<Triple<Short,String,Boolean>> readMappings(String name) throws Exception {
         InputStream stream;
         stream=Util.getResourceAsStream(name, ClassConfigurator.class);
         // try to load the map from file even if it is not a Resource in the class path
@@ -233,13 +248,13 @@ public class ClassConfigurator {
         return parse(stream);
     }
 
-    protected static List<Tuple<Short,String>> parse(InputStream stream) throws Exception {
+    protected static List<Triple<Short,String,Boolean>> parse(InputStream stream) throws Exception {
         DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
         factory.setValidating(false); // for now
         DocumentBuilder builder=factory.newDocumentBuilder();
         Document document=builder.parse(stream);
         NodeList class_list=document.getElementsByTagName("class");
-        List<Tuple<Short,String>> list=new LinkedList<>();
+        List<Triple<Short,String,Boolean>> list=new LinkedList<>();
         for(int i=0; i < class_list.getLength(); i++) {
             if(class_list.item(i).getNodeType() == Node.ELEMENT_NODE) {
                 list.add(parseClassData(class_list.item(i)));
@@ -248,15 +263,20 @@ public class ClassConfigurator {
         return list;
     }
 
-    protected static Tuple<Short,String> parseClassData(Node protocol) {
+    protected static Triple<Short,String,Boolean> parseClassData(Node protocol) {
         protocol.normalize();
         NamedNodeMap attrs=protocol.getAttributes();
-        String clazzname;
-        String magicnumber;
+        String  clazzname;
+        String  magicnumber;
+        boolean external=false;
 
         magicnumber=attrs.getNamedItem("id").getNodeValue();
         clazzname=attrs.getNamedItem("name").getNodeValue();
-        return new Tuple<>(Short.valueOf(magicnumber), clazzname);
+
+        Node tmp=attrs.getNamedItem("external");
+        if(tmp != null)
+            external=Boolean.parseBoolean(tmp.getNodeValue());
+        return new Triple<>(Short.valueOf(magicnumber), clazzname,external);
     }
 
 
