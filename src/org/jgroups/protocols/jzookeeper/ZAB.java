@@ -2,10 +2,8 @@ package org.jgroups.protocols.jzookeeper;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -73,7 +71,7 @@ public class ZAB extends Protocol {
 	private long rateCount = 0;
 	private long currentCpuTime = 0, rateCountTime = 0, lastTimer = 0, lastCpuTime = 0;
 	private int lastArrayIndex = 0, lastArrayIndexUsingTime = 0 ;
-	private long timeInterval = 500;
+	private long timeInterval = 200;
 	private int lastFinished = 0;
 	private Timer timer;
 	private AtomicLong countMessageLeader = new AtomicLong(0);
@@ -83,13 +81,7 @@ public class ZAB extends Protocol {
 	private static long warmUp = 10000;
     private int largeLatCount = 0;
     private List<String> largeLatencies = new ArrayList<String>();
-    private boolean is_warmUp=true;
-    private List<Address> mainMembers = new ArrayList<Address>();
 
-
-    /* 
-     * Empty constructor
-     */
     public ZAB(){
     	
     }
@@ -117,35 +109,33 @@ public class ZAB extends Protocol {
     }
 
 
-    public void reset(Address client) {
-    	zxid.set(0); lastZxidProposed=0;  	
-    	lastZxidCommitted=0; requestQueue.clear();        
-    	queuedCommitMessage.clear(); queuedProposalMessage.clear();         
-        queuedMessages.clear(); outstandingProposals.clear();       
-        messageStore.clear(); latencies.clear();      
-        avgLatencies.clear(); avgLatenciesTimer.clear();       
-        numReqDeviverd= new AtomicInteger(0); numRequest= new AtomicInteger(0);      
-        startThroughputTime = 0; endThroughputTime = 0;
-        startThroughput = false; currentCpuTime = 0;       
-        rateCountTime = 0; lastTimer = 0;      
-        lastCpuTime = 0; lastArrayIndex = 0;    	
-    	lastArrayIndexUsingTime = 0 ; lastFinished = 0;    	
-    	countMessageLeader = new AtomicLong(0);//	 timer.cancel();    	
-    	largeLatCount=0; countMessageFollower=0;    	
-    	countTotalMessagesFollowers=0; rateCount=0;
-    	is_warmUp = false;
-    	try {
-			this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
-					(outDir+InetAddress.getLocalHost().getHostName()+"Zab.log",true)));
-    	}catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    	MessageId messageId = new MessageId(local_addr,
-				-10, System.currentTimeMillis());
-    	ZABHeader startTest = new ZABHeader(ZABHeader.STARTREALTEST, messageId);
-        Message confirmClient=new Message(client).putHeader(this.id, startTest);
-		down_prot.down(new Event(Event.MSG, confirmClient));     
+    public void reset() {
+    	zxid.set(0);
+    	lastZxidProposed=0;
+    	lastZxidCommitted=0;
+        requestQueue.clear();
+    	queuedCommitMessage.clear();
+        queuedProposalMessage.clear(); 
+        queuedMessages.clear();
+        outstandingProposals.clear();
+        messageStore.clear();
+        latencies.clear();
+        avgLatencies.clear();
+        avgLatenciesTimer.clear();
+        numReqDeviverd= new AtomicInteger(0);
+        numRequest= new AtomicInteger(0);
+        startThroughputTime = 0;
+        endThroughputTime = 0;
+        startThroughput = false;
+        currentCpuTime = 0;
+        rateCountTime = 0;
+        lastTimer = 0;
+        lastCpuTime = 0;
+    	lastArrayIndex = 0;
+    	lastArrayIndexUsingTime = 0 ;
+    	lastFinished = 0;
+    	countMessageLeader = new AtomicLong(0);
+	    
     }
     @Override
     public void stop() {
@@ -180,16 +170,22 @@ public class ZAB extends Protocol {
                 }
                 switch(hdr.getType()) {                
                    case ZABHeader.START_SENDING:
-                		//if(zabMembers.contains(local_addr))
-                			//is_warmUp = true;
-                		//else
-                			return up_prot.up(new Event(Event.MSG, msg));
+                	   if(!zabMembers.contains(local_addr))
+                		   return up_prot.up(new Event(Event.MSG, msg));
+                	   break;
                 	case ZABHeader.REQUEST:        
-                		
+                		if (!is_leader && !startThroughput){
+                			startThroughput = true;
+                			startThroughputTime = System.currentTimeMillis();
+                		      timer = new Timer();
+                			  timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
+	                	    //numRequest.incrementAndGet();
+                    		//queuedMessages.add(hdr);
+                		}
 	                		forwardToLeader(msg);                		
                 		break;
                 	case ZABHeader.RESET:
-  	                    reset(msg.getSrc());
+  	                    reset();
   	                	break;
                     case ZABHeader.FORWARD:   
 //                    	if (warmUpRequest.get() <= warmUp){
@@ -219,15 +215,8 @@ public class ZAB extends Protocol {
                 		break;
                     case ZABHeader.PROPOSAL:
 	                   	if (!is_leader){
-	                   		if (!is_warmUp && !startThroughput){
-	                			startThroughput = true;
-	                			startThroughputTime = System.currentTimeMillis();
-	                		    timer = new Timer();
-	                			timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
-		 
-	                		}
 	                   		hdr.getMessageId().setStartTime(System.currentTimeMillis());
-	            			sendACK(msg, hdr);
+	            			sendACK(msg);
 	            		}
 	                   	break;           		
                     case ZABHeader.ACK:
@@ -236,7 +225,7 @@ public class ZAB extends Protocol {
                 		}
                 		break;
                     case ZABHeader.COMMIT:
-                		 deliver(msg);
+                		// deliver(msg);
                 		 break;
                     case ZABHeader.STATS:
                     	//if(is_leader)
@@ -246,12 +235,8 @@ public class ZAB extends Protocol {
                     		sendTotalABMwssages(hdr);  
                     		log.info("Yes, I recieved count request");
                     	break;
-                    case ZABHeader.STARTREALTEST:
-                    	if(!zabMembers.contains(local_addr))
-                			return up_prot.up(new Event(Event.MSG, msg));
                     case ZABHeader.RESPONSE:
                     	handleOrderingResponse(hdr);
-                   
                     	
             }                
                 return null;
@@ -290,7 +275,7 @@ public class ZAB extends Protocol {
 
 		if (clientHeader != null
 				&& clientHeader.getType() == ZABHeader.START_SENDING) {
-			for (Address client : mainMembers) {
+			for (Address client : view.getMembers()) {
 				if (log.isDebugEnabled())
 					log.info("Address to check " + client);
 				if (!zabMembers.contains(client)) {
@@ -305,12 +290,11 @@ public class ZAB extends Protocol {
 
 		else if (clientHeader != null
 				&& clientHeader.getType() == ZABHeader.RESET) {
-			
+
 			for (Address server : zabMembers) {
 				// message.setDest(server);
 				Message resetMessage = new Message(server).putHeader(this.id,
 						clientHeader);
-				resetMessage.setSrc(local_addr);
 				down_prot.down(new Event(Event.MSG, resetMessage));
 			}
 		}
@@ -347,7 +331,7 @@ public class ZAB extends Protocol {
 			++index;
 			if (index > 2)
 				index = 0;
-			destination = zabMembers.get(index);
+			destination = zabMembers.get(0);
 			Message requestMessage = new Message(destination).putHeader(
 					this.id, hdrReq);
 			down_prot.down(new Event(Event.MSG, requestMessage));
@@ -363,9 +347,6 @@ public class ZAB extends Protocol {
         }
         if (mbrs.size() == 3){
         	zabMembers.addAll(v.getMembers());        	
-        }
-        if (mbrs.size() == 5){
-        	mainMembers.addAll(v.getMembers());        	
         }
         if (mbrs.size() > 3 && zabMembers.isEmpty()){
         	for (int i = 0; i < 3; i++) {
@@ -388,11 +369,13 @@ public class ZAB extends Protocol {
     private void forwardToLeader(Message msg) {
     	ZABHeader hdrReq = (ZABHeader) msg.getHeader(this.id);
  	   requestQueue.add(hdrReq.getMessageId());
-    	if (!is_warmUp && is_leader && !startThroughput){
+    	if (is_leader && !startThroughput){
 			startThroughput = true;
 			startThroughputTime = System.currentTimeMillis();
 		      timer = new Timer();
 			  timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
+    	    //numRequest.incrementAndGet();
+    		//queuedMessages.add(hdr);
 		}
 	   
 	   if (is_leader){
@@ -422,13 +405,14 @@ public class ZAB extends Protocol {
       
     }
     
-    private void sendACK(Message msg, ZABHeader hdrAck){
+    private void sendACK(Message msg){
    		numRequest.incrementAndGet();
+
     	if (msg == null )
     		return;
     	
-    	//ZABHeader hdr = (ZABHeader) msg.getHeader(this.id);
-    	if (hdrAck == null)
+    	ZABHeader hdr = (ZABHeader) msg.getHeader(this.id);
+    	if (hdr == null)
     		return;
     	
     	//if (hdr.getZxid() != lastZxidProposed + 1){
@@ -438,17 +422,18 @@ public class ZAB extends Protocol {
 //                    + Long.toHexString(lastZxidProposed + 1));
         //}
     	
-    	lastZxidProposed = hdrAck.getZxid();
-    	queuedProposalMessage.put(hdrAck.getZxid(), hdrAck);
-		ZABHeader hdrACK = new ZABHeader(ZABHeader.ACK, hdrAck.getZxid(), hdrAck.getMessageId());
+    	lastZxidProposed = hdr.getZxid();
+    	queuedProposalMessage.put(hdr.getZxid(), hdr);
+		ZABHeader hdrACK = new ZABHeader(ZABHeader.ACK, hdr.getZxid(), hdr.getMessageId());
 		Message ACKMessage = new Message(leader).putHeader(this.id, hdrACK);
-		if(!is_warmUp)
+		//if(startThroughput)
 			countMessageFollower++;
 		try{
     		down_prot.down(new Event(Event.MSG, ACKMessage));   
          }catch(Exception ex) {
     		log.error("failed sending ACK message to Leader");
     	} 
+		deliver(hdr.getZxid());
 		
 		
     }
@@ -472,6 +457,7 @@ public class ZAB extends Protocol {
         //}
 		
 		if(isQuorum(p.getAckCount())){ 	
+ 		   // log.info("Commiting processACK >>>>>>>>>>>>>"+ ackZxid);
             outstandingProposals.remove(ackZxid);
             commit(ackZxid);	
 		}
@@ -482,9 +468,7 @@ public class ZAB extends Protocol {
     private void commit(long zxidd){
 	    ZABHeader hdrOrg = queuedProposalMessage.get(zxidd);
    	    //log.info("Czxid = "+ hdrOrg.getZxid() + " " + getCurrentTimeStamp());
-	       synchronized(this){
-	    	   lastZxidCommitted = zxidd;
-	       }
+	     
 
 		   if (hdrOrg == null){
 			   log.info("??????????????????????????? Header is null (commit)"+ hdrOrg + " for zxid "+zxidd);
@@ -495,62 +479,68 @@ public class ZAB extends Protocol {
 	       Message commitMessage = new Message().putHeader(this.id, hdrCommit);	       
            for (Address address : zabMembers) {
         	   //if(!address.equals(leader) && startThroughput)
-        	   if(!is_warmUp && !address.equals(leader) )
+        	   if(!address.equals(leader)){
              	  countMessageLeader.incrementAndGet();
-              Message cpy = commitMessage.copy();
-              cpy.setDest(address);
-   		      //log.info("[" + local_addr + "] "+ "YYYYYYYY sending comit message zxid to = "+zxidd+":"+address);
-              down_prot.down(new Event(Event.MSG, cpy));   
+	              Message cpy = commitMessage.copy();
+	              cpy.setDest(address);
+	   		      //log.info("[" + local_addr + "] "+ "YYYYYYYY sending comit message zxid to = "+zxidd+":"+address);
+	              down_prot.down(new Event(Event.MSG, cpy));   
               
+        	   }
            }
+           deliver(zxidd);
+		   // log.info("Commiting commit >>>>>>>>>>>>>"+ zxidd);
+
 
 	    }
 		
-    private void deliver(Message toDeliver){
+    private void deliver(long zzxid){
 		//ZABHeader hdrOrginal = null;
-		ZABHeader hdr = (ZABHeader) toDeliver.getHeader(this.id);
-		long zxid = hdr.getZxid();
-
+		//ZABHeader hdr = (ZABHeader) toDeliver.getHeader(this.id);
+		//long zxid = hdr.getZxid();
+		  synchronized(this){
+	    	   lastZxidCommitted = zzxid;
+	       }
 //		log.info("[" + local_addr + "] "
 //				+ " recieved commit message (deliver) for zxid="
 //				+ hdr.getZxid() + " " + getCurrentTimeStamp());
 		//log.info("Dzxid = "+ hdr.getZxid() + " " + getCurrentTimeStamp());
-		ZABHeader hdrOrginal = queuedProposalMessage.remove(zxid);
+		ZABHeader hdrOrginal = queuedProposalMessage.remove(zzxid);
 		if (hdrOrginal == null) {
 			 if (log.isInfoEnabled())
 				 log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
-					+ hdrOrginal + " for zxid " + hdr.getZxid());
+					+ hdrOrginal + " for zxid " + zzxid);
 			return;
 		}
 //		log.info("!!!!!!!!!!!! check if (requestQueue.contains(hdrOrginal.getMessageId() (deliver)"
 //				+ requestQueue.contains(hdrOrginal.getMessageId()));
-		//numReqDeviverd.incrementAndGet();
 
-		queuedCommitMessage.put(zxid, hdrOrginal);
+		queuedCommitMessage.put(zzxid, hdrOrginal);
 		//synchronized(latencies){
-			if(!is_warmUp){
+			//if(startThroughput){
 				numReqDeviverd.incrementAndGet();
 				endThroughputTime = System.currentTimeMillis();
 				long startTime  = hdrOrginal.getMessageId().getStartTime();
 				latencies.add((int)(System.currentTimeMillis() - startTime));
 				rateCount++;
-			if (rateCount == rateInterval){
-				new StatsThread().start();;
-				rateCount=0;
-			}
-				if (numReqDeviverd.get()>=1000000){
+	//		if (rateCount == rateInterval){
+	//			StatsThread st = new StatsThread();
+	//			st.start();
+	//			rateCount=0;
+	//		}
+				if (numReqDeviverd.get()>=1000000)
 					timer.cancel();
-				}
-			}
-	//	}
-		
+			//}
+		//}
+			    //log.info("Commiting deliver >>>>>>>>>>>>>"+ zzxid);
+
 		if (log.isInfoEnabled())
-			log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+zxid);
+			log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+zzxid);
 		if (requestQueue.contains(hdrOrginal.getMessageId())) {
 			
 			//log.info("I am the zab request receiver, "+ hdr.getZxid());
 					//+ hdrOrginal.getMessageId().getAddress());
-			ZABHeader hdrResponse = new ZABHeader(ZABHeader.RESPONSE, hdr.getZxid(),
+			ZABHeader hdrResponse = new ZABHeader(ZABHeader.RESPONSE, zzxid,
 					hdrOrginal.getMessageId());
 			Message msgResponse = new Message(hdrOrginal.getMessageId()
 					.getAddress()).putHeader(this.id, hdrResponse);
@@ -597,9 +587,6 @@ public class ZAB extends Protocol {
 		
 		private void printMZabStats(){	
 			// print Min, Avg, and Max latency
-			List<Long> latAvg = new ArrayList<Long>();
-			int count =0;
-			long avgTemp =0;
 			long min = Long.MAX_VALUE, avg =0, max = Long.MIN_VALUE;
 			for (long lat : latencies){
 				if (lat < min){
@@ -608,14 +595,7 @@ public class ZAB extends Protocol {
 				if (lat > max){
 					max = lat;
 				}
-				avg+=lat;
-				avgTemp+=lat;
-				count++;
-				if(count>10000){
-					latAvg.add(avgTemp/count);
-					count=0;
-					avgTemp=0;
-				}
+				avg+=lat;	
 				
 			}
 
@@ -624,14 +604,11 @@ public class ZAB extends Protocol {
 			outFile.println("Total ZAB Messages = " + (countMessageLeader.get() + countTotalMessagesFollowers));
 			outFile.println("Throughput = " + (numReqDeviverd.get()/(TimeUnit.MILLISECONDS.toSeconds(endThroughputTime-startThroughputTime))));
 			outFile.println("Large Latencies count " + largeLatCount);	
-		
 			outFile.println("Large Latencies " + largeLatencies);	
 			outFile.println("Latency /Min= " + min + " /Avg= "+ (avg/latencies.size())+
 			        " /Max= " +max);	
 			outFile.println("Latency average rate with interval 100000 = " + 
 			        avgLatencies);
-			outFile.println("Latency average rate with No intervel = " + 
-					latAvg + " numbers avg = " + latAvg.size());
 			outFile.println("Latency average rate with interval 200 MillSec = " + 
 			        avgLatenciesTimer);
 			
@@ -746,9 +723,7 @@ public class ZAB extends Protocol {
             	long new_zxid = getNewZxid();
           	    numRequest.incrementAndGet();
 
-            	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, new_zxid, hdrReq.getMessageId()); 
-            	hdrProposal.getMessageId().setStartTime(System.currentTimeMillis());
-
+            	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, new_zxid, hdrReq.getMessageId());                
                 Message ProposalMessage=new Message().putHeader(this.id, hdrProposal);
 
                 ProposalMessage.setSrc(local_addr);
@@ -756,6 +731,7 @@ public class ZAB extends Protocol {
             	p.setMessageId(hdrReq.getMessageId());
             	p.AckCount++;            	            	
             	outstandingProposals.put(new_zxid, p);
+            	hdrProposal.getMessageId().setStartTime(System.currentTimeMillis());
             	queuedProposalMessage.put(new_zxid, hdrProposal);
             	
             	          	
@@ -764,8 +740,8 @@ public class ZAB extends Protocol {
                  	for (Address address : zabMembers) {
                         if(address.equals(leader))
                         	continue;
-                        if(!is_warmUp)
-                        	countMessageLeader.incrementAndGet();
+                        //if(startThroughput)
+                		countMessageLeader.incrementAndGet();
                         Message cpy = ProposalMessage.copy();
                         cpy.setDest(address);
                 		down_prot.down(new Event(Event.MSG, cpy));     
@@ -785,7 +761,6 @@ public class ZAB extends Protocol {
 	 public class StatsThread extends Thread{
 		 public void run(){
 			 int avg = 0, elementCount = 0;
-			 List<Integer> copyLat = new ArrayList<Integer>(latencies);
 			 for (int i =  lastArrayIndex; i < latencies.size(); i++){
 				 avg+=latencies.get(i);
 				 elementCount++;
@@ -816,7 +791,7 @@ public class ZAB extends Protocol {
 				 avg+=latencies.get(i);
 				 elementCount++;
 			 }
-			 //log.info("Time task invoke ++++++++++++++++++++++++++++++++++++++++++++++");
+			 
 			 lastArrayIndexUsingTime = latencies.size()-1;
 			 avg= avg/elementCount;
 		 
