@@ -23,6 +23,8 @@ Scattering reads on the receiving side
 --------------------------------------
 - We could write the JGroups metadata first (e.g. length, version etc), then the Infinispan metadata (put/get), then the
   Infinispan data (key/value, as direct buffer) and do a scattering read into 3 buffers on the receiving side
+  - To allocate direct memory for the Infinispan buffer, JGroups would have to invoke a callback (into Infinispan) to
+    obtain the buffer (via jemalloc). Not nice...
 - However, since scattering reads are not supported by datagram channels, we have to read the *entire* UDP datagram
   packet into a fixed size (65K) buffer
   - If the packet's size is much smaller than 65K (e.g. 10K) we can copy it and pass only the 10K up
@@ -39,3 +41,30 @@ Async Invocation API and buffer copying
 ---------------------------------------
 - AIA can probably hold on to a buffer since that buffer was read into a new buffer in the transport
 - If the JGroups transport reused buffers, this would require a copy at the AIA level
+
+
+
+
+
+Memory-mapped files for exchange of messages between members on the same box
+----------------------------------------------------------------------------
+- No notifications when data is ready (FileChannel doesn't implement SelectableChannel)
+
+
+
+
+Summary
+-------
+#1 The biggest advantage of NIO2 is its *asynchronous nature*: non-blocking reads/writes reduce the number of threads
+   used for *TCP*. NIO2 doesn't apply to UDP, as we only have 2 sockets (DatagramSocket, MulticastSocket) and 1 thread
+   servicing each.
+
+#2 ByteBuffers have no advantage over {byte[],offset,length} tuples; as a matter of fact, each ByteBuffer carries
+   additional variables which occupy memory if many ByteBuffers are used
+   - If direct memory is used, then ByteBuffers are required: direct ByteBuffers don't allow access to the underlying
+     array
+
+#3 For multiple transports, NIO2 is not required
+
+#4 For exchange of messages between member on the same box, NIO2 can be used to access shared memory without having to
+   use JNI (memory mapped files)
