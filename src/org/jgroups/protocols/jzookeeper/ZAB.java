@@ -84,8 +84,12 @@ public class ZAB extends Protocol {
     private int largeLatCount = 0;
     private List<String> largeLatencies = new ArrayList<String>();
     private boolean is_warmUp=true;
+    private List<Address> mainMembers = new ArrayList<Address>();
 
 
+    /* 
+     * Empty constructor
+     */
     public ZAB(){
     	
     }
@@ -220,8 +224,7 @@ public class ZAB extends Protocol {
 	                			startThroughputTime = System.currentTimeMillis();
 	                		    timer = new Timer();
 	                			timer.schedule(new ResubmitTimer(), timeInterval, timeInterval);
-		                	    //numRequest.incrementAndGet();
-	                    		//queuedMessages.add(hdr);
+		 
 	                		}
 	                   		hdr.getMessageId().setStartTime(System.currentTimeMillis());
 	            			sendACK(msg, hdr);
@@ -287,7 +290,7 @@ public class ZAB extends Protocol {
 
 		if (clientHeader != null
 				&& clientHeader.getType() == ZABHeader.START_SENDING) {
-			for (Address client : view.getMembers()) {
+			for (Address client : mainMembers) {
 				if (log.isDebugEnabled())
 					log.info("Address to check " + client);
 				if (!zabMembers.contains(client)) {
@@ -360,6 +363,9 @@ public class ZAB extends Protocol {
         }
         if (mbrs.size() == 3){
         	zabMembers.addAll(v.getMembers());        	
+        }
+        if (mbrs.size() == 5){
+        	mainMembers.addAll(v.getMembers());        	
         }
         if (mbrs.size() > 3 && zabMembers.isEmpty()){
         	for (int i = 0; i < 3; i++) {
@@ -532,8 +538,9 @@ public class ZAB extends Protocol {
 				new StatsThread().start();;
 				rateCount=0;
 			}
-				if (numReqDeviverd.get()>=1000000)
+				if (numReqDeviverd.get()>=1000000){
 					timer.cancel();
+				}
 			}
 	//	}
 		
@@ -590,6 +597,9 @@ public class ZAB extends Protocol {
 		
 		private void printMZabStats(){	
 			// print Min, Avg, and Max latency
+			List<Long> latAvg = new ArrayList<Long>();
+			int count =0;
+			long avgTemp =0;
 			long min = Long.MAX_VALUE, avg =0, max = Long.MIN_VALUE;
 			for (long lat : latencies){
 				if (lat < min){
@@ -598,7 +608,14 @@ public class ZAB extends Protocol {
 				if (lat > max){
 					max = lat;
 				}
-				avg+=lat;	
+				avg+=lat;
+				avgTemp+=lat;
+				count++;
+				if(count>10000){
+					latAvg.add(avgTemp/count);
+					count=0;
+					avgTemp=0;
+				}
 				
 			}
 
@@ -613,6 +630,8 @@ public class ZAB extends Protocol {
 			        " /Max= " +max);	
 			outFile.println("Latency average rate with interval 100000 = " + 
 			        avgLatencies);
+			outFile.println("Latency average rate with No intervel = " + 
+					latAvg + " numbers avg = " + latAvg.size());
 			outFile.println("Latency average rate with interval 200 MillSec = " + 
 			        avgLatenciesTimer);
 			
@@ -767,12 +786,12 @@ public class ZAB extends Protocol {
 		 public void run(){
 			 int avg = 0, elementCount = 0;
 			 List<Integer> copyLat = new ArrayList<Integer>(latencies);
-			 for (int i =  lastArrayIndex; i < copyLat.size(); i++){
-				 avg+=copyLat.get(i);
+			 for (int i =  lastArrayIndex; i < latencies.size(); i++){
+				 avg+=latencies.get(i);
 				 elementCount++;
 			 }
 			 
-			 lastArrayIndex = copyLat.size() - 1;
+			 lastArrayIndex = latencies.size() - 1;
 			 avg= avg/elementCount;
 			 avgLatencies.add(avg);
 		 }

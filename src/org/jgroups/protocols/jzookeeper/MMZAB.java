@@ -96,8 +96,8 @@ public class MMZAB extends Protocol {
 	private long rateCount = 0;
     private boolean is_warmUp=true;
 	private int longWait = Integer.MIN_VALUE;
-
-
+    private List<Address> mainMembers = new ArrayList<Address>();
+    private volatile boolean makeAllFollowersAck=false;
 
     public MMZAB(){
     	
@@ -149,7 +149,7 @@ public class MMZAB extends Protocol {
 			e.printStackTrace();
 		}
     	avgLatencies.clear();avgLatenciesTimer.clear();   	
-    	currentCpuTime=0;
+    	currentCpuTime=0; makeAllFollowersAck=false;
     	MessageId messageId = new MessageId(local_addr,
 				-10, System.currentTimeMillis());
     	ZABHeader startTest = new ZABHeader(ZABHeader.STARTREALTEST, messageId);
@@ -254,11 +254,11 @@ public class MMZAB extends Protocol {
                     	lastRequestRecieved=System.currentTimeMillis();
                     	recievedFirstRequest = true;
                     	//log.info("Start--------------------------------------------------- _timer");
-                    	if (!is_warmUp && !startSending){
-	                    	_timer = new Timer();
-	        				_timer.scheduleAtFixedRate(new FinishTask(this.id), 200, 200);
-	                    	startSending=true;
-                    	}
+                    	//if (!is_warmUp && !startSending){
+	                    	//_timer = new Timer();
+	        				//_timer.scheduleAtFixedRate(new FinishTask(this.id), 200, 200);
+	                    	//startSending=true;
+                    	//}
                     	//lastRequestRecieved = System.currentTimeMillis();
                 		queuedMessages.add(hdr);
                 		break;
@@ -329,17 +329,20 @@ public class MMZAB extends Protocol {
     	ZABHeader clientHeader = ((ZABHeader) message.getHeader(this.id));
     	if (clientHeader!=null && clientHeader.getType() == ZABHeader.START_SENDING){
 
-    		for (Address client : view.getMembers()){
- 			   if (log.isInfoEnabled())
- 				   log.info("Address to check " + client);
-        	  // if (!zabMembers.contains(client)){
-				   if (log.isInfoEnabled())
-	        	 	    log.info("Address to check is not zab Members, will send start request to" + client+ " "+ getCurrentTimeStamp());
-	        		message.setDest(client);
-	        	    down_prot.down(new Event(Event.MSG, message));    	
-        		//}
-        		
-    	}
+    		if (clientHeader != null
+    				&& clientHeader.getType() == ZABHeader.START_SENDING) {
+    			for (Address client : mainMembers) {
+    				if (log.isDebugEnabled())
+    					log.info("Address to check " + client);
+    				if (!zabMembers.contains(client)) {
+    					if (log.isDebugEnabled())
+    						log.info("Address to check is not zab Members, will send start request to"
+    								+ client + " " + getCurrentTimeStamp());
+    					message.setDest(client);
+    					down_prot.down(new Event(Event.MSG, message));
+    				}
+    			}
+    		}
     	}
     	
 
@@ -397,6 +400,9 @@ public class MMZAB extends Protocol {
         if (mbrs.size() == 3){
         	zabMembers.addAll(v.getMembers());        	
         	
+        }
+        if (mbrs.size() == 5){
+        	mainMembers.addAll(v.getMembers());        	
         }
         if (mbrs.size() > 3 && zabMembers.isEmpty()){
         	for (int i = 0; i < 3; i++) {
@@ -506,7 +512,7 @@ public class MMZAB extends Protocol {
     	}    
 		}
 		
-		else if (ZUtil.SendAckOrNoSend()){// || makeAllFollowersAck) {
+		else if (ZUtil.SendAckOrNoSend() || makeAllFollowersAck) {
 
 //			log.info("["
 //					+ local_addr
@@ -695,11 +701,14 @@ public class MMZAB extends Protocol {
 				endThroughputTime = System.currentTimeMillis();
 				long startTime  = hdrOrginal.getMessageId().getStartTime();
 				latencies.add((int)(System.currentTimeMillis() - startTime));
-				rateCount++;
-			if (rateCount == rateInterval){
-				new StatsThread().start();
-				rateCount=0;
-			}		
+//				rateCount++;
+//			if (rateCount == rateInterval){
+//				new StatsThread().start();
+//				rateCount=0;
+//			}		
+				if (numReqDeviverd.get()>=999000){
+					makeAllFollowersAck = true;
+					}
 				if (numReqDeviverd.get()>=1000000){
 					timer.cancel();
 					//_timer.cancel();

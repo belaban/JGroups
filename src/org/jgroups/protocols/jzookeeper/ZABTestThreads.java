@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,6 +68,8 @@ public class ZABTestThreads extends ReceiverAdapter {
     private static boolean is_warmUp = false;
     private long numsOfWarmUpPerThread = 0;
     private int countRecieved = 0;
+    private static boolean initiated = false;
+
 
 
 	public ZABTestThreads(String [] zabHosts, String protocolName, String props,
@@ -126,10 +129,12 @@ public class ZABTestThreads extends ReceiverAdapter {
 	}
 	
 	public void setupClientThreads(){
-
+		initiated = true;
 		final CyclicBarrier barrier = new CyclicBarrier(num_threads + 1);
 		System.out.println("Host name for client"+ local_addr.toString().split("-")[0]);
 		clientThreads = new ClientThread[num_threads];
+		System.out.println("(!zabboxInit.contains[0])"+(!zabboxInit.contains(local_addr.toString().split("-")[0])));
+
 		if (!zabboxInit.contains(local_addr.toString().split("-")[0])) {
 			for (int i = 0; i < clientThreads.length; i++) {
 				clientThreads[i] = new ClientThread(zabBox, barrier, num_msgs,
@@ -169,8 +174,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 		avgTimeElpased =0;
 		avgRecievedOps=0;
 		is_warmUp =false;
-		this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
-				(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
+		
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
 		ZABHeader resetProtocol = new ZABHeader(ZABHeader.RESET, -4,  mid);
@@ -200,51 +204,62 @@ public class ZABTestThreads extends ReceiverAdapter {
 	public void receive(Message msg) {
 		final ZABHeader testHeader = (ZABHeader) msg.getHeader(ID);
 		
-			if (testHeader.getType() == ZABHeader.START_SENDING) {
-				numsThreadFinished=0;
-				avgTimeElpased =0;
-				avgRecievedOps=0;
-				is_warmUp = true;
-				System.out.println("Warm up starts");
-
-				for (int i = 0; i < clientThreads.length; i++) {
-					System.out.println("inside for i = "+i);
-					clientThreads[i].setWarmUp(true);
-					clientThreads[i].sendMessages(numsOfWarmUpPerThread);				
-			    }
-				try {
-					this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
-							(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-	        }
-			else if (testHeader.getType() == ZABHeader.STARTREALTEST){
+			
+			if (testHeader.getType() == ZABHeader.STARTREALTEST){
 				System.out.println("Recieved STARTREALTEST from "+msg.getSrc());
 
 				synchronized(this){
 					countRecieved++;
 					if (countRecieved==zabBox.size())
-						startRealTest();
+						try {
+							sendStartSign();
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 				}
+			}
+			
+			else if (testHeader.getType() == ZABHeader.START_SENDING){
+				startRealTest();
 			}
 	}
 	
 	
 	
-	public synchronized static void finishedopsSoFar(long opNums, Sender sender){
-		//System.out.println("senter " + sender.getName()+ " has finished "+opNums+" ops");
-	}
+	public void warmUp(){
+			
+			System.out.println("Warm up starts");
+
+			for (int i = 0; i < clientThreads.length; i++) {
+				System.out.println("inside for i = "+i);
+				clientThreads[i].setWarmUp(true);
+				clientThreads[i].sendMessages(numsOfWarmUpPerThread);				
+		    }
+			
+      }
 	
 	public synchronized void finishedSend() throws Exception{
 		numsThreadFinished++;
 		if (numsThreadFinished >= num_threads)
 			resetProtocol();
-	
 	}
 	
 	public void startRealTest(){
+		try {
+			this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
+					(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		numsThreadFinished=0;
+		avgTimeElpased =0;
+		avgRecievedOps=0;
+		is_warmUp = true;
 		System.out.println("Real test starts");
 
 		for (int i = 0; i < clientThreads.length; i++) {
@@ -283,16 +298,16 @@ public class ZABTestThreads extends ReceiverAdapter {
 			}
 			avg+=lat;			
 		}
-		outFile.println("Sender " + sender.getName()+ " Finished "+
-				numOpsRecieved + " Throughput per sender "+(numOpsRecieved/TimeUnit.MILLISECONDS.toSeconds(timeElapsed))+" ops/sec"
-				+" /Latency-----> Min = " + min + " /Avg = "+ (avg/latencies.size())+
-		        " /Max = " +max);
+		//outFile.println("Sender " + sender.getName()+ " Finished "+
+				//numOpsRecieved + " Throughput per sender "+(numOpsRecieved/TimeUnit.MILLISECONDS.toSeconds(timeElapsed))+" ops/sec"
+				//+" /Latency-----> Min = " + min + " /Avg = "+ (avg/latencies.size())+
+		       // " /Max = " +max);
 		if (numsThreadFinished >= num_threads){
 			avgTimeElpased/=numsThreadFinished;
-			outFile.println("Throughput Per Client " +(avgRecievedOps/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))+" ops/sec");
-			outFile.println("Throughput All Cluster " +((avgRecievedOps*numOfClients)/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))
-					+" ops/sec");
-		    outFile.println("Test Generated at "+ new Date()+ " Lasted for " + TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased)); 
+			//outFile.println("Throughput Per Client " +(avgRecievedOps/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))+" ops/sec");
+			//outFile.println("Throughput All Cluster " +((avgRecievedOps*numOfClients)/TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased))
+					//+" ops/sec");
+		    //outFile.println("Test Generated at "+ new Date()+ " Lasted for " + TimeUnit.MILLISECONDS.toSeconds(avgTimeElpased)); 
 			System.out.println("File closed" +"############################################"); 
 			outFile.close();	
 		}
@@ -372,7 +387,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 															outputDir, numOfClients, load, numWarmUp);
 			
 			test.setup();
-			test.setupClientThreads();
+			//test.setupClientThreads();
 			test.loop();
 
 	} catch (Exception e) {
@@ -384,8 +399,8 @@ public class ZABTestThreads extends ReceiverAdapter {
 	public void loop() {
 		int c;
 		System.out.println("Zab members are "+ zabBox);;
-		final String INPUT = "[1] Send start request to all clients \n[2] Reset the protocol \n[3] print Throughput and Min/Avg/Max latency \n[4] Change number  of message\n"
-				+ "[4] calculate AB Message \n[5] Print Zab meberes \n"
+		final String INPUT = "[1] Join the cluster [2] Send start request to all clients \n[3] Reset the protocol \n[4] print Throughput and Min/Avg/Max latency \n[5] calculate AB Message\n"
+				+ "[6] Channel Size \n[7] Print Zab meberes \n"
 				+ "";
 
 		while (true) {
@@ -393,32 +408,37 @@ public class ZABTestThreads extends ReceiverAdapter {
 				c = Util.keyPress(String.format(INPUT));
 				switch (c) {
 				case '1':
+					if (!initiated)
+						setupClientThreads();
+					break;
+				case '2':
 					for (int i = 0; i < clientThreads.length; i++) {
 						clientThreads[i].init();
 					}
 					System.out.println("Start Test ----->");
-					sendStartSign();
+					warmUp();
 					break;
-				case '2':
+				case '3':
 					resetProtocol();
 					// System.out.println("view: " + channel.getView() +
 					// " (local address=" + channel.getAddress() + ")");
 					break;
-				case '3':
+				case '4':
 					 callRemotePrintStats();
 					//System.out.println("Enter number of message");
 					// num_msgs = read.nextLong();
 					break;
-				case '4':
+				case '5':
 					calculateABMessage();
 					//System.out.println("Enter Size of message");
 					//msg_size = read.nextInt();
 					break;
-				case '5':
+				case '6':
 					System.out.println("Zab members are "+ zabBox);
+					System.out.println("View Size "+ view.getMembers().size());
 					// num_threads = read.nextInt();
 					break;
-				case '6':
+				case '7':
 					// ProtocolStack stack=channel.getProtocolStack();
 					// String cluster_name=channel.getClusterName();
 					try {
