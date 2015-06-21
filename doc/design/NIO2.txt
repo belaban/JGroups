@@ -56,6 +56,10 @@ Non-blocking reads and writes
   --> The heap-based queue is yet another buffer, but the socket already has a buffer of its own (the send window)
   --> I suggest we leave writes blocking
   --> Issue: we cannot do non-blocking reads and blocking writes on the same channel !
+  - Hmm, perhaps non-blocking writes can be used and a fixed number of messages can wait to be written in a bounded queue
+  - When the queue is full, subsequent messages would get dropped
+  - Retransmission takes care of resending the dropped messages anyway, and dropping has the effect that flow control
+    will throttle fast senders
 
 
 
