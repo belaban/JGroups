@@ -90,6 +90,30 @@ Summary
 
 
 
+Main advantages of using NIO.2
+------------------------------
+- Fewer threads in TCP. This could be achieved by reviving TCP_NIO (TCP_NIO2)
+- Direct memory (but only for TCP, and only on the send side)
+  --> Is this avoiding of 1 copy really that much faster (test perf) ?
+
+
+Main disadvantages
+------------------
+- There have been reports that NIO is slower than BIO
+- Big change to the API (Message, JChannel.send() etc) --> I don't like this !
+- Bulky ByteBuffer class with too many unneeded fields (using a lot of memory)
+- Complicated ref counting with direct ByteBuffers (see below under "Issues")
+
+
+
+Issues
+------
+- When Infinispan uses jemalloc (which grabs a large off-heap memory area and manages allocated memory) and passes a
+  direct buffer to JGroups, then that buffer cannot be reused on send() returning, as it will be stored somewhere
+  (w.g. in NAKACK2) for potential retransmission.
+  - Looks like we'd have to introduce some ref-counted direct memory, which complicates things
+
+
 Misc
 ----
 - There have been a number of reports that claim NIO is slower than BIO, investigate and run perf tests
