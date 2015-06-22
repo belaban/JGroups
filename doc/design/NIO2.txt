@@ -87,3 +87,11 @@ Summary
 
 #4 For exchange of messages between member on the same box, NIO2 can be used to access shared memory without having to
    use JNI (memory mapped files)
+
+
+
+Misc
+----
+- There have been a number of reports that claim NIO is slower than BIO, investigate and run perf tests
+
+
