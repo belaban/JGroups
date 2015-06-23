@@ -208,7 +208,7 @@ public class TUNNEL extends TP {
                             break mainloop;
                         case GossipRouter.MESSAGE:
                             byte[] data = msg.getBuffer();
-                            receive(null/* src will be read from data */, data, 0, data.length);
+                            receive(null/* src will be read from data */, data, 0, data.length, false);
                             break;
                         case GossipRouter.SUSPECT:
                             final Address suspect = Util.readAddress(input);

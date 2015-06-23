@@ -71,7 +71,7 @@ public class SHARED_LOOPBACK extends TP {
             if(local_addr != null && local_addr.equals(dest))
                 continue; // message was already looped back
             try {
-                target.receive(local_addr, data, offset, length);
+                target.receive(local_addr, data, offset, length, true);
             }
             catch(Throwable t) {
                 log.error("failed sending message to " + dest, t);
@@ -94,7 +94,7 @@ public class SHARED_LOOPBACK extends TP {
             log.trace("destination address " + dest + " not found");
             return;
         }
-        target.receive(local_addr, buf, offset, length);
+        target.receive(local_addr, buf, offset, length, true);
     }
 
 

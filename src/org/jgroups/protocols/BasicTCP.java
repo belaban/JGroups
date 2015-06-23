@@ -136,7 +136,9 @@ public abstract class BasicTCP extends TP {
 
     /** ConnectionMap.Receiver interface */
     public void receive(Address sender, byte[] data, int offset, int length) {
-        super.receive(sender, data, offset, length);
+        // no need to make a copy of the byte[] buffer as TCPConnectionMap already created a new buffer
+        // (https://issues.jboss.org/browse/JGRP-1935)
+        super.receive(sender, data, offset, length, false);
     }
 
     protected Object handleDownEvent(Event evt) {
