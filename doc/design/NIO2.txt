@@ -6,16 +6,16 @@ NIO.2
 
 Gathering writes and scattering reads are not supported in DatagramChannel
 --------------------------------------------------------------------------
-- DatagramChannel.read() and write() are only possible if the channel is *connected*
-- However, we cannot connect a DatagramChannel as this defeats the purpose of having 1 channels for all sends and receives
-- So we have to resort to DatagramChannel.send() and receive(), which work on unconnected channels, but provide no
+- DatagramChannel.read(ByteBuffer[]) and write(ByteBuffer[]) are only possible if the channel is *connected*
+- However, we cannot connect a DatagramChannel as this defeats the purpose of having 1 channel for *all* sends and receives
+- So we have to resort to DatagramChannel.send() and receive(), which work on unconnected channels, but provides no
   support for gathering writes and scattering reads
 
 
 Direct buffers
 --------------
 - With the above restriction, direct buffers (ByteBuffer.allocateDirect()) cannot be supported for DatagramChannels,
-  only for SocketChannels
+  only for SocketChannels.
 
 
 
@@ -34,7 +34,7 @@ Direct buffers and fragmentation
 --------------------------------
 - Fragmentation _might_ defeat the purpose of direct buffers
 - Investigate whether a direct buffer can be broken into multiple direct buffers with different
-  offsets and lengths (should be possible)
+  offsets and lengths (should be possible with ByteBuffer.slice())
 
 
 Async Invocation API and buffer copying
@@ -66,17 +66,17 @@ Non-blocking reads and writes
 Memory-mapped files for exchange of messages between members on the same box
 ----------------------------------------------------------------------------
 - No notifications when data is ready (FileChannel doesn't implement SelectableChannel)
-
+- Shared memory is difficult to use for multicasts (one producer - many consumers)
+  - E.g. a ring buffer could only advance its read pointer when it know that all consumers have read the buffer
+  - Even then, the buffer can not be overwritten until all members have purged the message via STABLE !
 
 
 
 Summary
 -------
 #1 The biggest advantage of NIO2 is its *asynchronous nature*: non-blocking reads/writes reduce the number of threads
-   used for *TCP*. NIO2 doesn't apply to UDP, as we only have 2 sockets (DatagramSocket, MulticastSocket) and 1 thread
-   servicing each.
-   - Note that, while non-blocking reads make sense because they don't occupy a thread, non-blocking writes don't make
-     sense (see above)
+   used for *TCP*. NIO2 doesn't apply to UDP, which already is non-blocking, as we only have 2 sockets
+   (DatagramSocket, MulticastSocket) and 1 thread servicing each.
 
 #2 ByteBuffers have no advantage over {byte[],offset,length} tuples; as a matter of fact, each ByteBuffer carries
    additional variables which occupy memory if many ByteBuffers are used
@@ -92,7 +92,7 @@ Summary
 
 Main advantages of using NIO.2
 ------------------------------
-- Fewer threads in TCP. This could be achieved by reviving TCP_NIO (TCP_NIO2)
+- Fewer threads in TCP. However, this could also be achieved by reviving TCP_NIO (TCP_NIO2)
 - Direct memory (but only for TCP, and only on the send side)
   --> Is this avoiding of 1 copy really that much faster (test perf) ?
 
@@ -110,12 +110,16 @@ Issues
 ------
 - When Infinispan uses jemalloc (which grabs a large off-heap memory area and manages allocated memory) and passes a
   direct buffer to JGroups, then that buffer cannot be reused on send() returning, as it will be stored somewhere
-  (w.g. in NAKACK2) for potential retransmission.
+  (w.g. in NAKACK2) for potential retransmission, and can only get reused after STABLE purged the message.
   - Looks like we'd have to introduce some ref-counted direct memory, which complicates things
 
 
 Misc
 ----
 - There have been a number of reports that claim NIO is slower than BIO, investigate and run perf tests
+- Created NioServer/NioClient to test direct and heap-based ByteBuffers for sending and receiving of messages over
+  a SocketChannel. Results (testing on local mac, between mac and Linux workstation and on cluster01-16 lab) showed
+  that there was no perf difference between direct or heap-based memory !
+
 
 
