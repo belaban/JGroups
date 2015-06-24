@@ -142,8 +142,8 @@ public class ClassConfigurator {
 
 
     public static void addProtocol(short id, Class protocol) {
-        if(id <= MIN_CUSTOM_PROTOCOL_ID)
-            throw new IllegalArgumentException("protocol ID (" + id + ") needs to be greater than " + MIN_CUSTOM_PROTOCOL_ID);
+        if(id < MIN_CUSTOM_PROTOCOL_ID)
+            throw new IllegalArgumentException("protocol ID (" + id + ") needs to be greater than or equal to " + MIN_CUSTOM_PROTOCOL_ID);
         if(protocol_ids.containsKey(protocol))
             throw new IllegalArgumentException("Protocol " + protocol + " is already present");
         protocol_ids.put(protocol, id);
