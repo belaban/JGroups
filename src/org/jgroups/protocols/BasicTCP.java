@@ -6,9 +6,11 @@ import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
+import org.jgroups.nio.Receiver;
 import org.jgroups.util.AsciiString;
 
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,7 +20,7 @@ import java.util.Set;
  * @author Scott Marlow
  * @author Bela Ban
  */
-public abstract class BasicTCP extends TP {
+public abstract class BasicTCP extends TP implements Receiver<Address> {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
@@ -134,11 +136,25 @@ public abstract class BasicTCP extends TP {
 
     public abstract void retainAll(Collection<Address> members);
 
-    /** ConnectionMap.Receiver interface */
+    /** BaseServer.Receiver interface */
     public void receive(Address sender, byte[] data, int offset, int length) {
-        // no need to make a copy of the byte[] buffer as TCPConnectionMap already created a new buffer
+        // no need to make a copy of the byte[] buffer as TcpServer already created a new buffer
         // (https://issues.jboss.org/browse/JGRP-1935)
         super.receive(sender, data, offset, length, false);
+    }
+
+    public void receive(Address sender, ByteBuffer buf) {
+        if(buf == null)
+            return;
+        int offset=buf.hasArray()? buf.arrayOffset() : 0,
+          len=buf.remaining();
+        if(!buf.isDirect())
+            receive(sender, buf.array(), offset, len);
+        else { // by default use a copy; but of course implementers of Receiver can override this
+            byte[] tmp=new byte[len];
+            buf.get(tmp, 0, len);
+            receive(sender, tmp, 0, len);
+        }
     }
 
     protected Object handleDownEvent(Event evt) {

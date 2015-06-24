@@ -1,6 +1,10 @@
 package org.jgroups.util;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.UTFDataFormatException;
+import java.nio.ByteBuffer;
 
 /**
  * Implements {@link java.io.DataInput} over a byte[] buffer. This class is not thread safe.
@@ -22,6 +26,22 @@ public class ByteArrayDataInputStream implements DataInput {
         this.buf=buf;
         this.limit=Math.min(buf.length, offset+length);
         this.pos=checkBounds(offset);
+    }
+
+    public ByteArrayDataInputStream(ByteBuffer buffer) {
+        int offset=buffer.hasArray()? buffer.arrayOffset() : 0, len=buffer.remaining();
+        if(!buffer.isDirect()) {
+            this.buf=buffer.array();
+            this.pos=offset;
+            this.limit=offset+len;
+        }
+        else { // by default use a copy; but of course implementers of Receiver can override this
+            byte[] tmp=new byte[len];
+            buffer.get(tmp, 0, len);
+            this.buf=tmp;
+            this.pos=0;
+            this.limit=len;
+        }
     }
 
     public ByteArrayDataInputStream position(int pos) {

@@ -125,6 +125,32 @@ ${BasicTCP}
 
 ${TCP}
 
+
+[[TCP_NIO2]]
+==== TCP_NIO2
+
+TCP_NIO2 is similar to <<TCP>>, but uses NIO (= Non blocking IO) to send messages to and receive messages
+from members. Contrary to TCP, it doesn't use 1 thread per connection, but handles accepts, connects, reads and
+writes in a *single thread*.
+
+All of these operations are guaranteed to never block.
+
+For example, if a read is supposed to receive 1000 bytes and only reveived 700, the read reads the 700 bytes, saves
+them somewhere and later - when the remaining 300 bytes have been received - is notified to complete the read
+and then returns the 1000 bytes to the application.
+
+Using a single thread is not a problem, as operations will never block. The only potentially blocking operation,
+namely delivering messages up to the application, is done via the regular or OOB thread pools, as usual.
+
+While <<TCP>> and <<TCP_NIO2>> both have the N-1 problem of sending cluster wide messages (contrary to <<UDP>>),
+TCP_NIO2 is able to handle a larger number of connections than TCP, as it doesn't use the thread-per-connection model,
+and - contrary to TCP, but similar to UDP - it doesn't block when sending or receiving messages.
+
+${BasicTCP}
+
+${TCP_NIO2}
+
+
 [[TUNNEL]]
 
 

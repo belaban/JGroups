@@ -661,7 +661,6 @@ public class JChannel extends Channel {
                     if(cfg.containsKey("flush_supported")) {
                         flush_supported=(Boolean)cfg.get("flush_supported");
                     }
-                    cfg.putAll(cfg);
                 }
                 break;
                 

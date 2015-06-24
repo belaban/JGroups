@@ -11,11 +11,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * NIO based client for measuring heap-based vs direct byte buffers. Use {@link NioServer} as server
+ * NIO based client for measuring heap-based vs direct byte buffers. Use {@link NioServerPerfTest} as server
  * @author Bela Ban
  * @since  3.6.4
  */
-public class NioClient {
+public class NioClientTest {
     protected volatile boolean    running=true;
     protected final AtomicLong    total_bytes_sent=new AtomicLong(0);
     protected final AtomicLong    total_msgs=new AtomicLong(0);
@@ -70,7 +70,7 @@ public class NioClient {
             this.latch=latch;
             this.host=host;
             this.direct=direct;
-            buf=create(NioServer.SIZE, direct);
+            buf=create(NioServerPerfTest.SIZE, direct);
         }
 
         public void run() {
@@ -84,7 +84,7 @@ public class NioClient {
                 e.printStackTrace();
             }
             for(;;) {
-                if(total_bytes_sent.addAndGet(NioServer.SIZE) > NioServer.BYTES_TO_SEND)
+                if(total_bytes_sent.addAndGet(NioServerPerfTest.SIZE) > NioServerPerfTest.BYTES_TO_SEND)
                     break;
                 buf.rewind();
                 try {
@@ -119,11 +119,11 @@ public class NioClient {
                 num_threads=Integer.parseInt(args[++i]);
                 continue;
             }
-            System.out.println("NioClient [-host host] [-direct true|false] [-num_threads num]");
+            System.out.println("NioClientTest [-host host] [-direct true|false] [-num_threads num]");
             return;
         }
 
-        new NioClient().start(InetAddress.getByName(host), direct, num_threads);
+        new NioClientTest().start(InetAddress.getByName(host), direct, num_threads);
     }
 
 

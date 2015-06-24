@@ -5,10 +5,9 @@ import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.blocks.TCPConnectionMap;
+import org.jgroups.blocks.TcpServer;
 import org.jgroups.util.SocketFactory;
 
-import java.net.InetAddress;
 import java.util.Collection;
 
 /**
@@ -22,15 +21,15 @@ import java.util.Collection;
  * as well.
  * <p>
  * 
- * This functionality is in TCPConnectionMap, which is used by TCP. TCP sends
+ * This functionality is in TcpServer, which is used by TCP. TCP sends
  * messages using ct.send() and registers with the connection table to receive
  * all incoming messages.
  * 
  * @author Bela Ban
  */
-public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
+public class TCP extends BasicTCP {
     
-    private TCPConnectionMap ct=null;
+    private TcpServer ct=null;
 
     public TCP() {}
 
@@ -48,7 +47,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
     public void setSocketFactory(SocketFactory factory) {
         super.setSocketFactory(factory);
         if(ct != null)
-            ct.setSocketFactory(factory);
+            ct.socketFactory(factory);
     }
 
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
@@ -61,22 +60,31 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
     }
 
     public void start() throws Exception {
-        ct=createConnectionMap(reaper_interval,
-                              conn_expire_time,
-                              bind_addr,
-                              external_addr,
-                              external_port,
-                              bind_port,
-                              bind_port+port_range).log(log).timeService(time_service);
-        ct.setReceiveBufferSize(recv_buf_size);      
-        ct.setSendQueueSize(send_queue_size);
-        ct.setUseSendQueues(use_send_queues);
-        ct.setSendBufferSize(send_buf_size);
-        ct.setSocketConnectionTimeout(sock_conn_timeout);
-        ct.peerAddressReadTimeout(peer_addr_read_timeout);
-        ct.setTcpNodelay(tcp_nodelay);
-        ct.setLinger(linger);
-        ct.setSocketFactory(getSocketFactory());
+        ct=(TcpServer)new TcpServer("jgroups.tcp.srv_sock", getThreadFactory(), getSocketFactory(), this,
+                                                  bind_addr, external_addr, external_port, bind_port, bind_port+port_range, reaper_interval, conn_expire_time)
+          .useSendQueues(use_send_queues)
+          .sendQueueSize(send_queue_size)
+          .peerAddressReadTimeout(peer_addr_read_timeout)
+          .timeService(time_service)
+          .receiveBufferSize(recv_buf_size)
+          .sendBufferSize(send_buf_size)
+          .socketConnectionTimeout(sock_conn_timeout)
+          .tcpNodelay(tcp_nodelay).linger(linger)
+          .socketFactory(getSocketFactory())
+          .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
+          .log(this.log);
+
+        if(reaper_interval > 0 || conn_expire_time > 0) {
+            if(reaper_interval == 0) {
+                reaper_interval=5000;
+                log.warn("reaper_interval was 0, set it to %d", reaper_interval);
+            }
+            if(conn_expire_time == 0) {
+                conn_expire_time=1000 * 60 * 5;
+                log.warn("conn_expire_time was 0, set it to %d", conn_expire_time);
+            }
+            ct.connExpireTimeout(conn_expire_time).reaperInterval(reaper_interval);
+        }
 
         // we first start threads in TP (http://jira.jboss.com/jira/browse/JGRP-626)
         super.start();
@@ -103,70 +111,16 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
     protected void handleDisconnect() {
         if(isSingleton()) {
             super.handleDisconnect();
-            if(connect_count == 0) {
+            if(connect_count == 0)
                 ct.stop();
-            }
         }
         else
             ct.stop();
     }   
 
-    /**
-     * @param reaperInterval
-     * @param connExpireTime
-     * @param bindAddress
-     * @param startPort
-     * @throws Exception
-     * @return TCPConnectionMap Subclasses override this method to initialize a different version of ConnectionMap
-     */
-    protected TCPConnectionMap createConnectionMap(long reaperInterval,
-                                                   long connExpireTime,
-                                                   InetAddress bindAddress,
-                                                   InetAddress externalAddress,
-                                                   int external_port,
-                                                   int startPort,
-                                                   int endPort) throws Exception {
-        TCPConnectionMap cTable;
-        if(reaperInterval == 0 && connExpireTime == 0) {
-            cTable=new TCPConnectionMap("jgroups.tcp.srv_sock",
-                                        getThreadFactory(),
-                                        getSocketFactory(),
-                                        this,
-                                        bindAddress,
-                                        externalAddress,
-                                        external_port,
-                                        startPort,
-                                        endPort);
-        }
-        else {
-            if(reaperInterval == 0) {
-                reaperInterval=5000;
-                if(log.isWarnEnabled())
-                    log.warn("reaper_interval was 0, set it to " + reaperInterval);
-            }
-            if(connExpireTime == 0) {
-                connExpireTime=1000 * 60 * 5;
-                if(log.isWarnEnabled())
-                    log.warn("conn_expire_time was 0, set it to " + connExpireTime);
-            }
-            cTable=new TCPConnectionMap("jgroups.tcp.srv_sock",
-                                        getThreadFactory(),
-                                        getSocketFactory(),
-                                        this,
-                                        bindAddress,
-                                        externalAddress,
-                                        external_port,
-                                        startPort,
-                                        endPort,
-                                        reaperInterval,
-                                        connExpireTime);
-        }
 
-        return cTable.clientBindAddress(client_bind_addr).clientBindPort(client_bind_port)
-          .deferClientBinding(defer_client_bind_addr);
-    }
 
     protected PhysicalAddress getPhysicalAddress() {
-        return ct != null? (PhysicalAddress)ct.getLocalAddress() : null;
+        return ct != null? (PhysicalAddress)ct.localAddress() : null;
     }
 }
