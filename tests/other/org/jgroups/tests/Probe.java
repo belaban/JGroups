@@ -22,22 +22,24 @@ public class Probe {
 
     }
 
-    public void start(InetAddress addr, InetAddress bind_addr, int port, int ttl,
+    public void start(List<InetAddress> addrs, InetAddress bind_addr, int port, int ttl,
                       final long timeout, List<String> query, String match,
                       boolean weed_out_duplicates, String passcode) throws Exception {
 
-        boolean unicast_dest=addr != null && !addr.isMulticastAddress();
-        if(unicast_dest) {
-            Collection<InetAddress> targets=getPhysicalAddresses(addr, bind_addr, port, timeout);
-            if(targets.isEmpty()) {
-                System.err.println("Found no valid hosts - terminating");
-                return;
+        for(InetAddress addr: addrs) {
+            boolean unicast_dest=addr != null && !addr.isMulticastAddress();
+            if(unicast_dest) {
+                Collection<InetAddress> targets=getPhysicalAddresses(addr, bind_addr, port, timeout);
+                if(targets.isEmpty()) {
+                    System.err.println("Found no valid hosts - terminating");
+                    return;
+                }
+                for(InetAddress target : targets)
+                    sendRequest(target, bind_addr, port, ttl, query, passcode);
             }
-            for(InetAddress target: targets)
-                sendRequest(target, bind_addr, port, ttl, query, passcode);
+            else
+                sendRequest(addr, bind_addr, port, ttl, query, passcode);
         }
-        else
-            sendRequest(addr, bind_addr, port, ttl, query, passcode);
 
         new Thread() {
             public void run() {
@@ -178,22 +180,23 @@ public class Probe {
 
 
     public static void main(String[] args) {
-        InetAddress  addr=null, bind_addr=null;
-        int          port=0;
-        int          ttl=32;
-        long         timeout=500;
-        final String DEFAULT_DIAG_ADDR="224.0.75.75";
-        final String DEFAULT_DIAG_ADDR_IPv6="ff0e::0:75:75";
-        final int    DEFAULT_DIAG_PORT=7500;
-        List<String> query=new ArrayList<>();
-        String       match=null;
-        boolean      weed_out_duplicates=false;
-        String       passcode=null;
+        InetAddress       bind_addr=null;
+        List<InetAddress> addrs=new ArrayList<>();
+        int               port=0;
+        int               ttl=32;
+        long              timeout=500;
+        final String      DEFAULT_DIAG_ADDR="224.0.75.75";
+        final String      DEFAULT_DIAG_ADDR_IPv6="ff0e::0:75:75";
+        final int         DEFAULT_DIAG_PORT=7500;
+        List<String>      query=new ArrayList<>();
+        String            match=null;
+        boolean           weed_out_duplicates=false;
+        String            passcode=null;
 
         try {
             for(int i=0; i < args.length; i++) {
                 if("-addr".equals(args[i])) {
-                    addr=InetAddress.getByName(args[++i]);
+                    addrs.add(InetAddress.getByName(args[++i]));
                     continue;
                 }
                 if("-bind_addr".equals(args[i])) {
@@ -241,14 +244,15 @@ public class Probe {
                 query.add(args[i]);
             }
             Probe p=new Probe();
-            if(addr == null) {
+            if(addrs.isEmpty()) {
                 StackType stack_type=Util.getIpStackType();
                 boolean ipv6=stack_type == StackType.IPv6;
-                addr=ipv6? InetAddress.getByName(DEFAULT_DIAG_ADDR_IPv6) : InetAddress.getByName(DEFAULT_DIAG_ADDR);
+                InetAddress addr=ipv6? InetAddress.getByName(DEFAULT_DIAG_ADDR_IPv6) : InetAddress.getByName(DEFAULT_DIAG_ADDR);
+                addrs.add(addr);
             }
             if(port == 0)
                 port=DEFAULT_DIAG_PORT;
-            p.start(addr, bind_addr, port, ttl, timeout, query, match, weed_out_duplicates, passcode);
+            p.start(addrs, bind_addr, port, ttl, timeout, query, match, weed_out_duplicates, passcode);
         }
         catch(Throwable t) {
             t.printStackTrace();
