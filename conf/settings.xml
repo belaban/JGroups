@@ -13,6 +13,11 @@
             <username>USERNAME</username>
             <password>PASSWORD</password>
         </server>
+        <server>
+            <id>jboss-snapshots-repository</id>
+            <username>USERNAME</username>
+            <password>PASSWORD</password>
+        </server>
     </servers>
 
 
@@ -34,7 +39,28 @@
                     </releases>
                     <snapshots>
                         <enabled>true</enabled>
+                        <updatePolicy>interval:120</updatePolicy>
+                    </snapshots>
+                </repository>
+            </repositories>
+        </profile>
+
+
+        <profile>
+            <id>jboss-snapshots-repository</id>
+            <repositories>
+                <repository>
+                    <id>jboss-snapshots-repository</id>
+                    <name>JBoss Nexus snapshots repository</name>
+                    <url>https://repository.jboss.org/nexus/content/repositories/snapshots/</url>
+                    <layout>default</layout>
+                    <releases>
+                        <enabled>false</enabled>
                         <updatePolicy>never</updatePolicy>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                        <updatePolicy>interval:120</updatePolicy>
                     </snapshots>
                 </repository>
             </repositories>

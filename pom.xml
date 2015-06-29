@@ -5,7 +5,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>bundle</packaging>
     <name>JGroups</name>
-    <version>3.6.4.Final</version>
+    <version>3.6.4-SNAPSHOT</version>
     <url>http://www.jgroups.org</url>
 
     <properties>
@@ -13,6 +13,8 @@
         <autoReleaseAfterClose>true</autoReleaseAfterClose>
         <nexus.server.id>jboss-releases-repository</nexus.server.id>
         <nexus.server.url>https://repository.jboss.org/nexus</nexus.server.url>
+        <nexus.snapshot.server.id>jboss-snapshots-repository</nexus.snapshot.server.id>
+        <nexus.snapshot.server.url>https://repository.jboss.org/nexus/content/repositories/snapshots/</nexus.snapshot.server.url>
     </properties>
 
     <description>
@@ -55,6 +57,10 @@
             <name>JBoss Releases Repository</name>
             <url>${nexus.server.url}</url>
         </repository>
+        <snapshotRepository>
+            <id>${nexus.snapshot.server.id}</id>
+            <url>${nexus.snapshot.server.url}</url>
+        </snapshotRepository>
     </distributionManagement>
 
     <prerequisites>
@@ -73,7 +79,7 @@
             </releases>
             <snapshots>
                 <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
+                <updatePolicy>interval:120</updatePolicy>
             </snapshots>
         </repository>
     </repositories>
