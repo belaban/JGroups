@@ -42,7 +42,7 @@ public class Version {
 
     public static final String  VERSION_FILE="VERSION.properties";
     public static final String  VERSION_PROPERTY = "jgroups.version";
-    private static final Pattern VERSION_REGEXP = Pattern.compile("((\\d+)\\.(\\d+)\\.(\\d+)\\..*)");
+    private static final Pattern VERSION_REGEXP = Pattern.compile("((\\d+)\\.(\\d+)\\.(\\d+).*)");
 
     
 

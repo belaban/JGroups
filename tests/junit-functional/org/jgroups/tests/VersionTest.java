@@ -27,7 +27,7 @@ public class VersionTest {
 
     public void testIfVersionWasExtracted() throws Exception {
         String version=Version.printDescription();
-        assertTrue(version.matches("JGroups [1-9].\\d.\\d\\..*"), "Extracted version: " + version);
+        assertTrue(version.matches("JGroups [1-9].\\d.\\d.*"), "Extracted version: " + version);
     }
     public void testVersionPrint() {
         assertNotNull(Version.printVersion());
