@@ -11,7 +11,7 @@
 
 
 # DIST=../dist
-POM=../pom.xml
+POM=`dirname $0`/../pom.xml
 
 # JAR=`find $DIST -name "jgroups-*.jar" | grep -v source`
 # SRC_JAR=`find $DIST -name "jgroups-*.jar" | grep source`
@@ -30,7 +30,5 @@ POM=../pom.xml
 # echo "Deploying $SRC_JAR to $REPO"
 # mvn deploy:deploy-file -Dfile=$SRC_JAR -Durl=$REPO -DpomFile=$POM -Dclassifier=sources $FLAGS
 
-
-
-mvn -DpomFile=$POM -Dmaven.test.skip=true deploy
+mvn -f $POM -Dmaven.test.skip=true deploy
 
