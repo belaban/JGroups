@@ -688,7 +688,7 @@ acquired +"mylock"+, we'd block until P released the lock, or P left the cluster
         
 Note that the owner of a lock is always a given thread in a cluster, so the owner is the JGroups address and
 the thread ID. This means that different threads inside the same JVM trying to access the same named lock
-will compete for it. If `thread-22` grabs the lock first, then `thread-5` will block until `thread-23`
+will compete for it. If `thread-22` grabs the lock first, then `thread-5` will block until `thread-22`
 releases the lock.
 
 NOTE: If we want the lock owner to only be the address (and not the thread-id), then property
@@ -739,7 +739,7 @@ public void viewAccepted(View view) {
                 // stop all access to resources protected by l1, l2 or l3
                 // every thread needs to re-acquire the locks it holds
             }
-        }.start
+        }.start();
     }
 }
             
@@ -801,7 +801,7 @@ the cluster.  By having a thread run one of these runners, that thread has now v
 run any task that is submitted to the cluster via an ExecutionService.  This allows
 for any node in the cluster to participate or not participate in the running of these tasks and also any
 node can optionally run more than 1 ExecutionRunner if this node has additional
-capacity to do so.  A runner will run indefinately until the thread that is currently running it is
+capacity to do so.  A runner will run indefinitely until the thread that is currently running it is
 interrupted.  If a task is running when the runner is interrupted the task will be interrupted.
         
 Below is an example of how simple it is to have a single node start and allow for 10 distributed tasks to be executed
@@ -835,12 +835,12 @@ Since an ExecutionService does not allow for non serializable class instances to
 there are 2 utility classes provided to get around this problem.  For users that are used to using a
 CompletionService with an Executor there is an equivalent ExecutionCompletionService provided that allows
 for a user to have the same functionality.  It would have been preferred to allow for the same
-ExecutorCompletionService to be used, but due to it's implementation using a non serializable object
+ExecutorCompletionService to be used, but due to its implementation using a non serializable object
 the ExecutionCompletionService was implemented to be used instead in conjunction with an ExecutionService.
 
 Also a utility class was designed to help users to submit tasks which use a non serializable class.  The
 Executions class contains a method serializableCallable which allows for a user to pass a constructor of a
-class that implements Callable and it's arguments to then return to a user a Callable that will upon running
+class that implements Callable and its arguments to then return to a user a Callable that will upon running
 will automatically create and object from the constructor passing the provided arguments to it and then will
 call the call method on the object and return it's result as a normal callable.  All the arguments provided
 must still be serializable and the return object as detailed previously.
