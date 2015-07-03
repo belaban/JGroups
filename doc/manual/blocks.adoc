@@ -770,8 +770,8 @@ Below is an example of how `ExecutionService` is typically used:
 [source,java]
 ----
 // executing.xml needs to have an execution protocol, e.g. CENTRAL_EXECUTOR
-JChannel ch=new JChannel("/home/bela/executing.xml");
-ExecutionService exec_service =new ExecutionService(ch);
+JChannel ch = new JChannel("/home/bela/executing.xml");
+ExecutionService exec_service = new ExecutionService(ch);
 ch.connect("exec-cluster");
 Future<Value> future = exec_service.submit(new MyCallable());
 try {
@@ -812,7 +812,7 @@ simultaneously on it:
 
 int runnerCount = 10;
 // locking.xml needs to have a locking protocol
-JChannel ch=new JChannel("/home/bela/executing.xml");
+JChannel ch = new JChannel("/home/bela/executing.xml");
 ch.connect("exec-cluster");
 
 ExecutionRunner runner = new ExecutionRunner(ch);
@@ -832,7 +832,7 @@ ExecutionRunner.  This allows for this node to have 10 threads actively accept a
 submitted via any ExecutionService in the cluster.
         
 Since an ExecutionService does not allow for non serializable class instances to be sent across as tasks
-there are 2 utility classes provided to get around this problem.  For users that are used to using a
+there are two utility classes provided to get around this problem.  For users that are used to using a
 CompletionService with an Executor there is an equivalent ExecutionCompletionService provided that allows
 for a user to have the same functionality.  It would have been preferred to allow for the same
 ExecutorCompletionService to be used, but due to its implementation using a non serializable object
@@ -850,7 +850,7 @@ experiment with a distributed sort algorithm and performance.  This is for demon
 performance should not be assumed to be better than local.
 `ExecutionServiceDemo -h` dumps all command line options.
         
-Currently (July 2011), there is 1 protocol which provide executions:
+Currently (July 2011), there is one protocol which provide executions:
 <<CENTRAL_EXECUTOR>>. The executing protocol has to be placed at or
 towards the top of the stack (close to the channel).
         
@@ -858,7 +858,7 @@ towards the top of the stack (close to the channel).
 [[CounterService]]
 === Cluster wide atomic counters
 
-Cluster wide counters provide named counters (similar to AtomicLong) which can be changed atomically. 2
+Cluster wide counters provide named counters (similar to AtomicLong) which can be changed atomically. Two
 nodes incrementing the same counter with initial value 10 will see 11 and 12 as results, respectively.
         
 To create a named counter, the following steps have to be taken:
@@ -877,9 +877,9 @@ In the first step, we add `COUNTER` to the top of the protocol stack configurati
 <config>
     ...
     <MFC max_credits="2M"
-         min_threshold="0.4"/>
-    <FRAG2 frag_size="60K"  />
-    <COUNTER bypass_bundling="true" timeout="5000"/>
+         min_threshold="0.4" />
+    <FRAG2 frag_size="60K" />
+    <COUNTER bypass_bundling="true" timeout="5000" />
 </config>
         
 ----
@@ -890,10 +890,10 @@ Next, we create a `CounterService`, which is used to create and delete named cou
 
 [source,java]
 ----
-ch=new JChannel(props);
-CounterService counter_service=new CounterService(ch);
+ch = new JChannel(props);
+CounterService counter_service = new CounterService(ch);
 ch.connect("counter-cluster");
-Counter counter=counter_service.getOrCreateCounter("mycounter", 1);
+Counter counter = counter_service.getOrCreateCounter("mycounter", 1);
 ----
 
 In the sample code above, we create a channel first, then create the `CounterService` referencing the channel.
