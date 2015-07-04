@@ -1023,7 +1023,7 @@ be found in the <<protlist,protocols list>> section.
 [[STATE_TRANSFER]]
 .STATE_TRANSFER
 
-The is the original state transfer protocol, which used to transfer `byte[]` buffers. It still does
+This is the original state transfer protocol, which used to transfer `byte[]` buffers. It still does
 that, but is internally converted to call the `getState()` and `setState()` callbacks which use
 input and output streams.
 
