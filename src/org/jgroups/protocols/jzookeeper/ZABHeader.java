@@ -23,11 +23,10 @@ import org.jgroups.util.Util;
          public static final byte STATS = 11;
          public static final byte COUNTMESSAGE = 12;
          public static final byte STARTREALTEST = 13;
+//         public static final byte TEMPSENT = 14;
+//         public static final byte TEMPREC = 15;
+//         public static final byte RESPONCETEMP = 16;
 
-
-
-
-         
 
          private byte        type=0;
          private long        seqno=0;
@@ -88,9 +87,12 @@ import org.jgroups.util.Util;
             case STATS:			 return "STATS";
             case COUNTMESSAGE:			 return "COUNTMESSAGE";
             case STARTREALTEST:			 return "STARTREALTEST";
+//            case TEMPSENT:			 return "TEMPSENT";
+//            case TEMPREC:			 return "TEMPREC";
+//            case RESPONCETEMP:			 return "RESPONCETEMP";
+
             default:             return "n/a";
         }
-           
         }
         
         public long getZxid() {
