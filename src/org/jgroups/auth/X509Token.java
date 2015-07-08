@@ -10,6 +10,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -175,8 +177,13 @@ public class X509Token extends AuthToken {
                     CertificateException, NoSuchPaddingException, InvalidKeyException,
                     IllegalBlockSizeException, BadPaddingException, UnrecoverableEntryException {
         KeyStore store = KeyStore.getInstance(this.keystore_type);
-        java.io.FileInputStream fis = new java.io.FileInputStream(this.keystore_path);
-        store.load(fis, this.keystore_password);
+        InputStream inputStream=null;
+        inputStream=Thread.currentThread()
+                          .getContextClassLoader()
+                          .getResourceAsStream(this.keystore_path);
+        if(inputStream == null)
+          inputStream=new FileInputStream(this.keystore_path);
+        store.load(inputStream, this.keystore_password);
 
         this.cipher = Cipher.getInstance(this.cipher_type);
         this.certificate = (X509Certificate) store.getCertificate(this.cert_alias);
