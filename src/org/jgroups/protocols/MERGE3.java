@@ -38,8 +38,11 @@ public class MERGE3 extends Protocol {
     
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
+    @Property(description="Minimum time in ms before sending an info message")
     protected long min_interval=1000;
-    
+
+    @Property(description="Interval (in milliseconds) when the next info " +
+            "message will be sent. A random value is picked from range [1..max_interval]")
     protected long max_interval=10000;
 
     @Property(description="The max number of merge participants to be involved in a merge. 0 sets this to unlimited.")
@@ -142,24 +145,20 @@ public class MERGE3 extends Protocol {
         stopInfoSender();
     }
 
-    @Property public long getMinInterval() {
+    public long getMinInterval() {
         return min_interval;
     }
 
-    @Property(description="Minimum time in ms before sending an info message")
     public void setMinInterval(long i) {
         if(min_interval < 0 || min_interval >= max_interval)
             throw new IllegalArgumentException("min_interval (" + min_interval + ") has to be < max_interval (" + max_interval + ")");
         min_interval=i;
     }
 
-    @Property public long getMaxInterval() {
+    public long getMaxInterval() {
         return max_interval;
     }
 
-
-    @Property(description="Interval (in milliseconds) when the next info " +
-      "message will be sent. A random value is picked from range [1..max_interval]")
     public void setMaxInterval(long val) {
         if(val <= 0)
             throw new IllegalArgumentException("max_interval must be > 0");
