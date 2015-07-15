@@ -500,7 +500,8 @@ public class RequestCorrelator {
             }
         }
 
-        Message rsp=req.makeReply().setFlag(req.getFlags()).clearFlag(Message.Flag.RSVP, Message.Flag.SCOPED);
+        Message rsp=req.makeReply().setFlag(req.getFlags())
+          .clearFlag(Message.Flag.RSVP, Message.Flag.SCOPED, Message.Flag.INTERNAL); // JGRP-1940
         if(rsp_buf instanceof Buffer)
             rsp.setBuffer((Buffer)rsp_buf);
         else if(rsp_buf instanceof byte[])
