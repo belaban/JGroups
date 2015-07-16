@@ -784,7 +784,7 @@ The attributes are listed below. They roughly correspond to the options of a
                                     is used.
 |min_threads|The minimum number of threads to use.
 |max_threads|The maximum number of threads to use.
-|keep_alive_time|Number of milliseconds until an idle thread is placed back into the pool
+|keep_alive_time|Number of milliseconds until an idle thread is removed from the pool
 |queue_enabled|Whether or not to use a (bounded) queue. If enabled, when all minimum
                                     threads are busy, work items are added to the queue. When the queue is full,
                                     additional threads are created, up to max_threads. When max_threads have been
