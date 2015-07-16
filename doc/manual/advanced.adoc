@@ -827,20 +827,20 @@ On the receiving side, a message is handled by a thread pool, either the regular
 ==== Concurrent message delivery
 
 Up to version 2.5, all messages received were processed by a single thread, even if the messages were
-                sent by different senders. For instance, if sender A sent messages 1,2 and 3, and B sent message 34 and 45,
-                and if A's messages were all received first, then B's messages 34 and 35 could only be processed after
-                messages 1-3 from A were processed !
-            
+                sent by different senders. For instance, if sender A sent messages 1, 2 and 3, and B sent message 4 and 5,
+                and if A's messages were all received first, then B's messages 4 and 5 could only be processed after
+                messages 1-3 from A were processed!
+
 
 Now, we can process messages from different senders in parallel, e.g. messages 1, 2 and 3 from A can be
-                processed by one thread from the thread pool and messages 34 and 35 from B can be processed on a different
+                processed by one thread from the thread pool and messages 4 and 5 from B can be processed on a different
                 thread.
-            
+
 
 As a result, we get a speedup of almost N for a cluster of N if every node is sending messages and we
                 configure the thread pool to have at least N threads. There is actually a unit test
                 (ConcurrentStackTest.java) which demonstrates this.
-            
+
 
 [[Scopes]]
 ==== Scopes: concurrent message delivery for messages from the same sender
