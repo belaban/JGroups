@@ -11,7 +11,7 @@ Flushing means that all members of a group flush their pending messages. The pro
 so that state transfer or a join can be done. It is also called the stop-the-world model as nobody will be able to
 send messages while a flush is in process.
 
-When is it needed ?
+When is it needed?
 -------------------
 (1) On state transfer. When a member requests state transfer it tells everyone to stop sending messages and waits
 for everyone's ack. Then it asks the application for its state and ships it back to the requester. After the
@@ -160,7 +160,7 @@ Use case: block() callback needs to complete transactions which are in the 2PC (
 
 Issues:
 - What happens is a member sends another message M *after* returning from block() but *before* that member has received
-  all FLUSH_OK messages and therefore blocks ?
+  all FLUSH_OK messages and therefore blocks?
 - This algorithm only works for multicast messages, not unicast messages because multicast and unicast messages are not
   ordered with respect to each other
 

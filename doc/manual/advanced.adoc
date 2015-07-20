@@ -285,7 +285,7 @@ Because the RPC is blocking, we'll wait until the call has returned before invok
                 
 
 For each RPC, the request takes up to 30 ms, and each response will also take up to 30 ms, for a
-                    total of 60 ms _per call_. So the 10 blocking RPCs would take a total of 600 ms !
+                    total of 60 ms _per call_. So the 10 blocking RPCs would take a total of 600 ms!
                 
 
 This is clearly not desirable. However, there's a simple solution: we can use message flags
@@ -902,8 +902,8 @@ NOTE: Note that scopes should be _as unique as possible_. Compare this to hashin
       not concurrently. While this doesn't cause erroneous behavior, it defies the purpose of SCOPE. +
       Also note that, if multicast and unicast messages have the same scope, they will be delivered
       in sequence. So if A multicasts messages to the group with scope 25, and A also unicasts messages
-      to B with scope 25, then A's multicasts and unicasts will be delivered in order at B ! Again,
-      this is correct, but since multicasts and unicasts are unrelated, might slow down things !
+      to B with scope 25, then A's multicasts and unicasts will be delivered in order at B! Again,
+      this is correct, but since multicasts and unicasts are unrelated, might slow down things!
 
 
 [[OOB]]
@@ -914,7 +914,7 @@ OOB messages completely ignore any ordering constraints the stack might have. An
                 processing to wait until all other messages from the same sender have been processed, e.g. in the
                 heartbeat case: if sender P sends 5 messages and then a response to a heartbeat request received from
                 some other node, then the time taken to process P's 5 messages might take longer than the heartbeat
-                timeout, so that P might get falsely suspected ! However, if the heartbeat response is marked as OOB,
+                timeout, so that P might get falsely suspected! However, if the heartbeat response is marked as OOB,
                 then it will get processed by the OOB thread pool and therefore might be concurrent to its previously
                 sent 5 messages and not trigger a false suspicion.
             
@@ -1072,7 +1072,7 @@ public void viewAccepted(View view) {
         MergeView tmp=(MergeView)view;
         Vector<View> subgroups=tmp.getSubgroups();
         // merge state or determine primary partition
-        // run in a separate thread !
+        // run in a separate thread!
     }
 }
         
@@ -1304,7 +1304,7 @@ When we have a chatty protocol, scaling to a large number of nodes might be a pr
                 negative impact on the cluster. A possible impact is that more of the regular messages are dropped, and
                 have to be retransmitted, which impacts performance. Or heartbeats are dropped, leading to false
                 suspicions. So while the negative effects of chatty protocols may not be seen in small clusters, they
-                _will_ be seen in large clusters !
+                _will_ be seen in large clusters!
             
 
 
@@ -1902,7 +1902,7 @@ In the daisychaining approach, link usage is more even: if we look for example a
             
 
 In terms of rounds, the daisy chaining approach uses X + (N-2) rounds, so for a cluster size of 10 and
-                broadcasting 10 messages, it requires only 18 rounds, compared to 90 for the N-1 approach !
+                broadcasting 10 messages, it requires only 18 rounds, compared to 90 for the N-1 approach!
             
 
 
@@ -1914,7 +1914,7 @@ To measure performance of DAISYCHAIN, a performance test (test.Perf) was run, wi
                 every node. The config used was tcp.xml.
             
 
-The N-1 approach yielded a throughput of 73 MB/node/sec, and the daisy chaining approach 107MB/node/sec !
+The N-1 approach yielded a throughput of 73 MB/node/sec, and the daisy chaining approach 107MB/node/sec!
             
 
 
@@ -2427,7 +2427,7 @@ Note that `probe.sh -help` lists the command line options.
 To fetch all of the JMX information from all protocols, we can invoke `probe jmx`.
 
 However, this dumps all of the JMX attributes from all protocols of all cluster members, so make sure
-            to pipe the output into a file and awk and sed it for legibility !
+            to pipe the output into a file and awk and sed it for legibility!
         
 
 However, we can also JMX information from a specific protocol, e.g. FRAG2 (slightly edited&gt;:

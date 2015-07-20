@@ -95,4 +95,4 @@ Issues:
 -------
 
 - What if the client sends a JOIN_WITH_STATE, the coord processes the JOIN, but suspends the queue after it and before
-  processing the GET_STATE ?
+  processing the GET_STATE?

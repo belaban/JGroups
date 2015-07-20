@@ -41,7 +41,7 @@ to read them back in.
 It is important that `size()` returns the correct number of bytes, because some components (such a message
 bundling in the transport) depend on this, as they need to measure the exact number of bytes before sending
 a message. If size() returns fewer bytes than what will actually be written to the stream, then it is
-possible that (if we use UDP with a 65535 bytes maximum) the datagram packet is dropped by UDP !
+possible that (if we use UDP with a 65535 bytes maximum) the datagram packet is dropped by UDP!
 
 The final requirement is to add the newly created header class to `jg-magic-map.xml` (in the `./conf` directory),
 or - if this is not a JGroups internal protocol - to add the class to `ClassConfigurator`. This can be done

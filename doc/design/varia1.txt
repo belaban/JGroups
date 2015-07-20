@@ -100,7 +100,7 @@ is that under Linux, when a packet is sent to a non-existent
 (e.g. crashed) receiver, there will be an asynchronous ICMP
 HOST-UNREACHABLE sent back to the sender. However, since it is
 asynchronous, it will not cause an exception in the current send(),
-but in *one of the following ones* ! Therefore, we need to close and
+but in *one of the following ones*! Therefore, we need to close and
 re-open the send socket every time.
 
 This feature is due to the fact that the older JDK for Linux from
@@ -119,7 +119,7 @@ on every unicast send.
 
 
 Why not merge all sockets into one, e.g. a MulticastSocket, for
-sending/receiving unicast as well as multicast packets ?
+sending/receiving unicast as well as multicast packets?
 --------------------------------------------------------
 
 
@@ -272,7 +272,7 @@ NAKACK:
 STABLE:
 - A hard one: how do we know when a message is stable in all receivers
   so we can remove it from the retransmission table, when we don't have
-  membership information ? The simplest scheme is probably just to
+  membership information? The simplest scheme is probably just to
   periodically purge messages that are older than N seconds. If we
   accidentally purge a message that has not yet been seen by all members
   (small probability though), we just send an error back to the

@@ -86,7 +86,7 @@ GossipRouter
 
 - On DISCONNECT(logical_addr):
   - Remove the entry for logical_addr from all tables (RoutingTable, AddressMappings)
-  - Do *not* close the socket in ConnectionHandler: others may still be connected through the same connection !
+  - Do *not* close the socket in ConnectionHandler: others may still be connected through the same connection!
 
 
 - On GET_MEMBERS(groupname):

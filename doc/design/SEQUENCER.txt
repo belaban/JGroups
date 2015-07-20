@@ -29,7 +29,7 @@ adds a header which records the original sender (C) and replaces M's sender addr
 When a member receives M, everybody thinks the message is from A, and NAKACK will possibly retransmit from A
 in case M is lost. However, SEQUENCER removes the header and replaces M's sender address with C. It has to
 do so on a *copy* of M, otherwise we would change the original message and therefore retransmission
-requests would go to C, rather than A !
+requests would go to C, rather than A!
 
 Reliability on failover of coordinator
 --------------------------------------
@@ -50,7 +50,7 @@ When a member receives a broadcast message, because the ordering of the message 
 This is done by keeping the last N seqnos around, and checking if the seqno of the received message has already been
 received. If so, the message is discarded, else it is delivered and the new seqno recorded.
 
-Note that seqnos are *not* used to check for ordering, but only to discard duplicates ! So it is ok to
+Note that seqnos are *not* used to check for ordering, but only to discard duplicates! So it is ok to
 receive seqno 5 before seqno 4, if different threads on the same sender send messages concurrently.
 
 SEQUENCER will ensure though that, if a receiver P receives C:5 before C:4, then *everybody* will receive C:5 before C:4.
@@ -58,7 +58,7 @@ SEQUENCER will ensure though that, if a receiver P receives C:5 before C:4, then
 There are various unit tests for SEQUENCER, e.g. SequencerFailoverTest, SequencerMergeTest, SequencerOrderTest etc.
 
 
-Design (*not* updated since 2005, look in the code for details !)
+Design (*not* updated since 2005, look in the code for details!)
 -----------------------------------------------------------------
 
 Variables:
@@ -118,7 +118,7 @@ Deliver(M,S):
 
 On view change:
 - If the coord leaves/crashes:
-  - For each message M in forward-table (*in increasing order of seqnos* !):
+  - For each message M in forward-table (*in increasing order of seqnos*!):
     - Change M.dest to the new coord
     - Send M to the new coord
 - Remove entries for left members in received-table

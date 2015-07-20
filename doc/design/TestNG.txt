@@ -38,7 +38,7 @@ Goals
    - Move instance variables into methods (unless they are channels)
 
 x. Different stack configs (udp, tcp, mux-udp, mux-tcp etc)
-   - As data providers ?
+   - As data providers?
    - @Parameter annotation, e.g.
 
      @Parameter(name="channel.conf") // defined in the ChannelTestsBase (or whichever) super class
@@ -95,7 +95,7 @@ Conversion
 
 Todos:
 ------
-- Convert all tests to TestNG (use TestNG's automatic converter or use awk.sed ?)
+- Convert all tests to TestNG (use TestNG's automatic converter or use awk.sed?)
 - Remove junit.jar, add testng.jar
 - Write correct TestNG XML file
 - Integrate with build.xml
@@ -105,14 +105,14 @@ Questions, issues
 -----------------
 
 - Identify useful group names and use those consistently
-  - udp, mux-udp, tcp, mux-tcp ?
-  - functional vs. stack-dependent ?
-- How do we generate mcast addresses and ports such that traffic doesn't overlap ?
-  --> Possibly a @BeforeTest annotation which modifies the stack config ?
+  - udp, mux-udp, tcp, mux-tcp?
+  - functional vs. stack-dependent?
+- How do we generate mcast addresses and ports such that traffic doesn't overlap?
+  --> Possibly a @BeforeTest annotation which modifies the stack config?
 
 - We're using system properties (mux.on, channel.conf etc) to configure stacks. This means we *cannot* run 2
   different stacks at the same time because the system properties are singleton wrt the JVM !
-  --> Change from system properties to TestNG parameters ? Or DataProviders ?
+  --> Change from system properties to TestNG parameters? Or DataProviders?
   Solution: parameters:
 
   ChannelTestBase:

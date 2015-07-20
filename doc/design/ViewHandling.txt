@@ -16,7 +16,7 @@ Proposed solution:
 - JOIN, LEAVE and MERGE requests received by the coordinator simply add an entry to the queue
 - A thread dequeues elements from that queue and processes them, one at a time, to ensure FIFO handling
   of those requests
-  --> One result of this is that the merge handling is now *not* done asynchronously anymore !
+  --> One result of this is that the merge handling is now *not* done asynchronously anymore!
 - A side effect of this is that we could implement a feature which waits for N JOIN/LEAVE requests or M milliseconds,
   and then processes a number of JOIN and LEAVE requests as *one* view, which is more efficient, given the fact that
   views are transmitted reliable, ie. for each view we need to receive an ack from each member

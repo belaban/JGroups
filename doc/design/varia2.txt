@@ -480,7 +480,7 @@ pbcast.STABLE protocol
   One way in which this can happen is as follows:
   - 2 members: A,B
   - A receives a stable message from  B, and removes B from its heard_from list
-  - A sets its own digest, but this time it has 3 members ! (A,B,C)
+  - A sets its own digest, but this time it has 3 members! (A, B, C)
   - A removes itself from the heard_from list, and since that list is now empty, it sends a
     stability message {A,B,C}. However, B has *not* agreed on C's highest delivered seqnos, so this is
     unilateral action and may cause the above problem.

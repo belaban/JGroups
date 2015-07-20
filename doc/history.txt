@@ -742,7 +742,7 @@ Version 2.2.1
 
 - Scheduler can now handle incoming requests concurrently (if concurrent_processing is true). By default,
   this is false: setting this to true can destroy the ordering properties provided by a protocol stack, e.g.
-  in the case of total or causal order. FIFO (default) should be fine, but please know what you are doing !
+  in the case of total or causal order. FIFO (default) should be fine, but please know what you are doing!
   (bela Dec 10 2003) 
 
 - Modified SMACK protcol: handling of CONNECT/CONNECT_OK and DISCONNECT/DISCONNECT_OK was incorrect. Worked only
@@ -1179,7 +1179,7 @@ Version 2.0.4
   (bela Oct 28 2002)
 
 - DistributedHashtable: moved MethodCall creation from remote method
-  invocation (once/call !) to instance level (once/instance)
+  invocation (once/call!) to instance level (once/instance)
   (bela Oct 17 2002)
 
 - Made TOTAL.Header public (needed by externalization)
@@ -1674,7 +1674,7 @@ Version 0.9.9.8
   (bela Feb 15 2001)
 
 - Added bounded buffer to PBCAST: now PBCAST-related messages (like
-  gossips, etc (not multicast msgs !)) will be discarded if buffer is
+  gossips, etc (not multicast msgs!)) will be discarded if buffer is
   full. This is not a problem since gossips in later rounds can make
   up for the loss of previous gossips.
 
@@ -1968,7 +1968,7 @@ Version 0.9.3
 
 - Modified demo apps: UNICAST layer has to be *above*
   NAKACK. Otherwise, NAKs and ACKs of the NAKACK layer are reliable
-  too (causing way to many msgs, e.g. acking of ACKs themselves) !
+  too (causing way to many msgs, e.g. acking of ACKs themselves)!
   (bba Nov 30 1999)
 
 - Removed PT2PT protocol layer, Pt2ptFsm, Pt2ptHeader: replaced by
@@ -2044,7 +2044,7 @@ Version 0.9
     - MNAK, GMS, GmsImpl
 
   Therefore this version will break existing code that is based on
-  these classes ! Either use a previous version, or rewrite the code
+  these classes! Either use a previous version, or rewrite the code
   using the new classes (e.g. RpcDispatcher for Dispatcher)
 
 - Added ChannelListener (bba Nov 5 1999)
@@ -2076,9 +2076,9 @@ Version 0.8.5
   linked list.
 
 - Implemented interface Externalizable in Message.java, Header.java:
-  huge performance improvement ! Header: in addition to the byte rep,
+  huge performance improvement! Header: in addition to the byte rep,
   we also store object directly (caching). Thus, Message.PeekHeader()
-  does not always have to reconstruct an object from the byte rep !
+  does not always have to reconstruct an object from the byte rep!
   (bba Sep 3 1999)
 
 - Implemented List and Stack: faster versions of their respective
@@ -2214,7 +2214,7 @@ Version 0.6.9 May 27 1999 (bba)
 
 - Created NakReceiverWindow out of SlidingWindow (will be removed
   soon), thread is now created only when needed (ther might be many
-  NakReceiverWindow instances !). Also, retransmitter thread does not
+  NakReceiverWindow instances!). Also, retransmitter thread does not
   check age of message any more, just presence or absence.
 
 
@@ -2371,7 +2371,7 @@ Version 0.5.4 Jan 13 1999 (bba)
 -------------------------------
 
 - Back to square 1: dropped unicast mode altogether, essentially back
-  to version 0.5.2 !
+  to version 0.5.2!
 
 
 

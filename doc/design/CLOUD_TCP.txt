@@ -31,7 +31,7 @@ next neighbor and so on.
 Implementation:
 ---------------
 
-This functionality can probably be done in a subclass of TCP (or maybe even be integrated into TP !).
+This functionality can probably be done in a subclass of TCP (or maybe even be integrated into TP!).
 
 Update: IMO a better approach is to create a new protocol layered on top of the transport. This way, we can use this
 functionality with other transports as well.

@@ -65,5 +65,5 @@ Merging of local digests (NAKACK.mergeDigest())
     - Else: reset P's NakReceiverWindow and overwrite it with the new seqno
 
 ==> If we didn't do this, in the example above, B's seqno would be #7 whereas we already received seqnos up to #10 from
-    P, so we'd receive seqnos #7-#10 from P twice !
+    P, so we'd receive seqnos #7-#10 from P twice!
     

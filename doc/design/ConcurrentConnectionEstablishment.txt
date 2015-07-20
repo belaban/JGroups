@@ -20,7 +20,7 @@ at the exact same time, then we run into the following scenario:
 - We used to close Connections which were already in the table, but this lead to ping-pong effects where concurrent
   initial senders always closed each others connections
 - Even worse: a new Socket() always creates a new Connection object and places it into the table, *regardless* of
-  whether a Connection for a given destination already exists or not !
+  whether a Connection for a given destination already exists or not!
 
 
 SOLUTION:
@@ -47,7 +47,7 @@ On connection accept from B:
 - Lock CT
 - If there is no key for B, we create a connection for B and add it to the CT
   - Else:
-      - If B's address > A's address --> remove the existing entry for B (closing the connection !) and add
+      - If B's address > A's address --> remove the existing entry for B (closing the connection!) and add
         the newly created connection for B to the CT
       - Else close the connection which resulted from accept(B)
 - Unlock CT

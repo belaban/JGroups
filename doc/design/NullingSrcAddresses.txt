@@ -9,7 +9,7 @@ addresses with it, e.g. 10.0.0.1 and 10.0.0.2.
 
 However, when we have a member M1 bound to 10.0.0.1, and another member M2 bound to 10.0.0.2, and
 bind_to_all_interfaces is set to true, then it was observed that - regardless of the bind address -
-the sender's address in a DatagramPacket received was always 10.0.0.1 (the first address assigned) !
+the sender's address in a DatagramPacket received was always 10.0.0.1 (the first address assigned)!
 
 Therefore, members would never find each other.
 

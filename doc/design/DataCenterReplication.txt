@@ -76,16 +76,16 @@ Cluster RPCs in JBossCache
 - When we invoke a cluster RPC in JBossCache, the destination list is (for example) {A,C,D,E}
 - This list is sent with the RPC (as a header)
 - The receiver drops the request if its local address is not part of the destination list
-==> This would cause all nodes in the SFO cluster to drop the cluster RPC request !
+==> This would cause all nodes in the SFO cluster to drop the cluster RPC request!
 
 Buddy Replication
 -----------------
-- When we replicate from B to C, the relay (e.g. E) doesn't know about this and will not replicate !
-- How do we determine to whom we should replicate in SFO if we use buddy replication ?
+- When we replicate from B to C, the relay (e.g. E) doesn't know about this and will not replicate!
+- How do we determine to whom we should replicate in SFO if we use buddy replication?
 
 Identity
 --------
-- What if we have members that have the same address in NYC and SFO ?
+- What if we have members that have the same address in NYC and SFO?
 - If we use TCP plus bin_port (7800), then every member starts at 7800
 - If we happen to use IP local addresses in both SFO and NYC (e.g. 192.168.1.1), then
   we run into this issue
@@ -95,10 +95,10 @@ Reception of message sent by self
 - Because we relay messages only on *reception*, NOT on sending, a relay might not receive it own message
 - This is possible when the relay (e.g. E) calls RpcDispatcher.callRemoteMethods() with a target list which excludes
   itself
-==> Solution: catch the message when sending, *not* receiving !
+==> Solution: catch the message when sending, *not* receiving!
 
-No, doesn't work ! The relay would have to be active on every node ! This is not feasible as this would require
-every node to have a TCP connection to NYC ! We still need to do it on reception not sending. However, messages
+No, doesn't work! The relay would have to be active on every node! This is not feasible as this would require
+every node to have a TCP connection to NYC! We still need to do it on reception not sending. However, messages
 cannot exclude the sender
 
 *****************************************************

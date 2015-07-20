@@ -10,7 +10,7 @@
 - FC: on a fast network, we can still run out of memory because received_msgs/delivered_msgs becomes very big.
   Instead of basing FC on the speed of the network, we should also take the number of messages processed
   (a.k.a delivered_msgs/received_msgs) into account, and only send credits when that number falls below a
-  certain threshold. First: look at the number of received/delivered msgs in the perf test !
+  certain threshold. First: look at the number of received/delivered msgs in the perf test!
   --> Look into memory-based FC: criteria for sending credits are
       - available free memory
       - outstanding retransmission requests (sender sends with each message number of messages sent,
@@ -203,7 +203,7 @@
 - Feb 2005 (bela)
   NAKACK/NakReceiverWindow:
   - NakReceiverWindow.Retransmitter.remove(): linear search for
-    removable element plus linear removal: 2 linear access patterns !
+    removable element plus linear removal: 2 linear access patterns!
     Replace with log(n) access pattern, e.g. TreeMap
   - updateHighestSeqno(): linear search
 
@@ -233,7 +233,7 @@
   ucast out. Combine them into 1 or 2 sockets (e.g. 1 mcast in/out, 1
   ucast in/out). The reason for this was that under Linux, because
   sockets were not BSD-compatible, a ucast send socket has to be
-  closed and re-opened after every send ! This error may have been
+  closed and re-opened after every send! This error may have been
   fixed in the meantime.
   --> Implemented in UDP and UDP1_4 protocols
 
@@ -302,7 +302,7 @@
 - June 1 2002 (bela)
   UNICAST:
   - UnicastTest has too many retransmissions for 10000 messages even
-    with -loopback !
+    with -loopback!
   - Exponential backoff for message retransmission (similar to
     NakReceiverWindow)
   - variable retransmission configuration (currently only 1 value (2
@@ -370,7 +370,7 @@
 
 - Oct 10 2001 (bela)
   Problem with Thread.interrupt on Linux/JDK1.3.1: thread waiting on
-  input (e.g. System.in.read() do *not* get interrupted !)
+  input (e.g. System.in.read() do *not* get interrupted!)
   --> Fixed. See history.txt
 
 - Oct 10 2001
@@ -547,7 +547,7 @@
 - Dec 10 2000 (bela)
   MessageDispatcherTest: if using 100ms instead of 2000, the app
   crashes: problem with ReusableThread / Scheduler ?
-  - use no Sleep(): app hangs !
+  - use no Sleep(): app hangs!
   - MessageDispatcherTest / RpcDispatcherTest: hangs when closing
     channel (number of threads still running)
   --> Due to bug in ReusableThread, AckMcastSenderWindow
@@ -611,7 +611,7 @@
       initial digests back in
   --> Therefore, the client currently does not set its digest received
       as a result of the Join request. This has to be uncommented once
-      gossip is available !
+      gossip is available!
   ==> see ./JavaStack/Protocols/pbcast/DESIGN for an explanantion of
       the solution to this issue
 
@@ -724,7 +724,7 @@
     it. But since the coordinator installs a new view, message
     retransmission is stopped, and that member may never receive the
     new view. Therefore we have to make sure that all non-faulty
-    members have received the new view before resetting retransmission !
+    members have received the new view before resetting retransmission!
   - Solution: see ./design/ViewChangeRetransmission.txt
 
 
@@ -740,7 +740,7 @@
 
 
 - Nov 99 (bba)
-  Add objects, ints etc to Message (not as Header, but to message itself !)
+  Add objects, ints etc to Message (not as Header, but to message itself!)
 
 - Nov 99 (bba)
   Modify layer FD to *not* send out are-you-alive messages to a member
@@ -755,7 +755,7 @@
   Phase out MessageCorrelator
 
 - Nov 99 (bba)
-  Remove classes not needed any longer !!!
+  Remove classes not needed any longer!!!
 
 - Nov 99 (bba)
   Remove IDs for Messages. IDs are added by MNAK/NAK layers
@@ -787,7 +787,7 @@
 - Jan 13, 1999 (bba): Change Channel according to Channel interface document
 
 - Provide unicast point-to-point channel: Connect(new Address("janet", 3456))
-  Implemented and then dropped again ! Connection-less group mcast and
+  Implemented and then dropped again! Connection-less group mcast and
   connection-oriented ucast don't mix very well in the same model. That's why
   there are DatagramSockets and MulticastSockets...
 

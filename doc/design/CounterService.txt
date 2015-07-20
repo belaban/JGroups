@@ -110,6 +110,6 @@ On reception of a reconciliation request from P:
 
 Issues:
 -------
-- Int or long counters ? Do we let the users choose ?
+- Int or long counters? Do we let the users choose?
 
 

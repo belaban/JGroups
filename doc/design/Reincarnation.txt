@@ -16,7 +16,7 @@ JGroups relies on the fact that the assignment of ports by the OS is always (not
 
 1. Restart:
 When a member P crashes and then is restarted, if FD is used and P is restarted *before* it is excluded,
-then we have a new member *under the same old address* ! Since it lost all of its state (e.g. retransmission table),
+then we have a new member *under the same old address*! Since it lost all of its state (e.g. retransmission table),
 retransmission requests sent to the new P will fail.
 
 2. Shunning:
@@ -24,7 +24,7 @@ Regarding shunning: a member keeps its last N (default is 100) ports used, and m
 those already-used ports when it is shunned. However, this is process-wide and *not* machine-wide, e.g. when we have
 processes P1 on A:5000 and P2 on A:5002 (on machine A), and both of them are shunned at the same time,
 when they rejoin, P1 does not use port 5000, but might use port 5002, and P2 doesn't use 5002, but might use 5000, so
-they could assume each other's identity !
+they could assume each other's identity!
 
 
 Both problems cannot be solved by remembering the last 100 ports: in case #1, this list is lost because we start a

@@ -226,7 +226,7 @@ public class MessageDispatcherTest implements RequestHandler {
 
     public Object handle(Message msg) throws Exception {
         System.out.println("handle(): " + msg);
-        return "Success !";
+        return "Success!";
     }
 
     public static void main(String[] args) {
@@ -492,11 +492,11 @@ The filter accepts all responses whose value is greater than 1, and returns as s
           
 
 WARNING: If we have a RspFilter which doesn't terminate the call even if responses from all members have
-         been received, we might block forever (if no timeout was given) ! For example, if we have 10 members,
+         been received, we might block forever (if no timeout was given)! For example, if we have 10 members,
          and every member returns 1 or 2 as return value of foo() in the above code, then
          isAcceptable() would always return false, therefore never incrementing `num`,
          and `needMoreResponses()` would always return true; this would never terminate
-         the call if it wasn't for the timeout of 10 seconds ! +
+         the call if it wasn't for the timeout of 10 seconds! +
          This was fixed in 3.1; a blocking call will always return if we've received as many responses as
          we have members in `dests`, regardless of what the RspFilter says.
 
@@ -718,9 +718,9 @@ lock +"mylock"+. This is what happens (with the locking protocol being `CENTRAL_
 * D successfully acquires `"mylock"` from C
 * The partitions merge back into `{A,B,C,D}`. Now, only A is the coordinator, but C ceases
 to be a coordinator
-* Problem: D still holds a lock which should actually be invalid !
+* Problem: D still holds a lock which should actually be invalid!
 There is no easy way (via the Lock API) to 'remove' the lock from D. We could for example simply release
-D's lock on `"mylock"`, but then there's no way telling D that the lock it holds is actually stale !
+D's lock on `"mylock"`, but then there's no way telling D that the lock it holds is actually stale!
             
 Therefore the recommended solution here is for nodes to listen to `MergeView` changes if they expect
 merging to occur, and re-acquire all of their locks after a merge, e.g.:

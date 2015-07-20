@@ -17,17 +17,17 @@ A: New coordinator doesn't take over
 - A terminates, which means that retransmission of A's V2 in B stops (B never receives V2)
 - B's view is now V1 {A,B,C}
 - C's view is now V2 {B,C}
-- B does *not* become the new coordinator !
+- B does *not* become the new coordinator!
 
 Problem 1:
 - A new member D wants to join, B replies to the discovery request with coord=A, C replies with coord=B
-- If D sends a JOIN request to B, B will reject the JOIN request because it thinks the coord is still A !
+- If D sends a JOIN request to B, B will reject the JOIN request because it thinks the coord is still A!
 - If D sends a JOIN request to A, it will time out and receive no response
-  --> In any case, D will continue looping forever, or until B is killed !
+  --> In any case, D will continue looping forever, or until B is killed!
 
 Problem 2:
 - B invokes a group RPC. Because it still thinks A is part of the group, it will wait for A's reply, which
-  never arrives. If the mode is GET_ALL and timeout is 0, then this call will block forever !
+  never arrives. If the mode is GET_ALL and timeout is 0, then this call will block forever!
 
 
 B: Continuous SUSPECT messages
@@ -40,12 +40,12 @@ B: Continuous SUSPECT messages
 - B's view is now V2 {B,C}
 - When A terminates, C starts multicasting SUSPECT(A) messages to the group
 - B (as coord) handles the SUSPECT(A) message, but since A is not a member of B's view V2 {B,C}, B simply
-  *ignores* the SUSPECT(A) message !
+  *ignores* the SUSPECT(A) message!
 - C continues multicasting SUSPECT(A) messages to the cluster
 
 Problem:
 - C invokes a group RPC. Because it still thinks A is part of the group, it will wait for A's reply, which
-  never arrives. If the mode is GET_ALL and timeout is 0, then this call will block forever !
+  never arrives. If the mode is GET_ALL and timeout is 0, then this call will block forever!
 
 
 C: New coordinator doesn't take over, old coord crashes
@@ -59,9 +59,9 @@ D: The coordinator leaves while another member joins
 - In the current impl, the new member P will receive a view V in a JoinRsp
 - The VIEW V is then to be broadcast by the coord
 - However, the coord leaves before this happens
---> Everybody has the old view, while P has the new view !
---> We need to atomically return the JoinRsp and broadcast the view !
-    --> Maybe we should broadcast the view first and then return the JoinRsp to the client !
+--> Everybody has the old view, while P has the new view!
+--> We need to atomically return the JoinRsp and broadcast the view!
+    --> Maybe we should broadcast the view first and then return the JoinRsp to the client!
 --> See ViewHandling.txt for a new approach
 
 

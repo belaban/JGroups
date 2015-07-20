@@ -44,7 +44,7 @@ An important item that is costly to recreate, or cannot be recreated at all, sho
 The point of being able to define replication counts per data item is that we can save memory. If we
 compare this to RAID 1, then - because we're replicating every single data item - we can effectively only use
 half of the memory (disk space) allocated to the RAID system. With per data replication counts, we can increase the
-net memory that can be used (unless of course all elements are added with a count of -1 !).
+net memory that can be used (unless of course all elements are added with a count of -1!).
 
 Put() always results in a multicast across the cluster. Each node determines by itself whether it will add the KEY|VAL
 or not. This is done by computing a set of consistent hashes from KEY, mapping them to a set of servers and determining

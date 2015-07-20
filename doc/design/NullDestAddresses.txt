@@ -14,7 +14,7 @@ the receiver can determine the destination:
            - if not set, we set the destination to the address passed to use from the ConnectionTable
 
 This requires that when marshalling a message, we send a multicast byte with each Message (or once for bundled msgs)
-based on the destination address !
+based on the destination address!
 
-Note that we *cannot* modify the destination address in the message itself, otherwise retransmissions might fail !
+Note that we *cannot* modify the destination address in the message itself, otherwise retransmissions might fail!
 

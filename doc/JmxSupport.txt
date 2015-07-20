@@ -58,7 +58,7 @@ Example
 -------
 The Draw program was modified to support JMX. The following steps describe how to configure and run a JDK 5 VM and
 look at the resulting Draw application via jconsole.
-- Run the Draw program (the JDK needs to be 5 !):
+- Run the Draw program (the JDK needs to be 5!):
   java -Dcom.sun.management.jmxremote org.jgroups.demos.Draw -props c:\udp.xml -jmx
   (the -jmx flag enables registering the Channel and protocols with the MBeanServer)
 - Start jconsole and connect to the local Draw process
