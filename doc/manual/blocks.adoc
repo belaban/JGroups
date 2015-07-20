@@ -603,7 +603,7 @@ updates to an unrelated web session 2 on A have been processed.
 
 This is similar to what the <<SCOPE>> protocol tried to achieve.
 
-NOTE: The asynchronous invocation API was added in 3.3
+NOTE: The asynchronous invocation API was added in JGroups 3.3.
         
 
 [[ReplicatedHashMap]]

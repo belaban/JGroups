@@ -846,7 +846,7 @@ As a result, we get a speedup of almost N for a cluster of N if every node is se
 ==== Scopes: concurrent message delivery for messages from the same sender
 
 
-NOTE: In 3.3, SCOPE is replaced with the <<AsyncInvocation>>. SCOPE will probably be removed in 4.x.
+NOTE: In JGroups 3.3, SCOPE is replaced with the <<AsyncInvocation>>. SCOPE will probably be removed in JGroups 4.x.
 
 In the previous paragraph, we showed how the concurrent stack delivers messages from different senders
                 concurrently. But all (non-OOB) messages from the same sender P are delivered in the order in which
@@ -927,37 +927,37 @@ The 2 unit tests UNICAST_OOB_Test and NAKACK_OOB_Test demonstrate how OOB messag
 
 ==== Replacing the default and OOB thread pools
 
-In 2.7, there are 3 thread pools and 4 thread factories in TP:
-                .Thread pools and factories in TP
+In JGroups 2.7, there are three thread pools and four thread factories in TP:
+
 [options="header",cols="3,10"]
 |===============
 |Name|Description
 |Default thread pool|This is the pool for handling incoming messages. It can be fetched using
                                     getDefaultThreadPool() and replaced using setDefaultThreadPool(). When setting a
-                                    thread pool, the old thread pool (if any) will be shutdown and all of it tasks
-                                    cancelled first
+                                    thread pool, the old thread pool (if any) will be shutdown and all of its tasks
+                                    cancelled first.
                                 
 |OOB thread pool|This is the pool for handling incoming OOB messages. Methods to get and set
-                                    it are getOOBThreadPool() and setOOBThreadPool()
+                                    it are getOOBThreadPool() and setOOBThreadPool().
 |Timer thread pool|This is the thread pool for the timer. The max number of threads is set through
                                 the timer.num_threads property. The timer thread pool cannot be set, it can only
                                 be retrieved using getTimer(). However, the thread factory of the timer
-                                can be replaced (see below)
+                                can be replaced (see below).
 |Default thread factory|This is the thread factory (org.jgroups.util.ThreadFactory) of the default
                                     thread pool, which handles incoming messages. A thread pool factory is used to
                                     name threads and possibly make them daemons.
                                     It can be accessed using
-                                    getDefaultThreadPoolThreadFactory() and setDefaultThreadPoolThreadFactory()
+                                    getDefaultThreadPoolThreadFactory() and setDefaultThreadPoolThreadFactory().
 |OOB thread factory|This is the thread factory for the OOB thread pool. It can be retrieved
                                 using getOOBThreadPoolThreadFactory() and set using method
-                                setOOBThreadPoolThreadFactory()
+                                setOOBThreadPoolThreadFactory().
 |Timer thread factory|This is the thread factory for the timer thread pool. It can be accessed
-                                using getTimerThreadFactory() and setTimerThreadFactory()
+                                using getTimerThreadFactory() and setTimerThreadFactory().
 |Global thread factory|The global thread factory can get used (e.g. by protocols) to create threads
                                 which don't live in the transport, e.g. the FD_SOCK server socket handler thread.
                                 Each protocol has a method getTransport(). Once the TP is obtained, getThreadFactory()
                                 can be called to get the global thread factory. The global thread factory
-                                can be replaced with setThreadFactory()
+                                can be replaced with setThreadFactory().
 
 |===============
 
@@ -969,13 +969,13 @@ NOTE: Note that thread pools and factories should be replaced after a channel ha
 
 ==== Sharing of thread pools between channels in the same JVM
 
-In 2.7, the default and OOB thread pools can be shared between instances running inside the same JVM. The
+In JGroups 2.7, the default and OOB thread pools can be shared between instances running inside the same JVM. The
                 advantage here is that multiple channels running within the same JVM can pool (and therefore save) threads.
                 The disadvantage is that thread naming will not show to which channel instance an incoming thread
                 belongs to.
             
 
-Note that we can not just shared thread pools between JChannels within the same JVM, but we can also
+Note that we can not just share thread pools between JChannels within the same JVM, but we can also
                 share entire transports. For details see <<SharedTransport>>.
             
 
