@@ -35,7 +35,7 @@ DESIGN:
      to represent non multicast addresses)
 
 - All UUIDs have a reference to a static table which contains the mappings between logical names and UUIDs
-  (classloader issues ?)
+  (classloader issues?)
 
 - The logical name is used in UUID.toString(), and the least and most significant bits are used for equals() and
   hashCode()
@@ -74,14 +74,14 @@ UDP startup
 
 TCPPING:TCP startup
 -------------------
-- The problem is that TCPPING has as initial_hosts the *physical* (not logical) addresses listed !
+- The problem is that TCPPING has as initial_hosts the *physical* (not logical) addresses listed!
 - The joiner sends a discovery request to all physical addresses listed in initial_hosts
 - The dest_addr field of a discovery request message is the physical address
 - The transport usually expects UUIDs as addresses and finds the associated physical address in the cache
 - However, in this case, the transport re-uses the physical address (dest_addr) in the message, bypasses the
   translation UUID --> physical address, and nulls dest_addr in Message
 - The destination address is now *null*. This works because Discovery/PING/TCPPING don't check the messages's
-  dest_addr field ! (Otherwise 'null' would be interpreted as a multicast destination !)
+  dest_addr field! (Otherwise 'null' would be interpreted as a multicast destination!)
 - On the receiver side, the destination is not used for discovery
 - The response is sent back to the sender (Message.getSrc()), this is a UUID and will be translated back
   into a physical address
@@ -171,7 +171,7 @@ On view change
 
 IDs instead of UUIDs
 --------------------
-- Implemented in TP or a separate protocol (ID ?)
+- Implemented in TP or a separate protocol (ID?)
 - The coordinator dishes out IDs (shorts) for new nodes
 - The IDs are always increasing
 - Every new ID is broadcast across the cluster, so everyone knows the highest IDs
@@ -213,31 +213,31 @@ TODOs
   the logical name, but maybe the host name and a random short
 - Util.writeAddress()/writeAddresses(): currently optimized for IpAddress, change to UUID.
   Example: View.writeTo()/readFrom()
-- How are we going to associate logical names to channels when a shared transport is used ?
+- How are we going to associate logical names to channels when a shared transport is used?
 - Marshalled size of UUID: 18 bytes, IpAddress: 9 bytes. Size in memory (without superclass, additional_data, on
-  64 bit machine): 16 bytes for UUID, 32 bytes for IpAddress ! So while marshalling takes more space for UUID,
-  it is quite compact in memory !
+  64 bit machine): 16 bytes for UUID, 32 bytes for IpAddress! So while marshalling takes more space for UUID,
+  it is quite compact in memory!
   If it turns out that UUIDs generate too much overhead on the wire (bandwidth), we should think about canonicalizing
   UUIDs to shorts: run an agreement protocol which assigns cluster-wide unique shorts to UUIDs, and send the shorts
-  rather than the UUIDs around !
+  rather than the UUIDs around!
 - UDP.initial_hosts also needs to send to physical addresses
 - Implement getPhysicalAddress() in all transports
 - BasicTCP.handleDownEvent(): view has to be handled in ProtocolAdapter and connections have to be closed there, too
-  --> The semantics of retainAll() have to be inspected: do we handle UUIDs or PhysicalAddresses ?
+  --> The semantics of retainAll() have to be inspected: do we handle UUIDs or PhysicalAddresses?
   --> Should we switch to a model where ConnectionTable never reaps connections based on view changes, but based on
-      idle time ? Ie. reap a connection that hasn't been used for more than 30 seconds
-- TCPPING.initial_hosts="A,B": how will we find out about C, D and E ?
+      idle time? Ie. reap a connection that hasn't been used for more than 30 seconds
+- TCPPING.initial_hosts="A,B": how will we find out about C, D and E?
 
 
 - Shared transport
-  - Move setSourceAddress() from TP to JChannel ?
+  - Move setSourceAddress() from TP to JChannel?
   - Check whether thread names in a shared transport are still correct.
-  - Do thread names use the logical or UUID name of a channel ?
-  - Is Global.DUMMY still needed when we set the local address top down ?
+  - Do thread names use the logical or UUID name of a channel?
+  - Is Global.DUMMY still needed when we set the local address top down?
   - The 'members' variable in TP is a union of all memberships in the shared transport case
     - In BasicTCP, we need to change retainAll() to use physical addresses rather than UUIDs stored ib TP.members
     - Dito for suspected_mbrs
-    - In general, change all addresses in TCP to PhysicalAddresses. Or should we use logical addresses ?
+    - In general, change all addresses in TCP to PhysicalAddresses. Or should we use logical addresses?
   
         
 

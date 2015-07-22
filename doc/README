@@ -1,5 +1,5 @@
 
-JGroups ships as a single JAR file: jgroups-x.y.z.jar. Simply add it to your classpath and start coding !
+JGroups ships as a single JAR file: jgroups-x.y.z.jar. Simply add it to your classpath and start coding!
 
 The JGroups version can be printed with java -jar jgroups-x.y.z.jar.
 

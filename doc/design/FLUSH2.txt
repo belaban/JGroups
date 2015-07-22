@@ -65,7 +65,7 @@ On SUSPECT(S):
 - Remove S from start_flush_set and stop_flush_set
 - If start_flush_set is now empty --> notify thread blocking on it
 - Remove S from FlushState.flush_leaders
-- If FlushState.flush_leaders is empty: (flush leader S crashed during flush !)
+- If FlushState.flush_leaders is empty: (flush leader S crashed during flush!)
     - Unblock down_mutex
 
 
@@ -73,7 +73,7 @@ On view change V:
 - Remove all members that are not part of V from start_flush_set and stop_flush_set
 - If start_flush_set is now empty --> notify thread blocking on it
 - Remove all members from FlushState.flush_leaders which are not part of V
-- If FlushState.flush_leaders is empty: (flush leader crashed during flush !)
+- If FlushState.flush_leaders is empty: (flush leader crashed during flush!)
     - Unblock down_mutex
 
 

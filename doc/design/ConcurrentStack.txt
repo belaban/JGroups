@@ -99,11 +99,11 @@ Todos
   unmarshalled). Don't use increasing numbers for threads (?)
   - Append (channel="<GroupName>") to each pool thread's name
 
-- Dynamic resizing of thread pools, e.g. according to number of nodes in a cluster ?
+- Dynamic resizing of thread pools, e.g. according to number of nodes in a cluster?
 
 - Enable setting the thread pools programmatically
 
-- Remove configurability of rejection policy ?
+- Remove configurability of rejection policy?
 
 
 
@@ -112,8 +112,8 @@ Todos
 Done
 ====
 
-- Thread pool shut-downs: correct ? Should we use something else rather than shutdownNow() ?
-  - Use of shutdown() rather than shutdownNow() ?
+- Thread pool shut-downs: correct? Should we use something else rather than shutdownNow()?
+  - Use of shutdown() rather than shutdownNow()?
   - We continue using shutdownNow()
 
 - Handle dispatching of messages from Unmarshaller to OOB or regular thread pool based on flags. Currently not done;
@@ -124,12 +124,12 @@ Done
 - Switch all queues in thread pools from number of elements to number of bytes
   Created JIRA issue
 
-- How are OOB messages handled by UNICAST and NAKACK ? Are these 2 effectively ignoring OOB flags ? Does it make
-  sense to use OOB messages in protocols *above* UNICAST or NAKACK ? Exampe: GMS sending VIEW_ACK messages.
+- How are OOB messages handled by UNICAST and NAKACK? Are these two effectively ignoring OOB flags? Does it make
+  sense to use OOB messages in protocols *above* UNICAST or NAKACK? Exampe: GMS sending VIEW_ACK messages.
   Logic in UNICAST:
   - Receive OOB message, place in receiver table
-  - Pass up the OOB message *immediately*, regardless of whether it is in sequence !
-  - When message is finally removed, do *NOT* pass it up when marked as OOB !
+  - Pass up the OOB message *immediately*, regardless of whether it is in sequence!
+  - When message is finally removed, do *NOT* pass it up when marked as OOB!
   JGRP-379 (NAKACK) / JGRP-377 (UNICAST)
 
 - Check UNICAST and NAKACK for correct synchronization: block messages from the *same* sender, other messages can be

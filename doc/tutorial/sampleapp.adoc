@@ -122,7 +122,7 @@ correct address anyway.
         
 The third argument is the line that we read from stdin, this uses Java
 serialization to create a byte[] buffer and set the message's payload. Note that we could also
-serialize the object ourselves (which is actually the recommended way !) and use the Message contructor which
+serialize the object ourselves (which is actually the recommended way!) and use the Message contructor which
 takes a byte[] buffer as third argument.
 
 The application is now fully functional, except that we don't yet receive messages or view notifications.

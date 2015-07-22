@@ -112,7 +112,7 @@ Information for target P is not in local cache
 ----------------------------------------------
 - When a message is to be sent to P and P is not in the local cache, the information for P is fetched from the
   current coordinator (A).
-  - Alternative: read it from the members file ? Advantage is that we can read the entire file and thus
+  - Alternative: read it from the members file? Advantage is that we can read the entire file and thus
     possibly suppress further fetches from the coord for other missing members.
 
 
@@ -137,7 +137,7 @@ Merge of {A,B,C}, {M,N,O} and {X,Y,Z}
 
 Issues
 ------
-- Do we need to support subclasses of UUID (e.g. ExtendedUUID) ?
+- Do we need to support subclasses of UUID (e.g. ExtendedUUID)?
   --> Probably yes: we actually only need the UUIDs as *keys* for the physical addrs in the caches, so it doesn't matter
       that we strip ExtendedUUIDs down to UUIDs as they're only used for lookup purposes anyway. The UUIDs sent with
       the messages (e.g. sender) are not changed, so this should not have any adverse effect.

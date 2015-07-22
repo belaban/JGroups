@@ -26,7 +26,7 @@ Receiving a unicast message from P
       - Create a new entry for P in the connection table
       - Add the message to the entry for P (AckReceiverWindow) and ack it back to P
     - Else:
-      - Discard the message and do *not* ack it ! This is necessary, so P keeps retransmitting it !
+      - Discard the message and do *not* ack it! This is necessary, so P keeps retransmitting it!
   - Else:
     - Add the message to the entry for P (AckReceiverWindow) and ack it back to P
 

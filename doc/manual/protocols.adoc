@@ -1684,7 +1684,7 @@ As discussed in <<Scopes>>, the SCOPE protocol is used to deliver updates
 SCOPE has a separate thread pool. The reason why the default thread pool from the transport wasn't used
                 is that the default thread pool has a different purpose. For example, it can use a queue to which all
                 incoming messages are added, which would defy the purpose of concurrent delivery in SCOPE. As a matter
-                of fact, using a queue would most likely delay messages get sent up into SCOPE !
+                of fact, using a queue would most likely delay messages get sent up into SCOPE!
             
 
 Also, the default pool's rejection policy might not be "run", so the SCOPE implementation would have

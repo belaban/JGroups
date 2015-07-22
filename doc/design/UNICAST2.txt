@@ -18,10 +18,10 @@ Now the partition heals and A and B can communicate again.
 
 Assuming A's next seqno to B is #25 (and #7 for receiving messages from B),
 B will store the message because it expects #1 from A (new connection). As a matter of fact, B will store *and not
-deliver* all subsequent messages from A !
+deliver* all subsequent messages from A!
 
 The reverse direction is also bad: B will send #1 to A, but A expects #7, so A will discard the message. The first 6
-messages from B are discarded at A !
+messages from B are discarded at A!
 
 
 Goals
@@ -142,7 +142,7 @@ The scenarios are tested in UNICAST_ConnectionTests
 - B now finally receives #1, and creates a new receiver window for A at #1
 - A retransmits #3
 - B stores #3 but doesn't deliver it because it hasn't received #2 yet
-- However, B will *never* receive #2 from A because that seqno has been removed from A's sender window !
+- However, B will *never* receive #2 from A because that seqno has been removed from A's sender window!
 
 
 #7 Merge where A and B are in different partitions:
@@ -173,9 +173,9 @@ The scenarios are tested in UNICAST_ConnectionTests
 
 Issues
 ------
-- How do we handle retransmissions of the first message (first=true) ? We *cannot* create a new entry.recv_win, or
-  else we trash already received msgs ! Use a UUID (as connection-ID) instead of first=true ? Maybe the system time
-  is sufficient ? After all, the ID only has to be unique between A and B !
+- How do we handle retransmissions of the first message (first=true)? We *cannot* create a new entry.recv_win, or
+  else we trash already received msgs! Use a UUID (as connection-ID) instead of first=true? Maybe the system time
+  is sufficient? After all, the ID only has to be unique between A and B!
   ==> Solved by using connection IDs (see above)
 
 

@@ -55,7 +55,7 @@ Non-blocking reads and writes
   --> This can cause out-of-memory exceptions, as too much data is buffered in memory
   --> The heap-based queue is yet another buffer, but the socket already has a buffer of its own (the send window)
   --> I suggest we leave writes blocking
-  --> Issue: we cannot do non-blocking reads and blocking writes on the same channel !
+  --> Issue: we cannot do non-blocking reads and blocking writes on the same channel!
   - Hmm, perhaps non-blocking writes can be used and a fixed number of messages can wait to be written in a bounded queue
   - When the queue is full, subsequent messages would get dropped
   - Retransmission takes care of resending the dropped messages anyway, and dropping has the effect that flow control
@@ -68,7 +68,7 @@ Memory-mapped files for exchange of messages between members on the same box
 - No notifications when data is ready (FileChannel doesn't implement SelectableChannel)
 - Shared memory is difficult to use for multicasts (one producer - many consumers)
   - E.g. a ring buffer could only advance its read pointer when it know that all consumers have read the buffer
-  - Even then, the buffer can not be overwritten until all members have purged the message via STABLE !
+  - Even then, the buffer can not be overwritten until all members have purged the message via STABLE!
 
 
 
@@ -94,13 +94,13 @@ Main advantages of using NIO.2
 ------------------------------
 - Fewer threads in TCP. However, this could also be achieved by reviving TCP_NIO (TCP_NIO2)
 - Direct memory (but only for TCP, and only on the send side)
-  --> Is this avoiding of 1 copy really that much faster (test perf) ?
+  --> Is this avoiding of 1 copy really that much faster (test perf)?
 
 
 Main disadvantages
 ------------------
 - There have been reports that NIO is slower than BIO
-- Big change to the API (Message, JChannel.send() etc) --> I don't like this !
+- Big change to the API (Message, JChannel.send() etc) --> I don't like this!
 - Bulky ByteBuffer class with too many unneeded fields (using a lot of memory)
 - Complicated ref counting with direct ByteBuffers (see below under "Issues")
 
@@ -119,7 +119,7 @@ Misc
 - There have been a number of reports that claim NIO is slower than BIO, investigate and run perf tests
 - Created NioServer/NioClient to test direct and heap-based ByteBuffers for sending and receiving of messages over
   a SocketChannel. Results (testing on local mac, between mac and Linux workstation and on cluster01-16 lab) showed
-  that there was no perf difference between direct or heap-based memory !
+  that there was no perf difference between direct or heap-based memory!
 
 
 

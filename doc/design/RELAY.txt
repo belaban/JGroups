@@ -16,7 +16,7 @@ proposal, and could be done for example by changing DNS entries, load balancers 
 
 The data centers in NYC and SFO are *completely autonomous local clusters*. There are no stability, flow control or
 retransmission messages exchanged between NYC and SFO. This is critical because we don't want the SFO cluster to block
-for example on waiting for credits from a node in the NYC cluster !
+for example on waiting for credits from a node in the NYC cluster!
 
 For the example, we assume that each site uses a UDP based stack, and relaying between the sites uses a
 TCP based stack, see figure RELAY.png.
@@ -116,7 +116,7 @@ RELAY.up(msg):
 RELAY.down(msg):
 - If msg.dest is not a ProxyUUID: pass down, return
 - forwardToCoord(msg)
-- Return // don't pass down !
+- Return // don't pass down!
 
 
 Receive message M from TCP channel:
@@ -180,9 +180,9 @@ Bridge view changed:
 
 
 Issues:
-- Do we copy the headers of a message M when M is relayed ? If not, an app won't be able to add their own headers
-- Should we pass logical name information between the clusters ? Or should this be part of ProxyAddress ?
+- Do we copy the headers of a message M when M is relayed? If not, an app won't be able to add their own headers
+- Should we pass logical name information between the clusters? Or should this be part of ProxyAddress?
 
 Todo:
-#3 Handling temp coordinator outage - how do we prevent message loss ?
+#3 Handling temp coordinator outage - how do we prevent message loss?
 #4 State transfer - replication across clusters, to bootstrap initial coords in a local cluster

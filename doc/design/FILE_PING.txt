@@ -22,7 +22,7 @@ FILE_PING takes as property a 'location' which is the location of a directory in
 Each cluster X creates a subdirectory X, where all files for cluster X reside.
 
 A member writes its local address (plus physical address mappings) to a file which is named after the local address.
-Example: /share/jgroups/DemoCluster/linux-433234.dat. (Maybe we should use the UUID !)
+Example: /share/jgroups/DemoCluster/linux-433234.dat. (Maybe we should use the UUID!)
 
 A new member reads all files in DemoCluster and sends the discovery request to all addresses resulting from this.
 

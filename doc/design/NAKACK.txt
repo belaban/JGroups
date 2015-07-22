@@ -78,7 +78,7 @@ NakReceiverWindow
   moves the highest_deliverable marker
 - Messages are *only* purged from NakReceiverWindow on reception of a stability message (stable())
 - Note that the highest delivered message is the highest seqno actually *removed* by the application, not the
-  highest *deliverable* message !
+  highest *deliverable* message!
 
 
 

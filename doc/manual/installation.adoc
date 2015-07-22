@@ -33,7 +33,7 @@ src:: the sources
 
 tests:: unit and stress tests
 
-lib:: JARs needed to either run the unit tests, or build the manual etc. No JARs from here are required at runtime !
+lib:: JARs needed to either run the unit tests, or build the manual etc. No JARs from here are required at runtime!
       Note that these JARs are downloaded automatically via ivy.
 
 conf:: configuration files needed by JGroups, plus default protocol stack definitions
@@ -215,7 +215,7 @@ the internal network (e.g. `eth1`).
 
 
 [[ItDoesntWork]]
-=== It doesn't work !
+=== It doesn't work!
 
 NOTE: The section below refers to JGroups versions prior to 3.5. In 3.5 and later versions, `mcast` (see below) should be used.
 
@@ -282,7 +282,7 @@ frequently updated and a useful companion to this manual.
 
 
 
-=== I have discovered a bug !
+=== I have discovered a bug!
 
 If you think that you discovered a bug, submit a bug report on
 http://jira.jboss.com/jira/browse/JGRP[JIRA] or send email to the jgroups-users mailing list if you're unsure about it.
