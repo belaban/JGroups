@@ -47,7 +47,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     protected ProtocolAdapter                       prot_adapter;
     protected volatile Collection<Address>          members=new HashSet<>();
     protected Address                               local_addr;
-    protected final Log                             log=LogFactory.getLog(getClass());
+    protected final Log                             log=LogFactory.getLog(MessageDispatcher.class);
     protected boolean                               hardware_multicast_supported=false;
     protected final AtomicInteger                   sync_unicasts=new AtomicInteger(0);
     protected final AtomicInteger                   async_unicasts=new AtomicInteger(0);
@@ -200,7 +200,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         // method and still integrate with a MuxUpHandler
         installUpHandler(prot_adapter, false);
     }
-    
+
     /**
      * Sets the given UpHandler as the UpHandler for the channel, or, if the
      * channel already has a Muxer installed as it's UpHandler, sets the given
@@ -212,9 +212,9 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
      * Passing <code>false</code> as the <code>canReplace</code> value allows
      * callers to use this method to install defaults without concern about
      * inadvertently overriding
-     * 
+     *
      * @param handler the UpHandler to install
-     * @param canReplace <code>true</code> if an existing Channel upHandler or 
+     * @param canReplace <code>true</code> if an existing Channel upHandler or
      *              Muxer default upHandler can be replaced; <code>false</code>
      *              if this method shouldn't install
      */
@@ -232,7 +232,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
            }
            else if (canReplace) {
                log.warn("Channel Muxer already has a default up handler installed (" +
-                     mux.getDefaultHandler() + ") but now it is being overridden"); 
+                     mux.getDefaultHandler() + ") but now it is being overridden");
                mux.setDefaultHandler(handler);
            }
        }
@@ -482,6 +482,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
 
     /* ------------------------ RequestHandler Interface ---------------------- */
+    @Override
     public Object handle(Message msg) throws Exception {
         if(req_handler != null)
             return req_handler.handle(msg);
@@ -492,6 +493,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
 
     /* -------------------- AsyncRequestHandler Interface --------------------- */
+    @Override
     public void handle(Message request, Response response) throws Exception {
         if(req_handler != null) {
             if(req_handler instanceof AsyncRequestHandler)
@@ -515,6 +517,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
     /* --------------------- Interface ChannelListener ---------------------- */
 
+    @Override
     public void channelConnected(Channel channel) {
         for(ChannelListener l: channel_listeners) {
             try {
@@ -526,6 +529,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         }
     }
 
+    @Override
     public void channelDisconnected(Channel channel) {
         stop();
         for(ChannelListener l: channel_listeners) {
@@ -538,6 +542,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         }
     }
 
+    @Override
     public void channelClosed(Channel channel) {
         stop();
         for(ChannelListener l: channel_listeners) {
@@ -627,6 +632,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
     class MyProbeHandler implements DiagnosticsHandler.ProbeHandler {
 
+        @Override
         public Map<String,String> handleProbe(String... keys) {
             Map<String,String> retval=new HashMap<>();
             for(String key: keys) {
@@ -651,6 +657,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
             return retval;
         }
 
+        @Override
         public String[] supportedKeys() {
             return new String[]{"rpcs", "rpcs-reset"};
         }
@@ -662,6 +669,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
         /* ------------------------- Protocol Interface --------------------------- */
 
+        @Override
         public String getName() {
             return "MessageDispatcher";
         }
@@ -670,6 +678,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         /**
          * Called by channel (we registered before) when event is received. This is the UpHandler interface.
          */
+        @Override
         public Object up(Event evt) {
             if(corr != null) {
                 if(!corr.receive(evt)) {
@@ -686,6 +695,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
 
 
+        @Override
         public Object down(Event evt) {
             if(channel != null) {
                 if(evt.getType() == Event.MSG && !(channel.isConnected() || channel.isConnecting()))
