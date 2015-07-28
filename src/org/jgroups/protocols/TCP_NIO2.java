@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
-import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
@@ -24,7 +23,6 @@ import java.util.Collection;
  * @author Bela Ban
  * @since 3.6.5
  */
-@Experimental
 public class TCP_NIO2 extends BasicTCP {
     protected NioServer server;
 
