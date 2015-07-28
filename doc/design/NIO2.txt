@@ -97,6 +97,35 @@ Main advantages of using NIO.2
   --> Is this avoiding of 1 copy really that much faster (test perf)?
 
 
+
+Arguments against direct buffers
+--------------------------------
+- Big change in Message and all consumers of message
+- Big change in transport
+- ByteBuffer or wrapper/subclass will have to be used to do gathering writes and scattering reads
+- ByteBuffer is quite bulky compared to byte[]/offset/length (1 long + 2 ints):
+  - 4 ints and 1 long (Buffer)
+  - 1 long or more (inheritance) (ByteBuffer)
+  - hb (long), offset (int) isReadOnly (boolean)
+  - If we create a subclass, or wrap it, that will add another long (inheritance)
+  - We will need to subclass/wrap ByteBuffer because we'll need the release() method (see below)
+  - Instrumentation.getObjectSize(ByteBuffer.allocate(1024)):       48 bytes
+  - Instrumentation.getObjectSize(ByteBuffer.allocateDirect(1024)): 64 bytes !!
+  - Note that a JGroups message with dest, src and payload is only 40 bytes !!
+  - [1] claims even bigger sizes, e.g. 88 bytes for a 5 bytes HeapByteBuffer object !!
+- This does NOT work for UDP datagram channels, only for TCP sockets
+  - UDP datagram channels have to be connected for gathering writes, scatting reads to work (useless)
+- Memory management:
+  - Sending a direct ByteBuffer requires managing the buffer; it can only be released when JGroups marks a message
+    as stable (see by everyone). Requires a release() method, complicating matters
+  - If JGroups is to use direct memory to *receive* a message, how does it get the direct memory ?
+  - The app now also has to call release() on the ByteBuffer (subclass), to prevent JGroups from reusing direct memory
+    before the app is done. E.g. if Infinispan uses the async invocation API, then JGroups cannot immediately reuse the
+    direct buffer.
+    - How would JGroups allocate direct memory ? jemalloc ? --> nope
+
+
+
 Main disadvantages
 ------------------
 - There have been reports that NIO is slower than BIO
@@ -121,5 +150,9 @@ Misc
   a SocketChannel. Results (testing on local mac, between mac and Linux workstation and on cluster01-16 lab) showed
   that there was no perf difference between direct or heap-based memory!
 
+
+Refs
+----
+[1] http://btoddb-java-sizing.blogspot.ch
 
 
