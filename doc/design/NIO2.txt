@@ -118,6 +118,7 @@ Arguments against direct buffers
 - Memory management:
   - Sending a direct ByteBuffer requires managing the buffer; it can only be released when JGroups marks a message
     as stable (see by everyone). Requires a release() method, complicating matters
+    - What would a release() do ?
   - If JGroups is to use direct memory to *receive* a message, how does it get the direct memory ?
   - The app now also has to call release() on the ByteBuffer (subclass), to prevent JGroups from reusing direct memory
     before the app is done. E.g. if Infinispan uses the async invocation API, then JGroups cannot immediately reuse the
