@@ -131,7 +131,7 @@ public class NioServer extends BaseServer<Address,NioConnection> {
                 try {
                     it=selector.selectedKeys().iterator();
                 }
-                catch(Exception ex) {
+                catch(Throwable ex) {
                     continue;
                 }
 
@@ -159,7 +159,7 @@ public class NioServer extends BaseServer<Address,NioConnection> {
                                 key.interestOps(key.interestOps() & ~SelectionKey.OP_CONNECT | SelectionKey.OP_READ);
                         }
                     }
-                    catch(Exception ex) {
+                    catch(Throwable ex) {
                         Util.close(conn);
                         removeConnectionIfPresent(conn != null? conn.peerAddress() : null, conn);
                     }
