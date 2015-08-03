@@ -337,7 +337,7 @@
                             schema;version=${project.version},
                             ${project.groupId}.*;version=${project.version}
                         </Export-Package>
-                        <Bundle-RequiredExecutionEnvironment>J2SE-1.6</Bundle-RequiredExecutionEnvironment>
+                        <Bundle-RequiredExecutionEnvironment>Java2SE-1.7</Bundle-RequiredExecutionEnvironment>
                     </instructions>
                 </configuration>
             </plugin>
