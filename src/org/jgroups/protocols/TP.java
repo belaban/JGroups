@@ -2537,12 +2537,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             tmp.add(msg);
             count+=size;
         }
-
-        protected void checkLength(long len) throws Exception {
-            if(len > max_bundle_size)
-                throw new Exception("message size (" + len + ") is greater than max bundling size (" + max_bundle_size +
-                                      "). Set the fragmentation/bundle size in FRAG/FRAG2 and TP correctly");
-        }
     }
 
 
@@ -2561,7 +2555,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         public void send(Message msg) throws Exception {
             long    size=msg.size();
             boolean do_schedule=false;
-            checkLength(size);
 
             lock.lock();
             try {
@@ -2608,7 +2601,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         public void send(Message msg) throws Exception {
             long size=msg.size();
-            checkLength(size);
             num_senders.incrementAndGet();
 
             lock.lock();
@@ -2678,8 +2670,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         public void send(Message msg) throws Exception {
-            long size=msg.size();
-            checkLength(size);
             if(bundler_thread != null)
                 queue.put(msg);
         }
