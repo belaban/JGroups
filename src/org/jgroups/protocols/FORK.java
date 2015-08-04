@@ -1,8 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Event;
-import org.jgroups.Header;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.ConfiguratorFactory;
@@ -15,8 +13,7 @@ import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Bits;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.w3c.dom.Node;
 
 import java.io.*;
@@ -46,22 +43,27 @@ public class FORK extends Protocol {
       "Ignored if null")
     protected String config;
 
+    @Property(description="If enabled, state transfer events will be processed, else they will be passed up")
+    protected boolean process_state_events=true;
+
     private UnknownForkHandler unknownForkHandler = new UnknownForkHandler() {
         @Override
         public Object handleUnknownForkStack(Message message, String forkStackId) {
-            log.warn("fork-stack for id=%s not found; discarding message", forkStackId);
+            log.warn("%s: fork-stack for id=%s not found; discarding message", local_addr, forkStackId);
             return null;
         }
 
         @Override
         public Object handleUnknownForkChannel(Message message, String forkChannelId) {
-            log.warn("fork-channel for id=%s not found; discarding message", forkChannelId);
+            log.warn("%s: fork-channel for id=%s not found; discarding message", local_addr, forkChannelId);
             return null;
         }
     };
 
     // mappings between fork-stack-ids and fork-stacks (bottom-most protocol)
     protected final ConcurrentMap<String,Protocol> fork_stacks=new ConcurrentHashMap<>();
+
+    protected Address local_addr;
 
     public void setUnknownForkHandler(UnknownForkHandler unknownForkHandler) {
         this.unknownForkHandler = unknownForkHandler;
@@ -90,6 +92,15 @@ public class FORK extends Protocol {
             createForkStacks(config);
     }
 
+    public Object down(Event evt) {
+        switch(evt.getType()) {
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
+        }
+        return down_prot.down(evt);
+    }
+
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
@@ -106,6 +117,18 @@ public class FORK extends Protocol {
                 for(Protocol bottom: fork_stacks.values())
                     bottom.up(evt);
                 break;
+
+            case Event.STATE_TRANSFER_OUTPUTSTREAM:
+                if(!process_state_events)
+                    break;
+                getStateFromMainAndForkChannels(evt);
+                return null;
+
+            case Event.STATE_TRANSFER_INPUTSTREAM:
+                if(!process_state_events)
+                    break;
+                setStateInMainAndForkChannels((InputStream)evt.getArg());
+                return null;
         }
         return up_prot.up(evt);
     }
@@ -144,6 +167,85 @@ public class FORK extends Protocol {
 
         if(!batch.isEmpty())
             up_prot.up(batch);
+    }
+
+
+    protected void getStateFromMainAndForkChannels(Event evt) {
+        final OutputStream out=(OutputStream)evt.getArg();
+
+        try(DataOutputStream dos=new DataOutputStream(out)) {
+            getStateFrom(null, up_prot, null, null, dos);
+
+            // now fetch state from all fork channels
+            for(Map.Entry<String,Protocol> entry: fork_stacks.entrySet()) {
+                String stack_name=entry.getKey();
+                Protocol prot=entry.getValue();
+                ForkProtocolStack fork_stack=getForkStack(prot);
+                for(Map.Entry<String,JChannel> en: fork_stack.getForkChannels().entrySet()) {
+                    String fc_name=en.getKey();
+                    JChannel fc=en.getValue();
+                    getStateFrom(fc, null, stack_name, fc_name, dos);
+                }
+            }
+        }
+        catch(Throwable ex) {
+            log.error("%s: failed fetching state from main channel", local_addr, ex);
+        }
+    }
+
+
+    protected void getStateFrom(JChannel channel, Protocol prot, String stack, String ch, DataOutputStream out) throws Exception {
+        ByteArrayDataOutputStream output=new ByteArrayDataOutputStream(1024);
+        OutputStreamAdapter out_ad=new OutputStreamAdapter(output);
+        Event evt=new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, out_ad);
+        if(channel != null)
+            channel.up(evt);
+        else
+            prot.up(evt);
+        int len=output.position();
+        if(len > 0) {
+            Bits.writeString(stack, out);
+            Bits.writeString(ch, out);
+            out.writeInt(len);
+            out.write(output.buffer(), 0, len);
+            log.trace("%s: fetched %d bytes from %s:%s", local_addr, len, stack, ch);
+        }
+    }
+
+    protected void setStateInMainAndForkChannels(InputStream in) {
+        try(DataInputStream input=new DataInputStream(in)) {
+            for(;;) {
+                String stack_name=Bits.readString(input);
+                String ch_name=Bits.readString(input);
+                int len=input.readInt();
+                if(len > 0) {
+                    byte[] data=new byte[len];
+                    in.read(data, 0, len);
+                    ByteArrayInputStream tmp=new ByteArrayInputStream(data, 0, len);
+                    if(stack_name == null && ch_name == null)
+                        up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, tmp));
+                    else {
+                        Protocol prot=fork_stacks.get(stack_name);
+                        if(prot == null) {
+                            log.warn("%s: fork stack %s not found, dropping state for %s:%s", local_addr, stack_name, stack_name, ch_name);
+                            continue;
+                        }
+                        ForkProtocolStack fork_stack=getForkStack(prot);
+                        JChannel fork_ch=fork_stack.get(ch_name);
+                        if(fork_ch == null) {
+                            log.warn("%s: fork channel %s not found, dropping state for %s:%s", local_addr, ch_name, stack_name, ch_name);
+                            continue;
+                        }
+                        fork_ch.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, tmp));
+                    }
+                }
+            }
+        }
+        catch(EOFException eof) {
+        }
+        catch(Throwable ex) {
+            log.error("%s: failed setting state in main channel", local_addr, ex);
+        }
     }
 
 

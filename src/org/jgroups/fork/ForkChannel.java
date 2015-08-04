@@ -168,7 +168,8 @@ public class ForkChannel extends JChannel implements ChannelListener {
 
     @Override
     public void connect(String cluster_name, Address target, long timeout) throws Exception {
-        throw new UnsupportedOperationException("connect() with state transfer is not supported by a fork-channel");
+        connect(cluster_name);
+        main_channel.getState(target, timeout);
     }
 
     /** Removes the fork-channel from the fork-stack's hashmap and resets its state. Does <em>not</em> affect the
@@ -240,7 +241,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
 
     @Override
     public void getState(Address target, long timeout) throws Exception {
-        throw new UnsupportedOperationException();
+        main_channel.getState(target, timeout);
     }
 
     @Override
