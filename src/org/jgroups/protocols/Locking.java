@@ -991,13 +991,11 @@ abstract public class Locking extends Protocol {
 
                         while(wait_time > 0 && !acquired && !denied) {
                             try {
-                                this.wait(TimeUnit.MILLISECONDS.convert(wait_time, TimeUnit.NANOSECONDS));
+                                long wait_ms=TimeUnit.MILLISECONDS.convert(wait_time, TimeUnit.NANOSECONDS);
+                                if(wait_ms > 0)
+                                    this.wait(wait_ms);
                             }
                             catch(InterruptedException e) {
-                                //if (!acquired && !denied) {
-                                  //  _unlock(true);
-                                    //throw e;
-                                //}
                                 interrupted=true;
                             }
                             finally {
