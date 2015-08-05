@@ -46,7 +46,7 @@ public class TCPGOSSIP_Test {
 
         bind_addr=InetAddress.getByName(tmp);
         gossip_router_port=ResourceManager.getNextTcpPort(bind_addr);
-        gossipRouter=new GossipRouter(gossip_router_port, null);
+        gossipRouter=new GossipRouter(null, gossip_router_port);
         gossipRouter.start();
     }
 

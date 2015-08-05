@@ -1,14 +1,15 @@
-package org.jgroups.nio;
+package org.jgroups.blocks.cs;
+
+import org.jgroups.Address;
 
 import java.nio.ByteBuffer;
 
 /**
- * Receiver interface to be used with {@link Server} implementations
- * @param <A> The type of the address, e.g. {@link org.jgroups.Address}
+ * Receiver interface to be used with {@link BaseServer} instances
  * @author Bela Ban
  * @since  3.6.5
  */
-public interface Receiver<A> {
+public interface Receiver {
 
     /**
      * Delivers a message from a given sender to the application
@@ -19,7 +20,7 @@ public interface Receiver<A> {
      * @param offset The offset at which the received data starts
      * @param length The length of the received data
      */
-    void receive(A sender, byte[] buf, int offset, int length);
+    void receive(Address sender, byte[] buf, int offset, int length);
 
     /**
      * Delivers a message from a given sender to the application
@@ -29,5 +30,5 @@ public interface Receiver<A> {
      *            When buf is not referenced any longer, it can get garbage collected.<p/>
      *            Note that buf could be a direct ByteBuffer.
      */
-    void receive(A sender, ByteBuffer buf); // should be a default method in Java 8
+    void receive(Address sender, ByteBuffer buf); // should be a default method in Java 8
 }

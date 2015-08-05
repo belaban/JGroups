@@ -11,6 +11,7 @@ import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.GossipData;
+import org.jgroups.stack.GossipType;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
@@ -74,33 +75,32 @@ public class SizeTest {
         _testSize(new AuthHeader(tok));
     }
 
-    public static void testGossipData() throws Exception {
+    public void testGossipData() throws Exception {
         GossipData data;
         final Address own=org.jgroups.util.UUID.randomUUID();
         final Address coord=org.jgroups.util.UUID.randomUUID();
         UUID.add(own, "own");
         UUID.add(coord, "coord");
+        PingData pd1=new PingData(coord, true, "coord", new IpAddress(7400));
+        PingData pd2=new PingData(own, true, "own", new IpAddress(7500));
 
         final PhysicalAddress physical_addr_1=new IpAddress("127.0.0.1", 7500);
 
-        _testSize(new GossipData());
+        _testSize(new GossipData(GossipType.REGISTER));
 
-        data=new GossipData((byte)1);
+        data=new GossipData(GossipType.REGISTER, "DemoCluster", own, (List<PingData>)null, null);
         _testSize(data);
 
-        data=new GossipData((byte)1, "DemoCluster", own, (List<Address>)null, (PhysicalAddress)null);
+        data=new GossipData(GossipType.REGISTER, "DemoCluster", own, Arrays.asList(pd1, pd2), null);
         _testSize(data);
 
-        data=new GossipData((byte)1, "DemoCluster", own, Arrays.asList(own, coord), (PhysicalAddress)null);
+        data=new GossipData(GossipType.REGISTER, "DemoCluster", own, Arrays.asList(pd2, pd1), physical_addr_1);
         _testSize(data);
 
-        data=new GossipData((byte)1, "DemoCluster", own, Arrays.asList(own, coord), physical_addr_1);
+        data=new GossipData(GossipType.REGISTER, "demo", own, "logical_name", null);
         _testSize(data);
 
-        data=new GossipData((byte)1, "demo", own, "logical_name", (PhysicalAddress)null);
-        _testSize(data);
-
-        data=new GossipData((byte)1, "demo", own, new byte[]{'b', 'e', 'l', 'a'});
+        data=new GossipData(GossipType.REGISTER, "demo", own, new byte[]{'b', 'e', 'l', 'a'});
         _testSize(data);
 
         byte[] buffer=new byte[10];
@@ -108,7 +108,11 @@ public class SizeTest {
         buffer[3]='e';
         buffer[4]='l';
         buffer[5]='a';
-        data=new GossipData((byte)1, "demo", own, buffer, 2, 4);
+        data=new GossipData(GossipType.REGISTER, "demo", own, buffer, 2, 4);
+        _testSize(data);
+
+        buffer="hello world".getBytes();
+        data=new GossipData(GossipType.MESSAGE, "demo", null, buffer, 0, buffer.length);
         _testSize(data);
     }
 
@@ -523,7 +527,7 @@ public class SizeTest {
         Address[] members=Util.createRandomAddresses(NUM, true);
         Address[] first=Arrays.copyOf(members,NUM / 2);
         Address[] second=new Address[NUM/2];
-        System.arraycopy(members, NUM/2, second, 0, second.length);
+        System.arraycopy(members, NUM / 2, second, 0, second.length);
 
         View v1=View.create(first[0], 5, first), v2=View.create(second[0], 5, second);
         MergeView mv=new MergeView(new ViewId(first[0], 6), members, Arrays.asList(v1, v2));

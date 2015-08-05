@@ -29,7 +29,8 @@ public class ByteArrayDataInputStream implements DataInput {
     }
 
     public ByteArrayDataInputStream(ByteBuffer buffer) {
-        int offset=buffer.hasArray()? buffer.arrayOffset() : 0, len=buffer.remaining();
+        int offset=buffer.hasArray()? buffer.arrayOffset() + buffer.position() : buffer.position(),
+          len=buffer.remaining();
         if(!buffer.isDirect()) {
             this.buf=buffer.array();
             this.pos=offset;

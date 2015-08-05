@@ -1,4 +1,6 @@
-package org.jgroups.blocks;
+package org.jgroups.blocks.cs;
+
+import org.jgroups.Address;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
@@ -6,13 +8,14 @@ import java.nio.ByteBuffer;
 
 /**
  * Represents a connection to a peer
- * @param <A> The type of the peer address
  */
-public interface Connection<A> extends Closeable {
+public interface Connection extends Closeable {
     boolean isOpen();
     boolean isConnected();
-    boolean isExpired(long milis);
-    void    connect(A dest) throws Exception;
+    Address localAddress();
+    Address peerAddress();
+    boolean isExpired(long millis);
+    void    connect(Address dest) throws Exception;
     void    start() throws Exception;
     void    send(byte[] buf, int offset, int length) throws Exception;
     void    send(ByteBuffer buf) throws Exception;

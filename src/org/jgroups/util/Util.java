@@ -783,6 +783,21 @@ public class Util {
     }
 
 
+    public static void bufferToArray(final Address sender, final ByteBuffer buf, org.jgroups.blocks.cs.Receiver target) {
+        if(buf == null)
+            return;
+        int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(),
+          len=buf.remaining();
+        if(!buf.isDirect())
+            target.receive(sender, buf.array(), offset, len);
+        else { // by default use a copy; but of course implementers of Receiver can override this
+            byte[] tmp=new byte[len];
+            buf.get(tmp, 0, len);
+            target.receive(sender, tmp, 0, len);
+        }
+    }
+
+
     public static <T extends Streamable> Streamable streamableFromByteBuffer(Class<? extends Streamable> cl,byte[] buffer,int offset,int length) throws Exception {
         if(buffer == null) return null;
         DataInput in=new ByteArrayDataInputStream(buffer,offset,length);

@@ -1,4 +1,4 @@
-package org.jgroups.blocks;
+package org.jgroups.blocks.cs;
 
 import org.jgroups.Address;
 import org.jgroups.Version;
@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  * @since  3.6.5
  */
-public class TcpConnection implements Connection<Address> {
+public class TcpConnection implements Connection {
     protected final Socket           sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
     protected final ReentrantLock    send_lock=new ReentrantLock(); // serialize send()
     protected static final byte[]    cookie= { 'b', 'e', 'l', 'a' };
@@ -31,10 +31,10 @@ public class TcpConnection implements Connection<Address> {
     protected long                   last_access;
     protected volatile Sender        sender;
     protected volatile Receiver      receiver;
-    protected final TcpServer        server;
+    protected final TcpBaseServer    server;
 
     /** Creates a connection stub and binds it, use {@link #connect(Address)} to connect */
-    public TcpConnection(Address peer_addr, TcpServer server) throws Exception {
+    public TcpConnection(Address peer_addr, TcpBaseServer server) throws Exception {
         this.server=server;
         if(peer_addr == null)
             throw new IllegalArgumentException("Invalid parameter peer_addr="+ peer_addr);
@@ -52,16 +52,22 @@ public class TcpConnection implements Connection<Address> {
         setSocketParameters(s);
         this.out=new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
         this.in=new DataInputStream(new BufferedInputStream(s.getInputStream()));
-        this.peer_addr=readPeerAddress(s);
+        this.peer_addr=server.usePeerConnections()? readPeerAddress(s)
+          : new IpAddress((InetSocketAddress)s.getRemoteSocketAddress());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
+    }
+
+    public Address localAddress() {
+        InetSocketAddress local_addr=sock != null? (InetSocketAddress)sock.getLocalSocketAddress() : null;
+        return local_addr != null? new IpAddress(local_addr) : null;
+    }
+
+    public Address peerAddress() {
+        return peer_addr;
     }
 
     protected long getTimestamp() {
         return server.timeService() != null? server.timeService().timestamp() : System.nanoTime();
-    }
-
-    protected Address getPeerAddress() {
-        return peer_addr;
     }
 
     protected boolean isSenderUsed(){
@@ -84,6 +90,10 @@ public class TcpConnection implements Connection<Address> {
 
     /** Called after {@link TcpConnection#TcpConnection(Address, SocketFactory)} */
     public void connect(Address dest) throws Exception {
+        connect(dest, server.usePeerConnections());
+    }
+
+    protected void connect(Address dest, boolean send_local_addr) throws Exception {
         SocketAddress destAddr=new InetSocketAddress(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort());
         try {
             if(!server.defer_client_binding)
@@ -93,10 +103,11 @@ public class TcpConnection implements Connection<Address> {
             Util.connect(this.sock, destAddr, server.sock_conn_timeout);
             this.out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
             this.in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));
-            sendLocalAddress(server.localAddress());
+            if(send_local_addr)
+                sendLocalAddress(server.localAddress());
         }
         catch(Exception t) {
-            server.socket_factory.close(this.sock);
+            Util.close(this.sock);
             throw t;
         }
     }
@@ -136,11 +147,11 @@ public class TcpConnection implements Connection<Address> {
     public void send(ByteBuffer buf) throws Exception {
         if(buf == null)
             return;
-        int offset=buf.hasArray()? buf.arrayOffset() : 0,
+        int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(),
           len=buf.remaining();
         if(!buf.isDirect())
             send(buf.array(), offset, len);
-        else { // by default use a copy
+        else { // by default use a copy; but of course implementers of Receiver can override this
             byte[] tmp=new byte[len];
             buf.get(tmp, 0, len);
             send(tmp, 0, len);
@@ -210,6 +221,28 @@ public class TcpConnection implements Connection<Address> {
 
 
     /**
+     * Send the cookie first, then the our port number. If the cookie
+     * doesn't match the receiver's cookie, the receiver will reject the
+     * connection and close it.
+     */
+    protected void sendLocalAddress(Address local_addr) throws Exception {
+        try {
+            // write the cookie
+            out.write(cookie, 0, cookie.length);
+
+            // write the version
+            out.writeShort(Version.version);
+            local_addr.writeTo(out);
+            out.flush(); // needed ?
+            updateLastAccessed();
+        }
+        catch(Exception ex) {
+            server.socket_factory.close(this.sock);
+            throw ex;
+        }
+    }
+
+    /**
      * Reads the peer's address. First a cookie has to be sent which has to
      * match my own cookie, otherwise the connection will be refused
      */
@@ -240,25 +273,8 @@ public class TcpConnection implements Connection<Address> {
         }
     }
 
-    /**
-     * Send the cookie first, then the our port number. If the cookie
-     * doesn't match the receiver's cookie, the receiver will reject the
-     * connection and close it.
-     *
-     * @throws Exception
-     */
-    protected void sendLocalAddress(Address local_addr) throws Exception {
-        // write the cookie
-        out.write(cookie, 0, cookie.length);
 
-        // write the version
-        out.writeShort(Version.version);
-        local_addr.writeTo(out);
-        out.flush(); // needed ?
-        updateLastAccessed();
-    }
-
-    protected boolean matchCookie(byte[] input) {
+    protected static boolean matchCookie(byte[] input) {
         if(input == null || input.length < cookie.length) return false;
         for(int i=0; i < cookie.length; i++)
             if(cookie[i] != input[i]) return false;
@@ -282,7 +298,6 @@ public class TcpConnection implements Connection<Address> {
 
         public Receiver stop() {
             receiving=false;
-            recv.interrupt();
             return this;
         }
 
@@ -295,28 +310,28 @@ public class TcpConnection implements Connection<Address> {
         }
 
         public void run() {
-            try {
-                while(!Thread.currentThread().isInterrupted() && canRun()) {
-                    try {
-                        int len=in.readInt();
-                        byte[] buf=new byte[len];
-                        in.readFully(buf, 0, len);
-                        updateLastAccessed();
-                        server.receive(peer_addr, buf, 0, len);
-                    }
-                    catch(OutOfMemoryError mem_ex) {
-                        break; // continue;
-                    }
-                    catch(IOException io_ex) {
-                        break;
-                    }
-                    catch(Throwable e) {
-                    }
+            Throwable t=null;
+            while(canRun()) {
+                try {
+                    int len=in.readInt();
+                    byte[] buf=new byte[len];
+                    in.readFully(buf, 0, len);
+                    updateLastAccessed();
+                    server.receive(peer_addr, buf, 0, len);
+                }
+                catch(OutOfMemoryError mem_ex) {
+                    t=mem_ex;
+                    break; // continue;
+                }
+                catch(IOException io_ex) {
+                    t=io_ex;
+                    break;
+                }
+                catch(Throwable e) {
                 }
             }
-            finally {
-                server.removeConnectionIfPresent(peer_addr, TcpConnection.this);
-            }
+            server.notifyConnectionClosed(TcpConnection.this, String.format("%s: %s", getClass().getSimpleName(),
+                                                                            t != null? t.toString() : "n/a"));
         }
     }
 
@@ -331,7 +346,7 @@ public class TcpConnection implements Connection<Address> {
             this.send_queue=new LinkedBlockingQueue<>(send_queue_size);
         }
 
-        public void addToQueue(byte[] data) throws Exception{
+        public void addToQueue(byte[] data) throws Exception {
             if(canRun())
                 if (!send_queue.offer(data, server.sock_conn_timeout, TimeUnit.MILLISECONDS))
                     server.log.warn("%s: discarding message because TCP send_queue is full and hasn't been releasing for %d ms",
@@ -345,8 +360,8 @@ public class TcpConnection implements Connection<Address> {
         }
 
         public Sender stop() {
+            send_queue.offer(cookie); // cookie is the termination signal
             started=false;
-            runner.interrupt();
             return this;
         }
 
@@ -359,61 +374,51 @@ public class TcpConnection implements Connection<Address> {
         }
 
         public void run() {
-            try {
-                while(!Thread.currentThread().isInterrupted() && canRun()) {
-                    byte[] data=null;
-                    try {
-                        data=send_queue.take();
-                    }
-                    catch(InterruptedException e) {
-                        // Thread.currentThread().interrupt();
+            Throwable t=null;
+            while(canRun()) {
+                byte[] data=null;
+                try {
+                    data=send_queue.take();
+                    if(data.hashCode() == cookie.hashCode())
                         break;
-                    }
+                }
+                catch(InterruptedException e) {
+                    t=e;
+                    break;
+                }
 
-                    if(data != null) {
-                        try {
-                            _send(data, 0, data.length, false, send_queue.isEmpty());
-                        }
-                        catch(Throwable ignored) {
-                        }
+                if(data != null) {
+                    try {
+                        _send(data, 0, data.length, false, send_queue.isEmpty());
+                    }
+                    catch(Throwable ignored) {
+                        t=ignored;
                     }
                 }
             }
-            finally {
-                server.removeConnectionIfPresent(peer_addr, TcpConnection.this);
-            }
+            server.notifyConnectionClosed(TcpConnection.this, String.format("%s: %s", getClass().getSimpleName(),
+                                                                            t != null? t.toString() : "normal stop"));
         }
     }
 
     public String toString() {
-        StringBuilder ret=new StringBuilder();
-        InetAddress local=null, remote=null;
-        String local_str, remote_str;
-
         Socket tmp_sock=sock;
         if(tmp_sock == null)
-            ret.append("<null socket>");
-        else {
-            //since the sock variable gets set to null we want to make
-            //make sure we make it through here without a nullpointer exception
-            local=tmp_sock.getLocalAddress();
-            remote=tmp_sock.getInetAddress();
-            local_str=local != null? Util.shortName(local) : "<null>";
-            remote_str=remote != null? Util.shortName(remote) : "<null>";
-            ret.append('<' + local_str
-                         + ':'
-                         + tmp_sock.getLocalPort()
-                         + " --> "
-                         + remote_str
-                         + ':'
-                         + tmp_sock.getPort()
-                         + "> ("
-                         + TimeUnit.SECONDS.convert(getTimestamp() - last_access, TimeUnit.NANOSECONDS)
-                         + " secs old) [" + (isOpen()? "open]" : "closed]"));
-        }
-        tmp_sock=null;
+            return "<null socket>";
+        InetAddress local=tmp_sock.getLocalAddress(), remote=tmp_sock.getInetAddress();
+        String local_str=local != null? Util.shortName(local) : "<null>";
+        String remote_str=remote != null? Util.shortName(remote) : "<null>";
+        return String.format("%s:%s --> %s:%s (%d secs old) [%s]",
+                             local_str, tmp_sock.getLocalPort(), remote_str, tmp_sock.getPort(),
+                             TimeUnit.SECONDS.convert(getTimestamp() - last_access, TimeUnit.NANOSECONDS),
+                             status());
+    }
 
-        return ret.toString();
+    protected String status() {
+        if(sock == null)    return "n/a";
+        if(isConnected())   return "connected";
+        if(isOpen())        return "open";
+        return                     "closed";
     }
 
     public boolean isExpired(long now) {
@@ -421,22 +426,17 @@ public class TcpConnection implements Connection<Address> {
     }
 
     public boolean isConnected() {
-        return sock != null && !sock.isClosed() && sock.isConnected();
+        return sock != null && sock.isConnected();
     }
 
     public boolean isOpen() {
-        boolean connected=isConnected();
-        Sender tmp_sender=sender;
-        boolean sender_ok=!isSenderUsed() || (tmp_sender != null && tmp_sender.isRunning());
-        Receiver tmp_receiver=receiver;
-        boolean receiver_ok=tmp_receiver != null && tmp_receiver.isRunning();
-        return connected && sender_ok && receiver_ok;
+        return sock != null && !sock.isClosed();
     }
 
     public void close() throws IOException {
-        // can close even if start was never called...
         send_lock.lock();
         try {
+            Util.close(out, in, sock);
             if(receiver != null) {
                 receiver.stop();
                 receiver=null;
@@ -445,15 +445,9 @@ public class TcpConnection implements Connection<Address> {
                 sender.stop();
                 sender=null;
             }
-            try {
-                server.socket_factory.close(sock);
-            }
-            catch(Throwable t) {}
-            Util.close(out, in);
         }
         finally {
             send_lock.unlock();
         }
-        server.notifyConnectionClosed(peer_addr);
     }
 }

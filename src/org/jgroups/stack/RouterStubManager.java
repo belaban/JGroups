@@ -2,166 +2,288 @@
 package org.jgroups.stack;
 
 import org.jgroups.Address;
-import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
-import java.net.InetAddress;
-import java.util.List;
-import java.util.concurrent.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Manages a list of RouterStubs (e.g. health checking, reconnecting etc.
  * @author Vladimir Blagojevic
  * @author Bela Ban
  */
-public class RouterStubManager implements RouterStub.ConnectionListener {
-
+public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     @GuardedBy("reconnectorLock")
-    private final ConcurrentMap<RouterStub,Future<?>> futures=new ConcurrentHashMap<>();
-    private final List<RouterStub> stubs;
-    
-    private final Protocol owner;
-    private final TimeScheduler timer;
-    private final String channelName;
-    private final Address logicalAddress;
-    private final long interval;
+    protected final ConcurrentMap<RouterStub,Future<?>> futures=new ConcurrentHashMap<>();
 
-    protected final Log log;
+    // List of currently connected RouterStubs
+    protected volatile List<RouterStub>                 stubs;
 
-    public RouterStubManager(Protocol owner, String channelName, Address logicalAddress, long interval) {
+    // List of destinations that the reconnect task needs to create and connect
+    protected volatile Set<Target>                      reconnect_list;
+
+    protected final Protocol                            owner;
+    protected final TimeScheduler                       timer;
+    protected final String                              cluster_name;
+    protected final Address                             local_addr;
+    protected final String                              logical_name;
+    protected final PhysicalAddress                     phys_addr;
+    protected final long                                interval;      // reconnect interval (ms)
+    protected boolean                                   use_nio=true;  // whether to use RouterStubTcp or RouterStubNio
+    protected Future<?>                                 reconnector_task;
+    protected final Log                                 log;
+
+    /** Interface to iterate through stubs. Will be replaced by Java 8 Consumer in 4.0 */
+    public interface Consumer {
+        void accept(RouterStub stub);
+    }
+
+
+    public RouterStubManager(Protocol owner, String cluster_name, Address local_addr,
+                             String logical_name, PhysicalAddress phys_addr, long interval) {
         this.owner = owner;
-        this.stubs = new CopyOnWriteArrayList<>();
+        this.stubs = new ArrayList<>();
+        this.reconnect_list=new HashSet<>();
         this.log = LogFactory.getLog(owner.getClass());     
         this.timer = owner.getTransport().getTimer();
-        this.channelName = channelName;
-        this.logicalAddress = logicalAddress;
+        this.cluster_name=cluster_name;
+        this.local_addr=local_addr;
+        this.logical_name=logical_name;
+        this.phys_addr=phys_addr;
         this.interval = interval;
     }
-    
-    private RouterStubManager(Protocol p) {
-       this(p,null,null,0L);
+
+    public static RouterStubManager emptyGossipClientStubManager(Protocol p) {
+        return new RouterStubManager(p,null,null,null, null,0L);
     }
     
-    public List<RouterStub> getStubs(){
-        return stubs;
+
+    public RouterStubManager useNio(boolean flag) {use_nio=flag; return this;}
+
+
+
+    /**
+     * Applies action to all RouterStubs that are connected
+     * @param action
+     */
+    public void forEach(Consumer action) {
+        for(RouterStub stub: stubs) {
+            if(stub.isConnected())
+                apply(stub, action);
+        }
     }
-    
-    public RouterStub createAndRegisterStub(String routerHost, int routerPort, InetAddress bindAddress) {
-        RouterStub s = new RouterStub(routerHost,routerPort,bindAddress,this);
-        unregisterAndDestroyStub(s);
-        stubs.add(s);   
-        return s;
-    }
-    
-    public void registerStub(RouterStub s) {        
-        unregisterAndDestroyStub(s);
-        stubs.add(s);           
-    }
-    
-    public RouterStub unregisterStub(final RouterStub stub) {
-        if(stub == null)
-            throw new IllegalArgumentException("Cannot remove null stub");
-        RouterStub found=null;
-        for (RouterStub s: stubs) {
-            if (s.equals(stub)) {
-                found=s;
-                break;
+
+    /**
+     * Applies action to a randomly picked RouterStub that's connected
+     * @param action
+     */
+    public void forAny(Consumer action) {
+        while(!stubs.isEmpty()) {
+            RouterStub stub=Util.pickRandomElement(stubs);
+            if(stub != null && stub.isConnected()) {
+                apply(stub, action);
+                return;
             }
         }
-        if(found != null)
-            stubs.remove(found);
-        return found;
     }
-    
-    public boolean unregisterAndDestroyStub(final RouterStub stub) {
-        RouterStub unregisteredStub = unregisterStub(stub);
-        if(unregisteredStub != null) {
-            unregisteredStub.destroy();
-            return true;
+
+
+    public RouterStub createAndRegisterStub(IpAddress local, IpAddress router_addr) {
+        RouterStub stub=new RouterStub(local, router_addr, use_nio, this);
+        RouterStub old_stub=unregisterStub(router_addr);
+        if(old_stub != null)
+            old_stub.destroy();
+        add(stub);
+        return stub;
+    }
+
+
+    public RouterStub unregisterStub(IpAddress router_addr) {
+        RouterStub stub=find(router_addr);
+        if(stub != null)
+            remove(stub);
+        return stub;
+    }
+
+
+    public void connectStubs() {
+        for(RouterStub stub : stubs) {
+            try {
+                if(!stub.isConnected())
+                    stub.connect(cluster_name, local_addr, logical_name, phys_addr);
+            }
+            catch (Throwable e) {
+                moveStubToReconnects(stub);
+            }
         }
-        return false;
     }
+
     
     public void disconnectStubs() {
-        for (RouterStub stub : stubs) {
+        stopReconnector();
+        for(RouterStub stub : stubs) {
             try {
-                stub.disconnect(channelName, logicalAddress);                
-            } catch (Exception e) {
+                stub.disconnect(cluster_name, local_addr);
+            }
+            catch (Throwable e) {
             }
         }       
     }
     
     public void destroyStubs() {
-        for (RouterStub s : stubs) {
-            stopReconnecting(s);
-            s.destroy();            
-        }
+        stopReconnector();
+        for(RouterStub s : stubs)
+            s.destroy();
         stubs.clear();
     }
 
-    public void startReconnecting(final RouterStub stub) {
-        Future<?> f = futures.remove(stub);
-        if (f != null)
-            f.cancel(true);
-
-        final Runnable reconnector = new Runnable() {
-            public void run() {
-                try {
-                    if (log.isTraceEnabled()) log.trace("Reconnecting " + stub);
-                    String logical_name = org.jgroups.util.UUID.get(logicalAddress);
-                    PhysicalAddress physical_addr = (PhysicalAddress) owner.down(new Event(
-                      Event.GET_PHYSICAL_ADDRESS, logicalAddress));
-                    stub.connect(channelName, logicalAddress, logical_name, physical_addr);
-                    if (log.isTraceEnabled()) log.trace("Reconnected " + stub);
-                } catch (Throwable ex) {
-                    if (log.isWarnEnabled())
-                        log.warn("failed reconnecting stub to GR at "+ stub.getGossipRouterAddress() + ": " + ex);
-                }
-            }
-
-            public String toString() {
-                return RouterStubManager.class.getSimpleName() + ": Reconnector";
-            }
-        };
-        f = timer.scheduleWithFixedDelay(reconnector, 0, interval, TimeUnit.MILLISECONDS);
-        if(f != null && stub != null)
-            futures.putIfAbsent(stub, f);
+    public String printStubs() {
+        return Util.printListWithDelimiter(stubs, ", ");
     }
 
-    public void stopReconnecting(final RouterStub stub) {
-        Future<?> f = futures.get(stub);
-        if (f != null) {
-            f.cancel(true);
-            futures.remove(stub);
+    public String printReconnectList() {
+        return Util.printListWithDelimiter(reconnect_list, ", ");
+    }
+
+    public String print() {
+        return String.format("Stubs: %s\nReconnect list: %s", printStubs(), printReconnectList());
+    }
+
+    public void run() {
+        // try to create new RouterStubs for all elements in targets. when successful, remove target
+        while(!reconnect_list.isEmpty()) {
+            for(Iterator<Target> it=reconnect_list.iterator(); it.hasNext();) {
+                Target target=it.next();
+                if(reconnect(target))
+                    it.remove();
+            }
         }
-
-        final Runnable pinger = new Runnable() {
-            public void run() {
-                try {
-                    if(log.isTraceEnabled()) log.trace("Pinging " + stub);
-                    stub.checkConnection();
-                    if(log.isTraceEnabled()) log.trace("Pinged " + stub);
-                } catch (Throwable ex) {
-                    if (log.isWarnEnabled())
-                        log.warn("failed pinging stub, GR at " + stub.getGossipRouterAddress()+ ": " + ex);
-                }
-            }
-
-            public String toString() {
-                return RouterStubManager.class.getSimpleName() + ": Pinger";
-            }
-        };
-        f = timer.scheduleWithFixedDelay(pinger, 1000, interval, TimeUnit.MILLISECONDS);
-        futures.putIfAbsent(stub, f);
     }
-   
 
-    public void connectionStatusChange(RouterStub stub, RouterStub.ConnectionStatus newState) {
-        if (newState == RouterStub.ConnectionStatus.CONNECTION_BROKEN) {
+    @Override
+    public void closed(RouterStub stub) {
+        moveStubToReconnects(stub);
+    }
+
+    protected boolean reconnect(Target target) {
+        RouterStub stub=new RouterStub(target.bind_addr, target.router_addr, this.use_nio, this).receiver(target.receiver);
+        if(!add(stub))
+            return false;
+        try {
+            stub.connect(this.cluster_name, this.local_addr, this.logical_name, this.phys_addr);
+            log.debug("re-established connection to %s successfully for group=%s and address=%s", stub.remote(), this.cluster_name, this.local_addr);
+            return true;
+        }
+        catch(Throwable t) {
+            remove(stub);
+            return false;
+        }
+    }
+
+    protected void moveStubToReconnects(RouterStub stub) {
+        if(stub == null) return;
+        remove(stub);
+        if(add(new Target(stub.local(), stub.remote(), stub.receiver()))) {
+            log.debug("connection to %s closed, trying to re-establish connection", stub.remote());
+            startReconnector();
+        }
+    }
+
+    protected boolean add(RouterStub stub) {
+        if(stub == null) return false;
+        List<RouterStub> new_stubs=new ArrayList<>(stubs);
+        boolean retval=!new_stubs.contains(stub) && new_stubs.add(stub);
+        this.stubs=new_stubs;
+        return retval;
+    }
+
+
+    protected boolean add(Target target) {
+        if(target == null) return false;
+        Set<Target> new_set=new HashSet<>(reconnect_list);
+        if(new_set.add(target)) {
+            this.reconnect_list=new_set;
+            return true;
+        }
+        return false;
+    }
+
+    protected boolean remove(RouterStub stub) {
+        if(stub == null) return false;
+        stub.destroy();
+        List<RouterStub> new_stubs=new ArrayList<>(stubs);
+        boolean retval=new_stubs.remove(stub);
+        this.stubs=new_stubs;
+        return retval;
+    }
+
+    protected boolean remove(Target target) {
+        if(target == null) return false;
+        Set<Target> new_set=new HashSet<>(reconnect_list);
+        if(new_set.remove(target)) {
+            this.reconnect_list=new_set;
+            return true;
+        }
+        return false;
+    }
+
+
+    protected void apply(RouterStub stub, Consumer action) {
+        try {
+            action.accept(stub);
+        }
+        catch(Throwable t) {
+            log.warn("failed invoking stub", t);
+        }
+    }
+
+
+    protected RouterStub find(IpAddress router_addr) {
+        for(RouterStub stub: stubs) {
+            IpAddress addr=stub.gossipRouterAddress();
+            if(addr != null && addr.equals(router_addr))
+                return stub;
+        }
+        return null;
+    }
+
+    protected synchronized void startReconnector() {
+        if(reconnector_task == null || reconnector_task.isDone())
+            reconnector_task=timer.scheduleWithFixedDelay(this, interval, interval, TimeUnit.MILLISECONDS);
+    }
+
+    protected synchronized void stopReconnector() {
+        if(reconnector_task != null)
+            reconnector_task.cancel(true);
+    }
+
+
+
+
+
+    /*public void connectionStatusChange(RouterStub stub, RouterStub.ConnectionStatus newState) {
+        switch(newState) {
+            case CONNECTED:
+            case DISCONNECTED:
+                reconnector.remove(stub.gossipRouterAddress());
+                break;
+            case CONNECTION_BROKEN:
+                reconnector.add(stub.gossipRouterAddress(), stub.local());
+                break;
+            default:
+                break;
+        }*/
+
+/*
+        if(newState == RouterStub.ConnectionStatus.CONNECTION_BROKEN) {
             stub.interrupt();
             stub.destroy();
             startReconnecting(stub);
@@ -173,10 +295,39 @@ public class RouterStubManager implements RouterStub.ConnectionListener {
                 stub.join(interval);
             } catch (InterruptedException e) {
             }
+        }*/
+    //}
+    
+
+
+
+
+    protected static class Target implements Comparator<Target> {
+        protected final IpAddress               bind_addr, router_addr;
+        protected final RouterStub.StubReceiver receiver;
+
+        public Target(IpAddress bind_addr, IpAddress router_addr, RouterStub.StubReceiver receiver) {
+            this.bind_addr=bind_addr;
+            this.router_addr=router_addr;
+            this.receiver=receiver;
+        }
+
+        @Override
+        public int compare(Target o1, Target o2) {
+            return o1.router_addr.compareTo(o2.router_addr);
+        }
+
+        public int hashCode() {
+            return router_addr.hashCode();
+        }
+
+        public boolean equals(Object obj) {
+            return compare(this, (Target)obj) == 0;
+        }
+
+        public String toString() {
+            return String.format("%s -> %s", bind_addr, router_addr);
         }
     }
-    
-    public static RouterStubManager emptyGossipClientStubManager(Protocol p) {
-        return new RouterStubManager(p);
-    }
+
 }

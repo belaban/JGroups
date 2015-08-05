@@ -81,7 +81,7 @@ public class GossipRouterTest {
         b.connect("demo");
 
         System.out.println("-- starting GossipRouter");
-        router=new GossipRouter(gossip_router_port, bind_addr_str);
+        router=new GossipRouter(bind_addr_str, gossip_router_port);
         router.start();
 
         System.out.println("-- waiting for merge to happen --");

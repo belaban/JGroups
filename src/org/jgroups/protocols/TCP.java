@@ -5,7 +5,7 @@ import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.blocks.TcpServer;
+import org.jgroups.blocks.cs.TcpServer;
 import org.jgroups.util.SocketFactory;
 
 import java.util.Collection;
@@ -29,50 +29,51 @@ import java.util.Collection;
  */
 public class TCP extends BasicTCP {
     
-    private TcpServer ct=null;
+    private TcpServer server=null;
 
     public TCP() {}
 
 
     @ManagedAttribute
     public int getOpenConnections() {
-        return ct.getNumConnections();
+        return server.getNumConnections();
     }
 
     @ManagedOperation
     public String printConnections() {
-        return ct.printConnections();
+        return server.printConnections();
     }
 
     public void setSocketFactory(SocketFactory factory) {
         super.setSocketFactory(factory);
-        if(ct != null)
-            ct.socketFactory(factory);
+        if(server != null)
+            server.socketFactory(factory);
     }
 
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
-        if(ct != null)
-            ct.send(dest, data, offset, length);
+        if(server != null)
+            server.send(dest, data, offset, length);
     }
 
     public void retainAll(Collection<Address> members) {
-        ct.retainAll(members);
+        server.retainAll(members);
     }
 
     public void start() throws Exception {
-        ct=(TcpServer)new TcpServer("jgroups.tcp.srv_sock", getThreadFactory(), getSocketFactory(), this,
-                                                  bind_addr, external_addr, external_port, bind_port, bind_port+port_range, reaper_interval, conn_expire_time)
-          .useSendQueues(use_send_queues)
-          .sendQueueSize(send_queue_size)
-          .peerAddressReadTimeout(peer_addr_read_timeout)
+        server=(TcpServer)((TcpServer)new TcpServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port+port_range, external_addr, external_port)
+          .receiver(this)
           .timeService(time_service)
           .receiveBufferSize(recv_buf_size)
           .sendBufferSize(send_buf_size)
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
-          .socketFactory(getSocketFactory())
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
-          .log(this.log);
+          .log(this.log))
+          .socketFactory(getSocketFactory())
+          .peerAddressReadTimeout(peer_addr_read_timeout)
+          .useSendQueues(use_send_queues)
+          .sendQueueSize(send_queue_size)
+          .usePeerConnections(true);
 
         if(reaper_interval > 0 || conn_expire_time > 0) {
             if(reaper_interval == 0) {
@@ -83,7 +84,7 @@ public class TCP extends BasicTCP {
                 conn_expire_time=1000 * 60 * 5;
                 log.warn("conn_expire_time was 0, set it to %d", conn_expire_time);
             }
-            ct.connExpireTimeout(conn_expire_time).reaperInterval(reaper_interval);
+            server.connExpireTimeout(conn_expire_time).reaperInterval(reaper_interval);
         }
 
         // we first start threads in TP (http://jira.jboss.com/jira/browse/JGRP-626)
@@ -92,7 +93,7 @@ public class TCP extends BasicTCP {
     
     public void stop() {
         if(log.isDebugEnabled()) log.debug("closing sockets and stopping threads");
-        ct.stop(); //not needed, but just in case
+        server.stop(); //not needed, but just in case
         super.stop();
     }
 
@@ -100,27 +101,27 @@ public class TCP extends BasicTCP {
     protected void handleConnect() throws Exception {
         if(isSingleton()) {
             if(connect_count == 0) {
-                ct.start();
+                server.start();
             }
             super.handleConnect();
         }
         else
-            ct.start();
+            server.start();
     }
 
     protected void handleDisconnect() {
         if(isSingleton()) {
             super.handleDisconnect();
             if(connect_count == 0)
-                ct.stop();
+                server.stop();
         }
         else
-            ct.stop();
+            server.stop();
     }   
 
 
 
     protected PhysicalAddress getPhysicalAddress() {
-        return ct != null? (PhysicalAddress)ct.localAddress() : null;
+        return server != null? (PhysicalAddress)server.localAddress() : null;
     }
 }

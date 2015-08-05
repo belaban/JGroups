@@ -6,8 +6,7 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.nio.NioServer;
-import org.jgroups.util.SocketFactory;
+import org.jgroups.blocks.cs.NioServer;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
@@ -17,8 +16,8 @@ import java.util.Collection;
  * which eliminates the thread per connection model. Instead, TCP_NIO uses a single selector to poll for incoming
  * messages and dispatches handling of those to a (configurable) thread pool.
  * <p>
- * Most of the functionality is in {@link org.jgroups.nio.NioServer}. TCP_NIO sends
- * messages using {@link org.jgroups.nio.NioServer#send(Object,byte[],int,int)} and registers with the server
+ * Most of the functionality is in {@link NioServer}. TCP_NIO sends
+ * messages using {@link NioServer#send(Object,byte[],int,int)} and registers with the server
  * to receive messages.
  * @author Bela Ban
  * @since 3.6.5
@@ -64,11 +63,6 @@ public class TCP_NIO2 extends BasicTCP {
         server.maxReadBatchSize(size);
     }
 
-    public void setSocketFactory(SocketFactory factory) {
-        super.setSocketFactory(factory);
-        if(server != null)
-            server.socketFactory(factory);
-    }
 
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
         if(server != null) {
@@ -87,17 +81,17 @@ public class TCP_NIO2 extends BasicTCP {
     }
 
     public void start() throws Exception {
-        server=(NioServer)new NioServer(getThreadFactory(), getSocketFactory(), this,
-                             bind_addr, external_addr, external_port, bind_port, bind_port+port_range, reaper_interval, conn_expire_time)
+        server=(NioServer)((NioServer)new NioServer(getThreadFactory(), bind_addr, bind_port, bind_port+port_range, external_addr, external_port)
+          .receiver(this)
           .timeService(time_service)
           .receiveBufferSize(recv_buf_size)
           .sendBufferSize(send_buf_size)
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
-          .socketFactory(getSocketFactory())
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
-          .log(this.log);
-        server.maxSendBuffers(max_send_buffers).maxReadBatchSize(this.max_read_batch_size);
+          .log(this.log))
+          .maxSendBuffers(max_send_buffers).maxReadBatchSize(this.max_read_batch_size)
+          .usePeerConnections(true);
 
         if(reaper_interval > 0 || conn_expire_time > 0) {
             if(reaper_interval == 0) {

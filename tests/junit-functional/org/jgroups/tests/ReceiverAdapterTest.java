@@ -1,14 +1,15 @@
 package org.jgroups.tests;
 
+import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.nio.ReceiverAdapter;
+import org.jgroups.blocks.cs.ReceiverAdapter;
 import org.testng.annotations.Test;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
- * Tests {@link org.jgroups.nio.ReceiverAdapter}
+ * Tests {@link ReceiverAdapter}
  * @author Bela Ban
  * @since  3.6.4
  */
@@ -24,7 +25,7 @@ public class ReceiverAdapterTest {
         MyReceiver rec=new MyReceiver();
         ByteBuffer buf=ByteBuffer.wrap("Bela Ban".getBytes(), 5, 3);
         rec.receive(null, buf);
-        assert rec.offset == 0 && rec.length == 3;
+        assert rec.offset == 5 && rec.length == 3;
         byte[] tmp=new byte[3];
         buf.get(tmp);
         assert Arrays.equals(tmp, "Ban".getBytes());
@@ -38,13 +39,13 @@ public class ReceiverAdapterTest {
         assert rec.offset == 0 && rec.length == Global.INT_SIZE *3;
     }
 
-    protected static final class MyReceiver extends ReceiverAdapter<Void> {
+    protected static final class MyReceiver extends ReceiverAdapter {
         protected byte[] buffer;
         protected int    offset;
         protected int    length;
 
 
-        public void receive(Void sender, byte[] buf, int offset, int length) {
+        public void receive(Address sender, byte[] buf, int offset, int length) {
             this.buffer=buf;
             this.offset=offset;
             this.length=length;

@@ -4,159 +4,159 @@ package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.blocks.BaseServer;
-import org.jgroups.blocks.TcpServer;
-import org.jgroups.nio.NioServer;
-import org.jgroups.nio.ReceiverAdapter;
-import org.jgroups.util.ResourceManager;
+import org.jgroups.blocks.cs.BaseServer;
+import org.jgroups.blocks.cs.NioServer;
+import org.jgroups.blocks.cs.ReceiverAdapter;
+import org.jgroups.blocks.cs.TcpServer;
+import org.jgroups.util.CondVar;
+import org.jgroups.util.Condition;
 import org.jgroups.util.Util;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.net.InetAddress;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="configProvider")
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ServerUnitTest {
-    static final int     port1, port2, port3, port4;
-    protected BaseServer s1, s2;
 
-
-    static {
-        try {
-            InetAddress localhost=Util.getLocalhost();
-            port1=ResourceManager.getNextTcpPort(localhost);
-            port2=ResourceManager.getNextTcpPort(localhost);
-            port3=ResourceManager.getNextTcpPort(localhost);
-            port4=ResourceManager.getNextTcpPort(localhost);
-        }
-        catch(Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    @DataProvider
-    protected Object[][] configProvider() {
-        return new Object[][] {
-          {create(false, port1), create(false, port2)},
-          {create(true, port3), create(true, port4)}
-        };
-    }
-
-
-    protected void setup(BaseServer a, BaseServer b) throws Exception {
-        s1=a; s2=b;
-        s1.start();
-        s2.start();
-    }
-
-    @AfterMethod
-    void tearDown() throws Exception {
-        Util.close(s1, s2);
-    }
-
-    public void testSetup(BaseServer a, BaseServer b) throws Exception {
-        setup(a, b);
-        Assert.assertNotSame(s1.localAddress(), s2.localAddress());
-    }
-
-    public void testSendToNullReceiver(BaseServer a, BaseServer b) throws Exception {
-        setup(a,b);
-        byte[]  data=new byte[0];
-        try {
-            s1.send(null, data, 0, data.length);
-            assert false : "sending data to a null destination should have thrown an exception";
-        }
-        catch(IllegalArgumentException ex) {
-            System.out.println("got exception as expected: " + ex);
-        }
-    }
-
-    public void testSendEmptyData(BaseServer a, BaseServer b) throws Exception {
-        setup(a,b);
-        byte[]  data=new byte[0];
-        Address myself=s1.localAddress();
-        s1.receiver(new ReceiverAdapter<Address>() {
-            public void receive(Address sender, byte[] data, int offset, int length) {
+    public void testSetup() throws Exception {
+        for(boolean nio : new boolean[]{false, true}) {
+            try(BaseServer a=create(nio, 0);
+                BaseServer b=create(nio, 0)) {
+                Assert.assertNotSame(a.localAddress(), b.localAddress());
             }
-        });
-        s1.send(myself, data, 0, data.length);
-    }
-
-    public void testSendNullData(BaseServer a, BaseServer b) throws Exception {
-        setup(a, b);
-        Address myself=s1.localAddress();
-        s1.send(myself, null, 0, 0);
+        }
     }
 
 
-    public void testSendToSelf(BaseServer a, BaseServer b) throws Exception {
-        setup(a,b);
-        long       NUM=1000, total_time;
-        Address    myself=s1.localAddress();
-        MyReceiver r=new MyReceiver(s1, NUM, false);
-        byte[]     data="hello world".getBytes();
+    public void testSendEmptyData() throws Exception {
+        for(boolean nio : new boolean[]{false, true}) {
+            try(BaseServer a=create(nio, 0);
+                BaseServer b=create(nio, 0)) {
+                byte[] data=new byte[0];
+                Address myself=a.localAddress();
+                a.receiver(new ReceiverAdapter() {});
+                a.send(myself, data, 0, data.length);
+            }
+        }
+    }
 
-        s1.receiver(r);
-
-        for(int i=0; i < NUM; i++)
-            s1.send(myself, data, 0, data.length);
-
-        log("sent " + NUM + " msgs");
-        r.waitForCompletion(20000);
-        total_time=r.stop_time - r.start_time;
-        log("number expected=" + r.getNumExpected() + ", number received=" + r.getNumReceived() +
-            ", total time=" + total_time + " (" + (double)total_time / r.getNumReceived()  + " ms/msg)");
-
-        Assert.assertEquals(r.getNumExpected(), r.getNumReceived());
+    public void testSendNullData() throws Exception {
+        for(boolean nio : new boolean[]{false, true}) {
+            try(BaseServer a=create(nio, 0)) {
+                Address myself=a.localAddress();
+                a.send(myself, null, 0, 0); // the test passes if send() doesn't throw an exception
+            }
+        }
     }
 
 
-    public void testSendToOther(BaseServer a, BaseServer b) throws Exception {
-        setup(a,b);
-        long       NUM=1000, total_time;
-        Address    other=s2.localAddress();
-        MyReceiver r=new MyReceiver(s2, NUM, false);
-        byte[]     data="hello world".getBytes();
+    public void testSendToSelf() throws Exception {
+        for(boolean nio : new boolean[]{false, true}) {
+            try(BaseServer a=create(nio, 0);
+                BaseServer b=create(nio, 0)) {
+                long NUM=1000, total_time;
+                Address myself=a.localAddress();
+                MyReceiver r=new MyReceiver(a, NUM, false);
+                byte[] data="hello world".getBytes();
+                a.receiver(r);
+                for(int i=0; i < NUM; i++)
+                    a.send(myself, data, 0, data.length);
+                log("sent " + NUM + " msgs");
+                r.waitForCompletion(20000);
+                total_time=r.stop_time - r.start_time;
+                log("number expected=" + r.getNumExpected() + ", number received=" + r.getNumReceived() +
+                      ", total time=" + total_time + " (" + (double)total_time / r.getNumReceived() + " ms/msg)");
 
-        s2.receiver(r);
-        for(int i=0; i < NUM; i++)
-            s1.send(other, data, 0, data.length);
-
-        log("sent " + NUM + " msgs");
-        r.waitForCompletion(20000);
-        total_time=r.stop_time - r.start_time;
-        log("number expected=" + r.getNumExpected() + ", number received=" + r.getNumReceived() +
-              ", total time=" + total_time + " (" + (double)total_time / r.getNumReceived() + " ms/msg)");
-
-        Assert.assertEquals(r.getNumExpected(), r.getNumReceived());
+                Assert.assertEquals(r.getNumExpected(), r.getNumReceived());
+            }
+        }
     }
 
-    public void testSendToOtherGetResponse(BaseServer a, BaseServer b) throws Exception {
-        setup(a,b);
-        long       NUM=1000, total_time;
-        Address    other=s2.localAddress();
-        MyReceiver r1=new MyReceiver(s1, NUM, false);
-        MyReceiver r2=new MyReceiver(s2, NUM, true); // send response
-        byte[]     data="hello world".getBytes();
+    public void testSendToAll() throws Exception {
+        for(boolean nio : new boolean[]{false, true}) {
+            try(BaseServer a=create(nio, 0);
+                BaseServer b=create(nio, 0)) {
+                long NUM=1000, total_time;
+                MyReceiver r1=new MyReceiver(a, NUM, false);
+                MyReceiver r2=new MyReceiver(b, NUM, false);
+                byte[] data="hello world".getBytes();
 
-        s1.receiver(r1);
-        s2.receiver(r2);
+                // send uncast to establish connection to s2:
+                a.send(b.localAddress(), new byte[1000], 0, 1000);
+                Util.sleep(1000);
 
-        for(int i=0; i < NUM; i++)
-            s1.send(other, data, 0, data.length);
-        log("sent " + NUM + " msgs");
-        r1.waitForCompletion(20000);
-        total_time=r1.stop_time - r1.start_time;
-        log("number expected=" + r1.getNumExpected() + ", number received=" + r1.getNumReceived() +
-            ", total time=" + total_time + " (" + (double)total_time / r1.getNumReceived()  + " ms/msg)");
+                a.receiver(r1);
+                b.receiver(r2);
+                for(int i=0; i < NUM; i++)
+                    a.send(null, data, 0, data.length);
 
-        Assert.assertEquals(r1.getNumReceived(), r1.getNumExpected());
+                log("sent " + NUM + " msgs");
+                r2.waitForCompletion(20000);
+                total_time=r2.stop_time - r2.start_time;
+                log("number expected=" + r2.getNumExpected() + ", number received=" + r2.getNumReceived() +
+                      ", total time=" + total_time + " (" + (double)total_time / r2.getNumReceived() + " ms/msg)");
+
+                Assert.assertEquals(r2.getNumExpected(), r2.getNumReceived());
+                assert r1.getNumReceived() == 0 || r1.getNumReceived() > 0;
+            }
+        }
+    }
+
+    public void testSendToOther() throws Exception {
+        for(boolean nio : new boolean[]{false, true}) {
+            try(BaseServer a=create(nio, 0);
+                BaseServer b=create(nio, 0)) {
+                long NUM=1000, total_time;
+                Address other=b.localAddress();
+                MyReceiver r=new MyReceiver(b, NUM, false);
+                byte[] data="hello world".getBytes();
+
+                b.receiver(r);
+                for(int i=0; i < NUM; i++)
+                    a.send(other, data, 0, data.length);
+
+                log("sent " + NUM + " msgs");
+                r.waitForCompletion(20000);
+                total_time=r.stop_time - r.start_time;
+                log("number expected=" + r.getNumExpected() + ", number received=" + r.getNumReceived() +
+                      ", total time=" + total_time + " (" + (double)total_time / r.getNumReceived() + " ms/msg)");
+                Assert.assertEquals(r.getNumExpected(), r.getNumReceived());
+            }
+        }
+    }
+
+
+
+    public void testSendToOtherGetResponse() throws Exception {
+        for(boolean nio : new boolean[]{false, true}) {
+            try(BaseServer a=create(nio, 0);
+                BaseServer b=create(nio, 0)) {
+                long NUM=1000, total_time;
+                Address other=b.localAddress();
+                MyReceiver r1=new MyReceiver(a, NUM, false);
+                MyReceiver r2=new MyReceiver(b, NUM, true); // send response
+                byte[] data="hello world".getBytes();
+
+                a.receiver(r1);
+                b.receiver(r2);
+
+                for(int i=0; i < NUM; i++)
+                    a.send(other, data, 0, data.length);
+                log("sent " + NUM + " msgs");
+                r1.waitForCompletion(20000);
+                total_time=r1.stop_time - r1.start_time;
+                log("number expected=" + r1.getNumExpected() + ", number received=" + r1.getNumReceived() +
+                      ", total time=" + total_time + " (" + (double)total_time / r1.getNumReceived() + " ms/msg)");
+
+                Assert.assertEquals(r1.getNumReceived(), r1.getNumExpected());
+            }
+        }
     }
 
 
@@ -165,69 +165,80 @@ public class ServerUnitTest {
      * not two, e.g. a spurious connection. Tests http://jira.jboss.com/jira/browse/JGRP-549.<p/>
      * Turned concurrent test into a simple sequential test. We're going to replace this code with NIO2 soon anyway...
      */
-    public void testReuseOfConnection(BaseServer a, BaseServer b) throws Exception {
-        setup(a, b);
+    public void testReuseOfConnection() throws Exception {
+        for(boolean nio : new boolean[]{false, true}) {
+            try(BaseServer a=create(nio, 0);
+                BaseServer b=create(nio, 0)) {
 
-        int num_conns;
-        num_conns=s1.getNumConnections();
-        assert num_conns == 0;
-        num_conns=s2.getNumConnections();
-        assert num_conns == 0;
+                int num_conns;
+                num_conns=a.getNumConnections();
+                assert num_conns == 0;
+                num_conns=b.getNumConnections();
+                assert num_conns == 0;
 
-        Address addr1=s1.localAddress(), addr2=s2.localAddress();
-        byte[] data="hello world".getBytes();
+                Address addr1=a.localAddress(), addr2=b.localAddress();
+                byte[] data="hello world".getBytes();
 
-        s1.send(addr2, data, 0, data.length);
-        s2.send(addr1, data, 0, data.length);
+                a.send(addr2, data, 0, data.length);
+                b.send(addr1, data, 0, data.length);
 
-        String msg="ct1: " + s1 + "\nct2: " + s2;
-        System.out.println(msg);
+                String msg="A: " + a + "\nB: " + b;
+                System.out.println(msg);
 
-        waitForOpenConns(1, s1, s2);
-        num_conns=s1.getNumOpenConnections();
-        assert num_conns == 1 : "num_conns for ct1 is " + num_conns + ", " + msg;
-        num_conns=s2.getNumOpenConnections();
-        assert num_conns == 1 : "num_conns for ct2 is " + num_conns + ", " + msg;
+                waitForOpenConns(1, a, b);
+                num_conns=a.getNumOpenConnections();
+                assert num_conns == 1 : "num_conns for A is " + num_conns + ", " + msg;
+                num_conns=b.getNumOpenConnections();
+                assert num_conns == 1 : "num_conns for B is " + num_conns + ", " + msg;
 
-        // done in a loop because connect() might be non-blocking (NioServer)
-        connectionEstablished(s1, addr2);
-        connectionEstablished(s2, addr1);
+                // done in a loop because connect() might be non-blocking (NioServer)
+                connectionEstablished(a, addr2);
+                connectionEstablished(b, addr1);
+            }
+        }
     }
 
 
-    public void testConnectionCountOnStop(BaseServer a, BaseServer b) throws Exception {
-        setup(a,b);
-        Address addr1=s1.localAddress(), addr2=s2.localAddress();
-        byte[] data="hello world".getBytes();
-        s1.send(addr1, data, 0, data.length); // send to self
-        assert s1.getNumConnections() == 0;
-        s1.send(addr2, data, 0, data.length); // send to other
+    public void testConnectionCountOnStop() throws Exception {
+        for(boolean nio : new boolean[]{false, true}) {
+            try(BaseServer a=create(nio, 0);
+                BaseServer b=create(nio, 0)) {
+                Address addr1=a.localAddress(), addr2=b.localAddress();
+                byte[] data="hello world".getBytes();
+                a.send(addr1, data, 0, data.length); // send to self
+                assert a.getNumConnections() == 0;
+                a.send(addr2, data, 0, data.length); // send to other
 
-        s2.send(addr2, data, 0, data.length); // send to self
-        s2.send(addr1, data, 0, data.length); // send to other
+                b.send(addr2, data, 0, data.length); // send to self
+                b.send(addr1, data, 0, data.length); // send to other
 
 
-        System.out.println("s1:\n" + s1 + "\ns2:\n" + s2);
+                System.out.println("A:\n" + a + "\nB:\n" + b);
 
-        int num_conns_table1=s1.getNumConnections(), num_conns_table2=s2.getNumConnections();
-        assert num_conns_table1 == 1 : "s1 should have 1 connection, but has " + num_conns_table1 + ": " + s1;
-        assert num_conns_table2 == 1 : "s2 should have 1 connection, but has " + num_conns_table2 + ": " + s2;
+                int num_conns_table1=a.getNumConnections(), num_conns_table2=b.getNumConnections();
+                assert num_conns_table1 == 1 : "A should have 1 connection, but has " + num_conns_table1 + ": " + a;
+                assert num_conns_table2 == 1 : "B should have 1 connection, but has " + num_conns_table2 + ": " + b;
 
-        Util.close(s2,s1);
-        waitForOpenConns(0, s1,s2);
-        assert s1.getNumOpenConnections() == 0  : "s1 should have 0 connections: " + s1.printConnections();
-        assert s2.getNumOpenConnections() == 0  : "s2 should have 0 connections: " + s2.printConnections();
+                Util.close(b,a);
+                waitForOpenConns(0, a, b);
+                assert a.getNumOpenConnections() == 0 : "A should have 0 connections: " + a.printConnections();
+                assert b.getNumOpenConnections() == 0 : "B should have 0 connections: " + b.printConnections();
+            }
+        }
     }
-
 
 
     static void log(String msg) {
         System.out.println("-- [" + Thread.currentThread() + "]: " + msg);
     }
 
-    protected BaseServer create(boolean nio, int port) {
+    protected static BaseServer create(boolean nio, int port) {
         try {
-            return nio? new NioServer(null, port) : new TcpServer(null, port).useSendQueues(false);
+            BaseServer retval=nio? new NioServer(null, port) : new TcpServer(null, port).useSendQueues(false);
+            retval.usePeerConnections(true);
+            retval.start();
+            // System.out.printf("Created instance of %s\n", retval.getClass().getSimpleName());
+            return retval;
         }
         catch(Exception ex) {
             return null;
@@ -260,16 +271,19 @@ public class ServerUnitTest {
     }
 
 
-    protected static class MyReceiver extends ReceiverAdapter<Address> {
-        final long       num_expected;
-        long             num_received=0, start_time=0, stop_time=0;
-        volatile boolean done=false;
-        boolean          send_response=false;
-        long             modulo;
-        BaseServer       ct;
 
-        MyReceiver(BaseServer ct, long num_expected, boolean send_response) {
-            this.ct=ct;
+
+    protected static class MyReceiver extends ReceiverAdapter {
+        protected final long       num_expected;
+        protected final AtomicLong num_received=new AtomicLong(0);
+        protected long             start_time=0, stop_time=0;
+        protected final  CondVar   done=new CondVar();
+        protected boolean          send_response=false;
+        protected final long       modulo;
+        protected final BaseServer server;
+
+        MyReceiver(BaseServer server, long num_expected, boolean send_response) {
+            this.server=server;
             this.num_expected=num_expected;
             this.send_response=send_response;
             start_time=System.currentTimeMillis();
@@ -277,47 +291,45 @@ public class ServerUnitTest {
         }
 
 
-        public long getNumReceived() {
-            return num_received;
-        }
-
-        public long getNumExpected() {
-            return num_expected;
-        }
+        public long getNumReceived() {return num_received.get();}
+        public long getNumExpected() {return num_expected;}
 
 
         public void receive(Address sender, byte[] data, int offset, int length) {
-            num_received++;
-            if(num_received % modulo == 0)
-                log("received msg# " + num_received);
+            long tmp=num_received.incrementAndGet();
+            if(tmp >= num_expected) {
+                synchronized(this) {
+                    if(stop_time == 0)
+                        stop_time=System.currentTimeMillis();
+                }
+                done.signal(true);
+            }
             if(send_response) {
-                if(ct != null) {
+                if(server != null) {
                     try {
                         byte[] rsp=new byte[0];
-                        ct.send(sender, rsp, 0, rsp.length);
+                        server.send(sender, rsp, 0, rsp.length);
                     }
                     catch(Exception e) {
                         e.printStackTrace();
                     }
                 }
             }
-            if(num_received >= num_expected) {
-                synchronized(this) {
-                    if(!done) {
-                        done=true;
-                        stop_time=System.currentTimeMillis();
-                        notifyAll();
-                    }
+        }
+
+        public void waitForCompletion(long timeout) throws Exception {
+            done.waitFor(new Condition() {
+                public boolean isMet() {
+                    return num_received.get() >= num_expected;
                 }
-            }
+            },
+                         timeout, TimeUnit.MILLISECONDS);
         }
 
-
-        public synchronized void waitForCompletion(long timeout) throws Exception {
-            wait(timeout);
+        public String toString() {
+            return String.format("expected=%d, received=%d\n", num_expected, num_received.get());
         }
-
-
     }
+
 
 }

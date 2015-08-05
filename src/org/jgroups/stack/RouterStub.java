@@ -3,365 +3,279 @@ package org.jgroups.stack;
 import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.blocks.cs.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.PingData;
-import org.jgroups.protocols.TUNNEL.StubReceiver;
-import org.jgroups.util.Responses;
+import org.jgroups.util.ByteArrayDataInputStream;
+import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketException;
-import java.util.concurrent.locks.ReentrantLock;
+import java.nio.ByteBuffer;
+import java.util.*;
+
 
 /**
- * Client stub that talks to a remote GossipRouter
+ * Client stub that talks to a remote GossipRouter via blocking or non-blocking TCP
  * @author Bela Ban
  */
-public class RouterStub implements Comparable<RouterStub> {
+public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub>, ConnectionListener {
+    public interface StubReceiver        {void receive(GossipData data);}
+    public interface MembersNotification {void members(List<PingData> mbrs);}
+    public interface CloseListener       {void closed(RouterStub stub);}
 
-    public static enum ConnectionStatus {INITIAL, CONNECTION_BROKEN, CONNECTION_ESTABLISHED, CONNECTED,DISCONNECTED};
+    protected BaseServer                                  client;
+    protected final IpAddress                             local;  // bind address
+    protected final IpAddress                             remote; // address of remote GossipRouter
+    protected final boolean                               use_nio;
+    protected StubReceiver                                receiver; // external consumer of data, e.g. TUNNEL
+    protected CloseListener                               close_listener;
+    protected static final Log                            log=LogFactory.getLog(RouterStub.class);
 
-    protected final String router_host; // name of the router host
+    // max number of ms to wait for socket establishment to GossipRouter
+    protected int                                         sock_conn_timeout=3000;
+    protected boolean                                     tcp_nodelay=true;
 
-    protected final int router_port; // port on which router listens on
+    // map to correlate GET_MBRS requests and responses
+    protected final Map<String,List<MembersNotification>> get_members_map=new HashMap<>();
 
-    protected Socket sock=null; // socket connecting to the router
-
-    protected DataOutputStream output=null;
-
-    protected DataInputStream input=null;
-
-    protected volatile ConnectionStatus connectionState=ConnectionStatus.INITIAL;
-
-    protected static final Log log=LogFactory.getLog(RouterStub.class);
-
-    protected final ConnectionListener conn_listener;
-
-    protected final InetAddress bind_addr;
-
-    protected int sock_conn_timeout=3000; // max number of ms to wait for socket establishment to
-    // GossipRouter
-
-    protected int sock_read_timeout=3000; // max number of ms to wait for socket reads (0 means block
-    // forever, or until the sock is closed)
-
-    protected boolean tcp_nodelay=true;
-    
-    protected volatile StubReceiver receiver;
-
-    // used to synchronize access to socket, and input and output stream
-    protected final ReentrantLock lock=new ReentrantLock();
-
-    public interface ConnectionListener {
-        void connectionStatusChange(RouterStub stub, ConnectionStatus state);
-    }
 
     /**
-     * Creates a stub for a remote Router object.
-     * @param routerHost The name of the router's host
-     * @param routerPort The router's port
-     * @throws SocketException
+     * Creates a stub to a remote GossipRouter
+     * @param bind_addr The local address to bind to. If null, one will be picked
+     * @param bind_port The local port. If 0, a random port will be used
+     * @param router_host The address of the remote {@link GossipRouter}
+     * @param router_port The port on which the remote GossipRouter is listening
+     * @param use_nio Whether to use blocking or non-blocking IO
+     * @param l The {@link org.jgroups.stack.RouterStub.CloseListener}
      */
-    public RouterStub(String routerHost, int routerPort, InetAddress bindAddress, ConnectionListener l) {
-        router_host=routerHost != null? routerHost : "localhost";
-        router_port=routerPort;
-        bind_addr=bindAddress;
-        conn_listener=l;        
+    public RouterStub(InetAddress bind_addr, int bind_port, InetAddress router_host, int router_port,
+                      boolean use_nio, CloseListener l) {
+        local=new IpAddress(bind_addr, bind_port);
+        this.remote=new IpAddress(router_host, router_port);
+        this.use_nio=use_nio;
+        this.close_listener=l;
+        client=use_nio? new NioClient(bind_addr, bind_port, router_host, router_port)
+          : new TcpClient(bind_addr, bind_port, router_host, router_port);
+        client.addConnectionListener(this);
+        client.receiver(this);
+        client.socketConnectionTimeout(sock_conn_timeout).tcpNodelay(tcp_nodelay);
     }
 
-    public RouterStub(InetSocketAddress addr) {
-        this(addr.getHostName(), addr.getPort(), null, null);
+
+    public RouterStub(IpAddress local, IpAddress remote, boolean use_nio, CloseListener l) {
+        this.local=local;
+        this.remote=remote;
+        this.use_nio=use_nio;
+        this.close_listener=l;
+        client=use_nio? new NioClient(local, remote) : new TcpClient(local, remote);
+        client.receiver(this);
+        client.addConnectionListener(this);
+        client.socketConnectionTimeout(sock_conn_timeout).tcpNodelay(tcp_nodelay);
     }
 
-    public void setReceiver(StubReceiver receiver) {
-        this.receiver = receiver;
-    }
-    
-    public StubReceiver  getReceiver() {
-        return receiver;
-    }
 
-    public boolean isTcpNoDelay() {
-        return tcp_nodelay;
-    }
+    public IpAddress           local()                                  {return local;}
+    public IpAddress           remote()                                 {return remote;}
+    public RouterStub          receiver(StubReceiver r)                 {receiver=r; return this;}
+    public StubReceiver        receiver()                               {return receiver;}
+    public boolean             tcpNoDelay()                             {return tcp_nodelay;}
+    public RouterStub          tcpNoDelay(boolean tcp_nodelay)          {this.tcp_nodelay=tcp_nodelay; return this;}
+    public CloseListener       connectionListener()                     {return close_listener;}
+    public RouterStub          connectionListener(CloseListener l)      {this.close_listener=l; return this;}
+    public int                 socketConnectionTimeout()                {return sock_conn_timeout;}
+    public RouterStub          socketConnectionTimeout(int timeout)     {this.sock_conn_timeout=timeout; return this;}
+    public boolean             useNio()                                 {return use_nio;}
+    public IpAddress           gossipRouterAddress()                    {return remote;}
+    public boolean             isConnected()                            {return client != null && ((Client)client).isConnected();}
 
-    public void setTcpNoDelay(boolean tcp_nodelay) {
-        this.tcp_nodelay=tcp_nodelay;
-    }
 
-    // Note that this would fail to return 0 if we had a dotted decimal and a symbolic addr resolving to the same host !
-    public int compareTo(RouterStub o) {
-        int rc=router_host.compareTo(o.router_host);
-        if(rc != 0)
-            return rc;
-        return router_port < o.router_port? -1 : router_port > o.router_port? 1 : 0;
-    }
-
-    public boolean equals(Object obj) {
-        RouterStub o=(RouterStub)obj;
-        return compareTo(o) == 0;
-    }
-
-    public int hashCode() {
-        return router_host.hashCode() + router_port;
-    }
-
-    public void interrupt() {
-        StubReceiver tmp=receiver;
-        if(tmp != null) {
-            Thread thread=tmp.getThread();
-            if(thread != null)
-                thread.interrupt();
+    public RouterStub set(String attr, Object val) {
+        switch(attr) {
+            case "tcp_nodelay":
+                tcpNoDelay((Boolean)val);
+                break;
+            default:
+                throw new IllegalArgumentException("Attribute " + attr + " unknown");
         }
-    }
-    
-    public void join(long wait) throws InterruptedException {
-        StubReceiver tmp=receiver;
-        if(tmp != null) {
-            Thread thread=tmp.getThread();
-            if(thread != null)
-                thread.join(wait);
-        }
+        return this;
     }
 
 
-    public int getSocketConnectionTimeout() {
-        return sock_conn_timeout;
-    }
-
-    public void setSocketConnectionTimeout(int sock_conn_timeout) {
-        this.sock_conn_timeout=sock_conn_timeout;
-    }
-
-    public int getSocketReadTimeout() {
-        return sock_read_timeout;
-    }
-
-    public void setSocketReadTimeout(int sock_read_timeout) {
-        this.sock_read_timeout=sock_read_timeout;
-    }
-
-    public boolean isConnected() {
-        return !(connectionState == ConnectionStatus.CONNECTION_BROKEN || connectionState == ConnectionStatus.INITIAL);
-    }
-
-    public ConnectionStatus getConnectionStatus() {
-        return connectionState;
-    }
 
 
     /**
-     * Register this process with the router under <code>group</code>.
-     * @param group The name of the group under which to register
+     * Registers mbr with the GossipRouter under the given group, with the given logical name and physical address.
+     * Establishes a connection to the GossipRouter and sends a CONNECT message.
+     * @param group The group cluster) name under which to register the member
+     * @param addr The address of the member
+     * @param logical_name The logical name of the member
+     * @param phys_addr The physical address of the member
+     * @throws Exception Thrown when the registration failed
      */
     public void connect(String group, Address addr, String logical_name, PhysicalAddress phys_addr) throws Exception {
-        lock.lock();
-        try {
+        synchronized(this) {
             _doConnect();
-            GossipData request=new GossipData(GossipRouter.CONNECT, group, addr, logical_name, phys_addr);
-            request.writeTo(output);
-            output.flush();
-            byte result = input.readByte();
-            if(result == GossipRouter.CONNECT_OK) {
-                connectionStateChanged(ConnectionStatus.CONNECTED);
-            } else {
-                connectionStateChanged(ConnectionStatus.DISCONNECTED);
-                throw new Exception("Connect failed received from GR " + getGossipRouterAddress());
-            }
         }
-        finally {
-            if(lock.isHeldByCurrentThread())
-                lock.unlock();
-        }
+        GossipData request=new GossipData(GossipType.REGISTER, group, addr, logical_name, phys_addr);
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.size()+10);
+        request.writeTo(out);
+        client.send(remote, out.buffer(), 0, out.position());
     }
 
-    public void doConnect() throws Exception {
-        lock.lock();
-        try {
-            _doConnect();
-        }
-        finally {
-            if(lock.isHeldByCurrentThread())
-                lock.unlock();
-        }
+    public synchronized void connect() throws Exception {
+        _doConnect();
     }
 
     @GuardedBy("lock")
     protected void _doConnect() throws Exception {
-        if(!isConnected()) {
-            try {
-                sock=new Socket();
-                InetSocketAddress dest=new InetSocketAddress(router_host,router_port);
-                InetAddress tmp_bind_addr=bind_addr;
-                if(!Util.sameAddresses(bind_addr, tmp_bind_addr))
-                    tmp_bind_addr=null;
-                sock.bind(new InetSocketAddress(tmp_bind_addr, 0));
-                sock.setSoTimeout(sock_read_timeout);
-                sock.setSoLinger(true, 2);
-                sock.setTcpNoDelay(tcp_nodelay);
-                sock.setKeepAlive(true);
-                Util.connect(sock, dest, sock_conn_timeout);
-                output=new DataOutputStream(sock.getOutputStream());
-                input=new DataInputStream(sock.getInputStream());
-                connectionStateChanged(ConnectionStatus.CONNECTION_ESTABLISHED);
-            }
-            catch(Exception e) {
-                Util.close(sock);
-                Util.close(input, output);
-                connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
-                throw new Exception("Could not connect to " + getGossipRouterAddress() , e);
-            }
-        }
+        client.start();
     }
 
 
-    /**
-     * Checks whether the connection is open
-     * @return
-     */
-    public void checkConnection() {
-        GossipData request=new GossipData(GossipRouter.PING);
-        lock.lock();
-        try {
-            request.writeTo(output);
-            output.flush();
-        }
-        catch(Exception e) {
-            connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
-        }
-        finally {
-            if(lock.isHeldByCurrentThread())
-                lock.unlock();
-        }
-    }
-
-
-    public void disconnect(String group, Address addr) {
-        lock.lock();
-        try {
-            GossipData request=new GossipData(GossipRouter.DISCONNECT, group, addr);
-            request.writeTo(output);
-            output.flush();
-        }
-        catch(Exception e) {
-        }
-        finally {
-            connectionStateChanged(ConnectionStatus.DISCONNECTED);
-            if(lock.isHeldByCurrentThread()) // not needed as connectionStateChanged() unlocks, but this gets rid of the warning
-                lock.unlock();
-        }
+    public void disconnect(String group, Address addr) throws Exception {
+        writeRequest(new GossipData(GossipType.UNREGISTER, group, addr));
     }
 
     public void destroy() {
-        lock.lock();
-        try {
-            GossipData request = new GossipData(GossipRouter.CLOSE);
-            request.writeTo(output);
-            output.flush();
-        }
-        catch (Exception e) {
-        }
-        finally {
-            Util.close(output);
-            Util.close(input);
-            Util.close(sock);
-            if(lock.isHeldByCurrentThread())
-                lock.unlock();
-        }
+        Util.close(client);
     }
-    
-    
-    /*
-     * Used only in testing, never access socket directly
-     * 
+
+    /**
+     * Fetches a list of {@link PingData} from the GossipRouter, one for each member in the given group. This call
+     * returns immediately and when the results are available, the
+     * {@link org.jgroups.stack.RouterStub.MembersNotification#members(List)} callback will be invoked.
+     * @param group The group for which we need members information
+     * @param callback The callback to be invoked.
      */
-    public Socket getSocket() {
-        return sock;
-    }
-
-
-    public void getMembers(final String group, Responses rsps) throws Exception {
-        lock.lock();
+    public void getMembers(final String group, MembersNotification callback) throws Exception {
+        if(callback == null)
+            return;
+        // if(!isConnected()) throw new Exception ("not connected");
+        synchronized(get_members_map) {
+            List<MembersNotification> set=get_members_map.get(group);
+            if(set == null)
+                get_members_map.put(group, set=new ArrayList<>());
+            set.add(callback);
+        }
         try {
-            if(!isConnected() || input == null) throw new Exception ("not connected");
-            // we might get a spurious SUSPECT message from the router, just ignore it
-            if(input.available() > 0) // fixes https://jira.jboss.org/jira/browse/JGRP-1151
-                input.skipBytes(input.available());
-
-            GossipData request=new GossipData(GossipRouter.GOSSIP_GET, group, null);
-            request.writeTo(output);
-            output.flush();
-
-            short num_rsps=input.readShort();
-            for(int i=0; i < num_rsps; i++) {
-                PingData rsp=new PingData();
-                rsp.readFrom(input);
-                rsps.addResponse(rsp, false);
-            }
+            writeRequest(new GossipData(GossipType.GET_MBRS, group, null));
         }
-        catch(Exception e) {           
-            connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
-            throw new Exception("Connection to " + getGossipRouterAddress() + " broken. Could not send GOSSIP_GET request", e);
-        }
-        finally {
-            if(lock.isHeldByCurrentThread())
-                lock.unlock();
+        catch(Exception ex) {
+            removeResponse(group, callback);
+            throw new Exception(String.format("connection to %s broken. Could not send %s request: %s",
+                                              gossipRouterAddress(), GossipType.GET_MBRS, ex));
         }
     }
 
-    public InetSocketAddress getGossipRouterAddress() {
-        return new InetSocketAddress(router_host, router_port);
-    }
-    
-    public String toString() {
-        return "RouterStub[localsocket=" + ((sock != null) ? sock.getLocalSocketAddress()
-                        : "null")+ ",router_host=" + router_host + "::" + router_port + ",connected=" + isConnected() + "]";
-    }
 
     public void sendToAllMembers(String group, byte[] data, int offset, int length) throws Exception {
         sendToMember(group, null, data, offset, length); // null destination represents mcast
     }
 
     public void sendToMember(String group, Address dest, byte[] data, int offset, int length) throws Exception {
-        lock.lock();
         try {
-            GossipData request = new GossipData(GossipRouter.MESSAGE, group, dest, data, offset, length);
-            request.writeTo(output);
-            output.flush();
+            writeRequest(new GossipData(GossipType.MESSAGE, group, dest, data, offset, length));
         }
-        catch (Exception e) {
-            connectionStateChanged(ConnectionStatus.CONNECTION_BROKEN);
-            throw new Exception("Connection to " + getGossipRouterAddress()
-                            + " broken. Could not send message to " + dest, e);
-        }
-        finally {
-            if(lock.isHeldByCurrentThread())
-                lock.unlock();
+        catch(Exception ex) {
+            throw new Exception(String.format("connection to %s broken. Could not send message to %s: %s",
+                                              gossipRouterAddress(), dest, ex));
         }
     }
 
-    public DataInputStream getInputStream() {
-        return input;
-    }
 
-    protected void connectionStateChanged(ConnectionStatus newState) {
-        boolean notify=connectionState != newState;
-        connectionState=newState;
-        if(notify && conn_listener != null) {
-            // release lock as the callback below might block: https://issues.jboss.org/browse/JGRP-1526
-            if(lock.isHeldByCurrentThread())
-                lock.unlock();
-            try {
-                conn_listener.connectionStatusChange(this, newState);
-            }
-            catch(Throwable t) {
-                log.error("failed notifying ConnectionListener " + conn_listener, t);
+    @Override
+    public void receive(Address sender, byte[] buf, int offset, int length) {
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
+        GossipData data=new GossipData();
+        try {
+            data.readFrom(in);
+            switch(data.getType()) {
+                case MESSAGE:
+                case SUSPECT:
+                    if(receiver != null)
+                        receiver.receive(data);
+                    break;
+                case GET_MBRS_RSP:
+                    notifyResponse(data.getGroup(), data.getPingData());
+                    break;
             }
         }
+        catch(Exception ex) {
+            log.error("failed reading data", ex);
+        }
     }
+
+    @Override
+    public void receive(Address sender, ByteBuffer buf) {
+        Util.bufferToArray(sender, buf, this);
+    }
+
+
+    @Override
+    public void connectionClosed(Connection conn, String reason) {
+        if(close_listener != null)
+            close_listener.closed(this);
+    }
+
+    @Override
+    public void connectionEstablished(Connection conn) {
+
+    }
+
+    @Override public int compareTo(RouterStub o) {
+        return remote.compareTo(o.remote);
+    }
+
+    public int hashCode() {return remote.hashCode();}
+
+    public boolean equals(Object obj) {
+        return compareTo((RouterStub)obj) == 0;
+    }
+
+    public String toString() {
+        return String.format("RouterStub[localsocket=%s, router_host=%s]", client.localAddress(), remote);
+    }
+
+
+    protected synchronized void writeRequest(GossipData req) throws Exception {
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(req.size());
+        req.writeTo(out);
+        client.send(remote, out.buffer(), 0, out.position());
+    }
+
+    protected void removeResponse(String group, MembersNotification notif) {
+        synchronized(get_members_map) {
+            List<MembersNotification> set=get_members_map.get(group);
+            if(set == null || set.isEmpty()) {
+                get_members_map.remove(group);
+                return;
+            }
+            if(set.remove(notif) && set.isEmpty())
+                get_members_map.remove(group);
+        }
+    }
+
+    protected void notifyResponse(String group, List<PingData> list) {
+        if(group == null)
+            return;
+        if(list == null)
+            list=Collections.emptyList();
+        synchronized(get_members_map) {
+            List<MembersNotification> set=get_members_map.get(group);
+            while(set != null && !set.isEmpty()) {
+                try {
+                    MembersNotification rsp=set.remove(0);
+                    rsp.members(list);
+                }
+                catch(Throwable t) {
+                    log.error("failed notifying %s: %s", group, t);
+                }
+            }
+            get_members_map.remove(group);
+        }
+    }
+
+
 }

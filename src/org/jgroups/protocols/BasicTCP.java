@@ -6,8 +6,9 @@ import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
-import org.jgroups.nio.Receiver;
+import org.jgroups.blocks.cs.Receiver;
 import org.jgroups.util.AsciiString;
+import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
@@ -20,7 +21,7 @@ import java.util.Set;
  * @author Scott Marlow
  * @author Bela Ban
  */
-public abstract class BasicTCP extends TP implements Receiver<Address> {
+public abstract class BasicTCP extends TP implements Receiver {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
@@ -144,17 +145,7 @@ public abstract class BasicTCP extends TP implements Receiver<Address> {
     }
 
     public void receive(Address sender, ByteBuffer buf) {
-        if(buf == null)
-            return;
-        int offset=buf.hasArray()? buf.arrayOffset() : 0,
-          len=buf.remaining();
-        if(!buf.isDirect())
-            receive(sender, buf.array(), offset, len);
-        else { // by default use a copy; but of course implementers of Receiver can override this
-            byte[] tmp=new byte[len];
-            buf.get(tmp, 0, len);
-            receive(sender, tmp, 0, len);
-        }
+        Util.bufferToArray(sender, buf, this);
     }
 
     protected Object handleDownEvent(Event evt) {

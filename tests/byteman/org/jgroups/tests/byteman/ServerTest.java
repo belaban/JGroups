@@ -4,10 +4,10 @@ import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jboss.byteman.contrib.bmunit.BMScript;
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.blocks.BaseServer;
-import org.jgroups.blocks.TcpServer;
-import org.jgroups.nio.NioServer;
-import org.jgroups.nio.ReceiverAdapter;
+import org.jgroups.blocks.cs.BaseServer;
+import org.jgroups.blocks.cs.TcpServer;
+import org.jgroups.blocks.cs.NioServer;
+import org.jgroups.blocks.cs.ReceiverAdapter;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -57,7 +57,9 @@ public class ServerTest extends BMNGRunner {
 
     protected void setup(BaseServer one, BaseServer two) throws Exception {
         a=one;
+        a.usePeerConnections(true);
         b=two;
+        b.usePeerConnections(true);
         A=a.localAddress();
         B=b.localAddress();
         assert A.compareTo(B) < 0;
@@ -213,7 +215,7 @@ public class ServerTest extends BMNGRunner {
         }
     }
 
-    protected static class MyReceiver extends ReceiverAdapter<Address> {
+    protected static class MyReceiver extends ReceiverAdapter {
         protected final String        name;
         protected final List<String>  reqs=new ArrayList<>();
 
