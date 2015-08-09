@@ -348,7 +348,7 @@
              includes="org/jgroups/**">
             <fileset dir="${conf.dir}" includes="*.xml, jg-messages*.properties, VERSION.properties"/>
             <fileset dir="${compile.dir}/schema">
-                <include name="*.xsd"/>
+                <include name="jgroups.xsd"/>
             </fileset>
             <fileset dir="${root.dir}">
                 <include name="INSTALL.html"/>
