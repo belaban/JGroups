@@ -108,7 +108,7 @@ public class ServerUnitTest {
             s1.send(myself, data, 0, data.length);
 
         log("sent " + NUM + " msgs");
-        r.waitForCompletion();
+        r.waitForCompletion(20000);
         total_time=r.stop_time - r.start_time;
         log("number expected=" + r.getNumExpected() + ", number received=" + r.getNumReceived() +
             ", total time=" + total_time + " (" + (double)total_time / r.getNumReceived()  + " ms/msg)");
@@ -129,7 +129,7 @@ public class ServerUnitTest {
             s1.send(other, data, 0, data.length);
 
         log("sent " + NUM + " msgs");
-        r.waitForCompletion();
+        r.waitForCompletion(20000);
         total_time=r.stop_time - r.start_time;
         log("number expected=" + r.getNumExpected() + ", number received=" + r.getNumReceived() +
               ", total time=" + total_time + " (" + (double)total_time / r.getNumReceived() + " ms/msg)");
@@ -152,7 +152,7 @@ public class ServerUnitTest {
         for(int i=0; i < NUM; i++)
             s1.send(other, data, 0, data.length);
         log("sent " + NUM + " msgs");
-        r1.waitForCompletion();
+        r1.waitForCompletion(20000);
         total_time=r1.stop_time - r1.start_time;
         log("number expected=" + r1.getNumExpected() + ", number received=" + r1.getNumReceived() +
             ", total time=" + total_time + " (" + (double)total_time / r1.getNumReceived()  + " ms/msg)");
@@ -313,14 +313,8 @@ public class ServerUnitTest {
         }
 
 
-        public synchronized void waitForCompletion() {
-            while(!done) {
-                try {
-                    wait();
-                }
-                catch(InterruptedException e) {
-                }
-            }
+        public synchronized void waitForCompletion(long timeout) throws Exception {
+            wait(timeout);
         }
 
 

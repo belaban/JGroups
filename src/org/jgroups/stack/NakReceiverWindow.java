@@ -45,6 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban
  */
+@Deprecated
 public class NakReceiverWindow {
 
     public interface Listener {
