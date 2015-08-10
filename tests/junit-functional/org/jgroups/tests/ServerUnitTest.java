@@ -137,7 +137,6 @@ public class ServerUnitTest {
         Assert.assertEquals(r.getNumExpected(), r.getNumReceived());
     }
 
-
     public void testSendToOtherGetResponse(BaseServer a, BaseServer b) throws Exception {
         setup(a,b);
         long       NUM=1000, total_time;
@@ -157,7 +156,7 @@ public class ServerUnitTest {
         log("number expected=" + r1.getNumExpected() + ", number received=" + r1.getNumReceived() +
             ", total time=" + total_time + " (" + (double)total_time / r1.getNumReceived()  + " ms/msg)");
 
-        Assert.assertEquals(r1.getNumExpected(), r1.getNumReceived());
+        Assert.assertEquals(r1.getNumReceived(), r1.getNumExpected());
     }
 
 
@@ -262,7 +261,8 @@ public class ServerUnitTest {
 
 
     protected static class MyReceiver extends ReceiverAdapter<Address> {
-        long             num_expected=0, num_received=0, start_time=0, stop_time=0;
+        final long       num_expected;
+        long             num_received=0, start_time=0, stop_time=0;
         volatile boolean done=false;
         boolean          send_response=false;
         long             modulo;
