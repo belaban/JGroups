@@ -48,7 +48,7 @@ public class TestAll extends ReceiverAdapter {
     private int num_threads=25, numOfClients=10, timeout=0, load = 1;
     private int num_msgs=10000, msg_size=1000, num_msgsPerThreads = 10000;
     private int numsOfWarmUpPerThread = 0;
-    private int anycast_count=2;
+    private int anycast_count=1;
     private boolean use_anycast_addrs = true;
     private boolean random_destinations = false;
     private boolean include_local_address = true; // Include local address in anycast count
@@ -126,7 +126,7 @@ public class TestAll extends ReceiverAdapter {
             }
         });
         disp.setRequestMarshaller(new CustomMarshaller());
-		channel.connect("ZABCluster");
+		channel.connect("ZABCLRPC");
         local_addr=channel.getAddress();
         this.boxMembers = zabMembers;
 
@@ -919,6 +919,7 @@ public class TestAll extends ReceiverAdapter {
             test.init(zabMembers, name, propsFile, totalMessages,
 					numberOfMessages, numsThreads, msgSize, 
 					outputDir, numOfClients, load, numWarmUp);
+            test.eventLoop();
            
         }
         catch(Throwable ex) {
