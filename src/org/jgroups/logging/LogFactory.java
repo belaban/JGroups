@@ -25,6 +25,7 @@ public class LogFactory {
                 customLogFactoryX=(CustomLogFactory)Class.forName(customLogFactoryClass).newInstance();
             }
             catch(Exception e) {
+                throw new RuntimeException(e);
             }
         }
 
