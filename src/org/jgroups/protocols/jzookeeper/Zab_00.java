@@ -294,101 +294,37 @@ public class Zab_00 extends Protocol {
 
     
 	private void handleClientRequest(Event event, Message message) {
-		ZABHeader clientHeader = ((ZABHeader) message.getHeader(this.id));
+        log.info("handleClientRequest");
+
+		ZABHeader clientHeader = null;
         Address destination = message.getDest();
-
-		if (destination != null && destination instanceof AnycastAddress){
-			log.info("Yes --------> Recieve rpc");
-			destination = null;
-			MessageId messageId = new MessageId(local_addr,
-					local.getAndIncrement(), System.currentTimeMillis());
-			messageStore.put(messageId, message);
-			ZABHeader hdrReq = new ZABHeader(ZABHeader.REQUEST,
-					messageId);
-			++index;
-			if (index > 2)
-				index = 0;
-			destination = zabMembers.get(index);
-			Message requestMessage = new Message(destination).putHeader(
-					this.id, hdrReq);
-			int diff = 1000 - hdrReq.size();
-	        if (diff > 0)
-	            message.setBuffer(new byte[diff]); // Necessary to ensure that each msgs size is 1kb, necessary for accurate network measurements
-
-			down_prot.down(new Event(Event.MSG, requestMessage));
-		}
-		else if (clientHeader != null
-				&& clientHeader.getType() == ZABHeader.START_SENDING) {
-			for (Address client : view.getMembers()) {
-				if (log.isDebugEnabled())
-					log.info("Address to check " + client);
-				if (!zabMembers.contains(client)) {
-					if (log.isDebugEnabled())
-						log.info("Address to check is not zab Members, will send start request to"
-								+ client + " " + getCurrentTimeStamp());
-					message.setDest(client);
-					down_prot.down(new Event(Event.MSG, message));
-				}
-			}
-		}
-
-		else if (clientHeader != null
-				&& clientHeader.getType() == ZABHeader.RESET) {
-
-			for (Address server : zabMembers) {
-				// message.setDest(server);
-				Message resetMessage = new Message(server).putHeader(this.id,
-						clientHeader);
-				resetMessage.setSrc(local_addr);
-				down_prot.down(new Event(Event.MSG, resetMessage));
-			}
-		}
-
-		else if (clientHeader != null
-				&& clientHeader.getType() == ZABHeader.STATS) {
-
-			for (Address server : zabMembers) {
-				// message.setDest(server);
-				Message statsMessage = new Message(server).putHeader(this.id,
-						clientHeader);
-				down_prot.down(new Event(Event.MSG, statsMessage));
-			}
-		}
-
-		else if (clientHeader != null
-				&& clientHeader.getType() == ZABHeader.COUNTMESSAGE) {
-			for (Address server : zabMembers) {
-				if(!server.equals(zabMembers.get(0))){
-					Message countMessages = new Message(server).putHeader(this.id,
-							clientHeader);
-					down_prot.down(new Event(Event.MSG, countMessages));
-				}
-			}
+        Address zabDestination = null;
+        //Store put here, and Forward write to Zab box to obtain otdering
+        if (destination != null && destination instanceof AnycastAddress && !message.isFlagSet(Message.Flag.NO_TOTAL_ORDER)) {
+			log.info("-------> AnycastAddress Send to Zab boxes");
+        	MessageId messageId = new MessageId(local_addr,
+			local.getAndIncrement(), System.currentTimeMillis());
+        	messageStore.put(messageId, message);
+        	ZABHeader hdrReq = new ZABHeader(ZABHeader.REQUEST,
+			messageId);
+        	++index;
+        	if (index > 2)
+        		index = 0;
+        	zabDestination = zabMembers.get(index);
+        	Message requestMessage = new Message(zabDestination).putHeader(
+			this.id, hdrReq);
+        	int diff = 1000 - hdrReq.size();
+        	 if (diff > 0)
+        	message.setBuffer(new byte[diff]); // Necessary to ensure that each msgs size is 1kb, necessary for accurate network measurements
+        	down_prot.down(new Event(Event.MSG, requestMessage));
+        }
+        //Forward start call to all destination to start the benchmark
+        else if (destination != null && !(destination instanceof AnycastAddress)) {
+			log.info("-------> Send to client only");
 			
+			down_prot.down(new Event(Event.MSG, message));
 		}
-		
-		else if (!clientHeader.getMessageId().equals(null)
-				&& clientHeader.getType() == ZABHeader.REQUEST) {
-			destination = null;
-			messageStore.put(clientHeader.getMessageId(), message);
-			ZABHeader hdrReq = new ZABHeader(ZABHeader.REQUEST,
-					clientHeader.getMessageId());
-			++index;
-			if (index > 2)
-				index = 0;
-			destination = zabMembers.get(index);
-			Message requestMessage = new Message(destination).putHeader(
-					this.id, hdrReq);
-			int diff = 1000 - hdrReq.size();
-	        if (diff > 0)
-	            message.setBuffer(new byte[diff]); // Necessary to ensure that each msgs size is 1kb, necessary for accurate network measurements
 
-			down_prot.down(new Event(Event.MSG, requestMessage));
-		}
-	 else {
-        down_prot.down(event);
-    }
-		
 
 	}
     
@@ -614,8 +550,12 @@ public class Zab_00 extends Protocol {
 		
     private void handleOrderingResponse(ZABHeader hdrResponse) {
 	        Message message = messageStore.get(hdrResponse.getMessageId());
+	        log.info("Check return RPC ########################### "+ message);
+	        log.info("Check return RPC ########################### "+ message.getHeaders());
+	        message.setDest(local_addr);
+
 	        message.putHeader(this.id, hdrResponse);
-	        up_prot.up(new Event(Event.MSG, message));
+	        //up_prot.up(new Event(Event.MSG, message));
 
 	    }
 	    	

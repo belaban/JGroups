@@ -45,7 +45,7 @@ public class TestAll extends ReceiverAdapter {
 
     // ============ configurable properties ==================
     private boolean sync=true, oob=false, anycastRequests=true;
-    private int num_threads=25, numOfClients=10, timeout=0, load = 1;
+    private int num_threads=25, numOfClients=10, timeout=5000, load = 1;
     private int num_msgs=10000, msg_size=1000, num_msgsPerThreads = 10000;
     private int numsOfWarmUpPerThread = 0;
     private int anycast_count=1;
@@ -111,14 +111,16 @@ public class TestAll extends ReceiverAdapter {
     	this.num_msgs = totalNum_msgs;
 		this.num_msgsPerThreads = totalPerThreads;
 		this.num_threads = num_threads;
-		this.num_msgs = msg_size;
+		this.msg_size = msg_size;
 		this.outputDir = outputDir;
 		this.numOfClients = numOfClients;
 		this.load = load;
 		this.numsOfWarmUpPerThread = numsOfWarmUpPerThread;
 
         channel=new JChannel(propsFile);
-        
+        System.out.println("this.ProtocotName := " + this.ProtocotName+ " propsFile :="+propsFile+
+        		"this.num_threads "+this.num_threads);
+
         disp=new RpcDispatcher(channel, null, this, this);
         disp.setMethodLookup(new MethodLookup() {
             public Method findMethod(short id) {
@@ -146,20 +148,20 @@ public class TestAll extends ReceiverAdapter {
 
         Address coord = pickCoordinator();
         System.out.println("Coordinator := " + coord);
-        ConfigOptions config=(ConfigOptions)disp.callRemoteMethod(coord, new MethodCall(GET_CONFIG), new RequestOptions(ResponseMode.GET_ALL, timeout));
-        if(config != null) {
-            this.oob=config.oob;
-            this.sync=config.sync;
-            this.num_threads=config.num_threads;
-            this.num_msgs=config.num_msgs;
-            this.msg_size=config.msg_size;
-            this.anycast_count=config.anycast_count;
-            this.use_anycast_addrs=config.use_anycast_addrs;
-            this.read_percentage=config.read_percentage;
-            System.out.println("Fetched config from " + coord + ": " + config);
-        }
-        else
-            System.err.println("failed to fetch config from " + coord);
+//        ConfigOptions config=(ConfigOptions)disp.callRemoteMethod(coord, new MethodCall(GET_CONFIG), new RequestOptions(ResponseMode.GET_ALL, timeout));
+//        if(config != null) {
+//            this.oob=config.oob;
+//            this.sync=config.sync;
+//            this.num_threads=config.num_threads;
+//            this.num_msgs=config.num_msgs;
+//            this.msg_size=config.msg_size;
+//            this.anycast_count=config.anycast_count;
+//            this.use_anycast_addrs=config.use_anycast_addrs;
+//            this.read_percentage=config.read_percentage;
+//            System.out.println("Fetched config from " + coord + ": " + config);
+//        }
+//        else
+//            System.err.println("failed to fetch config from " + coord);
     }
 
     void stop() {
@@ -207,7 +209,7 @@ public class TestAll extends ReceiverAdapter {
 		local_addr=channel.getAddress();
 		
 		
-        addSiteMastersToMembers();          		   		
+        //addSiteMastersToMembers();          		   		
     	
     }
     
@@ -240,7 +242,7 @@ public class TestAll extends ReceiverAdapter {
     }
 
     public Results startTest() throws Throwable {
-
+    	 System.out.println("Start hereeeeeeeeeeeeeeeeeeeeeeee");
         addSiteMastersToMembers();
 
         System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) +
@@ -253,8 +255,11 @@ public class TestAll extends ReceiverAdapter {
 
         Random random = new Random();
         Invoker[] invokers=new Invoker[num_threads];
-        for(int i=0; i < invokers.length; i++)
+        for(int i=0; i < invokers.length; i++){
             invokers[i]=new Invoker(nonBoxMembers, num_msgs, num_msgs_sent, random);
+            System.out.println("Create Invoker --------------->>>> " + i);
+
+        }
 
         long start=System.currentTimeMillis();
         for(Invoker invoker: invokers)
@@ -318,10 +323,11 @@ public class TestAll extends ReceiverAdapter {
 
 
     public void put(long key, byte[] val) {
-
+    	System.out.println("Inside -----------> PUT method**************");
     }
 
     public ConfigOptions getConfig() {
+    	System.out.println("Inside -----------> getConfig");
         return new ConfigOptions(oob, sync, num_threads, num_msgs, msg_size, anycast_count, use_anycast_addrs, read_percentage);
     }
 
@@ -455,6 +461,7 @@ public class TestAll extends ReceiverAdapter {
         RequestOptions options=new RequestOptions(ResponseMode.GET_ALL, 0, anycastRequests);
         options.setFlags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.NO_FC);
         RspList<Object> responses=disp.callRemoteMethods(dest, new MethodCall(START), options);
+        System.out.println("after sending rpc");
 
         long total_reqs=0;
         long total_time=0;
@@ -566,6 +573,7 @@ public class TestAll extends ReceiverAdapter {
 
 
         public void run() {
+        	System.out.println(" Inside run");
             final byte[] buf=new byte[msg_size];
             Object[] put_args={0, buf};
             Object[] get_args={0};
@@ -592,8 +600,9 @@ public class TestAll extends ReceiverAdapter {
 
             while(true) {
                 long i=num_msgs_sent.getAndIncrement();
-                if(i >= num_msgs_to_send)
+                if(i >= num_msgs_to_send){
                     break;
+                }
 
                 boolean get=Util.tossWeightedCoin(read_percentage);
 
@@ -605,10 +614,12 @@ public class TestAll extends ReceiverAdapter {
                         num_gets++;
                     }
                     else {    // sync or async (based on value of 'sync') PUT
+                    	System.out.println("invoker name "+ getName());
                         Collection<Address> targets = random_destinations ? pickRandomAnycastTargets() : pickAnycastTargets();
                         put_args[0]=i;
                         RspList rsp = disp.callRemoteMethods(targets, put_call, put_options);
                         num_puts++;
+
                     }
                 }
                 catch(Throwable throwable) {
