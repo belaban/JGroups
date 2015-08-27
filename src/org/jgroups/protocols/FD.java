@@ -63,7 +63,7 @@ public class FD extends Protocol {
     
     protected int                        num_suspect_events;
 
-    protected final BoundedList<Address> suspect_history=new BoundedList<>(20);
+    protected final BoundedList<String> suspect_history=new BoundedList<>(20);
 
 
     
@@ -115,12 +115,12 @@ public class FD extends Protocol {
     public int getMaxTries() {return max_tries;}
     public void setMaxTries(int max_tries) {this.max_tries=max_tries;}
     public int getCurrentNumTries() {return num_tries.get();}
+
     @ManagedOperation(description="Print suspect history")
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
-        for(Address addr: suspect_history) {
-            sb.append(new Date()).append(": ").append(addr).append("\n");
-        }
+        for(String addr: suspect_history)
+            sb.append(addr).append("\n");
         return sb.toString();
     }   
 
@@ -473,7 +473,7 @@ public class FD extends Protocol {
                     num_tries.set(1);
                     if(stats) {
                         num_suspect_events++;
-                        suspect_history.add(dest);
+                        suspect_history.add(String.format("%s: %s", new Date(), dest));
                     }
                 }
                 else {

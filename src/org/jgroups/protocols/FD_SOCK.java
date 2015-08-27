@@ -89,7 +89,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     protected int num_suspect_events=0;
 
-    protected final BoundedList<Address> suspect_history=new BoundedList<>(20);
+    protected final BoundedList<String> suspect_history=new BoundedList<>(20);
 
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -159,9 +159,8 @@ public class FD_SOCK extends Protocol implements Runnable {
     @ManagedOperation(description="Print suspect history")
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
-        for(Address suspect: suspect_history) {
-            sb.append(new Date()).append(": ").append(suspect).append("\n");
-        }
+        for(String suspect: suspect_history)
+            sb.append(suspect).append("\n");
         return sb.toString();
     }
 
@@ -473,7 +472,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         suspects.remove(local_addr);
         final List<Address> eligible_mbrs=new ArrayList<>();
         for(Address suspect: suspects)
-            suspect_history.add(suspect);
+            suspect_history.add(String.format("%s: %s", new Date(), suspect));
         suspected_mbrs.addAll(suspects);
         eligible_mbrs.addAll(this.members);
         eligible_mbrs.removeAll(suspected_mbrs);
@@ -725,7 +724,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         bcast_task.addSuspectedMember(suspected_mbr);
         if(stats) {
             num_suspect_events++;
-            suspect_history.add(suspected_mbr);
+            suspect_history.add(String.format("%s: %s", new Date(), suspected_mbr));
         }
     }
 
