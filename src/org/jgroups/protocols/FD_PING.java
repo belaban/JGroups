@@ -2,13 +2,14 @@ package org.jgroups.protocols;
 
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
+import org.jgroups.logging.Log;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
-import org.jgroups.logging.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Date;
 
 /**
  * Protocol which uses an executable (e.g. /sbin/ping, or a script) to check whether a given host is up or not,
@@ -77,7 +78,7 @@ public class FD_PING extends FD {
                     num_tries.set(0);
                     if(stats) {
                         num_suspect_events++;
-                        suspect_history.add(ping_dest);
+                        suspect_history.add(String.format("%s: %s", new Date(), ping_dest));
                     }
                 }
             }
