@@ -1,95 +1,80 @@
 
 
-Release Notes JGroups 3.6.0
+Release notes JGroups 3.6.5
 ===========================
 
 Author: Bela Ban
 
 
 
+
 New features
 ============
 
-CENTRAL_LOCK: lock owners can be node rather than individual threads
---------------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1886]
-
-Added an option to make the node the lock owner rather than the combo node:thread. This was needed by the JGroups
-clustering plugin for vert.x.
 
 
-RSVP: option to not block caller
---------------------------------
-[https://issues.jboss.org/browse/JGRP-1851]
+TCP_NIO2: new non-blocking transport based on NIO.2
+---------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-886]
 
-This way, a caller knows that its message will get resent, but it doesn't have to block. Also added code to skip
-RSVP if the message was unicast and UNICAST3 was used as protocol (only used for multicast messages).
+This new transport is based on NIO.2 and *non-blocking*, ie. no reads or writes will ever block. The biggest
+advantage compared to TCP is that we moved from the 1-thread-per-connection model to the 1-selector-for-all-connections
+model. This means that we use 1 thread for N connections in TCP_NIO2, while TCP used N threads.
+To use this, new classes TcpClient / NioClient and TcpServer / NioServer have been created.
+More details at http://belaban.blogspot.ch/2015/07/a-new-nio.html.
 
 
-Docker image for JGroups
-------------------------
-[https://issues.jboss.org/browse/JGRP-1840]
+Fork channels now support state transfer
+----------------------------------------
+[https://issues.jboss.org/browse/JGRP-1941]
 
-mcast: new multicast diagnosis tool
------------------------------------
-[https://issues.jboss.org/browse/JGRP-1832]
+Fork channels used to throw an exception on calling ForkChannel.getState(). This is now supported; details in the
+JIRA issue.
 
+
+GossipRouter has been reimplemented using the NIO
+-------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1943]
+
+GossipRouter can now use a blocking (TcpServer) or a non-blocking (NioServer) implementation. On the client side,
+RouterStub (TUNNEL and TCPGOSSIP) can do the same, using TcpClient or NioClient.
+Which implementation is used is governed by the -nio flag when starting the router, or in the configuration of
+TUNNEL / TCPGOSSIP (use_nio).
+Blocking clients can interact with a non-blocking GossipRouter, and vice versa.
 
 
 
 Optimizations
 =============
 
-UNICAST3 / NAKACK2: limit the max size of retransmission requests
------------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1868]
-
-When we have a retransmission request in UNICAST3 or NAKACK2 for a large number of messages, then the size of the
-retransmit message may become larger than what the transport can handle, and is therefore dropped. This leads to endless
-retransmissions.
-The fix here is to retransmit only the oldest N messages such that the retransmit message doesn't exceed the max
-bundling size of the transport and to use a bitmap to identify missing messages to be retransmitted.
-Also, the bitmaps used by SeqnoList reduce the size of a retransmission message.
-
-
-Channel creation has unneeded synchronization
----------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1887]
-
-Slowing down parallel creation of many channels; this was removed.
-
-
-UNICAST3: sync receiver table with sender table
------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1875]
-
-In some edge cases, a receiver would not sync correctly with a sender.
 
 
 
 Bug fixes
 =========
 
-JMX: unregistering a channel which didn't register any protocols issues warnings
---------------------------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1894]
+Retransmissions use the INTERNAL flag
+-------------------------------------
+[https://issues.jboss.org/browse/JGRP-1940]
+
+Retransmissions use the internal flag: when a retransmission is a request, a potential response was also flagged as
+internal. This flag is now cleared on reception of a request.
 
 
-UDP: ip_ttl was ignored and is always 1
----------------------------------------
-[https://issues.jboss.org/browse/JGRP-1880]
+
+Lock.tryLock() can wait forever
+-------------------------------
+[https://issues.jboss.org/browse/JGRP-1949]
+
+Caused by a conversion from nanos to millis.
 
 
-MERGE3: in some cases, the information about subgroups is incorrect
--------------------------------------------------------------------
-[https://issues.jboss.org/browse/JGRP-1876]
+TCPPING: access initial_hosts in the defined order
+--------------------------------------------------
+[https://issues.jboss.org/browse/JGRP-1959]
 
-The actual MergeView was always correct, but the information about subgroups wasn't.
+Was not the case as we used a HashSet which reordered elements.
 
-
-RELAY2 doesn't work with FORK
------------------------------
-[https://issues.jboss.org/browse/JGRP-1875]
 
 
 
@@ -103,5 +88,5 @@ The complete list of features and bug fixes can be found at http://jira.jboss.co
 
 
 Bela Ban, Kreuzlingen, Switzerland
-Oct 2014
+Sept 2015
 
