@@ -805,7 +805,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                 up_prot.up(evt);
             }
             catch(Throwable t) {
-                log.error("couldn't deliver OOB message " + msg, t);
+                log.error("couldn't deliver OOB message %s: %s", msg, t);
             }
         }
 
@@ -849,7 +849,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                         up_prot.up(new Event(Event.MSG, msg));
                     }
                     catch(Throwable t) {
-                        log.error("couldn't deliver OOB message " + msg, t);
+                        log.error("couldn't deliver OOB message %s: %s", msg, t);
                     }
                 }
             }
