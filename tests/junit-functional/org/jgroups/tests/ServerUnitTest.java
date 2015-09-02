@@ -36,8 +36,7 @@ public class ServerUnitTest {
 
     public void testSendEmptyData() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
-            try(BaseServer a=create(nio, 0);
-                BaseServer b=create(nio, 0)) {
+            try(BaseServer a=create(nio, 0)) {
                 byte[] data=new byte[0];
                 Address myself=a.localAddress();
                 a.receiver(new ReceiverAdapter() {});
@@ -58,8 +57,7 @@ public class ServerUnitTest {
 
     public void testSendToSelf() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
-            try(BaseServer a=create(nio, 0);
-                BaseServer b=create(nio, 0)) {
+            try(BaseServer a=create(nio, 0)) {
                 long NUM=1000, total_time;
                 Address myself=a.localAddress();
                 MyReceiver r=new MyReceiver(a, NUM, false);
@@ -234,7 +232,8 @@ public class ServerUnitTest {
 
     protected static BaseServer create(boolean nio, int port) {
         try {
-            BaseServer retval=nio? new NioServer(null, port) : new TcpServer(null, port).useSendQueues(false);
+            BaseServer retval=nio? new NioServer(null, port).maxSendBuffers(500).maxReadBatchSize(20)
+              : new TcpServer(null, port).useSendQueues(false);
             retval.usePeerConnections(true);
             retval.start();
             // System.out.printf("Created instance of %s\n", retval.getClass().getSimpleName());
@@ -322,8 +321,7 @@ public class ServerUnitTest {
                 public boolean isMet() {
                     return num_received.get() >= num_expected;
                 }
-            },
-                         timeout, TimeUnit.MILLISECONDS);
+            }, timeout, TimeUnit.MILLISECONDS);
         }
 
         public String toString() {
