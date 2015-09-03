@@ -76,6 +76,11 @@ TCPPING: access initial_hosts in the defined order
 Was not the case as we used a HashSet which reordered elements.
 
 
+SWIFT_PING: support JSON
+------------------------
+[https://issues.jboss.org/browse/JGRP-1954]
+
+Request/response format has changed from application/xml to application/json in the Identity API.
 
 
 
