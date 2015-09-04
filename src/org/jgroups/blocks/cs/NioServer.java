@@ -105,8 +105,9 @@ public class NioServer extends NioBaseServer {
         NioConnection conn=null;
         if(client_channel == null) return; // can happen if no connection is available to accept
         try {
-            conn=new NioConnection(client_channel, NioServer.this).key(key);
-            client_channel.register(selector, SelectionKey.OP_READ, conn);
+            conn=new NioConnection(client_channel, NioServer.this);
+            SelectionKey client_key=client_channel.register(selector, SelectionKey.OP_READ, conn);
+            conn.key(client_key); // we need to set the selection key of the client channel *not* the server channel
             Address peer_addr=conn.peerAddress();
             if(use_peer_connections)
                 return;
