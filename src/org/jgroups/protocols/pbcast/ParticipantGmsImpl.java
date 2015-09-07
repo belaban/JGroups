@@ -44,29 +44,23 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
      * Else send handleLeave() to coord until success
      */
     public void leave(Address mbr) {
-        Address coord;
-        int max_tries=3;
-
         leave_promise.reset();
-
         if(mbr.equals(gms.local_addr))
             leaving=true;
 
-        while((coord=gms.determineCoordinator()) != null && max_tries-- > 0) {
-            if(gms.local_addr.equals(coord)) {            // I'm the coordinator
+        Address coord=gms.determineCoordinator();
+        if(coord != null) {
+            if(gms.local_addr.equals(coord)) { // I'm the coordinator
                 gms.becomeCoordinator();
-                // gms.getImpl().handleLeave(mbr, false);    // regular leave
-                gms.getImpl().leave(mbr);    // regular leave
+                gms.getImpl().leave(mbr);      // regular leave
                 return;
             }
 
             log.trace("%s: sending LEAVE request to %s", gms.local_addr, coord);
             sendLeaveMessage(coord, mbr);
             Boolean result=leave_promise.getResult(gms.leave_timeout);
-            if(result != null) {
+            if(result != null)
                 log.trace("%s: got LEAVE response from %s", gms.local_addr, coord);
-                break;
-            }
         }
         gms.becomeClient();
     }
