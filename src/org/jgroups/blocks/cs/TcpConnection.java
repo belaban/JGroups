@@ -3,7 +3,7 @@ package org.jgroups.blocks.cs;
 import org.jgroups.Address;
 import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.SocketFactory;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Blocking IO (BIO) connection. Starts 1 reader thread for the peer socket and blocks until data is available.
- * Calls {@link TcpServer#receive(Object,byte[],int,int)} when data has been received.
+ * Calls {@link TcpServer#receive(Address,byte[],int,int)} when data has been received.
  * @author Bela Ban
  * @since  3.6.5
  */
@@ -25,6 +25,7 @@ public class TcpConnection implements Connection {
     protected final Socket           sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
     protected final ReentrantLock    send_lock=new ReentrantLock(); // serialize send()
     protected static final byte[]    cookie= { 'b', 'e', 'l', 'a' };
+    protected static final Buffer    termination=new Buffer(cookie);
     protected DataOutputStream       out;
     protected DataInputStream        in;
     protected Address                peer_addr; // address of the 'other end' of the connection
@@ -88,7 +89,6 @@ public class TcpConnection implements Connection {
             last_access=getTimestamp();
     }
 
-    /** Called after {@link TcpConnection#TcpConnection(Address, SocketFactory)} */
     public void connect(Address dest) throws Exception {
         connect(dest, server.usePeerConnections());
     }
@@ -134,11 +134,9 @@ public class TcpConnection implements Connection {
      * @param length
      */
     public void send(byte[] data, int offset, int length) throws Exception {
-        if (sender != null) {
-            // we need to copy the byte[] buffer here because the original buffer might get changed meanwhile
-            byte[] tmp = new byte[length];
-            System.arraycopy(data, offset, tmp, 0, length);
-            sender.addToQueue(tmp);
+        if(sender != null) {
+            // we don't need to copy as data was created anew when sending the message !
+            sender.addToQueue(new Buffer(data, offset, length));
         }
         else
             _send(data, offset, length, true, true);
@@ -154,7 +152,7 @@ public class TcpConnection implements Connection {
         else { // by default use a copy; but of course implementers of Receiver can override this
             byte[] tmp=new byte[len];
             buf.get(tmp, 0, len);
-            send(tmp, 0, len);
+            send(tmp, 0, len); // will get copied again if send-queues are enabled
         }
     }
 
@@ -336,7 +334,7 @@ public class TcpConnection implements Connection {
     }
 
     protected class Sender implements Runnable {
-        protected final BlockingQueue<byte[]> send_queue;
+        protected final BlockingQueue<Buffer> send_queue;
         protected final Thread                runner;
         protected volatile boolean            started=true;
 
@@ -346,7 +344,7 @@ public class TcpConnection implements Connection {
             this.send_queue=new LinkedBlockingQueue<>(send_queue_size);
         }
 
-        public void addToQueue(byte[] data) throws Exception {
+        public void addToQueue(Buffer data) throws Exception {
             if(canRun())
                 if (!send_queue.offer(data, server.sock_conn_timeout, TimeUnit.MILLISECONDS))
                     server.log.warn("%s: discarding message because TCP send_queue is full and hasn't been releasing for %d ms",
@@ -360,7 +358,7 @@ public class TcpConnection implements Connection {
         }
 
         public Sender stop() {
-            send_queue.offer(cookie); // cookie is the termination signal
+            send_queue.offer(termination); // cookie is the termination signal
             started=false;
             return this;
         }
@@ -376,10 +374,10 @@ public class TcpConnection implements Connection {
         public void run() {
             Throwable t=null;
             while(canRun()) {
-                byte[] data=null;
+                Buffer data=null;
                 try {
                     data=send_queue.take();
-                    if(data.hashCode() == cookie.hashCode())
+                    if(data.hashCode() == termination.hashCode())
                         break;
                 }
                 catch(InterruptedException e) {
@@ -389,7 +387,7 @@ public class TcpConnection implements Connection {
 
                 if(data != null) {
                     try {
-                        _send(data, 0, data.length, false, send_queue.isEmpty());
+                        _send(data.getBuf(), 0, data.getLength(), false, send_queue.isEmpty());
                     }
                     catch(Throwable ignored) {
                         t=ignored;

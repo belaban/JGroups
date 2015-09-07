@@ -17,7 +17,7 @@ import java.util.Collection;
  * messages and dispatches handling of those to a (configurable) thread pool.
  * <p>
  * Most of the functionality is in {@link NioServer}. TCP_NIO sends
- * messages using {@link NioServer#send(Object,byte[],int,int)} and registers with the server
+ * messages using {@link NioServer#send(Address,byte[],int,int)} and registers with the server
  * to receive messages.
  * @author Bela Ban
  * @since 3.6.5

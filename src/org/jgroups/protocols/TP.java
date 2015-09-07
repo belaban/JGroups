@@ -895,8 +895,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public boolean isReceiveOnAllInterfaces() {return receive_on_all_interfaces;}
     public List<NetworkInterface> getReceiveInterfaces() {return receive_interfaces;}
-    public static boolean isDiscardIncompatiblePackets() {return true;}
-    public static void setDiscardIncompatiblePackets(boolean flag) {}
+    @Deprecated public static boolean isDiscardIncompatiblePackets() {return true;}
+    @Deprecated public static void setDiscardIncompatiblePackets(boolean flag) {}
     @Deprecated public static boolean isEnableBundling() {return true;}
     @Deprecated public void setEnableBundling(boolean flag) {}
     @Deprecated public static boolean isEnableUnicastBundling() {return true;}
@@ -2438,7 +2438,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected class BaseBundler implements Bundler {
         /** Keys are destinations, values are lists of Messages */
         final Map<SingletonAddress,List<Message>>  msgs=new HashMap<>(24);
-        final ByteArrayDataOutputStream            output=new ByteArrayDataOutputStream(1024);
         @GuardedBy("lock") long                    count;    // current number of bytes accumulated
         final ReentrantLock                        lock=new ReentrantLock();
 
@@ -2451,10 +2450,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
          * Sends all messages in the map. Messages for the same destination are bundled into a message list. The map will
          * be cleared when done
          */
-        protected void sendBundledMessages(final Map<SingletonAddress,List<Message>> msgs, final ByteArrayDataOutputStream out) {
+        protected void sendBundledMessages() {
             if(log.isTraceEnabled()) {
                 double percentage=100.0 / max_bundle_size * count;
-                log.trace(BUNDLE_MSG, local_addr, numMessages(msgs), count, percentage, msgs.size(), msgs.keySet());
+                log.trace(BUNDLE_MSG, local_addr, numMessages(), count, percentage, msgs.size(), msgs.keySet());
             }
 
             for(Map.Entry<SingletonAddress,List<Message>> entry: msgs.entrySet()) {
@@ -2462,12 +2461,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 if(list.isEmpty())
                     continue;
 
-                out.position(0);
                 if(list.size() == 1)
-                    sendSingleMessage(list.get(0), false, out);
+                    sendSingleMessage(list.get(0));
                 else {
                     SingletonAddress dst=entry.getKey();
-                    sendMessageList(dst.getAddress(), list.get(0).getSrc(), dst.getClusterName(), list, false, out);
+                    sendMessageList(dst.getAddress(), list.get(0).getSrc(), dst.getClusterName(), list);
                     if(stats)
                         num_batches_sent++;
                 }
@@ -2476,7 +2474,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             count=0;
         }
 
-        protected int numMessages(final Map<SingletonAddress,List<Message>> msgs) {
+        protected int numMessages() {
             int num=0;
             Collection<List<Message>> values=msgs.values();
             for(List<Message> list: values)
@@ -2485,12 +2483,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
 
-        protected void sendSingleMessage(final Message msg, boolean reset, final ByteArrayDataOutputStream out) {
-            Address dest=msg.getDest();
-
+        protected void sendSingleMessage(final Message msg) {
+            Address                   dest=msg.getDest();
+            int                       capacity=(int)(count > 0? count + MSG_OVERHEAD : msg.size() + MSG_OVERHEAD);
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(capacity);
             try {
-                if(reset)
-                    out.position(0);
                 writeMessage(msg, out, dest == null);
                 doSend(getClusterName(msg), out.buffer(), 0, out.position(), dest);
                 if(stats)
@@ -2509,10 +2506,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
         protected void sendMessageList(final Address dest, final Address src, final byte[] cluster_name,
-                                       final List<Message> list, boolean reset, final ByteArrayDataOutputStream out) {
+                                       final List<Message> list) {
+            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)count);
             try {
-                if(reset)
-                    out.position(0);
                 writeMessageList(dest, src, cluster_name, list, out, dest == null, id); // flushes output stream when done
                 doSend(isSingleton()? new AsciiString(cluster_name) : null, out.buffer(), 0, out.position(), dest);
             }
@@ -2559,7 +2555,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             lock.lock();
             try {
                 if(count + size >= max_bundle_size)
-                    sendBundledMessages(msgs, output);
+                    sendBundledMessages();
                 addMessage(msg, size);
                 if(num_bundling_tasks < MIN_NUMBER_OF_BUNDLING_TASKS) {
                     num_bundling_tasks++;
@@ -2579,7 +2575,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             try {
                 if(!msgs.isEmpty()) {
                     try {
-                        sendBundledMessages(msgs, output);
+                        sendBundledMessages();
                     }
                     catch(Exception e) {
                         log.error(Util.getMessage("FailureSendingMsgBundle"), local_addr, e);
@@ -2608,15 +2604,15 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 num_senders.decrementAndGet();
 
                 if(count + size >= max_bundle_size)
-                    sendBundledMessages(msgs, output);
+                    sendBundledMessages();
 
                 // at this point, we haven't sent our message yet !
                 if(num_senders.get() == 0) { // no other sender threads present at this time
                     if(count == 0)
-                        sendSingleMessage(msg, true, output);
+                        sendSingleMessage(msg);
                     else {
                         addMessage(msg,size);
-                        sendBundledMessages(msgs, output);
+                        sendBundledMessages();
                     }
                 }
                 else  // there are other sender threads waiting, so our message will be sent by a different thread
@@ -2684,17 +2680,17 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                             continue;
                         long size=msg.size();
                         if(count + size >= max_bundle_size || queue.size() >= threshold)
-                            sendBundledMessages(msgs, output);
+                            sendBundledMessages();
                         addMessage(msg, size);
                     }
                     while(null != (msg=queue.poll())) {
                         long size=msg.size();
                         if(count + size >= max_bundle_size || queue.size() >= threshold)
-                            sendBundledMessages(msgs, output);
+                            sendBundledMessages();
                         addMessage(msg, size);
                     }
                     if(count > 0)
-                        sendBundledMessages(msgs, output);
+                        sendBundledMessages();
                 }
                 catch(Throwable t) {
                 }

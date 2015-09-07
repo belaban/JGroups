@@ -129,7 +129,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected boolean resend_last_seqno=true;
 
     @Property(description="Max number of times the last seqno is resent before acquiescing if last seqno isn't incremented")
-    protected int     resend_last_seqno_max_times=3;
+    protected int     resend_last_seqno_max_times=1;
 
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 

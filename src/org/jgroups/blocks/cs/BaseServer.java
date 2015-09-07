@@ -445,7 +445,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
 
         if(!running.get()) {
-            log.warn("%s: server is not running, discarding message to %s", local_addr, dest);
+            log.trace("%s: server is not running, discarding message to %s", local_addr, dest);
             return false;
         }
         return true;

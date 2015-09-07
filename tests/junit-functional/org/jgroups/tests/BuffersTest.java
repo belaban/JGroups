@@ -15,17 +15,17 @@ import java.util.Arrays;
  */
 @Test(groups=Global.FUNCTIONAL)
 public class BuffersTest {
-    protected static final ByteBuffer buffer=ByteBuffer.wrap("hello world".getBytes());
+    protected static ByteBuffer buffer() {return ByteBuffer.wrap("hello world".getBytes());}
 
     public void testCreation() {
-        ByteBuffer b=(ByteBuffer)buffer.duplicate().clear();
+        ByteBuffer b=buffer();
         Buffers bufs=new Buffers(b);
         System.out.println("bufs = " + bufs);
-        assert bufs.remaining() == Global.INT_SIZE + buffer.capacity();
+        assert bufs.remaining() == Global.INT_SIZE + buffer().capacity();
     }
 
     public void testWrite() throws Exception {
-        ByteBuffer b=(ByteBuffer)buffer.duplicate().clear();
+        ByteBuffer b=buffer();
         Buffers bufs=new Buffers();
         MockSocketChannel ch=new MockSocketChannel().bytesToWrite(15);
         boolean rc=bufs.write(ch, b);
@@ -42,12 +42,12 @@ public class BuffersTest {
         assert rc;
 
         ch.bytesToWrite(10);
-        b=buffer.duplicate(); // mimic a new buffer
+        b=buffer(); // mimic a new buffer
         rc=bufs.write(ch, b);
         assert rc == false;
 
         ch.bytesToWrite(30);
-        b=buffer.duplicate(); // mimic a new buffer
+        b=buffer(); // mimic a new buffer
         rc=bufs.write(ch, b);
         assert rc;
     }
@@ -108,4 +108,25 @@ public class BuffersTest {
             System.out.printf("received exception as expected: %s\n", eof);
         }
     }
+
+
+    public void testReadLength() throws Exception {
+        byte[] tmp="hello world".getBytes();
+        ByteBuffer data=ByteBuffer.allocate(Global.INT_SIZE + tmp.length).putInt(tmp.length).put(tmp);
+        data.flip().limit(4); // read the entire length
+        MockSocketChannel ch=new MockSocketChannel().bytesToRead(data);
+        Buffers bufs=new Buffers();
+        ByteBuffer buf=bufs.read(ch);
+        assert buf == null;
+
+        data.limit(8); // allow for some more data to be read...
+        buf=bufs.read(ch);
+        assert buf == null;
+
+        data.limit(data.capacity()); // read all data
+        buf=bufs.read(ch);
+        assert buf != null;
+    }
+
+
 }

@@ -40,7 +40,9 @@ public class Buffers {
     /**
      * Writes the length and data with a gathering write
      * @param ch The channel to write to
-     * @param buf The data buffer. Note that {@link ByteBuffer#position} needs to be at the start of the data to be written
+     * @param buf The data buffer. Note that {@link ByteBuffer#position} needs to be at the start of the data to be
+     *            written. The buffer must not be reused by the application as the write may not be synchronous; that is,
+     *            after this call returns, the data is not guaranteed to be completely written and may be written later.
      * @return True if all the bytes of the buffer were written successfully, false otherwise.
      * @throws Exception Thrown if the write failed
      */
@@ -92,8 +94,7 @@ public class Buffers {
             return null;
 
         if(bufs[1] == null) {
-            bufs[0].flip();
-            int len=bufs[0].getInt();
+            int len=bufs[0].getInt(0); // we know bufs[0] is always 4 bytes, no need to clear or flip it
             bufs[1]=ByteBuffer.allocate(len);
         }
         if(bufs[1].hasRemaining() && ch.read(bufs[1]) < 0)
@@ -101,8 +102,7 @@ public class Buffers {
 
         if(!bufs[1].hasRemaining()) {
             try {
-                bufs[1].flip();
-                return bufs[1];
+                return (ByteBuffer)bufs[1].clear();
             }
             finally {
                 bufs[0].clear();

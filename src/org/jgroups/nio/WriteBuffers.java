@@ -46,14 +46,12 @@ public class WriteBuffers extends Buffers {
     public int limit()    {return limit;}
 
 
-    //@Override
     public boolean write(SocketChannel ch, ByteBuffer buf) throws Exception {
         if(spaceAvailable() || makeSpace())
             add(buf);
         return write(ch);
     }
 
-    //@Override
     public boolean write(SocketChannel ch) throws Exception {
         int num_buffers_to_write=size();
         if(num_buffers_to_write == 0)
@@ -157,7 +155,7 @@ public class WriteBuffers extends Buffers {
     }
 
     protected static ByteBuffer makeLengthBuffer(ByteBuffer buf) {
-        return (ByteBuffer)ByteBuffer.allocate(Global.INT_SIZE).putInt(buf.remaining()).flip();
+        return (ByteBuffer)ByteBuffer.allocate(Global.INT_SIZE).putInt(buf.remaining()).clear();
     }
 
 }
