@@ -149,8 +149,10 @@ public class ServerUnitTest {
                 log("sent " + NUM + " msgs");
                 r1.waitForCompletion(20000);
                 total_time=r1.stop_time - r1.start_time;
-                log("number expected=" + r1.getNumExpected() + ", number received=" + r1.getNumReceived() +
-                      ", total time=" + total_time + " (" + (double)total_time / r1.getNumReceived() + " ms/msg)");
+                log(String.format("r1.expected=%d, r1.received=%d, r2.expected=%d, r2.received=%d, r2.sent=%d, total time=%d (%.2f ms/msg)",
+                                  r1.getNumExpected(), r1.getNumReceived(), r1.getNumExpected(), r2.getNumReceived(), r2.num_sent.get(),
+                                  total_time, (double)total_time / r1.getNumReceived()
+                ));
 
                 Assert.assertEquals(r1.getNumReceived(), r1.getNumExpected());
             }
@@ -232,7 +234,7 @@ public class ServerUnitTest {
 
     protected static BaseServer create(boolean nio, int port) {
         try {
-            BaseServer retval=nio? new NioServer(null, port).maxSendBuffers(500).maxReadBatchSize(20)
+            BaseServer retval=nio? new NioServer(null, port).maxSendBuffers(1024).maxReadBatchSize(20)
               : new TcpServer(null, port).useSendQueues(false);
             retval.usePeerConnections(true);
             retval.start();
@@ -274,7 +276,7 @@ public class ServerUnitTest {
 
     protected static class MyReceiver extends ReceiverAdapter {
         protected final long       num_expected;
-        protected final AtomicLong num_received=new AtomicLong(0);
+        protected final AtomicLong num_received=new AtomicLong(0), num_sent=new AtomicLong(0);
         protected long             start_time=0, stop_time=0;
         protected final  CondVar   done=new CondVar();
         protected boolean          send_response=false;
@@ -303,15 +305,14 @@ public class ServerUnitTest {
                 }
                 done.signal(true);
             }
-            if(send_response) {
-                if(server != null) {
-                    try {
-                        byte[] rsp=new byte[0];
-                        server.send(sender, rsp, 0, rsp.length);
-                    }
-                    catch(Exception e) {
-                        e.printStackTrace();
-                    }
+            if(send_response && tmp <= num_expected) {
+                try {
+                    byte[] rsp=new byte[0];
+                    server.send(sender, rsp, 0, rsp.length);
+                    num_sent.incrementAndGet();
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
                 }
             }
         }
