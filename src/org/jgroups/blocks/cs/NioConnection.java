@@ -265,9 +265,9 @@ public class NioConnection implements Connection {
         try {remote=channel != null? (InetSocketAddress)channel.getRemoteAddress() : null;} catch(Throwable t) {}
         String loc=local == null ? "n/a" : local.getHostString() + ":" + local.getPort(),
           rem=remote == null? "n/a" : remote.getHostString() + ":" + remote.getPort();
-        return String.format("<%s --> %s> (%d secs old) [%s]",
+        return String.format("<%s --> %s> (%d secs old) [%s] [send_buf: %s, recv_buf: %s]",
                              loc, rem, TimeUnit.SECONDS.convert(getTimestamp() - last_access, TimeUnit.NANOSECONDS),
-                             status());
+                             status(), send_buf, recv_buf);
     }
 
     protected String status() {
