@@ -228,6 +228,27 @@ public class ServerUnitTest {
     }
 
 
+    public void testAsyncConnectThenSend() throws Exception {
+        try(NioServer a=(NioServer)create(true, 0); NioServer b=(NioServer)create(true, 0)) {
+            a.start();
+            b.start();
+            Address target=b.localAddress();
+            MyReceiver r=new MyReceiver(b, 2, false);
+            b.receiver(r);
+
+            // now send 2 msgs from A to B: this will connect async, buffer the 2 msgs, then send when connected
+            byte[] buffer="hello world".getBytes();
+            a.send(target, buffer, 0, buffer.length);
+            a.send(target, buffer, 0, buffer.length);
+
+            r.waitForCompletion(20000);
+            assert r.getNumReceived() == 2;
+        }
+    }
+
+
+
+
     static void log(String msg) {
         System.out.println("-- [" + Thread.currentThread() + "]: " + msg);
     }
@@ -238,7 +259,6 @@ public class ServerUnitTest {
               : new TcpServer(null, port).useSendQueues(false);
             retval.usePeerConnections(true);
             retval.start();
-            // System.out.printf("Created instance of %s\n", retval.getClass().getSimpleName());
             return retval;
         }
         catch(Exception ex) {
@@ -297,6 +317,7 @@ public class ServerUnitTest {
 
 
         public void receive(Address sender, byte[] data, int offset, int length) {
+            System.out.printf("from %s: %d bytes\n", sender, length);
             long tmp=num_received.incrementAndGet();
             if(tmp >= num_expected) {
                 synchronized(this) {
