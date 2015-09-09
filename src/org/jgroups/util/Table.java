@@ -89,7 +89,7 @@ public class Table<T> {
 
     public Table(long offset) {
         this();
-        this.offset=offset;
+        this.offset=this.low=this.hr=this.hd=offset;
     }
 
     public Table(int num_rows, int elements_per_row, long offset) {
@@ -276,7 +276,7 @@ public class Table<T> {
     public T get(long seqno) {
         lock.lock();
         try {
-            if(seqno <= low || seqno > hr)
+            if(seqno - low <= 0 || seqno - hr > 0)
                 return null;
             int row_index=computeRow(seqno);
             if(row_index < 0 || row_index >= matrix.length)
@@ -321,8 +321,8 @@ public class Table<T> {
         lock.lock();
         try {
             // boundary check: the get() has to be in range [low+1 .. hr-1]
-            if(from <= low) from=low+1;
-            if(to > hr) to=hr;
+            if(from - low <= 0) from=low+1;
+            if(to - hr > 0) to=hr;
             Getter getter=new Getter();
             forEach(from, to, getter);
             return getter.getList();
@@ -356,7 +356,7 @@ public class Table<T> {
                 size=Math.max(size-1, 0); // cannot be < 0 (well that would be a bug, but let's have this 2nd line of defense !)
                 if(nullify) {
                     row[index]=null;
-                    if(hd > low)
+                    if(hd - low > 0)
                         low=hd;
                 }
             }
@@ -418,14 +418,14 @@ public class Table<T> {
     public void purge(long seqno, boolean force) {
         lock.lock();
         try {
-            if(seqno <= low)
+            if(seqno - low <= 0)
                 return;
             if(force) {
-                if(seqno > hr)
+                if(seqno - hr > 0)
                     seqno=hr;
             }
             else {
-                if(seqno > hd) // we cannot be higher than the highest removed seqno
+                if(seqno - hd > 0) // we cannot be higher than the highest removed seqno
                     seqno=hd;
             }
 
@@ -441,10 +441,10 @@ public class Table<T> {
                 for(int i=0; i <= index; i++) // null all elements up to and including seqno in the given row
                     matrix[end_row][i]=null;
             }
-            if(seqno > low)
+            if(seqno - low > 0)
                 low=seqno;
             if(force) {
-                if(seqno > hd)
+                if(seqno - hd > 0)
                     low=hd=seqno;
                 size=computeSize();
             }
@@ -488,7 +488,7 @@ public class Table<T> {
      */
     @GuardedBy("lock")
     public void forEach(long from, long to, Visitor<T> visitor) {
-        if(from > to)
+        if(from - to > 0)
             return;
         int row=computeRow(from), column=computeIndex(from);
         int distance=(int)(to - from +1);
@@ -509,7 +509,7 @@ public class Table<T> {
     }
 
     protected boolean _add(long seqno, T element, boolean check_if_resize_needed, Filter<T> remove_filter) {
-        if(seqno <= hd)
+        if(seqno - hd <= 0)
             return false;
 
         int row_index=computeRow(seqno);
@@ -523,7 +523,7 @@ public class Table<T> {
         if(existing_element == null) {
             row[index]=element;
             size++;
-            if(seqno > hr)
+            if(seqno - hr > 0)
                 hr=seqno;
             if(remove_filter != null && hd +1 == seqno)
                 forEach(hd+1, hr, new RemoverOnAdd(remove_filter));
@@ -537,7 +537,7 @@ public class Table<T> {
         long seqno=-1;
         for(Tuple<Long,T> tuple: list) {
             Long val=tuple.getVal1();
-            if(val != null && val > seqno)
+            if(val != null && val - seqno > 0)
                 seqno=val;
         }
         return seqno;
@@ -794,7 +794,7 @@ public class Table<T> {
                     list.add(element);
                     num_results++;
                 }
-                if(seqno > hd)
+                if(seqno - hd > 0)
                     hd=seqno;
                 size=Math.max(size-1, 0); // cannot be < 0 (well that would be a bug, but let's have this 2nd line of defense !)
                 if(nullify) {
@@ -802,7 +802,7 @@ public class Table<T> {
                     // if we're nulling the last element of a row, null the row as well
                     if(column == elements_per_row-1)
                         matrix[row]=null;
-                    if(seqno > low)
+                    if(seqno - low > 0)
                         low=seqno;
                 }
                 return max_results == 0 || num_results < max_results;
@@ -822,7 +822,7 @@ public class Table<T> {
         public boolean visit(long seqno, T element, int row, int column) {
             if(element == null || !filter.accept(element))
                 return false;
-            if(seqno > hd)
+            if(seqno - hd > 0)
                 hd=seqno;
             size=Math.max(size-1, 0); // cannot be < 0 (well that would be a bug, but let's have this 2nd line of defense !)
             return true;
@@ -850,39 +850,6 @@ public class Table<T> {
         }
     }
 
-  /*  protected class Missing implements Visitor<T> {
-        protected SeqnoList missing_elements;
-        protected long      last_missing=-1; // last missing seqno
-
-        protected SeqnoList getMissingElements() {return missing_elements;}
-
-        public boolean visit(long seqno, T element, int row, int column) {
-            if(element == null) {
-                if(last_missing == -1)
-                    last_missing=seqno;
-                else
-                    ;
-            }
-            else {
-                if(last_missing == -1) {
-                    ;
-                }
-                else {
-                    long tmp=seqno-1;
-                    if(missing_elements == null)
-                        missing_elements=new SeqnoList();
-                    if(tmp - last_missing > 0) {
-                        missing_elements.add(last_missing, tmp);
-                    }
-                    else {
-                        missing_elements.add(last_missing);
-                    }
-                    last_missing=-1;
-                }
-            }
-            return true;
-        }
-    }*/
 
     protected class Missing implements Visitor<T> {
         protected final SeqnoList missing_elements;

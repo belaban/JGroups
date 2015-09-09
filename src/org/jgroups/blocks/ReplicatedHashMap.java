@@ -26,7 +26,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @author Bela Ban
  */
 public class ReplicatedHashMap<K, V> extends
-        AbstractMap<K,V> implements ConcurrentMap<K,V>, Receiver, ReplicatedMap<K,V> {
+        AbstractMap<K,V> implements ConcurrentMap<K,V>, Receiver, ReplicatedMap<K,V>, Closeable {
 
     public interface Notification<K, V> {
         void entrySet(K key, V value);
@@ -197,6 +197,11 @@ public class ReplicatedHashMap<K, V> extends
             disp=null;
         }
         Util.close(channel);
+    }
+
+
+    @Override public void close() throws IOException {
+        stop();
     }
 
     /**
@@ -456,40 +461,25 @@ public class ReplicatedHashMap<K, V> extends
     
 
     public void getState(OutputStream ostream) throws Exception {
-        K key;
-        V val;
         HashMap<K,V> copy=new HashMap<>();
-        ObjectOutputStream oos=null;
-
         for(Map.Entry<K,V> entry:entrySet()) {
-            key=entry.getKey();
-            val=entry.getValue();
+            K key=entry.getKey();
+            V val=entry.getValue();
             copy.put(key, val);
         }
-        try {
-            oos=new ObjectOutputStream(new BufferedOutputStream(ostream, 1024));
+        try(ObjectOutputStream oos=new ObjectOutputStream(new BufferedOutputStream(ostream, 1024))) {
             oos.writeObject(copy);
-        }
-        finally {
-            Util.close(oos);
         }
     }
 
     public void setState(InputStream istream) throws Exception {
         HashMap<K,V> new_copy=null;
-        ObjectInputStream ois=null;
-        try {
-            ois=new ObjectInputStream(istream);
+        try(ObjectInputStream ois=new ObjectInputStream(istream)) {
             new_copy=(HashMap<K,V>)ois.readObject();
-        }
-        finally {
-            Util.close(ois);
         }
         if(new_copy != null)
             _putAll(new_copy);
-
-        if(log.isDebugEnabled())
-            log.debug("state received successfully");
+        log.debug("state received successfully");
     }
 
     /*------------------- Membership Changes ----------------------*/

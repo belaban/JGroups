@@ -19,6 +19,7 @@ import java.util.List;
  * This class in not synchronized; the caller has to make sure access to it is synchronized
  * @author Bela Ban
  */
+@Deprecated
 public class RetransmitTable {
     protected final int    num_rows;
     /** Must be a power of 2 for efficient modular arithmetic **/

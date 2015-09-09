@@ -44,11 +44,12 @@ public class ForkProtocolStack extends ProtocolStack {
                 this.protocols.add(protocols.get(i));
     }
 
-    public JChannel get(String fork_channel_id)                                {return fork_channels.get(fork_channel_id);}
-    public JChannel putIfAbsent(String fork_channel_id, JChannel fork_channel) {return fork_channels.putIfAbsent(fork_channel_id, fork_channel);}
-    public void     remove(String fork_channel_id)                             {fork_channels.remove(fork_channel_id);}
-    public synchronized int getInits()                                         {return inits;}
-    public synchronized int getConnects()                                      {return connects;}
+    public ConcurrentMap<String,JChannel> getForkChannels()                   {return fork_channels;}
+    public JChannel                       get(String fork_channel_id)         {return fork_channels.get(fork_channel_id);}
+    public JChannel                       putIfAbsent(String id, JChannel fc) {return fork_channels.putIfAbsent(id, fc);}
+    public void                           remove(String fork_channel_id)      {fork_channels.remove(fork_channel_id);}
+    public synchronized int               getInits()                          {return inits;}
+    public synchronized int               getConnects()                       {return connects;}
 
     public Object down(Event evt) {
         return down_prot.down(evt);
@@ -147,7 +148,7 @@ public class ForkProtocolStack extends ProtocolStack {
             List<Message> list=entry.getValue();
             JChannel fork_channel=get(fork_channel_id);
             if(fork_channel == null) {
-                log.warn("fork-channel for id=%s not found; discarding message", fork_channel_id);
+                log.debug("fork-channel for id=%s not found; discarding message", fork_channel_id);
                 continue;
             }
             MessageBatch mb=new MessageBatch(batch.dest(), batch.sender(), batch.clusterName(), batch.multicast(), list);

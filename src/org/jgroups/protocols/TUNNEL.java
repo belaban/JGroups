@@ -5,19 +5,20 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.*;
+import org.jgroups.stack.GossipData;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.RouterStub;
+import org.jgroups.stack.RouterStubManager;
 import org.jgroups.util.AsciiString;
 import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -37,34 +38,36 @@ import java.util.List;
  * @author Vladimir Blagojevic
  */
 @Experimental
-public class TUNNEL extends TP {
+public class TUNNEL extends TP implements RouterStub.StubReceiver {
 
-    /*
-    * ----------------------------------------- Properties
-    * --------------------------------------------------
-    */
+    public interface TUNNELPolicy {
+        void sendToAllMembers(String group, byte[] data, int offset, int length) throws Exception;
+        void sendToSingleMember(String group, Address dest, byte[] data, int offset, int length) throws Exception;
+    }
+
+    /* ----------------------------------------- Properties -------------------------------------------------- */
 
     @Property(description = "Interval in msec to attempt connecting back to router in case of torn connection. Default is 5000 msec")
-    private long reconnect_interval = 5000;
+    protected long    reconnect_interval=5000;
 
     @Property(description="Should TCP no delay flag be turned on")
-    boolean tcp_nodelay=false;
+    protected boolean tcp_nodelay=false;
 
-    /*
-    * --------------------------------------------- Fields
-    * ------------------------------------------------------
-    */
+    @Property(description="Whether to use blocking (false) or non-blocking (true) connections. If GossipRouter is used, " +
+      "this needs to be false; if GossipRouterNio is used, it needs to be true")
+    protected boolean use_nio;
 
-   private final List<InetSocketAddress> gossip_router_hosts = new ArrayList<>();
+    /* ------------------------------------------ Fields ----------------------------------------------------- */
 
-   private TUNNELPolicy tunnel_policy = new DefaultTUNNELPolicy();
+    protected final List<InetSocketAddress> gossip_router_hosts = new ArrayList<>();
+    protected TUNNELPolicy                  tunnel_policy = new DefaultTUNNELPolicy();
+    protected DatagramSocket                sock; // used to get a unique client address
+    protected volatile RouterStubManager    stubManager;
 
-   private DatagramSocket sock;
-   
-   protected volatile RouterStubManager stubManager;
 
-   public TUNNEL() {
-   }
+
+    public TUNNEL() {
+    }
 
     /** We can simply send a message with dest == null and the GossipRouter will take care of routing it to all
      * members in the cluster */
@@ -73,36 +76,54 @@ public class TUNNEL extends TP {
     }
 
     @Property(description="A comma-separated list of GossipRouter hosts, e.g. HostA[12001],HostB[12001]")
-   public void setGossipRouterHosts(String hosts) throws UnknownHostException {
-      gossip_router_hosts.clear();
-      // if we get passed value of List<SocketAddress>#toString() we have to strip []
-      if (hosts.startsWith("[") && hosts.endsWith("]")) {
-         hosts = hosts.substring(1, hosts.length() - 1);
-      }
-      gossip_router_hosts.addAll(Util.parseCommaDelimitedHosts2(hosts, 1));
-   }
+    public void setGossipRouterHosts(String hosts) throws UnknownHostException {
+        gossip_router_hosts.clear();
+        // if we get passed value of List<SocketAddress>#toString() we have to strip []
+        if (hosts.startsWith("[") && hosts.endsWith("]")) {
+            hosts = hosts.substring(1, hosts.length() - 1);
+        }
+        gossip_router_hosts.addAll(Util.parseCommaDelimitedHosts2(hosts, 1));
+    }
 
-   public RouterStubManager getStubManager() {return stubManager;}
+    @ManagedOperation(description="Prints all stubs and the reconnect list")
+    public String print() {
+        RouterStubManager mgr=stubManager;
+        return mgr != null? mgr.print() : "n/a";
+    }
 
-   public String toString() {
-      return "TUNNEL";
-   }
+    @ManagedOperation(description="Prints all currently connected stubs")
+    public String printStubs() {
+        RouterStubManager mgr=stubManager;
+        return mgr != null? mgr.printStubs() : "n/a";
+    }
 
-   public long getReconnectInterval() {
-      return reconnect_interval;
-   }
+    @ManagedOperation(description="Prints the reconnect list")
+    public String printReconnectList() {
+        RouterStubManager mgr=stubManager;
+        return mgr != null? mgr.printReconnectList() : "n/a";
+    }
 
-   public void setReconnectInterval(long reconnect_interval) {
-      this.reconnect_interval = reconnect_interval;
-   }
+    public RouterStubManager getStubManager() {return stubManager;}
 
-   /*------------------------------ Protocol interface ------------------------------ */
+    public String toString() {
+        return "TUNNEL";
+    }
 
-   public synchronized void setTUNNELPolicy(TUNNELPolicy policy) {
-      if (policy == null)
-         throw new IllegalArgumentException("Tunnel policy has to be non null");
-      tunnel_policy = policy;
-   }
+    public long getReconnectInterval() {
+        return reconnect_interval;
+    }
+
+    public void setReconnectInterval(long reconnect_interval) {
+        this.reconnect_interval = reconnect_interval;
+    }
+
+    /*------------------------------ Protocol interface ------------------------------ */
+
+    public synchronized void setTUNNELPolicy(TUNNELPolicy policy) {
+        if (policy == null)
+            throw new IllegalArgumentException("Tunnel policy has to be non null");
+        tunnel_policy = policy;
+    }
 
     public void init() throws Exception {
         super.init();
@@ -117,7 +138,7 @@ public class TUNNEL extends TP {
             throw new IllegalStateException("gossip_router_hosts needs to contain at least one address of a GossipRouter");
         log.debug("GossipRouters are:" + gossip_router_hosts.toString());
         
-        stubManager = RouterStubManager.emptyGossipClientStubManager(this);
+        stubManager = RouterStubManager.emptyGossipClientStubManager(this).useNio(this.use_nio);
         sock = getSocketFactory().createDatagramSocket("jgroups.tunnel.ucast_sock", bind_port, bind_addr);
     }
     
@@ -126,117 +147,57 @@ public class TUNNEL extends TP {
         super.destroy();
     }
 
-   private void disconnectStub(String group, Address addr) {
-      stubManager.disconnectStubs();
-   }
-
-   public Object handleDownEvent(Event evt) {
-      Object retEvent = super.handleDownEvent(evt);
-      switch (evt.getType()) {
-         case Event.CONNECT:
-         case Event.CONNECT_WITH_STATE_TRANSFER:
-         case Event.CONNECT_USE_FLUSH:
-         case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
-             String group=(String)evt.getArg();
-             Address local=local_addr;
-
-             if(stubManager != null)
-                stubManager.destroyStubs();
-             stubManager = new TUNNELStubManager(this,group,local,getReconnectInterval());
-             for (InetSocketAddress gr : gossip_router_hosts) {
-                 RouterStub stub = stubManager.createAndRegisterStub(gr.getHostName(), gr.getPort(), bind_addr);
-                 stub.setTcpNoDelay(tcp_nodelay);           
-              }  
-             PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local));
-             String logical_name=org.jgroups.util.UUID.get(local);
-             List<RouterStub> stubs = stubManager.getStubs();
-             tunnel_policy.connect(stubs, group, local, logical_name, physical_addr);
-            break;
-
-         case Event.DISCONNECT:
-             local = local_addr;
-             disconnectStub(cluster_name != null? cluster_name.toString() : null,local);
-            break;
-      }
-      return retEvent;
-   }
-    private class TUNNELStubManager extends RouterStubManager {
-
-        TUNNELStubManager(Protocol owner, String channelName, Address logicalAddress, long interval) {            
-            super(owner, channelName, logicalAddress, interval);
-        }
-
-        public void connectionStatusChange(RouterStub stub, RouterStub.ConnectionStatus newState) {
-            super.connectionStatusChange(stub, newState);
-            if (newState == RouterStub.ConnectionStatus.CONNECTED) {               
-                StubReceiver stubReceiver = new StubReceiver(stub);
-                stub.setReceiver(stubReceiver);
-                Thread t = global_thread_factory.newThread(stubReceiver, "TUNNEL receiver for " + stub.toString());
-                stubReceiver.setThread(t);
-                t.setDaemon(true);
-                t.start();
-            } 
-        }
+    private void disconnectStub() {
+        stubManager.disconnectStubs();
     }
 
-    public class StubReceiver implements Runnable {
+    public Object handleDownEvent(Event evt) {
+        Object retEvent = super.handleDownEvent(evt);
+        switch (evt.getType()) {
+            case Event.CONNECT:
+            case Event.CONNECT_WITH_STATE_TRANSFER:
+            case Event.CONNECT_USE_FLUSH:
+            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
+                String group=(String)evt.getArg();
+                Address local=local_addr;
 
-        private Thread runner;        
-        private final RouterStub stub;
-       
-        public StubReceiver(RouterStub stub) {
-            this.stub = stub;          
-        }
-
-        public synchronized void setThread(Thread t) {
-            runner = t;
-        }
-
-        public synchronized Thread getThread() {
-            return runner;
-        }
-
-        public void run() {
-            final DataInputStream input = stub.getInputStream();
-            mainloop:
-            while (!Thread.currentThread().isInterrupted()) {
-                try {                                        
-                    GossipData msg = new GossipData();
-                    msg.readFrom(input);
-                    switch (msg.getType()) {
-                        case GossipRouter.DISCONNECT_OK:                            
-                            break mainloop;
-                        case GossipRouter.MESSAGE:
-                            byte[] data = msg.getBuffer();
-                            receive(null/* src will be read from data */, data, 0, data.length, false);
-                            break;
-                        case GossipRouter.SUSPECT:
-                            final Address suspect = Util.readAddress(input);
-                            log.debug("Firing suspect event " + suspect + " at " + local_addr);
-                            if(suspect != null) {
-                                // https://jira.jboss.org/jira/browse/JGRP-902                               
-                                Thread thread = getThreadFactory().newThread(new Runnable() {
-                                    public void run() {
-                                        fireSuspectEvent(suspect);
-                                    }
-                                }, "StubReceiver-suspect");
-                                thread.start();
-                            }
-                            break;
-                    }
-                }catch (SocketException ioe) {
-                    break;
-                }catch (Exception ioe) {     
-                    if(!stub.isConnected())
-                        break;
+                if(stubManager != null)
+                    stubManager.destroyStubs();
+                PhysicalAddress physical_addr=getPhysicalAddressFromCache(local);
+                String logical_name=org.jgroups.util.UUID.get(local);
+                stubManager = new RouterStubManager(this,group,local, logical_name, physical_addr, getReconnectInterval()).useNio(this.use_nio);
+                for (InetSocketAddress gr : gossip_router_hosts) {
+                    stubManager.createAndRegisterStub(new IpAddress(bind_addr, bind_port), new IpAddress(gr.getAddress(), gr.getPort()))
+                      .receiver(this).set("tcp_nodelay", tcp_nodelay);
                 }
-            }
-        }
+                stubManager.connectStubs();
+                break;
 
-        private void fireSuspectEvent(Address suspect) {
-            up(new Event(Event.SUSPECT, suspect));            
+            case Event.DISCONNECT:
+                disconnectStub();
+                break;
+        }
+        return retEvent;
+    }
+
+    @Override
+    public void receive(GossipData data) {
+        switch (data.getType()) {
+            case MESSAGE:
+                byte[] msg=data.getBuffer();
+                receive(data.getAddress(), msg, 0, msg.length, false);
+                break;
+            case SUSPECT:
+                Address suspect=data.getAddress();
+                if(suspect != null) {
+                    log.debug("%s: firing suspect event for %s", local_addr, suspect);
+                    up(new Event(Event.SUSPECT, suspect));
+                }
+                break;
         }
     }
+
+
 
     @Override
     protected void send(Message msg, Address dest) throws Exception {
@@ -254,11 +215,10 @@ public class TUNNEL extends TP {
             num_msgs_sent++;
             num_bytes_sent+=dos.position();
         }
-        List<RouterStub> stubs = stubManager.getStubs();
         if(dest == null)
-            tunnel_policy.sendToAllMembers(stubs, group, dos.buffer(), 0, dos.position());
+            tunnel_policy.sendToAllMembers(group, dos.buffer(), 0, dos.position());
         else
-            tunnel_policy.sendToSingleMember(stubs, group, dest, dos.buffer(), 0, dos.position());
+            tunnel_policy.sendToSingleMember(group, dest, dos.buffer(), 0, dos.position());
     }
 
 
@@ -266,91 +226,50 @@ public class TUNNEL extends TP {
         throw new UnsupportedOperationException("sendMulticast() should not get called on TUNNEL");
     }
 
-   public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-       throw new UnsupportedOperationException("sendUnicast() should not get called on TUNNEL");
-   }
+    public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
+        throw new UnsupportedOperationException("sendUnicast() should not get called on TUNNEL");
+    }
 
-   public String getInfo() {
-       List<RouterStub> stubs = stubManager.getStubs();
-      if (stubs.isEmpty())
-         return stubs.toString();
-      else
-         return "RouterStubs not yet initialized";
-   }
+    public String getInfo() {
+        return stubManager.printStubs();
+    }
 
-   protected PhysicalAddress getPhysicalAddress() {
-      return sock != null ? new IpAddress(bind_addr, sock.getLocalPort()) : null;
-   }
+    protected PhysicalAddress getPhysicalAddress() {
+        return sock != null ? new IpAddress(bind_addr, sock.getLocalPort()) : null;
+    }
 
-   public interface TUNNELPolicy {
-      public void connect(List<RouterStub> stubs, String group, Address addr, String logical_name, PhysicalAddress phys_addr);
 
-      public void sendToAllMembers(List<RouterStub> stubs, String group, byte[] data, int offset, int length) throws Exception;
+    private class DefaultTUNNELPolicy implements TUNNELPolicy {
 
-       public void sendToSingleMember(List<RouterStub> stubs, String group, Address dest, byte[] data, int offset,
-               int length) throws Exception;
-   }
-
-   private class DefaultTUNNELPolicy implements TUNNELPolicy {
-
-      public void sendToAllMembers(List<RouterStub> stubs, String group, byte[] data, int offset, int length)
-               throws Exception {
-         boolean sent = false;
-          if(stubs.size() > 1)
-              Collections.shuffle(stubs);  // todo: why is this needed ?
-         for (RouterStub stub : stubs) {
-            try {
-                if(!stub.isConnected())
-                    continue;
-                stub.sendToAllMembers(group, data, offset, length);
-               if (log.isTraceEnabled())
-                  log.trace("sent a message to all members, GR used " + stub.getGossipRouterAddress());
-               sent = true;
-               break;
-            } catch (Exception e) {
-                if (log.isWarnEnabled())
-                    log.warn("failed sending a message to all members, GR used " + stub.getGossipRouterAddress());
-            }
-         }
-         if (!sent)
-            throw new Exception("None of the available stubs " + stubs + " accepted a multicast message");
-      }
-
-      public void sendToSingleMember(List<RouterStub> stubs, String group, Address dest, byte[] data, int offset, int length) throws Exception {
-         boolean sent = false;
-          if(stubs.size() > 1)
-              Collections.shuffle(stubs); 
-         for (RouterStub stub : stubs) {
-            try {
-                if(!stub.isConnected())
-                    continue;
-                stub.sendToMember(group, dest, data, offset, length);
-               if (log.isDebugEnabled())
-                  log.debug("sent a message to " + dest + ", GR used " + stub.getGossipRouterAddress());
-               sent = true;
-               break;
-            } catch (Exception e) {
-                if (log.isWarnEnabled()) {
-                    log.warn("failed sending a message to " + dest + ", GR used " + stub.getGossipRouterAddress());
+        public void sendToAllMembers(final String group, final byte[] data, final int offset, final int length) throws Exception {
+            stubManager.forAny(new RouterStubManager.Consumer() {
+                @Override public void accept(RouterStub stub) {
+                    try {
+                        if(log.isTraceEnabled())
+                            log.trace("sent a message to all members, GR used %s", stub.gossipRouterAddress());
+                        stub.sendToAllMembers(group, data, offset, length);
+                    }
+                    catch (Exception ex) {
+                        log.warn("failed sending a message to all members, router used %s", stub.gossipRouterAddress());
+                    }
                 }
-            }
-         }
-         if (!sent)
-            throw new Exception("None of the available stubs " + stubs
-                     + " accepted a message for dest " + dest);
-      }
+            });
+        }
 
-       public void connect(List<RouterStub> stubs, String group, Address addr, String logical_name, PhysicalAddress phys_addr) {
-           for (RouterStub stub : stubs) {
-               try {
-                   stub.connect(group, addr, logical_name, phys_addr);
-               }
-               catch (Exception e) {
-                   if (log.isWarnEnabled())
-                       log.warn("Failed connecting to GossipRouter at " + stub.getGossipRouterAddress());
-                   stubManager.startReconnecting(stub);
-               }
-           }
-       }
-   }
+        public void sendToSingleMember(final String group, final Address dest, final byte[] data, final int offset, final int length) throws Exception {
+            stubManager.forAny(new RouterStubManager.Consumer() {
+                @Override public void accept(RouterStub stub) {
+                    try {
+                        if(log.isTraceEnabled())
+                            log.trace("sent a message to all members, GR used %s", stub.gossipRouterAddress());
+                        stub.sendToMember(group, dest, data, offset, length);
+                    }
+                    catch (Exception ex) {
+                        log.warn("failed sending a message to all members, router used %s", stub.gossipRouterAddress());
+                    }
+                }
+            });
+        }
+
+    }
 }

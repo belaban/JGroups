@@ -19,7 +19,7 @@
         <dependency org="org.jboss.byteman"        name="byteman-submit"          rev="3.+"/>
         <dependency org="org.apache.logging.log4j" name="log4j-api"               rev="2.+"/>
         <dependency org="org.apache.logging.log4j" name="log4j-core"              rev="2.+"/>
-        <dependency org="org.testng"               name="testng"                  rev="6.8.+"/>
+        <dependency org="org.testng"               name="testng"                  rev="6.9.+"/>
         <dependency org="com.beust"                name="jcommander"              rev="1.+"/>
         <!--dependency org="org.sonatype.nexus.ant"   name="nexus-staging-ant-tasks" rev="1.6.3"/-->
     </dependencies>

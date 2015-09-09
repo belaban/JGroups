@@ -18,7 +18,7 @@ import java.util.Collection;
  * @author Alex Fu
  * @author Bela Ban
  */
-@Experimental @Unsupported
+@Experimental @Unsupported @Deprecated
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
 

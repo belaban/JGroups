@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import java.io.DataOutput;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
@@ -27,9 +28,10 @@ public class ByteArrayDataOutputStream implements DataOutput {
         this.pos=checkBounds(pos); return this;
     }
 
-    public int    position()  {return pos;}
-    public byte[] buffer()    {return buf;}
-    public Buffer getBuffer() {return new Buffer(buf, 0, pos);}
+    public int        position()      {return pos;}
+    public byte[]     buffer()        {return buf;}
+    public Buffer     getBuffer()     {return new Buffer(buf, 0, pos);}
+    public ByteBuffer getByteBuffer() {return ByteBuffer.wrap(buf, 0, pos);}
 
 
     public void write(int b) {

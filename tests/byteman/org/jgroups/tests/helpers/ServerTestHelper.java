@@ -3,14 +3,14 @@ package org.jgroups.tests.helpers;
 import org.jboss.byteman.rule.Rule;
 import org.jboss.byteman.rule.helper.Helper;
 import org.jgroups.Address;
-import org.jgroups.tests.byteman.TCPConnectionMapTest;
+import org.jgroups.tests.byteman.ServerTest;
 
 /**
  * @author Bela Ban
  * @since  3.3
  */
-public class TCPConnectionMapTestHelper extends Helper {
-    protected TCPConnectionMapTestHelper(Rule rule) {
+public class ServerTestHelper extends Helper {
+    protected ServerTestHelper(Rule rule) {
         super(rule);
     }
 
@@ -19,7 +19,10 @@ public class TCPConnectionMapTestHelper extends Helper {
     }
 
     public boolean isA(Object obj) {
-        return obj.equals(TCPConnectionMapTest.A);
+        return obj.equals(ServerTest.A);
+    }
+    public boolean isB(Object obj) {
+        return obj.equals(ServerTest.B);
     }
 
    /* public void stackTrace() {

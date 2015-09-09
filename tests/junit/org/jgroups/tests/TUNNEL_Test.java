@@ -31,7 +31,7 @@ import java.util.List;
  * @author Bela Ban belaban@yahoo.com
  **/
 @Test(groups={Global.STACK_INDEPENDENT, Global.GOSSIP_ROUTER, Global.EAP_EXCLUDED},singleThreaded=true)
-public class TUNNEL_Test extends ChannelTestBase{
+public class TUNNEL_Test extends ChannelTestBase {
     protected JChannel            channel, coordinator;
     protected final static String GROUP="TUNNEL_Test";
     protected GossipRouter        gossipRouter;
@@ -46,7 +46,7 @@ public class TUNNEL_Test extends ChannelTestBase{
         bind_addr=InetAddress.getByName(bind_addr_str);
         gossip_router_port=ResourceManager.getNextTcpPort(bind_addr);
         gossip_router_hosts=bind_addr.getHostAddress() + "[" + gossip_router_port + "]";
-        gossipRouter=new GossipRouter(gossip_router_port, bind_addr_str);
+        gossipRouter=new GossipRouter(bind_addr_str, gossip_router_port);
         gossipRouter.start();
     }
     

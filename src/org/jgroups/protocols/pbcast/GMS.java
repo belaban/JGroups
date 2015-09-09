@@ -654,7 +654,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new Message(dest).putHeader(this.id, new GmsHeader(GmsHeader.JOIN_RSP))
-          .setBuffer(marshal(rsp));
+          .setBuffer(marshal(rsp)).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL);
         getDownProtocol().down(new Event(Event.MSG, m));
     }
 

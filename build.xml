@@ -346,9 +346,11 @@
              basedir="${compile.dir}"
              manifest="${conf.dir}/MANIFEST.MF"
              includes="org/jgroups/**">
-            <fileset dir="${conf.dir}" includes="*.xml, jg-messages*.properties, VERSION.properties"/>
+            <fileset dir="${conf.dir}" includes="*.xml, jg-messages*.properties, VERSION.properties">
+                <exclude name="log4j*.xml"/>
+            </fileset>
             <fileset dir="${compile.dir}/schema">
-                <include name="*.xsd"/>
+                <include name="jgroups.xsd"/>
             </fileset>
             <fileset dir="${root.dir}">
                 <include name="INSTALL.html"/>
@@ -610,6 +612,7 @@
         	<antcall target="functional"/>
             <antcall target="udp"/>
             <antcall target="tcp"/>
+            <antcall target="tcp-nio"/>
             <antcall target="stack-independent"/>
             <antcall target="flush"/>
             <antcall target="time-sensitive"/>
@@ -684,6 +687,26 @@
                 />
     </target>
 
+
+    <target name="tcp-nio" depends="postcompile,define-testng-task" description="Runs TCP-NIO tests">
+        <!-- Needed to force reading of properties. Otherwise tcp-nio tests will fail -->
+        <property name="build.properties.file" value="build.properties"/>
+        <property file="${build.properties.file}"/>
+
+        <mkdir dir="${tmp.dir}/test-results/xml/tcp-nio"/>
+        <runtest suitename="tcp-nio"
+                 groups="base,stack-dependent"
+                 excludedgroups="stack-independent,flush,broken"
+                 parallel="${parallel.classes}"
+                 threadcount="5"
+                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
+                 initial.mcast.port="27000"
+                 initial.tcp.port="28000"
+                 tcp.recv.buf.size="50000"
+                 tcp.send.buf.size="10000"
+                 jvmarg1="-Dchannel.conf=tcp-nio.xml"
+                />
+    </target>
 
 
     <target name="time-sensitive" depends="postcompile,define-testng-task" description="Runs time-sensitive tests">

@@ -3,12 +3,15 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.util.*;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Tests {@link org.jgroups.util.Table<Integer>}
  * @author Bela Ban
@@ -21,6 +24,14 @@ public class TableTest {
             return msg != null && msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK);
         }
     };
+
+    @DataProvider(name="rangeProvider")
+    protected static final Object[][] rangeProvider() {
+        return new Object[][]{
+          {Long.MAX_VALUE - 10, 20},
+          {-10, 20}
+        };
+    }
     
     public static void testCreation() {
         Table<Integer> table=new Table<>(3, 10, 0);
@@ -56,7 +67,7 @@ public class TableTest {
         System.out.println("buf = " + buf);
         assert rc;
         assert buf.size() == 10;
-        List<Integer> list=buf.removeMany(null,true,0,new Filter<Integer>() {
+        List<Integer> list=buf.removeMany(null, true, 0, new Filter<Integer>() {
             public boolean accept(Integer element) {
                 return element.hashCode() == DUMMY.hashCode();
             }
@@ -159,6 +170,19 @@ public class TableTest {
         assert num_resizes == 1 : "number of resizings=" + num_resizes + " (expected 1)";
     }
 
+    public static void testAddListWithResizingNegativeSeqnos() {
+        long seqno=Long.MAX_VALUE-50;
+        Table<Integer> table=new Table<>(3, 5, seqno);
+        List<Tuple<Long,Integer>> msgs=new ArrayList<>();
+        for(int i=1; i < 100; i++)
+            msgs.add(new Tuple<>((long)i+seqno,i));
+        table.add(msgs, false);
+        System.out.println("table = " + table);
+        int num_resizes=table.getNumResizes();
+        System.out.println("num_resizes = " + num_resizes);
+        assert num_resizes == 1 : "number of resizings=" + num_resizes + " (expected 1)";
+    }
+
     public static void testAddListWithResizing2() {
         Table<Integer> table=new Table<>(3, 500, 0);
         List<Tuple<Long,Integer>> msgs=new ArrayList<>();
@@ -175,7 +199,7 @@ public class TableTest {
         Table<Integer> table=new Table<>(3, 10, 2);
         addAndGet(table, 1000,1001);
         table.compact();
-        addAndGet(table, 1005,1009,1010,1011,1019,1020,1029);
+        addAndGet(table, 1005, 1009, 1010, 1011, 1019, 1020, 1029);
         System.out.println("table: " + table.dump());
         assert table.size() == 9;
         assertIndices(table, 2, 2, 1029);
@@ -219,7 +243,7 @@ public class TableTest {
 
     public void testAddWithWrapAroundAndRemoveMany() {
         Table<Integer> buf=new Table<>(3, 10, 5);
-        for(int i=6; i <=15; i++)
+        for(int i=6; i <= 15; i++)
             assert buf.add(i, i) : "addition of seqno " + i + " failed";
         System.out.println("buf = " + buf);
         List<Integer> removed=buf.removeMany(true, 3);
@@ -276,7 +300,7 @@ public class TableTest {
     
     public static void testDuplicateAddition() {
         Table<Integer> table=new Table<>(3, 10, 0);
-        addAndGet(table,  1,5,9,10);
+        addAndGet(table, 1, 5, 9, 10);
         assert !table.add(5,5);
         assert table.get(5) == 5;
         assert table.size() == 4;
@@ -397,7 +421,7 @@ public class TableTest {
         assert table.getHighestDelivered() == 4;
 
         table.add(5, msg(5, true),dont_loopback_filter);
-        table.add(6, msg(6, true),dont_loopback_filter);
+        table.add(6, msg(6, true), dont_loopback_filter);
         assert table.getHighestDelivered() == 6;
     }
 
@@ -459,9 +483,9 @@ public class TableTest {
         Table<Integer> buf=new Table<>(3, 10, 5);
         assert buf.getHighestDelivered() == 5;
         assert buf.getHighestReceived() == 5;
-        buf.add(6,6); buf.add(7,7);
+        buf.add(6, 6); buf.add(7, 7);
         long low=buf.getLow();
-        buf.removeMany(true,0);
+        buf.removeMany(true, 0);
         System.out.println("buf = " + buf);
         for(long i=low; i <= 7; i++)
             assert buf._get(i) == null : "message with seqno=" + i + " is not null";
@@ -549,7 +573,7 @@ public class TableTest {
             table.add(seqno, seqno);
         System.out.println("table = " + table);
         assertIndices(table, 0, 0, 10);
-        List<Integer> list=table.removeMany(true,4);
+        List<Integer> list=table.removeMany(true, 4);
         System.out.println("list=" + list + ", table=" + table);
         assert table.size() == 5 && table.getNumMissing() == 1;
         assert list != null && list.size() == 4;
@@ -709,7 +733,7 @@ public class TableTest {
         for(int i=1; i <=20; i++)
            table.add(i, i);
         System.out.println("table = " + table);
-        table.forEach(table.getLow()+1, table.getHighestReceived()-1, visitor);
+        table.forEach(table.getLow() + 1, table.getHighestReceived() - 1, visitor);
         int count=1;
         for(int[] pair: visitor.list) {
             int row=pair[0], column=pair[1];
@@ -844,7 +868,7 @@ public class TableTest {
 
     public static void testGetMissing3() {
         Table<Integer> table=new Table<>(3, 10, 0);
-        for(int num: Arrays.asList(8))
+        for(int num: Collections.singletonList(8))
             table.add(num, num);
         System.out.println("table = " + table);
         SeqnoList missing=table.getMissing();
@@ -1023,7 +1047,7 @@ public class TableTest {
         addAndGet(table,35);
         assertCapacity(table.capacity(), table.getNumRows(), 10);
         addAndGet(table,500);
-        assertCapacity(table.capacity(),table.getNumRows(),10);
+        assertCapacity(table.capacity(), table.getNumRows(), 10);
 
         addAndGet(table, 515);
         assertCapacity(table.capacity(), table.getNumRows(), 10);
@@ -1044,7 +1068,7 @@ public class TableTest {
 
         table.purge(50);
         System.out.println("now triggering a resize() by addition of seqno=120");
-        addAndGet(table,120);
+        addAndGet(table, 120);
         
     }
 
@@ -1121,7 +1145,7 @@ public class TableTest {
     }
 
 
-    public static void testMove() {
+    public void testMove() {
         Table<Integer> table=new Table<>(3, 10, 0);
         for(int i=1; i < 50; i++)
             addAndGet(table, i);
@@ -1132,20 +1156,20 @@ public class TableTest {
         assertCapacity(table.capacity(), table.getNumRows(), 10);
     }
 
-    public static void testMove2() {
+    public void testMove2() {
         Table<Integer> table=new Table<>(3, 10, 0);
         for(int i=1; i < 30; i++)
-            table.add(i,i);
+            table.add(i, i);
         table.removeMany(true, 23);
         System.out.println("table = " + table);
-        table.add(35,35); // triggers a resize() --> move()
+        table.add(35, 35); // triggers a resize() --> move()
         for(int i=1; i <= 23; i++)
             assert table._get(i) == null;
         for(int i=24; i < 30; i++)
             assert table._get(i) != null;
     }
 
-    public static void testMove3() {
+    public void testMove3() {
         Table<Integer> table=new Table<>(3, 10, 0);
         for(int i=1; i < 30; i++)
             table.add(i, i);
@@ -1233,7 +1257,7 @@ public class TableTest {
         for(int i=1; i <= 100; i++)
             table.add(i, i);
         System.out.println("table = " + table);
-        table.removeMany(false,53);
+        table.removeMany(false, 53);
         table.purge(53);
         for(int i=54; i <= 100; i++)
             assert table.get(i) == i;
@@ -1273,7 +1297,7 @@ public class TableTest {
         for(int i=1; i <= 30; i++)
             table.add(i, i);
         System.out.println("table = " + table);
-        table.purge(15,true);
+        table.purge(15, true);
         System.out.println("table = " + table);
         assertIndices(table, 15, 15, 30);
         for(int i=1; i <= 15; i++)
@@ -1322,27 +1346,27 @@ public class TableTest {
         assertIndices(table, 20, 20, 30);
 
         table.purge(15, false);
-        assertIndices(table, 20,20, 30);
+        assertIndices(table, 20, 20, 30);
     }
 
 
     public void testCompact() {
         Table<Integer> table=new Table<>(3, 10, 0);
         for(int i=1; i <= 80; i++)
-            addAndGet(table,i);
+            addAndGet(table, i);
         assert table.size() == 80;
-        assertIndices(table,0,0,80);
+        assertIndices(table, 0, 0, 80);
         List<Integer> list=table.removeMany(false,60);
         assert list.size() == 60;
         assert list.get(0) == 1 && list.get(list.size() -1) == 60;
         assertIndices(table, 0, 60, 80);
         table.purge(60);
-        assertIndices(table,60,60,80);
+        assertIndices(table, 60, 60, 80);
         assert table.size() == 20;
         table.compact();
-        assertIndices(table,60,60,80);
+        assertIndices(table, 60, 60, 80);
         assert table.size() == 20;
-        assertCapacity(table.capacity(),table.getNumRows(),10);
+        assertCapacity(table.capacity(), table.getNumRows(), 10);
     }
 
 
@@ -1358,6 +1382,28 @@ public class TableTest {
         table.compact();
         assert table.size() == 20;
         assertCapacity(table.capacity(), table.getNumRows(), 10);
+    }
+
+
+
+    @Test(groups=Global.FUNCTIONAL,dataProvider="rangeProvider")
+    public void testSeqnoOverflow(long seqno, final int delta) {
+        long orig_seqno=seqno;
+        Table<Message> win=new Table<>(3, 10, seqno);
+
+        for(int i=1; i <= delta; i++) {
+            Message msg=new Message(null, "hello");
+            win.add(++seqno, msg);
+        }
+        System.out.println("win = " + win);
+        assert win.size() == delta;
+        assertIndices(win, orig_seqno, orig_seqno, seqno);
+
+        final AtomicBoolean processing=new AtomicBoolean(false);
+        List<Message> msgs=win.removeMany(processing, true, 200);
+        System.out.printf("removed %d msgs\n", msgs.size());
+        assert win.isEmpty();
+        assertIndices(win, seqno, seqno, seqno);
     }
 
 

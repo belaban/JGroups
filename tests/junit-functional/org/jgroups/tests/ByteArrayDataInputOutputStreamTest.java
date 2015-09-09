@@ -21,6 +21,22 @@ import java.util.List;
 @Test(groups=Global.FUNCTIONAL)
 public class ByteArrayDataInputOutputStreamTest {
 
+    public void testConstructors() throws Exception {
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(32);
+        byte[] tmp="hello world".getBytes();
+        out.writeInt(tmp.length);
+        out.write(tmp);
+        ByteBuffer input_buf=out.getByteBuffer();
+
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(input_buf);
+        int length=in.readInt();
+        byte[] tmp2=new byte[length];
+        in.read(tmp2, 0, tmp2.length);
+        System.out.println("length=" + length + ", " + new String(tmp2));
+        assert length == tmp.length;
+        assert Arrays.equals(tmp, tmp2);
+    }
+
     public void testLimit() {
         byte[] buf=new byte[100];
         buf[0]='B'; buf[1]='e'; buf[2]='l'; buf[3]='a';

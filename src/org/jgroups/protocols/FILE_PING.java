@@ -13,10 +13,7 @@ import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Future;
 
 
@@ -64,7 +61,6 @@ public class FILE_PING extends Discovery {
     protected static final FilenameFilter filter=new FilenameFilter() {
         public boolean accept(File dir, String name) {return name.endsWith(SUFFIX);}
     };
-    protected volatile View               prev_view;
     protected Future<?>                   info_writer;
 
     public boolean isDynamic() {return true;}
@@ -113,7 +109,7 @@ public class FILE_PING extends Discovery {
             if(responses.isEmpty()) {
                 PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS,local_addr));
                 PingData coord_data=new PingData(local_addr, true, UUID.get(local_addr), physical_addr).coord(is_coord);
-                write(Arrays.asList(coord_data), cluster_name);
+                write(Collections.singletonList(coord_data), cluster_name);
                 return;
             }
 

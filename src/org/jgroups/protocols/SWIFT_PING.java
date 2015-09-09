@@ -8,11 +8,13 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
-import org.w3c.dom.Document;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.*;
+import javax.script.Bindings;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import javax.script.SimpleBindings;
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
@@ -244,23 +246,25 @@ public class SWIFT_PING extends FILE_PING {
      * implementation
      */
     private static class Keystone_V_2_0_Auth implements Authenticator {
-
-        private static XPathExpression tokenIdExpression;
-
-        private static XPathExpression publicUrlExpression;
-
-        static {
-            XPathFactory xPathFactory = XPathFactory.newInstance();
-            XPath xpath = xPathFactory.newXPath();
-            try {
-                tokenIdExpression = xpath.compile("/access/token/@id");
-                publicUrlExpression = xpath
-                        .compile("/access/serviceCatalog/service[@type='object-store']/endpoint/@publicURL");
-            } catch (XPathExpressionException e) {
-                // Do nothing
-            }
-        }
-
+        // Using Java's built-in JavaScript engine to parse JSON response. We use
+        // this approach to avoid introducing an external dependency on a JSON parser.
+        private final static String JSON_RESPONSE_PARSING_SCRIPT = 
+                "var response = JSON.parse(json);" + 
+                "var result = {};" + 
+                "result.id = response.access.token.id;" + 
+                "var serviceCatalog = response.access.serviceCatalog;" + 
+                "for (var i = 0; i < serviceCatalog.length; i++) {" + 
+                "    var service = serviceCatalog[i];" + 
+                "    if (service.type == \"object-store\") {" + 
+                "        result.url = service.endpoints[0].publicURL;" + 
+                "        break;" + 
+                "    }" + 
+                "}" + 
+                "result;";
+        
+        private static Object scriptEngineLock = new Object();
+        private static ScriptEngine scriptEngine;
+        
         private String tenant;
 
         private URL authUrl;
@@ -286,7 +290,7 @@ public class SWIFT_PING extends FILE_PING {
             HttpURLConnection urlConnection = new ConnBuilder(authUrl)
                     .addHeader(HttpHeaders.CONTENT_TYPE_HEADER,
                             "application/json")
-                    .addHeader(HttpHeaders.ACCEPT_HEADER, "application/xml")
+                    .addHeader(HttpHeaders.ACCEPT_HEADER, "application/json")
                     .getConnection();
 
             StringBuilder jsonBuilder = new StringBuilder();
@@ -299,26 +303,44 @@ public class SWIFT_PING extends FILE_PING {
                     jsonBuilder.toString().getBytes(), true);
 
             if (response.isSuccessCode()) {
+                Map<String, String> result = parseJsonResponse(new String(response.payload, "UTF-8"));
 
-                DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory
-                        .newInstance();
-                DocumentBuilder builder = documentBuilderFactory
-                        .newDocumentBuilder();
-                Document doc = builder.parse(new ByteArrayInputStream(
-                        response.payload));
-
-                String authToken = (String) tokenIdExpression.evaluate(doc,
-                        XPathConstants.STRING);
-                String storageUrl = (String) publicUrlExpression.evaluate(doc,
-                        XPathConstants.STRING);
-
+                String authToken = result.get("id");
+                String storageUrl = result.get("url");
+                if (authToken == null)
+                {
+                    throw new IllegalStateException("Missing token id in authentication response");
+                }
+                if (storageUrl == null)
+                {
+                    throw new IllegalStateException("Missing storage service URL in authentication response");
+                }
+                
                 log.trace("Authentication successful");
-
                 return new Credentials(authToken, storageUrl);
             } else {
                 throw new IllegalStateException(
                         "Error authenticating to the service. Please check your credentials. Code = "
                                 + response.code);
+            }
+        }
+        
+        protected Map<String,String> parseJsonResponse(String json) throws ScriptException
+        {
+            synchronized (scriptEngineLock)
+            {
+                if (scriptEngine == null)
+                {
+                    scriptEngine = new ScriptEngineManager().getEngineByName("JavaScript");
+                    if (scriptEngine == null) {
+                        throw new RuntimeException("Failed to load JavaScript script engine");
+                    }
+                 
+                }
+                Bindings bindings = new SimpleBindings();
+                bindings.put("json", json);
+                
+                return (Map<String, String>)scriptEngine.eval(JSON_RESPONSE_PARSING_SCRIPT, bindings);
             }
         }
     }

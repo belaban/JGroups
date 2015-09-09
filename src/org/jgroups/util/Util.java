@@ -28,6 +28,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.NumberFormat;
@@ -202,7 +204,7 @@ public class Util {
 
 
     public static void assertNotNull(Object val) {
-        assertNotNull(null,val);
+        assertNotNull(null, val);
     }
 
 
@@ -251,7 +253,7 @@ public class Util {
         if(additional_protocols == null)
             return protocols;
         Protocol[] tmp=Arrays.copyOf(protocols,protocols.length + additional_protocols.length);
-        System.arraycopy(additional_protocols,0,tmp,protocols.length,additional_protocols.length);
+        System.arraycopy(additional_protocols, 0, tmp, protocols.length, additional_protocols.length);
         return tmp;
     }
 
@@ -367,38 +369,20 @@ public class Util {
                 }
             }
         }
-        sock.connect(dest,sock_conn_timeout);
+        sock.connect(dest, sock_conn_timeout);
     }
 
-
-    public static void close(Socket s) {
-        if(s != null) {
-            try {
-                s.close();
-            }
-            catch(Exception ex) {
-            }
-        }
-    }
-
-    public static void close(ServerSocket s) {
-        if(s != null) {
-            try {
-                s.close();
-            }
-            catch(Exception ex) {
+    public static boolean connect(SocketChannel ch, SocketAddress dest) throws IOException {
+        if(dest instanceof InetSocketAddress) {
+            InetAddress addr=((InetSocketAddress)dest).getAddress();
+            if(addr instanceof Inet6Address) {
+                Inet6Address tmp=(Inet6Address)addr;
+                if(tmp.getScopeId() != 0) {
+                    dest=new InetSocketAddress(InetAddress.getByAddress(tmp.getAddress()),((InetSocketAddress)dest).getPort());
+                }
             }
         }
-    }
-
-    public static void close(DatagramSocket my_sock) {
-        if(my_sock != null) {
-            try {
-                my_sock.close();
-            }
-            catch(Throwable t) {
-            }
-        }
+        return ch.connect(dest);
     }
 
 
@@ -768,6 +752,21 @@ public class Util {
     }
 
 
+    public static void bufferToArray(final Address sender, final ByteBuffer buf, org.jgroups.blocks.cs.Receiver target) {
+        if(buf == null)
+            return;
+        int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(),
+          len=buf.remaining();
+        if(!buf.isDirect())
+            target.receive(sender, buf.array(), offset, len);
+        else { // by default use a copy; but of course implementers of Receiver can override this
+            byte[] tmp=new byte[len];
+            buf.get(tmp, 0, len);
+            target.receive(sender, tmp, 0, len);
+        }
+    }
+
+
     public static <T extends Streamable> Streamable streamableFromByteBuffer(Class<? extends Streamable> cl,byte[] buffer,int offset,int length) throws Exception {
         if(buffer == null) return null;
         DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
@@ -786,7 +785,7 @@ public class Util {
     public static byte[] streamableToByteBuffer(Streamable obj) throws Exception {
         final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
         obj.writeTo(out);
-        return Arrays.copyOf(out.buffer(),out.position());
+        return Arrays.copyOf(out.buffer(), out.position());
     }
 
     public static Buffer streamableToBuffer(Streamable obj) {
@@ -804,7 +803,7 @@ public class Util {
     public static byte[] collectionToByteBuffer(Collection<Address> c) throws Exception {
         final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
         Util.writeAddresses(c,out);
-        return Arrays.copyOf(out.buffer(),out.position());
+        return Arrays.copyOf(out.buffer(), out.position());
     }
 
     public static byte[] stringToBytes(String str) {
@@ -1220,7 +1219,7 @@ public class Util {
             return readGenericStreamable(in);
 
         byte[] buf=new byte[len];
-        in.readFully(buf,0,len);
+        in.readFully(buf, 0, len);
         return objectFromByteBuffer(buf);
     }
 
@@ -1342,7 +1341,7 @@ public class Util {
         if(b == 1) {
             b=in.readInt();
             byte[] buf=new byte[b];
-            in.readFully(buf,0,buf.length);
+            in.readFully(buf, 0, buf.length);
             return buf;
         }
         return null;
@@ -2181,7 +2180,7 @@ public class Util {
 
     /** Returns an array of num random addresses, named A, B, C etc */
     public static Address[] createRandomAddresses(int num) {
-        return createRandomAddresses(num,false);
+        return createRandomAddresses(num, false);
     }
 
     public static Address[] createRandomAddresses(int num,boolean use_numbers) {
@@ -2283,6 +2282,11 @@ public class Util {
             sb.append(total + " total (" + servers + " servers (" + coords + " coord), " + clients + " clients)");
         }
         return sb.toString();
+    }
+
+
+    public static String print(ByteBuffer buf) {
+        return buf == null? "null" : String.format("[pos=%d lim=%d cap=%d]", buf.position(), buf.limit(), buf.capacity());
     }
 
 
@@ -2713,7 +2717,7 @@ public class Util {
         Pattern p=Pattern.compile("\\s*([^=\\s]+)\\s*=\\s*([^=\\s,]+)\\s*,?"); //Pattern.compile("\\s*([^=\\s]+)\\s*=\\s([^=\\s]+)\\s*,?");
         Matcher matcher=p.matcher(s);
         while(matcher.find()) {
-            props.put(matcher.group(1),matcher.group(2));
+            props.put(matcher.group(1), matcher.group(2));
         }
         return props;
     }
@@ -3003,6 +3007,36 @@ public class Util {
         return ret;
     }
 
+    public static ServerSocketChannel createServerSocketChannel(InetAddress bind_addr,
+                                                         int start_port, int end_port) throws Exception {
+        ServerSocketChannel channel=ServerSocketChannel.open();
+        int original_start_port=start_port;
+
+        while(true) {
+            try {
+                if(bind_addr == null)
+                    channel.bind(new InetSocketAddress(start_port));
+                else {
+                    channel.bind(new InetSocketAddress(bind_addr, start_port));
+                }
+            }
+            catch(SocketException bind_ex) {
+                if(start_port == end_port)
+                    throw new BindException("No available port to bind to in range [" + original_start_port + " .. " + end_port + "]");
+                if(bind_addr != null && !bind_addr.isLoopbackAddress()) {
+                    NetworkInterface nic=NetworkInterface.getByInetAddress(bind_addr);
+                    if(nic == null)
+                        throw new BindException("bind_addr " + bind_addr + " is not a valid interface: " + bind_ex);
+                }
+                start_port++;
+                continue;
+            }
+            break;
+        }
+
+        return channel;
+    }
+
 
     /**
      * Creates a DatagramSocket bound to addr. If addr is null, socket won't be bound. If address is already in use,
@@ -3193,7 +3227,7 @@ public class Util {
     }
 
     public static boolean checkForAndroid() {
-        return contains("java.vm.vendor","android");
+        return contains("java.vm.vendor", "android");
     }
 
     public static boolean checkForMac() {return checkForPresence("os.name", "mac");}
@@ -3225,6 +3259,10 @@ public class Util {
             return InetAddress.getByName("127.0.0.1");
         else
             return InetAddress.getByName("::1");
+    }
+
+    public static InetAddress getLocalhost() throws UnknownHostException {
+        return getLocalhost(Util.getIpStackType());
     }
 
 

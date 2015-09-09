@@ -109,7 +109,7 @@ public class StateTransferTest extends ChannelTestBase {
 
         // Sleep to ensure async messages arrive
         System.out.println("Waiting for all channels to have " + MSG_SEND_COUNT * APP_COUNT + " elements:");
-        long end_time=System.currentTimeMillis() + 10000L;
+        long end_time=System.currentTimeMillis() + 20000L;
         while(System.currentTimeMillis() < end_time) {
             boolean terminate=true;
             for(StateTransferApplication app: apps) {

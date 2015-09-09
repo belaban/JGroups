@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
  * by a nak-based scheme to send a retransmission request to the sender of the missing message.<br/>
  * @author Bela Ban
  */
+@Deprecated
 public abstract class Retransmitter {
 
     /** Default retransmit intervals (ms) - exponential approx. */

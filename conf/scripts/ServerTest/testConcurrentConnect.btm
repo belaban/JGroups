@@ -1,0 +1,77 @@
+
+
+
+## Tests A connecting to B and B to A concurrently (A < B)
+## Both A and B create their own connections to each other (but don't call connect() yet) in rendezvous #1
+## Then they accept each others connection and accept or reject it, depending on precedence (B wins over A).
+## The goal is to make sure that there is only *one* connection between A and B
+
+##     A:                      B:
+##    ----                   ----
+## connect(B)           | connect(A)
+## accept(B)            | accept(A)
+## connect(B) returns   | connect(A) returns
+
+
+
+RULE CreateRendezvous
+CLASS ServerTest
+METHOD setup
+AT EXIT
+IF TRUE
+   DO System.out.println("--> Creating rendezvous");
+      createRendezvous("rv", 2, true);
+ENDRULE
+
+
+## Delete the rendezvous when the test is done
+RULE DeleteRendezvous
+CLASS ServerTest
+METHOD destroy()
+AT ENTRY
+IF TRUE
+   DO System.out.println("--> Deleting rendezvous");
+      deleteRendezvous("rv", 2);
+ENDRULE
+
+
+## ---------------------------------------------------------------------------------------------
+
+## First rendezvous: A.connect() and B.connect(). The connections have already been created.
+RULE beforeConnect
+CLASS BaseServer
+METHOD getConnection
+AT INVOKE Connection.connect
+IF TRUE
+  DO System.out.println("--> getConnection("+$1+"): rendezvous #1");
+     rendezvous("rv");
+ENDRULE
+
+
+## --------------------------------------------------------------------------------------------
+## Second rendezvous: A.accept() and B.accept() return
+
+## accept() returns in TcpServer
+RULE accept_returns_tcp
+CLASS TcpServer$Acceptor
+METHOD handleAccept
+AT EXIT
+IF TRUE
+   DO System.out.println("--> A.accept() returned: rendezvous #2");
+      rendezvous("rv");
+ENDRULE
+
+## NioServer.receive() reads peer address and adds connection
+RULE accept_returns_nio
+CLASS NioConnection
+METHOD receive
+AFTER INVOKE addConnection
+IF TRUE
+   DO System.out.println("--> BaseServer.addConnection() returned: rendezvous #2");
+      rendezvous("rv");
+ENDRULE
+
+
+
+
+

@@ -2,11 +2,13 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.util.Bits;
 import org.jgroups.util.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 
@@ -358,6 +360,37 @@ public class UtilTest {
         marshalString(Short.MAX_VALUE + 100000);
     }
 
+
+    protected static class MyNioReceiver extends org.jgroups.blocks.cs.ReceiverAdapter {
+        protected String name;
+
+        @Override
+        public void receive(Address sender, byte[] buf, int offset, int length) {
+            name=new String(buf, offset, length);
+        }
+
+        @Override
+        public void receive(Address sender, ByteBuffer buf) {
+            Util.bufferToArray(sender, buf, this);
+        }
+    }
+
+    public void testBufferToArray() {
+        // test heap based ByteBuffer:
+        String hello="hello";
+        byte[] buffer=hello.getBytes();
+        ByteBuffer buf=(ByteBuffer)ByteBuffer.allocate(50).putInt(322649).put(buffer).flip();
+        buf.getInt();
+        MyNioReceiver receiver=new MyNioReceiver();
+        receiver.receive(null, buf);
+        assert receiver.name.equals(hello);
+
+        // test direct ByteBuffer:
+        buf=(ByteBuffer)ByteBuffer.allocateDirect(50).putInt(322649).put(buffer).flip();
+        buf.getInt();
+        receiver.receive(null, buf);
+        assert receiver.name.equals(hello);
+    }
 
     private static void marshalString(int size) throws Exception {
         byte[] tmp=new byte[size];

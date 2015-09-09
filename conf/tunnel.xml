@@ -11,7 +11,7 @@
     <TUNNEL gossip_router_hosts="${jgroups.tunnel.gossip_router_hosts:localhost[12001]}"/>
     <PING/>
     <MERGE3/>
-    <FD/>
+    <FD_ALL/>
     <VERIFY_SUSPECT/>
     <pbcast.NAKACK2 use_mcast_xmit="false"/>
     <UNICAST3/>
@@ -21,5 +21,4 @@
     <MFC/>
     <FRAG2/>
     <pbcast.STATE_TRANSFER/>
-    <pbcast.FLUSH timeout="2000"/>
 </config>

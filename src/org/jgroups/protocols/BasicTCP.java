@@ -6,9 +6,12 @@ import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
+import org.jgroups.blocks.cs.Receiver;
 import org.jgroups.util.AsciiString;
+import org.jgroups.util.Util;
 
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,7 +21,7 @@ import java.util.Set;
  * @author Scott Marlow
  * @author Bela Ban
  */
-public abstract class BasicTCP extends TP {
+public abstract class BasicTCP extends TP implements Receiver {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
@@ -134,11 +137,15 @@ public abstract class BasicTCP extends TP {
 
     public abstract void retainAll(Collection<Address> members);
 
-    /** ConnectionMap.Receiver interface */
+    /** BaseServer.Receiver interface */
     public void receive(Address sender, byte[] data, int offset, int length) {
-        // no need to make a copy of the byte[] buffer as TCPConnectionMap already created a new buffer
+        // no need to make a copy of the byte[] buffer as TcpServer already created a new buffer
         // (https://issues.jboss.org/browse/JGRP-1935)
         super.receive(sender, data, offset, length, false);
+    }
+
+    public void receive(Address sender, ByteBuffer buf) {
+        Util.bufferToArray(sender, buf, this);
     }
 
     protected Object handleDownEvent(Event evt) {
