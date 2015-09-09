@@ -386,37 +386,6 @@ public class Util {
     }
 
 
-    public static void close(Socket s) {
-        if(s != null) {
-            try {
-                s.close();
-            }
-            catch(Exception ex) {
-            }
-        }
-    }
-
-    public static void close(ServerSocket s) {
-        if(s != null) {
-            try {
-                s.close();
-            }
-            catch(Exception ex) {
-            }
-        }
-    }
-
-    public static void close(DatagramSocket my_sock) {
-        if(my_sock != null) {
-            try {
-                my_sock.close();
-            }
-            catch(Throwable t) {
-            }
-        }
-    }
-
-
     public static void close(Closeable closeable) {
         if(closeable != null) {
             try {

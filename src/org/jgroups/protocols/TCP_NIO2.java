@@ -8,6 +8,7 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.NioServer;
 
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 
@@ -49,6 +50,11 @@ public class TCP_NIO2 extends BasicTCP {
     @ManagedOperation(description="Prints send and receive buffers for all connections")
     public String printBuffers() {return server.printBuffers();}
 
+    @ManagedOperation(description="Clears all connections (they will get re-established). For testing only, don't use !")
+    public void clearConnections() {
+        server.clearConnections();
+    }
+
     @ManagedAttribute
     public int maxReadBatchSize() {
         int tmp=server.maxReadBatchSize();
@@ -63,14 +69,23 @@ public class TCP_NIO2 extends BasicTCP {
         server.maxReadBatchSize(size);
     }
 
+    @ManagedAttribute(description="Is the selector open")
+    public boolean isSelectorOpen() {return server != null && server.selectorOpen();}
+
+    @ManagedAttribute(description="Is the acceptor thread (calling select()) running")
+    public boolean isAcceptorRunning() {return server != null && server.acceptorRunning();}
+
+    @ManagedAttribute(description="Number of times select() was called")
+    public int     numSelects() {return server != null? server.numSelects() : -1;}
+
 
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
         if(server != null) {
             try {
                 server.send(dest, data, offset, length);
             }
-            catch(ClosedChannelException closed) {}
-            catch(Exception ex) {
+            catch(ClosedChannelException | CancelledKeyException ignored_exceptions) {}
+            catch(Throwable ex) {
                 log.warn("%s: failed sending message to %s: %s", local_addr, dest, ex);
             }
         }

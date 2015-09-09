@@ -46,7 +46,6 @@ public class NioConnection implements Connection {
      /** Creates a connection stub and binds it, use {@link #connect(Address)} to connect */
     public NioConnection(Address peer_addr, NioBaseServer server) throws Exception {
         this.server=server;
-        //addFailureListener(server);
         if(peer_addr == null)
             throw new IllegalArgumentException("Invalid parameter peer_addr="+ peer_addr);
         this.peer_addr=peer_addr;
@@ -104,6 +103,20 @@ public class NioConnection implements Connection {
     public SelectionKey  key()               {return key;}
     public NioConnection key(SelectionKey k) {this.key=k; return this;}
 
+    public synchronized int registerSelectionKey(int interest_ops) {
+        if(key == null)
+            return 0;
+        key.interestOps(key.interestOps() | interest_ops);
+        return key.interestOps();
+    }
+
+    public synchronized int clearSelectionKey(int interest_ops) {
+        if(key == null)
+            return 0;
+        key.interestOps(key.interestOps() & ~interest_ops);
+        return key.interestOps();
+    }
+
 
     @Override
     public void connect(Address dest) throws Exception {
@@ -118,12 +131,11 @@ public class NioConnection implements Connection {
             if(this.channel.getLocalAddress() != null && this.channel.getLocalAddress().equals(destAddr))
                 throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
 
+            this.key=server.register(channel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ, this);
             if(Util.connect(channel, destAddr)) {
-                channel.finishConnect();
-                this.key=channel.register(server.selector, SelectionKey.OP_READ, this);
+                if(channel.finishConnect())
+                    clearSelectionKey(SelectionKey.OP_CONNECT);
             }
-            else
-                this.key=server.register(channel, SelectionKey.OP_CONNECT, this);
             if(send_local_addr)
                 sendLocalAddress(server.localAddress());
         }
@@ -265,9 +277,9 @@ public class NioConnection implements Connection {
         try {remote=channel != null? (InetSocketAddress)channel.getRemoteAddress() : null;} catch(Throwable t) {}
         String loc=local == null ? "n/a" : local.getHostString() + ":" + local.getPort(),
           rem=remote == null? "n/a" : remote.getHostString() + ":" + remote.getPort();
-        return String.format("<%s --> %s> (%d secs old) [%s] [send_buf: %s, recv_buf: %s]",
+        return String.format("<%s --> %s> (%d secs old) [%s] [send_buf: %s, recv_buf: %s] [ops=%d]",
                              loc, rem, TimeUnit.SECONDS.convert(getTimestamp() - last_access, TimeUnit.NANOSECONDS),
-                             status(), send_buf, recv_buf);
+                             status(), send_buf, recv_buf, key != null? key.interestOps() : -1);
     }
 
     protected String status() {
@@ -286,13 +298,13 @@ public class NioConnection implements Connection {
         if(register) {
             if(!write_interest_set) {
                 write_interest_set=true;
-                key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+                registerSelectionKey(SelectionKey.OP_WRITE);
             }
         }
         else {
             if(write_interest_set) {
                 write_interest_set=false;
-                key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
+                clearSelectionKey(SelectionKey.OP_WRITE);
             }
         }
     }

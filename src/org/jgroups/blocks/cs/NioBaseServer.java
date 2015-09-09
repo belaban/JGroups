@@ -28,6 +28,9 @@ public abstract class NioBaseServer extends BaseServer {
     @ManagedAttribute(description="Max number of messages to read on an OP_READ",writable=true)
     protected int               max_read_batch_size=50;
 
+    @ManagedAttribute(description="Number of times select() was called")
+    protected int               num_selects;
+
 
 
     protected NioBaseServer(ThreadFactory f) {
@@ -40,6 +43,12 @@ public abstract class NioBaseServer extends BaseServer {
     public NioBaseServer maxSendBuffers(int num)    {this.max_send_buffers=num; return this;}
     public int           maxReadBatchSize()         {return max_read_batch_size;}
     public NioBaseServer maxReadBatchSize(int size) {max_read_batch_size=size; return this;}
+    public boolean       selectorOpen()             {return selector != null && selector.isOpen();}
+    public boolean       acceptorRunning()          {return acceptor != null && acceptor.isAlive();}
+    public int           numSelects()               {return num_selects;}
+
+
+
 
     /** Prints send and receive buffers for all connections */
     @ManagedOperation(description="Prints the send and receive buffers")
@@ -95,6 +104,7 @@ public abstract class NioBaseServer extends BaseServer {
                 while(it.hasNext()) {
                     SelectionKey key=it.next();
                     NioConnection conn=(NioConnection)key.attachment();
+                    it.remove();
                     try {
                         if(!key.isValid())
                             continue;
@@ -110,17 +120,14 @@ public abstract class NioBaseServer extends BaseServer {
                             handleAccept(key);
                         else if(key.isConnectable()) {
                             SocketChannel ch=(SocketChannel)key.channel();
-                            if(ch.finishConnect())
-                                key.interestOps(key.interestOps() & ~SelectionKey.OP_CONNECT | SelectionKey.OP_READ);
+                            if(ch.finishConnect() || ch.isConnected())
+                                conn.clearSelectionKey(SelectionKey.OP_CONNECT);
                         }
                     }
                     catch(Throwable ex) {
                         Util.close(conn);
                         notifyConnectionClosed(conn, ex.toString());
                         removeConnectionIfPresent(conn != null? conn.peerAddress() : null, conn);
-                    }
-                    finally {
-                        it.remove();
                     }
                 }
             }
@@ -130,6 +137,7 @@ public abstract class NioBaseServer extends BaseServer {
         protected boolean doSelect() {
             try {
                 int num=selector.select();
+                num_selects++;
                 checkforPendingRegistrations();
                 if(num == 0) return true;
             }

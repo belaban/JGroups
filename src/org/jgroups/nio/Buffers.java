@@ -117,7 +117,7 @@ public class Buffers {
         StringBuilder sb=new StringBuilder(Util.print(bufs[0]));
         if(bufs[1] != null)
             sb.append(", ").append(Util.print(bufs[1]));
-        sb.append(", remaining ").append(remaining());
+        sb.append(", rem ").append(remaining());
         return sb.toString();
     }
 

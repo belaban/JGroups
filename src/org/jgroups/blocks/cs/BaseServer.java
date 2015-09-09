@@ -356,6 +356,12 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
     }
 
+    /** Used only for testing ! */
+    public synchronized void clearConnections() {
+        for(Connection conn: conns.values())
+            Util.close(conn);
+        conns.clear();
+    }
 
     /** Removes all connections which are not in current_mbrs */
     public void retainAll(Collection<Address> current_mbrs) {
