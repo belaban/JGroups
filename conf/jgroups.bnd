@@ -3,7 +3,7 @@ Bundle-DocURL: http://www.jboss.org
 Bundle-License: http://www.apache.org/licenses/LICENSE-2.0
 Bundle-ManifestVersion: 2
 Bundle-Name: ${ant.project.name}
-Bundle-RequiredExecutionEnvironment: Java2SE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-SymbolicName: org.jgroups
 Bundle-Vendor: JBoss, a division of Red Hat
 Bundle-Version: ${version}

@@ -215,7 +215,7 @@
                     <rules>
                         <requireJavaVersion>
                             <!-- require JDK 1.7 to run the build -->
-                            <version>[1.7,)</version>
+                            <version>[1.7,1.8)</version>
                         </requireJavaVersion>
                         <requireMavenVersion>
                             <version>3.0.4</version>
@@ -337,7 +337,7 @@
                             schema;version=${project.version},
                             ${project.groupId}.*;version=${project.version}
                         </Export-Package>
-                        <Bundle-RequiredExecutionEnvironment>Java2SE-1.7</Bundle-RequiredExecutionEnvironment>
+                        <Bundle-RequiredExecutionEnvironment>JavaSE-1.7</Bundle-RequiredExecutionEnvironment>
                     </instructions>
                 </configuration>
             </plugin>
