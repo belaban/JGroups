@@ -205,7 +205,7 @@ public class BARRIER extends Protocol {
     }
 
     /** Close the barrier. Temporarily remove all threads which are waiting or blocked, re-insert them after the call */
-    protected void closeBarrier() {
+    public void closeBarrier() {
         if(!barrier_closed.compareAndSet(false, true))
             return; // barrier is already closed
 
