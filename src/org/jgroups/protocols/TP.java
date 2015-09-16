@@ -184,7 +184,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(name="oob_thread_pool.rejection_policy",
               description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
-    protected String oob_thread_pool_rejection_policy="discard";
+    protected String oob_thread_pool_rejection_policy="abort";
 
     @Property(name="thread_pool.min_threads",description="Minimum thread pool size for the regular thread pool")
     protected int thread_pool_min_threads=2;
@@ -207,7 +207,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(name="thread_pool.rejection_policy",
               description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
-    protected String thread_pool_rejection_policy="Discard";
+    protected String thread_pool_rejection_policy="abort";
 
 
     @Property(name="internal_thread_pool.enabled",description="Switch for enabling thread pool for internal messages",
@@ -231,7 +231,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(name="internal_thread_pool.rejection_policy",
               description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
-    protected String internal_thread_pool_rejection_policy="discard";
+    protected String internal_thread_pool_rejection_policy="abort";
 
 
 
