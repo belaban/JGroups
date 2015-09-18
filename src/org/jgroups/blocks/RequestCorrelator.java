@@ -449,6 +449,7 @@ public class RequestCorrelator {
     protected void handleRequest(Message req, Header hdr) {
         Object        retval;
         boolean       threw_exception=false;
+        boolean       wrap_exception=System.getProperty(Global.DONT_WRAP_EXCEPTIONS, "false").equals("false");
 
         if(log.isTraceEnabled()) {
             log.trace(new StringBuilder("calling (").append((request_handler != null? request_handler.getClass().getName() : "null")).
@@ -461,7 +462,7 @@ public class RequestCorrelator {
             }
             catch(Throwable t) {
                 if(rsp != null)
-                    rsp.send(new InvocationTargetException(t), true);
+                    rsp.send(wrap_exception ? new InvocationTargetException(t) : t, true);
                 else
                     log.error(local_addr + ": failed dispatching request asynchronously: " + t);
             }
@@ -473,7 +474,7 @@ public class RequestCorrelator {
         }
         catch(Throwable t) {
             threw_exception=true;
-            retval=new InvocationTargetException(t);
+            retval=wrap_exception ? new InvocationTargetException(t) : t;
         }
         if(hdr.rsp_expected)
             sendReply(req, hdr.id, retval, threw_exception);
