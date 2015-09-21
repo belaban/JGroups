@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the UNICAST by invoking unicast RPCs between a sender and a receiver. Mimicks the DIST mode in Infinispan
  *
- * @author Bela Ban
  */
 public class TestAll extends ReceiverAdapter {
     private JChannel               channel;
@@ -255,6 +254,7 @@ public class TestAll extends ReceiverAdapter {
 
         Random random = new Random();
         Invoker[] invokers=new Invoker[num_threads];
+        // create sender (threads) to send writes to Zab/Zab_1/Zab_2
         for(int i=0; i < invokers.length; i++){
             invokers[i]=new Invoker(nonBoxMembers, num_msgs, num_msgs_sent, random);
             System.out.println("Create Invoker --------------->>>> " + i);
@@ -317,11 +317,13 @@ public class TestAll extends ReceiverAdapter {
         System.out.println("read_percentage = " + read_percentage);
     }
 
+    //Get method
     public byte[] get(long key) {
         return GET_RSP;
     }
 
-
+    //Write method, this will invoke as soon as write gets order by ording protocol
+    //we just simulate Infinispan key-value store, so using put for write, get for read
     public void put(long key, byte[] val) {
     	System.out.println("Inside -----------> PUT method**************");
     }
@@ -334,6 +336,7 @@ public class TestAll extends ReceiverAdapter {
     // ================================= end of callbacks =====================================
 
 
+    //method provides options, the important one is option (1) where the benchmark is told to start
     public void eventLoop() throws Throwable {
         int c;
 
@@ -550,7 +553,7 @@ public class TestAll extends ReceiverAdapter {
             return null;
         }
     }
-
+    //Sender to send write RPC, for testing ording protocol 
     private class Invoker extends Thread {
         private final List<Address>  dests=new ArrayList<Address>();
         private final int            num_msgs_to_send;
@@ -614,10 +617,21 @@ public class TestAll extends ReceiverAdapter {
                         num_gets++;
                     }
                     else {    // sync or async (based on value of 'sync') PUT
+                    	synchronized (members) {
+                            removeBoxMembers(members);
+                        }
+                        System.out.println("Members at start | " + members);
+
+                        Collection<Address> dest;
+                        if (anycastRequests)
+                            dest = members;
+                        else
+                            dest = null;
                     	System.out.println("invoker name "+ getName());
+                    	//Creat writes and sends to down prootcols, then it will send to order protocol and finally invoke put RPC
                         Collection<Address> targets = random_destinations ? pickRandomAnycastTargets() : pickAnycastTargets();
                         put_args[0]=i;
-                        RspList rsp = disp.callRemoteMethods(targets, put_call, put_options);
+                        RspList rsp = disp.callRemoteMethods(dest, put_call, put_options);
                         num_puts++;
 
                     }

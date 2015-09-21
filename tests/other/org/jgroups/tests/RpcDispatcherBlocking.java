@@ -34,12 +34,13 @@ public class RpcDispatcherBlocking implements MembershipListener {
     RpcDispatcher disp;
     Channel       channel;
     long          timeout=30000;
-    String        props=null;
+    String        props="";
     int           i=0;
 
 
     public RpcDispatcherBlocking(String props, long timeout) {
         this.props=props; this.timeout=timeout;
+        System.out.println("this.props "+this.props );
     }
 
 
@@ -117,8 +118,6 @@ public class RpcDispatcherBlocking implements MembershipListener {
             help();
             return;
         }
-        
-
 
         try {
             new RpcDispatcherBlocking(props, timeout).start();

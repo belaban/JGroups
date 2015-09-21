@@ -294,17 +294,19 @@ public class Zab_00 extends Protocol {
 
     
 	private void handleClientRequest(Event event, Message message) {
-        log.info("handleClientRequest");
-
 		ZABHeader clientHeader = null;
         Address destination = message.getDest();
         Address zabDestination = null;
         //Store put here, and Forward write to Zab box to obtain otdering
         if (destination != null && destination instanceof AnycastAddress && !message.isFlagSet(Message.Flag.NO_TOTAL_ORDER)) {
-			log.info("-------> AnycastAddress Send to Zab boxes");
+			log.info("-------> AnycastAddress Send to Zab boxes message " + message);
         	MessageId messageId = new MessageId(local_addr,
 			local.getAndIncrement(), System.currentTimeMillis());
         	messageStore.put(messageId, message);
+			log.info("handleClientRequest---> " + messageId);
+			log.info("handleClientRequest---> " + messageId.getId());
+			down_prot.up(new Event(Event.MSG, message));
+
         	ZABHeader hdrReq = new ZABHeader(ZABHeader.REQUEST,
 			messageId);
         	++index;
@@ -318,10 +320,11 @@ public class Zab_00 extends Protocol {
         	message.setBuffer(new byte[diff]); // Necessary to ensure that each msgs size is 1kb, necessary for accurate network measurements
         	down_prot.down(new Event(Event.MSG, requestMessage));
         }
-        //Forward start call to all destination to start the benchmark
+        //Forward start call to all destinations to start the benchmark
         else if (destination != null && !(destination instanceof AnycastAddress)) {
 			log.info("-------> Send to client only");
-			
+			log.info("Start    ---> " + message);
+
 			down_prot.down(new Event(Event.MSG, message));
 		}
 
@@ -357,6 +360,7 @@ public class Zab_00 extends Protocol {
 
     private void forwardToLeader(Message msg) {
     	ZABHeader hdrReq = (ZABHeader) msg.getHeader(this.id);
+    	log.info("message id = "+hdrReq.getMessageId());
  	   requestQueue.add(hdrReq.getMessageId());
     	if (!is_warmUp && is_leader && !startThroughput){
 			startThroughput = true;
@@ -531,7 +535,7 @@ public class Zab_00 extends Protocol {
 			//if(!is_warmUp){
 			long startTime  = hdrOrginal.getMessageId().getStartTime();
 			latencies.add((int)(System.nanoTime() - startTime));
-			//log.info("chckkkkkkkkkkkkk "+(endThroughputTime - startTime));
+			log.info("chckkkkkkkkkkkkk "+("deliver messgae is:= "+hdrOrginal.getMessageId()));
 
 			//}
 			//log.info("I am the zab request receiver, "+ hdr.getZxid());
@@ -550,12 +554,12 @@ public class Zab_00 extends Protocol {
 		
     private void handleOrderingResponse(ZABHeader hdrResponse) {
 	        Message message = messageStore.get(hdrResponse.getMessageId());
-	        log.info("Check return RPC ########################### "+ message);
-	        log.info("Check return RPC ########################### "+ message.getHeaders());
+	        log.info("Check return RPC before ########################### "+ message);
 	        message.setDest(local_addr);
-
-	        message.putHeader(this.id, hdrResponse);
-	        //up_prot.up(new Event(Event.MSG, message));
+	        message.src(null);
+	        log.info("Check return after ########################### "+ message);
+	        //message.putHeader(this.id, hdrResponse);
+	        down_prot.down(new Event(Event.MSG, message));
 
 	    }
 	    	

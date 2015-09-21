@@ -34,6 +34,9 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
         this.address = address;
         this.id = id;
         this.startSend = startSend;
+        System.out.println(" id ==== "+id);
+        System.out.println(" id ==== "+this.id);
+
     }
     
     public MessageId(long zxid) {
@@ -65,6 +68,10 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
     
     public long getZxid(){
     	return zxid;
+    }
+    
+    public long getId(){
+    	return id;
     }
 
     public void setZxid(long zxid){
