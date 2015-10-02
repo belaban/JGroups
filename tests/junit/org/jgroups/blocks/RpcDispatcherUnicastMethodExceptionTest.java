@@ -83,6 +83,12 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
         }
     }
 
+    @Test(expectedExceptions=TimeoutException.class)
+    public void testMethodWithExceptionWithoutWrapping() throws Exception {
+        System.setProperty(Global.DONT_WRAP_EXCEPTIONS, "true");
+        disp.callRemoteMethod(channel.getAddress(),"bar",null,null,RequestOptions.SYNC());
+    }
+
     // @Test(expectedExceptions=IllegalArgumentException.class)
     public void testMethodWithException2() throws Exception {
         try {
@@ -95,6 +101,12 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
         }
     }
 
+    @Test(expectedExceptions=IllegalArgumentException.class)
+    public void testMethodWithException2WithoutWrapping() throws Exception {
+        System.setProperty(Global.DONT_WRAP_EXCEPTIONS, "true");
+        disp.callRemoteMethod(channel.getAddress(),"foobar",null,null,RequestOptions.SYNC());
+    }
+
     // @Test(expectedExceptions=AssertionError.class)
     public void testMethodWithError() throws Exception {
         try {
@@ -105,6 +117,12 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
             assert t instanceof InvocationTargetException;
             assert t.getCause() instanceof AssertionError;
         }
+    }
+
+    @Test(expectedExceptions=AssertionError.class)
+    public void testMethodWithErrorWithoutWrapping() throws Exception {
+        System.setProperty(Global.DONT_WRAP_EXCEPTIONS, "true");
+        disp.callRemoteMethod(channel.getAddress(),"foofoobar",null,null,RequestOptions.SYNC());
     }
 
     // @Test(expectedExceptions=Throwable.class)
@@ -120,5 +138,9 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     }
 
 
-
+    @Test(expectedExceptions=Throwable.class)
+    public void testMethodWithThrowableWithoutWrapping() throws Exception {
+        System.setProperty(Global.DONT_WRAP_EXCEPTIONS, "true");
+        disp.callRemoteMethod(channel.getAddress(),"fooWithThrowable",null,null,RequestOptions.SYNC());
+    }
 }
