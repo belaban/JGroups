@@ -355,7 +355,6 @@
             <fileset dir="${root.dir}">
                 <include name="INSTALL.html"/>
                 <include name="LICENSE"/>
-                <include name="README"/>
             </fileset>
             <fileset dir="${lib.dir}">
                 <include name="licenses/thirdparty*"/>
