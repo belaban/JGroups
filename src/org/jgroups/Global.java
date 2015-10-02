@@ -105,8 +105,6 @@ public class Global {
     public static final int IPV4_SIZE=4;
     public static final int IPV6_SIZE=16;
 
-    public static final String DONT_WRAP_EXCEPTIONS = "jgroups.dont.wrap.exceptions";
-
 
     public static boolean getPropertyAsBoolean(String property, boolean defaultValue) {
         boolean result = defaultValue;

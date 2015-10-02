@@ -73,7 +73,7 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     // @Test(expectedExceptions=InvocationTargetException.class)
     public void testMethodWithException() throws Exception {
         try {
-            disp.callRemoteMethod(channel.getAddress(),"bar",null,null,RequestOptions.SYNC());
+            disp.callRemoteMethod(channel.getAddress(), "bar", null, null, RequestOptions.SYNC());
             assert false: "method should have thrown an exception";
         }
         catch(Exception ex) {
@@ -85,14 +85,19 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
 
     @Test(expectedExceptions=TimeoutException.class)
     public void testMethodWithExceptionWithoutWrapping() throws Exception {
-        System.setProperty(Global.DONT_WRAP_EXCEPTIONS, "true");
-        disp.callRemoteMethod(channel.getAddress(),"bar",null,null,RequestOptions.SYNC());
+        disp.wrapExceptions(false);
+        try {
+            disp.callRemoteMethod(channel.getAddress(), "bar", null, null, RequestOptions.SYNC());
+        }
+        finally {
+            disp.wrapExceptions(true);
+        }
     }
 
     // @Test(expectedExceptions=IllegalArgumentException.class)
     public void testMethodWithException2() throws Exception {
         try {
-            disp.callRemoteMethod(channel.getAddress(),"foobar",null,null,RequestOptions.SYNC());
+            disp.callRemoteMethod(channel.getAddress(), "foobar", null, null, RequestOptions.SYNC());
         }
         catch(Throwable t) {
             System.out.println("t = " + t);
@@ -103,8 +108,13 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
 
     @Test(expectedExceptions=IllegalArgumentException.class)
     public void testMethodWithException2WithoutWrapping() throws Exception {
-        System.setProperty(Global.DONT_WRAP_EXCEPTIONS, "true");
-        disp.callRemoteMethod(channel.getAddress(),"foobar",null,null,RequestOptions.SYNC());
+        disp.wrapExceptions(false);
+        try {
+            disp.callRemoteMethod(channel.getAddress(), "foobar", null, null, RequestOptions.SYNC());
+        }
+        finally {
+            disp.wrapExceptions(true);
+        }
     }
 
     // @Test(expectedExceptions=AssertionError.class)
@@ -121,8 +131,13 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
 
     @Test(expectedExceptions=AssertionError.class)
     public void testMethodWithErrorWithoutWrapping() throws Exception {
-        System.setProperty(Global.DONT_WRAP_EXCEPTIONS, "true");
-        disp.callRemoteMethod(channel.getAddress(),"foofoobar",null,null,RequestOptions.SYNC());
+        disp.wrapExceptions(false);
+        try {
+            disp.callRemoteMethod(channel.getAddress(), "foofoobar", null, null, RequestOptions.SYNC());
+        }
+        finally {
+            disp.wrapExceptions(true);
+        }
     }
 
     // @Test(expectedExceptions=Throwable.class)
@@ -140,7 +155,12 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
 
     @Test(expectedExceptions=Throwable.class)
     public void testMethodWithThrowableWithoutWrapping() throws Exception {
-        System.setProperty(Global.DONT_WRAP_EXCEPTIONS, "true");
-        disp.callRemoteMethod(channel.getAddress(),"fooWithThrowable",null,null,RequestOptions.SYNC());
+        disp.wrapExceptions(true);
+        try {
+            disp.callRemoteMethod(channel.getAddress(), "fooWithThrowable", null, null, RequestOptions.SYNC());
+        }
+        finally {
+            disp.wrapExceptions(true);
+        }
     }
 }

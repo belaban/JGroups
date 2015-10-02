@@ -44,6 +44,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     protected MembershipListener                    membership_listener;
     protected RequestHandler                        req_handler;
     protected boolean                               async_dispatching;
+    protected boolean                               wrap_exceptions=true;
     protected ProtocolAdapter                       prot_adapter;
     protected volatile Collection<Address>          members=new HashSet<>();
     protected Address                               local_addr;
@@ -96,6 +97,12 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         return this;
     }
 
+    public boolean                  wrapExceptions()               {return wrap_exceptions;}
+    public MessageDispatcher        wrapExceptions(boolean flag)   {
+        wrap_exceptions=flag;
+        if(corr != null)
+            corr.wrapExceptions(flag);
+        return this;}
 
     public UpHandler getProtocolAdapter() {
         return prot_adapter;
@@ -131,7 +138,8 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
     public void start() {
         if(corr == null)
-            corr=createRequestCorrelator(prot_adapter, this, local_addr).asyncDispatching(async_dispatching);
+            corr=createRequestCorrelator(prot_adapter, this, local_addr)
+              .asyncDispatching(async_dispatching).wrapExceptions(this.wrap_exceptions);
         correlatorStarted();
         corr.start();
 
