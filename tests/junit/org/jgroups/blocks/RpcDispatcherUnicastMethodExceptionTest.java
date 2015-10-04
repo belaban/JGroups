@@ -155,7 +155,7 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
 
     @Test(expectedExceptions=Throwable.class)
     public void testMethodWithThrowableWithoutWrapping() throws Exception {
-        disp.wrapExceptions(true);
+        disp.wrapExceptions(false);
         try {
             disp.callRemoteMethod(channel.getAddress(), "fooWithThrowable", null, null, RequestOptions.SYNC());
         }
