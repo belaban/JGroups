@@ -10,6 +10,7 @@ import org.jgroups.fork.ForkChannel;
 import org.jgroups.fork.ForkProtocolStack;
 import org.jgroups.protocols.COUNTER;
 import org.jgroups.protocols.FORK;
+import org.jgroups.protocols.FRAG2;
 import org.jgroups.protocols.pbcast.STATE;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -43,6 +44,20 @@ public class ForkChannelTest {
     }
 
 
+    @Test
+    public void testCreateForkIfAbsent() throws Exception {
+        JChannel c = new JChannel(Util.getTestStack(new STATE())).name("C");
+
+        ForkChannel fc = new ForkChannel(c,
+                "hijack-stack",
+                "lead-hijacker",
+                true,
+                ProtocolStack.ABOVE,
+                FRAG2.class);
+        assert fc.isOpen() && !fc.isConnected() && !fc.isClosed() : "state=" + fc.getState();
+
+        Util.close(fc, c);
+    }
 
     public void testLifecycle() throws Exception {
         fc1=new ForkChannel(a, "stack", "fc1");
