@@ -451,8 +451,12 @@ public class Zab_00 extends Protocol {
 		
 		if(isQuorum(p.getAckCount())){ 	
  		   // log.info("Commiting processACK >>>>>>>>>>>>>"+ ackZxid);
-            outstandingProposals.remove(ackZxid);
-            commit(ackZxid);	
+			if(ackZxid == lastZxidCommitted+1){
+	            outstandingProposals.remove(ackZxid);
+	            commit(ackZxid);	
+			}
+			else
+				System.out.println(">>> Can't commit >>>>>>>>>");
 		}
 			
 			

@@ -151,7 +151,7 @@ public class ClientThread extends ReceiverAdapter {
 				//notify send thread
 				//isSend = false;
 				else if(testHeader.getType()==ZABHeader.RESPONSE){
-					latencies.add((System.currentTimeMillis() - message.getStartTime()));
+					//latencies.add((System.currentTimeMillis() - message.getStartTime()));
 					// if (startReset) {
 					// st = System.currentTimeMillis();
 					// startReset = false;
@@ -170,11 +170,11 @@ public class ClientThread extends ReceiverAdapter {
 					//		+ "msgReceived / numsMsg -----> " + msgReceived + " / "
 					//		+ numsMsg);
 					msgReceived++;
-					if (msgReceived >= currentLoad) {
-						ZABTestThreads.result(msgReceived, sender,
-								(System.currentTimeMillis() - startTh), latencies);
+					//if (msgReceived >= currentLoad) {
+						//ZABTestThreads.result(msgReceived, sender,
+								//(System.currentTimeMillis() - startTh), latencies);
 	
-					}
+					//}
 				}
 
 			}
@@ -233,7 +233,7 @@ public class ClientThread extends ReceiverAdapter {
 					target = Util.pickRandomElement(zabBox);
 					Message msg = new Message(target, payload);
 					msg.putHeader(ID, hdrReq);
-					System.out.println("sender " + this.getName()+ " Sending " + i + " out of " + num_msgsPerThreads);
+					//System.out.println("sender " + this.getName()+ " Sending " + i + " out of " + num_msgsPerThreads);
 					channel.send(msg);
 					//isSend = true;
 					//while (isSend){

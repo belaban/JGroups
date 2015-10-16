@@ -68,8 +68,7 @@ public class ZABTestThreads extends ReceiverAdapter {
     private long numsOfWarmUpPerThread = 0;
     private int countTempRecieved = 0;
     private int countRecieved = 0;
-
-
+    private Scanner wait = new Scanner(System.in);
 
 
 	public ZABTestThreads(String [] zabHosts, String protocolName, String props,
@@ -142,6 +141,8 @@ public class ZABTestThreads extends ReceiverAdapter {
 
 		if ((view != null) && zabBox.size() != 0
 				&& view.getMembers().size() > 3 && !zabBox.contains(local_addr)) {
+			System.out.println("Start create Threads Enter int number to start");
+			int noUsed = wait.nextInt();
 			for (int i = 0; i < clientThreads.length; i++) {
 				try {
 					clientThreads[i].start();
@@ -153,7 +154,19 @@ public class ZABTestThreads extends ReceiverAdapter {
 			}
 
 		}
-		
+		// Send local address to leader
+		MessageId mid = new MessageId(local_addr,
+				localSequence.incrementAndGet());
+		ZABHeader startHeader = new ZABHeader(ZABHeader.SENDMYADDRESS, -6, mid);
+		Message msg = new Message(null).putHeader(ID, startHeader);
+		msg.src(channel.getAddress());
+		msg.setObject("SENDMYADDRESS");
+		try {
+			channel.send(msg);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 
@@ -222,46 +235,79 @@ public class ZABTestThreads extends ReceiverAdapter {
 		}
 		
 	}
-
 	
 	public void receive(Message msg) {
 		final ZABHeader testHeader = (ZABHeader) msg.getHeader(ID);
 		
-			if (testHeader.getType() == ZABHeader.START_SENDING) {
-				numsThreadFinished=0;
-				avgTimeElpased =0;
-				avgRecievedOps=0;
-				is_warmUp = true;
-				System.out.println("Warm up starts");
+			//if (testHeader.getType() == ZABHeader.START_SENDING) {
+				//numsThreadFinished=0;
+				//avgTimeElpased =0;
+				//avgRecievedOps=0;
+				//is_warmUp = true;
+				//System.out.println("Warm up starts");
 
-				for (int i = 0; i < clientThreads.length; i++) {
-					System.out.println("inside for i = "+i);
-					clientThreads[i].setWarmUp(true);
-					clientThreads[i].sendMessages(numsOfWarmUpPerThread);				
-			    }
-				try {
-					this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
-							(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
-				} catch (IOException e) {
+				//for (int i = 0; i < clientThreads.length; i++) {
+				//	System.out.println("inside for i = "+i);
+				//	clientThreads[i].setWarmUp(true);
+				//	clientThreads[i].sendMessages(numsOfWarmUpPerThread);				
+			  //  }
+				//try {
+				//	this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
+			//				(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
+			//	} catch (IOException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-	        }
-			else if (testHeader.getType() == ZABHeader.STARTREALTEST){
-				System.out.println("Recieved STARTREALTEST from "+msg.getSrc());
+			//		e.printStackTrace();
+			//	}
+	       // }
+		    if (testHeader.getType() == ZABHeader.STARTREALTEST){
+				System.out.println("!!!Recieved STARTREALTEST from "+msg.getSrc());
 
-				synchronized(this){
-					countRecieved++;
-					if (countRecieved==zabBox.size())
+				//synchronized(this){
+					//countRecieved++;
+					//if (countRecieved==zabBox.size())
 						startRealTest();
-				}
+			//	}
 			}
 			//else if (testHeader.getType() == ZABHeader.RESPONCETEMP){
 				//countTempRecieved++;
 			//}
 	}
 	
+	public void sendMyAddressToLeader(){
+		MessageId mid = new MessageId(local_addr,
+				localSequence.incrementAndGet());
+		ZABHeader startHeader = new ZABHeader(ZABHeader.SENDMYADDRESS, -6, mid);
+		Message msg = new Message(null).putHeader(ID, startHeader);
+		msg.src(channel.getAddress());
+		msg.setObject("SENDMYADDRESS");
+		try {
+			channel.send(msg);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
+		public void warmup(){
+		numsThreadFinished=0;
+		avgTimeElpased =0;
+		avgRecievedOps=0;
+		is_warmUp = true;
+		System.out.println("Warm up starts");
+
+		for (int i = 0; i < clientThreads.length; i++) {
+			System.out.println("inside for i = "+i);
+			clientThreads[i].setWarmUp(true);
+			clientThreads[i].sendMessages(numsOfWarmUpPerThread);				
+	    }
+		try {
+			this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
+					(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
 	
 	public synchronized static void finishedopsSoFar(long opNums, Sender sender){
 		//System.out.println("senter " + sender.getName()+ " has finished "+opNums+" ops");
@@ -423,11 +469,13 @@ public class ZABTestThreads extends ReceiverAdapter {
 				c = Util.keyPress(String.format(INPUT));
 				switch (c) {
 				case '1':
+        System.out.println("Start lenght ----->" + clientThreads.length);
 					for (int i = 0; i < clientThreads.length; i++) {
 						clientThreads[i].init();
 					}
 					System.out.println("Start Test ----->");
-					sendStartSign();
+					warmup();
+					//sendStartSign();
 					break;
 				case '2':
 					resetProtocol();
@@ -445,9 +493,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 					//msg_size = read.nextInt();
 					break;
 				case '5':
-					//System.out.println("Zab members are "+ zabBox);
-					//sendTestRequest();
-					// num_threads = read.nextInt();
+					sendMyAddressToLeader();
 					break;
 				case '6':
 					

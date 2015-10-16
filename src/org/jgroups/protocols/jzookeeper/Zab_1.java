@@ -92,6 +92,8 @@ public class Zab_1 extends Protocol {
     private List<String> largeLatencies = new ArrayList<String>();
     private List<String> largeLatenciesNano = new ArrayList<String>();
     private boolean is_warmUp=true;
+    private List<Address>  clients = Collections.synchronizedList(new ArrayList<Address>());
+
     
     public Zab_1(){
     	
@@ -147,9 +149,13 @@ public class Zab_1 extends Protocol {
     	log.info("Reset done");
     	MessageId messageId = new MessageId(local_addr,
 				-10, System.currentTimeMillis());
-    	ZABHeader startTest = new ZABHeader(ZABHeader.STARTREALTEST, messageId);
-        Message confirmClient=new Message(client).putHeader(this.id, startTest);
-		down_prot.down(new Event(Event.MSG, confirmClient));     
+    	 if (is_leader){
+     		for(Address c: clients){
+ 		    	ZABHeader startTest = new ZABHeader(ZABHeader.STARTREALTEST, messageId);
+ 		        Message confirmClient=new Message(c).putHeader(this.id, startTest);
+ 				down_prot.down(new Event(Event.MSG, confirmClient));  
+     		}
+     	}     
 	    
     }
     @Override
@@ -257,6 +263,12 @@ public class Zab_1 extends Protocol {
                     		sendTotalABMwssages(hdr);  
                     		log.info("Yes, I recieved count request");
                     	break;
+                    case ZABHeader.SENDMYADDRESS:
+                		if (is_leader){
+                			clients.add(msg.getSrc());
+                			System.out.println("Rceived client;s address "+msg.getSrc());
+                		}
+                		break;
                     case ZABHeader.STARTREALTEST:
                     	if(!zabMembers.contains(local_addr))
                 			return up_prot.up(new Event(Event.MSG, msg));
@@ -362,6 +374,14 @@ public class Zab_1 extends Protocol {
 					this.id, hdrReq);
 			down_prot.down(new Event(Event.MSG, requestMessage));
 		}
+		
+		else if(!clientHeader.getMessageId().equals(null) && clientHeader.getType() == ZABHeader.SENDMYADDRESS){
+	    	 Address destination = null;
+	        destination = zabMembers.get(0);
+	        message.dest(destination);
+	        message.src(message.getSrc());
+	       down_prot.down(new Event(Event.MSG, message));    
+  	}
 
 	}
     
@@ -454,13 +474,19 @@ public class Zab_1 extends Protocol {
 		Message ACKMessage = new Message(leader).putHeader(this.id, hdrACK);
 		if(!is_warmUp)
 			countMessageFollower++;
+		 
+		if(hdrAck.getZxid() == lastZxidCommitted+1){
+            outstandingProposals.remove(hdrAck.getZxid());
+            commit(hdrAck.getZxid());	
+		}
+		else{
+			System.out.println(">>> Can't commit >>>>>>>>>");	
+		}
 		try{
     		down_prot.down(new Event(Event.MSG, ACKMessage));   
          }catch(Exception ex) {
     		log.error("failed sending ACK message to Leader");
-    	} 
-		deliver(hdrAck.getZxid());
-		
+    	}
 		
     }
     
@@ -483,9 +509,12 @@ public class Zab_1 extends Protocol {
         //}
 		
 		if(isQuorum(p.getAckCount())){ 	
- 		   // log.info("Commiting processACK >>>>>>>>>>>>>"+ ackZxid);
-            outstandingProposals.remove(ackZxid);
-            commit(ackZxid);	
+			if(ackZxid == lastZxidCommitted+1){
+	            outstandingProposals.remove(ackZxid);
+	            commit(ackZxid);	
+			}
+			else
+				System.out.println(">>> Can't commit >>>>>>>>>");
 		}
 			
 			
@@ -503,19 +532,19 @@ public class Zab_1 extends Protocol {
 			   return;
 		   }
 
-	       ZABHeader hdrCommit = new ZABHeader(ZABHeader.COMMIT, zxidd);
-	       Message commitMessage = new Message().putHeader(this.id, hdrCommit);	       
-           for (Address address : zabMembers) {
-        	   //if(!address.equals(leader) && startThroughput)
-        	   if(!address.equals(leader))
-             	  	countMessageLeader.incrementAndGet();
-	              Message cpy = commitMessage.copy();
-	              cpy.setDest(address);
-	   		      //log.info("[" + local_addr + "] "+ "YYYYYYYY sending comit message zxid to = "+zxidd+":"+address);
-	              down_prot.down(new Event(Event.MSG, cpy));   
-              
-        	   
-           }
+//	       ZABHeader hdrCommit = new ZABHeader(ZABHeader.COMMIT, zxidd);
+//	       Message commitMessage = new Message().putHeader(this.id, hdrCommit);	       
+//           for (Address address : zabMembers) {
+//        	   //if(!address.equals(leader) && startThroughput)
+//        	   if(!address.equals(leader))
+//             	  	countMessageLeader.incrementAndGet();
+//	              Message cpy = commitMessage.copy();
+//	              cpy.setDest(address);
+//	   		      //log.info("[" + local_addr + "] "+ "YYYYYYYY sending comit message zxid to = "+zxidd+":"+address);
+//	              down_prot.down(new Event(Event.MSG, cpy));   
+//              
+//        	   
+//           }
            deliver(zxidd);
 		   // log.info("Commiting commit >>>>>>>>>>>>>"+ zxidd);
 
@@ -647,15 +676,15 @@ public class Zab_1 extends Protocol {
 			outFile.println("Number of Request Deliever = " + numReqDeviverd);
 			outFile.println("Total ZAB Messages = " + (countMessageLeader.get() + countTotalMessagesFollowers));
 			outFile.println("Throughput = " + (numReqDeviverd.get()/(TimeUnit.MILLISECONDS.toSeconds(endThroughputTime-startThroughputTime))));
-			outFile.println("Large Latencies count " + largeLatCount);	
-			outFile.println("Large Latencies " + largeLatencies);	
-			outFile.println("Latency /Min= " + min + " /Avg= "+ (avg/latencies.size())+
-			        " /Max= " +max);	
-			outFile.println("Latency size= " + latencies.size());
-			outFile.println("Latency average rate with interval 100000 = " + 
-			        avgLatencies);
-			outFile.println("Latency average rate with interval 200 MillSec = " + 
-			        avgLatenciesTimer);
+			//outFile.println("Large Latencies count " + largeLatCount);	
+			//outFile.println("Large Latencies " + largeLatencies);	
+			//outFile.println("Latency /Min= " + min + " /Avg= "+ (avg/latencies.size())+
+			        //" /Max= " +max);	
+			//outFile.println("Latency size= " + latencies.size());
+			//outFile.println("Latency average rate with interval 100000 = " + 
+			        //avgLatencies);
+			//outFile.println("Latency average rate with interval 200 MillSec = " + 
+			       // avgLatenciesTimer);
 			outFile.println("Latency average rate with No intervel = " + 
 					latAvg + " numbers avg = " + latAvg.size());
 			
@@ -707,25 +736,25 @@ public class Zab_1 extends Protocol {
 					xLager700++;
 			}
 				//outFile.println("Distribution contains latencies form (0-50) " + x50);
-				outFile.println("Distribution contains latencies form (0-10) " + x10);
-				outFile.println("Distribution contains latencies form (11-20) " + x20);
-				outFile.println("Distribution contains latencies form (21-30) " + x30);
-				outFile.println("Distribution contains latencies form (31-40) " + x40);
-				outFile.println("Distribution contains latencies form (41-50) " + x55);
-			    outFile.println("Distribution contains latencies form (51-100) " + x100);
-			    outFile.println("Distribution contains latencies form (101-150) " + x150);
-			    outFile.println("Distribution contains latencies form (151-200) " + x200);
-			    outFile.println("Distribution contains latencies form (201-250) " + x250);
-			    outFile.println("Distribution contains latencies form (251-300) " + x300);
-			    outFile.println("Distribution contains latencies form (301-350) " + x350);
-			    outFile.println("Distribution contains latencies form (351-400) " + x400);
-			    outFile.println("Distribution contains latencies form (401-450) " + x450);
-			    outFile.println("Distribution contains latencies form (451-500) " + x500);
-			    outFile.println("Distribution contains latencies form (501-550) " + x550);
-			    outFile.println("Distribution contains latencies form (551-600) " + x600);
-			    outFile.println("Distribution contains latencies form (601-650) " + x650);
-			    outFile.println("Distribution contains latencies form (651-700) " + x700);
-			    outFile.println("Distribution contains latencies form (  > 700) " + xLager700);
+//				outFile.println("Distribution contains latencies form (0-10) " + x10);
+//				outFile.println("Distribution contains latencies form (11-20) " + x20);
+//				outFile.println("Distribution contains latencies form (21-30) " + x30);
+//				outFile.println("Distribution contains latencies form (31-40) " + x40);
+//				outFile.println("Distribution contains latencies form (41-50) " + x55);
+//			    outFile.println("Distribution contains latencies form (51-100) " + x100);
+//			    outFile.println("Distribution contains latencies form (101-150) " + x150);
+//			    outFile.println("Distribution contains latencies form (151-200) " + x200);
+//			    outFile.println("Distribution contains latencies form (201-250) " + x250);
+//			    outFile.println("Distribution contains latencies form (251-300) " + x300);
+//			    outFile.println("Distribution contains latencies form (301-350) " + x350);
+//			    outFile.println("Distribution contains latencies form (351-400) " + x400);
+//			    outFile.println("Distribution contains latencies form (401-450) " + x450);
+//			    outFile.println("Distribution contains latencies form (451-500) " + x500);
+//			    outFile.println("Distribution contains latencies form (501-550) " + x550);
+//			    outFile.println("Distribution contains latencies form (551-600) " + x600);
+//			    outFile.println("Distribution contains latencies form (601-650) " + x650);
+//			    outFile.println("Distribution contains latencies form (651-700) " + x700);
+//			    outFile.println("Distribution contains latencies form (  > 700) " + xLager700);
 		
 			
 //			final int groupRange = 50;
