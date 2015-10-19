@@ -270,8 +270,9 @@ public class ForkChannel extends JChannel implements ChannelListener {
         if(fork == null) {
             if(!create_fork_if_absent)
                 throw new IllegalArgumentException("FORK not found in main stack");
-            stack.insertProtocol(fork=new FORK(), position, neighbor);
+            fork = new FORK();
             fork.setProtocolStack(stack);
+            stack.insertProtocol(fork, position, neighbor);
         }
         return fork;
     }
