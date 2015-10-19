@@ -38,7 +38,7 @@ import org.jgroups.util.MessageBatch;
 
 
 /* 
- * Zab_1 is the same implementation as Zab_0, but the follower will commit locally
+ * Zab_1 (Zan0Dash) is the same implementation as Zab_0, but the follower will commit locally
  * but the leader still sends commit message to follower, but it is ignored by follower.
  * Also it has features of testing throuhput, latency (in Nano), ant etc. 
  * When using testing, it provides warm up test before starting real test.

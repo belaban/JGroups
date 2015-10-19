@@ -1,42 +1,42 @@
 package org.jgroups.protocols.jzookeeper;
 	import java.io.BufferedWriter;
-	import java.io.FileWriter;
-	import java.io.IOException;
-	import java.io.PrintWriter;
-	import java.net.InetAddress;
-	import java.net.UnknownHostException;
-	import java.text.SimpleDateFormat;
-	import java.util.ArrayList;
-	import java.util.Calendar;
-	import java.util.Collections;
-	import java.util.Date;
-	import java.util.HashMap;
-	import java.util.HashSet;
-	import java.util.List;
-	import java.util.Map;
-	import java.util.Random;
-	import java.util.Set;
-	import java.util.SortedSet;
-	import java.util.Timer;
-	import java.util.TimerTask;
-	import java.util.TreeSet;
-	import java.util.concurrent.ConcurrentHashMap;
-	import java.util.concurrent.ConcurrentMap;
-	import java.util.concurrent.ExecutorService;
-	import java.util.concurrent.Executors;
-	import java.util.concurrent.LinkedBlockingQueue;
-	import java.util.concurrent.TimeUnit;
-	import java.util.concurrent.atomic.AtomicInteger;
-	import java.util.concurrent.atomic.AtomicLong;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 	import org.jgroups.Address;
-	import org.jgroups.Event;
-	import org.jgroups.Message;
-	import org.jgroups.View;
-	import org.jgroups.annotations.ManagedAttribute;
-	import org.jgroups.protocols.jzookeeper.ZAB.ResubmitTimer;
-	import org.jgroups.stack.Protocol;
-	import org.jgroups.util.MessageBatch;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.protocols.jzookeeper.ZAB.ResubmitTimer;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.MessageBatch;
 
 	
 	/* 
@@ -102,6 +102,7 @@ package org.jgroups.protocols.jzookeeper;
 	    private boolean is_warmUp=true;
 		private int longWait = Integer.MIN_VALUE;
 		private volatile boolean makeAllFollowersAck=false;
+		private List<Address>  clients = Collections.synchronizedList(new ArrayList<Address>());
 
 		public Zab_3(){
 	    	
@@ -156,11 +157,16 @@ package org.jgroups.protocols.jzookeeper;
 	    	currentCpuTime=0;
 	    	MessageId messageId = new MessageId(local_addr,
 					-10, System.currentTimeMillis());
-	    	ZABHeader startTest = new ZABHeader(ZABHeader.STARTREALTEST, messageId);
-	        Message confirmClient=new Message(client).putHeader(this.id, startTest);
-			down_prot.down(new Event(Event.MSG, confirmClient));  
+	    	if (is_leader){
+	    		for(Address c: clients){
+			    	ZABHeader startTest = new ZABHeader(ZABHeader.STARTREALTEST, messageId);
+			        Message confirmClient=new Message(c).putHeader(this.id, startTest);
+					down_prot.down(new Event(Event.MSG, confirmClient));  
+	    		}
+	    	}
 		    
-	    }
+	    }  
+		   
 	    // For sending Dummy request
 	    
 	    class FinishTask extends TimerTask {
@@ -287,6 +293,12 @@ package org.jgroups.protocols.jzookeeper;
 	                		sendTotalABMessages(hdr);  
 	                		log.info("Yes, I recieved count request");
 	                	break;
+	                    case ZABHeader.SENDMYADDRESS:
+	                		if (is_leader){
+	                			clients.add(msg.getSrc());
+	                			System.out.println("Rceived client;s address "+msg.getSrc());
+	                		}
+	                		break;
 	                    case ZABHeader.STARTREALTEST:
 	                    	if(!zabMembers.contains(local_addr))
 	                			return up_prot.up(new Event(Event.MSG, msg));
@@ -388,6 +400,14 @@ package org.jgroups.protocols.jzookeeper;
 		        Message requestMessage = new Message(destination).putHeader(this.id, hdrReq);
 		       down_prot.down(new Event(Event.MSG, requestMessage));    
 	    	}
+	    	
+	    	else if(!clientHeader.getMessageId().equals(null) && clientHeader.getType() == ZABHeader.SENDMYADDRESS){
+		    	 Address destination = null;
+		        destination = zabMembers.get(0);
+		        message.dest(destination);
+		        message.src(message.getSrc());
+		       down_prot.down(new Event(Event.MSG, message));    
+	   	}
 	    
 	    	
 	    }
