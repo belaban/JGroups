@@ -831,7 +831,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public void setTimerThreadFactory(ThreadFactory factory) {
         timer_thread_factory=factory;
-        timer.setThreadFactory(factory);
+        if(timer != null)
+            timer.setThreadFactory(factory);
     }
 
     public TimeScheduler getTimer() {return timer;}
