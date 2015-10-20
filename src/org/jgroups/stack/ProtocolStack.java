@@ -853,10 +853,12 @@ public class ProtocolStack extends Protocol {
                                 continue;
                         }
                         prot.init(); // if shared TP, call init() with lock : https://issues.jboss.org/browse/JGRP-1887
+                        callAfterCreationHook(prot, prot.afterCreationHook());
                         continue;
                     }
                 }
             }
+            callAfterCreationHook(prot, prot.afterCreationHook());
             prot.init();
         }
     }
@@ -1090,5 +1092,13 @@ public class ProtocolStack extends Protocol {
         }
     }
 
+
+    protected static void callAfterCreationHook(Protocol prot, String classname) throws Exception {
+        if(classname == null || prot == null)
+            return;
+        Class<ProtocolHook> clazz=Util.loadClass(classname, prot.getClass());
+        ProtocolHook hook=clazz.newInstance();
+        hook.afterCreation(prot);
+    }
 
 }

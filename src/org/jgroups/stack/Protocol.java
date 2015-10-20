@@ -58,6 +58,10 @@ public abstract class Protocol {
             "instances of it in the same stack (also change ID)",writable=false)
     protected String           name=getClass().getSimpleName();
 
+    @Property(description="Fully qualified name of a class implementing ProtocolHook, will be called after creation of " +
+      "the protocol (before init())",writable=false)
+    protected String           after_creation_hook;
+
     @Property(description="Give the protocol a different ID if needed so we can have multiple " +
             "instances of it in the same stack",writable=false)
     protected short            id=ClassConfigurator.getProtocolId(getClass());
@@ -90,6 +94,7 @@ public abstract class Protocol {
     public Protocol      setUpProtocol(Protocol prot)      {this.up_prot=prot; return this;}
     public Protocol      setDownProtocol(Protocol prot)    {this.down_prot=prot; return this;}
     public Protocol      setProtocolStack(ProtocolStack s) {this.stack=s; return this;}
+    public String        afterCreationHook()               {return after_creation_hook;}
 
 
     public Object getValue(String name) {
