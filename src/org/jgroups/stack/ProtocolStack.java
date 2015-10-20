@@ -852,8 +852,8 @@ public class ProtocolStack extends Protocol {
                             if(num_inits >= 1)
                                 continue;
                         }
-                        prot.init(); // if shared TP, call init() with lock : https://issues.jboss.org/browse/JGRP-1887
                         callAfterCreationHook(prot, prot.afterCreationHook());
+                        prot.init(); // if shared TP, call init() with lock : https://issues.jboss.org/browse/JGRP-1887
                         continue;
                     }
                 }
