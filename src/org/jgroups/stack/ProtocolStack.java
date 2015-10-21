@@ -153,6 +153,7 @@ public class ProtocolStack extends Protocol {
                     }
 
                     try {
+                        callAfterCreationHook(prot, afterCreationHook());
                         prot.init();
                         prot.start();
                     }
@@ -785,7 +786,7 @@ public class ProtocolStack extends Protocol {
 
         if(new_prot.getUpProtocol() == this)
             top_prot=new_prot;
-
+        callAfterCreationHook(new_prot, afterCreationHook());
         new_prot.init();
     }
 
@@ -852,8 +853,8 @@ public class ProtocolStack extends Protocol {
                             if(num_inits >= 1)
                                 continue;
                         }
-                        prot.init(); // if shared TP, call init() with lock : https://issues.jboss.org/browse/JGRP-1887
                         callAfterCreationHook(prot, prot.afterCreationHook());
+                        prot.init(); // if shared TP, call init() with lock : https://issues.jboss.org/browse/JGRP-1887
                         continue;
                     }
                 }
