@@ -61,6 +61,10 @@ public class LazyThreadFactory extends DefaultThreadFactory {
             renameThreads();
     }
 
+    public void destroy() {
+        threads.clear();
+    }
+
     protected void renameThreads() {
         for(Iterator<WeakReference<Thread>> it=threads.iterator(); it.hasNext();) {
             WeakReference<Thread> ref=it.next();

@@ -28,9 +28,9 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
 
     protected static final Log                        log=LogFactory.getLog(TimeScheduler3.class);
 
-    protected ThreadFactory                           timer_thread_factory=null;
+    protected ThreadFactory                           timer_thread_factory;
 
-    protected static enum TaskType                    {dynamic, fixed_rate, fixed_delay}
+    protected enum TaskType                           {dynamic, fixed_rate, fixed_delay}
 
 
     /**
@@ -151,6 +151,10 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
         }
         catch(InterruptedException e) {
         }
+
+        // clears the threads list (https://issues.jboss.org/browse/JGRP-1971)
+        if(timer_thread_factory instanceof LazyThreadFactory)
+            ((LazyThreadFactory)timer_thread_factory).destroy();
     }
 
 
