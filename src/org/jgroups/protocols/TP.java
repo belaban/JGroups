@@ -167,7 +167,7 @@ public abstract class TP extends Protocol {
 
     @Property(name="oob_thread_pool.rejection_policy",
               description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run. Default is Discard")
-    String oob_thread_pool_rejection_policy="discard";
+    String oob_thread_pool_rejection_policy="abort";
 
     protected int thread_pool_min_threads=2;
 
@@ -187,7 +187,7 @@ public abstract class TP extends Protocol {
 
     @Property(name="thread_pool.rejection_policy",
               description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run")
-    protected String thread_pool_rejection_policy="Discard";
+    protected String thread_pool_rejection_policy="abort";
 
     @Property(description="Type of timer to be used. Valid values are \"old\" (DefaultTimeScheduler, used up to 2.10), " +
             "\"new\" (TimeScheduler2) and \"wheel\". Note that this property might disappear " +
