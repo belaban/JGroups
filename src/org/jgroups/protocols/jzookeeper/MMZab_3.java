@@ -46,7 +46,7 @@ import org.jgroups.util.MessageBatch;
 	 * Also it has features of testing throughput, latency (in Nano), ant etc. 
 	 * When using testing, it provides warm up test before starting real test.
 	 */
-	public class MMMZAB extends Protocol {
+	public class MMZab_3 extends Protocol {
 		protected final AtomicLong        zxid=new AtomicLong(0);
 	    private ExecutorService executor;
 	    protected Address                           local_addr;
@@ -104,7 +104,7 @@ import org.jgroups.util.MessageBatch;
 		private volatile boolean makeAllFollowersAck=false;
 		private List<Address>  clients = Collections.synchronizedList(new ArrayList<Address>());
 
-		public MMMZAB(){
+		public MMZab_3(){
 	    	
 	    }
 	    
@@ -810,10 +810,10 @@ import org.jgroups.util.MessageBatch;
 				outFile.println("Number of Request Deliever = " + numReqDeviverd);
 				outFile.println("Total ZAB Messages = " + (countMessageLeader.get() + countTotalMessagesFollowers));
 				outFile.println("Throughput = " + (numReqDeviverd.get()/(TimeUnit.MILLISECONDS.toSeconds(endThroughputTime-startThroughputTime)))+ " ops/sec");
-				//outFile.println("Large Latencies count " + largeLatCount);	
-				//outFile.println("Large Latencies " + largeLatencies);	
-				//outFile.println("Latency /Min= " + min + " /Avg= "+ (avg/latencies.size())+
-				        //" /Max= " +max);	
+				outFile.println("Large Latencies count " + largeLatCount);	
+				outFile.println("Large Latencies " + largeLatencies);	
+				outFile.println("Latency /Min= " + min + " /Avg= "+ (avg/latencies.size())+
+				        " /Max= " +max);	
 				//outFile.println("Latency average rate with interval 100000 = " + 
 				       // avgLatencies + " numbers avg = " + avgLatencies.size());
 				//outFile.println("Latency average rate with interval 200 MillSec = " + 
@@ -858,21 +858,21 @@ import org.jgroups.util.MessageBatch;
 					else
 						xLager700++;
 				}
-//					outFile.println("Distribution contains latencies form (0-50) " + x50);
-//				    outFile.println("Distribution contains latencies form (51-100) " + x100);
-//				    outFile.println("Distribution contains latencies form (101-150) " + x150);
-//				    outFile.println("Distribution contains latencies form (151-200) " + x200);
-//				    outFile.println("Distribution contains latencies form (201-250) " + x250);
-//				    outFile.println("Distribution contains latencies form (251-300) " + x300);
-//				    outFile.println("Distribution contains latencies form (301-350) " + x350);
-//				    outFile.println("Distribution contains latencies form (351-400) " + x400);
-//				    outFile.println("Distribution contains latencies form (401-450) " + x450);
-//				    outFile.println("Distribution contains latencies form (451-500) " + x500);
-//				    outFile.println("Distribution contains latencies form (501-550) " + x550);
-//				    outFile.println("Distribution contains latencies form (551-600) " + x600);
-//				    outFile.println("Distribution contains latencies form (601-650) " + x650);
-//				    outFile.println("Distribution contains latencies form (651-700) " + x700);
-//				    outFile.println("Distribution contains latencies form (  > 700) " + xLager700);
+					outFile.println("Distribution contains latencies form (0-50) " + x50);
+				    outFile.println("Distribution contains latencies form (51-100) " + x100);
+				    outFile.println("Distribution contains latencies form (101-150) " + x150);
+				    outFile.println("Distribution contains latencies form (151-200) " + x200);
+				    outFile.println("Distribution contains latencies form (201-250) " + x250);
+				    outFile.println("Distribution contains latencies form (251-300) " + x300);
+				    outFile.println("Distribution contains latencies form (301-350) " + x350);
+				    outFile.println("Distribution contains latencies form (351-400) " + x400);
+				    outFile.println("Distribution contains latencies form (401-450) " + x450);
+				    outFile.println("Distribution contains latencies form (451-500) " + x500);
+				    outFile.println("Distribution contains latencies form (501-550) " + x550);
+				    outFile.println("Distribution contains latencies form (551-600) " + x600);
+				    outFile.println("Distribution contains latencies form (601-650) " + x650);
+				    outFile.println("Distribution contains latencies form (651-700) " + x700);
+				    outFile.println("Distribution contains latencies form (  > 700) " + xLager700);
 			
 				
 //				final int groupRange = 50;
