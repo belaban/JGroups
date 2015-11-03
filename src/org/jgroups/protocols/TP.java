@@ -165,6 +165,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(name="oob_thread_pool.enabled",description="Switch for enabling thread pool for OOB messages. " +
             "Default=true",writable=false)
+    @Deprecated
     protected boolean oob_thread_pool_enabled=true;
 
     @Property(name="oob_thread_pool.min_threads",description="Minimum thread pool size for the OOB thread pool")
@@ -196,6 +197,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected long thread_pool_keep_alive_time=30000;
 
     @Property(name="thread_pool.enabled",description="Switch for enabling thread pool for regular messages")
+    @Deprecated
     protected boolean thread_pool_enabled=true;
 
     @Property(name="thread_pool.queue_enabled", description="Queue to enqueue incoming regular messages")
@@ -212,6 +214,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(name="internal_thread_pool.enabled",description="Switch for enabling thread pool for internal messages",
               writable=false)
+    @Deprecated
     protected boolean internal_thread_pool_enabled=true;
 
     @Property(name="internal_thread_pool.min_threads",description="Minimum thread pool size for the internal thread pool")
@@ -1690,7 +1693,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         Executor pool=pickThreadPool(oob, internal);
 
         try {
-            if(!copy_buffer || pool instanceof DirectExecutor)
+            if(!copy_buffer) // e.g. with TCP which creates a new buffer for each msg
                 pool.execute(new MyHandler(sender, data, offset, length)); // we don't make a copy if we execute on this thread
             else {
                 byte[] tmp=new byte[length];
