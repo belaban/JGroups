@@ -1337,7 +1337,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         /**
          * Default implementation for a merge. Picks the new coordinator among the coordinators of the old subviews
-         * by getting all coords, sorting them and picking the first. Then the coord is adde to the new list, and
+         * by getting all coords, sorting them and picking the first. Then the coord is added to the new list, and
          * all subviews are subsequently added.<p/>
          * Tries to minimize coordinatorship moving around between different members
          * @param subviews A list of membership lists, e.g. [{A,B,C}, {M,N,O,P}, {X,Y,Z}]. This is a merge between
