@@ -40,7 +40,7 @@ public class Version {
     private static final int     MINOR_MASK  = 0x0007c0; //      11111000000 bit mask
     private static final int     MICRO_MASK  = 0x00003f; //           111111 bit mask
 
-    public static final String  VERSION_FILE="VERSION.properties";
+    public static final String  VERSION_FILE="JGROUPS_VERSION.properties";
     public static final String  VERSION_PROPERTY = "jgroups.version";
     private static final Pattern VERSION_REGEXP = Pattern.compile("((\\d+)\\.(\\d+)\\.(\\d+).*)");
 
