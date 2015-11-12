@@ -8,7 +8,7 @@
 
     <property name="root.dir"              value="${basedir}"/>
     <property name="conf.dir"              value="${root.dir}/conf"/>
-    <property file="${conf.dir}/VERSION.properties"/> <!-- Defines jgroups.version -->
+    <property file="${conf.dir}/JGROUPS_VERSION.properties"/> <!-- Defines jgroups.version -->
     <property name="version"               value="${jgroups.version}"/>
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
@@ -346,7 +346,7 @@
              basedir="${compile.dir}"
              manifest="${conf.dir}/MANIFEST.MF"
              includes="org/jgroups/**">
-            <fileset dir="${conf.dir}" includes="*.xml, jg-messages*.properties, VERSION.properties">
+            <fileset dir="${conf.dir}" includes="*.xml, jg-messages*.properties, JGROUPS_VERSION.properties">
                 <exclude name="log4j*.xml"/>
             </fileset>
             <fileset dir="${compile.dir}/schema">
