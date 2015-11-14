@@ -37,15 +37,17 @@ public class Topology extends Frame implements WindowListener {
     private static final int CheckStyle=1;
     private JChannel channel;
     private Object my_addr=null;
+    private String props="udp.xml";
+    private String name;
     private static final String channel_name="FD-Heartbeat";
 
 
-    public Topology() {
+    public Topology(String props, String name) {
+        this.props=props;
+        this.name=name;
         addWindowListener(this);
-        //g=getGraphics();
         fm=getFontMetrics(new Font("Helvetica", Font.PLAIN, 12));
         myFont=new Font("Helvetica", Font.PLAIN, 12);
-
     }
 
 
@@ -160,9 +162,7 @@ public class Topology extends Frame implements WindowListener {
 
 
     public void start() throws Exception {
-        String props="udp.xml";
-
-        channel=new JChannel(props);
+        channel=new JChannel(props).name(name);
 
         channel.setReceiver(new ReceiverAdapter() {
             public void viewAccepted(View view) {
@@ -187,14 +187,27 @@ public class Topology extends Frame implements WindowListener {
 
 
     public static void main(String[] args) {
+        String name=null, props="udp.xml";
+
+        for(int i=0; i < args.length; i++) {
+            if(args[i].equals("-name")) {
+                name=args[++i];
+                continue;
+            }
+            if(args[i].equals("-props")) {
+                props=args[++i];
+                continue;
+            }
+            System.out.println("Topology [-props config file] [-name name]");
+            return;
+        }
         try {
-            Topology top=new Topology();
+            Topology top=new Topology(props, name);
             top.setLayout(null);
             top.setSize(240, 507);
             top.start();
         }
         catch(Exception e) {
-            System.err.println(e);
             e.printStackTrace();
             System.exit(0);
         }
