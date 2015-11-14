@@ -27,7 +27,7 @@ public class Cache<K,V> {
     private Future task=null;
     private final AtomicBoolean is_reaping=new AtomicBoolean(false);
 
-    private Set<ChangeListener> change_listeners=new HashSet<>();
+    private final Set<ChangeListener> change_listeners=new HashSet<>();
 
     /** The maximum number of keys, When this value is exceeded we evict older entries, until we drop below this 
      * mark again. This effectively maintains a bounded cache. A value of 0 means don't bound the cache.
@@ -149,7 +149,7 @@ public class Cache<K,V> {
             }
         }
 
-        return retval != null? retval.value : null;
+        return getValue(retval);
     }
 
     @ManagedOperation
@@ -157,14 +157,12 @@ public class Cache<K,V> {
         if(log.isTraceEnabled())
             log.trace("get(" + key + ")");
         Value<V> val=map.get(key);
-        if(val == null)
-            return null;
-        if(val.timeout == -1 ||
-                (val.timeout > 0 && val.timeout < System.currentTimeMillis())) {
+
+        if (isExpired(val)) {
             map.remove(key);
-            return null;
         }
-        return val.value;
+
+        return getValue(val);
     }
 
     /**
@@ -185,8 +183,7 @@ public class Cache<K,V> {
     public V remove(K key) {
         if(log.isTraceEnabled())
             log.trace("remove(" + key + ")");
-        Value<V> val=map.remove(key);
-        return val != null? val.value : null;
+        return getValue(map.remove(key));
     }
 
     public Set<Map.Entry<K,Value<V>>> entrySet() {
@@ -211,12 +208,11 @@ public class Cache<K,V> {
         return sb.toString();
     }
 
-
     public String dump() {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<K,Value<V>> entry: map.entrySet()) {
             sb.append(entry.getKey()).append(": ");
-            V val=entry.getValue().getValue();
+            V val = getValue(entry.getValue());
             if(val != null) {
                 if(val instanceof byte[])
                     sb.append(" (" + ((byte[])val).length).append(" bytes)");
@@ -233,13 +229,11 @@ public class Cache<K,V> {
         for(Iterator<Map.Entry<K,Value<V>>> it=map.entrySet().iterator(); it.hasNext();) {
             Map.Entry<K,Value<V>> entry=it.next();
             Value<V> val=entry.getValue();
-            if(val != null) {
-                if(val.timeout == -1 || (val.timeout > 0 && System.currentTimeMillis() > val.insertion_time + val.timeout)) {
-                    if(log.isTraceEnabled())
-                        log.trace("evicting " + entry.getKey() + ": " + entry.getValue().value);
-                    it.remove();
-                    evicted=true;
-                }
+            evicted = isExpired(val);
+            if (evicted) {
+                if(log.isTraceEnabled())
+                    log.trace("evicting " + entry.getKey() + ": " + getValue(val));
+                it.remove();
             }
         }
         if(evicted)
@@ -257,7 +251,14 @@ public class Cache<K,V> {
         }
     }
 
-    
+    private V getValue(Value<V> val) {
+        return val == null ? null : val.getValue();
+    }
+
+    private boolean isExpired(Value<V> val) {
+        return val != null &&
+          (val.timeout == -1 || (val.timeout > 0 && System.currentTimeMillis() > val.insertion_time + val.timeout));
+    }
 
     public static class Value<V> implements Externalizable {
         private V value;
