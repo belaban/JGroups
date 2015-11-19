@@ -539,7 +539,7 @@ public class STABLE extends Protocol {
      */
     protected void handleStableMessage(final Digest d, final Address sender, final ViewId view_id) {
         if(d == null || sender == null) {
-            if(log.isErrorEnabled()) log.error("digest or sender is null");
+            if(log.isErrorEnabled()) log.error(Util.getMessage("DigestOrSenderIsNull"));
             return;
         }
 
@@ -600,7 +600,7 @@ public class STABLE extends Protocol {
 
     protected void handleStabilityMessage(final Digest stable_digest, final Address sender, final ViewId view_id) {
         if(stable_digest == null) {
-            if(log.isErrorEnabled()) log.error("stability digest is null");
+            if(log.isErrorEnabled()) log.error(Util.getMessage("StabilityDigestIsNull"));
             return;
         }
 

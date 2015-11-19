@@ -425,7 +425,7 @@ abstract public class Locking extends Protocol {
             if (server_lock != null)
                 server_lock.condition.addWaiter(owner);
             else
-                log.error("Condition await was received but lock was not created. Waiter may block forever");
+                log.error(Util.getMessage("ConditionAwaitWasReceivedButLockWasNotCreatedWaiterMayBlockForever"));
         }
         finally {
             lock.unlock();
@@ -440,7 +440,7 @@ abstract public class Locking extends Protocol {
             if (server_lock != null)
                 server_lock.condition.removeWaiter(owner);
             else
-                log.error("Condition await delete was received, but lock was gone");
+                log.error(Util.getMessage("ConditionAwaitDeleteWasReceivedButLockWasGone"));
         }
         finally {
             lock.unlock();
@@ -453,7 +453,7 @@ abstract public class Locking extends Protocol {
             lock.condition.signaled();
         }
         else {
-            log.error("Condition response was client lock was not present. Ignored signal.");
+            log.error(Util.getMessage("ConditionResponseWasClientLockWasNotPresentIgnoredSignal"));
         }
     }
     
@@ -466,7 +466,7 @@ abstract public class Locking extends Protocol {
             if (server_lock != null)
                 rsp=server_lock.handleRequest(req);
             else
-                log.error("Condition signal was received but lock was not created. Couldn't notify anyone.");
+                log.error(Util.getMessage("ConditionSignalWasReceivedButLockWasNotCreatedCouldnTNotifyAnyone"));
         }
         finally {
             lock.unlock();
@@ -910,7 +910,7 @@ abstract public class Locking extends Protocol {
 
         protected synchronized void lockGranted(int lock_id) {
             if(this.lock_id != lock_id) {
-                log.error("discarded LOCK-GRANTED response with lock-id=" + lock_id + ", my lock-id=" + this.lock_id);
+                log.error(Util.getMessage("DiscardedLOCKGRANTEDResponseWithLockId") + lock_id + ", my lock-id=" + this.lock_id);
                 return;
             }
             acquired=true;
@@ -919,7 +919,7 @@ abstract public class Locking extends Protocol {
 
         protected synchronized void lockDenied(int lock_id) {
             if(this.lock_id != lock_id) {
-                log.error("discarded LOCK-DENIED response with lock-id=" + lock_id + ", my lock_id=" + this.lock_id);
+                log.error(Util.getMessage("DiscardedLOCKDENIEDResponseWithLockId") + lock_id + ", my lock_id=" + this.lock_id);
                 return;
             }
             denied=true;

@@ -473,7 +473,7 @@ public abstract class Discovery extends Protocol {
                     retval.add(new PingData(uuid, true, name_str, phys_addr).coord(is_coordinator));
                 }
                 catch(Throwable t) {
-                    log.error("failed reading line of input stream", t);
+                    log.error(Util.getMessage("FailedReadingLineOfInputStream"), t);
                 }
             }
             return retval;
@@ -550,7 +550,7 @@ public abstract class Discovery extends Protocol {
             return Util.streamableToByteBuffer(clone);
         }
         catch(Exception e) {
-            log.error("error serializing PingData", e);
+            log.error(Util.getMessage("ErrorSerializingPingData"), e);
             return null;
         }
     }

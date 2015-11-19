@@ -227,7 +227,7 @@ public class STOMP extends Protocol implements Runnable {
                     up(new Event(Event.MSG, msg));
                 }
                 catch(Throwable t) {
-                    log.error("failed passing up message", t);
+                    log.error(Util.getMessage("FailedPassingUpMessage"), t);
                 }
             }
         }
@@ -455,7 +455,7 @@ public class STOMP extends Protocol implements Runnable {
                     remove();
                 }
                 catch(Throwable t) {
-                    log.error("failure reading frame", t);
+                    log.error(Util.getMessage("FailureReadingFrame"), t);
                 }
             }
         }
@@ -554,7 +554,7 @@ public class STOMP extends Protocol implements Runnable {
                 out.flush();
             }
             catch(IOException ex) {
-                log.error("failed writing response " + response + ": " + ex);
+                log.error(Util.getMessage("FailedWritingResponse") + response + ": " + ex);
             }
         }
 
@@ -564,7 +564,7 @@ public class STOMP extends Protocol implements Runnable {
                 out.flush();
             }
             catch(IOException ex) {
-                log.error("failed writing response: " + ex);
+                log.error(Util.getMessage("FailedWritingResponse") + ex);
             }
         }
     }

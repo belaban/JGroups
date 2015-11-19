@@ -1299,7 +1299,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             startDiagnostics();
         }
         catch(Exception e) {
-            log.error("failed starting diagnostics", e);
+            log.error(Util.getMessage("FailedStartingDiagnostics"), e);
         }
     }
 

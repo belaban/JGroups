@@ -88,7 +88,7 @@ public class RACKSPACE_PING extends FILE_PING {
             }
 
         } catch (Exception e) {
-            log.error("Error unmarshalling object", e);
+            log.error(Util.getMessage("ErrorUnmarshallingObject"), e);
         }
     }
 
@@ -101,7 +101,7 @@ public class RACKSPACE_PING extends FILE_PING {
             byte[] data=out.toByteArray();
             rackspaceClient.createObject(container, filename, data);
         } catch (Exception e) {
-            log.error("Error marshalling object", e);
+            log.error(Util.getMessage("ErrorMarshallingObject"), e);
         }
     }
 
@@ -194,7 +194,7 @@ public class RACKSPACE_PING extends FILE_PING {
                     authenticate();
                     deleteObject(containerName, objectName);
                 } else {
-                    log.error("Error deleting object " + objectName + " from container " + containerName + ",code = " + response.code);
+                    log.error(Util.getMessage("ErrorDeletingObject") + objectName + " from container " + containerName + ",code = " + response.code);
                 }
             }
 
@@ -218,7 +218,7 @@ public class RACKSPACE_PING extends FILE_PING {
                     authenticate();
                     createContainer(containerName);
                 } else {
-                    log.error("Error creating container " + containerName + " ,code = " + response.code);
+                    log.error(Util.getMessage("ErrorCreatingContainer") + containerName + " ,code = " + response.code);
                 }
             }
         }
@@ -244,7 +244,7 @@ public class RACKSPACE_PING extends FILE_PING {
                     authenticate();
                     createObject(containerName, objectName, contents);
                 } else {
-                    log.error("Error creating object " + objectName + " in container " + containerName + ",code = " + response.code);
+                    log.error(Util.getMessage("ErrorCreatingObject") + objectName + " in container " + containerName + ",code = " + response.code);
                 }
             }
 
@@ -268,7 +268,7 @@ public class RACKSPACE_PING extends FILE_PING {
                     authenticate();
                     return readObject(containerName, objectName);
                 } else {
-                    log.error("Error reading object " + objectName + " from container " + containerName + ", code = " + response.code);
+                    log.error(Util.getMessage("ErrorReadingObject") + objectName + " from container " + containerName + ", code = " + response.code);
                 }
             }
             return response.payload;
@@ -292,7 +292,7 @@ public class RACKSPACE_PING extends FILE_PING {
                     authenticate();
                     return listObjects(containerName);
                 } else {
-                    log.error("Error listing container " + containerName + ", code = " + response.code);
+                    log.error(Util.getMessage("ErrorListingContainer") + containerName + ", code = " + response.code);
                 }
 
             }
@@ -325,7 +325,7 @@ public class RACKSPACE_PING extends FILE_PING {
                 response = new Response(urlConnection.getHeaderFields(), urlConnection.getResponseCode(), payload);
 
             } catch (IOException e) {
-                log.error("Error calling service", e);
+                log.error(Util.getMessage("ErrorCallingService"), e);
             } finally {
                 Util.close(inputStream);
                 Util.close(outputStream);
@@ -386,7 +386,7 @@ public class RACKSPACE_PING extends FILE_PING {
                 try {
                     con = (HttpURLConnection) url.openConnection();
                 } catch (IOException e) {
-                    log.error("Error building URL", e);
+                    log.error(Util.getMessage("ErrorBuildingURL"), e);
                 }
             }
 
@@ -400,7 +400,7 @@ public class RACKSPACE_PING extends FILE_PING {
                     con.addRequestProperty(STORAGE_TOKEN_HEADER, credentials.authToken);
                     con.addRequestProperty(ACCEPT_HEADER, "*/*");
                 } catch (IOException e) {
-                    log.error("Error creating connection", e);
+                    log.error(Util.getMessage("ErrorCreatingConnection"), e);
                 }
 
             }
@@ -409,7 +409,7 @@ public class RACKSPACE_PING extends FILE_PING {
                 try {
                     con.setRequestMethod(method);
                 } catch (ProtocolException e) {
-                    log.error("Protocol error", e);
+                    log.error(Util.getMessage("ProtocolError"), e);
                 }
                 return this;
             }
@@ -478,7 +478,7 @@ public class RACKSPACE_PING extends FILE_PING {
                     }
                     in.close();
                 } catch (IOException e) {
-                    log.error("Error reading objects", e);
+                    log.error(Util.getMessage("ErrorReadingObjects"), e);
                 }
                 return lines;
             }

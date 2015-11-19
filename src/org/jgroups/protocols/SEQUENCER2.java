@@ -211,7 +211,7 @@ public class SEQUENCER2 extends Protocol {
                         for(int i=0; i < hdr.num_seqnos; i++) {
                             Message bcast_msg=fwd_queue.poll();
                             if(bcast_msg == null) {
-                                log.error("received %d seqnos but fwd_queue is empty", hdr.num_seqnos);
+                                log.error(Util.getMessage("Received%DSeqnosButFwdqueueIsEmpty"), hdr.num_seqnos);
                                 break;
                             }
 
@@ -309,7 +309,7 @@ public class SEQUENCER2 extends Protocol {
                 up(new Event(Event.MSG, msg));
             }
             catch(Throwable t) {
-                log.error("failed passing up message", t);
+                log.error(Util.getMessage("FailedPassingUpMessage"), t);
             }
         }
 

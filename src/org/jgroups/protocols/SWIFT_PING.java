@@ -100,7 +100,7 @@ public class SWIFT_PING extends FILE_PING {
         try {
             swiftClient.createContainer(container);
         } catch (Exception e) {
-            log.error("failure creating container", e);
+            log.error(Util.getMessage("FailureCreatingContainer"), e);
         }
     }
 
@@ -124,7 +124,7 @@ public class SWIFT_PING extends FILE_PING {
             }
 
         } catch (Exception e) {
-            log.error("Error unmarshalling object", e);
+            log.error(Util.getMessage("ErrorUnmarshallingObject"), e);
         }
     }
 
@@ -137,7 +137,7 @@ public class SWIFT_PING extends FILE_PING {
             byte[] data=out.toByteArray();
             swiftClient.createObject(container, filename, data);
         } catch (Exception e) {
-            log.error("Error marshalling object", e);
+            log.error(Util.getMessage("ErrorMarshallingObject"), e);
         }
     }
 
@@ -148,7 +148,7 @@ public class SWIFT_PING extends FILE_PING {
         try {
             swiftClient.deleteObject(container, fileName);
         } catch (Exception e) {
-            log.error("failure removing data", e);
+            log.error(Util.getMessage("FailureRemovingData"), e);
         }
     }
 
@@ -162,7 +162,7 @@ public class SWIFT_PING extends FILE_PING {
             }
         }
         catch(Exception t) {
-            log.error("failed removing objects", t);
+            log.error(Util.getMessage("FailedRemovingObjects"), t);
         }
     }
 
@@ -356,7 +356,7 @@ public class SWIFT_PING extends FILE_PING {
             try {
                 con = (HttpURLConnection) url.openConnection();
             } catch (IOException e) {
-                log.error("Error building URL", e);
+                log.error(Util.getMessage("ErrorBuildingURL"), e);
             }
         }
 
@@ -369,7 +369,7 @@ public class SWIFT_PING extends FILE_PING {
                 }
                 con = (HttpURLConnection) new URL(url).openConnection();
             } catch (IOException e) {
-                log.error("Error creating connection", e);
+                log.error(Util.getMessage("ErrorCreatingConnection"), e);
             }
 
         }
@@ -378,7 +378,7 @@ public class SWIFT_PING extends FILE_PING {
             try {
                 con.setRequestMethod(method);
             } catch (ProtocolException e) {
-                log.error("Protocol error", e);
+                log.error(Util.getMessage("ProtocolError"), e);
             }
             return this;
         }
@@ -424,7 +424,7 @@ public class SWIFT_PING extends FILE_PING {
                 }
                 in.close();
             } catch (IOException e) {
-                log.error("Error reading objects", e);
+                log.error(Util.getMessage("ErrorReadingObjects"), e);
             }
             return lines;
         }
@@ -485,7 +485,7 @@ public class SWIFT_PING extends FILE_PING {
                     authenticate();
                     deleteObject(containerName, objectName);
                 } else {
-                    log.error("Error deleting object " + objectName
+                    log.error(Util.getMessage("ErrorDeletingObject") + objectName
                             + " from container " + containerName + ",code = "
                             + response.code);
                 }
@@ -511,7 +511,7 @@ public class SWIFT_PING extends FILE_PING {
                     authenticate();
                     createContainer(containerName);
                 } else {
-                    log.error("Error creating container " + containerName
+                    log.error(Util.getMessage("ErrorCreatingContainer") + containerName
                             + " ,code = " + response.code);
                 }
             }
@@ -540,7 +540,7 @@ public class SWIFT_PING extends FILE_PING {
                     authenticate();
                     createObject(containerName, objectName, contents);
                 } else {
-                    log.error("Error creating object " + objectName
+                    log.error(Util.getMessage("ErrorCreatingObject") + objectName
                             + " in container " + containerName + ",code = "
                             + response.code);
                 }
@@ -569,7 +569,7 @@ public class SWIFT_PING extends FILE_PING {
                     authenticate();
                     return readObject(containerName, objectName);
                 } else {
-                    log.error("Error reading object " + objectName
+                    log.error(Util.getMessage("ErrorReadingObject") + objectName
                             + " from container " + containerName + ", code = "
                             + response.code);
                 }
@@ -597,7 +597,7 @@ public class SWIFT_PING extends FILE_PING {
                     authenticate();
                     return listObjects(containerName);
                 } else {
-                    log.error("Error listing container " + containerName
+                    log.error(Util.getMessage("ErrorListingContainer") + containerName
                             + ", code = " + response.code);
                 }
 

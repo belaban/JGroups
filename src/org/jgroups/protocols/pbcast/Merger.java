@@ -152,7 +152,7 @@ public class Merger {
             gms.stopFlush();
         }
         catch(Throwable t) {
-            log.error("stop flush failed", t.getMessage());
+            log.error(Util.getMessage("StopFlushFailed"), t.getMessage());
         }
         log.trace("%s: merge %s is cancelled", gms.local_addr, merge_id);
         cancelMerge(merge_id);
@@ -313,7 +313,7 @@ public class Merger {
         View view=combined_merge_data.view;
         Digest digest=combined_merge_data.digest;
         if(view == null || digest == null) {
-            log.error("view or digest is null, cannot send consolidated merge view/digest");
+            log.error(Util.getMessage("ViewOrDigestIsNullCannotSendConsolidatedMergeView/Digest"));
             return;
         }
 

@@ -312,12 +312,12 @@ public class RpcDispatcher extends MessageDispatcher {
      */
     public Object handle(Message req) throws Exception {
         if(server_obj == null) {
-            if(log.isErrorEnabled()) log.error("no method handler is registered. Discarding request.");
+            if(log.isErrorEnabled()) log.error(Util.getMessage("NoMethodHandlerIsRegisteredDiscardingRequest"));
             return null;
         }
 
         if(req == null || req.getLength() == 0) {
-            if(log.isErrorEnabled()) log.error("message or message buffer is null");
+            if(log.isErrorEnabled()) log.error(Util.getMessage("MessageOrMessageBufferIsNull"));
             return null;
         }
 

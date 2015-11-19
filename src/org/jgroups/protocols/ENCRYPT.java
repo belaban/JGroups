@@ -495,7 +495,7 @@ public class ENCRYPT extends Protocol {
 			}
 
 		} catch (Exception e) {
-			log.error("could not initialize new ciphers", e);
+			log.error(Util.getMessage("CouldNotInitializeNewCiphers"), e);
 			if ( e instanceof RuntimeException) {
 				throw (RuntimeException)e;
 			} else {
@@ -656,7 +656,7 @@ public class ENCRYPT extends Protocol {
                     up_prot.up(new Event(Event.MSG, msg));
             }
             catch(Throwable t) {
-                log.error("failed decrypting and sending message up when draining queue", t);
+                log.error(Util.getMessage("FailedDecryptingAndSendingMessageUpWhenDrainingQueue"), t);
             }
         }
     }
@@ -676,7 +676,7 @@ public class ENCRYPT extends Protocol {
                 encryptAndSend(tmp);
             }
             catch(Throwable t) {
-                log.error("failed sending message down when draining queue", t);
+                log.error(Util.getMessage("FailedSendingMessageDownWhenDrainingQueue"), t);
             }
         }
     }
@@ -894,7 +894,7 @@ public class ENCRYPT extends Protocol {
             return keySpec;
         }
         catch(Exception e) {
-            log.error("failed decoding key", e);
+            log.error(Util.getMessage("FailedDecodingKey"), e);
             return null;
         }
     }

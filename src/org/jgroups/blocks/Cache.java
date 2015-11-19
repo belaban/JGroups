@@ -246,7 +246,7 @@ public class Cache<K,V> {
                 l.changed();
             }
             catch(Throwable t) {
-                log.error("failed notifying change listener", t);
+                log.error(Util.getMessage("FailedNotifyingChangeListener"), t);
             }
         }
     }

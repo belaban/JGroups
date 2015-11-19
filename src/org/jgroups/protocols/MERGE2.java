@@ -362,7 +362,7 @@ public class MERGE2 extends Protocol {
 
                 }
                 catch(Throwable t) {
-                    log.error("FindSubgroupsTask failed", t);
+                    log.error(Util.getMessage("FindSubgroupsTaskFailed"), t);
                 }
                 finally {
                     lock.unlock();
@@ -417,7 +417,7 @@ public class MERGE2 extends Protocol {
                 num_merge_events++;
             }
             catch(Throwable t) {
-                log.error("failed sending up MERGE event", t);
+                log.error(Util.getMessage("FailedSendingUpMERGEEvent"), t);
             }
         }
 

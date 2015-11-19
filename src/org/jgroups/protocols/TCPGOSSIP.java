@@ -13,6 +13,7 @@ import org.jgroups.stack.RouterStub;
 import org.jgroups.stack.RouterStubManager;
 import org.jgroups.util.Responses;
 import org.jgroups.util.UUID;
+import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -107,7 +108,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
 
     public void handleConnect() {
         if (cluster_name == null || local_addr == null)
-            log.error("group_addr or local_addr is null, cannot register with GossipRouter(s)");
+            log.error(Util.getMessage("GroupaddrOrLocaladdrIsNullCannotRegisterWithGossipRouterS"));
         else {
             InetAddress bind_addr=getTransport().getBindAddress();
             log.trace("registering " + local_addr + " under " + cluster_name + " with GossipRouter");
@@ -147,7 +148,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
     @Override
     public void findMembers(List<Address> members, boolean initial_discovery, Responses responses) {
         if(this.cluster_name == null) {
-            log.error("cluster_name is null, cannot get membership");
+            log.error(Util.getMessage("ClusternameIsNullCannotGetMembership"));
             return;
         }
 

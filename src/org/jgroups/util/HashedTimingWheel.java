@@ -288,7 +288,7 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
                 Util.sleep(sleep_time);
             }
             catch(Throwable t) {
-                log.error("failed executing tasks(s)", t);
+                log.error(Util.getMessage("FailedExecutingTasksS"), t);
             }
         }
     }
@@ -308,7 +308,7 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
                         pool.execute(tmp);
                     }
                     catch(Throwable t) {
-                        log.error("failure submitting task to thread pool", t);
+                        log.error(Util.getMessage("FailureSubmittingTaskToThreadPool"), t);
                     }
                     it.remove();
                 }
@@ -410,7 +410,7 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
                 task.run();
             }
             catch(Throwable t) {
-                log.error("failed executing task " + task, t);
+                log.error(Util.getMessage("FailedExecutingTask") + task, t);
             }
             finally {
                 done=true;
@@ -478,7 +478,7 @@ public class HashedTimingWheel implements TimeScheduler, Runnable  {
                 task.run();
             }
             catch(Throwable t) {
-                log.error("failed running task " + task, t);
+                log.error(Util.getMessage("FailedRunningTask") + task, t);
             }
             if(!cancelled)
                 doSchedule();

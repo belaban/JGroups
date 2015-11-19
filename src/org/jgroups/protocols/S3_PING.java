@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.Responses;
+import org.jgroups.util.Util;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -12,6 +13,7 @@ import org.xml.sax.helpers.XMLReaderFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -136,7 +138,7 @@ public class S3_PING extends FILE_PING {
             }
         }
         catch(IOException ex) {
-            log.error("failed reading addresses", ex);
+            log.error(Util.getMessage("FailedReadingAddresses"), ex);
         }
     }
 
@@ -159,7 +161,7 @@ public class S3_PING extends FILE_PING {
                 }
             }
             catch(Throwable e) {
-                log.error("failed unmarshalling response", e);
+                log.error(Util.getMessage("FailedUnmarshallingResponse"), e);
             }
         }
     }
@@ -187,10 +189,10 @@ public class S3_PING extends FILE_PING {
                 httpConn = conn.put(location, key, val, headers).connection;
             }
             if(!httpConn.getResponseMessage().equals("OK")) {
-                log.error("Failed to write file to S3 bucket - HTTP Response code: (" + httpConn.getResponseCode() + ")");
+                log.error(Util.getMessage("FailedToWriteFileToS3BucketHTTPResponseCode") + httpConn.getResponseCode() + ")");
             }
         } catch (Exception e) {
-            log.error("Error marshalling object", e);
+            log.error(Util.getMessage("ErrorMarshallingObject"), e);
         }
     }
 
@@ -212,7 +214,7 @@ public class S3_PING extends FILE_PING {
                 log.trace("removing " + location + "/" + key);
         }
         catch(Exception e) {
-            log.error("failure removing data", e);
+            log.error(Util.getMessage("FailureRemovingData"), e);
         }
     }
 
@@ -243,7 +245,7 @@ public class S3_PING extends FILE_PING {
             }
         }
         catch(IOException ex) {
-            log.error("failed deleting all objects", ex);
+            log.error(Util.getMessage("FailedDeletingAllObjects"), ex);
         }
     }
 
