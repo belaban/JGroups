@@ -165,7 +165,7 @@ public class RSVP extends Protocol {
                 RsvpHeader hdr=(RsvpHeader)msg.getHeader(id);
                 if(hdr == null) {
                     if(dest == null || handle_unicasts)
-                        log.error("message with RSVP flag needs to have an RsvpHeader");
+                        log.error(Util.getMessage("MessageWithRSVPFlagNeedsToHaveAnRsvpHeader"));
                     break;
                 }
                 Address sender=msg.getSrc();
@@ -210,7 +210,7 @@ public class RSVP extends Protocol {
             RsvpHeader hdr=(RsvpHeader)msg.getHeader(id);
             if(hdr == null) {
                 if(dest == null || handle_unicasts)
-                    log.error("message with RSVP flag needs to have an RsvpHeader");
+                    log.error(Util.getMessage("MessageWithRSVPFlagNeedsToHaveAnRsvpHeader"));
                 continue;
             }
             switch(hdr.type) {
@@ -277,7 +277,7 @@ public class RSVP extends Protocol {
             down_prot.down(new Event(Event.MSG, msg));
         }
         catch(Throwable t) {
-            log.error("failed sending response", t);
+            log.error(Util.getMessage("FailedSendingResponse"), t);
         }
     }
 

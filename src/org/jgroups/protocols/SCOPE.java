@@ -222,7 +222,7 @@ public class SCOPE extends Protocol {
                 
                 ScopeHeader hdr=(ScopeHeader)msg.getHeader(id);
                 if(hdr == null)
-                    throw new IllegalStateException("message doesn't have a ScopeHeader attached");
+                    throw new IllegalStateException(Util.getMessage("MessageDoesnTHaveAScopeHeaderAttached"));
 
                 if(hdr.type == ScopeHeader.EXPIRE) {
                     removeScope(msg.getSrc(), hdr.scope);
@@ -253,7 +253,7 @@ public class SCOPE extends Protocol {
 
             ScopeHeader hdr=(ScopeHeader)msg.getHeader(id);
             if(hdr == null) {
-                log.error("message doesn't have a ScopeHeader attached");
+                log.error(Util.getMessage("MessageDoesnTHaveAScopeHeaderAttached"));
                 continue;
             }
 
@@ -440,7 +440,7 @@ public class SCOPE extends Protocol {
                             up_prot.up(new Event(Event.MSG, msg_to_deliver));
                         }
                         catch(Throwable t) {
-                            log.error("couldn't deliver message " + msg_to_deliver, t);
+                            log.error(Util.getMessage("CouldnTDeliverMessage") + msg_to_deliver, t);
                         }
                     }
                 }
@@ -464,7 +464,7 @@ public class SCOPE extends Protocol {
                 _run();
             }
             catch(Throwable t) {
-                log.error("failed expiring old scopes", t);
+                log.error(Util.getMessage("FailedExpiringOldScopes"), t);
             }
         }
 

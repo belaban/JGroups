@@ -65,7 +65,7 @@ public class QuoteServer extends ReceiverAdapter {
             System.out.println("Ready to serve requests");
         }
         catch(Exception e) {
-            log.error("QuoteServer.start() : " + e);
+            log.error(Util.getMessage("QuoteServerStart") + e);
             System.exit(-1);
         }
     }

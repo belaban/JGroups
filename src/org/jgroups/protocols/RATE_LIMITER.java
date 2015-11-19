@@ -4,6 +4,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -111,7 +112,7 @@ public class RATE_LIMITER extends Protocol {
             lock.lock();
             try {
                 if(len > max_bytes) {
-                    log.error("message length (" + len + " bytes) exceeded max_bytes (" + max_bytes + "); " +
+                    log.error(Util.getMessage("MessageLength") + len + " bytes) exceeded max_bytes (" + max_bytes + "); " +
                             "adjusting max_bytes to " + len);
                     max_bytes=len;
                 }

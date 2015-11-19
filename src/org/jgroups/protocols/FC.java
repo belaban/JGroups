@@ -512,7 +512,7 @@ public class FC extends Protocol {
                     handleCreditRequest(received, sender,sent_credits);
                 break;
             default:
-                log.error("header type " + hdr.type + " not known");
+                log.error(Util.getMessage("HeaderType") + hdr.type + " not known");
                 break;
         }
     }

@@ -153,7 +153,7 @@ public abstract class Retransmitter {
             }
             catch(Throwable t) {
                 if(log.isErrorEnabled())
-                    log.error("failed retransmission task", t);
+                    log.error(Util.getMessage("FailedRetransmissionTask"), t);
             }
             doSchedule();
         }

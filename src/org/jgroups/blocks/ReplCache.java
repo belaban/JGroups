@@ -633,7 +633,7 @@ public class ReplCache<K,V> implements MembershipListener, Cache.ChangeListener 
             }
             catch(Throwable t) {
                 if(log.isErrorEnabled())
-                    log.error("failed notifying change listener", t);
+                    log.error(Util.getMessage("FailedNotifyingChangeListener"), t);
             }
         }
     }

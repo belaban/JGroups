@@ -10,6 +10,7 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.util.CondVar;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.NotifyingFuture;
+import org.jgroups.util.Util;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -76,7 +77,7 @@ public abstract class Request implements RspCollector, NotifyingFuture, org.jgro
 
     public boolean execute() throws Exception {
         if(corr == null) {
-            if(log.isErrorEnabled()) log.error("corr is null, cannot send request");
+            if(log.isErrorEnabled()) log.error(Util.getMessage("CorrIsNullCannotSendRequest"));
             return false;
         }
 

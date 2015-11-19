@@ -67,7 +67,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
 
                 public void receive(Message msg) {
                     if(msg == null || msg.getLength() == 0) {
-                        log.error("DrawApplet.run(): msg or msg.buffer is null !");
+                        log.error(Util.getMessage("DrawAppletRunMsgOrMsgBufferIsNull"));
                         return;
                     }
 

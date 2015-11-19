@@ -170,7 +170,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
                 // flag is cleared and we check if the loop should be terminated at the top of the loop
             }
             catch(Throwable t) {
-                log.error("failed submitting task to thread pool", t);
+                log.error(Util.getMessage("FailedSubmittingTaskToThreadPool"), t);
             }
         }
     }
@@ -291,7 +291,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
                 runnable.run();
             }
             catch(Throwable t) {
-                log.error("failed executing task " + runnable, t);
+                log.error(Util.getMessage("FailedExecutingTask") + runnable, t);
             }
             finally {
                 done=true;

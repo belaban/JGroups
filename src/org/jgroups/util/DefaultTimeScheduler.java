@@ -32,7 +32,7 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
                 TIMER_DEFAULT_NUM_THREADS=Integer.parseInt(tmp);
         }
         catch(Exception e) {
-            log.error("could not set number of timer threads", e);
+            log.error(Util.getMessage("CouldNotSetNumberOfTimerThreads"), e);
         }
     }
 
@@ -181,7 +181,7 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
                 }
                 catch(Throwable t) {
                     if(log.isErrorEnabled())
-                        log.error("exception executing task " + command + ": " +  t);
+                        log.error(Util.getMessage("ExceptionExecutingTask") + command + ": " +  t);
                 }
             }
         }
@@ -218,7 +218,7 @@ public class DefaultTimeScheduler extends ScheduledThreadPoolExecutor implements
                 task.run();
             }
             catch(Throwable t) {
-                log.error("failed running task " + task, t);
+                log.error(Util.getMessage("FailedRunningTask") + task, t);
             }
 
             if(cancelled) {

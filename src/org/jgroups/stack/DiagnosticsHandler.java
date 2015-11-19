@@ -129,7 +129,7 @@ public class DiagnosticsHandler implements Runnable {
             catch(IOException socket_ex) {
             }
             catch(Throwable e) {
-                log.error("failure handling diagnostics request", e);
+                log.error(Util.getMessage("FailureHandlingDiagnosticsRequest"), e);
             }
         }
     }
@@ -169,7 +169,7 @@ public class DiagnosticsHandler implements Runnable {
                 sendResponse(sock, sender, diag_rsp);
             }
             catch(Throwable t) {
-                log.error("failed sending diag rsp to " + sender, t);
+                log.error(Util.getMessage("FailedSendingDiagRspTo") + sender, t);
             }
         }
     }

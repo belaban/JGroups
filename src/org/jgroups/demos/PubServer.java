@@ -38,7 +38,7 @@ public class PubServer extends ReceiverAdapter {
             server.send(null, buf);
         }
         catch(Exception ex) {
-            log.error("failed publishing message", ex);
+            log.error(Util.getMessage("FailedPublishingMessage"), ex);
         }
     }
 
@@ -48,7 +48,7 @@ public class PubServer extends ReceiverAdapter {
             server.send(null, buf, offset, length);
         }
         catch(Exception ex) {
-            log.error("failed publishing message", ex);
+            log.error(Util.getMessage("FailedPublishingMessage"), ex);
         }
     }
 

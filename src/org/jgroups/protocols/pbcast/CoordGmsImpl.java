@@ -45,7 +45,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
     /** The coordinator itself wants to leave the group */
     public void leave(Address mbr) {
         if(mbr == null) {
-            if(log.isErrorEnabled()) log.error("member's address is null !");
+            if(log.isErrorEnabled()) log.error(Util.getMessage("MemberSAddressIsNull"));
             return;
         }
         if(mbr.equals(gms.local_addr))

@@ -491,7 +491,7 @@ abstract public class Executing extends Protocol {
                             runnable = new FutureTask<>(callable);
                         }
                         else {
-                            log.error("Request of type " + req.type + 
+                            log.error(Util.getMessage("RequestOfType") + req.type + 
                                 " sent an object of " + objectToRun + " which is invalid");
                             break;
                         }
@@ -531,7 +531,7 @@ abstract public class Executing extends Protocol {
                         handleRemoveRunRequest(owner);
                         break;
                     default:
-                        log.error("Request of type " + req.type + " not known");
+                        log.error(Util.getMessage("RequestOfType") + req.type + " not known");
                         break;
                 }
                 return null;
@@ -783,7 +783,7 @@ abstract public class Executing extends Protocol {
             sendToCoordinator(Type.RUN_REQUEST, taskRequestId, local_addr);
         }
         else {
-            log.error("error resubmitting task for request-id: " + requestId);
+            log.error(Util.getMessage("ErrorResubmittingTaskForRequestId") + requestId);
         }
     }
 
@@ -826,7 +826,7 @@ abstract public class Executing extends Protocol {
             // All we can do is log the error since their is no
             // way to return this to the user since they don't
             // have a future object.
-            log.error("Runtime Error encountered from cluster execute(Runnable) method", throwable);
+            log.error(Util.getMessage("RuntimeErrorEncounteredFromClusterExecuteRunnableMethod"), throwable);
         }
     }
 
@@ -899,7 +899,7 @@ abstract public class Executing extends Protocol {
             down_prot.down(new Event(Event.MSG, msg));
         }
         catch(Exception ex) {
-            log.error("failed sending " + type + " request: " + ex);
+            log.error(Util.getMessage("FailedSending") + type + " request: " + ex);
         }  
     }
     
@@ -915,7 +915,7 @@ abstract public class Executing extends Protocol {
             down_prot.down(new Event(Event.MSG, msg));
         }
         catch(Exception ex) {
-            log.error("failed sending " + type + " request: " + ex);
+            log.error(Util.getMessage("FailedSending") + type + " request: " + ex);
         }  
     }
     

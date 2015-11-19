@@ -140,7 +140,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
             case Event.CONFIG:
                 Map<String,Object> config=(Map<String,Object>)evt.getArg();
                 if(config != null && config.containsKey("state_transfer"))
-                    log.error("Protocol stack cannot contain two state transfer protocols. Remove either one of them");
+                    log.error(Util.getMessage("ProtocolStackCannotContainTwoStateTransferProtocolsRemoveEitherOneOfThem"));
                 break;
         }
         return up_prot.up(evt);

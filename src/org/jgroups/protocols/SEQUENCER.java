@@ -165,7 +165,7 @@ public class SEQUENCER extends Protocol {
                     forwardToCoord(next_seqno, msg);
                 }
                 catch(Exception ex) {
-                    log.error("failed sending message", ex);
+                    log.error(Util.getMessage("FailedSendingMessage"), ex);
                 }
                 finally {
                     in_flight_sends.decrementAndGet();
@@ -259,7 +259,7 @@ public class SEQUENCER extends Protocol {
                 up(new Event(Event.MSG, msg));
             }
             catch(Throwable t) {
-                log.error("failed passing up message", t);
+                log.error(Util.getMessage("FailedPassingUpMessage"), t);
             }
         }
 
@@ -348,7 +348,7 @@ public class SEQUENCER extends Protocol {
                     val=Util.objectToByteBuffer(msg);
                 }
                 catch(Exception e) {
-                    log.error("flushing (broadcasting) failed", e);
+                    log.error(Util.getMessage("FlushingBroadcastingFailed"), e);
                     continue;
                 }
 
@@ -382,7 +382,7 @@ public class SEQUENCER extends Protocol {
                 val=Util.objectToByteBuffer(msg);
             }
             catch(Exception e) {
-                log.error("flushing (broadcasting) failed", e);
+                log.error(Util.getMessage("FlushingBroadcastingFailed"), e);
                 continue;
             }
 
@@ -448,7 +448,7 @@ public class SEQUENCER extends Protocol {
             forwarded_msgs++;
         }
         catch(Exception ex) {
-            log.error("failed forwarding message to " + msg.getDest(), ex);
+            log.error(Util.getMessage("FailedForwardingMessageTo") + msg.getDest(), ex);
         }
     }
 
@@ -489,7 +489,7 @@ public class SEQUENCER extends Protocol {
             deliver(msg_to_deliver, new Event(Event.MSG, msg_to_deliver), hdr);
         }
         catch(Exception ex) {
-            log.error("failure unmarshalling buffer", ex);
+            log.error(Util.getMessage("FailureUnmarshallingBuffer"), ex);
         }
     }
 

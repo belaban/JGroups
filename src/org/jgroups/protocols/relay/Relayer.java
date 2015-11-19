@@ -202,7 +202,7 @@ public class Relayer {
                 }
             }
             catch(Exception e) {
-                log.error("failure relaying message", e);
+                log.error(Util.getMessage("FailureRelayingMessage"), e);
             }
         }
 
