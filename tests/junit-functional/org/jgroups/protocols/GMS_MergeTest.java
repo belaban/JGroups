@@ -155,7 +155,7 @@ public class GMS_MergeTest {
             checkViews(channels, "A", "A", "B");
             checkViews(channels, "B", "A", "B");
             checkViews(channels, "C", "C", "D");
-            checkViews(channels, "C", "C", "D");
+            checkViews(channels, "D", "C", "D");
 
             System.out.println("\ndigests:");
             printDigests(channels);
