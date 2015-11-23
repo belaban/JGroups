@@ -414,7 +414,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                 handleResendingOfFirstMessage(sender, hdr.seqno);
                 break;
             default:
-                log.error(Util.getMessage("UnicastHeaderType") + hdr.type + " not known !");
+                log.error(Util.getMessage("UnicastHeaderType"), hdr.type);
                 break;
         }
     }

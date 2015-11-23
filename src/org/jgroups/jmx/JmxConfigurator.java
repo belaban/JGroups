@@ -11,7 +11,6 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
 import javax.management.*;
-
 import java.util.List;
 import java.util.Set;
 

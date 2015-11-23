@@ -5,7 +5,6 @@ import org.jgroups.*;
 import org.jgroups.blocks.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.util.Util;
 
 import java.applet.Applet;
 import java.awt.*;
@@ -105,7 +104,7 @@ public class Whiteboard extends Applet implements MessageListener, MembershipLis
             channel.connect(groupname);
             channel.getState(null, 0);
         } catch (Exception e) {
-            log.error(Util.getMessage("WhiteboardInit") + e);
+            log.error("Whiteboard.init(): " + e);
         }
         panel.my_addr = channel.getAddress();
 

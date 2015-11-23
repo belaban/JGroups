@@ -175,7 +175,7 @@ public class ReplicatedTree extends ReceiverAdapter {
 		//if true, propagate action to the group
         if(send_message) {
             if(channel == null) {
-                if(log.isErrorEnabled()) log.error(Util.getMessage("ChannelIsNullCannotBroadcastPUTRequest"));
+                if(log.isErrorEnabled()) log.error("channel is null, cannot broadcast PUT request");
                 return;
             }
             try {
@@ -186,7 +186,7 @@ public class ReplicatedTree extends ReceiverAdapter {
                                 new Request(Request.PUT, fqn, data)));
             }
             catch(Exception ex) {
-                if(log.isErrorEnabled()) log.error(Util.getMessage("FailureBcastingPUTRequest") + ex);
+                if(log.isErrorEnabled()) log.error("failure bcasting PUT request: " + ex);
             }
         }
         else {
@@ -214,7 +214,7 @@ public class ReplicatedTree extends ReceiverAdapter {
         if(send_message) {
 
             if(channel == null) {
-                if(log.isErrorEnabled()) log.error(Util.getMessage("ChannelIsNullCannotBroadcastPUTRequest"));
+                if(log.isErrorEnabled()) log.error("channel is null, cannot broadcast PUT request");
                 return;
             }
             try {
@@ -225,7 +225,7 @@ public class ReplicatedTree extends ReceiverAdapter {
                                 new Request(Request.PUT, fqn, key, value)));
             }
             catch(Exception ex) {
-                if(log.isErrorEnabled()) log.error(Util.getMessage("FailureBcastingPUTRequest") + ex);
+                if(log.isErrorEnabled()) log.error("failure bcasting PUT request: " + ex);
             }
         }
         else {
@@ -247,7 +247,7 @@ public class ReplicatedTree extends ReceiverAdapter {
 		//if true, propagate action to the group
         if(send_message) {
             if(channel == null) {
-                if(log.isErrorEnabled()) log.error(Util.getMessage("ChannelIsNullCannotBroadcastREMOVERequest"));
+                if(log.isErrorEnabled()) log.error("channel is null, cannot broadcast REMOVE request");
                 return;
             }
             try {
@@ -255,7 +255,7 @@ public class ReplicatedTree extends ReceiverAdapter {
                         new Message(null, null, new Request(Request.REMOVE, fqn)));
             }
             catch(Exception ex) {
-                if(log.isErrorEnabled()) log.error(Util.getMessage("FailureBcastingREMOVERequest") + ex);
+                if(log.isErrorEnabled()) log.error("failure bcasting REMOVE request: " + ex);
             }
         }
         else {
@@ -278,7 +278,7 @@ public class ReplicatedTree extends ReceiverAdapter {
 		//if true, propagate action to the group
         if(send_message) {
             if(channel == null) {
-                if(log.isErrorEnabled()) log.error(Util.getMessage("ChannelIsNullCannotBroadcastREMOVERequest"));
+                if(log.isErrorEnabled()) log.error("channel is null, cannot broadcast REMOVE request");
                 return;
             }
             try {
@@ -289,7 +289,7 @@ public class ReplicatedTree extends ReceiverAdapter {
                                 new Request(Request.REMOVE, fqn, key)));
             }
             catch(Exception ex) {
-                if(log.isErrorEnabled()) log.error(Util.getMessage("FailureBcastingREMOVERequest") + ex);
+                if(log.isErrorEnabled()) log.error("failure bcasting REMOVE request: " + ex);
             }
         }
         else {
@@ -545,7 +545,7 @@ public class ReplicatedTree extends ReceiverAdapter {
             }
         }
         catch(Exception ex) {
-            if(log.isErrorEnabled()) log.error(Util.getMessage("FailedUnmarshallingRequest") + ex);
+            if(log.isErrorEnabled()) log.error("failed unmarshalling request: " + ex);
         }
     }
 

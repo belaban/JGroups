@@ -1,19 +1,22 @@
 package org.jgroups.demos.applets;
 
+import org.jgroups.*;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
+
 import java.applet.Applet;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
-import java.io.*;
-import java.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.util.ArrayList;
 import java.util.List;
-
-import org.jgroups.*;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.util.Util;
+import java.util.Random;
 
 
 public class DrawApplet extends Applet implements MouseMotionListener, ActionListener {
@@ -67,7 +70,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
 
                 public void receive(Message msg) {
                     if(msg == null || msg.getLength() == 0) {
-                        log.error(Util.getMessage("DrawAppletRunMsgOrMsgBufferIsNull"));
+                        log.error("DrawApplet.run(): msg or msg.buffer is null !");
                         return;
                     }
 

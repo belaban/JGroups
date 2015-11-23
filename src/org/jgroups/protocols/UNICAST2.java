@@ -446,7 +446,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                         stable(msg.getSrc(), hdr.conn_id, hdr.seqno, hdr.high_seqno);
                         break;
                     default:
-                        log.error(Util.getMessage("UnicastHeaderType") + hdr.type + " not known !");
+                        log.error(Util.getMessage("UnicastHeaderType"), hdr.type);
                         break;
                 }
                 return null;
