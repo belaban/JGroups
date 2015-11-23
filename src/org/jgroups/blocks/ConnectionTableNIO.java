@@ -6,6 +6,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.ShutdownRejectedExecutionHandler;
+import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.net.*;
@@ -246,7 +247,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             }
             catch (IllegalArgumentException ex)
             {
-               if (log.isErrorEnabled()) log.error("exception setting send buffer size to " +
+               if (log.isErrorEnabled()) log.error(Util.getMessage("ExceptionSettingSendBufferSizeTo") +
                   send_buf_size + " bytes: " + ex);
             }
             try
@@ -259,7 +260,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             }
             catch (IllegalArgumentException ex)
             {
-               if (log.isErrorEnabled()) log.error("exception setting receive buffer size to " +
+               if (log.isErrorEnabled()) log.error(Util.getMessage("ExceptionSettingReceiveBufferSizeTo") +
                   send_buf_size + " bytes: " + ex);
             }
 
@@ -486,20 +487,20 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                        client_sock_ch.socket().setSendBufferSize(send_buf_size);
                    }
                    catch(IllegalArgumentException ex) {
-                       if(log.isErrorEnabled()) log.error("exception setting send buffer size to " + send_buf_size + " bytes: ", ex);
+                       if(log.isErrorEnabled()) log.error(Util.getMessage("ExceptionSettingSendBufferSizeTo") + send_buf_size + " bytes: ", ex);
                    }
                    catch(SocketException e) {
-                       if(log.isErrorEnabled()) log.error("exception setting send buffer size to " + send_buf_size + " bytes: ", e);
+                       if(log.isErrorEnabled()) log.error(Util.getMessage("ExceptionSettingSendBufferSizeTo") + send_buf_size + " bytes: ", e);
                    }
 
                    try {
                        client_sock_ch.socket().setReceiveBufferSize(recv_buf_size);
                    }
                    catch(IllegalArgumentException ex) {
-                       if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " + send_buf_size + " bytes: ", ex);
+                       if(log.isErrorEnabled()) log.error(Util.getMessage("ExceptionSettingReceiveBufferSizeTo") + send_buf_size + " bytes: ", ex);
                    }
                    catch(SocketException e) {
-                       if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " + recv_buf_size + " bytes: ", e);
+                       if(log.isErrorEnabled()) log.error(Util.getMessage("ExceptionSettingReceiveBufferSizeTo") + recv_buf_size + " bytes: ", e);
                    }
 
                    conn=new Connection(client_sock_ch, null);
@@ -574,7 +575,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                m_serverSocketChannel.close();
            }
            catch(Exception e) {
-               log.error("exception closing server listening socket", e);
+               log.error(Util.getMessage("ExceptionClosingServerListeningSocket"), e);
            }
        }
        if(log.isTraceEnabled())
@@ -624,7 +625,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          }
          catch (IOException io_ex)
          {
-            log.error("Attempt to bind serversocket failed, port="+start_port+", bind addr=" + bind_addr ,io_ex);
+            log.error(Util.getMessage("AttemptToBindServersocketFailedPort")+start_port+", bind addr=" + bind_addr ,io_ex);
             throw io_ex;
          }
          srv_port = start_port;
@@ -995,7 +996,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          if (ex instanceof Exception)
          {
              if (log.isErrorEnabled())
-                 log.error("failed sending message", (Exception)ex);
+                 log.error(Util.getMessage("FailedSendingMessage"), (Exception)ex);
              if (((Exception)ex).getCause() instanceof IOException)
                  throw (IOException) ((Exception)ex).getCause();
              throw (Exception)ex;
@@ -1022,7 +1023,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             }
             catch (Exception e)
             {
-               log.error("error closing socket connection", e);
+               log.error(Util.getMessage("ErrorClosingSocketConnection"), e);
             }
             sock_ch = null;
          }
@@ -1215,7 +1216,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                   }
                   catch (IOException e)
                   {  // need to understand what causes this error so we can handle it properly
-                     if (log.isErrorEnabled()) log.error("SelectNow operation on write selector failed, didn't expect this to occur, please report this", e);
+                     if (log.isErrorEnabled()) log.error(Util.getMessage("SelectNowOperationOnWriteSelectorFailedDidnTExpectThisToOccurPleaseReportThis"), e);
                      return;             // if select fails, give up so we don't go into a busy loop.
                   }
                }
@@ -1248,7 +1249,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                   }
                   catch (IOException e)
                   {  // need to understand what causes this error
-                     if (log.isErrorEnabled()) log.error("Failure while writing to socket",e);
+                     if (log.isErrorEnabled()) log.error(Util.getMessage("FailureWhileWritingToSocket"),e);
                   }
                }
             }

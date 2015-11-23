@@ -225,7 +225,7 @@ public class FRAG extends Protocol {
             }
         }
         catch(Exception e) {
-            log.error("exception occurred trying to fragment message", e);
+            log.error(Util.getMessage("ExceptionOccurredTryingToFragmentMessage"), e);
         }
     }
 
@@ -264,7 +264,7 @@ public class FRAG extends Protocol {
             return assembled_msg;
         }
         catch(Exception e) {
-            log.error("failed unfragmenting a message", e);
+            log.error(Util.getMessage("FailedUnfragmentingAMessage"), e);
             return null;
         }
     }

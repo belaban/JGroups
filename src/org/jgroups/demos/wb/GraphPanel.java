@@ -88,7 +88,7 @@ public class GraphPanel extends Panel implements MouseListener, MouseMotionListe
         Object a;
 
         if(addr == null) {
-            log.error("removeNode(): address of node to be removed is null !");
+            log.error(Util.getMessage("RemoveNodeAddressOfNodeToBeRemovedIsNull"));
             return;
         }
 

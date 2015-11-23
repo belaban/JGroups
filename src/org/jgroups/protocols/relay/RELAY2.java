@@ -620,7 +620,7 @@ public class RELAY2 extends Protocol {
             }
         }
         catch(Exception e) {
-            log.error("failed delivering message", e);
+            log.error(Util.getMessage("FailedDeliveringMessage"), e);
         }
     }
 

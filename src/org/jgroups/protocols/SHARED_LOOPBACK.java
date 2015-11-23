@@ -8,6 +8,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.AsciiString;
 import org.jgroups.util.UUID;
+import org.jgroups.util.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,7 +75,7 @@ public class SHARED_LOOPBACK extends TP {
                 target.receive(local_addr, data, offset, length, true);
             }
             catch(Throwable t) {
-                log.error("failed sending message to " + dest, t);
+                log.error(Util.getMessage("FailedSendingMessageTo") + dest, t);
             }
         }
     }

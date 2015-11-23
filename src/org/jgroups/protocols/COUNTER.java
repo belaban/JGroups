@@ -187,11 +187,11 @@ public class COUNTER extends Protocol {
                         handleResponse((Response)obj, msg.getSrc());
                     }
                     else {
-                        log.error("received object is neither a Request nor a Response: " + obj);
+                        log.error(Util.getMessage("ReceivedObjectIsNeitherARequestNorAResponse") + obj);
                     }
                 }
                 catch(Exception ex) {
-                    log.error("failed handling message", ex);
+                    log.error(Util.getMessage("FailedHandlingMessage"), ex);
                 }
                 return null;
 
@@ -441,7 +441,7 @@ public class COUNTER extends Protocol {
             down_prot.down(new Event(Event.MSG, msg));
         }
         catch(Exception ex) {
-            log.error("failed sending " + req + " request: " + ex);
+            log.error(Util.getMessage("FailedSending") + req + " request: " + ex);
         }
     }
 
@@ -459,7 +459,7 @@ public class COUNTER extends Protocol {
             down_prot.down(new Event(Event.MSG, rsp_msg));
         }
         catch(Exception ex) {
-            log.error("failed sending " + rsp + " message to " + dest + ": " + ex);
+            log.error(Util.getMessage("FailedSending") + rsp + " message to " + dest + ": " + ex);
         }
     }
 
@@ -473,7 +473,7 @@ public class COUNTER extends Protocol {
             }
         }
         catch(Exception ex) {
-            log.error("failed sending " + req + " to backup coordinator(s):" + ex);
+            log.error(Util.getMessage("FailedSending") + req + " to backup coordinator(s):" + ex);
         }
     }
 
@@ -485,7 +485,7 @@ public class COUNTER extends Protocol {
             down_prot.down(new Event(Event.MSG, rsp_msg));
         }
         catch(Exception ex) {
-            log.error("failed sending message to " + dest + ": " + ex);
+            log.error(Util.getMessage("FailedSendingMessageTo") + dest + ": " + ex);
         }
     }
 

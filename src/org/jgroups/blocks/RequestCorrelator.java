@@ -396,7 +396,7 @@ public class RequestCorrelator {
                                 Util.objectFromByteBuffer(buf, offset, length);
                     }
                     catch(Exception e) {
-                        log.error("failed unmarshalling buffer into return value", e);
+                        log.error(Util.getMessage("FailedUnmarshallingBufferIntoReturnValue"), e);
                         retval=e;
                         is_exception=true;
                     }
@@ -406,7 +406,7 @@ public class RequestCorrelator {
 
             default:
                 msg.getHeader(this.id);
-                if(log.isErrorEnabled()) log.error("header's type is neither REQ nor RSP !");
+                if(log.isErrorEnabled()) log.error(Util.getMessage("HeaderSTypeIsNeitherREQNorRSP"));
                 break;
         }
 
@@ -496,11 +496,11 @@ public class RequestCorrelator {
                 is_exception=true;
             }
             catch(NotSerializableException not_serializable) {
-                if(log.isErrorEnabled()) log.error("failed marshalling rsp (" + reply + "): not serializable");
+                if(log.isErrorEnabled()) log.error(Util.getMessage("FailedMarshallingRsp") + reply + "): not serializable");
                 return;
             }
             catch(Throwable tt) {
-                if(log.isErrorEnabled()) log.error("failed marshalling rsp (" + reply + "): " + tt);
+                if(log.isErrorEnabled()) log.error(Util.getMessage("FailedMarshallingRsp") + reply + "): " + tt);
                 return;
             }
         }

@@ -77,7 +77,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
 
         Seqno old_range=ranges.put(range, range);
         if(old_range != null)
-            log.error("new range " + range + " overlaps with old range " + old_range);
+            log.error(Util.getMessage("NewRange") + range + " overlaps with old range " + old_range);
 
         tasks.put(range, new_task);
         new_task.doSchedule(); // Entry adds itself to the timer
@@ -105,7 +105,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
             if(task != null)
                 task.cancel();
             else
-                log.error("task for range " + range + " not found");
+                log.error(Util.getMessage("TaskForRange") + range + " not found");
             ranges.remove(range);
             if(log.isTraceEnabled())
                 log.trace("all messages for " + sender + " [" + range + "] have been received; removing range");

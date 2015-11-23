@@ -142,7 +142,7 @@ public class StompConnection implements Runnable {
             }
         }
         catch(IOException ex) {
-            log.error("failed to send connect message:", ex);
+            log.error(Util.getMessage("FailedToSendConnectMessage"), ex);
         }
     }
 
@@ -170,7 +170,7 @@ public class StompConnection implements Runnable {
             }
         }
         catch(IOException ex) {
-            log.error("failed subscribing to " + destination + ": ", ex);
+            log.error(Util.getMessage("FailedSubscribingTo") + destination + ": ", ex);
         }
     }
 
@@ -198,7 +198,7 @@ public class StompConnection implements Runnable {
             }
         }
         catch(IOException ex) {
-            log.error("failed unsubscribing from " + destination + ": ", ex);
+            log.error(Util.getMessage("FailedUnsubscribingFrom") + destination + ": ", ex);
         }
     }
 
@@ -225,7 +225,7 @@ public class StompConnection implements Runnable {
             }
         }
         catch (IOException e) {
-            log.error("failed sending message to " + destination + ": ", e);
+            log.error(Util.getMessage("FailedSendingMessageTo") + destination + ": ", e);
         }
     }
 
@@ -312,7 +312,7 @@ public class StompConnection implements Runnable {
                 timeout = 0;
             }
             catch(IOException e) {
-                log.error("Connection closed unexpectedly:", e);
+                log.error(Util.getMessage("ConnectionClosedUnexpectedly"), e);
                 if (reconnect) {
                     closeConnections();
                 }
@@ -321,7 +321,7 @@ public class StompConnection implements Runnable {
                 }
             }
             catch(Throwable t) {
-                log.error("failure reading frame", t);
+                log.error(Util.getMessage("FailureReadingFrame"), t);
             }
         }
     }
@@ -332,7 +332,7 @@ public class StompConnection implements Runnable {
                 listener.onMessage(headers, buf, offset, length);
             }
             catch(Throwable t) {
-                log.error("failed calling listener", t);
+                log.error(Util.getMessage("FailedCallingListener"), t);
             }
         }
     }
@@ -343,7 +343,7 @@ public class StompConnection implements Runnable {
                 listener.onInfo(info);
             }
             catch(Throwable t) {
-                log.error("failed calling listener", t);
+                log.error(Util.getMessage("FailedCallingListener"), t);
             }
         }
     }
@@ -364,7 +364,7 @@ public class StompConnection implements Runnable {
             }
             catch(IOException ex) {
                 if(log.isErrorEnabled())
-                    log.error("failed connecting to " + dest + ":" + ex);
+                    log.error(Util.getMessage("FailedConnectingTo") + dest + ":" + ex);
                 closeConnections();
             }
         }

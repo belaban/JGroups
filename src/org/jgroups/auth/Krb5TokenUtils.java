@@ -4,12 +4,14 @@ import org.ietf.jgss.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Bits;
+import org.jgroups.util.Util;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.*;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 import javax.xml.bind.DatatypeConverter;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -30,7 +32,7 @@ public class Krb5TokenUtils {
         try {
             krb5Oid = new Oid("1.2.840.113554.1.2.2");
         } catch(Exception e) {
-            log.error("Exception was generated while creating an Oid instance", e);
+            log.error(Util.getMessage("ExceptionWasGeneratedWhileCreatingAnOidInstance"), e);
             // Set to null to use the default mechanism.
             krb5Oid = null;
         }
@@ -76,7 +78,7 @@ public class Krb5TokenUtils {
                                         return context.initSecContext(token, 0,
                                                                       token.length);
                                     } catch (GSSException e) {
-                                        log.error("Krb5Token Kerberos context processing exception",e);
+                                        log.error(Util.getMessage("Krb5TokenKerberosContextProcessingException"),e);
                                         return null;
                                     }
                                 }
@@ -97,7 +99,7 @@ public class Krb5TokenUtils {
                     context.acceptSecContext(serviceTicket, 0, serviceTicket.length);
                     return context.getSrcName().toString();
                 } catch (Exception e) {
-                    log.error("Krb5Token Kerberos context processing exception",e);
+                    log.error(Util.getMessage("Krb5TokenKerberosContextProcessingException"),e);
                     return null;
                 }
             }
