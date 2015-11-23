@@ -27,7 +27,7 @@ public class Cache<K,V> {
     private Future task=null;
     private final AtomicBoolean is_reaping=new AtomicBoolean(false);
 
-    private final Set<ChangeListener> change_listeners=new HashSet<>();
+    private final Set<ChangeListener> change_listeners=new LinkedHashSet<>();
 
     /** The maximum number of keys, When this value is exceeded we evict older entries, until we drop below this 
      * mark again. This effectively maintains a bounded cache. A value of 0 means don't bound the cache.
@@ -160,6 +160,7 @@ public class Cache<K,V> {
 
         if (isExpired(val)) {
             map.remove(key);
+            return null;
         }
 
         return getValue(val);
