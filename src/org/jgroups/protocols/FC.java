@@ -43,11 +43,11 @@ import java.util.concurrent.locks.ReentrantLock;
 public class FC extends Protocol {
 
     private final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
-    private final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);  
+    private final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);
 
-    
+
     /* -----------------------------------------    Properties     -------------------------------------------------- */
-    
+
     /**
      * Max number of bytes to send per receiver until an ack must be received before continuing sending
      */
@@ -79,7 +79,7 @@ public class FC extends Protocol {
     /**
      * If we've received (min_threshold * max_credits) bytes from P, we send more credits to P. Example: if
      * max_credits is 1'000'000, and min_threshold 0.25, then we send ca. 250'000 credits to P once we've
-     * received 250'000 bytes from P. 
+     * received 250'000 bytes from P.
      */
     @Property(description="The threshold (as a percentage of max_credits) at which a receiver sends more credits to " +
             "a sender. Example: if max_credits is 1'000'000, and min_threshold 0.25, then we send ca. 250'000 credits " +
@@ -92,7 +92,7 @@ public class FC extends Protocol {
      */
     @Property(description="Computed as max_credits x min_theshold unless explicitly set")
     private long min_credits=0;
-    
+
     /**
      * Whether an up thread that comes back down should be allowed to
      * bypass blocking if all credits are exhausted. Avoids JGRP-465.
@@ -102,25 +102,25 @@ public class FC extends Protocol {
     @Property(description="Does not block a down message if it is a result of handling an up message in the" +
             "same thread. Fixes JGRP-928", deprecatedMessage="not used any longer")
     private boolean ignore_synchronous_response=false;
-    
-    
-    
-    
+
+
+
+
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
-    
-    
+
+
     private int num_blockings=0;
     private int num_credit_requests_received=0, num_credit_requests_sent=0;
     private int num_credit_responses_sent=0, num_credit_responses_received=0;
     private long total_time_blocking=0;
 
     private final BoundedList<Long> last_blockings=new BoundedList<>(50);
-    
-    
-    
+
+
+
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-    
-    
+
+
     /**
      * Map<Address,Long>: keys are members, values are credits left. For each send, the
      * number of credits is decremented by the message size. A HashMap rather than a ConcurrentHashMap is
@@ -144,7 +144,7 @@ public class FC extends Protocol {
     @GuardedBy("lock")
     private final Set<Address> creditors=new HashSet<>(11);
 
-    
+
     /**
      * Whether FC is still running, this is set to false when the protocol terminates (on stop())
      */
@@ -153,7 +153,7 @@ public class FC extends Protocol {
 
     private boolean frag_size_received=false;
 
-   
+
     /**
      * the lowest credits of any destination (sent_msgs)
      */
@@ -167,12 +167,12 @@ public class FC extends Protocol {
 
     /** Mutex to block on down() */
     private final Condition credits_available=lock.newCondition();
-   
+
 
 
     /** Last time a credit request was sent. Used to prevent credit request storms */
     @GuardedBy("lock")
-    private long last_credit_request=0;   
+    private long last_credit_request=0;
 
     public void resetStats() {
         super.resetStats();
@@ -269,7 +269,7 @@ public class FC extends Protocol {
         }
         return sb.toString();
     }
-    
+
     @ManagedAttribute(description="Total time (ms) spent in flow control block")
     public long getTotalTimeBlocked() {
         return total_time_blocking;
@@ -284,7 +284,7 @@ public class FC extends Protocol {
     public int getNumberOfCreditRequestsReceived() {
         return num_credit_requests_received;
     }
-    
+
     @ManagedAttribute(description="Number of credit requests sent")
     public int getNumberOfCreditRequestsSent() {
         return num_credit_requests_sent;
@@ -323,7 +323,7 @@ public class FC extends Protocol {
     }
 
     public Map<String, Object> dumpStats() {
-        Map<String, Object> retval=super.dumpStats();      
+        Map<String, Object> retval=super.dumpStats();
         retval.put("senders", printMap(sent));
         retval.put("receivers", printMap(received));
         return retval;
@@ -419,7 +419,7 @@ public class FC extends Protocol {
                     break;
                 return handleDownMessage(evt, msg, length);
             case Event.CONFIG:
-                handleConfigEvent((Map<String,Object>)evt.getArg()); 
+                handleConfigEvent((Map<String,Object>)evt.getArg());
                 break;
             case Event.VIEW_CHANGE:
                 handleViewChange(((View)evt.getArg()).getMembers());
@@ -448,7 +448,7 @@ public class FC extends Protocol {
 
                 Address sender=msg.getSrc();
                 long new_credits=adjustCredit(received, sender, msg.getLength());
-                
+
                 try {
                     return up_prot.up(evt);
                 }
@@ -512,7 +512,7 @@ public class FC extends Protocol {
                     handleCreditRequest(received, sender,sent_credits);
                 break;
             default:
-                log.error(Util.getMessage("HeaderType") + hdr.type + " not known");
+                log.error(Util.getMessage("HeaderTypeNotKnown"), "message from: " + msg.getSrc().toString(), hdr.type);
                 break;
         }
     }

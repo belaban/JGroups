@@ -240,7 +240,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
         catch(Exception ex) {
             if(log.isErrorEnabled())
-                log.error(Util.getMessage("FailedPinging") + suspected_mbr, ex);
+                log.error(Util.getMessage("FailedPinging"),suspected_mbr, ex);
         }
     }
 
