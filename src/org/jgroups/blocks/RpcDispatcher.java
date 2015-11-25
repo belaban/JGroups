@@ -140,13 +140,12 @@ public class RpcDispatcher extends MessageDispatcher {
                                             RequestOptions options) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
             if(log.isTraceEnabled())
-                log.trace("destination list of " + method_call.getName() + "() is empty: no need to send message");
+                log.trace("destination list of %s() is empty: no need to send message", method_call.getName());
             return new RspList();
         }
 
         if(log.isTraceEnabled())
-            log.trace(new StringBuilder("dests=").append(dests).append(", method_call=").append(method_call).
-              append(", options=").append(options));
+            log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, options);
 
         Object buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToByteBuffer(method_call);
 
@@ -157,7 +156,7 @@ public class RpcDispatcher extends MessageDispatcher {
             msg.setBuffer((byte[])buf);
 
         RspList<T> retval=super.castMessage(dests, msg, options);
-        if(log.isTraceEnabled()) log.trace("responses: " + retval);
+        if(log.isTraceEnabled()) log.trace("responses: %s", retval);
         return retval;
     }
 
@@ -179,14 +178,12 @@ public class RpcDispatcher extends MessageDispatcher {
                                                                        FutureListener<RspList<T>> listener) throws Exception {
         if(dests != null && dests.isEmpty()) { // don't send if dest list is empty
             if(log.isTraceEnabled())
-                log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
-                        append("() is empty: no need to send message"));
+                log.trace("destination list of %s() is empty: no need to send message", method_call.getName());
             return new NullFuture<RspList<T>>(new RspList());
         }
 
         if(log.isTraceEnabled())
-            log.trace(new StringBuilder("dests=").append(dests).append(", method_call=").append(method_call).
-                    append(", options=").append(options));
+            log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, options);
 
         Object buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToByteBuffer(method_call);
 
@@ -197,7 +194,7 @@ public class RpcDispatcher extends MessageDispatcher {
             msg.setBuffer((byte[])buf);
 
         NotifyingFuture<RspList<T>>  retval=super.castMessageWithFuture(dests, msg, options, listener);
-        if(log.isTraceEnabled()) log.trace("responses: " + retval);
+        if(log.isTraceEnabled()) log.trace("responses: %s", retval);
         return retval;
     }
 
@@ -246,7 +243,7 @@ public class RpcDispatcher extends MessageDispatcher {
      */
     public <T> T callRemoteMethod(Address dest, MethodCall call, RequestOptions options) throws Exception {
         if(log.isTraceEnabled())
-            log.trace("dest=" + dest + ", method_call=" + call + ", options=" + options);
+            log.trace("dest=%s, method_call=%s, options=%s", dest, call, options);
 
         Object buf=req_marshaller != null? req_marshaller.objectToBuffer(call) : Util.objectToByteBuffer(call);
         Message msg=new Message(dest, null, null);
@@ -256,7 +253,7 @@ public class RpcDispatcher extends MessageDispatcher {
             msg.setBuffer((byte[])buf);
 
         T retval=super.sendMessage(msg, options);
-        if(log.isTraceEnabled()) log.trace("retval: " + retval);
+        if(log.isTraceEnabled()) log.trace("retval: %s", retval);
         return retval;
     }
 
@@ -274,7 +271,7 @@ public class RpcDispatcher extends MessageDispatcher {
     public <T> NotifyingFuture<T> callRemoteMethodWithFuture(Address dest, MethodCall call, RequestOptions options,
                                                              FutureListener<T> listener) throws Exception {
         if(log.isTraceEnabled())
-            log.trace("dest=" + dest + ", method_call=" + call + ", options=" + options);
+            log.trace("dest=%s, method_call=%s, options=%s", dest, call, options);
 
         Object buf=req_marshaller != null? req_marshaller.objectToBuffer(call) : Util.objectToByteBuffer(call);
         Message msg=new Message(dest, null, null);
@@ -312,12 +309,12 @@ public class RpcDispatcher extends MessageDispatcher {
      */
     public Object handle(Message req) throws Exception {
         if(server_obj == null) {
-            if(log.isErrorEnabled()) log.error(Util.getMessage("NoMethodHandlerIsRegisteredDiscardingRequest"));
+            log.error(Util.getMessage("NoMethodHandlerIsRegisteredDiscardingRequest"));
             return null;
         }
 
         if(req == null || req.getLength() == 0) {
-            if(log.isErrorEnabled()) log.error(Util.getMessage("MessageOrMessageBufferIsNull"));
+            log.error(Util.getMessage("MessageOrMessageBufferIsNull"));
             return null;
         }
 
@@ -330,11 +327,11 @@ public class RpcDispatcher extends MessageDispatcher {
         MethodCall method_call=(MethodCall)body;
 
         if(log.isTraceEnabled())
-            log.trace("[sender=" + req.getSrc() + "], method_call: " + method_call);
+            log.trace("[sender=%s], method_call: %s", req.getSrc(), method_call);
 
         if(method_call.getMode() == MethodCall.ID) {
             if(method_lookup == null)
-                throw new Exception("MethodCall uses ID=" + method_call.getId() + ", but method_lookup has not been set");
+                throw new Exception(String.format("MethodCall uses ID=%d, but method_lookup has not been set", method_call.getId()));
             Method m=method_lookup.findMethod(method_call.getId());
             if(m == null)
                 throw new Exception("no method found for " + method_call.getId());

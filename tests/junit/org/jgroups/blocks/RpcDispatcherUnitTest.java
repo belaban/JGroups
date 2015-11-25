@@ -72,10 +72,7 @@ public class RpcDispatcherUnitTest extends ChannelTestBase {
 
     @AfterClass
     protected void tearDown() throws Exception {
-        d3.stop();
-        d2.stop();
-        d1.stop();
-        Util.close(c3, c2, c1);
+        Util.close(d3,d2,d1,c3, c2, c1);
     }
 
 

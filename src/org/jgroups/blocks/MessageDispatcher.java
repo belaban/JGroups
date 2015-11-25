@@ -239,13 +239,12 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
                mux.setDefaultHandler(handler);
            }
            else if (canReplace) {
-               log.warn("Channel Muxer already has a default up handler installed (" +
-                     mux.getDefaultHandler() + ") but now it is being overridden");
+               log.warn("Channel Muxer already has a default up handler installed (%s) but now it is being overridden",  mux.getDefaultHandler());
                mux.setDefaultHandler(handler);
            }
        }
        else if (canReplace) {
-           log.warn("Channel already has an up handler installed (" + existing + ") but now it is being overridden");
+           log.warn("Channel already has an up handler installed (%s) but now it is being overridden", existing);
            channel.setUpHandler(handler);
        }
     }
@@ -306,11 +305,14 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         if(msg.getDest() != null && !(msg.getDest() instanceof AnycastAddress))
             throw new IllegalArgumentException("message destination is non-null, cannot send message");
 
-        if(options != null) {
-            msg.setFlag(options.getFlags()).setTransientFlag(options.getTransientFlags());
-            if(options.getScope() > 0)
-                msg.setScope(options.getScope());
+        if(options == null) {
+            log.warn("request options were null, using default of sync");
+            options=RequestOptions.SYNC();
         }
+
+        msg.setFlag(options.getFlags()).setTransientFlag(options.getTransientFlags());
+        if(options.getScope() > 0)
+            msg.setScope(options.getScope());
 
         List<Address> real_dests;
         // we need to clone because we don't want to modify the original
@@ -336,7 +338,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
                 real_dests.remove(local_addr);
         }
 
-        if(options != null && options.hasExclusionList()) {
+        if(options.hasExclusionList()) {
             Address[] exclusion_list=options.exclusionList();
             for(Address excluding: exclusion_list)
                 real_dests.remove(excluding);
@@ -344,7 +346,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
         // don't even send the message if the destination list is empty
         if(log.isTraceEnabled())
-            log.trace("real_dests=" + real_dests);
+            log.trace("real_dests=%s", real_dests);
 
         if(real_dests.isEmpty()) {
             if(log.isTraceEnabled())
@@ -352,25 +354,21 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
             return null;
         }
 
-        if(options != null) {
-            boolean async=options.getMode() == ResponseMode.GET_NONE;
-            if(options.getAnycasting()) {
-                if(async) async_anycasts.incrementAndGet();
-                else sync_anycasts.incrementAndGet();
-            }
-            else {
-                if(async) async_multicasts.incrementAndGet();
-                else sync_multicasts.incrementAndGet();
-            }
+        boolean async=options.getMode() == ResponseMode.GET_NONE;
+        if(options.getAnycasting()) {
+            if(async) async_anycasts.incrementAndGet();
+            else sync_anycasts.incrementAndGet();
+        }
+        else {
+            if(async) async_multicasts.incrementAndGet();
+            else sync_multicasts.incrementAndGet();
         }
 
         GroupRequest<T> req=new GroupRequest<>(msg, corr, real_dests, options);
         if(listener != null)
             req.setListener(listener);
-        if(options != null) {
-            req.setResponseFilter(options.getRspFilter());
-            req.setAnycasting(options.getAnycasting());
-        }
+        req.setResponseFilter(options.getRspFilter());
+        req.setAnycasting(options.getAnycasting());
         req.setBlockForResults(block_for_results);
         req.execute();
         return req;
@@ -401,20 +399,23 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         if(dest == null)
             throw new IllegalArgumentException("message destination is null, cannot send message");
 
-        if(opts != null) {
-            msg.setFlag(opts.getFlags()).setTransientFlag(opts.getTransientFlags());
-            if(opts.getScope() > 0)
-                msg.setScope(opts.getScope());
-            if(opts.getMode() == ResponseMode.GET_NONE)
-                async_unicasts.incrementAndGet();
-            else
-                sync_unicasts.incrementAndGet();
+        if(opts == null) {
+            log.warn("request options were null, using default of sync");
+            opts=RequestOptions.SYNC();
         }
+
+        msg.setFlag(opts.getFlags()).setTransientFlag(opts.getTransientFlags());
+        if(opts.getScope() > 0)
+            msg.setScope(opts.getScope());
+        if(opts.getMode() == ResponseMode.GET_NONE)
+            async_unicasts.incrementAndGet();
+        else
+            sync_unicasts.incrementAndGet();
 
         UnicastRequest<T> req=new UnicastRequest<>(msg, corr, dest, opts);
         req.execute();
 
-        if(opts != null && opts.getMode() == ResponseMode.GET_NONE)
+        if(opts.getMode() == ResponseMode.GET_NONE)
             return null;
 
         Rsp<T> rsp=req.getResult();
@@ -453,22 +454,25 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         if(dest == null)
             throw new IllegalArgumentException("message destination is null, cannot send message");
 
-        if(options != null) {
-            msg.setFlag(options.getFlags()).setTransientFlag(options.getTransientFlags());
-            if(options.getScope() > 0)
-                msg.setScope(options.getScope());
-            if(options.getMode() == ResponseMode.GET_NONE)
-                async_unicasts.incrementAndGet();
-            else
-                sync_unicasts.incrementAndGet();
+        if(options == null) {
+            log.warn("request options were null, using default of sync");
+            options=RequestOptions.SYNC();
         }
+
+        msg.setFlag(options.getFlags()).setTransientFlag(options.getTransientFlags());
+        if(options.getScope() > 0)
+            msg.setScope(options.getScope());
+        if(options.getMode() == ResponseMode.GET_NONE)
+            async_unicasts.incrementAndGet();
+        else
+            sync_unicasts.incrementAndGet();
 
         UnicastRequest<T> req=new UnicastRequest<>(msg, corr, dest, options);
         if(listener != null)
             req.setListener(listener);
         req.setBlockForResults(false);
         req.execute();
-        if(options != null && options.getMode() == ResponseMode.GET_NONE)
+        if(options.getMode() == ResponseMode.GET_NONE)
             return new NullFuture<>(null);
         return req;
     }
@@ -614,8 +618,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
                 break;
 
             case Event.SET_LOCAL_ADDRESS:
-                if(log.isTraceEnabled())
-                    log.trace("setting local_addr (" + local_addr + ") to " + evt.getArg());
+                log.trace("setting local_addr (%s) to %s", local_addr, evt.getArg());
                 local_addr=(Address)evt.getArg();
                 break;
 
