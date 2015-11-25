@@ -440,7 +440,7 @@ public class SCOPE extends Protocol {
                             up_prot.up(new Event(Event.MSG, msg_to_deliver));
                         }
                         catch(Throwable t) {
-                            log.error(Util.getMessage("CouldnTDeliverMessage") + msg_to_deliver, t);
+                            log.error(Util.getMessage("CouldnTDeliverMessage"), msg_to_deliver, t);
                         }
                     }
                 }
