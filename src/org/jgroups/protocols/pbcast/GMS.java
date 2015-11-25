@@ -540,8 +540,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             return retval;
         }
         catch(Throwable t) {
-            log.error(Util.getMessage("MembershipChangePolicy") + membership_change_policy.getClass().getSimpleName() +
-                        " failed, falling back to default policy to compute new membership", t);
+            log.error(Util.getMessage("MembershipChangePolicy"), membership_change_policy.getClass().getSimpleName(), t);
         }
 
         try {
@@ -562,8 +561,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             return retval;
         }
         catch(Throwable t) {
-            log.error(Util.getMessage("MembershipChangePolicy") + membership_change_policy.getClass().getSimpleName() +
-                        " failed, falling back to default policy to compute new membership", t);
+            log.error(Util.getMessage("MembershipChangePolicy"), membership_change_policy.getClass().getSimpleName(), t);
         }
 
         try {
@@ -1019,7 +1017,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         break;
 
                     default:
-                        if(log.isErrorEnabled()) log.error(Util.getMessage("GmsHeaderWithType") + hdr.type + " not known");
+                        if(log.isErrorEnabled()) log.error(Util.getMessage("GmsHeaderWithType"), hdr.type);
                 }
                 return null;  // don't pass up
 
