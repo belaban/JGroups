@@ -286,7 +286,7 @@ public class MPING extends PING implements Runnable {
                         s.send(packet);
                     }
                     catch(Exception e) {
-                        log.error(Util.getMessage("FailedSendingPacketOnSocket") + s);
+                        log.error(Util.getMessage("FailedSendingPacketOnSocket"), s);
                     }
                 }
             }
@@ -319,7 +319,7 @@ public class MPING extends PING implements Runnable {
                 break;
             }
             catch(Throwable ex) {
-                log.error(Util.getMessage("FailedReceivingPacketFrom") + packet.getSocketAddress() + ")", ex);
+                log.error(Util.getMessage("FailedReceivingPacketFrom"), packet.getSocketAddress(), ex);
             }
         }
         if(log.isTraceEnabled())

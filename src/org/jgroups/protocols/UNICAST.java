@@ -639,7 +639,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                 up_prot.up(evt);
             }
             catch(Throwable t) {
-                log.error(Util.getMessage("CouldnTDeliverOOBMessage") + msg, t);
+                log.error(Util.getMessage("CouldnTDeliverOOBMessage"), msg, t);
             }
         }
 
@@ -691,7 +691,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                         up_prot.up(new Event(Event.MSG, msg));
                     }
                     catch(Throwable t) {
-                        log.error(Util.getMessage("CouldnTDeliverOOBMessage") + msg, t);
+                        log.error(Util.getMessage("CouldnTDeliverOOBMessage"), msg, t);
                     }
                 }
             }
@@ -751,7 +751,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
                     up_prot.up(batch);
                 }
                 catch(Throwable t) {
-                    log.error(Util.getMessage("FailedToDeliverBatch") + batch, t);
+                    log.error(Util.getMessage("FailedToDeliverBatch"), batch, t);
                 }
             }
         }
@@ -905,7 +905,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
             num_acks_sent++;
         }
         catch(Throwable t) {
-            log.error(Util.getMessage("FailedSendingACK") + seqno + ") to " + dst, t);
+            log.error(Util.getMessage("FailedSendingAck"), local_addr, seqno, dst, t);
         }
     }
 

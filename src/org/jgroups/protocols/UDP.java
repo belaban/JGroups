@@ -695,9 +695,7 @@ public class UDP extends TP {
                     int len=packet.getLength();
                     if(len > receive_buf.length) {
                         if(log.isErrorEnabled())
-                            log.error(Util.getMessage("SizeOfTheReceivedPacket") + len + ") is bigger than allocated buffer (" +
-                                      receive_buf.length + "): will not be able to handle packet. " +
-                                      "Use the FRAG2 protocol and make its frag_size lower than " + receive_buf.length);
+                            log.error(Util.getMessage("SizeOfTheReceivedPacket"),len, receive_buf.length, receive_buf.length);
                     }
 
                     receive(new IpAddress(packet.getAddress(), packet.getPort()),

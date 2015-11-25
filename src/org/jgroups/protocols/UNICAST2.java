@@ -931,7 +931,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     up_prot.up(batch);
                 }
                 catch(Throwable t) {
-                    log.error(Util.getMessage("FailedToDeliverBatch") + batch, t);
+                    log.error(Util.getMessage("FailedToDeliverBatch"), batch, t);
                 }
             }
         }

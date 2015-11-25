@@ -605,7 +605,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             case NakAckHeader.XMIT_REQ:
                 if(hdr.range == null) {
                     if(log.isErrorEnabled()) {
-                        log.error(Util.getMessage("XMITREQRangeOfXmitMsgIsNullDiscardingRequestFrom") + msg.getSrc());
+                        log.error(Util.getMessage("XMITREQRangeOfXmitMsgIsNull"), msg.getSrc());
                     }
                     return null;
                 }
@@ -618,7 +618,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             default:
                 if(log.isErrorEnabled()) {
-                    log.error(Util.getMessage("NakAckHeaderType") + hdr.type + " not known !");
+                    log.error(Util.getMessage("NakAckHeaderType"), hdr.type);
                 }
                 return null;
             }
@@ -744,7 +744,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                         up_prot.up(new Event(Event.MSG, msg));
                     }
                     catch(Throwable t) {
-                        log.error(Util.getMessage("FailedToDeliverOOBMessage") + msg, t);
+                        log.error(Util.getMessage("FailedToDeliverOOBMessage"), msg, t);
                     }
                 }
             }
@@ -790,7 +790,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                         up_prot.up(new Event(Event.MSG, msg_to_deliver));
                     }
                     catch(Throwable t) {
-                        log.error(Util.getMessage("FailedToDeliverMessage") + msg_to_deliver, t);
+                        log.error(Util.getMessage("FailedToDeliverMessage"), msg_to_deliver, t);
                     }
                 }
             }
@@ -1201,7 +1201,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         StringBuilder sb=new StringBuilder(merge? "\n[" + local_addr + " mergeDigest()]\n" : "\n["+local_addr + " setDigest()]\n");
         sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
-        
+
         boolean set_own_seqno=false;
         for(Digest.Entry entry: digest) {
             Address member=entry.getMember();

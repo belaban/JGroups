@@ -135,7 +135,7 @@ public class BPING extends PING implements Runnable {
                 break;
             }
             catch(Throwable ex) {
-                log.error(Util.getMessage("FailedReceivingPacketFrom") + packet.getSocketAddress() + ")", ex);
+                log.error(Util.getMessage("FailedReceivingPacketFrom"), packet.getSocketAddress(), ex);
             }
         }
         if(log.isTraceEnabled())
