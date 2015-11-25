@@ -2634,7 +2634,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * messages immediately when no other messages are available. https://issues.jboss.org/browse/JGRP-1540
      */
     protected class TransferQueueBundler extends BaseBundler implements Runnable {
-        protected final        int                    threshold;
         protected final        BlockingQueue<Message> queue;
         protected volatile     Thread                 bundler_thread;
         protected static final String                 THREAD_NAME="TransferQueueBundler";
@@ -2644,7 +2643,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(capacity <=0) throw new IllegalArgumentException("bundler capacity cannot be " + capacity);
             queue=new LinkedBlockingQueue<>(capacity);
             // buffer=new ConcurrentLinkedBlockingQueue2<Message>(capacity);
-            threshold=(int)(capacity * .9); // 90% of capacity
         }
 
         public Thread getThread()     {return bundler_thread;}
@@ -2683,13 +2681,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                         if(msg == null)
                             continue;
                         long size=msg.size();
-                        if(count + size >= max_bundle_size || queue.size() >= threshold)
+                        if(count + size >= max_bundle_size)
                             sendBundledMessages();
                         addMessage(msg, size);
                     }
                     while(null != (msg=queue.poll())) {
                         long size=msg.size();
-                        if(count + size >= max_bundle_size || queue.size() >= threshold)
+                        if(count + size >= max_bundle_size)
                             sendBundledMessages();
                         addMessage(msg, size);
                     }
