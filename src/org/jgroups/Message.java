@@ -49,7 +49,7 @@ public class Message implements Streamable {
 
 
     // =============================== Flags ====================================
-    public static enum Flag {
+    public enum Flag {
         OOB((short)            1),           // message is out-of-band
         DONT_BUNDLE(   (short)(1 <<  1)),    // don't bundle message at the transport
         NO_FC(         (short)(1 <<  2)),    // bypass flow control
@@ -107,7 +107,7 @@ public class Message implements Streamable {
     */
     public Message(Address dest) {
         setDest(dest);
-        headers=createHeaders(3);
+        headers=createHeaders(Util.DEFAULT_HEADERS);
     }
 
    /**
@@ -199,13 +199,13 @@ public class Message implements Streamable {
 
 
     public Message() {
-        headers=createHeaders(3);
+        headers=createHeaders(Util.DEFAULT_HEADERS);
     }
 
 
     public Message(boolean create_headers) {
         if(create_headers)
-            headers=createHeaders(3);
+            headers=createHeaders(Util.DEFAULT_HEADERS);
     }
 
     public Address getDest()                 {return dest_addr;}
@@ -578,7 +578,7 @@ public class Message implements Streamable {
             retval.setBuffer(buf, offset, length);
         }
 
-        retval.headers=copy_headers && headers != null? headers.copy() : createHeaders(3);
+        retval.headers=copy_headers && headers != null? headers.copy() : createHeaders(Util.DEFAULT_HEADERS);
         return retval;
     }
 

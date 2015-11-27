@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Open addressing based implementation of a hashmap (not supporting the Map interface though) for message
  * headers. The keys are shorts (IDs) and the values Headers, and they're stored in 2 arrays: an ID array and a headers
- * array. The indices of the IDs array corespond with the headers array, e.g.
+ * array. The indices of the IDs array correspond with the headers array, e.g.
  * <pre>
  * IDs:      id-1  | id-2  | id-3  | ... | id-n |
  * Headers:  hdr-1 | hdr-2 | hdr-3 | ... | hdr-n |

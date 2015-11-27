@@ -62,6 +62,8 @@ public class Global {
 
     public static final String USE_JDK_LOGGER="jgroups.use.jdk_logger"; // forces use of the JDK logger
     public static final String CUSTOM_LOG_FACTORY="jgroups.logging.log_factory_class";
+    /** System prop for defining the default number of headers in a Message */
+    public static final String DEFAULT_HEADERS="jgroups.msg.default_headers";
 
     public static final long   DEFAULT_FIRST_UNICAST_SEQNO = 1;
 

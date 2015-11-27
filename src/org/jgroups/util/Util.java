@@ -71,9 +71,10 @@ public class Util {
     private static final Pattern ATTR_NAME_TO_METHOD_NAME_PATTERN=Pattern.compile("_.");
 
 
-    protected static int CCHM_INITIAL_CAPACITY=16;
-    protected static float CCHM_LOAD_FACTOR=0.75f;
-    protected static int CCHM_CONCURRENCY_LEVEL=16;
+    protected static int    CCHM_INITIAL_CAPACITY=16;
+    protected static float  CCHM_LOAD_FACTOR=0.75f;
+    protected static int    CCHM_CONCURRENCY_LEVEL=16;
+    public static final int DEFAULT_HEADERS;
 
     /**
      * The max size of an address list, e.g. used in View or Digest when toString() is called. Limiting this
@@ -85,7 +86,7 @@ public class Util {
         return new Class<?>[]{UNICAST.class,UNICAST2.class,UNICAST3.class};
     }
 
-    public static enum AddressScope {GLOBAL,SITE_LOCAL,LINK_LOCAL,LOOPBACK,NON_LOOPBACK}
+    public enum AddressScope {GLOBAL,SITE_LOCAL,LINK_LOCAL,LOOPBACK,NON_LOOPBACK}
 
     ;
 
@@ -155,6 +156,14 @@ public class Util {
                 MAX_LIST_PRINT_SIZE=Integer.valueOf(tmp);
         }
         catch(SecurityException ex) {
+        }
+
+        try {
+            String tmp=System.getProperty(Global.DEFAULT_HEADERS);
+            DEFAULT_HEADERS=tmp != null? new Integer(tmp) : 3;
+        }
+        catch(Throwable t) {
+            throw new IllegalArgumentException(String.format("property %s has an incorrect value", Global.DEFAULT_HEADERS), t);
         }
     }
 
