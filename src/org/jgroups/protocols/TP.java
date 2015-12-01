@@ -1269,7 +1269,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             else if(bundler_type.startsWith("transfer-queue") || bundler_type.startsWith("new")) {
                 if(bundler_type.startsWith("new"))
                     log.warn(Util.getMessage("OldBundlerType"), bundler_type, "transfer-queue");
-                bundler=new TransferQueueBundler(bundler_capacity);
+                // TODO: remove system option
+                if (bundler_type.endsWith("simplified")) {
+                    bundler = new SimplifiedTransferQueueBundler(bundler_capacity);
+                } else {
+                    bundler = new TransferQueueBundler(bundler_capacity);
+                }
             }
             else if(bundler_type.startsWith("sender-sends")) {
                 bundler=new SenderSendsBundler();
@@ -2061,6 +2066,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      */
     public static void writeMessageList(Address dest, Address src, byte[] cluster_name,
                                         List<Message> msgs, DataOutput dos, boolean multicast, short transport_id) throws Exception {
+        writeMessageListHeader(dest, src, cluster_name, msgs != null ? msgs.size() : 0, dos, multicast);
+
+        if(msgs != null)
+            for(Message msg: msgs)
+                msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
+    }
+
+    public static void writeMessageListHeader(Address dest, Address src, byte[] cluster_name, int numMsgs, DataOutput dos, boolean multicast) throws Exception {
         dos.writeShort(Version.version);
 
         byte flags=LIST;
@@ -2077,14 +2090,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(cluster_name != null)
             dos.write(cluster_name);
 
-        // Number of messages (0 == no messages)
-        dos.writeInt(msgs != null? msgs.size() : 0);
-
-        if(msgs != null)
-            for(Message msg: msgs)
-                msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
+        dos.writeInt(numMsgs);
     }
-
 
 
     public static List<Message> readMessageList(DataInput in, short transport_id) throws Exception {
@@ -2133,8 +2140,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // AsciiString cluster_name=Bits.readAsciiString(in);
         short length=in.readShort();
         byte[] cluster_name=length >= 0? new byte[length] : null;
-        if(cluster_name != null)
+        AsciiString cluster_name_string = null;
+        if(cluster_name != null) {
             in.readFully(cluster_name, 0, cluster_name.length);
+            cluster_name_string = new AsciiString(cluster_name);
+        }
 
         int len=in.readInt();
         for(int i=0; i < len; i++) {
@@ -2159,7 +2169,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
 
             if(batches[index] == null)
-                batches[index]=new MessageBatch(dest, src, new AsciiString(cluster_name), multicast, mode, len);
+                batches[index]=new MessageBatch(dest, src, cluster_name_string, multicast, mode, len);
             batches[index].add(msg);
         }
         return batches;
@@ -2628,6 +2638,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
          }
     }
 
+    private static int assertPositive(int value, String message) {
+        if(value <= 0) throw new IllegalArgumentException(message);
+        return value;
+    }
 
     /**
      * This bundler adds all (unicast or multicast) messages to a queue until max size has been exceeded, but does send
@@ -2638,11 +2652,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         protected volatile     Thread                 bundler_thread;
         protected static final String                 THREAD_NAME="TransferQueueBundler";
 
+        protected TransferQueueBundler(BlockingQueue<Message> queue) {
+            this.queue = queue;
+        }
 
         protected TransferQueueBundler(int capacity) {
-            if(capacity <=0) throw new IllegalArgumentException("bundler capacity cannot be " + capacity);
-            queue=new LinkedBlockingQueue<>(capacity);
-            // buffer=new ConcurrentLinkedBlockingQueue2<Message>(capacity);
+            this(new LinkedBlockingQueue<Message>(assertPositive(capacity, "bundler capacity cannot be " + capacity)));
         }
 
         public Thread getThread()     {return bundler_thread;}
@@ -2700,7 +2715,122 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
     }
 
+   /**
+    * This bundler uses the same logic as {@link TransferQueueBundler} but does not allocate
+    * memory except for the buffer itself and does use complex data structures.
+    */
+   protected class SimplifiedTransferQueueBundler extends TransferQueueBundler {
+        protected final int MSG_BUF_SIZE = 512;
+        protected final Message[] msgs = new Message[MSG_BUF_SIZE];
 
+        protected int curr;
+        protected ByteArrayDataOutputStream outputStream = new ByteArrayDataOutputStream(max_bundle_size);
+
+        protected SimplifiedTransferQueueBundler(int capacity) {
+            super(new ArrayBlockingQueue<Message>(assertPositive(capacity, "bundler capacity cannot be " + capacity)));
+        }
+
+        protected void addMessage(Message msg, long size) {
+           try {
+               while (curr < MSG_BUF_SIZE && msgs[curr] != null) ++curr;
+               if (curr < MSG_BUF_SIZE) {
+                   msgs[curr] = msg;
+                   ++curr;
+               } else {
+                   sendBundledMessages();
+                   curr = 0;
+                   msgs[0] = msg;
+               }
+           } finally {
+               count += size;
+           }
+        }
+
+        protected void sendBundledMessages() {
+            int start = 0;
+            for (; ; ) {
+                for (; start < MSG_BUF_SIZE && msgs[start] == null; ++start) ;
+                if (start >= MSG_BUF_SIZE) {
+                    count = 0;
+                    return;
+                }
+                Address dest = msgs[start].getDest();
+                byte[] clusterName = getMsgClusterName(msgs[start]);
+                int numMsgs = 1;
+                if (isSingleton()) {
+                    for (int i = start + 1; i < MSG_BUF_SIZE; ++i) {
+                        Message msg = msgs[i];
+                        if (msg != null && (dest == msg.getDest() || (dest != null && dest.equals(msg.getDest())))
+                              && Arrays.equals(clusterName, getMsgClusterName(msg))) {
+                            msg.setDest(dest); // avoid further equals() calls
+                            numMsgs++;
+                        }
+                    }
+                } else {
+                    for (int i = start + 1; i < MSG_BUF_SIZE; ++i) {
+                        Message msg = msgs[i];
+                        if (msg != null && (dest == msg.getDest() || (dest != null && dest.equals(msg.getDest())))) {
+                            msg.setDest(dest); // avoid further equals() calls
+                            numMsgs++;
+                        }
+                    }
+                }
+                try {
+                    outputStream.position(0);
+                    if (numMsgs == 1) {
+                        sendSingleMessage(msgs[start], outputStream);
+                        msgs[start] = null;
+                    } else {
+                        writeMessageListHeader(dest, msgs[start].getSrc(), clusterName, numMsgs, outputStream, dest == null);
+                        for (int i = start; i < MSG_BUF_SIZE; ++i) {
+                            Message msg = msgs[i];
+                            // since we assigned the matching destination we can do plain ==
+                            if (msg != null && msg.getDest() == dest) {
+                                msg.writeToNoAddrs(msg.getSrc(), outputStream, id);
+                                msgs[i] = null;
+                            }
+                        }
+                        // TODO remove the copy in JGRP-1989
+                        // At this point we have to copy the buffer as TcpConnection hands it over to another thread
+                        byte[] buffer = new byte[outputStream.position()];
+                        System.arraycopy(outputStream.buffer(), 0, buffer, 0, outputStream.position());
+
+                        doSend(isSingleton() ? new AsciiString(clusterName) : null, buffer, 0, buffer.length, dest);
+                    }
+                    start++;
+                } catch (Exception e) {
+                    log.error("Failed to send message", e);
+                }
+            }
+       }
+
+       private byte[] getMsgClusterName(Message msg) {
+           return ((TpHeader) msg.getHeader(id)).cluster_name;
+       }
+
+       protected void sendSingleMessage(Message msg, ByteArrayDataOutputStream output) {
+           Address dest = msg.getDest();
+           try {
+               writeMessage(msg, output, dest == null);
+               // TODO remove the copy in JGRP-1989
+               // At this point we have to copy the buffer as TcpConnection hands it over to another thread
+               byte[] buffer = new byte[output.position()];
+               System.arraycopy(output.buffer(), 0, buffer, 0, output.position());
+
+               doSend(getClusterName(msg), buffer, 0, buffer.length, dest);
+               if(stats)
+                   num_single_msgs_sent++;
+           }
+           catch(SocketException sock_ex) {
+               log.trace(Util.getMessage("SendFailure"),
+                     local_addr, (dest == null? "cluster" : dest), msg.size(), sock_ex.toString(), msg.printHeaders());
+           }
+           catch(Throwable e) {
+               log.error(Util.getMessage("SendFailure"),
+                     local_addr, (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
+           }
+       }
+   }
 
 
 
