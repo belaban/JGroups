@@ -2654,7 +2654,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         protected TransferQueueBundler(int capacity) {
-            this(new LinkedBlockingQueue<Message>(assertPositive(capacity, "bundler capacity cannot be " + capacity)));
+            this(new ArrayBlockingQueue<Message>(assertPositive(capacity, "bundler capacity cannot be " + capacity)));
         }
 
         public Thread getThread()     {return bundler_thread;}
