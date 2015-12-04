@@ -128,8 +128,15 @@ public class MockSocketChannel extends SocketChannel {
     }
 
     @Override
-    public int write(ByteBuffer src) throws IOException {
-        return 0;
+    public int write(ByteBuffer buf) throws IOException {
+        if(bytes_to_write == 0)
+            return 0;
+        int written=0;
+        while(buf.hasRemaining() && bytes_to_write-- > 0) {
+            buf.get();
+            written++;
+        }
+        return written;
     }
 
     @Override
