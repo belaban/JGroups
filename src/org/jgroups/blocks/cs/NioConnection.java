@@ -1,9 +1,9 @@
 package org.jgroups.blocks.cs;
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.nio.Buffers;
-import org.jgroups.nio.WriteBuffers;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.ByteArrayDataOutputStream;
@@ -37,8 +37,8 @@ public class NioConnection implements Connection {
     protected final Buffers       send_buf;
     protected boolean             write_interest_set; // set when a send() didn't manage to send all data
     protected final Lock          send_lock=new ReentrantLock(); // serialize send()
-
-    protected Buffers             recv_buf=new Buffers();
+    // creates an array of 2: length buffer (for reading the length of the following data buffer) and data buffer
+    protected Buffers             recv_buf=new Buffers(ByteBuffer.allocate(Global.INT_SIZE), null);
     protected final Lock          recv_lock=new ReentrantLock(); // serialize receive()
 
 
@@ -49,7 +49,7 @@ public class NioConnection implements Connection {
         if(peer_addr == null)
             throw new IllegalArgumentException("Invalid parameter peer_addr="+ peer_addr);
         this.peer_addr=peer_addr;
-        send_buf=new WriteBuffers(server.maxSendBuffers());
+        send_buf=new Buffers(server.maxSendBuffers() *2); // space for actual bufs and length bufs!
         channel=SocketChannel.open();
         channel.configureBlocking(false);
         setSocketParameters(channel.socket());
@@ -61,7 +61,7 @@ public class NioConnection implements Connection {
         this.server=server;
         setSocketParameters(this.channel.socket());
         channel.configureBlocking(false);
-        send_buf=new WriteBuffers(server.maxSendBuffers());
+        send_buf=new Buffers(server.maxSendBuffers() *2); // space for actual bufs and length bufs!
         this.peer_addr=server.usePeerConnections()? null /* read by first receive() */
           : new IpAddress((InetSocketAddress)channel.getRemoteAddress());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
@@ -165,7 +165,7 @@ public class NioConnection implements Connection {
     public void send(ByteBuffer buf) throws Exception {
         send_lock.lock();
         try {
-            boolean success=send_buf.write(channel, buf);
+            boolean success=send_buf.add(makeLengthBuffer(buf), buf).write(channel);
             writeInterest(!success);
             if(success)
                 updateLastAccessed();
@@ -198,7 +198,7 @@ public class NioConnection implements Connection {
 
         recv_lock.lock();
         try {
-            if((msg=recv_buf.read(channel)) == null)
+            if((msg=recv_buf.readLengthAndData(channel)) == null)
                 return;
             if(peer_addr == null && server.usePeerConnections()) {
                 peer_addr=readPeerAddress(msg);
@@ -230,7 +230,7 @@ public class NioConnection implements Connection {
         recv_lock.lock();
         try {
             while(index < buffers.length) {
-                if((msg=recv_buf.read(channel)) == null)
+                if((msg=recv_buf.readLengthAndData(channel)) == null)
                     break;
                 if(peer_addr == null && server.usePeerConnections()) {
                     peer_addr=readPeerAddress(msg);
@@ -358,6 +358,10 @@ public class NioConnection implements Connection {
         client_peer_addr.readFrom(in);
         updateLastAccessed();
         return client_peer_addr;
+    }
+
+    protected static ByteBuffer makeLengthBuffer(ByteBuffer buf) {
+        return (ByteBuffer)ByteBuffer.allocate(Global.INT_SIZE).putInt(buf.remaining()).clear();
     }
 
 }

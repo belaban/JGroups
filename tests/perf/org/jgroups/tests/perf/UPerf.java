@@ -215,7 +215,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
     public void quitAll() {
-        Util.sleepRandom(10, 10000);
+        // Util.sleepRandom(10, 10000);
         System.out.println("-- received quitAll(): shutting down");
         stopEventThread();
     }
@@ -322,7 +322,7 @@ public class UPerf extends ReceiverAdapter {
                     return;
                 case 'X':
                     try {
-                        RequestOptions options=new RequestOptions(ResponseMode.GET_NONE, 0).setExclusionList(local_addr);
+                        RequestOptions options=new RequestOptions(ResponseMode.GET_NONE, 0); // .setExclusionList(local_addr);
                         options.setFlags(Message.Flag.OOB, Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
                         disp.callRemoteMethods(null, new MethodCall(QUIT_ALL), options);
                     }
