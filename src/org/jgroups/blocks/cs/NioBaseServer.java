@@ -31,6 +31,8 @@ public abstract class NioBaseServer extends BaseServer {
     @ManagedAttribute(description="Number of times select() was called")
     protected int               num_selects;
 
+    protected boolean           copy_on_partial_write=true;
+
 
 
     protected NioBaseServer(ThreadFactory f) {
@@ -39,13 +41,34 @@ public abstract class NioBaseServer extends BaseServer {
 
 
 
-    public int           maxSendBuffers()           {return max_send_buffers;}
-    public NioBaseServer maxSendBuffers(int num)    {this.max_send_buffers=num; return this;}
-    public int           maxReadBatchSize()         {return max_read_batch_size;}
-    public NioBaseServer maxReadBatchSize(int size) {max_read_batch_size=size; return this;}
-    public boolean       selectorOpen()             {return selector != null && selector.isOpen();}
-    public boolean       acceptorRunning()          {return acceptor != null && acceptor.isAlive();}
-    public int           numSelects()               {return num_selects;}
+    public int            maxSendBuffers()              {return max_send_buffers;}
+    public NioBaseServer  maxSendBuffers(int num)       {this.max_send_buffers=num; return this;}
+    public int            maxReadBatchSize()            {return max_read_batch_size;}
+    public NioBaseServer  maxReadBatchSize(int size)    {max_read_batch_size=size; return this;}
+    public boolean        selectorOpen()                {return selector != null && selector.isOpen();}
+    public boolean        acceptorRunning()             {return acceptor != null && acceptor.isAlive();}
+    public int            numSelects()                  {return num_selects;}
+    public boolean        copyOnPartialWrite()          {return copy_on_partial_write;}
+
+    public NioBaseServer  copyOnPartialWrite(boolean b) {
+        this.copy_on_partial_write=b;
+        synchronized(this) {
+            for(Connection c: conns.values()) {
+                NioConnection conn=(NioConnection)c;
+                conn.copyOnPartialWrite(b);
+            }
+        }
+        return this;
+    }
+
+    public synchronized int numPartialWrites() {
+        int retval=0;
+        for(Connection c: conns.values()) {
+            NioConnection conn=(NioConnection)c;
+            retval+=conn.numPartialWrites();
+        }
+        return retval;
+    }
 
 
 
@@ -79,7 +102,7 @@ public abstract class NioBaseServer extends BaseServer {
 
     @Override
     protected NioConnection createConnection(Address dest) throws Exception {
-        return new NioConnection(dest, this);
+        return new NioConnection(dest, this).copyOnPartialWrite(copy_on_partial_write);
     }
 
     protected void handleAccept(SelectionKey key) throws Exception {

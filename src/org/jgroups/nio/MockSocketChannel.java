@@ -18,7 +18,7 @@ public class MockSocketChannel extends SocketChannel {
     protected int        bytes_to_write;
     protected ByteBuffer bytes_to_read;
     protected boolean    closed=false;
-
+    protected ByteBuffer recorder; // records writes if set
 
 
     public MockSocketChannel() {
@@ -48,6 +48,8 @@ public class MockSocketChannel extends SocketChannel {
         return this;
     }
 
+    public MockSocketChannel recorder(ByteBuffer buf) {this.recorder=buf; return this;}
+    public ByteBuffer        recorder()               {return recorder;}
 
 
     @Override
@@ -144,8 +146,10 @@ public class MockSocketChannel extends SocketChannel {
             return 0;
         int written=0;
         while(buf.hasRemaining() && bytes_to_write-- > 0) {
-            buf.get();
+            byte b=buf.get();
             written++;
+            if(recorder != null)
+                recorder.put(b);
         }
         return written;
     }
@@ -158,8 +162,10 @@ public class MockSocketChannel extends SocketChannel {
         for(int i=offset; i < Math.min(srcs.length, length+offset); i++) {
             ByteBuffer buf=srcs[i];
             while(buf.hasRemaining() && bytes_to_write-- > 0) {
-                buf.get();
+                byte b=buf.get();
                 written++;
+                if(recorder != null)
+                    recorder.put(b);
             }
         }
         return written;

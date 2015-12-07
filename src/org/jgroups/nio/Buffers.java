@@ -14,8 +14,8 @@ import java.util.NoSuchElementException;
 
 /**
  * Class to do scattering reads or gathering writes on a sequence of {@link ByteBuffer} instances. The buffers are
- * kept in an array with fixed capacity. Buffers can be added and removed dynamically (they're dropped when the
- * capacity is exceeded).<p/>
+ * kept in an array with fixed capacity (max Short.MAX_VALUE).
+ * Buffers can be added and removed dynamically (they're dropped when the capacity is exceeded).<p/>
  * A read is successful when all non-null buffers from left to right are filled, ie. all {@link ByteBuffer#remaining()}
  * methods return 0.<p/>
  * Same for writes: when all non-null buffers (from left to right) have been written ({@link ByteBuffer#remaining()} == 0),
@@ -29,28 +29,36 @@ import java.util.NoSuchElementException;
  */
 public class Buffers implements Iterable<ByteBuffer> {
     protected final ByteBuffer[] bufs; // the buffers to be written or read
-    protected int position;            // points to the next buffer in bufs to be read or written
-    protected int limit;               // points 1 beyond the last buffer in bufs that was read or written
+    protected short position;          // points to the next buffer in bufs to be read or written
+    protected short limit;             // points beyond the last buffer in bufs that was read or written
+    protected short next_to_copy;      // index of the next buffer to copy, set by copy(): position <= last_copied <= limit
 
+    /**
+     * Creates a new instance with an array of capacity buffers
+     * @param capacity Must be an unsigned positive short [1 .. Short.MAX_VALUE]
+     */
     public Buffers(int capacity) {
-        bufs=new ByteBuffer[capacity];
+        bufs=new ByteBuffer[toPositiveUnsignedShort(capacity)];
     }
 
     public Buffers(ByteBuffer ... data) {
+        if(data == null)
+            throw new IllegalArgumentException("null buffer array");
+        assertPositiveUnsignedShort(data.length);
         this.bufs=data;
-        if(this.bufs != null) {
-            for(ByteBuffer b: this.bufs) {
-                if(b == null)
-                    break;
-                limit++;
-            }
+        for(ByteBuffer b: this.bufs) {
+            if(b == null)
+                break;
+            limit++;
         }
     }
 
     public int     position()            {return position;}
-    public Buffers position(int new_pos) {this.position=new_pos; return this;}
+    public Buffers position(int new_pos) {this.position=toPositiveUnsignedShort(new_pos); nextToCopy(new_pos); return this;}
     public int     limit()               {return limit;}
-    public Buffers limit(int new_limit)  {this.limit=new_limit; return this;}
+    public Buffers limit(int new_limit)  {this.limit=toPositiveUnsignedShort(new_limit); return this;}
+    public int     nextToCopy()          {return next_to_copy;}
+    public Buffers nextToCopy(int next)  {next_to_copy=toPositiveUnsignedShort(next); return this;}
 
 
     public int remaining() {
@@ -185,6 +193,17 @@ public class Buffers implements Iterable<ByteBuffer> {
         return nullData();
     }
 
+    /** Copies the data that has not yet been written and moves last_copied. Typically done after an unsuccessful
+     * write, if copying is required. This is typically needed if the output buffer is reused. Note that
+     * direct buffers will be converted to heap-based buffers */
+    public Buffers copy() {
+        for(int i=Math.max(position, next_to_copy); i < limit; i++) {
+            this.bufs[i]=copyBuffer(this.bufs[i]);
+            next_to_copy=(short)(i+1);
+        }
+        return this;
+    }
+
     /** Returns the number of elements that have not yet been read or written */
     public int size() {
         return limit - position;
@@ -200,7 +219,7 @@ public class Buffers implements Iterable<ByteBuffer> {
 
     protected boolean makeSpace() {
         if(position == limit) { // easy case: no pending writes, but pos and limit are not at the head of the buffer
-            position=limit=0;   // redundant if position == 0, but who cares
+            position=limit=next_to_copy=0;   // redundant if position == 0, but who cares
             return true;
         }
         // limit > position: copy to head of buffer if position > 0
@@ -215,8 +234,9 @@ public class Buffers implements Iterable<ByteBuffer> {
         // null buffers
         for(int i=buffers_to_move; i < limit; i++)
             bufs[i]=null;
+        next_to_copy=(short)Math.max(next_to_copy-position, position);
+        limit=(short)buffers_to_move; // same as limit-=position
         position=0;
-        limit=buffers_to_move;
         return true;
     }
 
@@ -237,15 +257,42 @@ public class Buffers implements Iterable<ByteBuffer> {
                 return false;
             if(null_complete_data)
                 bufs[position]=null;
-           // else
-             //   bufs[position].clear();
             position++;
         }
         return true;
     }
 
+    protected static short toPositiveUnsignedShort(int num) {
+        assertPositiveUnsignedShort(num);
+        return (short)num;
+    }
+
+    protected static void assertPositiveUnsignedShort(int num) {
+        if(num < 1 || num > Short.MAX_VALUE) {
+            short tmp=(short)num;
+            throw new IllegalArgumentException(String.format("number %d must be a positive unsigned short", tmp));
+        }
+    }
+
     protected static ByteBuffer makeLengthBuffer(ByteBuffer buf) {
         return (ByteBuffer)ByteBuffer.allocate(Global.INT_SIZE).putInt(buf.remaining()).clear();
+    }
+
+    /** Copies a ByteBuffer by copying and wrapping the underlying array of a heap-based buffer. Direct buffers
+        are converted to heap-based buffers */
+    public static ByteBuffer copyBuffer(final ByteBuffer buf) {
+        if(buf == null)
+            return null;
+        int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(), len=buf.remaining();
+        byte[] tmp=new byte[len];
+        if(!buf.isDirect())
+            System.arraycopy(buf.array(), offset, tmp, 0, len);
+        else {
+         //   buf.get(tmp, 0, len);
+            for(int i=0; i < len; i++)
+                tmp[i]=buf.get(i+offset);
+        }
+        return ByteBuffer.wrap(tmp);
     }
 
     @Override

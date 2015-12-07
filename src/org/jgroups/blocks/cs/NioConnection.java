@@ -40,7 +40,8 @@ public class NioConnection implements Connection {
     // creates an array of 2: length buffer (for reading the length of the following data buffer) and data buffer
     protected Buffers             recv_buf=new Buffers(ByteBuffer.allocate(Global.INT_SIZE), null);
     protected final Lock          recv_lock=new ReentrantLock(); // serialize receive()
-
+    protected boolean             copy_on_partial_write=true;
+    protected int                 partial_writes; // number of partial writes (write which did not write all bytes)
 
 
      /** Creates a connection stub and binds it, use {@link #connect(Address)} to connect */
@@ -99,9 +100,12 @@ public class NioConnection implements Connection {
         return local_addr != null? new IpAddress(local_addr) : null;
     }
 
-    public Address       peerAddress()       {return peer_addr;}
-    public SelectionKey  key()               {return key;}
-    public NioConnection key(SelectionKey k) {this.key=k; return this;}
+    public Address       peerAddress()                 {return peer_addr;}
+    public SelectionKey  key()                         {return key;}
+    public NioConnection key(SelectionKey k)           {this.key=k; return this;}
+    public NioConnection copyOnPartialWrite(boolean b) {this.copy_on_partial_write=b; return this;}
+    public boolean       copyOnPartialWrite()          {return copy_on_partial_write;}
+    public int           numPartialWrites()            {return partial_writes;}
 
     public synchronized int registerSelectionKey(int interest_ops) {
         if(key == null)
@@ -169,6 +173,11 @@ public class NioConnection implements Connection {
             writeInterest(!success);
             if(success)
                 updateLastAccessed();
+            if(!success) {
+                if(copy_on_partial_write)
+                    send_buf.copy(); // copy data on partial write as subsequent writes might corrupt data (https://issues.jboss.org/browse/JGRP-1991)
+                partial_writes++;
+            }
         }
         finally {
             send_lock.unlock();
@@ -183,6 +192,11 @@ public class NioConnection implements Connection {
             writeInterest(!success);
             if(success)
                 updateLastAccessed();
+            if(!success) {
+                if(copy_on_partial_write)
+                    send_buf.copy(); // copy data on partial write as subsequent writes might corrupt data (https://issues.jboss.org/browse/JGRP-1991)
+                partial_writes++;
+            }
         }
         finally {
             send_lock.unlock();

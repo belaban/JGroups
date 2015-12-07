@@ -216,6 +216,25 @@ public class BuffersTest {
         check(buf, 0, 1, 1, remaining(buf2));
     }
 
+
+    public void testMakeSpaceMoveTwo() throws Exception {
+        MockSocketChannel ch=new MockSocketChannel().bytesToWrite(1000);
+        Buffers buf=new Buffers(6);
+        buf.add(buf1);
+        buf.add(buf2);
+        buf.write(ch);
+        buf.add(buf3);
+        buf.add(ByteBuffer.wrap("bla".getBytes()));
+        ch.bytesToWrite(2);
+        boolean rc=buf.write(ch);
+        assert !rc;
+        buf.copy();
+        rc=makeSpace(buf);
+        assert rc;
+        check(buf, 0, 2, 2, remaining(buf3)+3);
+    }
+
+
     public void testMakeSpaceOverlappingMove() throws Exception {
         MockSocketChannel ch=new MockSocketChannel().bytesToWrite(1000);
         Buffers buf=new Buffers(6);
@@ -365,6 +384,79 @@ public class BuffersTest {
         check(bufs, 0, 0, 0, 0);
     }
 
+    public void testCopyBuffer() {
+        byte[] array1=generateArray(1024), array2=generateArray(16), array3=generateArray(8);
+        int off1=500, len1=500,
+          off2=0, len2=16,
+          off3=0, len3=4;
+
+        testCopyBuffer(ByteBuffer.wrap(array1, off1, len1));
+        testCopyBuffer(ByteBuffer.wrap(array2, off2, len2));
+        testCopyBuffer(ByteBuffer.wrap(array3, off3, len3));
+
+        ByteBuffer direct=ByteBuffer.allocateDirect(16);
+        for(int i=0; i < direct.remaining(); i++)
+            direct.put(i, (byte)Util.random(26));
+        ByteBuffer copy=Buffers.copyBuffer(direct);
+        assert copy.equals(direct);
+
+        direct.position(10);
+        copy=Buffers.copyBuffer(direct);
+        assert copy.equals(direct);
+    }
+
+    public void testCopy() throws Exception {
+        copyHelper(3, 2, 8, 10);
+        copyHelper(3, 2, 8, 4);
+        copyHelper(3, 2, 8, 20);
+        copyHelper(3, 3, 8, 4);
+        copyHelper(3, 3, 8, 10);
+    }
+
+    public void testCopyWithPartialWrite() throws Exception {
+        final String s1="hello", s2=" world", s3=" from ", s4="Bela";
+        ByteBuffer a=ByteBuffer.wrap(s1.getBytes()), b=ByteBuffer.wrap(s2.getBytes()),
+          c=ByteBuffer.wrap(s3.getBytes()), d=ByteBuffer.wrap(s4.getBytes());
+        Buffers bufs=new Buffers(a,b,c,d);
+        ByteBuffer recorder=ByteBuffer.allocate(100);
+        MockSocketChannel ch=new MockSocketChannel().bytesToWrite(13) // a, b: OK, c: partial, d: fail
+          .recorder(recorder); // we're recording the writes so we can compare expected bytes to actually written bytes
+        boolean success=bufs.write(ch);
+        System.out.println("bufs = " + bufs);
+        assert !success;
+        assert bufs.position() == 2;
+        assert bufs.limit() == 4;
+
+        // copy the buffers which have not yet been written so that we can reuse buffers (not needed if buffers are already copies)
+        bufs.copy(); // https://issues.jboss.org/browse/JGRP-1991
+
+        makeSpace(bufs);
+        assert bufs.position() == 0;
+        assert bufs.limit() == 2;
+        assert bufs.nextToCopy() == 2;
+
+        // now modify the original buffers
+        for(ByteBuffer buf: Arrays.asList(a,b,c,d))
+            buf.putInt(0, 322649);
+
+        ch.bytesToWrite(100);  // next write will be successful
+        success=bufs.write(ch);
+        System.out.println("bufs = " + bufs);
+        assert success;
+        assert bufs.position() == 2;
+        assert bufs.limit() == 2;
+
+        // now compare the contents of the buffers
+        recorder.flip();
+        for(String s: Arrays.asList(s1,s2,s3,s4)) {
+            byte[] expected=s.getBytes();
+            byte[] actual=new byte[expected.length];
+            recorder.get(actual);
+            assert Arrays.equals(expected, actual) : String.format("expected %s, got %s\n", s, new String(actual));
+        }
+    }
+
+
     public void testIteration() {
         Buffers buf=new Buffers(6).add(ByteBuffer.wrap("hello world".getBytes()), ByteBuffer.allocate(1024),
                                        ByteBuffer.allocate(500), ByteBuffer.allocate(1024));
@@ -396,6 +488,70 @@ public class BuffersTest {
             count++;
         }
         assert count == 6;
+    }
+
+    protected void testCopyBuffer(ByteBuffer buf) {
+        ByteBuffer copy=Buffers.copyBuffer(buf);
+        assert copy.equals(buf);
+    }
+
+
+    protected void copyHelper(int capacity, int num_buffers, int buffer_size, int bytes_to_write) throws Exception {
+        assert capacity > 0 && num_buffers <= capacity;
+        byte[][] arrays=new byte[num_buffers][]; // the original data, will be used to compare after the copy()
+        for(int i=0; i < arrays.length; i++)
+            arrays[i]=generateArray(buffer_size);
+        ByteBuffer[] buffers=new ByteBuffer[num_buffers];
+        for(int i=0; i < arrays.length; i++) {
+            // make a copy as we'll modify it later, so the original is not modified: we need it to compare later
+            byte[] tmp=Arrays.copyOf(arrays[i], arrays[i].length);
+            buffers[i]=ByteBuffer.wrap(tmp);
+        }
+
+        ByteBuffer recorder=ByteBuffer.allocate(Math.max(bytes_to_write, num_buffers * buffer_size));
+        MockSocketChannel ch=new MockSocketChannel().bytesToWrite(bytes_to_write).recorder(recorder);
+        Buffers bufs=new Buffers(capacity).add(buffers);
+        System.out.println("\nbufs = " + bufs);
+        assert bufs.size() == buffers.length;
+
+        boolean successful_write=bytes_to_write >= num_buffers * buffer_size;
+        boolean rc=bufs.write(ch);
+        assert rc == successful_write;
+        if(!successful_write) {
+            bufs.copy();
+            int num_bufs_not_written=(int)Math.ceil((num_buffers * buffer_size - bytes_to_write) / (double)buffer_size);
+            assertNotEqual(bufs, buffers, num_bufs_not_written);
+
+            // modify the buffers and compare the output to the original buffers (should match)
+            for(ByteBuffer buf: buffers)
+                modifyBuffer(buf);
+            ch.bytesToWrite(num_buffers * buffer_size); // the next write() will succeed
+
+            rc=bufs.write(ch);
+            assert rc;
+
+            // now compare the original buffers with the recorded bytes
+            recorder.flip();
+            for(byte[] original: arrays) {
+                byte[] actual=new byte[original.length];
+                recorder.get(actual);
+                assert Arrays.equals(original, actual);
+            }
+        }
+    }
+
+
+    protected void assertNotEqual(Buffers bufs, ByteBuffer[] buffers, int num_buffers) {
+        int not_equal=0;
+        for(int i=0; i < num_buffers; i++) {
+            ByteBuffer original=buffers[buffers.length - num_buffers + i], actual=bufs.get(i+bufs.position());
+            boolean same=original == actual;
+            System.out.printf("original %s %s actual %s\n", original.hashCode(), same? "==" : "!=", actual.hashCode());
+            if(!same)
+                not_equal++;
+        }
+
+        assert not_equal > 0;
     }
 
 
@@ -433,6 +589,21 @@ public class BuffersTest {
 
     protected void limit(Buffers buf, int lim) {
         Util.setField(limit, buf, lim);
+    }
+
+    protected static byte[] generateArray(int size) {
+        byte[] retval=new byte[size];
+        for(int i=0; i < retval.length; i++) {
+            byte b=(byte)Util.random(26);
+            retval[i]=b;
+        }
+        return retval;
+    }
+
+    protected static void modifyBuffer(final ByteBuffer buf) {
+        buf.clear();
+        for(int i=0; i < buf.capacity(); i++)
+            buf.put(i, (byte)Util.random(26));
     }
 
 }

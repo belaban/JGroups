@@ -36,6 +36,8 @@ public class TCP_NIO2 extends BasicTCP {
       "then every read will create an array of max_read_batch_size messages.")
     protected int max_read_batch_size=10;
 
+    @ManagedAttribute(description="If true, a partial write will make a copy of the data so a buffer can be reused")
+    protected boolean copy_on_partial_write=true;
 
 
     public TCP_NIO2() {}
@@ -78,6 +80,9 @@ public class TCP_NIO2 extends BasicTCP {
     @ManagedAttribute(description="Number of times select() was called")
     public int     numSelects() {return server != null? server.numSelects() : -1;}
 
+    @ManagedAttribute(description="Number of partial writes for all connections (not all bytes were written)")
+    public int     numPartialWrites() {return server.numPartialWrites();}
+
 
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
         if(server != null) {
@@ -107,6 +112,7 @@ public class TCP_NIO2 extends BasicTCP {
           .log(this.log))
           .maxSendBuffers(max_send_buffers).maxReadBatchSize(this.max_read_batch_size)
           .usePeerConnections(true);
+        server.copyOnPartialWrite(this.copy_on_partial_write);
 
         if(reaper_interval > 0 || conn_expire_time > 0) {
             if(reaper_interval == 0) {
