@@ -93,7 +93,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(description="Used to map the internal port (bind_port) to an external port. Only used if > 0",
               systemProperty=Global.EXTERNAL_PORT,writable=false)
-    protected int external_port=0;
+    protected int external_port;
 
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
               description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr",
@@ -126,7 +126,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     /** The port to which the transport binds. 0 means to bind to any (ephemeral) port */
     @Property(description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port",writable=false)
-    protected int bind_port=0;
+    protected int bind_port;
 
     @Property(description="The range of valid ports, from bind_port to end_port. 0 only binds to bind_port and fails if taken")
     protected int port_range=50; // 27-6-2003 bgooren, Only try one port by default
@@ -496,30 +496,33 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     @ManagedAttribute(description="Number of messages sent")
-    protected long num_msgs_sent=0;
+    protected long num_msgs_sent;
     @ManagedAttribute(description="Number of messages received")
-    protected long num_msgs_received=0;
+    protected long num_msgs_received;
 
     @ManagedAttribute(description="Number of single messages received")
-    protected long num_single_msgs_received=0;
+    protected long num_single_msgs_received;
 
     @ManagedAttribute(description="Number of single messages sent")
-    protected long num_single_msgs_sent=0;
+    protected long num_single_msgs_sent;
+
+    @ManagedAttribute(description="Number of single messages that were sent instead of sending a batch of 1")
+    protected long num_single_msgs_sent_instead_of_batch;
 
     @ManagedAttribute(description="Number of message batches received")
-    protected long num_batches_received=0;
+    protected long num_batches_received;
 
     @ManagedAttribute(description="Number of message batches sent")
-    protected long num_batches_sent=0;
+    protected long num_batches_sent;
 
     @ManagedAttribute(description="Number of bytes sent")
-    protected long num_bytes_sent=0;
+    protected long num_bytes_sent;
 
     @ManagedAttribute(description="Number of bytes received")
-    protected long num_bytes_received=0;
+    protected long num_bytes_received;
 
     @ManagedAttribute(description="Number of messages rejected by the thread pool")
-    protected int num_rejected_msgs=0;
+    protected int num_rejected_msgs;
 
     /** The name of the group to which this member is connected. With a shared transport, the channel name is
      * in TP.ProtocolAdapter (cluster_name), and this field is not used */
@@ -584,7 +587,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     /** Keeps track of connects and disconnects, in order to start and stop threads */
-    protected int connect_count=0;
+    protected int connect_count;
 
     //http://jira.jboss.org/jira/browse/JGRP-849
     protected final ReentrantLock connectLock = new ReentrantLock();
@@ -662,7 +665,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache;
 
     // last time (in ns) we sent a discovery request
-    protected long last_discovery_request=0;
+    protected long last_discovery_request;
 
     Future<?> logical_addr_cache_reaper;
 
@@ -728,7 +731,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public void resetStats() {
         num_msgs_sent=num_msgs_received=num_single_msgs_received=num_batches_received=num_bytes_sent=num_bytes_received=0;
-        num_oob_msgs_received=num_incoming_msgs_received=num_internal_msgs_received=num_single_msgs_sent=num_batches_sent=0;
+        num_oob_msgs_received=num_incoming_msgs_received=num_internal_msgs_received=num_single_msgs_sent=num_single_msgs_sent_instead_of_batch=num_batches_sent=0;
         avg_batch_size.clear();
     }
 
@@ -2502,7 +2505,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 writeMessage(msg, out, dest == null);
                 doSend(getClusterName(msg), out.buffer(), 0, out.position(), dest);
                 if(stats)
-                    num_single_msgs_sent++;
+                    num_single_msgs_sent_instead_of_batch++;
             }
             catch(SocketException sock_ex) {
                 log.trace(Util.getMessage("SendFailure"),
@@ -2820,7 +2823,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
                doSend(getClusterName(msg), buffer, 0, buffer.length, dest);
                if(stats)
-                   num_single_msgs_sent++;
+                   num_single_msgs_sent_instead_of_batch++;
            }
            catch(SocketException sock_ex) {
                log.trace(Util.getMessage("SendFailure"),
