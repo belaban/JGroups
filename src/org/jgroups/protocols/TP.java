@@ -124,8 +124,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "marked as removable. 0 disables reaping.")
     protected long logical_addr_cache_reaper_interval=60000;
 
-    /** The port to which the transport binds. 0 means to bind to any (ephemeral) port */
-    @Property(description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port",writable=false)
+    /** The port to which the transport binds. 0 means to bind to any (ephemeral) port. See also {@link #port_range} */
+    @Property(description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port. See also port_range",writable=false)
     protected int bind_port;
 
     @Property(description="The range of valid ports, from bind_port to end_port. 0 only binds to bind_port and fails if taken")
