@@ -1,0 +1,11 @@
+
+
+Changes in 4.0
+==============
+
+receive() needs to consume the buffer
+-------------------------------------
+The receive(Message msg) callback needs to consume the buffer of msg, as the transport might reuse the buffer and thus
+overwrite its contents. Consuming means for example to de-serialize the buffer into an application object.
+If the application needs to hang on to the buffer, it needs to make a *copy*.
+

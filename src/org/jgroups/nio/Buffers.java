@@ -1,7 +1,5 @@
 package org.jgroups.nio;
 
-import org.jgroups.Global;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -234,9 +232,10 @@ public class Buffers implements Iterable<ByteBuffer> {
         // null buffers
         for(int i=buffers_to_move; i < limit; i++)
             bufs[i]=null;
-        next_to_copy=(short)Math.max(next_to_copy-position, position);
+        next_to_copy-=position;
         limit=(short)buffers_to_move; // same as limit-=position
         position=0;
+        next_to_copy=(short)Math.max(next_to_copy, position);
         return true;
     }
 
@@ -258,6 +257,8 @@ public class Buffers implements Iterable<ByteBuffer> {
             if(null_complete_data)
                 bufs[position]=null;
             position++;
+            if(next_to_copy < position)
+                next_to_copy=position;
         }
         return true;
     }
@@ -274,9 +275,11 @@ public class Buffers implements Iterable<ByteBuffer> {
         }
     }
 
-    protected static ByteBuffer makeLengthBuffer(ByteBuffer buf) {
-        return (ByteBuffer)ByteBuffer.allocate(Global.INT_SIZE).putInt(buf.remaining()).clear();
-    }
+    /*protected void assertNextToCopy() {
+        boolean condition=position <= next_to_copy && next_to_copy <= limit;
+        assert condition
+          : String.format("position=%d next_to_copy=%d limit=%d\n", position, next_to_copy, limit);
+    }*/
 
     /** Copies a ByteBuffer by copying and wrapping the underlying array of a heap-based buffer. Direct buffers
         are converted to heap-based buffers */

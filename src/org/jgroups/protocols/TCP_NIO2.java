@@ -29,7 +29,7 @@ public class TCP_NIO2 extends BasicTCP {
     @Property(description="The max number of outgoing messages that can get queued for a given peer connection " +
       "(before dropping them). Most messages will ge retransmitted; this is mainly used at startup, e.g. to prevent " +
       "dropped discovery requests or responses (sent unreliably, without retransmission).")
-    protected int max_send_buffers=5;
+    protected int max_send_buffers=10;
 
     @Property(description="Max number of messages a read will try to read from the socket. Setting this to a higher " +
       "value will increase speed when receiving a lot of messages. However, when the receive message rate is small, " +

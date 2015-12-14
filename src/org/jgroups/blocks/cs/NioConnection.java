@@ -37,6 +37,7 @@ public class NioConnection implements Connection {
     protected final Buffers       send_buf;
     protected boolean             write_interest_set; // set when a send() didn't manage to send all data
     protected final Lock          send_lock=new ReentrantLock(); // serialize send()
+
     // creates an array of 2: length buffer (for reading the length of the following data buffer) and data buffer
     protected Buffers             recv_buf=new Buffers(ByteBuffer.allocate(Global.INT_SIZE), null);
     protected final Lock          recv_lock=new ReentrantLock(); // serialize receive()
@@ -169,6 +170,7 @@ public class NioConnection implements Connection {
     public void send(ByteBuffer buf) throws Exception {
         send_lock.lock();
         try {
+            // makeLengthBuffer() reuses the same pre-allocated buffer and copies it only if the write didn't complete
             boolean success=send_buf.add(makeLengthBuffer(buf), buf).write(channel);
             writeInterest(!success);
             if(success)

@@ -2454,6 +2454,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         final Map<SingletonAddress,List<Message>>  msgs=new HashMap<>(24);
         @GuardedBy("lock") long                    count;    // current number of bytes accumulated
         final ReentrantLock                        lock=new ReentrantLock();
+        protected final ByteArrayDataOutputStream  output=new ByteArrayDataOutputStream(max_bundle_size + MSG_OVERHEAD);
 
 
         public void start() {}
@@ -2499,11 +2500,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         protected void sendSingleMessage(final Message msg) {
             Address                   dest=msg.getDest();
-            int                       capacity=(int)(count > 0? count + MSG_OVERHEAD : msg.size() + MSG_OVERHEAD);
-            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(capacity);
             try {
-                writeMessage(msg, out, dest == null);
-                doSend(getClusterName(msg), out.buffer(), 0, out.position(), dest);
+                output.position(0);
+                writeMessage(msg, output, dest == null);
+                doSend(getClusterName(msg), output.buffer(), 0, output.position(), dest);
                 if(stats)
                     num_single_msgs_sent_instead_of_batch++;
             }
@@ -2521,10 +2521,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         protected void sendMessageList(final Address dest, final Address src, final byte[] cluster_name,
                                        final List<Message> list) {
-            ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)count);
             try {
-                writeMessageList(dest, src, cluster_name, list, out, dest == null, id); // flushes output stream when done
-                doSend(isSingleton()? new AsciiString(cluster_name) : null, out.buffer(), 0, out.position(), dest);
+                output.position(0);
+                writeMessageList(dest, src, cluster_name, list, output, dest == null, id); // flushes output stream when done
+                doSend(isSingleton()? new AsciiString(cluster_name) : null, output.buffer(), 0, output.position(), dest);
             }
             catch(SocketException sock_ex) {
                 log.debug(Util.getMessage("FailureSendingMsgBundle"),local_addr,sock_ex);
@@ -2558,6 +2558,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * message is added that doesn't exceed the max size, but then no further messages are added, so elapsed time
      * will trigger the sending, not exceeding of the max size.
      */
+    @Deprecated
     protected class SenderSendsWithTimerBundler extends BaseBundler implements Runnable {
         protected static final int MIN_NUMBER_OF_BUNDLING_TASKS=2;
         protected int              num_bundling_tasks=0;
@@ -2723,7 +2724,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
        protected static final int          MSG_BUF_SIZE=512;
        protected final Message[]           msgs=new Message[MSG_BUF_SIZE];
        protected int                       curr;
-       protected ByteArrayDataOutputStream outputStream=new ByteArrayDataOutputStream(max_bundle_size);
 
        protected SimplifiedTransferQueueBundler(int capacity) {
            super(new ArrayBlockingQueue<Message>(assertPositive(capacity, "bundler capacity cannot be " + capacity)));
@@ -2778,27 +2778,22 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                    }
                }
                try {
-                   outputStream.position(0);
+                   output.position(0);
                    if(numMsgs == 1) {
-                       sendSingleMessage(msgs[start], outputStream);
+                       sendSingleMessage(msgs[start], output);
                        msgs[start]=null;
                    }
                    else {
-                       writeMessageListHeader(dest, msgs[start].getSrc(), clusterName, numMsgs, outputStream, dest == null);
+                       writeMessageListHeader(dest, msgs[start].getSrc(), clusterName, numMsgs, output, dest == null);
                        for(int i=start; i < MSG_BUF_SIZE; ++i) {
                            Message msg=msgs[i];
                            // since we assigned the matching destination we can do plain ==
                            if(msg != null && msg.getDest() == dest) {
-                               msg.writeToNoAddrs(msg.getSrc(), outputStream, id);
+                               msg.writeToNoAddrs(msg.getSrc(), output, id);
                                msgs[i]=null;
                            }
                        }
-                       // TODO remove the copy in JGRP-1989
-                       // At this point we have to copy the buffer as TcpConnection hands it over to another thread
-                       byte[] buffer=new byte[outputStream.position()];
-                       System.arraycopy(outputStream.buffer(), 0, buffer, 0, outputStream.position());
-
-                       doSend(isSingleton()? new AsciiString(clusterName) : null, buffer, 0, buffer.length, dest);
+                       doSend(isSingleton()? new AsciiString(clusterName) : null, output.buffer(), 0, output.position(), dest);
                    }
                    start++;
                }
@@ -2816,12 +2811,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
            Address dest = msg.getDest();
            try {
                writeMessage(msg, output, dest == null);
-               // TODO remove the copy in JGRP-1989
-               // At this point we have to copy the buffer as TcpConnection hands it over to another thread
-               byte[] buffer = new byte[output.position()];
-               System.arraycopy(output.buffer(), 0, buffer, 0, output.position());
-
-               doSend(getClusterName(msg), buffer, 0, buffer.length, dest);
+               doSend(getClusterName(msg), output.buffer(), 0, output.position(), dest);
                if(stats)
                    num_single_msgs_sent_instead_of_batch++;
            }

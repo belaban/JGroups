@@ -901,6 +901,14 @@ ch.setReceiver(new ReceiverAdapter() {
 ch.connect("MyCluster");
 ----
 
+NOTE: The semantics of `receive(Message msg)` will change slightly in 4.0: as the buffer of `msg` might get reused by
+the transport (to reduce the memory allocation rate), the `receive()` method must consume the buffer
+(e.g. de-serialize it into an application object), or make a copy.
+As soon as `receive()` returns, the message's buffer might get overwritten with new data.
+
+
+
+
 
 [[ReceivingViewChanges]]
 ==== Receiving view changes

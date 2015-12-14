@@ -135,8 +135,9 @@ public class TcpConnection implements Connection {
      */
     public void send(byte[] data, int offset, int length) throws Exception {
         if(sender != null) {
-            // we don't need to copy as data was created anew when sending the message !
-            sender.addToQueue(new Buffer(data, offset, length));
+            byte[] copy=new byte[length];
+            System.arraycopy(data, offset, copy, 0, length);
+            sender.addToQueue(new Buffer(copy, 0, length));
         }
         else
             _send(data, offset, length, true, true);
