@@ -51,7 +51,7 @@ public class UPerf extends ReceiverAdapter {
     // ... add your own here, just don't forget to annotate them with @Property
     // =======================================================
 
-    private static final Method[] METHODS=new Method[16];
+    private static final Method[] METHODS=new Method[6];
     private static final short START                 =  0;
     private static final short GET                   =  1;
     private static final short PUT                   =  2;
