@@ -65,7 +65,7 @@ public class Util {
 
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable
-    static boolean resolve_dns=false;
+    @Deprecated  static boolean resolve_dns=false;
 
     private static final Pattern METHOD_NAME_TO_ATTR_NAME_PATTERN=Pattern.compile("[A-Z]+");
     private static final Pattern ATTR_NAME_TO_METHOD_NAME_PATTERN=Pattern.compile("_.");
@@ -81,6 +81,8 @@ public class Util {
      * reduces the amount of log data
      */
     public static int MAX_LIST_PRINT_SIZE=20;
+
+    private static final byte[] TYPE_NULL_ARRAY={0};
 
     public static final Class<?>[] getUnicastProtocols() {
         return new Class<?>[]{UNICAST.class,UNICAST2.class,UNICAST3.class};
@@ -532,7 +534,7 @@ public class Util {
      */
     public static byte[] objectToByteBuffer(Object obj) throws Exception {
         if(obj == null)
-            return ByteBuffer.allocate(Global.BYTE_SIZE).put(TYPE_NULL).array();
+            return TYPE_NULL_ARRAY;
 
         if(obj instanceof Streamable) {
             final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
@@ -545,14 +547,10 @@ public class Util {
         if(type == null) { // will throw an exception if object is not serializable
             final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
             out_stream.write(TYPE_SERIALIZABLE);
-            ObjectOutputStream out=new ObjectOutputStream(out_stream);
-            try {
+            try(ObjectOutputStream out=new ObjectOutputStream(out_stream)) {
                 out.writeObject(obj);
                 out.flush();
                 return out_stream.toByteArray();
-            }
-            finally {
-                Util.close(out);
             }
         }
 
@@ -593,7 +591,68 @@ public class Util {
             default:
                 throw new IllegalArgumentException("type " + type + " is invalid");
         }
+    }
 
+
+    public static Buffer objectToBuffer(Object obj) throws Exception {
+        if(obj == null)
+            return new Buffer(TYPE_NULL_ARRAY);
+
+        if(obj instanceof Streamable) {
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+            out.write(TYPE_STREAMABLE);
+            writeGenericStreamable((Streamable)obj,out);
+            return out.getBuffer();
+        }
+
+        Byte type=PRIMITIVE_TYPES.get(obj.getClass());
+        if(type == null) { // will throw an exception if object is not serializable
+            final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+            out_stream.write(TYPE_SERIALIZABLE);
+            try(ObjectOutputStream out=new ObjectOutputStream(out_stream)) {
+                out.writeObject(obj);
+                out.flush();
+                return new Buffer(out_stream.toByteArray());
+            }
+        }
+
+        switch(type) {
+            case TYPE_BOOLEAN:
+                return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE * 2).put(TYPE_BOOLEAN)
+                                    .put((Boolean)obj? (byte)1 : (byte)0).array());
+            case TYPE_BYTE:
+                return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE * 2).put(TYPE_BYTE).put((Byte)obj).array());
+            case TYPE_CHAR:
+                return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE * 3).put(TYPE_CHAR).putChar((Character)obj).array());
+            case TYPE_DOUBLE:
+                return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE + Global.DOUBLE_SIZE).put(TYPE_DOUBLE)
+                                    .putDouble((Double)obj).array());
+            case TYPE_FLOAT:
+                return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE + Global.FLOAT_SIZE).put(TYPE_FLOAT)
+                                    .putFloat((Float)obj).array());
+            case TYPE_INT:
+                return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE + Global.INT_SIZE).put(TYPE_INT)
+                                    .putInt((Integer)obj).array());
+            case TYPE_LONG:
+                return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE).put(TYPE_LONG)
+                                    .putLong((Long)obj).array());
+            case TYPE_SHORT:
+                return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE + Global.SHORT_SIZE).put(TYPE_SHORT)
+                                    .putShort((Short)obj).array());
+            case TYPE_STRING:
+                String str=(String)obj;
+                int len=str.length();
+                ByteBuffer retval=ByteBuffer.allocate(Global.BYTE_SIZE + len).put(TYPE_STRING);
+                for(int i=0; i < len; i++)
+                    retval.put((byte)str.charAt(i));
+                return new Buffer(retval.array());
+            case TYPE_BYTEARRAY:
+                byte[] buf=(byte[])obj;
+                return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE + buf.length).put(TYPE_BYTEARRAY)
+                                    .put(buf,0,buf.length).array());
+            default:
+                throw new IllegalArgumentException("type " + type + " is invalid");
+        }
     }
 
 
@@ -639,14 +698,10 @@ public class Util {
                     String str=(String)obj;
                     if(str.length() > Short.MAX_VALUE) {
                         out.writeBoolean(true);
-                        ObjectOutputStream oos=new ObjectOutputStream(out instanceof ByteArrayDataOutputStream?
-                                                                        new OutputStreamAdapter((ByteArrayDataOutputStream)out) :
-                                                                        (OutputStream)out);
-                        try {
+                        try(ObjectOutputStream oos=new ObjectOutputStream(out instanceof ByteArrayDataOutputStream?
+                                                                            new OutputStreamAdapter((ByteArrayDataOutputStream)out) :
+                                                                            (OutputStream)out)) {
                             oos.writeObject(str);
-                        }
-                        finally {
-                            oos.close();
                         }
                     }
                     else {

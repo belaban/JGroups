@@ -147,13 +147,8 @@ public class RpcDispatcher extends MessageDispatcher {
         if(log.isTraceEnabled())
             log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, options);
 
-        Object buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToByteBuffer(method_call);
-
-        Message msg=new Message();
-        if(buf instanceof Buffer)
-            msg.setBuffer((Buffer)buf);
-        else
-            msg.setBuffer((byte[])buf);
+        Buffer buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToBuffer(method_call);
+        Message msg=new Message().setBuffer(buf);
 
         RspList<T> retval=super.castMessage(dests, msg, options);
         if(log.isTraceEnabled()) log.trace("responses: %s", retval);
@@ -185,13 +180,8 @@ public class RpcDispatcher extends MessageDispatcher {
         if(log.isTraceEnabled())
             log.trace("dests=%s, method_call=%s, options=%s", dests, method_call, options);
 
-        Object buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToByteBuffer(method_call);
-
-        Message msg=new Message();
-        if(buf instanceof Buffer)
-            msg.setBuffer((Buffer)buf);
-        else
-            msg.setBuffer((byte[])buf);
+        Buffer buf=req_marshaller != null? req_marshaller.objectToBuffer(method_call) : Util.objectToBuffer(method_call);
+        Message msg=new Message().setBuffer(buf);
 
         NotifyingFuture<RspList<T>>  retval=super.castMessageWithFuture(dests, msg, options, listener);
         if(log.isTraceEnabled()) log.trace("responses: %s", retval);
@@ -245,12 +235,8 @@ public class RpcDispatcher extends MessageDispatcher {
         if(log.isTraceEnabled())
             log.trace("dest=%s, method_call=%s, options=%s", dest, call, options);
 
-        Object buf=req_marshaller != null? req_marshaller.objectToBuffer(call) : Util.objectToByteBuffer(call);
-        Message msg=new Message(dest, null, null);
-        if(buf instanceof Buffer)
-            msg.setBuffer((Buffer)buf);
-        else
-            msg.setBuffer((byte[])buf);
+        Buffer buf=req_marshaller != null? req_marshaller.objectToBuffer(call) : Util.objectToBuffer(call);
+        Message msg=new Message(dest, null, null).setBuffer(buf);
 
         T retval=super.sendMessage(msg, options);
         if(log.isTraceEnabled()) log.trace("retval: %s", retval);
@@ -273,12 +259,8 @@ public class RpcDispatcher extends MessageDispatcher {
         if(log.isTraceEnabled())
             log.trace("dest=%s, method_call=%s, options=%s", dest, call, options);
 
-        Object buf=req_marshaller != null? req_marshaller.objectToBuffer(call) : Util.objectToByteBuffer(call);
-        Message msg=new Message(dest, null, null);
-        if(buf instanceof Buffer)
-            msg.setBuffer((Buffer)buf);
-        else
-            msg.setBuffer((byte[])buf);
+        Buffer buf=req_marshaller != null? req_marshaller.objectToBuffer(call) : Util.objectToBuffer(call);
+        Message msg=new Message(dest, null, null).setBuffer(buf);
 
         return super.sendMessageWithFuture(msg, options, listener);
     }
