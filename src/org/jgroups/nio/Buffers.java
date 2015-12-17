@@ -325,5 +325,10 @@ public class Buffers implements Iterable<ByteBuffer> {
                     return bufs[index];
             }
         }
+
+        @Override
+        public void remove() { // todo: remove when baselining on Java 8
+            ;
+        }
     }
 }
