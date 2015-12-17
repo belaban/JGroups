@@ -482,12 +482,9 @@ public class Util {
     public static Object objectFromByteBuffer(byte[] buffer,int offset,int length, ClassLoader loader) throws Exception {
         if(buffer == null) return null;
         byte type=buffer[offset++];
-
         length--;
-
         switch(type) {
-            case TYPE_NULL:
-                return null;
+            case TYPE_NULL:    return null;
             case TYPE_STREAMABLE:
                 DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
                 return readGenericStreamable(in, loader);
@@ -496,25 +493,15 @@ public class Util {
                 try(ObjectInputStream oin=new ObjectInputStreamWithClassloader(in_stream, loader)) {
                     return oin.readObject();
                 }
-            case TYPE_BOOLEAN:
-                return buffer[offset] == 1;
-            case TYPE_BYTE:
-                return buffer[offset];
-            case TYPE_CHAR:
-                return Bits.readChar(buffer, offset);
-            case TYPE_DOUBLE:
-                return ByteBuffer.wrap(buffer,offset,length).getDouble();
-            case TYPE_FLOAT:
-                return ByteBuffer.wrap(buffer,offset,length).getFloat();
-            case TYPE_INT:
-                return Bits.readInt(buffer, offset);
-            case TYPE_LONG:
-                return Bits.readLong(buffer, offset);
-                // return ByteBuffer.wrap(buffer,offset,length).getLong();
-            case TYPE_SHORT:
-                return Bits.readShort(buffer, offset);
-            case TYPE_STRING:
-                return new String(buffer,offset,length);
+            case TYPE_BOOLEAN: return buffer[offset] == 1;
+            case TYPE_BYTE:    return buffer[offset];
+            case TYPE_CHAR:    return Bits.readChar(buffer, offset);
+            case TYPE_DOUBLE:  return Bits.readDouble(buffer, offset);
+            case TYPE_FLOAT:   return Bits.readFloat(buffer, offset);
+            case TYPE_INT:     return Bits.readInt(buffer, offset);
+            case TYPE_LONG:    return Bits.readLong(buffer, offset);
+            case TYPE_SHORT:   return Bits.readShort(buffer, offset);
+            case TYPE_STRING:  return new String(buffer,offset,length);
             case TYPE_BYTEARRAY:
                 byte[] tmp=new byte[length];
                 System.arraycopy(buffer,offset,tmp,0,length);
@@ -562,11 +549,15 @@ public class Util {
                 Bits.writeChar((char)obj, buf, 1);
                 return buf;
             case TYPE_DOUBLE:
-                return ByteBuffer.allocate(Global.BYTE_SIZE + Global.DOUBLE_SIZE).put(TYPE_DOUBLE)
-                  .putDouble((Double)obj).array();
+                buf=new byte[Global.BYTE_SIZE + Global.DOUBLE_SIZE];
+                buf[0]=TYPE_DOUBLE;
+                Bits.writeDouble((double)obj, buf, 1);
+                return buf;
             case TYPE_FLOAT:
-                return ByteBuffer.allocate(Global.BYTE_SIZE + Global.FLOAT_SIZE).put(TYPE_FLOAT)
-                  .putFloat((Float)obj).array();
+                buf=new byte[Global.BYTE_SIZE + Global.FLOAT_SIZE];
+                buf[0]=TYPE_FLOAT;
+                Bits.writeFloat((float)obj, buf, 1);
+                return buf;
             case TYPE_INT:
                 buf=new byte[Global.BYTE_SIZE + Global.INT_SIZE];
                 buf[0]=TYPE_INT;
@@ -577,8 +568,6 @@ public class Util {
                 buf[0]=TYPE_LONG;
                 Bits.writeLong((long)obj, buf, 1);
                 return buf;
-                //return ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE).put(TYPE_LONG)
-                  //.putLong((Long)obj).array();
             case TYPE_SHORT:
                 buf=new byte[Global.BYTE_SIZE + Global.SHORT_SIZE];
                 buf[0]=TYPE_SHORT;
@@ -593,8 +582,10 @@ public class Util {
                 return retval.array();
             case TYPE_BYTEARRAY:
                 buf=(byte[])obj;
-                return ByteBuffer.allocate(Global.BYTE_SIZE + buf.length).put(TYPE_BYTEARRAY)
-                  .put(buf,0,buf.length).array();
+                byte[] buffer=new byte[Global.BYTE_SIZE + buf.length];
+                buffer[0]=TYPE_BYTEARRAY;
+                System.arraycopy(buf, 0, buffer, 1, buf.length);
+                return buffer;
             default:
                 throw new IllegalArgumentException("type " + type + " is invalid");
         }
@@ -634,11 +625,15 @@ public class Util {
                 Bits.writeChar((char)obj, buf, 1);
                 return new Buffer(buf);
             case TYPE_DOUBLE:
-                return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE + Global.DOUBLE_SIZE).put(TYPE_DOUBLE)
-                                    .putDouble((Double)obj).array());
+                buf=new byte[Global.BYTE_SIZE + Global.DOUBLE_SIZE];
+                buf[0]=TYPE_DOUBLE;
+                Bits.writeDouble((double)obj, buf, 1);
+                return new Buffer(buf);
             case TYPE_FLOAT:
-                return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE + Global.FLOAT_SIZE).put(TYPE_FLOAT)
-                                    .putFloat((Float)obj).array());
+                buf=new byte[Global.BYTE_SIZE + Global.FLOAT_SIZE];
+                buf[0]=TYPE_FLOAT;
+                Bits.writeFloat((float)obj, buf, 1);
+                return new Buffer(buf);
             case TYPE_INT:
                 buf=new byte[Global.BYTE_SIZE + Global.INT_SIZE];
                 buf[0]=TYPE_INT;
@@ -649,8 +644,6 @@ public class Util {
                 buf[0]=TYPE_LONG;
                 Bits.writeLong((long)obj, buf, 1);
                 return new Buffer(buf);
-            //return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE).put(TYPE_LONG)
-            //                  .putLong((Long)obj).array());
             case TYPE_SHORT:
                 buf=new byte[Global.BYTE_SIZE + Global.SHORT_SIZE];
                 buf[0]=TYPE_SHORT;
@@ -665,8 +658,12 @@ public class Util {
                 return new Buffer(retval.array());
             case TYPE_BYTEARRAY:
                 buf=(byte[])obj;
-                return new Buffer(ByteBuffer.allocate(Global.BYTE_SIZE + buf.length).put(TYPE_BYTEARRAY)
-                                    .put(buf,0,buf.length).array());
+                byte[] buffer=new byte[Global.BYTE_SIZE + buf.length];
+                buffer[0]=TYPE_BYTEARRAY;
+                System.arraycopy(buf, 0, buffer, 1, buf.length);
+                return new Buffer(buffer);
+                /*buf=(byte[])obj;
+                return new Buffer(buf, 1, buf.length);*/
             default:
                 throw new IllegalArgumentException("type " + type + " is invalid");
         }
@@ -2219,6 +2216,15 @@ public class Util {
         }
         stack.init();
         return ch;
+    }
+
+    public static byte[] generateArray(int size) {
+        byte[] retval=new byte[size];
+        for(int i=0; i < retval.length; i++) {
+            byte b=(byte)Util.random(26);
+            retval[i]=b;
+        }
+        return retval;
     }
 
 

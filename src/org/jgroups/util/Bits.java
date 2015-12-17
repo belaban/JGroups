@@ -472,6 +472,9 @@ public class Bits {
         writeInt(Float.floatToIntBits(num), out);
     }
 
+    public static void writeFloat(float num, byte[] buf, int offset) {
+        writeInt(Float.floatToIntBits(num), buf, offset);
+    }
 
     /**
      * Reads a a float from a buffer.
@@ -489,6 +492,10 @@ public class Bits {
      */
     public static float readFloat(DataInput in) throws IOException {
         return Float.intBitsToFloat(readInt(in));
+    }
+
+    public static float readFloat(byte[] buf, int offset) {
+        return Float.intBitsToFloat(readInt(buf, offset));
     }
 
 
@@ -523,6 +530,10 @@ public class Bits {
         writeLong(Double.doubleToLongBits(num), out);
     }
 
+    public static void writeDouble(double num, byte[] buf, int offset) {
+        writeLong(Double.doubleToLongBits(num), buf, offset);
+    }
+
 
     /**
      * Reads a double from a buffer.
@@ -542,6 +553,9 @@ public class Bits {
         return Double.longBitsToDouble(readLong(in));
     }
 
+    public static double readDouble(byte[] buf, int offset) {
+        return Double.longBitsToDouble(readLong(buf, offset));
+    }
 
     /**
      * Computes the size of a variable-length encoded double

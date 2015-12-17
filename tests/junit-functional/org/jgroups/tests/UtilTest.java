@@ -316,7 +316,9 @@ public class UtilTest {
           (short)22,
           Short.MAX_VALUE,
           Short.MIN_VALUE,
-          "Bela Ban"
+          "Bela Ban",
+          new byte[]{'H', 'e', 'l', 'l', 'o'},
+          Util.generateArray(1024)
         };
         for(int i=0; i < values.length; i++) {
             Object value=values[i];

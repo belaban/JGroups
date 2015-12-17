@@ -385,7 +385,7 @@ public class BuffersTest {
     }
 
     public void testCopyBuffer() {
-        byte[] array1=generateArray(1024), array2=generateArray(16), array3=generateArray(8);
+        byte[] array1=Util.generateArray(1024), array2=Util.generateArray(16), array3=Util.generateArray(8);
         int off1=500, len1=500,
           off2=0, len2=16,
           off3=0, len3=4;
@@ -500,7 +500,7 @@ public class BuffersTest {
         assert capacity > 0 && num_buffers <= capacity;
         byte[][] arrays=new byte[num_buffers][]; // the original data, will be used to compare after the copy()
         for(int i=0; i < arrays.length; i++)
-            arrays[i]=generateArray(buffer_size);
+            arrays[i]=Util.generateArray(buffer_size);
         ByteBuffer[] buffers=new ByteBuffer[num_buffers];
         for(int i=0; i < arrays.length; i++) {
             // make a copy as we'll modify it later, so the original is not modified: we need it to compare later
@@ -591,14 +591,6 @@ public class BuffersTest {
         Util.setField(limit, buf, lim);
     }
 
-    protected static byte[] generateArray(int size) {
-        byte[] retval=new byte[size];
-        for(int i=0; i < retval.length; i++) {
-            byte b=(byte)Util.random(26);
-            retval[i]=b;
-        }
-        return retval;
-    }
 
     protected static void modifyBuffer(final ByteBuffer buf) {
         buf.clear();
