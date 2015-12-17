@@ -317,7 +317,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         List<Address> real_dests;
         // we need to clone because we don't want to modify the original
         if(dests != null) {
-            real_dests=new ArrayList<>();
+            real_dests=new ArrayList<>(dests.size());
             for(Address dest: dests) {
                 if(dest instanceof SiteAddress || this.members.contains(dest)) {
                     if(!real_dests.contains(dest))
