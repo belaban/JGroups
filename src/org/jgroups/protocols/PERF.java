@@ -67,7 +67,7 @@ public class PERF extends Protocol {
             else {
                 long time=System.nanoTime() - hdr.start_time;
                 if(time <= 0)
-                    log.error("%s: time is <= 0");
+                    log.error("%d: time is <= 0", time);
                 else
                     avg.add(time);
             }
@@ -83,7 +83,7 @@ public class PERF extends Protocol {
             else {
                 long time=System.nanoTime() - hdr.start_time;
                 if(time <= 0)
-                    log.error("%s: time is <= 0");
+                    log.error("%d: time is <= 0", time);
                 else
                     avg.add(time);
             }
