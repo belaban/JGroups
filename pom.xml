@@ -71,6 +71,14 @@
     </repositories>
 
     <dependencies>
+    
+    <!-- Cross platform Operating System Information -->
+        <dependency>
+			<groupId>com.github.dblock</groupId>
+			<artifactId>oshi-core</artifactId>
+			<version>1.5.1</version>
+		</dependency>
+	
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>

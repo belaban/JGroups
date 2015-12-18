@@ -2,7 +2,6 @@ package org.jgroups.protocols.jzookeeper;
 
 
 	
-	package org.jgroups.protocols.jzookeeper;
 
 	import org.jgroups.*;
 
@@ -61,7 +60,6 @@ package org.jgroups.protocols.jzookeeper;
 		private AtomicLong localSequence = new AtomicLong(); 
 		private long incMainRequest = 0;
 		private short ID;
-		
 	    private String outputDir;
 	    private static PrintWriter outFile;
 	    private static int numsThreadFinished = 0;
@@ -94,8 +92,8 @@ package org.jgroups.protocols.jzookeeper;
 			
 		}
 
-		public ZABTestThreadsCopy {
-		}
+//		public ZABTestThreadsCopy {
+//		}
 
 		public void viewAccepted(View new_view) {
 			System.out.println("** view: " + new_view);
@@ -137,8 +135,8 @@ package org.jgroups.protocols.jzookeeper;
 			clientThreads = new ClientThread[num_threads];
 			if (!zabboxInit.contains(local_addr.toString().split("-")[0])) {
 				for (int i = 0; i < clientThreads.length; i++) {
-					clientThreads[i] = new ClientThread(zabBox, barrier, num_msgs,
-							localSequence, payload, ProtocotName, num_msgsPerThreads, propsFile, load, numsOfWarmUpPerThread, this);
+//					clientThreads[i] = new ClientThread(zabBox, barrier, num_msgs,
+//							localSequence, payload, ProtocotName, num_msgsPerThreads, propsFile, load, numsOfWarmUpPerThread, this);
 				}
 			}
 
@@ -473,4 +471,4 @@ package org.jgroups.protocols.jzookeeper;
 
 	}
 
-}
+//}

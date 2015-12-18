@@ -18,5 +18,6 @@
         <dependency org="org.apache.logging.log4j" name="log4j-core"      rev="2.0"/>
         <dependency org="org.testng"               name="testng"          rev="6.8.7"/>
         <dependency org="com.beust"                name="jcommander"      rev="1.5"/>
+        <dependency org="com.github.dblock"        name="oshi-core"      rev="1.4"/>
     </dependencies>
 </ivy-module>

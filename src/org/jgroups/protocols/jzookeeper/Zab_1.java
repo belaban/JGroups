@@ -475,6 +475,12 @@ public class Zab_1 extends Protocol {
 		if(!is_warmUp)
 			countMessageFollower++;
 		 
+		
+		try{
+    		down_prot.down(new Event(Event.MSG, ACKMessage));   
+         }catch(Exception ex) {
+    		log.error("failed sending ACK message to Leader");
+    	}
 		if(hdrAck.getZxid() == lastZxidCommitted+1){
             outstandingProposals.remove(hdrAck.getZxid());
             commit(hdrAck.getZxid());	
@@ -482,11 +488,6 @@ public class Zab_1 extends Protocol {
 		else{
 			System.out.println(">>> Can't commit >>>>>>>>>");	
 		}
-		try{
-    		down_prot.down(new Event(Event.MSG, ACKMessage));   
-         }catch(Exception ex) {
-    		log.error("failed sending ACK message to Leader");
-    	}
 		
     }
     
@@ -893,3 +894,5 @@ public class Zab_1 extends Protocol {
 		 
 	 }
 }
+
+
