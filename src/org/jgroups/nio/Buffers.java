@@ -51,12 +51,12 @@ public class Buffers implements Iterable<ByteBuffer> {
         }
     }
 
-    public int     position()            {return position;}
-    public Buffers position(int new_pos) {this.position=toPositiveUnsignedShort(new_pos); nextToCopy(new_pos); return this;}
-    public int     limit()               {return limit;}
-    public Buffers limit(int new_limit)  {this.limit=toPositiveUnsignedShort(new_limit); return this;}
-    public int     nextToCopy()          {return next_to_copy;}
-    public Buffers nextToCopy(int next)  {next_to_copy=toPositiveUnsignedShort(next); return this;}
+    public int     position()              {return position;}
+    public Buffers position(int new_pos)   {this.position=toPositiveUnsignedShort(new_pos); nextToCopy(new_pos); return this;}
+    public int     limit()                 {return limit;}
+    public Buffers limit(int new_limit)    {this.limit=toPositiveUnsignedShort(new_limit); return this;}
+    public int     nextToCopy()            {return next_to_copy;}
+    public Buffers nextToCopy(int next)    {next_to_copy=toPositiveUnsignedShort(next); return this;}
 
 
     public int remaining() {
@@ -113,12 +113,11 @@ public class Buffers implements Iterable<ByteBuffer> {
     }
 
 
+
     /**
-     * Reads length, then allocates a data buffer and reads all data into it. Returns the data buffer when complete, or
-     * null when not all data has been read
-     * @param ch The channel to read from
-     * @return The complete data buffer, or null when more data needs to be read
-     * @throws Exception Thrown when the read failed
+     * Reads length and then length bytes into the data buffer, which is grown if needed.
+     * @param ch The channel to read data from
+     * @return The data buffer (position is 0 and limit is length), or null if not all data could be read.
      */
     public ByteBuffer readLengthAndData(SocketChannel ch) throws Exception {
         if(bufs[0].hasRemaining() && ch.read(bufs[0]) < 0)
@@ -127,23 +126,24 @@ public class Buffers implements Iterable<ByteBuffer> {
         if(bufs[0].hasRemaining())
             return null;
 
-        if(bufs[1] == null) {
-            int len=bufs[0].getInt(0); // we know bufs[0] is always 4 bytes, no need to clear or flip it
+        int len=bufs[0].getInt(0);
+        if(bufs[1] == null || len > bufs[1].capacity())
             bufs[1]=ByteBuffer.allocate(len);
-        }
+        bufs[1].limit(len);
+
         if(bufs[1].hasRemaining() && ch.read(bufs[1]) < 0)
             throw new EOFException();
 
-        if(!bufs[1].hasRemaining()) {
-            try {
-                return (ByteBuffer)bufs[1].clear();
-            }
-            finally {
-                bufs[0].clear();
-                bufs[1]=null;
-            }
+        if(bufs[1].hasRemaining())
+            return null;
+
+        try {
+            return (ByteBuffer)bufs[1].duplicate().flip();
         }
-        return null; // has remaining; not all data read yet
+        finally {
+            bufs[0].clear();
+            bufs[1].clear();
+        }
     }
 
     /**

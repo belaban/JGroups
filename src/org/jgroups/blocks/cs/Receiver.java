@@ -14,9 +14,9 @@ public interface Receiver {
     /**
      * Delivers a message from a given sender to the application
      * @param sender The sender of the message
-     * @param buf The buffer. Invokers of receive() must ensure that the contents of buf are not overwritten, e.g. by
-     *            copying it if a buffer is reused. The application can therefore hang on to buf as long as it needs to.
-     *            When buf is not referenced any longer, it can get garbage collected.
+     * @param buf The buffer. An application typically de-serializes data from the buffer into objects used by the
+     *            application. Note that when receive() returns, it is not safe to use the buffer any longer;
+     *            if an application needs to use a buffer after this callback returns, it must make a copy.
      * @param offset The offset at which the received data starts
      * @param length The length of the received data
      */
@@ -25,9 +25,9 @@ public interface Receiver {
     /**
      * Delivers a message from a given sender to the application
      * @param sender The sender of the message
-     * @param buf The buffer. Invokers of receive() must ensure that the contents of buf are not overwritten, e.g. by
-     *            copying it if a buffer is reused. The application can therefore hang on to buf as long as it needs to.
-     *            When buf is not referenced any longer, it can get garbage collected.<p/>
+     * @param buf The buffer. An application typically de-serializes data from the buffer into objects used by the
+     *            application. Note that when receive() returns, it is not safe to use the buffer any longer;
+     *            if an application needs to use a buffer after this callback returns, it must make a copy.<p/>
      *            Note that buf could be a direct ByteBuffer.
      */
     void receive(Address sender, ByteBuffer buf); // should be a default method in Java 8

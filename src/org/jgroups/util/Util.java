@@ -662,8 +662,6 @@ public class Util {
                 buffer[0]=TYPE_BYTEARRAY;
                 System.arraycopy(buf, 0, buffer, 1, buf.length);
                 return new Buffer(buffer);
-                /*buf=(byte[])obj;
-                return new Buffer(buf, 1, buf.length);*/
             default:
                 throw new IllegalArgumentException("type " + type + " is invalid");
         }

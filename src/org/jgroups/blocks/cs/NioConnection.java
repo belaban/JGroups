@@ -40,7 +40,6 @@ public class NioConnection implements Connection {
 
     // creates an array of 2: length buffer (for reading the length of the following data buffer) and data buffer
     protected Buffers             recv_buf=new Buffers(ByteBuffer.allocate(Global.INT_SIZE), null);
-    protected final Lock          recv_lock=new ReentrantLock(); // serialize receive()
     protected boolean             copy_on_partial_write=true;
     protected int                 partial_writes; // number of partial writes (write which did not write all bytes)
 
@@ -207,68 +206,42 @@ public class NioConnection implements Connection {
 
 
 
-    /** Read the length first, then the actual data */
+    /** Read the length first, then the actual data. This method is not reentrant and access must be synchronized */
     public void receive() throws Exception {
-        ByteBuffer msg=null;
-        Receiver   receiver=server.receiver();
-
-        recv_lock.lock();
-        try {
-            if((msg=recv_buf.readLengthAndData(channel)) == null)
-                return;
-            if(peer_addr == null && server.usePeerConnections()) {
-                peer_addr=readPeerAddress(msg);
-                server.addConnection(peer_addr, this);
-                return;
-            }
-            updateLastAccessed();
-        }
-        finally {
-            recv_lock.unlock();
-        }
-        // deliver the message outside the receive lock
-        if(receiver != null)
-            receiver.receive(peer_addr, msg);
+        _receive(true);
     }
 
 
-    /**
-     * Tries to receive up to max_num_msgs_to_receive messages in one go
-     * @param max_num_msgs_to_receive
-     * @throws Exception
-     */
-    public void receive(int max_num_msgs_to_receive) throws Exception {
-        ByteBuffer msg=null;
-        Receiver   receiver=server.receiver();
-        ByteBuffer[] buffers=new ByteBuffer[max_num_msgs_to_receive];
-        int index=0;
-
-        recv_lock.lock();
+    /** Tries to receive up to max_msgs_to_receive messages in one go */
+    public void receive(int max_msgs_to_receive) throws Exception {
         try {
-            while(index < buffers.length) {
-                if((msg=recv_buf.readLengthAndData(channel)) == null)
-                    break;
-                if(peer_addr == null && server.usePeerConnections()) {
-                    peer_addr=readPeerAddress(msg);
-                    server.addConnection(peer_addr, this);
-                    continue;
-                }
-                buffers[index++]=msg;
+            while(max_msgs_to_receive-- > 0) {
+                if(!_receive(false))
+                    return;
             }
-            updateLastAccessed();
         }
         finally {
-            recv_lock.unlock();
+            updateLastAccessed();
         }
+    }
 
-        // deliver the messages outside the receive lock
-        if(receiver == null)
-            return;
-        for(int i=0; i < buffers.length; i++) {
-            if((msg=buffers[i]) == null)
-                return;
-            receiver.receive(peer_addr, msg);
+
+    protected boolean _receive(boolean update) throws Exception {
+        ByteBuffer msg;
+        Receiver   receiver=server.receiver();
+
+        if((msg=recv_buf.readLengthAndData(channel)) == null)
+            return false;
+        if(peer_addr == null && server.usePeerConnections()) {
+            peer_addr=readPeerAddress(msg);
+            server.addConnection(peer_addr, this);
+            return true;
         }
+        if(receiver != null)
+            receiver.receive(peer_addr, msg);
+        if(update)
+            updateLastAccessed();
+        return true;
     }
 
 

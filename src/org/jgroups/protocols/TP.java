@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>{@link #destroy()}
  * </ul>
  * The create() or start() method has to create a local address.<br>
- * The {@link #receive(Address, byte[], int, int,boolean)} method must
+ * The {@link #receive(Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
  */
@@ -55,7 +55,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected static final byte    LIST=1; // we have a list of messages rather than a single message when set
     protected static final byte    MULTICAST=2; // message is a multicast (versus a unicast) message when set
-    protected static final int     MSG_OFFSET=Global.SHORT_SIZE + Global.BYTE_SIZE*2; // offset for flags for single msgs
     protected static final int     MSG_OVERHEAD=Global.SHORT_SIZE + Global.BYTE_SIZE; // version + flags
     protected static final boolean can_bind_to_mcast_addr;
     protected static final String  BUNDLE_MSG="%s: sending %d msgs (%d bytes (%.2f%% of max_bundle_size) to %d dests(s): %s";
@@ -98,7 +97,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(name="bind_interface", converter=PropertyConverters.BindInterface.class,
               description="The interface (NIC) which should be used by this transport", dependsUpon="bind_addr",
               exposeAsManagedAttribute=false)
-    protected String bind_interface_str=null;
+    protected String bind_interface_str;
     
     @Property(description="If true, the transport should use all available interfaces to receive multicast messages")
     protected boolean receive_on_all_interfaces=false;
@@ -1626,7 +1625,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /**
      * Subclasses must call this method when a unicast or multicast message has been received.
      */
-    public void receive(Address sender, byte[] data, int offset, int length, boolean copy_buffer) {
+    public void receive(Address sender, byte[] data, int offset, int length) {
         if(data == null) return;
 
         // drop message from self; it has already been looped back up (https://issues.jboss.org/browse/JGRP-1765)
@@ -1639,7 +1638,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(is_message_list) // used if message bundling is enabled
             handleMessageBatch(sender, data, offset, length);
         else
-            handleSingleMessage(sender, data, offset, length, copy_buffer);
+            handleSingleMessage(sender, data, offset, length);
     }
 
 
@@ -1685,32 +1684,42 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
     }
 
-    protected void handleSingleMessage(Address sender, byte[] data, int offset, int length, boolean copy_buffer) {
-        // the message flags are at indexes 4-5
-        short   msg_flags=Bits.makeShort(data[offset + MSG_OFFSET], data[offset + MSG_OFFSET +1]);
-        boolean internal=(msg_flags & Message.Flag.INTERNAL.value()) == Message.Flag.INTERNAL.value();
-        boolean oob=(msg_flags & Message.Flag.OOB.value()) == Message.Flag.OOB.value();
 
-        if(oob)
-            num_oob_msgs_received++;
-        else if(internal)
-            num_internal_msgs_received++;
-        else
-            num_incoming_msgs_received++;
 
-        Executor pool=pickThreadPool(oob, internal);
-
+    protected void handleSingleMessage(Address sender, byte[] data, int offset, int length) {
         try {
-            if(!copy_buffer) // e.g. with TCP which creates a new buffer for each msg
-                pool.execute(new MyHandler(sender, data, offset, length)); // we don't make a copy if we execute on this thread
-            else {
-                byte[] tmp=new byte[length];
-                System.arraycopy(data, offset, tmp, 0, length);
-                pool.execute(new MyHandler(sender, tmp, 0, tmp.length));
+            ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
+            short version=in.readShort();
+            if(!versionMatch(version, sender))
+                return;
+
+            byte flags=in.readByte();
+            final boolean multicast=(flags & MULTICAST) == MULTICAST;
+            Message msg=new Message(false); // don't create headers, readFrom() will do this
+            msg.readFrom(in);
+
+            if(!multicast) {
+                Address dest=msg.getDest(), target=local_addr;
+                if(dest != null && target != null && !dest.equals(target))
+                    return;
             }
+
+            boolean oob=msg.isFlagSet(Message.Flag.OOB), internal=msg.isFlagSet(Message.Flag.INTERNAL);
+            if(oob)
+                num_oob_msgs_received++;
+            else if(internal)
+                num_internal_msgs_received++;
+            else
+                num_incoming_msgs_received++;
+
+            Executor pool=pickThreadPool(oob, internal);
+            pool.execute(new SingleMessageHandler(msg));
         }
         catch(RejectedExecutionException ex) {
             num_rejected_msgs++;
+        }
+        catch(Throwable t) {
+            log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
         }
     }
 
@@ -1763,55 +1772,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
 
-    protected class MyHandler implements Runnable {
-        protected final Address sender;
-        protected final byte[]  data; // this is always a copy, or we use a DirectExecutor
-        protected final int     offset;
-        protected final int     length;
-
-        protected MyHandler(Address sender, byte[] data, int offset, int length) {
-            this.sender=sender;
-            this.data=data;
-            this.offset=offset;
-            this.length=length;
-        }
-
-        public void run() {
-            try {
-                ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
-                short version=in.readShort();
-                if(!versionMatch(version, sender))
-                    return;
-
-                byte flags=in.readByte();
-                final boolean multicast=(flags & MULTICAST) == MULTICAST;
-                Message msg=new Message(false); // don't create headers, readFrom() will do this
-                int payload_offset=msg.readFromSkipPayload(in);
-
-                if(!multicast) {
-                    Address dest=msg.getDest(), target=local_addr;
-                    if(dest != null && target != null && !dest.equals(target))
-                        return;
-                }
-
-                if(payload_offset >= 0)
-                    msg.setBuffer(data, payload_offset, length - payload_offset);
-
-                if(stats) {
-                    num_msgs_received++;
-                    num_single_msgs_received++;
-                    num_bytes_received+=length;
-                }
-
-                TpHeader hdr=(TpHeader)msg.getHeader(id);
-                AsciiString cname=new AsciiString(hdr.cluster_name);
-                passMessageUp(msg, cname, true, multicast, true);
-            }
-            catch(Throwable t) {
-                log.error(Util.getMessage("IncomingMsgFailure"), local_addr, t);
-            }
-        }
-    }
 
     protected class SingleMessageHandler implements Runnable {
         protected final Message msg;
@@ -2442,7 +2402,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
 
-    protected interface Bundler {
+    public interface Bundler {
         void start();
         void stop();
         void send(Message msg) throws Exception;
@@ -2722,7 +2682,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     */
    protected class SimplifiedTransferQueueBundler extends TransferQueueBundler {
        protected static final int          MSG_BUF_SIZE=512;
-       protected final Message[]           msgs=new Message[MSG_BUF_SIZE];
+       protected final Message[]           msg_queue=new Message[MSG_BUF_SIZE];
        protected int                       curr;
 
        protected SimplifiedTransferQueueBundler(int capacity) {
@@ -2731,15 +2691,15 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
        protected void addMessage(Message msg, long size) {
            try {
-               while(curr < MSG_BUF_SIZE && msgs[curr] != null) ++curr;
+               while(curr < MSG_BUF_SIZE && msg_queue[curr] != null) ++curr;
                if(curr < MSG_BUF_SIZE) {
-                   msgs[curr]=msg;
+                   msg_queue[curr]=msg;
                    ++curr;
                }
                else {
                    sendBundledMessages();
                    curr=0;
-                   msgs[0]=msg;
+                   msg_queue[0]=msg;
                }
            }
            finally {
@@ -2750,17 +2710,17 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
        protected void sendBundledMessages() {
            int start=0;
            for(;;) {
-               for(; start < MSG_BUF_SIZE && msgs[start] == null; ++start) ;
+               for(; start < MSG_BUF_SIZE && msg_queue[start] == null; ++start) ;
                if(start >= MSG_BUF_SIZE) {
                    count=0;
                    return;
                }
-               Address dest=msgs[start].getDest();
-               byte[] clusterName=getMsgClusterName(msgs[start]);
+               Address dest=msg_queue[start].getDest();
+               byte[] clusterName=getMsgClusterName(msg_queue[start]);
                int numMsgs=1;
                if(isSingleton()) {
                    for(int i=start + 1; i < MSG_BUF_SIZE; ++i) {
-                       Message msg=msgs[i];
+                       Message msg=msg_queue[i];
                        if(msg != null && (dest == msg.getDest() || (dest != null && dest.equals(msg.getDest())))
                          && Arrays.equals(clusterName, getMsgClusterName(msg))) {
                            msg.setDest(dest); // avoid further equals() calls
@@ -2770,7 +2730,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                }
                else {
                    for(int i=start + 1; i < MSG_BUF_SIZE; ++i) {
-                       Message msg=msgs[i];
+                       Message msg=msg_queue[i];
                        if(msg != null && (dest == msg.getDest() || (dest != null && dest.equals(msg.getDest())))) {
                            msg.setDest(dest); // avoid further equals() calls
                            numMsgs++;
@@ -2780,17 +2740,17 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                try {
                    output.position(0);
                    if(numMsgs == 1) {
-                       sendSingleMessage(msgs[start], output);
-                       msgs[start]=null;
+                       sendSingleMessage(msg_queue[start], output);
+                       msg_queue[start]=null;
                    }
                    else {
-                       writeMessageListHeader(dest, msgs[start].getSrc(), clusterName, numMsgs, output, dest == null);
+                       writeMessageListHeader(dest, msg_queue[start].getSrc(), clusterName, numMsgs, output, dest == null);
                        for(int i=start; i < MSG_BUF_SIZE; ++i) {
-                           Message msg=msgs[i];
+                           Message msg=msg_queue[i];
                            // since we assigned the matching destination we can do plain ==
                            if(msg != null && msg.getDest() == dest) {
                                msg.writeToNoAddrs(msg.getSrc(), output, id);
-                               msgs[i]=null;
+                               msg_queue[i]=null;
                            }
                        }
                        doSend(isSingleton()? new AsciiString(clusterName) : null, output.buffer(), 0, output.position(), dest);

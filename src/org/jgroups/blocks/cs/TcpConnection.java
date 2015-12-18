@@ -283,6 +283,7 @@ public class TcpConnection implements Connection {
     protected class Receiver implements Runnable {
         protected final Thread     recv;
         protected volatile boolean receiving=true;
+        protected volatile byte[]  buffer;
 
         public Receiver(ThreadFactory f) {
             recv=f.newThread(this,"Connection.Receiver [" + getSockAddress() + "]");
@@ -313,10 +314,11 @@ public class TcpConnection implements Connection {
             while(canRun()) {
                 try {
                     int len=in.readInt();
-                    byte[] buf=new byte[len];
-                    in.readFully(buf, 0, len);
+                    if(buffer == null || buffer.length < len)
+                        buffer=new byte[len];
+                    in.readFully(buffer, 0, len);
                     updateLastAccessed();
-                    server.receive(peer_addr, buf, 0, len);
+                    server.receive(peer_addr, buffer, 0, len);
                 }
                 catch(OutOfMemoryError mem_ex) {
                     t=mem_ex;

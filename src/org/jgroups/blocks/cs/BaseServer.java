@@ -145,7 +145,9 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
 
     /**
-     * Called by a {@link Connection} implementation when a message has been received
+     * Called by a {@link Connection} implementation when a message has been received. Note that data might be a
+     * reused buffer, so unless used to de-serialize an object from it, it should be copied (e.g. if we store a ref
+     * to it beyone the scope of this receive() method)
      */
     public void receive(Address sender, byte[] data, int offset, int length) {
         if(this.receiver != null)

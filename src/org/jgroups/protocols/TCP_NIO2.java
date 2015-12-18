@@ -32,11 +32,11 @@ public class TCP_NIO2 extends BasicTCP {
     protected int max_send_buffers=10;
 
     @Property(description="Max number of messages a read will try to read from the socket. Setting this to a higher " +
-      "value will increase speed when receiving a lot of messages. However, when the receive message rate is small, " +
-      "then every read will create an array of max_read_batch_size messages.")
-    protected int max_read_batch_size=10;
+      "value will increase speed when receiving a lot of messages. However, all other reads and writes are delayed " +
+      "by the time the batch read takes.")
+    protected int max_read_batch_size=50;
 
-    @ManagedAttribute(description="If true, a partial write will make a copy of the data so a buffer can be reused")
+    @Property(description="If true, a partial write will make a copy of the data so a buffer can be reused")
     protected boolean copy_on_partial_write=true;
 
 
