@@ -23,9 +23,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.jgroups.protocols.jzookeeper.ZAB;
-import org.jgroups.protocols.jzookeeper.ClientThread.Sender;
+import org.jgroups.protocols.jzookeeper.ZabCoinTossingClient.Sender;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -37,10 +35,10 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
-public class ZABTestThreads extends ReceiverAdapter {
+public class ZabCoinTossingTest extends ReceiverAdapter {
 	private List<String> zabboxInit = new ArrayList<String>();
-	private String propsFile = "conf/ZAB.xml";
-	private static String ProtocotName = "ZAB";
+	private String propsFile = "conf/ZabCoinTossing.xml";
+	private static String ProtocotName = "ZabCoinTossing";
 	private JChannel channel;
 	private Address local_addr = null;
 	private List<Address> zabBox = new ArrayList<Address>();
@@ -52,7 +50,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 	private static int num_threads = 10;
 	private long log_interval = num_msgs / 10; 
 	private long receive_log_interval = Math.max(1, num_msgs / 10);
-	private ClientThread[] clientThreads;
+	private ZabCoinTossingClient[] clientThreads;
 	private final byte[] payload = new byte[msg_size];
 	private AtomicLong localSequence = new AtomicLong(); 
 	private long incMainRequest = 0;
@@ -71,7 +69,7 @@ public class ZABTestThreads extends ReceiverAdapter {
     private Scanner wait = new Scanner(System.in);
 
 
-	public ZABTestThreads(String [] zabHosts, String protocolName, String props,
+	public ZabCoinTossingTest(String [] zabHosts, String protocolName, String props,
 						 int totalNum_msgs, int totalPerThreads, int num_threads,
 						 int msg_size, String outputDir, int numOfClients, int load, int numsOfWarmUpPerThread){
 		this.zabboxInit =  Arrays.asList(zabHosts);
@@ -85,13 +83,11 @@ public class ZABTestThreads extends ReceiverAdapter {
 		this.numOfClients = numOfClients;
 		this.load = load;
 		this.numsOfWarmUpPerThread = numsOfWarmUpPerThread;
-
 		this.ID = ClassConfigurator
-					.getProtocolId((this.ProtocotName.equals("ZAB"))?ZAB.class:MMZAB.class);
-		
+			.getProtocolId(ZabCoinTossing.class);
 	}
 
-	public ZABTestThreads() {
+	public ZabCoinTossingTest() {
 	}
 
 	public void viewAccepted(View new_view) {
@@ -131,10 +127,10 @@ public class ZABTestThreads extends ReceiverAdapter {
 
 		final CyclicBarrier barrier = new CyclicBarrier(num_threads + 1);
 		System.out.println("Host name for client"+ local_addr.toString().split("-")[0]);
-		clientThreads = new ClientThread[num_threads];
+		clientThreads = new ZabCoinTossingClient[num_threads];
 		if (!zabboxInit.contains(local_addr.toString().split("-")[0])) {
 			for (int i = 0; i < clientThreads.length; i++) {
-				clientThreads[i] = new ClientThread(zabBox, barrier, num_msgs,
+				clientThreads[i] = new ZabCoinTossingClient(zabBox, barrier, num_msgs,
 						localSequence, payload, ProtocotName, num_msgsPerThreads, propsFile, load, numsOfWarmUpPerThread, this);
 			}
 		}
@@ -157,7 +153,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 		// Send local address to leader
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZABHeader startHeader = new ZABHeader(ZABHeader.SENDMYADDRESS, -6, mid);
+		ZabCoinTossingHeader startHeader = new ZabCoinTossingHeader(ZabCoinTossingHeader.SENDMYADDRESS, -6, mid);
 		Message msg = new Message(null).putHeader(ID, startHeader);
 		msg.src(channel.getAddress());
 		msg.setObject("SENDMYADDRESS");
@@ -174,7 +170,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 		//System.out.println("inside sendStartSign");
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZABHeader startHeader = new ZABHeader(ZABHeader.START_SENDING, -5, mid);
+		ZabCoinTossingHeader startHeader = new ZabCoinTossingHeader(ZabCoinTossingHeader.START_SENDING, -5, mid);
 		Message msg = new Message(null).putHeader(ID, startHeader);
 		msg.setObject("req");
 		channel.send(msg);
@@ -189,7 +185,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 				(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZABHeader resetProtocol = new ZABHeader(ZABHeader.RESET, -4,  mid);
+		ZabCoinTossingHeader resetProtocol = new ZabCoinTossingHeader(ZabCoinTossingHeader.RESET, -4,  mid);
 		Message msg = new Message(null).putHeader(ID, resetProtocol);
 		channel.send(msg);
 	}
@@ -197,7 +193,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 	public void callRemotePrintStats() throws Exception{
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZABHeader stats = new ZABHeader(ZABHeader.STATS, -3, mid);
+		ZabCoinTossingHeader stats = new ZabCoinTossingHeader(ZabCoinTossingHeader.STATS, -3, mid);
 		Message msg = new Message(null).putHeader(ID, stats);
 		channel.send(msg);
 		
@@ -206,7 +202,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 	public void calculateABMessage() throws Exception{
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZABHeader stats = new ZABHeader(ZABHeader.COUNTMESSAGE, -2, mid);
+		ZabCoinTossingHeader stats = new ZabCoinTossingHeader(ZabCoinTossingHeader.COUNTMESSAGE, -2, mid);
 		Message msg = new Message(null).putHeader(ID, stats);
 		channel.send(msg);
 		
@@ -229,7 +225,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 
 			MessageId mid = new MessageId(local_addr,
 					localSequence.incrementAndGet());
-			//ZABHeader startHeader = new ZABHeader(ZABHeader.TEMPSENT,i, mid);
+			//ZabCoinTossingHeader startHeader = new ZabCoinTossingHeader(ZabCoinTossingHeader.TEMPSENT,i, mid);
 			//Message msg = new Message(null).putHeader(ID, startHeader);
 			//channel.send(msg);
 		}
@@ -237,9 +233,9 @@ public class ZABTestThreads extends ReceiverAdapter {
 	}
 	
 	public void receive(Message msg) {
-		final ZABHeader testHeader = (ZABHeader) msg.getHeader(ID);
+		final ZabCoinTossingHeader testHeader = (ZabCoinTossingHeader) msg.getHeader(ID);
 		
-			//if (testHeader.getType() == ZABHeader.START_SENDING) {
+			//if (testHeader.getType() == ZabCoinTossingHeader.START_SENDING) {
 				//numsThreadFinished=0;
 				//avgTimeElpased =0;
 				//avgRecievedOps=0;
@@ -259,7 +255,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 			//		e.printStackTrace();
 			//	}
 	       // }
-		    if (testHeader.getType() == ZABHeader.STARTREALTEST){
+		    if (testHeader.getType() == ZabCoinTossingHeader.STARTREALTEST){
 				System.out.println("!!!Recieved STARTREALTEST from "+msg.getSrc());
 
 				//synchronized(this){
@@ -268,7 +264,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 						startRealTest();
 			//	}
 			}
-			//else if (testHeader.getType() == ZABHeader.RESPONCETEMP){
+			//else if (testHeader.getType() == ZabCoinTossingHeader.RESPONCETEMP){
 				//countTempRecieved++;
 			//}
 	}
@@ -276,7 +272,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 	public void sendMyAddressToLeader(){
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZABHeader startHeader = new ZABHeader(ZABHeader.SENDMYADDRESS, -6, mid);
+		ZabCoinTossingHeader startHeader = new ZabCoinTossingHeader(ZabCoinTossingHeader.SENDMYADDRESS, -6, mid);
 		Message msg = new Message(null).putHeader(ID, startHeader);
 		msg.src(channel.getAddress());
 		msg.setObject("SENDMYADDRESS");
@@ -315,9 +311,10 @@ public class ZABTestThreads extends ReceiverAdapter {
 	
 	public synchronized void finishedSend() throws Exception{
 		numsThreadFinished++;
-		if (numsThreadFinished >= num_threads)
+		if (numsThreadFinished >= num_threads){
+      System.out.println("Finished warm up----------------------------->>>");
 			resetProtocol();
-	
+	  }
 	}
 	
 	public void startRealTest(){
@@ -376,8 +373,8 @@ public class ZABTestThreads extends ReceiverAdapter {
 }
 
 	public static void main(String[] args) {
-		String propsFile = "conf/sequencer.xml";
-		String name ="ZAB";
+		String propsFile = "conf/ZabCoinTossing.xml";
+		String name ="ZabCoinTossing";
 		String outputDir= "/home/pg/p13/a6915654/"+name+"/";
 		String [] zabboxInits= new String[3];
         int msgSize = 1000;
@@ -441,9 +438,13 @@ public class ZABTestThreads extends ReceiverAdapter {
              }
         	 
         }
-      
+        System.out.println("propsFile "+propsFile+ "/" + "zabboxInits "+ zabboxInits+ "/"+"name "+name+
+				"/"+"totalMessages "+totalMessages+"/"+"numberOfMessages "+numberOfMessages+"/"+"numsThreads "+
+				numsThreads+"/"+"msgSize" +msgSize+"/"+"outputDir "+outputDir+"/"+"numOfClients "+numOfClients+
+				"/"+"load "+load+"/"+"numWarmUp "+numWarmUp);
 		try {
-			final ZABTestThreads test = new ZABTestThreads(zabboxInits, name, propsFile, totalMessages,
+			
+			final ZabCoinTossingTest test = new ZabCoinTossingTest(zabboxInits, name, propsFile, totalMessages,
 															numberOfMessages, numsThreads, msgSize, 
 															outputDir, numOfClients, load, numWarmUp);
 			
@@ -459,7 +460,7 @@ public class ZABTestThreads extends ReceiverAdapter {
 	
 	public void loop() {
 		int c;
-		System.out.println("Zab members are "+ zabBox);;
+		System.out.println("ZabCoinTossing members are "+ zabBox);;
 		final String INPUT = "[1] Send start request to all clients \n[2] Reset the protocol \n[3] print Throughput and Min/Avg/Max latency \n[4] Change number  of message\n"
 				+ "[4] calculate AB Message \n[5] Print Zab meberes \n"
 				+ "[6] measure JGroups latency\n"+ "";

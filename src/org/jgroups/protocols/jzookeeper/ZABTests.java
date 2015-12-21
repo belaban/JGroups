@@ -14,7 +14,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.jgroups.protocols.jzookeeper.ZAB;
+import org.jgroups.protocols.jzookeeper.Zab2PhasesWithCommit;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -26,7 +26,7 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
-public class ZABTest extends ReceiverAdapter{
+public class ZABTests extends ReceiverAdapter{
 	
     String propsFile = "conf/sequencer.xml";
     String initiator = "";
@@ -115,9 +115,9 @@ public void sendMessages(long mesNums, int mesSize, int num_threads) {
 }
 
 public void receive(Message msg) {
-    final ZABHeader testHeader = (ZABHeader) msg.getHeader(ID);
+    final ZabHeader testHeader = (ZabHeader) msg.getHeader(ID);
     synchronized(this){
-	    if (testHeader.getType()!=ZABHeader.START_SENDING){
+	    if (testHeader.getType()!=ZabHeader.START_SENDING){
 	    	
 	    	//synchronized(latencies){
 		    	Stats stat = latencies.get(testHeader.getMessageId());
@@ -158,7 +158,7 @@ private String getCurrentTimeStamp(){
 
 public static void main(String[] args) {
     String props="conf/sequencer.xml", name="ZAB";
-     final ZABTest test=new ZABTest();
+     final ZABTests test=new ZABTests();
     try {
         test.start(props, name);
         test.loop();
@@ -182,7 +182,7 @@ public void loop() {
                 	msgReceived=0;
                 	latencies.clear();
                 	MessageId mid = new MessageId(local_addr, seqno.incrementAndGet());
-                	ZABHeader startHeader = new ZABHeader(ZABHeader.START_SENDING,1, mid);
+                	ZabHeader startHeader = new ZabHeader(ZabHeader.START_SENDING,1, mid);
                 	Message msg = new Message(null).putHeader(ID, startHeader);
                 	msg.setObject("req");
          			channel.send(msg);
@@ -274,7 +274,7 @@ public class Sender extends Thread {
    	   	    	    stat.setSender(this);
    	   	    	    latencies.put(messageId, stat);
    	    	   // }
-   	    	    ZABHeader hdrReq=new ZABHeader(ZABHeader.REQUEST, messageId);  
+   	    	    ZabHeader hdrReq=new ZabHeader(ZabHeader.REQUEST, messageId);  
         		target = Util.pickRandomElement(zabBox);
                 Message msg=new Message(target, payload);
                 msg.putHeader(ID, hdrReq);

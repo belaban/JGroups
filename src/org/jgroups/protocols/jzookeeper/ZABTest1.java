@@ -15,7 +15,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.jgroups.protocols.jzookeeper.ZAB;
+import org.jgroups.protocols.jzookeeper.Zab2PhasesWithCommit;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -47,7 +47,7 @@ public class ZABTest1{
     private final Map<MessageId,Stats> latencies = new HashMap<MessageId,Stats>();
     private volatile boolean sendAllow = false;
 
-    protected static final short                  ID=ClassConfigurator.getProtocolId(ZAB.class);
+    protected static final short                  ID=ClassConfigurator.getProtocolId(Zab2PhasesWithCommit.class);
     private AtomicLong localSequence = new AtomicLong(); // This nodes sequence number
 
     long start, end;
@@ -179,7 +179,7 @@ private long getStartTime(){
 
 public static void main(String[] args) {
     String props="conf/sequencer.xml", name="ZAB";
-     final ZABTest test=new ZABTest();
+     final ZABTests test=new ZABTests();
     try {
         //test.start(props, name);
         test.loop();
@@ -204,7 +204,7 @@ public void loop() throws Exception {
                 	//msgReceived=0;
                 	latencies.clear();
                 	MessageId mid = new MessageId(local_addr, seqno.incrementAndGet());
-                	ZABHeader startHeader = new ZABHeader(ZABHeader.START_SENDING,1, mid);
+                	ZabHeader startHeader = new ZabHeader(ZabHeader.START_SENDING,1, mid);
                 	Message msg = new Message(null).putHeader(ID, startHeader);
                 	msg.setObject("req");
          			channel1.send(msg);
@@ -250,11 +250,11 @@ public class Sender extends Thread {
     private final byte[]        payload;
     private final long    numsMsg;
     private final int    msgSize;   
-    private ZABTest zt = null;
+    private ZABTests zt = null;
     JChannel channel = null;
 
 
-    protected Sender(CyclicBarrier barrier, AtomicLong seq, byte[] payload, long numsMsg, int msgSize, ZABTest at) {
+    protected Sender(CyclicBarrier barrier, AtomicLong seq, byte[] payload, long numsMsg, int msgSize, ZABTests at) {
         this.barrier=barrier;
         this.seq = seq;
         this.payload=payload;
@@ -314,7 +314,7 @@ public class Sender extends Thread {
    	   	    	    //stat.setSender(this);
    	   	    	    latencies.put(messageId, stat);
    	    	   // }
-   	    	    ZABHeader hdrReq=new ZABHeader(ZABHeader.REQUEST, messageId);  
+   	    	    ZabHeader hdrReq=new ZabHeader(ZabHeader.REQUEST, messageId);  
         		target = Util.pickRandomElement(zabBox);
                 Message msg=new Message(target, payload);
                 msg.putHeader(ID, hdrReq);
@@ -338,11 +338,11 @@ private static class MyReceiver extends ReceiverAdapter {
     final String name=null;
     final List<Message> msgs=new LinkedList<Message>();
     private final Map<MessageId,Stats> latencies = new HashMap<MessageId,Stats>();
-    private ZABTest zabTest = null;
+    private ZABTests zabTest = null;
     int msgReceived =0;
 
 
-    public MyReceiver(ZABTest zabTest) {
+    public MyReceiver(ZABTests zabTest) {
         this.zabTest = zabTest;
     }
 
@@ -353,8 +353,8 @@ private static class MyReceiver extends ReceiverAdapter {
     public int size() {return msgs.size();}
 
     public void receive(Message msg) {
-        final ZABHeader testHeader = (ZABHeader) msg.getHeader(ID);
-        if (testHeader != null && testHeader.getType()==ZABHeader.START_SENDING){
+        final ZabHeader testHeader = (ZabHeader) msg.getHeader(ID);
+        if (testHeader != null && testHeader.getType()==ZabHeader.START_SENDING){
         	//System.out.println("[" + local_addr + "] "+ "Received START_SENDING "+ getCurrentTimeStamp());
         	msgReceived=0;
         	try {
@@ -366,7 +366,7 @@ private static class MyReceiver extends ReceiverAdapter {
         }
         else{
         	synchronized(latencies){
-                final ZABHeader tHeader = (ZABHeader) msg.getHeader(ID);
+                final ZabHeader tHeader = (ZabHeader) msg.getHeader(ID);
 
     	    	Stats stat = latencies.get(testHeader.getMessageId());
     	    	if(!stat.equals(null)){

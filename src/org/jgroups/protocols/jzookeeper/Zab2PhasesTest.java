@@ -23,9 +23,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.jgroups.protocols.jzookeeper.Zab;
-import org.jgroups.protocols.jzookeeper.ClientThreadMulti.Sender;
+import org.jgroups.protocols.jzookeeper.Zab2PhasesClient.Sender;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -37,10 +35,10 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
-public class ZABTestThreadsMulti extends ReceiverAdapter {
+public class Zab2PhasesTest extends ReceiverAdapter {
 	private List<String> zabboxInit = new ArrayList<String>();
-	private String propsFile = "conf/ZAB.xml";
-	private static String ProtocotName = "ZAB";
+	private String propsFile = "conf/Zab2Phases.xml";
+	private static String ProtocotName = "Zab2Phases";
 	private JChannel channel;
 	private Address local_addr = null;
 	private List<Address> zabBox = new ArrayList<Address>();
@@ -52,7 +50,7 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 	private static int num_threads = 10;
 	private long log_interval = num_msgs / 10; 
 	private long receive_log_interval = Math.max(1, num_msgs / 10);
-	private ClientThreadMulti[] clientThreads;
+	private Zab2PhasesClient[] clientThreads;
 	private final byte[] payload = new byte[msg_size];
 	private AtomicLong localSequence = new AtomicLong(); 
 	private long incMainRequest = 0;
@@ -68,9 +66,10 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
     private long numsOfWarmUpPerThread = 0;
     private int countTempRecieved = 0;
     private int countRecieved = 0;
+    private Scanner wait = new Scanner(System.in);
 
 
-	public ZABTestThreadsMulti(String [] zabHosts, String protocolName, String props,
+	public Zab2PhasesTest(String [] zabHosts, String protocolName, String props,
 						 int totalNum_msgs, int totalPerThreads, int num_threads,
 						 int msg_size, String outputDir, int numOfClients, int load, int numsOfWarmUpPerThread){
 		this.zabboxInit =  Arrays.asList(zabHosts);
@@ -84,18 +83,11 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 		this.numOfClients = numOfClients;
 		this.load = load;
 		this.numsOfWarmUpPerThread = numsOfWarmUpPerThread;
-		if (this.ProtocotName.equals("Zab"))
-			this.ID = ClassConfigurator
-			.getProtocolId(Zab.class);
-		else if(this.ProtocotName.equals("Zab2Phases"))
-			this.ID = ClassConfigurator
+		this.ID = ClassConfigurator
 			.getProtocolId(Zab2Phases.class);
-		else
-			this.ID = ClassConfigurator
-			.getProtocolId(ZabCoinTossing.class);
 	}
 
-	public ZABTestThreadsMulti() {
+	public Zab2PhasesTest (){
 	}
 
 	public void viewAccepted(View new_view) {
@@ -135,16 +127,18 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 
 		final CyclicBarrier barrier = new CyclicBarrier(num_threads + 1);
 		System.out.println("Host name for client"+ local_addr.toString().split("-")[0]);
-		clientThreads = new ClientThreadMulti[num_threads];
+		clientThreads = new Zab2PhasesClient[num_threads];
 		if (!zabboxInit.contains(local_addr.toString().split("-")[0])) {
 			for (int i = 0; i < clientThreads.length; i++) {
-				clientThreads[i] = new ClientThreadMulti(zabBox, barrier, num_msgs,
+				clientThreads[i] = new Zab2PhasesClient(zabBox, barrier, num_msgs,
 						localSequence, payload, ProtocotName, num_msgsPerThreads, propsFile, load, numsOfWarmUpPerThread, this);
 			}
 		}
 
 		if ((view != null) && zabBox.size() != 0
 				&& view.getMembers().size() > 3 && !zabBox.contains(local_addr)) {
+			System.out.println("Start create Threads Enter int number to start");
+			int noUsed = wait.nextInt();
 			for (int i = 0; i < clientThreads.length; i++) {
 				try {
 					clientThreads[i].start();
@@ -156,7 +150,19 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 			}
 
 		}
-		
+		// Send local address to leader
+		MessageId mid = new MessageId(local_addr,
+				localSequence.incrementAndGet());
+		Zab2PhasesHeader startHeader = new Zab2PhasesHeader(Zab2PhasesHeader.SENDMYADDRESS, -6, mid);
+		Message msg = new Message(null).putHeader(ID, startHeader);
+		msg.src(channel.getAddress());
+		msg.setObject("SENDMYADDRESS");
+		try {
+			channel.send(msg);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 
@@ -164,7 +170,7 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 		//System.out.println("inside sendStartSign");
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZabHeader startHeader = new ZabHeader(ZabHeader.START_SENDING, -5, mid);
+		Zab2PhasesHeader startHeader = new Zab2PhasesHeader(Zab2PhasesHeader.START_SENDING, -5, mid);
 		Message msg = new Message(null).putHeader(ID, startHeader);
 		msg.setObject("req");
 		channel.send(msg);
@@ -179,7 +185,7 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 				(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZabHeader resetProtocol = new ZabHeader(ZabHeader.RESET, -4,  mid);
+		Zab2PhasesHeader resetProtocol = new Zab2PhasesHeader(Zab2PhasesHeader.RESET, -4,  mid);
 		Message msg = new Message(null).putHeader(ID, resetProtocol);
 		channel.send(msg);
 	}
@@ -187,7 +193,7 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 	public void callRemotePrintStats() throws Exception{
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZabHeader stats = new ZabHeader(ZabHeader.STATS, -3, mid);
+		Zab2PhasesHeader stats = new Zab2PhasesHeader(Zab2PhasesHeader.STATS, -3, mid);
 		Message msg = new Message(null).putHeader(ID, stats);
 		channel.send(msg);
 		
@@ -196,7 +202,7 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 	public void calculateABMessage() throws Exception{
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZabHeader stats = new ZabHeader(ZabHeader.COUNTMESSAGE, -2, mid);
+		Zab2PhasesHeader stats = new Zab2PhasesHeader(Zab2PhasesHeader.COUNTMESSAGE, -2, mid);
 		Message msg = new Message(null).putHeader(ID, stats);
 		channel.send(msg);
 		
@@ -219,7 +225,7 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 
 			MessageId mid = new MessageId(local_addr,
 					localSequence.incrementAndGet());
-			//ZabHeader startHeader = new ZabHeader(ZabHeader.TEMPSENT,i, mid);
+			//Zab2PhasesHeader startHeader = new Zab2PhasesHeader(Zab2PhasesHeader.TEMPSENT,i, mid);
 			//Message msg = new Message(null).putHeader(ID, startHeader);
 			//channel.send(msg);
 		}
@@ -227,36 +233,58 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 	}
 	
 	public void receive(Message msg) {
-		final ZabHeader testHeader = (ZabHeader) msg.getHeader(ID);
+		final Zab2PhasesHeader testHeader = (Zab2PhasesHeader) msg.getHeader(ID);
 		
-//			if (testHeader.getType() == ZabHeader.START_SENDING) {
-//				numsThreadFinished=0;
-//				avgTimeElpased =0;
-//				avgRecievedOps=0;
-//				is_warmUp = true;
-//				System.out.println("Warm up starts");
-//
-//				for (int i = 0; i < clientThreads.length; i++) {
-//					System.out.println("inside for i = "+i);
-//					clientThreads[i].setWarmUp(true);
-//					clientThreads[i].sendMessages(numsOfWarmUpPerThread);				
-//			    }
-//				try {
-//					this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
-//							(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
-//				} catch (IOException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//	        }
-			 if (testHeader.getType() == ZabHeader.STARTREALTEST){
-				  System.out.println("!!! Recieved STARTREALTEST from "+msg.getSrc());
-          startRealTest();
-     	    System.out.println("Real test starts in receive method");
+			//if (testHeader.getType() == Zab2PhasesHeader.START_SENDING) {
+				//numsThreadFinished=0;
+				//avgTimeElpased =0;
+				//avgRecievedOps=0;
+				//is_warmUp = true;
+				//System.out.println("Warm up starts");
+
+				//for (int i = 0; i < clientThreads.length; i++) {
+				//	System.out.println("inside for i = "+i);
+				//	clientThreads[i].setWarmUp(true);
+				//	clientThreads[i].sendMessages(numsOfWarmUpPerThread);				
+			  //  }
+				//try {
+				//	this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
+			//				(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
+			//	} catch (IOException e) {
+					// TODO Auto-generated catch block
+			//		e.printStackTrace();
+			//	}
+	       // }
+		    if (testHeader.getType() == Zab2PhasesHeader.STARTREALTEST){
+				System.out.println("!!!Recieved STARTREALTEST from "+msg.getSrc());
+
+				//synchronized(this){
+					//countRecieved++;
+					//if (countRecieved==zabBox.size())
+						startRealTest();
+			//	}
 			}
+			//else if (testHeader.getType() == Zab2PhasesHeader.RESPONCETEMP){
+				//countTempRecieved++;
+			//}
 	}
 	
-	public void warmup(){
+	public void sendMyAddressToLeader(){
+		MessageId mid = new MessageId(local_addr,
+				localSequence.incrementAndGet());
+		Zab2PhasesHeader startHeader = new Zab2PhasesHeader(Zab2PhasesHeader.SENDMYADDRESS, -6, mid);
+		Message msg = new Message(null).putHeader(ID, startHeader);
+		msg.src(channel.getAddress());
+		msg.setObject("SENDMYADDRESS");
+		try {
+			channel.send(msg);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+		public void warmup(){
 		numsThreadFinished=0;
 		avgTimeElpased =0;
 		avgRecievedOps=0;
@@ -277,16 +305,16 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 		}
     }
 	
-	
 	public synchronized static void finishedopsSoFar(long opNums, Sender sender){
 		//System.out.println("senter " + sender.getName()+ " has finished "+opNums+" ops");
 	}
 	
 	public synchronized void finishedSend() throws Exception{
 		numsThreadFinished++;
-		if (numsThreadFinished >= num_threads)
-			resetProtocol();
-	
+		if (numsThreadFinished >= num_threads){
+        System.out.println("Finished warm up----------------------------->>>");
+		resetProtocol();
+	  }
 	}
 	
 	public void startRealTest(){
@@ -345,8 +373,8 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 }
 
 	public static void main(String[] args) {
-		String propsFile = "conf/sequencer.xml";
-		String name ="Zab";
+		String propsFile = "conf/Zab2Phases.xml";
+		String name ="Zab2Phases";
 		String outputDir= "/home/pg/p13/a6915654/"+name+"/";
 		String [] zabboxInits= new String[3];
         int msgSize = 1000;
@@ -410,9 +438,13 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
              }
         	 
         }
-      
+        System.out.println("propsFile "+propsFile+ "/" + "zabboxInits "+ zabboxInits+ "/"+"name "+name+
+				"/"+"totalMessages "+totalMessages+"/"+"numberOfMessages "+numberOfMessages+"/"+"numsThreads "+
+				numsThreads+"/"+"msgSize" +msgSize+"/"+"outputDir "+outputDir+"/"+"numOfClients "+numOfClients+
+				"/"+"load "+load+"/"+"numWarmUp "+numWarmUp);
 		try {
-			final ZabTestThreads test = new ZabTestThreads(zabboxInits, name, propsFile, totalMessages,
+			
+			final Zab2PhasesTest test = new Zab2PhasesTest(zabboxInits, name, propsFile, totalMessages,
 															numberOfMessages, numsThreads, msgSize, 
 															outputDir, numOfClients, load, numWarmUp);
 			
@@ -428,7 +460,7 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 	
 	public void loop() {
 		int c;
-		System.out.println("Zab members are "+ zabBox);;
+		System.out.println("Zab2Phases members are "+ zabBox);;
 		final String INPUT = "[1] Send start request to all clients \n[2] Reset the protocol \n[3] print Throughput and Min/Avg/Max latency \n[4] Change number  of message\n"
 				+ "[4] calculate AB Message \n[5] Print Zab meberes \n"
 				+ "[6] measure JGroups latency\n"+ "";
@@ -462,9 +494,7 @@ public class ZABTestThreadsMulti extends ReceiverAdapter {
 					//msg_size = read.nextInt();
 					break;
 				case '5':
-					//System.out.println("Zab members are "+ zabBox);
-					//sendTestRequest();
-					// num_threads = read.nextInt();
+					sendMyAddressToLeader();
 					break;
 				case '6':
 					

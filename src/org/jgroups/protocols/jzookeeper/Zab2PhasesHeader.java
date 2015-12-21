@@ -9,7 +9,7 @@ import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
 
 
-    public class ZABHeader extends Header {
+    public class Zab2PhasesHeader extends Header {
          public static final byte REQUEST       = 1;
          public static final byte FORWARD       = 2;
          public static final byte PROPOSAL      = 3;
@@ -33,22 +33,22 @@ import org.jgroups.util.Util;
          private long        seqno=0;
          private MessageId   messageId=null;
 
-        public ZABHeader() {
+        public Zab2PhasesHeader() {
         }
 
-        public ZABHeader(byte type) {
+        public Zab2PhasesHeader(byte type) {
             this.type=type;
         }
-        public ZABHeader(byte type, MessageId id) {
+        public Zab2PhasesHeader(byte type, MessageId id) {
             this.type=type;
             this.messageId=id;
         }
 
-        public ZABHeader(byte type, long seqno) {
+        public Zab2PhasesHeader(byte type, long seqno) {
             this(type);
             this.seqno=seqno;
         }
-        public ZABHeader(byte type, long seqno, MessageId messageId) {
+        public Zab2PhasesHeader(byte type, long seqno, MessageId messageId) {
             this(type);
             this.seqno=seqno;
             this.messageId=messageId;

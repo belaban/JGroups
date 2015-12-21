@@ -34,7 +34,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.protocols.jzookeeper.ZAB.ResubmitTimer;
+import org.jgroups.protocols.jzookeeper.Zab2PhasesWithCommit.ResubmitTimer;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
@@ -56,11 +56,11 @@ import org.jgroups.util.MessageBatch;
 	    private List<Address> zabMembers = Collections.synchronizedList(new ArrayList<Address>());
 		private long lastZxidProposed=0, lastZxidCommitted=0;
 	    private final Set<MessageId> requestQueue =Collections.synchronizedSet(new HashSet<MessageId>());
-		private Map<Long, ZABHeader> queuedCommitMessage = new HashMap<Long, ZABHeader>();
-	    private final LinkedBlockingQueue<ZABHeader> queuedMessages =
-		        new LinkedBlockingQueue<ZABHeader>();
+		private Map<Long, ZabHeader> queuedCommitMessage = new HashMap<Long, ZabHeader>();
+	    private final LinkedBlockingQueue<ZabHeader> queuedMessages =
+		        new LinkedBlockingQueue<ZabHeader>();
 		private ConcurrentMap<Long, Proposal> outstandingProposals = new ConcurrentHashMap<Long, Proposal>();
-	    private final Map<Long, ZABHeader> queuedProposalMessage = Collections.synchronizedMap(new HashMap<Long, ZABHeader>());
+	    private final Map<Long, ZabHeader> queuedProposalMessage = Collections.synchronizedMap(new HashMap<Long, ZabHeader>());
 	    private final Map<MessageId, Message> messageStore = Collections.synchronizedMap(new HashMap<MessageId, Message>());
 		Calendar cal = Calendar.getInstance();
 	    protected volatile boolean                  running=true;
@@ -159,7 +159,7 @@ import org.jgroups.util.MessageBatch;
 					-10, System.currentTimeMillis());
 	    	if (is_leader){
 	    		for(Address c: clients){
-			    	ZABHeader startTest = new ZABHeader(ZABHeader.STARTREALTEST, messageId);
+			    	ZabHeader startTest = new ZabHeader(ZabHeader.STARTREALTEST, messageId);
 			        Message confirmClient=new Message(c).putHeader(this.id, startTest);
 					down_prot.down(new Event(Event.MSG, confirmClient));  
 	    		}
@@ -198,7 +198,7 @@ import org.jgroups.util.MessageBatch;
 	        		this.cancel();
 	        		if (log.isInfoEnabled())
 	        			log.info("Comit Alllllllllllllllllllllllllllllllllll");
-	    			ZABHeader commitPending = new ZABHeader(ZABHeader.COMMITOUTSTANDINGREQUESTS);
+	    			ZabHeader commitPending = new ZabHeader(ZabHeader.COMMITOUTSTANDINGREQUESTS);
 					for (Address address : zabMembers) {
 	                    Message commitALL = new Message(address).putHeader(this.idd, commitPending);
 	            		down_prot.down(new Event(Event.MSG, commitALL));     
@@ -218,7 +218,7 @@ import org.jgroups.util.MessageBatch;
 	    }
 
 	    public Object down(Event evt) {
-	        ZABHeader hdr;
+	        ZabHeader hdr;
 
 	        switch(evt.getType()) {
 	            case Event.MSG:
@@ -235,22 +235,22 @@ import org.jgroups.util.MessageBatch;
 
 	    public Object up(Event evt) {
 	        Message msg = null;
-	        ZABHeader hdr;
+	        ZabHeader hdr;
 
 	        switch(evt.getType()) {
 	            case Event.MSG:            	
 	                msg=(Message)evt.getArg();
-	                hdr=(ZABHeader)msg.getHeader(this.id);
+	                hdr=(ZabHeader)msg.getHeader(this.id);
 	                if(hdr == null){
 	                    break; // pass up
 	                }
 	                switch(hdr.getType()) {                
-	                    case ZABHeader.START_SENDING:
+	                    case ZabHeader.START_SENDING:
 	            			return up_prot.up(new Event(Event.MSG, msg));
-	                    case ZABHeader.RESET:
+	                    case ZabHeader.RESET:
 	  	                    reset(msg.getSrc());
 		                	break;
-	                	case ZABHeader.REQUEST:
+	                	case ZabHeader.REQUEST:
 	                		if (!is_warmUp && !is_leader && !startThroughput){
 	                			startThroughput = true;
 	                			startThroughputTime = System.currentTimeMillis();
@@ -260,7 +260,7 @@ import org.jgroups.util.MessageBatch;
 	                		}
 	                		forwardToLeader(msg);
 	                		break;
-	                    case ZABHeader.FORWARD:
+	                    case ZabHeader.FORWARD:
 	                    	lastRequestRecieved=System.currentTimeMillis();
 	                    	recievedFirstRequest = true;
 	                    	//log.info("Start--------------------------------------------------- _timer");
@@ -272,39 +272,39 @@ import org.jgroups.util.MessageBatch;
 	                    	//lastRequestRecieved = System.currentTimeMillis();
 	                		queuedMessages.add(hdr);
 	                		break;
-	                    case ZABHeader.PROPOSAL:
+	                    case ZabHeader.PROPOSAL:
 		                   	if (!is_leader){
 		                   		//hdr.getMessageId().setStartTime(System.currentTimeMillis());
 		            			sendACK(msg, hdr);
 		            		}
 		                   	break;           		
-	                    case ZABHeader.ACK:
+	                    case ZabHeader.ACK:
 	                			processACK(msg, msg.getSrc());
 	                		break;
-	                    case ZABHeader.COMMITOUTSTANDINGREQUESTS:
+	                    case ZabHeader.COMMITOUTSTANDINGREQUESTS:
 	                    	//makeAllFollowersAck=true;
 	            			commitPendingRequest();
 	            			//startSending = false;
 	            		break;
-	                    case ZABHeader.STATS:
+	                    case ZabHeader.STATS:
 	                    	printMZabStats();
 	                    	break;
-	                    case ZABHeader.COUNTMESSAGE:
+	                    case ZabHeader.COUNTMESSAGE:
 	                		sendTotalABMessages(hdr);  
 	                		log.info("Yes, I recieved count request");
 	                	break;
-	                    case ZABHeader.SENDMYADDRESS:
+	                    case ZabHeader.SENDMYADDRESS:
 	                		if (is_leader){
 	                			clients.add(msg.getSrc());
 	                			System.out.println("Rceived client;s address "+msg.getSrc());
 	                		}
 	                		break;
-	                    case ZABHeader.STARTREALTEST:
+	                    case ZabHeader.STARTREALTEST:
 	                    	if(!zabMembers.contains(local_addr))
 	                			return up_prot.up(new Event(Event.MSG, msg));
 	                    	else
 	                    		break;
-	                    case ZABHeader.RESPONSE:
+	                    case ZabHeader.RESPONSE:
 	                    	handleOrderingResponse(hdr);
 	                    	
 	                    	
@@ -342,8 +342,8 @@ import org.jgroups.util.MessageBatch;
 
 	    
 	    private void handleClientRequest(Message message){
-	    	ZABHeader clientHeader = ((ZABHeader) message.getHeader(this.id));
-	    	if (clientHeader!=null && clientHeader.getType() == ZABHeader.START_SENDING){
+	    	ZabHeader clientHeader = ((ZabHeader) message.getHeader(this.id));
+	    	if (clientHeader!=null && clientHeader.getType() == ZabHeader.START_SENDING){
 
 	    		for (Address client : view.getMembers()){
 	 			   if (log.isInfoEnabled())
@@ -359,7 +359,7 @@ import org.jgroups.util.MessageBatch;
 	    	}
 	    	
 
-	    	else if (clientHeader!=null && clientHeader.getType() == ZABHeader.RESET){
+	    	else if (clientHeader!=null && clientHeader.getType() == ZabHeader.RESET){
 
 	    		for (Address server : zabMembers){
 	        			//message.setDest(server);
@@ -368,7 +368,7 @@ import org.jgroups.util.MessageBatch;
 	        	}
 	    	}
 	    	
-	    	else if (clientHeader!=null && clientHeader.getType() == ZABHeader.STATS){
+	    	else if (clientHeader!=null && clientHeader.getType() == ZabHeader.STATS){
 
 	    		for (Address server : zabMembers){
 	        			//message.setDest(server);
@@ -379,7 +379,7 @@ import org.jgroups.util.MessageBatch;
 	    	
 
 			else if (clientHeader != null
-					&& clientHeader.getType() == ZABHeader.COUNTMESSAGE) {
+					&& clientHeader.getType() == ZabHeader.COUNTMESSAGE) {
 				for (Address server : zabMembers) {
 					if(!server.equals(zabMembers.get(0))){
 						Message countMessages = new Message(server).putHeader(this.id,
@@ -389,10 +389,10 @@ import org.jgroups.util.MessageBatch;
 				}
 			}
 	    	
-	    	else if(!clientHeader.getMessageId().equals(null) && clientHeader.getType() == ZABHeader.REQUEST){
+	    	else if(!clientHeader.getMessageId().equals(null) && clientHeader.getType() == ZabHeader.REQUEST){
 		    	 Address destination = null;
 		         messageStore.put(clientHeader.getMessageId(), message);
-		        ZABHeader hdrReq=new ZABHeader(ZABHeader.REQUEST, clientHeader.getMessageId());  
+		        ZabHeader hdrReq=new ZabHeader(ZabHeader.REQUEST, clientHeader.getMessageId());  
 		        ++index;
 		        if (index>2)
 		        	index=0;
@@ -401,7 +401,7 @@ import org.jgroups.util.MessageBatch;
 		       down_prot.down(new Event(Event.MSG, requestMessage));    
 	    	}
 	    	
-	    	else if(!clientHeader.getMessageId().equals(null) && clientHeader.getType() == ZABHeader.SENDMYADDRESS){
+	    	else if(!clientHeader.getMessageId().equals(null) && clientHeader.getType() == ZabHeader.SENDMYADDRESS){
 		    	 Address destination = null;
 		        destination = zabMembers.get(0);
 		        message.dest(destination);
@@ -442,7 +442,7 @@ import org.jgroups.util.MessageBatch;
 	    }
 
 	    private void forwardToLeader(Message msg) {
-		   ZABHeader hdrReq = (ZABHeader) msg.getHeader(this.id);
+		   ZabHeader hdrReq = (ZabHeader) msg.getHeader(this.id);
 		   requestQueue.add(hdrReq.getMessageId());
 		   if (!is_warmUp && is_leader && !startThroughput){
 				startThroughput = true;
@@ -454,7 +454,7 @@ import org.jgroups.util.MessageBatch;
 			}
 		   if (is_leader){
 			   hdrReq.getMessageId().setStartTime(System.nanoTime());
-			   queuedMessages.add((ZABHeader)msg.getHeader(this.id));
+			   queuedMessages.add((ZabHeader)msg.getHeader(this.id));
 	       }	   
 		   else{
 			   hdrReq.getMessageId().setStartTime(System.nanoTime());
@@ -466,11 +466,11 @@ import org.jgroups.util.MessageBatch;
 
 	    private void forward(Message msg) {
 	        Address target=leader;
-	 	    ZABHeader hdrReq = (ZABHeader) msg.getHeader(this.id);
+	 	    ZabHeader hdrReq = (ZabHeader) msg.getHeader(this.id);
 	        if(target == null)
 	            return;
 		    try {
-		        ZABHeader hdr=new ZABHeader(ZABHeader.FORWARD, hdrReq.getMessageId());
+		        ZabHeader hdr=new ZabHeader(ZabHeader.FORWARD, hdrReq.getMessageId());
 		        Message forward_msg=new Message(target).putHeader(this.id,hdr);
 		        down_prot.down(new Event(Event.MSG, forward_msg));
 		     }
@@ -481,7 +481,7 @@ import org.jgroups.util.MessageBatch;
 	    }
 	    
 
-	    private void sendACK(Message msg, ZABHeader hrdAck){
+	    private void sendACK(Message msg, ZabHeader hrdAck){
 	   		numRequest.incrementAndGet();
 	    	Proposal p;
 	    	if (msg == null )
@@ -517,7 +517,7 @@ import org.jgroups.util.MessageBatch;
 
 			//}
 			if (is_warmUp){
-				ZABHeader hdrACK = new ZABHeader(ZABHeader.ACK, hrdAck.getZxid());
+				ZabHeader hdrACK = new ZabHeader(ZabHeader.ACK, hrdAck.getZxid());
 				Message ackMessage = new Message().putHeader(this.id, hdrACK);
 				//log.info("Sending ACK for " + hdr.getZxid()+" "+getCurrentTimeStamp()+ " " +getCurrentTimeStamp());
 				//notACK.put(hdr.getZxid(), true);
@@ -541,7 +541,7 @@ import org.jgroups.util.MessageBatch;
 //						+ "follower, sending ack if (ZUtil.SendAckOrNoSend()) (sendAck) at "+getCurrentTimeStamp());
 				//if(makeAllFollowersAck)
 					//log.info("*********** makeAllFollowersAck Probability not working "+(++countACKNoProb));
-				ZABHeader hdrACK = new ZABHeader(ZABHeader.ACK, hrdAck.getZxid());
+				ZabHeader hdrACK = new ZabHeader(ZabHeader.ACK, hrdAck.getZxid());
 				Message ackMessage = new Message().putHeader(this.id, hdrACK);
 				//log.info("Sending ACK for " + hdr.getZxid()+" "+getCurrentTimeStamp()+ " " +getCurrentTimeStamp());
 				//notACK.put(hdr.getZxid(), true);
@@ -569,7 +569,7 @@ import org.jgroups.util.MessageBatch;
 	    private synchronized void processACK(Message msgACK, Address sender){
 	    	laslAckRecieved = System.currentTimeMillis();
 		    Proposal p = null;
-	    	ZABHeader hdr = (ZABHeader) msgACK.getHeader(this.id);	
+	    	ZabHeader hdr = (ZabHeader) msgACK.getHeader(this.id);	
 	    	long ackZxid = hdr.getZxid();
 	    	//log.info("Reciving Ack zxid " + ackZxid + " sender " + sender+ " " +getCurrentTimeStamp());
 
@@ -680,7 +680,7 @@ import org.jgroups.util.MessageBatch;
 				
 		       	//log.info("[" + local_addr + "] "+"About to commit the request (commit) for zxid="+zxid+" "+getCurrentTimeStamp());
 
-			    ZABHeader hdrOrginal = null;
+			    ZabHeader hdrOrginal = null;
 		    	   synchronized(this){
 		    	       lastZxidCommitted = zxidd;
 		    	   }
@@ -709,7 +709,7 @@ import org.jgroups.util.MessageBatch;
 		    	//long zxid = hdr.getZxid();
 		    	//log.info("[" + local_addr + "] "+ " delivering message (deliver) for zxid=" + hdr.getZxid()+" "+getCurrentTimeStamp());
 
-		    	ZABHeader hdrOrginal = queuedProposalMessage.remove(committedZxid);
+		    	ZabHeader hdrOrginal = queuedProposalMessage.remove(committedZxid);
 		    	if (hdrOrginal == null) {
 					 if (log.isInfoEnabled())
 						 log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
@@ -746,7 +746,7 @@ import org.jgroups.util.MessageBatch;
 		    		long startTime  = hdrOrginal.getMessageId().getStartTime();
 					latencies.add((int)(System.nanoTime() - startTime));
 		    		//log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!I am the zab request receiver, going to send response back to " + hdrOrginal.getMessageId().getAddress());
-			    	ZABHeader hdrResponse = new ZABHeader(ZABHeader.RESPONSE, committedZxid,  hdrOrginal.getMessageId());
+			    	ZabHeader hdrResponse = new ZabHeader(ZabHeader.RESPONSE, committedZxid,  hdrOrginal.getMessageId());
 			    	Message msgResponse = new Message(hdrOrginal.getMessageId().getAddress()).putHeader(this.id, hdrResponse);
 		       		down_prot.down(new Event(Event.MSG, msgResponse));     
 
@@ -756,7 +756,7 @@ import org.jgroups.util.MessageBatch;
 		   }
 			
 			
-	    private void handleOrderingResponse(ZABHeader hdrResponse) {
+	    private void handleOrderingResponse(ZabHeader hdrResponse) {
 				
 		        Message message = messageStore.get(hdrResponse.getMessageId());
 		        message.putHeader(this.id, hdrResponse);
@@ -785,9 +785,9 @@ import org.jgroups.util.MessageBatch;
 				return find;
 			}
 			
-			private void sendTotalABMessages(ZABHeader carryCountMessageLeader){
+			private void sendTotalABMessages(ZabHeader carryCountMessageLeader){
 				if(!is_leader){
-				    ZABHeader followerMsgCount = new ZABHeader(ZABHeader.COUNTMESSAGE, countMessageFollower);
+				    ZabHeader followerMsgCount = new ZabHeader(ZabHeader.COUNTMESSAGE, countMessageFollower);
 			   	    Message requestMessage = new Message(leader).putHeader(this.id, followerMsgCount);
 			        down_prot.down(new Event(Event.MSG, requestMessage)); 
 				}
@@ -945,7 +945,7 @@ import org.jgroups.util.MessageBatch;
 	         */
 	    	
 	        private void handleRequests() {
-	        	ZABHeader hdrReq = null;
+	        	ZabHeader hdrReq = null;
 	        	//long currentTime = 0;
 	            while (running) {
 	            	//if (queuedMessages.peek()!=null)
@@ -993,7 +993,7 @@ import org.jgroups.util.MessageBatch;
 	            	long new_zxid = getNewZxid();
 	    			 //log.info("Queue Size------> "+ queuedMessages.size());
 
-	            	ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL, new_zxid, hdrReq.getMessageId()); 
+	            	ZabHeader hdrProposal = new ZabHeader(ZabHeader.PROPOSAL, new_zxid, hdrReq.getMessageId()); 
 	            	//hdrProposal.getMessageId().setStartTime(System.currentTimeMillis());
 	                Message ProposalMessage=new Message().putHeader(this.id, hdrProposal);
 

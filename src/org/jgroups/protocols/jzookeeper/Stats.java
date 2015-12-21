@@ -1,6 +1,6 @@
 package org.jgroups.protocols.jzookeeper;
 
-import org.jgroups.protocols.jzookeeper.ZABTest.Sender;
+import org.jgroups.protocols.jzookeeper.ZABTests.Sender;
 
 public class Stats {
 		private Sender sender = null;

@@ -43,7 +43,7 @@ import org.jgroups.util.MessageBatch;
  * When using testing, it provides warm up test before starting real test.
  */
 
-public class Zab0Dash extends Protocol {
+public class Zab2Phases extends Protocol {
 
 	private final static String ProtocolName = "Zab2Phases";
 	private final static int numberOfSenderInEachClient = 20;
@@ -59,13 +59,13 @@ public class Zab0Dash extends Protocol {
 	private long lastZxidProposed = 0, lastZxidCommitted = 0;
 	private final Set<MessageId> requestQueue = Collections
 			.synchronizedSet(new HashSet<MessageId>());
-	private Map<Long, ZABHeader> queuedCommitMessage = new HashMap<Long, ZABHeader>();
+	private Map<Long, Zab2PhasesHeader> queuedCommitMessage = new HashMap<Long, Zab2PhasesHeader>();
 	private List<Integer> avgLatencies = new ArrayList<Integer>();
 	private List<String> avgLatenciesTimer = new ArrayList<String>();
 
-	private final Map<Long, ZABHeader> queuedProposalMessage = Collections
-			.synchronizedMap(new HashMap<Long, ZABHeader>());
-	private final LinkedBlockingQueue<ZABHeader> queuedMessages = new LinkedBlockingQueue<ZABHeader>();
+	private final Map<Long, Zab2PhasesHeader> queuedProposalMessage = Collections
+			.synchronizedMap(new HashMap<Long, Zab2PhasesHeader>());
+	private final LinkedBlockingQueue<Zab2PhasesHeader> queuedMessages = new LinkedBlockingQueue<Zab2PhasesHeader>();
 	private ConcurrentMap<Long, Proposal> outstandingProposals = new ConcurrentHashMap<Long, Proposal>();
 	private final Map<MessageId, Message> messageStore = Collections
 			.synchronizedMap(new HashMap<MessageId, Message>());
@@ -73,8 +73,7 @@ public class Zab0Dash extends Protocol {
 	private int index = -1;
 	private volatile boolean running = true;
 	private volatile boolean startThroughput = false;
-	private static PrintWriter outFile;
-	private final static String outDir = "/home/pg/p13/a6915654/ZAB/";
+	private final static String outDir = "/home/pg/p13/a6915654/Zab2Phases/";
 	private long rateInterval = 10000;
 	private long rateCount = 0;
 	private long currentCpuTime = 0, rateCountTime = 0, lastTimer = 0,
@@ -96,7 +95,7 @@ public class Zab0Dash extends Protocol {
 			.synchronizedList(new ArrayList<Address>());
 	private ProtocolStats stats;
 
-	public Zab0Dash() {
+	public Zab2Phases() {
 
 	}
 
@@ -125,8 +124,6 @@ public class Zab0Dash extends Protocol {
 		executor = Executors.newSingleThreadExecutor();
 		executor.execute(new FollowerMessageHandler(this.id));
 		log.setLevel("trace");
-		this.outFile = new PrintWriter(new BufferedWriter(new FileWriter(outDir
-				+ InetAddress.getLocalHost().getHostName() + "Zab.log", true)));
 
 	}
 
@@ -135,6 +132,7 @@ public class Zab0Dash extends Protocol {
 	 * callback the clients to start main test
 	 */
 	public void reset(Address client) {
+		log.info("Did it Reach reset");
 		zxid.set(0);
 		lastZxidProposed = 0;
 		lastZxidCommitted = 0;
@@ -168,7 +166,7 @@ public class Zab0Dash extends Protocol {
 		// it only ensures one server (leader) call clients to start real test
 		if (is_leader) {
 			for (Address c : clients) {
-				ZABHeader startTest = new ZABHeader(ZABHeader.STARTREALTEST,
+				Zab2PhasesHeader startTest = new Zab2PhasesHeader(Zab2PhasesHeader.STARTREALTEST,
 						messageId);
 				Message confirmClient = new Message(c).putHeader(this.id,
 						startTest);
@@ -200,30 +198,30 @@ public class Zab0Dash extends Protocol {
 
 	public Object up(Event evt) {
 		Message msg = null;
-		ZABHeader hdr;
+		Zab2PhasesHeader hdr;
 
 		switch (evt.getType()) {
 		case Event.MSG:
 			msg = (Message) evt.getArg();
-			hdr = (ZABHeader) msg.getHeader(this.id);
+			hdr = (Zab2PhasesHeader) msg.getHeader(this.id);
 			if (hdr == null) {
 				break; // pass up
 			}
 			switch (hdr.getType()) {
-			case ZABHeader.START_SENDING:
+			case Zab2PhasesHeader.START_SENDING:
 				if (!zabMembers.contains(local_addr))
 					return up_prot.up(new Event(Event.MSG, msg));
 				break;
-			case ZABHeader.REQUEST:
+			case Zab2PhasesHeader.REQUEST:
 				forwardToLeader(msg);
 				break;
-			case ZABHeader.RESET:
+			case Zab2PhasesHeader.RESET:
 				reset(msg.getSrc());
 				break;
-			case ZABHeader.FORWARD:
+			case Zab2PhasesHeader.FORWARD:
 				queuedMessages.add(hdr);
 				break;
-			case ZABHeader.PROPOSAL:
+			case Zab2PhasesHeader.PROPOSAL:
 				if (!is_leader) {
 					if (!is_warmUp && !startThroughput) {
 						startThroughput = true;
@@ -232,32 +230,29 @@ public class Zab0Dash extends Protocol {
 					sendACK(msg, hdr);
 				}
 				break;
-			case ZABHeader.ACK:
+			case Zab2PhasesHeader.ACK:
 				if (is_leader) {
 					processACK(msg, msg.getSrc());
 				}
 				break;
-			case ZABHeader.COMMIT:
-				// deliver(hdr.getZxid());
-				break;
-			case ZABHeader.STATS:
+			case Zab2PhasesHeader.STATS:
 				stats.printProtocolStats();
 				break;
-			case ZABHeader.COUNTMESSAGE:
+			case Zab2PhasesHeader.COUNTMESSAGE:
 				sendTotalABMwssages(hdr);
 				log.info("Yes, I recieved count request");
 				break;
-			case ZABHeader.SENDMYADDRESS:
+			case Zab2PhasesHeader.SENDMYADDRESS:
 				if (!zabMembers.contains(msg.getSrc())) {
 					clients.add(msg.getSrc());
 					System.out.println("Rceived clients address "
 							+ msg.getSrc());
 				}
 				break;
-			case ZABHeader.STARTREALTEST:
+			case Zab2PhasesHeader.STARTREALTEST:
 				if (!zabMembers.contains(local_addr))
 					return up_prot.up(new Event(Event.MSG, msg));
-			case ZABHeader.RESPONSE:
+			case Zab2PhasesHeader.RESPONSE:
 				handleOrderingResponse(hdr);
 
 			}
@@ -298,10 +293,10 @@ public class Zab0Dash extends Protocol {
 	 * Handling all client requests, processing them according to request type
 	 */
 	private void handleClientRequest(Message message) {
-		ZABHeader clientHeader = ((ZABHeader) message.getHeader(this.id));
+		Zab2PhasesHeader clientHeader = ((Zab2PhasesHeader) message.getHeader(this.id));
 
 		if (clientHeader != null
-				&& clientHeader.getType() == ZABHeader.START_SENDING) {
+				&& clientHeader.getType() == Zab2PhasesHeader.START_SENDING) {
 			for (Address client : view.getMembers()) {
 				if (log.isDebugEnabled())
 					log.info("Address to check " + client);
@@ -316,19 +311,20 @@ public class Zab0Dash extends Protocol {
 		}
 
 		else if (clientHeader != null
-				&& clientHeader.getType() == ZABHeader.RESET) {
+				&& clientHeader.getType() == Zab2PhasesHeader.RESET) {
 
 			for (Address server : zabMembers) {
 				// message.setDest(server);
 				Message resetMessage = new Message(server).putHeader(this.id,
 						clientHeader);
+				log.info("Did it Reach handleClientRequest");
 				resetMessage.setSrc(local_addr);
 				down_prot.down(new Event(Event.MSG, resetMessage));
 			}
 		}
 
 		else if (clientHeader != null
-				&& clientHeader.getType() == ZABHeader.STATS) {
+				&& clientHeader.getType() == Zab2PhasesHeader.STATS) {
 
 			for (Address server : zabMembers) {
 				// message.setDest(server);
@@ -339,7 +335,7 @@ public class Zab0Dash extends Protocol {
 		}
 
 		else if (clientHeader != null
-				&& clientHeader.getType() == ZABHeader.COUNTMESSAGE) {
+				&& clientHeader.getType() == Zab2PhasesHeader.COUNTMESSAGE) {
 			for (Address server : zabMembers) {
 				if (!server.equals(zabMembers.get(0))) {
 					Message countMessages = new Message(server).putHeader(
@@ -351,10 +347,10 @@ public class Zab0Dash extends Protocol {
 		}
 
 		else if (!clientHeader.getMessageId().equals(null)
-				&& clientHeader.getType() == ZABHeader.REQUEST) {
+				&& clientHeader.getType() == Zab2PhasesHeader.REQUEST) {
 			Address destination = null;
 			messageStore.put(clientHeader.getMessageId(), message);
-			ZABHeader hdrReq = new ZABHeader(ZABHeader.REQUEST,
+			Zab2PhasesHeader hdrReq = new Zab2PhasesHeader(Zab2PhasesHeader.REQUEST,
 					clientHeader.getMessageId());
 			++index;
 			if (index > 2)
@@ -362,11 +358,14 @@ public class Zab0Dash extends Protocol {
 			destination = zabMembers.get(index);
 			Message requestMessage = new Message(destination).putHeader(
 					this.id, hdrReq);
+//			int diff = 1000 - hdrReq.size();
+//			if (diff > 0)
+//				requestMessage.setBuffer(new byte[diff]); // Necessary to ensure that
 			down_prot.down(new Event(Event.MSG, requestMessage));
 		}
 
 		else if (!clientHeader.getMessageId().equals(null)
-				&& clientHeader.getType() == ZABHeader.SENDMYADDRESS) {
+				&& clientHeader.getType() == Zab2PhasesHeader.SENDMYADDRESS) {
 			Address destination = null;
 			//destination = zabMembers.get(0);
 			log.info("ZabMemberSize = " + zabMembers.size());
@@ -414,7 +413,7 @@ public class Zab0Dash extends Protocol {
 	 * otherwise forwards request to the leader
 	 */
 	private void forwardToLeader(Message msg) {
-		ZABHeader hdrReq = (ZABHeader) msg.getHeader(this.id);
+		Zab2PhasesHeader hdrReq = (Zab2PhasesHeader) msg.getHeader(this.id);
 		requestQueue.add(hdrReq.getMessageId());
 		if (!is_warmUp && is_leader && !startThroughput) {
 			startThroughput = true;
@@ -425,7 +424,7 @@ public class Zab0Dash extends Protocol {
 
 		if (is_leader) {
 			hdrReq.getMessageId().setStartTime(System.nanoTime());
-			queuedMessages.add((ZABHeader) msg.getHeader(this.id));
+			queuedMessages.add((Zab2PhasesHeader) msg.getHeader(this.id));
 		} else {
 			hdrReq.getMessageId().setStartTime(System.nanoTime());
 			forward(msg);
@@ -438,12 +437,12 @@ public class Zab0Dash extends Protocol {
 	 */
 	private void forward(Message msg) {
 		Address target = leader;
-		ZABHeader hdrReq = (ZABHeader) msg.getHeader(this.id);
+		Zab2PhasesHeader hdrReq = (Zab2PhasesHeader) msg.getHeader(this.id);
 		if (target == null)
 			return;
 
 		try {
-			ZABHeader hdr = new ZABHeader(ZABHeader.FORWARD,
+			Zab2PhasesHeader hdr = new Zab2PhasesHeader(Zab2PhasesHeader.FORWARD,
 					hdrReq.getMessageId());
 			Message forward_msg = new Message(target).putHeader(this.id, hdr);
 			down_prot.down(new Event(Event.MSG, forward_msg));
@@ -458,7 +457,7 @@ public class Zab0Dash extends Protocol {
 	 * method generates ACK message and send it to the leader and call commit
 	 * message locally as it receives a majority.
 	 */
-	private void sendACK(Message msg, ZABHeader hdrAck) {
+	private void sendACK(Message msg, Zab2PhasesHeader hdrAck) {
 		if(!is_warmUp){
 			stats.incNumRequest();
 		}
@@ -477,7 +476,8 @@ public class Zab0Dash extends Protocol {
 
 		lastZxidProposed = hdrAck.getZxid();
 		queuedProposalMessage.put(hdrAck.getZxid(), hdrAck);
-		ZABHeader hdrACK = new ZABHeader(ZABHeader.ACK, hdrAck.getZxid(),
+		commit(hdrAck.getZxid());
+		Zab2PhasesHeader hdrACK = new Zab2PhasesHeader(Zab2PhasesHeader.ACK, hdrAck.getZxid(),
 				hdrAck.getMessageId());
 		Message ACKMessage = new Message(leader).putHeader(this.id, hdrACK);
 		if (!is_warmUp) {
@@ -492,8 +492,7 @@ public class Zab0Dash extends Protocol {
 		}
 		
 		//if (hdrAck.getZxid() == lastZxidCommitted + 1) {
-		outstandingProposals.remove(hdrAck.getZxid());
-		commit(hdrAck.getZxid());
+		//outstandingProposals.remove(hdrAck.getZxid());
 		//} else {
 		//	System.out.println(">>> Can't commit >>>>>>>>>");
 		//}
@@ -506,7 +505,7 @@ public class Zab0Dash extends Protocol {
 	 */
 	private synchronized void processACK(Message msgACK, Address sender) {
 
-		ZABHeader hdr = (ZABHeader) msgACK.getHeader(this.id);
+		Zab2PhasesHeader hdr = (Zab2PhasesHeader) msgACK.getHeader(this.id);
 		long ackZxid = hdr.getZxid();
 		if (lastZxidCommitted >= ackZxid) {
 			return;
@@ -530,16 +529,16 @@ public class Zab0Dash extends Protocol {
 	 * This method is invoked by leader and follower.
 	 */
 	private void commit(long zxidd) {
-		ZABHeader hdrOrg = queuedProposalMessage.get(zxidd);
+		//Zab2PhasesHeader hdrOrg = queuedProposalMessage.get(zxidd);
 		synchronized (this) {
 			lastZxidCommitted = zxidd;
 		}
-		if (hdrOrg == null) {
-			log.info("??????????????????????????? Header is null (commit)"
-					+ hdrOrg + " for zxid " + zxidd);
-			return;
-		}
 		deliver(zxidd);
+//		if (hdrOrg == null) {
+//			log.info("??????????????????????????? Header is null (commit)"
+//					+ hdrOrg + " for zxid " + zxidd);
+//			return;
+//		}
 		// log.info("Commiting commit >>>>>>>>>>>>>"+ zxidd);
 
 	}
@@ -549,13 +548,13 @@ public class Zab0Dash extends Protocol {
 	 * the request, replay to the client.
 	 */
 	private void deliver(long dZxid) {
-		ZABHeader hdrOrginal = queuedProposalMessage.remove(dZxid);
-		if (hdrOrginal == null) {
-			if (log.isInfoEnabled())
-				log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
-						+ hdrOrginal + " for zxid " + dZxid);
-			return;
-		}
+		Zab2PhasesHeader hdrOrginal = queuedProposalMessage.remove(dZxid);
+//		if (hdrOrginal == null) {
+//			if (log.isInfoEnabled())
+//				log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
+//						+ hdrOrginal + " for zxid " + dZxid);
+//			return;
+//		}
 		queuedCommitMessage.put(dZxid, hdrOrginal);
 		if (!is_warmUp) {
 			stats.incnumReqDelivered();
@@ -570,7 +569,7 @@ public class Zab0Dash extends Protocol {
 				long startTime = hdrOrginal.getMessageId().getStartTime();
 				stats.addLatency((int) (System.nanoTime() - startTime));
 			}
-			ZABHeader hdrResponse = new ZABHeader(ZABHeader.RESPONSE, dZxid,
+			Zab2PhasesHeader hdrResponse = new Zab2PhasesHeader(Zab2PhasesHeader.RESPONSE, dZxid,
 					hdrOrginal.getMessageId());
 			Message msgResponse = new Message(hdrOrginal.getMessageId()
 					.getAddress()).putHeader(this.id, hdrResponse);
@@ -583,7 +582,7 @@ public class Zab0Dash extends Protocol {
 	/*
 	 * Send replay to client
 	 */
-	private void handleOrderingResponse(ZABHeader hdrResponse) {
+	private void handleOrderingResponse(Zab2PhasesHeader hdrResponse) {
 		Message message = messageStore.get(hdrResponse.getMessageId());
 		message.putHeader(this.id, hdrResponse);
 		up_prot.up(new Event(Event.MSG, message));
@@ -606,9 +605,9 @@ public class Zab0Dash extends Protocol {
 		return timeString;
 	}
 
-	private void sendTotalABMwssages(ZABHeader CarryCountMessageLeader) {
+	private void sendTotalABMwssages(Zab2PhasesHeader CarryCountMessageLeader) {
 		if (!is_leader) {
-			ZABHeader followerMsgCount = new ZABHeader(ZABHeader.COUNTMESSAGE,
+			Zab2PhasesHeader followerMsgCount = new Zab2PhasesHeader(Zab2PhasesHeader.COUNTMESSAGE,
 					countMessageFollower);
 			Message requestMessage = new Message(leader).putHeader(this.id,
 					followerMsgCount);
@@ -643,7 +642,7 @@ public class Zab0Dash extends Protocol {
 		}
 
 		public void handleRequests() {
-			ZABHeader hdrReq = null;
+			Zab2PhasesHeader hdrReq = null;
 			while (running) {
 
 				try {
@@ -658,7 +657,7 @@ public class Zab0Dash extends Protocol {
 					stats.incNumRequest();
 				}
 
-				ZABHeader hdrProposal = new ZABHeader(ZABHeader.PROPOSAL,
+				Zab2PhasesHeader hdrProposal = new Zab2PhasesHeader(Zab2PhasesHeader.PROPOSAL,
 						new_zxid, hdrReq.getMessageId());
 				Message ProposalMessage = new Message().putHeader(this.id,
 						hdrProposal);

@@ -27,8 +27,8 @@ package org.jgroups.protocols.jzookeeper;
 	import java.util.concurrent.atomic.AtomicInteger;
 	import java.util.concurrent.atomic.AtomicLong;
 
-	import org.jgroups.protocols.jzookeeper.ZAB;
-	import org.jgroups.protocols.jzookeeper.ClientThread.Sender;
+	import org.jgroups.protocols.jzookeeper.Zab2PhasesWithCommit;
+	import org.jgroups.protocols.jzookeeper.ZabClient.Sender;
 	import org.jgroups.Address;
 	import org.jgroups.JChannel;
 	import org.jgroups.Message;
@@ -55,7 +55,7 @@ package org.jgroups.protocols.jzookeeper;
 		private static int num_threads = 10;
 		private long log_interval = num_msgs / 10; 
 		private long receive_log_interval = Math.max(1, num_msgs / 10);
-		private ClientThread[] clientThreads;
+		private ZabClient[] clientThreads;
 		private final byte[] payload = new byte[msg_size];
 		private AtomicLong localSequence = new AtomicLong(); 
 		private long incMainRequest = 0;
@@ -88,7 +88,7 @@ package org.jgroups.protocols.jzookeeper;
 			this.numsOfWarmUpPerThread = numsOfWarmUpPerThread;
 
 			this.ID = ClassConfigurator
-						.getProtocolId((this.ProtocotName.equals("ZAB"))?ZAB.class:MMZAB.class);
+						.getProtocolId((this.ProtocotName.equals("ZAB"))?Zab2PhasesWithCommit.class:MMZAB.class);
 			
 		}
 
@@ -132,7 +132,7 @@ package org.jgroups.protocols.jzookeeper;
 
 			final CyclicBarrier barrier = new CyclicBarrier(num_threads + 1);
 			System.out.println("Host name for client"+ local_addr.toString().split("-")[0]);
-			clientThreads = new ClientThread[num_threads];
+			clientThreads = new ZabClient[num_threads];
 			if (!zabboxInit.contains(local_addr.toString().split("-")[0])) {
 				for (int i = 0; i < clientThreads.length; i++) {
 //					clientThreads[i] = new ClientThread(zabBox, barrier, num_msgs,
@@ -161,7 +161,7 @@ package org.jgroups.protocols.jzookeeper;
 			//System.out.println("inside sendStartSign");
 			MessageId mid = new MessageId(local_addr,
 					localSequence.incrementAndGet());
-			ZABHeader startHeader = new ZABHeader(ZABHeader.START_SENDING, -5, mid);
+			ZabHeader startHeader = new ZabHeader(ZabHeader.START_SENDING, -5, mid);
 			Message msg = new Message(null).putHeader(ID, startHeader);
 			msg.setObject("req");
 			channel.send(msg);
@@ -176,7 +176,7 @@ package org.jgroups.protocols.jzookeeper;
 					(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
 			MessageId mid = new MessageId(local_addr,
 					localSequence.incrementAndGet());
-			ZABHeader resetProtocol = new ZABHeader(ZABHeader.RESET, -4,  mid);
+			ZabHeader resetProtocol = new ZabHeader(ZabHeader.RESET, -4,  mid);
 			Message msg = new Message(null).putHeader(ID, resetProtocol);
 			channel.send(msg);
 		}
@@ -184,7 +184,7 @@ package org.jgroups.protocols.jzookeeper;
 		public void callRemotePrintStats() throws Exception{
 			MessageId mid = new MessageId(local_addr,
 					localSequence.incrementAndGet());
-			ZABHeader stats = new ZABHeader(ZABHeader.STATS, -3, mid);
+			ZabHeader stats = new ZabHeader(ZabHeader.STATS, -3, mid);
 			Message msg = new Message(null).putHeader(ID, stats);
 			channel.send(msg);
 			
@@ -193,7 +193,7 @@ package org.jgroups.protocols.jzookeeper;
 		public void calculateABMessage() throws Exception{
 			MessageId mid = new MessageId(local_addr,
 					localSequence.incrementAndGet());
-			ZABHeader stats = new ZABHeader(ZABHeader.COUNTMESSAGE, -2, mid);
+			ZabHeader stats = new ZabHeader(ZabHeader.COUNTMESSAGE, -2, mid);
 			Message msg = new Message(null).putHeader(ID, stats);
 			channel.send(msg);
 			
@@ -224,9 +224,9 @@ package org.jgroups.protocols.jzookeeper;
 		}
 		
 		public void receive(Message msg) {
-			final ZABHeader testHeader = (ZABHeader) msg.getHeader(ID);
+			final ZabHeader testHeader = (ZabHeader) msg.getHeader(ID);
 			
-				if (testHeader.getType() == ZABHeader.START_SENDING) {
+				if (testHeader.getType() == ZabHeader.START_SENDING) {
 					numsThreadFinished=0;
 					avgTimeElpased =0;
 					avgRecievedOps=0;
@@ -246,7 +246,7 @@ package org.jgroups.protocols.jzookeeper;
 						e.printStackTrace();
 					}
 		        }
-				else if (testHeader.getType() == ZABHeader.STARTREALTEST){
+				else if (testHeader.getType() == ZabHeader.STARTREALTEST){
 					System.out.println("Recieved STARTREALTEST from "+msg.getSrc());
 
 					synchronized(this){
@@ -396,7 +396,7 @@ package org.jgroups.protocols.jzookeeper;
 	        }
 	      
 			try {
-				final ZABTestThreads test = new ZABTestThreads(zabboxInits, name, propsFile, totalMessages,
+				final ZabTestThreads test = new ZabTestThreads(zabboxInits, name, propsFile, totalMessages,
 																numberOfMessages, numsThreads, msgSize, 
 																outputDir, numOfClients, load, numWarmUp);
 				
