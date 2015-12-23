@@ -301,13 +301,9 @@ public class TcpConnection implements Connection {
             return this;
         }
 
-        public boolean isRunning() {
-            return receiving;
-        }
-
-        public boolean canRun() {
-            return isRunning() && isConnected();
-        }
+        public boolean isRunning()  {return receiving;}
+        public boolean canRun()     {return isRunning() && isConnected();}
+        public int     bufferSize() {return buffer != null? buffer.length : 0;}
 
         public void run() {
             Throwable t=null;
@@ -409,10 +405,10 @@ public class TcpConnection implements Connection {
         InetAddress local=tmp_sock.getLocalAddress(), remote=tmp_sock.getInetAddress();
         String local_str=local != null? Util.shortName(local) : "<null>";
         String remote_str=remote != null? Util.shortName(remote) : "<null>";
-        return String.format("%s:%s --> %s:%s (%d secs old) [%s]",
+        return String.format("%s:%s --> %s:%s (%d secs old) [%s] [recv_buf=%d]",
                              local_str, tmp_sock.getLocalPort(), remote_str, tmp_sock.getPort(),
                              TimeUnit.SECONDS.convert(getTimestamp() - last_access, TimeUnit.NANOSECONDS),
-                             status());
+                             status(), receiver != null? receiver.bufferSize() : 0);
     }
 
     protected String status() {

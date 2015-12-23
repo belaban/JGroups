@@ -305,6 +305,12 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         notifyConnectionEstablished(conn);
     }
 
+    public void closeConnection(Connection conn, Throwable ex) {
+        Util.close(conn);
+        notifyConnectionClosed(conn, ex.toString());
+        removeConnectionIfPresent(conn != null? conn.peerAddress() : null, conn);
+    }
+
 
     public synchronized void addConnection(Address peer_addr, Connection conn) throws Exception {
         boolean conn_exists=hasConnection(peer_addr),

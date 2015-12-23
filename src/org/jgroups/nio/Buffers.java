@@ -82,6 +82,7 @@ public class Buffers implements Iterable<ByteBuffer> {
     public Buffers add(ByteBuffer ... buffers) {
         if(buffers == null)
             return this;
+        assertPositiveUnsignedShort(buffers.length);
         int len=buffers.length;
         if(spaceAvailable(len) || (makeSpace() && spaceAvailable(len))) {
             for(ByteBuffer buf: buffers)
