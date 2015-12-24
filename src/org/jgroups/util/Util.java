@@ -164,7 +164,7 @@ public class Util {
 
         try {
             String tmp=System.getProperty(Global.DEFAULT_HEADERS);
-            DEFAULT_HEADERS=tmp != null? new Integer(tmp) : 3;
+            DEFAULT_HEADERS=tmp != null? new Integer(tmp) : 4;
         }
         catch(Throwable t) {
             throw new IllegalArgumentException(String.format("property %s has an incorrect value", Global.DEFAULT_HEADERS), t);
