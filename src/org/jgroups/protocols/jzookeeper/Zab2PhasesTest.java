@@ -23,6 +23,8 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.jgroups.protocols.jzookeeper.Zab2Phases;
 import org.jgroups.protocols.jzookeeper.Zab2PhasesClient.Sender;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
@@ -87,7 +89,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 			.getProtocolId(Zab2Phases.class);
 	}
 
-	public Zab2PhasesTest (){
+	public Zab2PhasesTest() {
 	}
 
 	public void viewAccepted(View new_view) {
@@ -312,8 +314,8 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 	public synchronized void finishedSend() throws Exception{
 		numsThreadFinished++;
 		if (numsThreadFinished >= num_threads){
-        System.out.println("Finished warm up----------------------------->>>");
-		resetProtocol();
+      System.out.println("Finished warm up----------------------------->>>");
+			resetProtocol();
 	  }
 	}
 	

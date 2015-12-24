@@ -254,7 +254,6 @@ public class Zab2Phases extends Protocol {
 					return up_prot.up(new Event(Event.MSG, msg));
 			case Zab2PhasesHeader.RESPONSE:
 				handleOrderingResponse(hdr);
-
 			}
 			return null;
 		case Event.VIEW_CHANGE:
@@ -585,7 +584,13 @@ public class Zab2Phases extends Protocol {
 	private void handleOrderingResponse(Zab2PhasesHeader hdrResponse) {
 		Message message = messageStore.get(hdrResponse.getMessageId());
 		message.putHeader(this.id, hdrResponse);
-		up_prot.up(new Event(Event.MSG, message));
+		try{
+			up_prot.up(new Event(Event.MSG, message));
+		}catch(Exception e){
+			log.info("Problem with zxid ?"+ hdrResponse.getZxid());
+			System.out.println("handleOrderingResponse zxid ?"+ hdrResponse.getZxid());
+		}
+	
 
 	}
 
@@ -668,7 +673,7 @@ public class Zab2Phases extends Protocol {
 				p.AckCount++;
 				outstandingProposals.put(new_zxid, p);
 				queuedProposalMessage.put(new_zxid, hdrProposal);
-
+				log.error("Yes I am Zab2Phases");
 				try {
 
 					for (Address address : zabMembers) {

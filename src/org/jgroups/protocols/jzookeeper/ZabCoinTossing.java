@@ -283,16 +283,15 @@ import org.jgroups.util.MessageBatch;
 	                		log.info("Yes, I recieved count request");
 	                	break;
 	                    case ZabCoinTossingHeader.SENDMYADDRESS:
-	                		if (is_leader){
-	                			clients.add(msg.getSrc());
-	                			System.out.println("Rceived client;s address "+msg.getSrc());
-	                		}
-	                		break;
+	                    	if (!zabMembers.contains(msg.getSrc())) {
+	        					clients.add(msg.getSrc());
+	        					System.out.println("Rceived clients address "
+	        							+ msg.getSrc());
+	        				}
+	        				break;
 	                    case ZabCoinTossingHeader.STARTREALTEST:
 	                    	if(!zabMembers.contains(local_addr))
 	                			return up_prot.up(new Event(Event.MSG, msg));
-	                    	else
-	                    		break;
 	                    case ZabCoinTossingHeader.RESPONSE:
 	                    	handleOrderingResponse(hdr);
 	                    	
@@ -348,14 +347,17 @@ import org.jgroups.util.MessageBatch;
 	    	}
 	    	
 
-	    	else if (clientHeader!=null && clientHeader.getType() == ZabCoinTossingHeader.RESET){
+	    	else if (clientHeader != null
+					&& clientHeader.getType() == ZabHeader.RESET) {
 
-	    		for (Address server : zabMembers){
-	        			//message.setDest(server);
-	        	        Message resetMessage = new Message(server).putHeader(this.id, clientHeader);
-	        	        down_prot.down(new Event(Event.MSG, resetMessage));    	
-	        	}
-	    	}
+				for (Address server : zabMembers) {
+					// message.setDest(server);
+					Message resetMessage = new Message(server).putHeader(this.id,
+							clientHeader);
+					resetMessage.setSrc(local_addr);
+					down_prot.down(new Event(Event.MSG, resetMessage));
+				}
+			}
 	    	
 	    	else if (clientHeader!=null && clientHeader.getType() == ZabCoinTossingHeader.STATS){
 
@@ -390,13 +392,19 @@ import org.jgroups.util.MessageBatch;
 		       down_prot.down(new Event(Event.MSG, requestMessage));    
 	    	}
 	    	
-	    	else if(!clientHeader.getMessageId().equals(null) && clientHeader.getType() == ZabCoinTossingHeader.SENDMYADDRESS){
-		    	 Address destination = null;
-		        destination = zabMembers.get(0);
-		        message.dest(destination);
-		        message.src(message.getSrc());
-		       down_prot.down(new Event(Event.MSG, message));    
-	   	}
+	    	else if (!clientHeader.getMessageId().equals(null)
+					&& clientHeader.getType() == ZabCoinTossingHeader.SENDMYADDRESS) {
+				Address destination = null;
+				destination = zabMembers.get(0);
+				//destination = zabMembers.get(0);
+				log.info("ZabMemberSize = " + zabMembers.size());
+				for (Address server : zabMembers) {
+					log.info("server address = " + server);
+					message.dest(server);
+					message.src(message.getSrc());
+					down_prot.down(new Event(Event.MSG, message));
+				}
+			}
 	    
 	    	
 	    }
@@ -733,8 +741,10 @@ import org.jgroups.util.MessageBatch;
 						log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+committedZxid);
 
 		    	if (requestQueue.contains(hdrOrginal.getMessageId())){
-		    		long startTime  = hdrOrginal.getMessageId().getStartTime();
-					stats.addLatency((int) (System.nanoTime() - startTime));
+		    		if (!is_warmUp) {
+						long startTime = hdrOrginal.getMessageId().getStartTime();
+						stats.addLatency((int) (System.nanoTime() - startTime));
+					}
 			    	ZabCoinTossingHeader hdrResponse = new ZabCoinTossingHeader(ZabCoinTossingHeader.RESPONSE, committedZxid,  hdrOrginal.getMessageId());
 			    	Message msgResponse = new Message(hdrOrginal.getMessageId().getAddress()).putHeader(this.id, hdrResponse);
 		       		down_prot.down(new Event(Event.MSG, msgResponse));     

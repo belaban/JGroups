@@ -84,24 +84,6 @@ public class Proposal implements Comparable<Proposal>{
 	public String toString() {
 		return "Proposal [zxid=" + zxid + "]";
 	}
-	
-	public static void main(String [] args){
-		List<Proposal> lists = new ArrayList<Proposal>();
-		 Proposal p1 =new Proposal();
-		 p1.setZxid(1);
-		lists.add(p1);
-		Proposal p2 =new Proposal();
-		 p2.setZxid(2);
-		lists.add(p2);
-		Proposal p3 =new Proposal();
-		 p3.setZxid(0);
-		lists.add(p3);
-		Proposal p4 =new Proposal();
-		 p1.setZxid(7);
-		lists.add(p4);
-		
-	}
-	
-    
+ 
 
 }

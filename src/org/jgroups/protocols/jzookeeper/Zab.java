@@ -367,9 +367,9 @@ public class Zab extends Protocol {
 			destination = zabMembers.get(index);
 			Message requestMessage = new Message(destination).putHeader(
 					this.id, hdrReq);
-			int diff = 1000 - hdrReq.size();
-			if (diff > 0)
-				requestMessage.setBuffer(new byte[diff]); // Necessary to ensure that
+//			int diff = 1000 - hdrReq.size();
+//			if (diff > 0)
+//				requestMessage.setBuffer(new byte[diff]); // Necessary to ensure that
 													// each msgs size is 1kb,
 													// necessary for accurate
 													// network measurements

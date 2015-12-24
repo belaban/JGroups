@@ -50,7 +50,7 @@ public class ZabCoinTossingTest extends ReceiverAdapter {
 	private static int num_threads = 10;
 	private long log_interval = num_msgs / 10; 
 	private long receive_log_interval = Math.max(1, num_msgs / 10);
-	private ZabCoinTossingClient[] clientThreads;
+	private ZabCoinTossingClient[] clientThreads=null;
 	private final byte[] payload = new byte[msg_size];
 	private AtomicLong localSequence = new AtomicLong(); 
 	private long incMainRequest = 0;
@@ -128,13 +128,14 @@ public class ZabCoinTossingTest extends ReceiverAdapter {
 		final CyclicBarrier barrier = new CyclicBarrier(num_threads + 1);
 		System.out.println("Host name for client"+ local_addr.toString().split("-")[0]);
 		clientThreads = new ZabCoinTossingClient[num_threads];
+		System.out.println("after clientThreads = new ZabCoinTossingClient[num_threads];");
 		if (!zabboxInit.contains(local_addr.toString().split("-")[0])) {
 			for (int i = 0; i < clientThreads.length; i++) {
 				clientThreads[i] = new ZabCoinTossingClient(zabBox, barrier, num_msgs,
 						localSequence, payload, ProtocotName, num_msgsPerThreads, propsFile, load, numsOfWarmUpPerThread, this);
 			}
 		}
-
+		System.out.println("after for (int i = 0; i < clientThreads.length; i++)");
 		if ((view != null) && zabBox.size() != 0
 				&& view.getMembers().size() > 3 && !zabBox.contains(local_addr)) {
 			System.out.println("Start create Threads Enter int number to start");
