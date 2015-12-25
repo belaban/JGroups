@@ -21,6 +21,9 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
     private Address address = null;
     private long id = -1;
     private long startSend = 0;
+    private long startFToLF = 0;
+    private long startLToFP = 0;
+    private long startFToLA = 0;
     private long zxid = -1;
 
     public MessageId() {}
@@ -43,6 +46,7 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
     @Override
     public int compareTo(MessageId other) {
         if (other == null) {
+        	System.out.println("Before NullPointerException MessageId");
             throw new NullPointerException();
         }
 
@@ -63,7 +67,32 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
     	this.startSend = startSend;
     }
     
-    public long getZxid(){
+
+	public long getStartFToLF() {
+		return startFToLF;
+	}
+
+	public void setStartFToLF(long startFToLF) {
+		this.startFToLF = startFToLF;
+	}
+
+	public long getStartLToFP() {
+		return startLToFP;
+	}
+
+	public void setStartLToFP(long startLToFP) {
+		this.startLToFP = startLToFP;
+	}
+
+	public long getStartFToLA() {
+		return startFToLA;
+	}
+
+	public void setStartFToLA(long startFToLA) {
+		this.startFToLA = startFToLA;
+	}
+
+	public long getZxid(){
     	return zxid;
     }
     
@@ -118,6 +147,9 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
         Util.writeAddress(address, out);
         Bits.writeLong(id, out);
         Bits.writeLong(startSend, out);
+        Bits.writeLong(startFToLF, out);
+        Bits.writeLong(startLToFP, out);
+        Bits.writeLong(startFToLA, out);
         Bits.writeLong(zxid, out);
 
     }
@@ -127,6 +159,9 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
         address = Util.readAddress(in);
         id = Bits.readLong(in);
         startSend = Bits.readLong(in);
+        startFToLF = Bits.readLong(in);
+        startLToFP = Bits.readLong(in);
+        startFToLA = Bits.readLong(in);
         zxid = Bits.readLong(in);
     }
 

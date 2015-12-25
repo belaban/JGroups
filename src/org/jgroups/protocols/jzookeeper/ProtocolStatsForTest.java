@@ -19,14 +19,12 @@ import org.jgroups.logging.LogFactory;
 /*
  * It uses to gathering protocol stats like throughput, latency and load.
  */
-public class ProtocolStats {
+public class ProtocolStatsForTest {
 	private List<Integer> latencies;
 	private List<Integer> fromfollowerToLeaderF;
 	private List<Integer> fromLeaderToFollowerP;
-//	private List<Integer> fromFollowerToLeaderA1;
-//	private List<Integer> fromFollowerToLeaderA2;
-//	private List<Integer> fromFollowerToLeaderF1;
-//	private List<Integer> fromFollowerToLeaderF2;
+	private List<Integer> fromFollowerToLeaderA1;
+	private List<Integer> fromFollowerToLeaderA2;
     private int throughput;
     private long startThroughputTime;
     private long endThroughputTime;
@@ -41,18 +39,15 @@ public class ProtocolStats {
     private static PrintWriter outFile;
     private String outDir;
     protected final Log        log=LogFactory.getLog(this.getClass());
-   
 
   
-	public ProtocolStats(String protocolName, int numberOfClients, int numberOfSenderInEachClient, String outDir) {
+	public ProtocolStatsForTest(String protocolName, int numberOfClients, int numberOfSenderInEachClient, String outDir) {
 
 		this.latencies = new ArrayList<Integer>();
 		this.fromfollowerToLeaderF = new ArrayList<Integer>();
-		this.fromLeaderToFollowerP = new ArrayList<Integer>();
-//		this.fromFollowerToLeaderA1 = new ArrayList<Integer>();
-//		this.fromFollowerToLeaderA2 = new ArrayList<Integer>();
-//		this.fromFollowerToLeaderF1 = new ArrayList<Integer>();;
-//		this.fromFollowerToLeaderF2 = new ArrayList<Integer>();;
+		this.fromLeaderToFollowerP = new ArrayList<Integer>();;
+		this.fromFollowerToLeaderA1 = new ArrayList<Integer>();;
+		this.fromFollowerToLeaderA2 = new ArrayList<Integer>();;
 		this.throughput = 0;
 		this.protocolName = protocolName;
 		this.numberOfClients = numberOfClients;
@@ -273,19 +268,12 @@ public class ProtocolStats {
 		fromLeaderToFollowerP.add(latency);
 	}
 	
-//	public void addLatencyFToLA1(int latency){	
-//		fromFollowerToLeaderA1.add(latency);
-//	}
-//	public void addLatencyFToLA2(int latency){	
-//		fromFollowerToLeaderA2.add(latency);
-//	}
-//	
-//	public void addLatencyFToLF1(int latency){	
-//		fromFollowerToLeaderF1.add(latency);
-//	}
-//	public void addLatencyFToLF2(int latency){	
-//		fromFollowerToLeaderF2.add(latency);
-//	}
+	public void addLatencyFToLA1(int latency){	
+		fromFollowerToLeaderA1.add(latency);
+	}
+	public void addLatencyFToLA2(int latency){	
+		fromFollowerToLeaderA2.add(latency);
+	}
 	
 	public void incCountMessageFollower() {
 		this.countMessageFollower.incrementAndGet();
@@ -296,13 +284,13 @@ public class ProtocolStats {
 	}
 
 
-	public void printProtocolStats(boolean isLeader) {
+	public void printProtocolStats() {
 		
 		// print Min, Avg, and Max latency
 		List<Long> latAvg = new ArrayList<Long>();
 		int count = 0;
 		long avgTemp = 0;
-		long min = Long.MAX_VALUE, avg = 0, max = Long.MIN_VALUE, FToLFAvg=0, LToFPAvg=0, avgAll=0;
+		long min = Long.MAX_VALUE, avg = 0, max = Long.MIN_VALUE;
 		for (long lat : latencies) {
 			if (lat < min) {
 				min = lat;
@@ -320,22 +308,6 @@ public class ProtocolStats {
 			}
 
 		}
-		avgAll = avg/latencies.size();
-		
-		if (isLeader){
-			for (long lat : fromLeaderToFollowerP) {
-				   LToFPAvg += lat;
-				}
-			   LToFPAvg = LToFPAvg/fromLeaderToFollowerP.size();				
-		}
-	   else{
-		   for (long lat : fromfollowerToLeaderF) {
-				FToLFAvg += lat;
-			}
-			FToLFAvg = FToLFAvg/fromfollowerToLeaderF.size();
-		   	
-	   }
-		
 		outFile.println("Start");
 		outFile.println(protocolName + "/" + numberOfClients + "/" + numberOfSenderInEachClient);
 		outFile.println("Number of Request Recieved = " + (numRequest));
@@ -347,15 +319,6 @@ public class ProtocolStats {
 						.toSeconds(endThroughputTime - startThroughputTime))));
 		outFile.println("Latency average" + latAvg
 				+ " numbers avg = " + latAvg.size());
-		outFile.println("All Latency average " +  (double)(avgAll)/1000000);
-		if (isLeader){
-			outFile.println("Latency From Leader to Follower (round-trip) (Proposal) " + (double)(LToFPAvg)/1000000);
-		}
-		else{
-			outFile.println("Latency From Folower to Leader (round-trip) (Forward) " + (double)(FToLFAvg)/1000000);
-
-		}
-		
 		outFile.println("Test Generated at "
 				+ new Date()
 				+ " /Lasted for = "

@@ -94,6 +94,7 @@ public class Zab2Phases extends Protocol {
 	private List<Address> clients = Collections
 			.synchronizedList(new ArrayList<Address>());
 	private ProtocolStats stats;
+	
 
 	public Zab2Phases() {
 
@@ -219,6 +220,16 @@ public class Zab2Phases extends Protocol {
 				reset(msg.getSrc());
 				break;
 			case Zab2PhasesHeader.FORWARD:
+				if(!is_warmUp){
+					if (msg.src().equals(zabMembers.get(1))){
+						long startFToLF1 = hdr.getMessageId().getStartFToLF();
+						stats.addLatencyFToLF1((int) (System.nanoTime() - startFToLF1));
+					}
+					else{
+						long startFToLF2 = hdr.getMessageId().getStartFToLF();
+						stats.addLatencyFToLF2((int) (System.nanoTime() - startFToLF2));
+					}
+				}
 				queuedMessages.add(hdr);
 				break;
 			case Zab2PhasesHeader.PROPOSAL:
@@ -236,7 +247,7 @@ public class Zab2Phases extends Protocol {
 				}
 				break;
 			case Zab2PhasesHeader.STATS:
-				stats.printProtocolStats();
+				stats.printProtocolStats(is_leader);
 				break;
 			case Zab2PhasesHeader.COUNTMESSAGE:
 				sendTotalABMwssages(hdr);
@@ -423,9 +434,11 @@ public class Zab2Phases extends Protocol {
 
 		if (is_leader) {
 			hdrReq.getMessageId().setStartTime(System.nanoTime());
-			queuedMessages.add((Zab2PhasesHeader) msg.getHeader(this.id));
+			hdrReq.getMessageId().setStartLToFP(System.nanoTime());
+			queuedMessages.add(hdrReq);
 		} else {
 			hdrReq.getMessageId().setStartTime(System.nanoTime());
+			hdrReq.getMessageId().setStartFToLF(System.nanoTime());
 			forward(msg);
 		}
 
@@ -478,12 +491,14 @@ public class Zab2Phases extends Protocol {
 		commit(hdrAck.getZxid());
 		Zab2PhasesHeader hdrACK = new Zab2PhasesHeader(Zab2PhasesHeader.ACK, hdrAck.getZxid(),
 				hdrAck.getMessageId());
-		Message ACKMessage = new Message(leader).putHeader(this.id, hdrACK);
 		if (!is_warmUp) {
 			countMessageFollower++;
 			stats.incCountMessageFollower();
+			hdrACK.getMessageId().setStartFToLA(System.nanoTime());
+			long startLToFP = hdrAck.getMessageId().getStartLToFP();
+			stats.addLatencyLToFP((int) (System.nanoTime() - startLToFP));
 		}
-
+		Message ACKMessage = new Message(leader).putHeader(this.id, hdrACK);
 		try {
 			down_prot.down(new Event(Event.MSG, ACKMessage));
 		} catch (Exception ex) {
@@ -503,8 +518,17 @@ public class Zab2Phases extends Protocol {
 	 * and check if a majority is reached for particular proposal.
 	 */
 	private synchronized void processACK(Message msgACK, Address sender) {
-
 		Zab2PhasesHeader hdr = (Zab2PhasesHeader) msgACK.getHeader(this.id);
+		if(!is_warmUp){
+			if (msgACK.src().equals(zabMembers.get(1))){
+				long startFToLA1 = hdr.getMessageId().getStartFToLA();
+				stats.addLatencyFToLA1((int) (System.nanoTime() - startFToLA1));
+			}
+			else{
+				long startFToLA2 = hdr.getMessageId().getStartFToLA();
+				stats.addLatencyFToLA2((int) (System.nanoTime() - startFToLA2));
+			}
+		}
 		long ackZxid = hdr.getZxid();
 		if (lastZxidCommitted >= ackZxid) {
 			return;

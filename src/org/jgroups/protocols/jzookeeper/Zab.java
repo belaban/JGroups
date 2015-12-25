@@ -245,7 +245,7 @@ public class Zab extends Protocol {
 				break;
 			case ZabHeader.STATS:
 				//log.info(" " + clients);
-				stats.printProtocolStats();
+				stats.printProtocolStats(is_leader);
 				break;
 			case ZabHeader.COUNTMESSAGE:
 				sendTotalABMssages(hdr);
@@ -425,7 +425,7 @@ public class Zab extends Protocol {
 	 * If this server is a leader put the request in queue for processing it.
 	 * otherwise forwards request to the leader
 	 */
-	private void forwardToLeader(Message msg) {
+	private synchronized void forwardToLeader(Message msg) {
 		ZabHeader hdrReq = (ZabHeader) msg.getHeader(this.id);
 		requestQueue.add(hdrReq.getMessageId());
 		if (!is_warmUp && is_leader && !startThroughput) {
@@ -434,10 +434,18 @@ public class Zab extends Protocol {
 		}
 
 		if (is_leader) {
-			hdrReq.getMessageId().setStartTime(System.nanoTime());
-			queuedMessages.add((ZabHeader) msg.getHeader(this.id));
+			if (!is_warmUp){
+				long stp = System.nanoTime();
+				hdrReq.getMessageId().setStartLToFP(stp);
+				hdrReq.getMessageId().setStartTime(stp);
+			}
+			queuedMessages.add(hdrReq);
 		} else {
-			hdrReq.getMessageId().setStartTime(System.nanoTime());
+			if (!is_warmUp){
+				long stf = System.nanoTime();
+				hdrReq.getMessageId().setStartFToLF(stf);
+				hdrReq.getMessageId().setStartTime(stf);
+			}
 			forward(msg);
 		}
 
@@ -492,6 +500,11 @@ public class Zab extends Protocol {
 		if (!is_warmUp){
 			countMessageFollower++;
 			stats.incCountMessageFollower();
+			if (requestQueue.contains(hdrAck.getMessageId())) {
+				long stf = hdrAck.getMessageId().getStartFToLF();
+				stats.addLatencyFToLF((int) (System.nanoTime() - stf));
+				//log.info("Latency for forward fro zxid=" +  dZxid + " start time=" + stf + " End Time=" + etf + " latency = "+((etf - stf)/1000000));
+			}
 		}
 		try {
 			down_prot.down(new Event(Event.MSG, ACKMessage));
@@ -520,6 +533,11 @@ public class Zab extends Protocol {
 		if (isQuorum(p.getAckCount())) {
 			if (ackZxid == lastZxidCommitted + 1) {
 				outstandingProposals.remove(ackZxid);
+				if(!is_warmUp && requestQueue.contains(hdr.getMessageId())){
+					long stf = hdr.getMessageId().getStartLToFP();
+					//log.info("Latency for Prposal for zxid=" +  ackZxid + " start time=" + stf + " End Time=" + etf + " latency = "+((etf - stf)/1000000));
+					stats.addLatencyLToFP((int) (System.nanoTime() - stf));
+				}
 				commit(ackZxid);
 			} else
 				System.out.println(">>> Can't commit >>>>>>>>>");
