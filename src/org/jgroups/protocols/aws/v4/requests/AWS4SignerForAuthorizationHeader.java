@@ -1,4 +1,4 @@
-package org.jgroups.protocols.aws.s3.signer;
+package org.jgroups.protocols.aws.v4.requests;
 
 import java.net.URL;
 import java.util.Date;
