@@ -43,7 +43,10 @@
          oob_thread_pool.queue_max_size="100"
          oob_thread_pool.rejection_policy="discard"/>
 
-    <PING />
+    <S3_PING
+    location="us-tti-mark" 
+    />
+    
     <MERGE3 max_interval="30000"
             min_interval="10000"/>
     <FD_SOCK/>
