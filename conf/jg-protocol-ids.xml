@@ -68,6 +68,7 @@
     <class id="72" name="org.jgroups.protocols.FD_HOST"/>
     <class id="73" name="org.jgroups.protocols.ABP"/>
     <class id="74" name="org.jgroups.protocols.TCP_NIO2"/>
+    <class id="75" name="org.jgroups.protocols.S3_PING2"/>
 
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->

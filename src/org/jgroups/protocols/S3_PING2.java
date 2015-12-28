@@ -67,14 +67,6 @@ public class S3_PING2 extends FILE_PING {
     public void init() throws Exception {
         super.init();
         
-        // check environment if null
-        if(access_key == null || access_key.length() > 0){
-        	access_key = System.getenv("access_key");
-        }
-        if(secret_access_key == null || secret_access_key.length() > 0){
-        	secret_access_key = System.getenv("secret_access_key");
-        }
-         
         if(host == null)
             host=Utils.DEFAULT_HOST;
         validateProperties();
