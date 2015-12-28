@@ -44,7 +44,8 @@
          oob_thread_pool.rejection_policy="discard"/>
 
     <S3_PING2
-    location="us-tti-mark" 
+    location="us-west-1-tti-mark" 
+    region="us-west-1"
     mdebug="true"
     />
     

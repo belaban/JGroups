@@ -63,9 +63,47 @@ public class S3_PING2 extends FILE_PING {
 
     protected AWSAuthConnection conn=null;
 
+    // -mm- //////////////////////////////////////////////////////////////////
+    
+    @Property(description="Mark's Debug flag")
+    protected boolean mdebug=false;
+    
+    @Property(description="AWS region")
+    protected String region="us-east-1";
+    protected String getRegion(){return region;}
+    
+    protected static void mlog(String s){
+    	System.out.println("**************** mlog begin ****************");
+    	System.out.println(s);
+    	System.out.println("****************  mlog end  ****************");
+    }
+    
+    ////////////////////////////////////////////////////////////////// -mm- //
+
     @Override
     public void init() throws Exception {
         super.init();
+
+        // -mm- //////////////////////////////////////////////////////////////////
+
+        // Use the environment to pass the AWS info
+        // during development so your keys are not 
+        // commited to the repo by accident.
+        
+        //access_key
+        if(access_key == null || access_key.length() > 0)
+        {
+        	// check environment if null
+        	access_key = System.getenv("access_key");
+        }
+        //secret_access_key
+        if(secret_access_key == null || secret_access_key.length() > 0)
+        {
+        	// check environment if null
+        	secret_access_key = System.getenv("secret_access_key");
+        }        
+
+        ////////////////////////////////////////////////////////////////// -mm- //
         
         if(host == null)
             host=Utils.DEFAULT_HOST;
@@ -100,11 +138,13 @@ public class S3_PING2 extends FILE_PING {
         if(!skip_bucket_existence_check && !conn.checkBucketExists(location)) {
             conn.createBucket(location, AWSAuthConnection.LOCATION_DEFAULT, null).connection.getResponseMessage();
         }
+        
+        mlog("init done.");
     }
 
     protected AWSAuthConnection createConnection() {
-        return port > 0? new AWSAuthConnection(access_key, secret_access_key, use_ssl, host, port)
-          : new AWSAuthConnection(access_key, secret_access_key, use_ssl, host);
+        return port > 0? new AWSAuthConnection(region, access_key, secret_access_key, use_ssl, host, port)
+          : new AWSAuthConnection(region, access_key, secret_access_key, use_ssl, host);
     }
 
     @Override
@@ -381,6 +421,7 @@ public class S3_PING2 extends FILE_PING {
         public static final String LOCATION_DEFAULT=null;
         public static final String LOCATION_EU="EU";
 
+        private String region;
         private String awsAccessKeyId;
         private String awsSecretAccessKey;
         private boolean isSecure;
@@ -388,29 +429,29 @@ public class S3_PING2 extends FILE_PING {
         private int port;
         private CallingFormat callingFormat;
 
-        public AWSAuthConnection(String awsAccessKeyId, String awsSecretAccessKey) {
-            this(awsAccessKeyId, awsSecretAccessKey, true);
+        public AWSAuthConnection(String region, String awsAccessKeyId, String awsSecretAccessKey) {
+            this(region, awsAccessKeyId, awsSecretAccessKey, true);
         }
 
-        public AWSAuthConnection(String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure) {
-            this(awsAccessKeyId, awsSecretAccessKey, isSecure, Utils.DEFAULT_HOST);
+        public AWSAuthConnection(String region, String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure) {
+            this(region, awsAccessKeyId, awsSecretAccessKey, isSecure, Utils.DEFAULT_HOST);
         }
 
-        public AWSAuthConnection(String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
+        public AWSAuthConnection(String region, String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
                                  String server) {
-            this(awsAccessKeyId, awsSecretAccessKey, isSecure, server,
+            this(region, awsAccessKeyId, awsSecretAccessKey, isSecure, server,
                  isSecure? Utils.SECURE_PORT : Utils.INSECURE_PORT);
         }
 
-        public AWSAuthConnection(String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
+        public AWSAuthConnection(String region, String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
                                  String server, int port) {
-            this(awsAccessKeyId, awsSecretAccessKey, isSecure, server, port, CallingFormat.getSubdomainCallingFormat());
+            this(region, awsAccessKeyId, awsSecretAccessKey, isSecure, server, port, CallingFormat.getSubdomainCallingFormat());
 
         }
 
-        public AWSAuthConnection(String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
+        public AWSAuthConnection(String region, String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
                                  String server, CallingFormat format) {
-            this(awsAccessKeyId, awsSecretAccessKey, isSecure, server,
+            this(region, awsAccessKeyId, awsSecretAccessKey, isSecure, server,
                  isSecure? Utils.SECURE_PORT : Utils.INSECURE_PORT,
                  format);
         }
@@ -425,9 +466,10 @@ public class S3_PING2 extends FILE_PING {
          * @param port               Which port to use.
          * @param format             Type of request Regular/Vanity or Pure Vanity domain
          */
-        public AWSAuthConnection(String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
+        public AWSAuthConnection(String region, String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
                                  String server, int port, CallingFormat format) {
-            this.awsAccessKeyId=awsAccessKeyId;
+            this.region=region;
+        	this.awsAccessKeyId=awsAccessKeyId;
             this.awsSecretAccessKey=awsSecretAccessKey;
             this.isSecure=isSecure;
             this.server=server;
@@ -837,6 +879,15 @@ public class S3_PING2 extends FILE_PING {
                 System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
             }
 
+            //-mm-///////////////////////////////////////////////////
+            // adjust the server for region if not us-east-1
+            // if us-east-1 we use the default server
+            if(region!=null && !region.equalsIgnoreCase("us-east-1")){
+            	server = "s3-" + region + ".amazonaws.com";
+            }
+            S3_PING2.mlog("server: " + server);
+            /////////////////////////////////////////////////////-mm-
+            
             // build the domain based on the calling format
             URL url=format.getURL(isSecure, server, this.port, bucket, key, pathArgs);
 
