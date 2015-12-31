@@ -7,12 +7,16 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.jgroups.Message;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 
@@ -23,6 +27,10 @@ public class ProtocolStats {
 	private List<Integer> latencies;
 	private List<Integer> fromfollowerToLeaderF;
 	private List<Integer> fromLeaderToFollowerP;
+	private List<Integer> latencyPropForward;
+	private final Map<MessageId, Long> latencyProposalForwardST;
+	private List<Integer> latencyProp;
+	private final Map<MessageId, Long> latencyProposalST;
 //	private List<Integer> fromFollowerToLeaderA1;
 //	private List<Integer> fromFollowerToLeaderA2;
 //	private List<Integer> fromFollowerToLeaderF1;
@@ -49,6 +57,12 @@ public class ProtocolStats {
 		this.latencies = new ArrayList<Integer>();
 		this.fromfollowerToLeaderF = new ArrayList<Integer>();
 		this.fromLeaderToFollowerP = new ArrayList<Integer>();
+		this.latencyProp = new ArrayList<Integer>();;
+		this.latencyProposalST= Collections
+				.synchronizedMap(new HashMap<MessageId, Long>());
+		this.latencyPropForward = new ArrayList<Integer>();;
+		this.latencyProposalForwardST= Collections
+				.synchronizedMap(new HashMap<MessageId, Long>());
 //		this.fromFollowerToLeaderA1 = new ArrayList<Integer>();
 //		this.fromFollowerToLeaderA2 = new ArrayList<Integer>();
 //		this.fromFollowerToLeaderF1 = new ArrayList<Integer>();;
@@ -273,9 +287,32 @@ public class ProtocolStats {
 		fromLeaderToFollowerP.add(latency);
 	}
 	
-//	public void addLatencyFToLA1(int latency){	
-//		fromFollowerToLeaderA1.add(latency);
-//	}
+	public void addLatencyProp(int latency){	
+		latencyProp.add(latency);
+	}
+	public void addLatencyProposalST(MessageId mid, Long st){	
+		latencyProposalST.put(mid,st);
+	}
+	public Long getLatencyProposalST(MessageId mid){	
+		return latencyProposalST.get(mid);
+	}
+	public void removeLatencyProposalST(MessageId mid){	
+		latencyProposalST.remove(mid);
+	}
+	
+	public void addLatencyPropForward(int latency){	
+		latencyPropForward.add(latency);
+	}
+	public void addLatencyProposalForwardST(MessageId mid, Long st){	
+		latencyProposalForwardST.put(mid,st);
+	}
+	public Long getLatencyProposalForwardST(MessageId mid){	
+		return latencyProposalForwardST.get(mid);
+	}
+	public void removeLatencyProposalForwardST(MessageId mid){	
+		latencyProposalForwardST.remove(mid);
+	}
+	
 //	public void addLatencyFToLA2(int latency){	
 //		fromFollowerToLeaderA2.add(latency);
 //	}
@@ -302,7 +339,8 @@ public class ProtocolStats {
 		List<Long> latAvg = new ArrayList<Long>();
 		int count = 0;
 		long avgTemp = 0;
-		long min = Long.MAX_VALUE, avg = 0, max = Long.MIN_VALUE, FToLFAvg=0, LToFPAvg=0, avgAll=0;
+		long min = Long.MAX_VALUE, avg = 0, max = Long.MIN_VALUE, FToLFAvg=0, LToFPAvg=0, avgAll=0, latProp=0, latLeader=0;
+		double latPropD=0, FToLFAvgD=0, LToFPAvgD=0, avgAllD=0, latLeaderD=0;
 		for (long lat : latencies) {
 			if (lat < min) {
 				min = lat;
@@ -320,19 +358,29 @@ public class ProtocolStats {
 			}
 
 		}
-		avgAll = avg/latencies.size();
+		avgAllD = (double) avg/latencies.size();
 		
 		if (isLeader){
 			for (long lat : fromLeaderToFollowerP) {
 				   LToFPAvg += lat;
-				}
-			   LToFPAvg = LToFPAvg/fromLeaderToFollowerP.size();				
+			}
+			LToFPAvgD = (double) LToFPAvg/fromLeaderToFollowerP.size();
+			   
+			 for (long lat : latencyProp) {
+				   latProp += lat;
+			 }
+			   latPropD = (double) latProp/latencyProp.size();
+			   
+			 for (long lat : latencyPropForward) {
+				   latLeader += lat;
+			 }
+			   latLeaderD = (double) latLeader/latencyPropForward.size();
 		}
 	   else{
 		   for (long lat : fromfollowerToLeaderF) {
-				FToLFAvg += lat;
+				lat += lat;
 			}
-			FToLFAvg = FToLFAvg/fromfollowerToLeaderF.size();
+		   FToLFAvgD = (double) FToLFAvg/fromfollowerToLeaderF.size();
 		   	
 	   }
 		
@@ -347,12 +395,16 @@ public class ProtocolStats {
 						.toSeconds(endThroughputTime - startThroughputTime))));
 		outFile.println("Latency average" + latAvg
 				+ " numbers avg = " + latAvg.size());
-		outFile.println("All Latency average " +  (double)(avgAll)/1000000);
+		outFile.println("All Latency average " +  (avgAllD)/1000000);
 		if (isLeader){
-			outFile.println("Latency From Leader to Follower (round-trip) (Proposal) " + (double)(LToFPAvg)/1000000);
+			outFile.println("Latency From Leader to Follower (round-trip) (Proposal) " + (double)(LToFPAvgD)/1000000);
+			outFile.println("Latency From FORWARD case to Proposal sent (Proposal) " + "latencyProp Size " + 
+					latencyProp.size() + " " +(double)(latPropD)/1000000);
+			outFile.println("Latency From leader to Proposal sent (Proposal) " + "latencyPropForward Size " + 
+					latencyPropForward.size() + " " +(double)(latLeaderD)/1000000);
 		}
 		else{
-			outFile.println("Latency From Folower to Leader (round-trip) (Forward) " + (double)(FToLFAvg)/1000000);
+			outFile.println("Latency From Folower to Leader (round-trip) (Forward) " + (double)(FToLFAvgD)/1000000);
 
 		}
 		

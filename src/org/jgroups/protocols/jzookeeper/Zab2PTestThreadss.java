@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jgroups.protocols.jzookeeper.Zab2Phases;
-import org.jgroups.protocols.jzookeeper.Zab2PhasesClient.Sender;
+import org.jgroups.protocols.jzookeeper.Zab2PClients.Sender;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -37,9 +37,9 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
-public class Zab2PhasesTest extends ReceiverAdapter {
+public class Zab2PTestThreadss extends ReceiverAdapter {
 	private List<String> zabboxInit = new ArrayList<String>();
-	private String propsFile = "conf/Zab.xml";
+	private String propsFile = "conf/Zab2Phases.xml";
 	private static String ProtocotName = "Zab2Phases";
 	private JChannel channel;
 	private Address local_addr = null;
@@ -52,7 +52,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 	private static int num_threads = 10;
 	private long log_interval = num_msgs / 10; 
 	private long receive_log_interval = Math.max(1, num_msgs / 10);
-	private Zab2PhasesClient[] clientThreads;
+	private Zab2PClients[] clientThreads;
 	private final byte[] payload = new byte[msg_size];
 	private AtomicLong localSequence = new AtomicLong(); 
 	private long incMainRequest = 0;
@@ -71,7 +71,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
     private Scanner wait = new Scanner(System.in);
 
 
-	public Zab2PhasesTest(String [] zabHosts, String protocolName, String props,
+	public Zab2PTestThreadss(String [] zabHosts, String protocolName, String props,
 						 int totalNum_msgs, int totalPerThreads, int num_threads,
 						 int msg_size, String outputDir, int numOfClients, int load, int numsOfWarmUpPerThread){
 		this.zabboxInit =  Arrays.asList(zabHosts);
@@ -89,7 +89,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 			.getProtocolId(Zab2Phases.class);
 	}
 
-	public Zab2PhasesTest() {
+	public Zab2PTestThreadss() {
 	}
 
 	public void viewAccepted(View new_view) {
@@ -119,9 +119,9 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 		System.out.println(sb);
 		channel = new JChannel(propsFile);
 		channel.setReceiver(this);
-		channel.connect("Zab2PCluster");
+		channel.connect("ZABCluster");
 		JmxConfigurator.registerChannel(channel, Util.getMBeanServer(),
-				"jgroups", "Zab2PCluster", true);
+				"jgroups", "ZABCluster", true);
 		Address coord = channel.getView().getMembers().get(0);
 	}
 	
@@ -129,10 +129,10 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 
 		final CyclicBarrier barrier = new CyclicBarrier(num_threads + 1);
 		System.out.println("Host name for client"+ local_addr.toString().split("-")[0]);
-		clientThreads = new Zab2PhasesClient[num_threads];
+		clientThreads = new Zab2PClients[num_threads];
 		if (!zabboxInit.contains(local_addr.toString().split("-")[0])) {
 			for (int i = 0; i < clientThreads.length; i++) {
-				clientThreads[i] = new Zab2PhasesClient(zabBox, barrier, num_msgs,
+				clientThreads[i] = new Zab2PClients(zabBox, barrier, num_msgs,
 						localSequence, payload, ProtocotName, num_msgsPerThreads, propsFile, load, numsOfWarmUpPerThread, this);
 			}
 		}
@@ -155,7 +155,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 		// Send local address to leader
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZabHeader startHeader = new ZabHeader(ZabHeader.SENDMYADDRESS, -6, mid);
+		Zab2PhasesHeader startHeader = new Zab2PhasesHeader(Zab2PhasesHeader.SENDMYADDRESS, -6, mid);
 		Message msg = new Message(null).putHeader(ID, startHeader);
 		msg.src(channel.getAddress());
 		msg.setObject("SENDMYADDRESS");
@@ -172,7 +172,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 		//System.out.println("inside sendStartSign");
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZabHeader startHeader = new ZabHeader(ZabHeader.START_SENDING, -5, mid);
+		Zab2PhasesHeader startHeader = new Zab2PhasesHeader(Zab2PhasesHeader.START_SENDING, -5, mid);
 		Message msg = new Message(null).putHeader(ID, startHeader);
 		msg.setObject("req");
 		channel.send(msg);
@@ -187,7 +187,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 				(outputDir+InetAddress.getLocalHost().getHostName()+".log",true)));
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZabHeader resetProtocol = new ZabHeader(ZabHeader.RESET, -11,  mid);
+		Zab2PhasesHeader resetProtocol = new Zab2PhasesHeader(Zab2PhasesHeader.RESET, -4,  mid);
 		Message msg = new Message(null).putHeader(ID, resetProtocol);
 		channel.send(msg);
 	}
@@ -195,7 +195,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 	public void callRemotePrintStats() throws Exception{
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZabHeader stats = new ZabHeader(ZabHeader.STATS, -3, mid);
+		Zab2PhasesHeader stats = new Zab2PhasesHeader(Zab2PhasesHeader.STATS, -3, mid);
 		Message msg = new Message(null).putHeader(ID, stats);
 		channel.send(msg);
 		
@@ -204,7 +204,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 	public void calculateABMessage() throws Exception{
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZabHeader stats = new ZabHeader(ZabHeader.COUNTMESSAGE, -2, mid);
+		Zab2PhasesHeader stats = new Zab2PhasesHeader(Zab2PhasesHeader.COUNTMESSAGE, -2, mid);
 		Message msg = new Message(null).putHeader(ID, stats);
 		channel.send(msg);
 		
@@ -227,7 +227,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 
 			MessageId mid = new MessageId(local_addr,
 					localSequence.incrementAndGet());
-			//ZabHeader startHeader = new ZabHeader(ZabHeader.TEMPSENT,i, mid);
+			//Zab2PhasesHeader startHeader = new Zab2PhasesHeader(Zab2PhasesHeader.TEMPSENT,i, mid);
 			//Message msg = new Message(null).putHeader(ID, startHeader);
 			//channel.send(msg);
 		}
@@ -235,9 +235,9 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 	}
 	
 	public void receive(Message msg) {
-		final ZabHeader testHeader = (ZabHeader) msg.getHeader(ID);
+		final Zab2PhasesHeader testHeader = (Zab2PhasesHeader) msg.getHeader(ID);
 		
-			//if (testHeader.getType() == ZabHeader.START_SENDING) {
+			//if (testHeader.getType() == Zab2PhasesHeader.START_SENDING) {
 				//numsThreadFinished=0;
 				//avgTimeElpased =0;
 				//avgRecievedOps=0;
@@ -257,7 +257,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 			//		e.printStackTrace();
 			//	}
 	       // }
-		    if (testHeader.getType() == ZabHeader.STARTREALTEST){
+		    if (testHeader.getType() == Zab2PhasesHeader.STARTREALTEST){
 				System.out.println("!!!Recieved STARTREALTEST from "+msg.getSrc());
 
 				//synchronized(this){
@@ -266,7 +266,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 						startRealTest();
 			//	}
 			}
-			//else if (testHeader.getType() == ZabHeader.RESPONCETEMP){
+			//else if (testHeader.getType() == Zab2PhasesHeader.RESPONCETEMP){
 				//countTempRecieved++;
 			//}
 	}
@@ -274,7 +274,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 	public void sendMyAddressToLeader(){
 		MessageId mid = new MessageId(local_addr,
 				localSequence.incrementAndGet());
-		ZabHeader startHeader = new ZabHeader(ZabHeader.SENDMYADDRESS, -6, mid);
+		Zab2PhasesHeader startHeader = new Zab2PhasesHeader(Zab2PhasesHeader.SENDMYADDRESS, -6, mid);
 		Message msg = new Message(null).putHeader(ID, startHeader);
 		msg.src(channel.getAddress());
 		msg.setObject("SENDMYADDRESS");
@@ -446,7 +446,7 @@ public class Zab2PhasesTest extends ReceiverAdapter {
 				"/"+"load "+load+"/"+"numWarmUp "+numWarmUp);
 		try {
 			
-			final Zab2PhasesTest test = new Zab2PhasesTest(zabboxInits, name, propsFile, totalMessages,
+			final Zab2PTestThreadss test = new Zab2PTestThreadss(zabboxInits, name, propsFile, totalMessages,
 															numberOfMessages, numsThreads, msgSize, 
 															outputDir, numOfClients, load, numWarmUp);
 			

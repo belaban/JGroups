@@ -68,9 +68,6 @@ import org.jgroups.util.MessageBatch;
 	    private int index=-1;
 	    //private Map<Long, Boolean> notACK = new HashMap<Long, Boolean>();
 	    SortedSet<Long> wantCommit = new TreeSet<Long>();
-	    private List<Integer> latencies = new ArrayList<Integer>();
-		private List<Integer> avgLatencies = new ArrayList<Integer>();
-		private List<String> avgLatenciesTimer = new ArrayList<String>();
 		private long currentCpuTime = 0, rateCountTime = 0, lastTimer = 0, lastCpuTime = 0;
 	    private Timer _timer;
 	    private boolean startSending = false;
@@ -85,18 +82,11 @@ import org.jgroups.util.MessageBatch;
 	    private int lastArrayIndex = 0, lastArrayIndexUsingTime = 0 ;
 		private long timeInterval = 500;
 		private int lastFinished = 0;
-		private Timer timer;
 		private AtomicLong countMessageLeader = new AtomicLong(0);
 		private long countMessageFollower = 0;
-		private long countTotalMessagesFollowers = 0;
-		private AtomicLong warmUpRequest = new AtomicLong(0);
-		private static long warmUp = 10000;
 	    private int largeLatCount = 0;
 	    private List<String> largeLatencies = new ArrayList<String>();
 	    private  AtomicInteger                  numReqDeviverd=new AtomicInteger(0);
-		private  AtomicInteger                  numRequest=new AtomicInteger(0);
-		private long rateInterval = 10000;
-		private long rateCount = 0;
 	    private boolean is_warmUp=true;
 		private int longWait = Integer.MIN_VALUE;
 		private volatile boolean makeAllFollowersAck=false;
@@ -130,19 +120,17 @@ import org.jgroups.util.MessageBatch;
 	        messageStore.clear();startSending=false;        
 	        wantCommit.clear();lastRequestRecieved=0;        
 	        laslAckRecieved=0;recievedFirstRequest = false;        
-	        latencies.clear(); numReqDeviverd= new AtomicInteger(0);       
-	        numRequest= new AtomicInteger(0);startThroughputTime = 0;       
-	        endThroughputTime = 0;rateCount = 0;       
-	        rateInterval = 10000;rateCount = 0;   	
+	        numReqDeviverd= new AtomicInteger(0);       
+	        startThroughputTime = 0;       
+	        endThroughputTime = 0;       
 	    	largeLatCount = 0;largeLatencies.clear();   	
 	    	lastArrayIndex = 0;lastArrayIndexUsingTime = 0 ;  	
 	        is_warmUp=false;//_timer.cancel();        
 	        countMessageLeader = new AtomicLong(0);        
-	        countMessageFollower = 0;countTotalMessagesFollowers = 0;        
+	        countMessageFollower = 0;      
 	    	currentCpuTime = 0; rateCountTime = 0;
 	    	lastTimer = 0; lastCpuTime = 0;
 	    	longWait = Integer.MIN_VALUE;
-	    	avgLatencies.clear();avgLatenciesTimer.clear();   	
 	    	currentCpuTime=0;
 	    	this.stats = new ProtocolStats(ProtocolName, clients.size(),
 					numberOfSenderInEachClient, outDir);
@@ -276,7 +264,7 @@ import org.jgroups.util.MessageBatch;
 	            			//startSending = false;
 	            		break;
 	                    case ZabCoinTossingHeader.STATS:
-	        				stats.printProtocolStats();
+	        				stats.printProtocolStats(is_leader);
 	                    	break;
 	                    case ZabCoinTossingHeader.COUNTMESSAGE:
 	                		sendTotalABMessages(hdr);  
@@ -930,15 +918,15 @@ import org.jgroups.util.MessageBatch;
 		 
 		 public void run(){
 			 int avg = 0, elementCount = 0;
-			 List<Integer> copyLat = new ArrayList<Integer>(latencies);
-			 for (int i =  lastArrayIndex; i < copyLat.size(); i++){
-				 avg+=copyLat.get(i);
-				 elementCount++;
-			 }
+			//List<Integer> copyLat = new ArrayList<Integer>(latencies);
+			 //for (int i =  lastArrayIndex; i < copyLat.size(); i++){
+				// avg+=copyLat.get(i);
+				// elementCount++;
+			 //}
 			 
-			 lastArrayIndex = copyLat.size() - 1;
+			// lastArrayIndex = copyLat.size() - 1;
 			 avg= avg/elementCount;
-			 avgLatencies.add(avg);
+			// avgLatencies.add(avg);
 		 }
 	 }
 	 
@@ -953,21 +941,21 @@ import org.jgroups.util.MessageBatch;
 			 int avg = 0, elementCount = 0;
 			 
 			 //List<Integer> latCopy = new ArrayList<Integer>(latencies);
-			 for (int i =  lastArrayIndexUsingTime; i < latencies.size(); i++){
-				 if (latencies.get(i)>50){
-					 largeLatCount++;
-					 largeLatencies.add((currentCpuTime - startThroughputTime) + "/" + latencies.get(i));
-				 }
-				 avg+=latencies.get(i);
-				 elementCount++;
-			 }
+			// for (int i =  lastArrayIndexUsingTime; i < latencies.size(); i++){
+//				 if (latencies.get(i)>50){
+//					 largeLatCount++;
+//					 largeLatencies.add((currentCpuTime - startThroughputTime) + "/" + latencies.get(i));
+//				 }
+//				 avg+=latencies.get(i);
+				// elementCount++;
+			// }
 			 
-			 lastArrayIndexUsingTime = latencies.size()-1;
+			 //lastArrayIndexUsingTime = latencies.size()-1;
 			 avg= avg/elementCount;
 		 
 			String mgsLat = (currentCpuTime - startThroughputTime) + "/" +
 			                ((finished - lastFinished) + "/" + avg);// (TimeUnit.MILLISECONDS.toSeconds(currentCpuTime - lastCpuTime)));
-			avgLatenciesTimer.add(mgsLat);
+			//avgLatenciesTimer.add(mgsLat);
 			lastFinished = finished;
 			lastCpuTime = currentCpuTime;
 		}

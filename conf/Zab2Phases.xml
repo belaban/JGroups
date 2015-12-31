@@ -68,7 +68,7 @@
     <!--<MFC/>-->
     <RSVP resend_interval="2000" timeout="10000"/>
     <!-- SEQUENCER could also be placed just under GMS, if messages and views need to be totally ordered -->
-    <jzookeeper.Zab2Phases/>
+    <jzookeeper.Zab2Phases />
     <FRAG2 frag_size="60K"  />
     <pbcast.STATE_TRANSFER />
 </config>

@@ -1,10 +1,6 @@
 package org.jgroups.protocols.jzookeeper;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.InetAddress;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -15,16 +11,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jgroups.Address;
@@ -50,7 +42,6 @@ public class Zab extends Protocol {
 	private ExecutorService executor;
 	private Address local_addr;
 	private volatile Address leader;
-	private int QUEUE_CAPACITY = 500;
 	private volatile View view;
 	private volatile boolean is_leader = false;
 	private List<Address> zabMembers = Collections
@@ -59,9 +50,6 @@ public class Zab extends Protocol {
 	private final Set<MessageId> requestQueue = Collections
 			.synchronizedSet(new HashSet<MessageId>());
 	private Map<Long, ZabHeader> queuedCommitMessage = new HashMap<Long, ZabHeader>();
-	private List<Integer> avgLatencies = new ArrayList<Integer>();
-	private List<String> avgLatenciesTimer = new ArrayList<String>();
-
 	private final Map<Long, ZabHeader> queuedProposalMessage = Collections
 			.synchronizedMap(new HashMap<Long, ZabHeader>());
 	private final LinkedBlockingQueue<ZabHeader> queuedMessages = new LinkedBlockingQueue<ZabHeader>();
@@ -73,22 +61,8 @@ public class Zab extends Protocol {
 	private volatile boolean running = true;
 	private volatile boolean startThroughput = false;
 	private final static String outDir = "/home/pg/p13/a6915654/Zab/";
-	//private AtomicInteger numReqDelivered = new AtomicInteger(0);
-	private long rateInterval = 10000;
-	private long rateCount = 0;
-	private long currentCpuTime = 0, rateCountTime = 0, lastTimer = 0,
-			lastCpuTime = 0;
-	private int lastArrayIndex = 0, lastArrayIndexUsingTime = 0;
-	private long timeInterval = 500;
-	private int lastFinished = 0;
-	private Timer timer;
 	private AtomicLong countMessageLeader = new AtomicLong(0);
 	private long countMessageFollower = 0;
-	private AtomicLong warmUpRequest = new AtomicLong(0);
-	private static long warmUp = 10000;
-	private int largeLatCount = 0;
-	private List<String> largeLatencies = new ArrayList<String>();
-	private List<String> largeLatenciesNano = new ArrayList<String>();
 	private boolean is_warmUp = true;
 	private List<Address> clients = Collections
 			.synchronizedList(new ArrayList<Address>());
@@ -143,21 +117,9 @@ public class Zab extends Protocol {
 		queuedMessages.clear();
 		outstandingProposals.clear();
 		messageStore.clear();
-		avgLatencies.clear();
-		avgLatenciesTimer.clear();
-		//numReqDelivered = new AtomicInteger(0);
 		startThroughput = false;
-		currentCpuTime = 0;
-		rateCountTime = 0;
-		lastTimer = 0;
-		lastCpuTime = 0;
-		lastArrayIndex = 0;
-		lastArrayIndexUsingTime = 0;
-		lastFinished = 0;
 		countMessageLeader = new AtomicLong(0);// timer.cancel();
-		largeLatCount = 0;
 		countMessageFollower = 0;
-		rateCount = 0;
 		is_warmUp = false;
 		this.stats = new ProtocolStats(ProtocolName, clients.size(), numberOfSenderInEachClient, outDir);
 		log.info("Reset done");
@@ -224,6 +186,9 @@ public class Zab extends Protocol {
 				reset(msg.getSrc());
 				break;
 			case ZabHeader.FORWARD:
+				if (!is_warmUp){
+					stats.addLatencyProposalST(hdr.getMessageId(), System.nanoTime());
+				}
 				queuedMessages.add(hdr);
 				break;
 			case ZabHeader.PROPOSAL:
@@ -261,6 +226,7 @@ public class Zab extends Protocol {
 			case ZabHeader.STARTREALTEST:
 				if (!zabMembers.contains(local_addr))
 					return up_prot.up(new Event(Event.MSG, msg));
+				break;
 			case ZabHeader.RESPONSE:
 				handleOrderingResponse(hdr);
 
@@ -438,6 +404,7 @@ public class Zab extends Protocol {
 				long stp = System.nanoTime();
 				hdrReq.getMessageId().setStartLToFP(stp);
 				hdrReq.getMessageId().setStartTime(stp);
+				stats.addLatencyProposalForwardST(hdrReq.getMessageId(), System.nanoTime());
 			}
 			queuedMessages.add(hdrReq);
 		} else {
@@ -455,10 +422,9 @@ public class Zab extends Protocol {
 	 */
 	private void forward(Message msg) {
 		Address target = leader;
-		ZabHeader hdrReq = (ZabHeader) msg.getHeader(this.id);
 		if (target == null)
 			return;
-
+		ZabHeader hdrReq = (ZabHeader) msg.getHeader(this.id);
 		try {
 			ZabHeader hdr = new ZabHeader(ZabHeader.FORWARD,
 					hdrReq.getMessageId());
@@ -700,6 +666,20 @@ public class Zab extends Protocol {
 				p.AckCount++;
 				outstandingProposals.put(new_zxid, p);
 				queuedProposalMessage.put(new_zxid, hdrProposal);
+				if (!is_warmUp){
+					Long st = stats.getLatencyProposalST(hdrReq.getMessageId());
+					if (st!=null){
+						stats.removeLatencyProposalST(hdrReq.getMessageId());
+						stats.addLatencyProp((int) (System.nanoTime() - st));
+					}					
+					else{
+						Long stL = stats.getLatencyProposalForwardST(hdrReq.getMessageId());
+						if (stL!=null){
+							stats.removeLatencyProposalForwardST(hdrReq.getMessageId());
+							stats.addLatencyPropForward((int) (System.nanoTime() - stL));
+						}
+				    }
+				}
 
 				try {
 
@@ -734,7 +714,7 @@ public class Zab extends Protocol {
 
 		//	lastArrayIndex = latencies.size() - 1;
 			avg = avg / elementCount;
-			avgLatencies.add(avg);
+			//avgLatencies.add(avg);
 		}
 	}
 
@@ -743,7 +723,7 @@ public class Zab extends Protocol {
 		@Override
 		public void run() {
 			//int finished = numReqDelivered.get();
-			currentCpuTime = System.currentTimeMillis();
+			//currentCpuTime = System.currentTimeMillis();
 
 			// Find average latency
 			int avg = 0, elementCount = 0;
@@ -768,7 +748,7 @@ public class Zab extends Protocol {
 																// lastCpuTime)));
 			//avgLatenciesTimer.add(mgsLat);
 			//lastFinished = finished;
-			lastCpuTime = currentCpuTime;
+			//lastCpuTime = currentCpuTime;
 		}
 
 	}
