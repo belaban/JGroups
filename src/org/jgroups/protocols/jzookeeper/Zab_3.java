@@ -82,7 +82,7 @@ import org.jgroups.util.MessageBatch;
 	    private long endThroughputTime = 0;
 	    private boolean startThroughput = false;
 	    private static PrintWriter outFile;
-	    private final static String outDir="/home/pg/p13/a6915654/MMZAB/";
+	    private final static String outDir="/home/pg/p13/a6915654/ZabCoinTossing/";
 	    
 	    private int lastArrayIndex = 0, lastArrayIndexUsingTime = 0 ;
 		private long timeInterval = 500;
@@ -121,8 +121,6 @@ import org.jgroups.util.MessageBatch;
 		        running=true;        
 			    executor = Executors.newSingleThreadExecutor();
 			    executor.execute(new FollowerMessageHandler(this.id));	   
-			    this.outFile = new PrintWriter(new BufferedWriter(new FileWriter
-						(outDir+InetAddress.getLocalHost().getHostName()+"MZAB.log",true)));
 	    }
 	    
 	    
@@ -482,7 +480,9 @@ import org.jgroups.util.MessageBatch;
 	    
 
 	    private void sendACK(Message msg, ZabHeader hrdAck){
-	   		numRequest.incrementAndGet();
+	    	if(!is_warmUp){
+	    		numRequest.incrementAndGet();
+	    	}
 	    	Proposal p;
 	    	if (msg == null )
 	    		return;

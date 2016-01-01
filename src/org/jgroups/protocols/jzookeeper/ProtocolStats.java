@@ -360,29 +360,31 @@ public class ProtocolStats {
 		}
 		avgAllD = (double) avg/latencies.size();
 		
-		if (isLeader){
-			for (long lat : fromLeaderToFollowerP) {
-				   LToFPAvg += lat;
+		if(!protocolName.equals("ZabCoinTossing")){
+			if (isLeader){
+				for (long lat : fromLeaderToFollowerP) {
+					   LToFPAvg += lat;
+				}
+				LToFPAvgD = (double) LToFPAvg/fromLeaderToFollowerP.size();
+				   
+				 for (long lat : latencyProp) {
+					   latProp += lat;
+				 }
+				   latPropD = (double) latProp/latencyProp.size();
+				   
+				 for (long lat : latencyPropForward) {
+					   latLeader += lat;
+				 }
+				   latLeaderD = (double) latLeader/latencyPropForward.size();
 			}
-			LToFPAvgD = (double) LToFPAvg/fromLeaderToFollowerP.size();
-			   
-			 for (long lat : latencyProp) {
-				   latProp += lat;
-			 }
-			   latPropD = (double) latProp/latencyProp.size();
-			   
-			 for (long lat : latencyPropForward) {
-				   latLeader += lat;
-			 }
-			   latLeaderD = (double) latLeader/latencyPropForward.size();
+		   else{
+			   for (long lat : fromfollowerToLeaderF) {
+					lat += lat;
+				}
+			   FToLFAvgD = (double) FToLFAvg/fromfollowerToLeaderF.size();
+			   	
+		   }
 		}
-	   else{
-		   for (long lat : fromfollowerToLeaderF) {
-				lat += lat;
-			}
-		   FToLFAvgD = (double) FToLFAvg/fromfollowerToLeaderF.size();
-		   	
-	   }
 		
 		outFile.println("Start");
 		outFile.println(protocolName + "/" + numberOfClients + "/" + numberOfSenderInEachClient);
@@ -396,16 +398,18 @@ public class ProtocolStats {
 		outFile.println("Latency average" + latAvg
 				+ " numbers avg = " + latAvg.size());
 		outFile.println("All Latency average " +  (avgAllD)/1000000);
-		if (isLeader){
-			outFile.println("Latency From Leader to Follower (round-trip) (Proposal) " + (double)(LToFPAvgD)/1000000);
-			outFile.println("Latency From FORWARD case to Proposal sent (Proposal) " + "latencyProp Size " + 
-					latencyProp.size() + " " +(double)(latPropD)/1000000);
-			outFile.println("Latency From leader to Proposal sent (Proposal) " + "latencyPropForward Size " + 
-					latencyPropForward.size() + " " +(double)(latLeaderD)/1000000);
-		}
-		else{
-			outFile.println("Latency From Folower to Leader (round-trip) (Forward) " + (double)(FToLFAvgD)/1000000);
-
+		if(!protocolName.equals("ZabCoinTossing")){
+			if (isLeader){
+				outFile.println("Latency From Leader to Follower (round-trip) (Proposal) " + (double)(LToFPAvgD)/1000000);
+				outFile.println("Latency From FORWARD case to Proposal sent (Proposal) " + "latencyProp Size " + 
+						latencyProp.size() + " " +(double)(latPropD)/1000000);
+				outFile.println("Latency From leader to Proposal sent (Proposal) " + "latencyPropForward Size " + 
+						latencyPropForward.size() + " " +(double)(latLeaderD)/1000000);
+			}
+			else{
+				outFile.println("Latency From Folower to Leader (round-trip) (Forward) " + (double)(FToLFAvgD)/1000000);
+	
+			}
 		}
 		
 		outFile.println("Test Generated at "
