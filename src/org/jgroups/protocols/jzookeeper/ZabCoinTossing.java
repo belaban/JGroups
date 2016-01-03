@@ -66,11 +66,17 @@ import org.jgroups.util.MessageBatch;
 		Calendar cal = Calendar.getInstance();
 	    protected volatile boolean                  running=true;
 	    private int index=-1;
+	    //private Map<Long, Boolean> notACK = new HashMap<Long, Boolean>();
 	    SortedSet<Long> wantCommit = new TreeSet<Long>();
+	    private List<Integer> latencies = new ArrayList<Integer>();
+		private List<Integer> avgLatencies = new ArrayList<Integer>();
+		private List<String> avgLatenciesTimer = new ArrayList<String>();
 		private long currentCpuTime = 0, rateCountTime = 0, lastTimer = 0, lastCpuTime = 0;
 	    private Timer _timer;
 	    private boolean startSending = false;
-	    private long lastRequestRecieved=0;
+	    private long lastRequestRecievedF=0;
+	    private long lastRequestRecievedL=0;
+
 	    private long laslAckRecieved=0;
 	    private boolean recievedFirstRequest = false;
 	    private long current = 0;
@@ -81,11 +87,18 @@ import org.jgroups.util.MessageBatch;
 	    private int lastArrayIndex = 0, lastArrayIndexUsingTime = 0 ;
 		private long timeInterval = 500;
 		private int lastFinished = 0;
+		private Timer timer;
 		private AtomicLong countMessageLeader = new AtomicLong(0);
 		private long countMessageFollower = 0;
+		private long countTotalMessagesFollowers = 0;
+		private AtomicLong warmUpRequest = new AtomicLong(0);
+		private static long warmUp = 10000;
 	    private int largeLatCount = 0;
 	    private List<String> largeLatencies = new ArrayList<String>();
 	    private  AtomicInteger                  numReqDeviverd=new AtomicInteger(0);
+		private  AtomicInteger                  numRequest=new AtomicInteger(0);
+		private long rateInterval = 10000;
+		private long rateCount = 0;
 	    private boolean is_warmUp=true;
 		private int longWait = Integer.MIN_VALUE;
 		private volatile boolean makeAllFollowersAck=false;
@@ -104,6 +117,7 @@ import org.jgroups.util.MessageBatch;
 	    public void start() throws Exception {
 	        super.start();
 		    log.setLevel("trace");
+	        //if (zabMembers.contains(local_addr)){
 		        running=true;        
 			    executor = Executors.newSingleThreadExecutor();
 			    executor.execute(new FollowerMessageHandler(this.id));	   
@@ -116,19 +130,21 @@ import org.jgroups.util.MessageBatch;
 	    	queuedCommitMessage.clear();queuedProposalMessage.clear();        
 	        queuedMessages.clear(); outstandingProposals.clear();       
 	        messageStore.clear();startSending=false;        
-	        wantCommit.clear();lastRequestRecieved=0;        
+	        wantCommit.clear();lastRequestRecievedF=0; lastRequestRecievedL=0;       
 	        laslAckRecieved=0;recievedFirstRequest = false;        
-	        numReqDeviverd= new AtomicInteger(0);       
-	        startThroughputTime = 0;       
-	        endThroughputTime = 0;       
+	        latencies.clear(); numReqDeviverd= new AtomicInteger(0);       
+	        numRequest= new AtomicInteger(0);startThroughputTime = 0;       
+	        endThroughputTime = 0;rateCount = 0;       
+	        rateInterval = 10000;rateCount = 0;   	
 	    	largeLatCount = 0;largeLatencies.clear();   	
 	    	lastArrayIndex = 0;lastArrayIndexUsingTime = 0 ;  	
-	        is_warmUp=false;        
+	        is_warmUp=false;//_timer.cancel();        
 	        countMessageLeader = new AtomicLong(0);        
-	        countMessageFollower = 0;      
+	        countMessageFollower = 0;countTotalMessagesFollowers = 0;        
 	    	currentCpuTime = 0; rateCountTime = 0;
 	    	lastTimer = 0; lastCpuTime = 0;
 	    	longWait = Integer.MIN_VALUE;
+	    	avgLatencies.clear();avgLatenciesTimer.clear();   	
 	    	currentCpuTime=0;
 	    	this.stats = new ProtocolStats(ProtocolName, clients.size(),
 					numberOfSenderInEachClient, outDir);
@@ -156,11 +172,15 @@ import org.jgroups.util.MessageBatch;
 			public void run() {
 				
 				 current = System.currentTimeMillis();
-
-	        	if ((current -laslAckRecieved) > 50
-	                     && (current - lastRequestRecieved) > 50
-	                     && !outstandingProposals.isEmpty()){
-	        		this.cancel();
+				 if((current - lastRequestRecievedL) > 50 &&
+				 (current - lastRequestRecievedF) > 50 &&
+				 (current -laslAckRecieved) > 50 &&
+				 (!outstandingProposals.isEmpty())){
+//	        	if ((current -laslAckRecieved) > 50
+//	                     && (current - lastRequestRecieved) > 50
+//	                     && !outstandingProposals.isEmpty()){
+	        		//if (log.isInfoEnabled()){
+				//if (!outstandingProposals.isEmpty() && (currentTime - lastRequestRecieved) >500) {
 	        		if (log.isInfoEnabled())
 	        			log.info("Comit Alllllllllllllllllllllllllllllllllll");
 	    			ZabCoinTossingHeader commitPending = new ZabCoinTossingHeader(ZabCoinTossingHeader.COMMITOUTSTANDINGREQUESTS);
@@ -168,6 +188,7 @@ import org.jgroups.util.MessageBatch;
 	                    Message commitALL = new Message(address).putHeader(this.idd, commitPending);
 	            		down_prot.down(new Event(Event.MSG, commitALL));     
 	                }
+					stats.InCountDummyCall();
 					//makeAllFollowersAck=true;
 					
 					startSending=false;
@@ -188,6 +209,7 @@ import org.jgroups.util.MessageBatch;
 	        switch(evt.getType()) {
 	            case Event.MSG:
 	                Message msg=(Message)evt.getArg();
+	               // hdr=(ZabCoinTossingHeader)msg.getHeader(this.id);
 	                handleClientRequest(msg);               
 	                return null; // don't pass down
 	            case Event.SET_LOCAL_ADDRESS:
@@ -222,18 +244,20 @@ import org.jgroups.util.MessageBatch;
 	                		forwardToLeader(msg);
 	                		break;
 	                    case ZabCoinTossingHeader.FORWARD:
-	                    	lastRequestRecieved=System.currentTimeMillis();
+	                    	lastRequestRecievedF=System.currentTimeMillis();
 	                    	recievedFirstRequest = true;
 	                    	//log.info("Start--------------------------------------------------- _timer");
-	                    	if (!is_warmUp && !startSending){
-		                    	_timer = new Timer();
-		        				_timer.scheduleAtFixedRate(new FinishTask(this.id), 200, 200);
-		                    	startSending=true;
-	                    	}
+//	                    	if (!is_warmUp && !startSending){
+//		                    	_timer = new Timer();
+//		        				_timer.scheduleAtFixedRate(new FinishTask(this.id), 200, 200);
+//		                    	startSending=true;
+//	                    	}
+	                    	//lastRequestRecieved = System.currentTimeMillis();
 	                		queuedMessages.add(hdr);
 	                		break;
 	                    case ZabCoinTossingHeader.PROPOSAL:
 		                   	if (!is_leader){
+		                   		//hdr.getMessageId().setStartTime(System.currentTimeMillis());
 		            			sendACK(msg, hdr);
 		            		}
 		                   	break;           		
@@ -241,10 +265,12 @@ import org.jgroups.util.MessageBatch;
 	                			processACK(msg, msg.getSrc());
 	                		break;
 	                    case ZabCoinTossingHeader.COMMITOUTSTANDINGREQUESTS:
+	                    	//makeAllFollowersAck=true;
 	            			commitPendingRequest();
+	            			//startSending = false;
 	            		break;
 	                    case ZabCoinTossingHeader.STATS:
-	        				stats.printProtocolStats(is_leader);
+     			           		   stats.printProtocolStats(is_leader);
 	                    	break;
 	                    case ZabCoinTossingHeader.COUNTMESSAGE:
 	                		sendTotalABMessages(hdr);  
@@ -414,8 +440,9 @@ import org.jgroups.util.MessageBatch;
 				stats.setStartThroughputTime(System.currentTimeMillis());
 			}
 		   if (is_leader){
+			   lastRequestRecievedL = System.currentTimeMillis();
 			   hdrReq.getMessageId().setStartTime(System.nanoTime());
-			   queuedMessages.add(hdrReq);
+			   queuedMessages.add((ZabCoinTossingHeader)msg.getHeader(this.id));
 	       }	   
 		   else{
 			   hdrReq.getMessageId().setStartTime(System.nanoTime());
@@ -427,9 +454,9 @@ import org.jgroups.util.MessageBatch;
 
 	    private void forward(Message msg) {
 	        Address target=leader;
+	 	    ZabCoinTossingHeader hdrReq = (ZabCoinTossingHeader) msg.getHeader(this.id);
 	        if(target == null)
 	            return;
-	 	    ZabCoinTossingHeader hdrReq = (ZabCoinTossingHeader) msg.getHeader(this.id);
 		    try {
 		        ZabCoinTossingHeader hdr=new ZabCoinTossingHeader(ZabCoinTossingHeader.FORWARD, hdrReq.getMessageId());
 		        Message forward_msg=new Message(target).putHeader(this.id,hdr);
@@ -449,18 +476,42 @@ import org.jgroups.util.MessageBatch;
 	    	Proposal p;
 	    	if (msg == null )
 	    		return;
-	    	   	
+	    	
+	    	//ZabCoinTossingHeader hdr = (ZabCoinTossingHeader) msg.getHeader(this.id);
+	    	
 	    	if (hrdAck == null)
 	    		return;
+	    	
+//	    	if (hdr.getZxid() != lastZxidProposed + 1){
+//	            log.info("Got zxid 0x"
+//	                    + Long.toHexString(hdr.getZxid())
+//	                    + " expected 0x"
+//	                    + Long.toHexString(lastZxidProposed + 1));
+//	        }
+	      	
+
+			//log.info("[" + local_addr + "] " + "follower, sending ack (sendAck) at "+getCurrentTimeStamp());
+//			if (!(outstandingProposals.containsKey(hdr.getZxid()))){
 				p = new Proposal();
 				p.AckCount++; // Ack from leader
 				p.setZxid(hrdAck.getZxid());
 				outstandingProposals.put(hrdAck.getZxid(), p);
 				lastZxidProposed = hrdAck.getZxid();
 				queuedProposalMessage.put(hrdAck.getZxid(), hrdAck);
+//			}
+//			else{
+//				p = outstandingProposals.get(hdr.getZxid());
+//				p.AckCount++; // Ack from leader
+//				queuedProposalMessage.put(hdr.getZxid(), hdr);
+//				lastZxidProposed = hdr.getZxid();
+
+			//}
 			if (is_warmUp){
 				ZabCoinTossingHeader hdrACK = new ZabCoinTossingHeader(ZabCoinTossingHeader.ACK, hrdAck.getZxid());
 				Message ackMessage = new Message().putHeader(this.id, hdrACK);
+				//log.info("Sending ACK for " + hdr.getZxid()+" "+getCurrentTimeStamp()+ " " +getCurrentTimeStamp());
+				//notACK.put(hdr.getZxid(), true);
+
 				try{
 				for (Address address : zabMembers) {
 	                Message cpy = ackMessage.copy();
@@ -472,7 +523,7 @@ import org.jgroups.util.MessageBatch;
 	    	}    
 			}
 			
-			else if (ZUtil.SendAckOrNoSend()|| makeAllFollowersAck) {
+			else if (ZUtil.SendAckOrNoSend() || makeAllFollowersAck) {
 
 				ZabCoinTossingHeader hdrACK = new ZabCoinTossingHeader(ZabCoinTossingHeader.ACK, hrdAck.getZxid());
 				Message ackMessage = new Message().putHeader(this.id, hdrACK);
@@ -490,6 +541,10 @@ import org.jgroups.util.MessageBatch;
 	    		log.error("failed proposing message to members");
 	    	}    
 			}
+			//else{
+				//log.info("Not Sending ACK for " + hdr.getZxid()+" "+getCurrentTimeStamp()+ " " +getCurrentTimeStamp());
+				//notACK.put(hdr.getZxid(), false);
+			//}
 		
 	    	}
 	    
@@ -499,32 +554,82 @@ import org.jgroups.util.MessageBatch;
 		    Proposal p = null;
 	    	ZabCoinTossingHeader hdr = (ZabCoinTossingHeader) msgACK.getHeader(this.id);	
 	    	long ackZxid = hdr.getZxid();
+	    	//log.info("Reciving Ack zxid " + ackZxid + " sender " + sender+ " " +getCurrentTimeStamp());
+
+//	    	if (!(outstandingProposals.containsKey(hdr.getZxid())) && (lastZxidProposed < hdr.getZxid())){
+//				p = new Proposal();
+//		        outstandingProposals.put(hdr.getZxid(), p); 
+//				queuedProposalMessage.put(hdr.getZxid(), hdr);
+//		        lastZxidProposed = hdr.getZxid();
+//		}
+		
+	 	    //log.info("recieved ack "+ackZxid+" "+ sender + " "+getCurrentTimeStamp());
 
 			if (lastZxidCommitted >= ackZxid) {
+	            //if (log.isDebugEnabled()) {
+	                //log.info("proposal has already been committed, pzxid: 0x{} zxid: 0x{}",
+	                        //lastZxidCommitted, ackZxid);
+	            //}
 	            return;
 	        }
 	        p = outstandingProposals.get(ackZxid);
-	        if (p == null) {        
+	        if (p == null) {
+//	            log.info("*********************Trying to commit future proposal: zxid 0x{} from {}",
+//	                    Long.toHexString(ackZxid), sender);
 	            return;
 	        }
 			
 			p.AckCount++;
+			//if (log.isDebugEnabled()) {
+//	            log.debug("Count for zxid: " +
+//	                    Long.toHexString(ackZxid)+" = "+ p.getAckCount());
+	        //}
+			
 			if (isQuorum(p.getAckCount())) {
 				if (ackZxid == lastZxidCommitted+1){
 					commit(ackZxid);
+					outstandingProposals.remove(ackZxid);				
+				//}
+				//if (isFirstZxid(ackZxid)) {
+					//log.info(" if (isQuorum(p.getAckCount())) commiting " + ackZxid);
+					//commit(ackZxid);
+					//outstandingProposals.remove(ackZxid);
 				} else {
 					long zxidCommiting = lastZxidCommitted +1;
 					if(longWait<(ackZxid-zxidCommiting))
 						longWait =(int)(ackZxid-zxidCommiting);
+						
+					//log.info("committing !!!!!!!!!!!!!!!!!!!!!!!!! from "+ (lastZxidCommitted +1)
+							//+ " to "+ ackZxid);
 					for (long z = zxidCommiting; z < ackZxid+1; z++){
 						commit(z);
 						outstandingProposals.remove(z);
 					}
 				}
+					//for (Proposal proposalPending : outstandingProposals.values()) {
+						//if (proposalPending.getZxid() < p.getZxid()) {
+							//log.info(" inside proposalPending.getZxid() < p.getZxid() "
+									//+ proposalPending.getZxid() + " " + p.getZxid());
+							//wantCommit.add(proposalPending.getZxid());
+							//log.info(" wantCommit size " + wantCommit.size());
+						//}
+					//}
+					//wantCommit.add(ackZxid);
 					
-
+//					log.info(" processAck Commiting allwantCommit) commiting " + wantCommit + " before "+ackZxid);
+//					for (long zx : wantCommit) {
+//						if (isFirstZxid(zx)) {
+//							commit(zx);
+//							//log.info(" for (long zx : wantCommit) commiting " + zx);
+//							outstandingProposals.remove(zx);
+//						} else
+//							break;
+//					}
+//					wantCommit.clear();
+//				}
 			}
-
+			
+			// }
 
 		}
 	    
@@ -534,10 +639,20 @@ import org.jgroups.util.MessageBatch;
 		    	for (Proposal proposalPending : outstandingProposals.values()){
 		    		wantCommit.add(proposalPending.getZxid());
 		    	}
+				//log.info("Before Finished outstandingProposals "+outstandingProposals.keySet());
+				//log.info("Before Finished wantCommit "+wantCommit);
+		
+			
+		    	//log.info("Commiting all  "+wantCommit);
 		    	for (long zx:wantCommit){
+					//log.info("Commiting "+outstandingProposals.keySet());
 						commit(zx);
 						outstandingProposals.remove(zx);
 					}
+				
+				
+//				log.info("After Finished outstandingProposals "+outstandingProposals.keySet());
+//				log.info("After Finished wantCommit "+wantCommit);
 				wantCommit.clear();
 	    	}
 		
@@ -546,26 +661,74 @@ import org.jgroups.util.MessageBatch;
 			
 	    private void commit(long zxidd){
 				
-		      synchronized(this){
-		    	    lastZxidCommitted = zxidd;
-		      }
+		       	//log.info("[" + local_addr + "] "+"About to commit the request (commit) for zxid="+zxid+" "+getCurrentTimeStamp());
+
+			    ZabCoinTossingHeader hdrOrginal = null;
+		    	   synchronized(this){
+		    	       lastZxidCommitted = zxidd;
+		    	   }
 		    	   
-			  deliver(zxidd);
+			   hdrOrginal = queuedProposalMessage.get(zxidd);
+			   if (hdrOrginal == null){
+				   //if (log.isInfoEnabled())
+					   //log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!! Header is null (commit)"+ hdrOrginal + " for zxid "+zxid);
+				   return;
+			   }
+	   	      //MessageId mid = hdrOrginal.getMessageId();
+//			   if (mid == null){
+//				   log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!! Message is null (commit)"+ mid + " for zxid "+zxid);
+//				   return;
+//			   }
+		       //ZabCoinTossingHeader hdrCommit = new ZabCoinTossingHeader(ZabCoinTossingHeader.COMMIT, zxid, mid);
+		       //Message commitMessage = new Message().putHeader(this.id, hdrCommit);
+		       //commitMessage.src(local_addr);
+			   deliver(zxidd);
 
 		    }
 	    
 			
 	    private void deliver(long committedZxid){
+		    	//ZabCoinTossingHeader hdr = (ZabCoinTossingHeader) toDeliver.getHeader(this.id);
+		    	//long zxid = hdr.getZxid();
+		    	//log.info("[" + local_addr + "] "+ " delivering message (deliver) for zxid=" + hdr.getZxid()+" "+getCurrentTimeStamp());
+
 		    	ZabCoinTossingHeader hdrOrginal = queuedProposalMessage.remove(committedZxid);
+		    	if (hdrOrginal == null) {
+					 if (log.isInfoEnabled())
+						 log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
+							+ hdrOrginal + " for zxid " + committedZxid);
+					return;
+				}
 		    	queuedCommitMessage.put(committedZxid, hdrOrginal);
 		    	if (!is_warmUp) {
 					stats.incnumReqDelivered();
 					stats.setEndThroughputTime(System.currentTimeMillis());
+				
 					
-					if (stats.getnumReqDelivered().get() > 9999000)
+					if (stats.getnumReqDelivered().get() > 999000){
 						makeAllFollowersAck=true;
+						//if (startSending==true){
+							//_timer.cancel();
+							//startSending = true;
+						//}
+					}
 		    	}
-				if (log.isInfoEnabled())
+					//long startTime  = hdrOrginal.getMessageId().getStartTime();
+					//latencies.add((int)(System.currentTimeMillis() - startTime));
+					//rateCount++;
+				//if (rateCount == rateInterval){
+					//new StatsThread().start();
+					//rateCount=0;
+				//}		
+					//if (numReqDeviverd.get()>=1000000){
+						//timer.cancel();
+						//_timer.cancel();
+					//}
+			
+		//}			endThroughputTime = System.currentTimeMillis();
+				//long startTimes  = hdrOrginal.getMessageId().getStartTime();
+				//latencies.add((int)(System.currentTimeMillis() - startTimes));
+				   if (log.isInfoEnabled())
 						log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+committedZxid);
 
 		    	if (requestQueue.contains(hdrOrginal.getMessageId())){
@@ -593,6 +756,8 @@ import org.jgroups.util.MessageBatch;
 		    	
 
 			private boolean isQuorum(int majority){
+				//log.info(" acks =  " + majority + " majority "+ ((zabMembers.size()/2)+1));
+
 		    	return majority >= ((zabMembers.size()/2) + 1)? true : false;
 		    }
 			
@@ -600,6 +765,7 @@ import org.jgroups.util.MessageBatch;
 				int i =0;
 				boolean find = true;
 				for (long z : outstandingProposals.keySet()){
+					//log.info("Inside isFirstZxid loop" + z + " i =" + (++i));
 					if (z < zxid){
 						find = false;
 						break;
@@ -717,11 +883,17 @@ import org.jgroups.util.MessageBatch;
 	            	p.setZxid(new_zxid);
 	            	p.AckCount++;
 	            	lastZxidProposed=new_zxid;
+	            	
+
+	            	//log.info("Zxid count for zxid = " + new_zxid + " count = "  +p.AckCount+" "+getCurrentTimeStamp());
 	            	outstandingProposals.put(new_zxid, p);
 	            	queuedProposalMessage.put(new_zxid, hdrProposal);
 	            	
 	            	try{
 	            		
+	            		//log.info("[" + local_addr + "] "+" prepar for proposal (run) for zxid="+new_zxid+" "+getCurrentTimeStamp());
+
+	                 	//log.info("Leader is about to sent a proposal " + ProposalMessage);
 	                 	for (Address address : zabMembers) {
 	                        if(address.equals(leader))
 	                        	continue; 
@@ -749,15 +921,15 @@ import org.jgroups.util.MessageBatch;
 		 
 		 public void run(){
 			 int avg = 0, elementCount = 0;
-			//List<Integer> copyLat = new ArrayList<Integer>(latencies);
-			 //for (int i =  lastArrayIndex; i < copyLat.size(); i++){
-				// avg+=copyLat.get(i);
-				// elementCount++;
-			 //}
+			 List<Integer> copyLat = new ArrayList<Integer>(latencies);
+			 for (int i =  lastArrayIndex; i < copyLat.size(); i++){
+				 avg+=copyLat.get(i);
+				 elementCount++;
+			 }
 			 
-			// lastArrayIndex = copyLat.size() - 1;
+			 lastArrayIndex = copyLat.size() - 1;
 			 avg= avg/elementCount;
-			// avgLatencies.add(avg);
+			 avgLatencies.add(avg);
 		 }
 	 }
 	 
@@ -772,21 +944,21 @@ import org.jgroups.util.MessageBatch;
 			 int avg = 0, elementCount = 0;
 			 
 			 //List<Integer> latCopy = new ArrayList<Integer>(latencies);
-			// for (int i =  lastArrayIndexUsingTime; i < latencies.size(); i++){
-//				 if (latencies.get(i)>50){
-//					 largeLatCount++;
-//					 largeLatencies.add((currentCpuTime - startThroughputTime) + "/" + latencies.get(i));
-//				 }
-//				 avg+=latencies.get(i);
-				//	 elementCount++;
-			// }
+			 for (int i =  lastArrayIndexUsingTime; i < latencies.size(); i++){
+				 if (latencies.get(i)>50){
+					 largeLatCount++;
+					 largeLatencies.add((currentCpuTime - startThroughputTime) + "/" + latencies.get(i));
+				 }
+				 avg+=latencies.get(i);
+				 elementCount++;
+			 }
 			 
-			 //lastArrayIndexUsingTime = latencies.size()-1;
+			 lastArrayIndexUsingTime = latencies.size()-1;
 			 avg= avg/elementCount;
 		 
 			String mgsLat = (currentCpuTime - startThroughputTime) + "/" +
 			                ((finished - lastFinished) + "/" + avg);// (TimeUnit.MILLISECONDS.toSeconds(currentCpuTime - lastCpuTime)));
-			//avgLatenciesTimer.add(mgsLat);
+			avgLatenciesTimer.add(mgsLat);
 			lastFinished = finished;
 			lastCpuTime = currentCpuTime;
 		}

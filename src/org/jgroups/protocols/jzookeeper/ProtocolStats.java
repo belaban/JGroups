@@ -48,6 +48,7 @@ public class ProtocolStats {
     private AtomicInteger countMessageFollower;
     private static PrintWriter outFile;
     private String outDir;
+    private AtomicInteger countDummyCall;
     protected final Log        log=LogFactory.getLog(this.getClass());
    
 
@@ -76,6 +77,7 @@ public class ProtocolStats {
 		countMessageLeader = new AtomicInteger(0);
 		countMessageFollower =  new AtomicInteger(0);;
 	    countTotalMessagesFollowers = new AtomicInteger(0);
+	    this.countDummyCall =  new AtomicInteger(0);
 	    this.outDir = outDir;
 		try {
 			this.outFile = new PrintWriter(new BufferedWriter(new FileWriter(outDir
@@ -208,7 +210,10 @@ public class ProtocolStats {
 		return numReqDelivered;
 	}
 
-
+	public AtomicInteger getcountDummyCall() {
+		return countDummyCall;
+	}
+	
 
 
 	public void setnumReqDelivered(AtomicInteger numReqDelivered) {
@@ -273,6 +278,10 @@ public class ProtocolStats {
 
 	public void addCountTotalMessagesFollowers(int countTotalMessages) {
 		this.countTotalMessagesFollowers.addAndGet(countTotalMessages);
+	}
+	
+	public void InCountDummyCall() {
+		countDummyCall.incrementAndGet();
 	}
 
 	public void addLatency(int latency){	
@@ -410,6 +419,10 @@ public class ProtocolStats {
 				outFile.println("Latency From Folower to Leader (round-trip) (Forward) " + (double)(FToLFAvgD)/1000000);
 	
 			}
+		}
+		else{
+			outFile.println("Number of call Dummy " + countDummyCall.get());
+
 		}
 		
 		outFile.println("Test Generated at "
