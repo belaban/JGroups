@@ -13,15 +13,15 @@ import java.util.Collection;
  * When used in conjunction with a MuxUpHandler, allows multiple dispatchers to use the same channel.
  * <br/>
  * Usage:<br/>
- * <code>
- * Channel c = new JChannel(...);<br/>
- * c.setUpHandler(new MuxUpHandler());<br/>
- * <br/>
- * RpcDispatcher d1 = new MuxRpcDispatcher((short) 1, c, ...);<br/>
- * RpcDispatcher d2 = new MuxRpcDispatcher((short) 2, c, ...);<br/>
- * <br/>
- * c.connect(...);<br/>
- * </code>
+ * <pre>
+ * JChannel c = new JChannel(...);
+ * c.setUpHandler(new MuxUpHandler());
+ *
+ * RpcDispatcher d1 = new MuxRpcDispatcher((short) 1, c, ...);
+ * RpcDispatcher d2 = new MuxRpcDispatcher((short) 2, c, ...);
+ *
+ * c.connect(...);
+ * </pre>
  * @author Bela Ban
  * @author Paul Ferraro
  */

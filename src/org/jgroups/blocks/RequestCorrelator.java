@@ -25,12 +25,12 @@ import java.util.concurrent.ConcurrentMap;
  * Framework to send requests and receive matching responses (matching on
  * request ID).
  * Multiple requests can be sent at a time. Whenever a response is received,
- * the correct <code>RspCollector</code> is looked up (key = id) and its
- * method <code>receiveResponse()</code> invoked. A caller may use
- * <code>done()</code> to signal that no more responses are expected, and that
+ * the correct {@code RspCollector} is looked up (key = id) and its
+ * method {@code receiveResponse()} invoked. A caller may use
+ * {@code done()} to signal that no more responses are expected, and that
  * the corresponding entry may be removed.
  * <p>
- * <code>RequestCorrelator</code> can be installed at both client and server
+ * {@code RequestCorrelator} can be installed at both client and server
  * sides, it can also switch roles dynamically; i.e., send a request and at
  * the same time process an incoming request (when local delivery is enabled,
  * this is actually the default).
@@ -75,9 +75,9 @@ public class RequestCorrelator {
 
 
     /**
-     * Constructor. Uses transport to send messages. If <code>handler</code>
+     * Constructor. Uses transport to send messages. If {@code handler}
      * is not null, all incoming requests will be dispatched to it (via
-     * <code>handle(Message)</code>).
+     * {@code handle(Message)}).
      *
      * @param id Used to differentiate between different RequestCorrelators
      * (e.g. in different protocol layers). Has to be unique if multiple
@@ -85,7 +85,7 @@ public class RequestCorrelator {
      *
      * @param transport Used to send/pass up requests. Is a Protocol (up_prot.up()/down_prot.down() will be used)
      *
-     * @param handler Request handler. Method <code>handle(Message)</code>
+     * @param handler Request handler. Method {@code handle(Message)}
      * will be called when a request is received.
      */
     public RequestCorrelator(short id, Protocol transport, RequestHandler handler, Address local_addr) {
@@ -134,7 +134,7 @@ public class RequestCorrelator {
      * the request data
      *
      * @param coll A response collector (usually the object that invokes this method). Its methods
-     * <code>receiveResponse()</code> and <code>suspect()</code> will be invoked when a message has been received
+     * {@code receiveResponse()} and {@code suspect()} will be invoked when a message has been received
      * or a member is suspected, respectively.
      */
     public void sendRequest(long id, Collection<Address> dest_mbrs, Message msg, RspCollector coll, RequestOptions options) throws Exception {
@@ -230,7 +230,7 @@ public class RequestCorrelator {
      * if not, pass it up to the next layer. Otherwise, it should remove
      * the header and check whether the message is a request or response.
      * In the first case, the message will be delivered to the request
-     * handler registered (calling its <code>handle()</code> method), in the
+     * handler registered (calling its {@code handle()} method), in the
      * second case, the corresponding response collector is looked up and
      * the message delivered.
      * @param evt The event to be received
@@ -294,7 +294,7 @@ public class RequestCorrelator {
      * <tt>Event.SUSPECT</tt> event received from a layer below.
      * <p>
      * All response collectors currently registered will
-     * be notified that <code>mbr</code> may have crashed, so they won't
+     * be notified that {@code mbr} may have crashed, so they won't
      * wait for its response.
      */
     public void receiveSuspect(Address mbr) {
