@@ -40,9 +40,9 @@ public class NioServer extends NioBaseServer {
 
     /**
      * Creates an instance of {@link NioServer} that opens a server channel and listens for connections.
+     * Needs to be started next.
      * @param bind_addr The local address to bind to. If null, the address will be picked by the OS
      * @param port The local port to bind to
-     * @return An instance of {@link NioServer}. Needs to be started next.
      * @throws Exception Thrown if the creation failed
      */
     public NioServer(InetAddress bind_addr, int port) throws Exception {
@@ -53,13 +53,12 @@ public class NioServer extends NioBaseServer {
 
     /**
      * Creates an instance of {@link NioServer} that opens a server channel and listens for connections.
+     * Needs to be started next.
      * @param thread_factory The thread factory used to create new threads
      * @param bind_addr The local address to bind to. If null, the address will be picked by the OS
      * @param end_port If srv_port is taken, the next port is tried, until end_port has been reached, in which case an
      *                 exception will be thrown. If srv_port == end_port, only 1 port will be tried.
      * @param external_addr The external address in case of NAT. Ignored if null.
-     * @param external_port The external port on the NA. If 0, srv_port is used.
-     * @return An instance of {@link NioServer}. Needs to be started next.
      * @throws Exception Thrown if the creation failed
      */
     public NioServer(ThreadFactory thread_factory, IpAddress bind_addr, int end_port, IpAddress external_addr) throws Exception {
@@ -71,6 +70,7 @@ public class NioServer extends NioBaseServer {
 
     /**
      * Creates an instance of {@link NioServer} that opens a server channel and listens for connections.
+     * Needs to be started next.
      * @param thread_factory The thread factory used to create new threads
      * @param bind_addr The local address to bind to. If null, the address will be picked by the OS
      * @param srv_port The local port to bind to If 0, the port will be picked by the OS.
@@ -78,7 +78,6 @@ public class NioServer extends NioBaseServer {
      *                 exception will be thrown. If srv_port == end_port, only 1 port will be tried.
      * @param external_addr The external address in case of NAT. Ignored if null.
      * @param external_port The external port on the NA. If 0, srv_port is used.
-     * @return An instance of {@link NioServer}. Needs to be started next.
      * @throws Exception Thrown if the creation failed
      */
     public NioServer(ThreadFactory thread_factory, InetAddress bind_addr, int srv_port, int end_port,

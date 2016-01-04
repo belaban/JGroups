@@ -1990,7 +1990,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /**
      * This method needs to be synchronized on out_stream when it is called
      * @param msg
-     * @return
      * @throws java.io.IOException
      */
     protected static void writeMessage(Message msg, DataOutput dos, boolean multicast) throws Exception {
@@ -2252,7 +2251,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /**
      * Associates the address with the physical address fetched from the cache
      * @param addr
-     * @return true if registered successfully, otherwise false (e.g. physical addr could not be fetched)
      */
     protected void registerLocalAddress(Address addr) {
         PhysicalAddress physical_addr=getPhysicalAddress();

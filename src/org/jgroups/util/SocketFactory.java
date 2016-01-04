@@ -11,7 +11,7 @@ import java.util.Map;
  * Ephemeral ports can be created by passing 0 as port, or (if the port is ignored), an implementation could pass in
  * a special service name (e.g. "EPHEMERAL"), this is implementation dependent.<p/>
  * The socket creation methods have the same parameter lists as the socket constructors, e.g.
- * {@link #createServerSocket(String, int, int)} is the same as {@link java.net.ServerSocket(int,int)}. 
+ * {@link #createServerSocket(String, int, int)} is the same as {@link java.net.ServerSocket#ServerSocket(int, int)}.
  * @author Bela Ban
  */
 public interface SocketFactory {

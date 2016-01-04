@@ -78,9 +78,9 @@ public class JChannel extends Channel {
 
     /**
      * Creates a JChannel without a protocol stack; used for programmatic creation of channel and protocol stack
+     *
      * @param create_protocol_stack If true, the default configuration will be used. If false, no protocol stack
      *        will be created
-     * @param create_protocol_stack Creates the default stack if true, or no stack if false
      */
     public JChannel(boolean create_protocol_stack) {
         if(create_protocol_stack) {

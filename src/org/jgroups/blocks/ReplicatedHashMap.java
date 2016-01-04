@@ -538,7 +538,7 @@ public class ReplicatedHashMap<K, V> extends
     /**
      * Creates a synchronized facade for a ReplicatedMap. All methods which
      * change state are invoked through a monitor. This is similar to
-     * {@Collections.synchronizedMap()}, but also includes the replication
+     * {@link java.util.Collections.SynchronizedMap#synchronizedMap(Map)}, but also includes the replication
      * methods (starting with an underscore).
      * 
      * @param map
