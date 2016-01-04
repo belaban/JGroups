@@ -8,6 +8,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.AsciiString;
 import org.jgroups.util.UUID;
+import org.jgroups.util.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,10 +72,10 @@ public class SHARED_LOOPBACK extends TP {
             if(local_addr != null && local_addr.equals(dest))
                 continue; // message was already looped back
             try {
-                target.receive(local_addr, data, offset, length, true);
+                target.receive(local_addr, data, offset, length);
             }
             catch(Throwable t) {
-                log.error("failed sending message to " + dest, t);
+                log.error(Util.getMessage("FailedSendingMessageTo") + dest, t);
             }
         }
     }
@@ -94,7 +95,7 @@ public class SHARED_LOOPBACK extends TP {
             log.trace("destination address " + dest + " not found");
             return;
         }
-        target.receive(local_addr, buf, offset, length, true);
+        target.receive(local_addr, buf, offset, length);
     }
 
 

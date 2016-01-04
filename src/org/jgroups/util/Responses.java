@@ -144,7 +144,7 @@ public class Responses implements Iterable<PingData>, org.jgroups.util.Condition
 
     public String toString() {
         int[] num=numResponses();
-        return num[0] + " rsps (" + num[1] + " coords) " + (isDone()? "[done]" : "");
+        return String.format("%d rsps (%d coords) [%s]", num[0], num[1], (isDone()? "done" : "pending"));
     }
 
     public String print() {
@@ -181,8 +181,7 @@ public class Responses implements Iterable<PingData>, org.jgroups.util.Condition
 
     @GuardedBy("lock") protected List<PingData> toList() {
         List<PingData> retval=new ArrayList<>();
-        for(int i=0; i < index; i++)
-            retval.add(ping_rsps[i]);
+        retval.addAll(Arrays.asList(ping_rsps).subList(0, index));
         return retval;
     }
 

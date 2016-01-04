@@ -84,7 +84,7 @@ public class FD_PING extends FD {
             }
             catch(Exception ex) {
                 if(log.isErrorEnabled())
-                    log.error("failed executing command " + command, ex);
+                    log.error(Util.getMessage("FailedExecutingCommand"), command, ex);
             }
         }
     }

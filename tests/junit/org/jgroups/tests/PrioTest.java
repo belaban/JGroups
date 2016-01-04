@@ -21,16 +21,16 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * @author Bela Ban
  */
-@Test(groups={Global.STACK_DEPENDENT,Global.EAP_EXCLUDED},singleThreaded=true)
-public class PrioTest extends ChannelTestBase {
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
+public class PrioTest {
     protected JChannel c1, c2;
     protected PrioReceiver r1, r2;
     protected static final short PRIO_ID=ClassConfigurator.getProtocolId(PRIO.class);
 
     @BeforeTest void init() throws Exception {
-        c1=createChannel(true, 2, "A");
+        c1=createChannel("A");
         c1.getProtocolStack().insertProtocol(new PRIO(), ProtocolStack.ABOVE, NAKACK2.class);
-        c2=createChannel(c1, "B");
+        c2=createChannel("B");
         c1.connect("PrioTest");
         c1.setReceiver(r1=new PrioReceiver());
         c2.connect("PrioTest");
@@ -120,6 +120,10 @@ public class PrioTest extends ChannelTestBase {
         assert correct_percentage >= 0.7 : "FAIL. The percentage of correct values is " + (correct_percentage * 100) + "%";
     }
 
+
+    protected JChannel createChannel(String name) throws Exception {
+        return new JChannel(Util.getTestStack()).name(name);
+    }
 
     protected static class PrioSender extends Thread {
         protected final JChannel ch;

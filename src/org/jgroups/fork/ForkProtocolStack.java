@@ -5,6 +5,7 @@ import org.jgroups.protocols.FORK;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MessageBatch;
+import org.jgroups.util.Util;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -156,7 +157,7 @@ public class ForkProtocolStack extends ProtocolStack {
                 fork_channel.up(mb);
             }
             catch(Throwable t) {
-                log.error("failed passing up batch", t);
+                log.error(Util.getMessage("FailedPassingUpBatch"), t);
             }
         }
 

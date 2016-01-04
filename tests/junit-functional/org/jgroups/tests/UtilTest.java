@@ -262,7 +262,7 @@ public class UtilTest {
     }
 
     @SuppressWarnings("unchecked")
-    public static void testObjectToFromByteBuffer() throws Exception {
+    public void testObjectToFromByteBuffer() throws Exception {
         byte[] buf;
         Address addr=Util.createRandomAddress(), addr2;
         List<String> list=new ArrayList<>(), list2;
@@ -294,17 +294,31 @@ public class UtilTest {
         assert obj == null;
 
         Object[] values={
-                Boolean.TRUE,
-                Boolean.FALSE,
-                new Byte((byte)22),
-                new Byte("2"),
-                new Character('5'),
-                new Double(3.14),
-                new Float(352.3),
-                new Integer(100),
-                new Long(322649),
-                new Short((short)22),
-                "Bela Ban"
+          Boolean.TRUE,
+          true,
+          false,
+          Boolean.FALSE,
+          (byte)22,
+          new Byte("2"),
+          '5',
+          3.14,
+          352.3f,
+          0,
+          100,
+          322649,
+          Integer.MAX_VALUE,
+          Integer.MIN_VALUE,
+          0L,
+          322649L,
+          Long.MAX_VALUE-50,
+          Long.MAX_VALUE,
+          Long.MIN_VALUE,
+          (short)22,
+          Short.MAX_VALUE,
+          Short.MIN_VALUE,
+          "Bela Ban",
+          new byte[]{'H', 'e', 'l', 'l', 'o'},
+          Util.generateArray(1024)
         };
         for(int i=0; i < values.length; i++) {
             Object value=values[i];
@@ -410,6 +424,19 @@ public class UtilTest {
         Object obj2=Util.objectFromByteBuffer(buf);
         System.out.println("obj=" + obj + ", obj2=" + obj2 + " (type=" + obj.getClass().getName() + ", length=" + buf.length + " bytes)");
         Assert.assertEquals(obj, obj2);
+
+        if(obj instanceof Integer) { // test compressed ints and longs
+            buf=new byte[10];
+            Bits.writeIntCompressed((int)obj, buf, 0);
+            obj2=Bits.readIntCompressed(buf, 0);
+            assert obj.equals(obj2);
+        }
+        if(obj instanceof Long) { // test compressed ints and longs
+            buf=new byte[10];
+            Bits.writeLongCompressed((long)obj, buf, 0);
+            obj2=Bits.readLongCompressed(buf, 0);
+            assert obj.equals(obj2);
+        }
     }
 
 

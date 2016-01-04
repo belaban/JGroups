@@ -185,7 +185,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         switch (data.getType()) {
             case MESSAGE:
                 byte[] msg=data.getBuffer();
-                receive(data.getAddress(), msg, 0, msg.length, false);
+                receive(data.getAddress(), msg, 0, msg.length);
                 break;
             case SUSPECT:
                 Address suspect=data.getAddress();

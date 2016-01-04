@@ -425,7 +425,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             tmp.init();
         }
         catch(Exception e) {
-            log.error("exception switching to coordinator role", e);
+            log.error(Util.getMessage("ExceptionSwitchingToCoordinatorRole"), e);
         }
         setImpl(tmp);
     }
@@ -442,7 +442,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             tmp.init();
         }
         catch(Exception e) {
-            log.error("exception switching to participant", e);
+            log.error(Util.getMessage("ExceptionSwitchingToParticipant"), e);
         }
         setImpl(tmp);
     }
@@ -457,7 +457,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             tmp.init();
         }
         catch(Exception e) {
-            log.error("exception switching to client role", e);
+            log.error(Util.getMessage("ExceptionSwitchingToClientRole"), e);
         }
         setImpl(tmp);
     }
@@ -492,7 +492,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         synchronized(members) {
             ViewId view_id=view != null? view.getViewId() : null;
             if(view_id == null) {
-                log.error("view_id is null");
+                log.error(Util.getMessage("ViewidIsNull"));
                 return null; // this should *never* happen !
             }
             long vid=Math.max(view_id.getId(), ltime) + 1;
@@ -540,15 +540,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             return retval;
         }
         catch(Throwable t) {
-            log.error("membership change policy " + membership_change_policy.getClass().getSimpleName() +
-                        " failed, falling back to default policy to compute new membership", t);
+            log.error(Util.getMessage("MembershipChangePolicy"), membership_change_policy.getClass().getSimpleName(), t);
         }
 
         try {
             return new DefaultMembershipPolicy().getNewMembership(current_members,joiners_copy,leavers_copy,suspects_copy);
         }
         catch(Throwable t) {
-            log.error("default membership change policy failed", t);
+            log.error(Util.getMessage("DefaultMembershipChangePolicyFailed"), t);
             return null;
         }
     }
@@ -562,15 +561,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             return retval;
         }
         catch(Throwable t) {
-            log.error("membership change policy " + membership_change_policy.getClass().getSimpleName() +
-                        " failed, falling back to default policy to compute new membership", t);
+            log.error(Util.getMessage("MembershipChangePolicy"), membership_change_policy.getClass().getSimpleName(), t);
         }
 
         try {
             return new DefaultMembershipPolicy().getNewMembership(subviews);
         }
         catch(Throwable t) {
-            log.error("default membership change policy failed", t);
+            log.error(Util.getMessage("DefaultMembershipChangePolicyFailed"), t);
             return null;
         }
     }
@@ -1019,7 +1017,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         break;
 
                     default:
-                        if(log.isErrorEnabled()) log.error("GmsHeader with type=" + hdr.type + " not known");
+                        if(log.isErrorEnabled()) log.error(Util.getMessage("GmsHeaderWithType"), hdr.type);
                 }
                 return null;  // don't pass up
 

@@ -244,7 +244,7 @@ public class RELAY extends Protocol {
                     handleUpEvent(msg, hdr);
                 }
                 catch(Throwable t) {
-                    log.error("failed processing message", t);
+                    log.error(Util.getMessage("FailedProcessingMessage"), t);
                 }
             }
 
@@ -315,7 +315,7 @@ public class RELAY extends Protocol {
             }
         }
         catch(Exception e) {
-            log.error("failed installing view", e);
+            log.error(Util.getMessage("FailedInstallingView"), e);
         }
         return null;
     }
@@ -329,7 +329,7 @@ public class RELAY extends Protocol {
                 bridge.send(msg);
             }
             catch(Throwable t) {
-                log.error("failed forwarding message over bridge", t);
+                log.error(Util.getMessage("FailedForwardingMessageOverBridge"), t);
             }
         }
     }
@@ -355,7 +355,7 @@ public class RELAY extends Protocol {
             }
         }
         catch(Exception e) {
-            log.error("failed forwarding unicast message to coord", e);
+            log.error(Util.getMessage("FailedForwardingUnicastMessageToCoord"), e);
         }
     }
 
@@ -373,7 +373,7 @@ public class RELAY extends Protocol {
                                 bridge.send(msg);
                             }
                             catch(Exception e) {
-                                log.error("failed sending view to remote", e);
+                                log.error(Util.getMessage("FailedSendingViewToRemote"), e);
                             }
                         }
                     });
@@ -383,7 +383,7 @@ public class RELAY extends Protocol {
             }
         }
         catch(Exception e) {
-            log.error("failed sending view to remote", e);
+            log.error(Util.getMessage("FailedSendingViewToRemote"), e);
         }
     }
 
@@ -435,7 +435,7 @@ public class RELAY extends Protocol {
 
         }
         catch(Exception e) {
-            log.error("failed creating bridge channel (props=" + bridge_props + ")", e);
+            log.error(Util.getMessage("FailedCreatingBridgeChannelProps") + bridge_props + ")", e);
         }
     }
 
@@ -464,7 +464,7 @@ public class RELAY extends Protocol {
             down_prot.down(new Event(Event.MSG, msg));
         }
         catch(Exception e) {
-            log.error("failed sending on local cluster", e);
+            log.error(Util.getMessage("FailedSendingOnLocalCluster"), e);
         }
     }
 
@@ -494,7 +494,7 @@ public class RELAY extends Protocol {
                 sendViewOnLocalCluster(destinations, buffer);
         }
         catch(Exception e) {
-            log.error("failed sending view to local cluster", e);
+            log.error(Util.getMessage("FailedSendingViewToLocalCluster"), e);
         }
     }
 
@@ -568,7 +568,7 @@ public class RELAY extends Protocol {
                         sendViewOnLocalCluster(data, false, null);
                     }
                     catch(Exception e) {
-                        log.error("failed unmarshalling view from remote cluster", e);
+                        log.error(Util.getMessage("FailedUnmarshallingViewFromRemoteCluster"), e);
                     }
                     break;
                 case BROADCAST_VIEW: // no-op

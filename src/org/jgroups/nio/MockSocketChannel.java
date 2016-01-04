@@ -18,7 +18,7 @@ public class MockSocketChannel extends SocketChannel {
     protected int        bytes_to_write;
     protected ByteBuffer bytes_to_read;
     protected boolean    closed=false;
-
+    protected ByteBuffer recorder; // records writes if set
 
 
     public MockSocketChannel() {
@@ -48,6 +48,8 @@ public class MockSocketChannel extends SocketChannel {
         return this;
     }
 
+    public MockSocketChannel recorder(ByteBuffer buf) {this.recorder=buf; return this;}
+    public ByteBuffer        recorder()               {return recorder;}
 
 
     @Override
@@ -124,12 +126,32 @@ public class MockSocketChannel extends SocketChannel {
 
     @Override
     public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
-        return 0;
+        long total=0;
+        for(int i=offset; i < offset+length; i++) {
+            ByteBuffer buf=i >=0 && i < dsts.length? dsts[i] : null;
+            if(buf != null) {
+                int read=read(buf);
+                if(read >= 0)
+                    total+=read;
+                else
+                    return read;
+            }
+        }
+        return total;
     }
 
     @Override
-    public int write(ByteBuffer src) throws IOException {
-        return 0;
+    public int write(ByteBuffer buf) throws IOException {
+        if(bytes_to_write == 0)
+            return 0;
+        int written=0;
+        while(buf.hasRemaining() && bytes_to_write-- > 0) {
+            byte b=buf.get();
+            written++;
+            if(recorder != null)
+                recorder.put(b);
+        }
+        return written;
     }
 
     @Override
@@ -140,8 +162,10 @@ public class MockSocketChannel extends SocketChannel {
         for(int i=offset; i < Math.min(srcs.length, length+offset); i++) {
             ByteBuffer buf=srcs[i];
             while(buf.hasRemaining() && bytes_to_write-- > 0) {
-                buf.get();
+                byte b=buf.get();
                 written++;
+                if(recorder != null)
+                    recorder.put(b);
             }
         }
         return written;

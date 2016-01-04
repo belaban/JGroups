@@ -409,7 +409,7 @@ public abstract class FlowControl extends Protocol {
                     handleCreditRequest(received, sender,requested_credits);
                 break;
             default:
-                log.error("header type " + hdr.type + " not known");
+                log.error(Util.getMessage("HeaderTypeNotKnown"), local_addr, hdr.type);
                 break;
         }
     }

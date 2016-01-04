@@ -183,7 +183,7 @@ public class SUPERVISOR extends Protocol {
                     handler.down(evt);
                 }
                 catch(Throwable t) {
-                    log.error("event handler failed handling down event", t);
+                    log.error(Util.getMessage("EventHandlerFailedHandlingDownEvent"), t);
                 }
             }
         }
@@ -203,7 +203,7 @@ public class SUPERVISOR extends Protocol {
                     handler.up(evt);
                 }
                 catch(Throwable t) {
-                    log.error("event handler failed handling up event", t);
+                    log.error(Util.getMessage("EventHandlerFailedHandlingUpEvent"), t);
                 }
             }
         }
@@ -218,7 +218,7 @@ public class SUPERVISOR extends Protocol {
                         handler.up(new Event(Event.MSG, msg));
                     }
                     catch(Throwable t) {
-                        log.error("event handler failed handling up event", t);
+                        log.error(Util.getMessage("EventHandlerFailedHandlingUpEvent"), t);
                     }
                 }
             }

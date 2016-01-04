@@ -288,7 +288,7 @@ public abstract class BasicConnectionTable {
        Connection conn;
        if(dest == null) {
            if(log.isErrorEnabled())
-               log.error("destination is null");
+               log.error(Util.getMessage("DestinationIsNull"));
            return;
        }
 
@@ -420,7 +420,7 @@ public abstract class BasicConnectionTable {
                conn_creations.incrementAndGet();
            }
            catch(Exception ex) {
-               if(log.isErrorEnabled()) log.error("exception is " + ex);
+               if(log.isErrorEnabled()) log.error(Util.getMessage("ExceptionIs") + ex);
            }
        }
 
@@ -525,7 +525,7 @@ public abstract class BasicConnectionTable {
                Thread.currentThread().interrupt(); // set interrupt flag again
            }
            catch(Throwable ex) {
-               if(log.isErrorEnabled()) log.error("failed sending data to " + peer_addr + ": " + ex);
+               if(log.isErrorEnabled()) log.error(Util.getMessage("FailedSendingDataTo") + peer_addr + ": " + ex);
            }
            finally {
                if(acquire_lock)
@@ -616,7 +616,7 @@ public abstract class BasicConnectionTable {
                    updateLastAccessed();
                }
                catch(Throwable t) {
-                   if(log.isErrorEnabled()) log.error("exception is " + t);
+                   if(log.isErrorEnabled()) log.error(Util.getMessage("ExceptionIs") + t);
                }
            }
        }
@@ -646,7 +646,7 @@ public abstract class BasicConnectionTable {
            while(receiverThread != null && receiverThread.equals(Thread.currentThread()) && is_running) {
                try {
                    if(in == null) {
-                       if(log.isErrorEnabled()) log.error("input stream is null !");
+                       if(log.isErrorEnabled()) log.error(Util.getMessage("InputStreamIsNull"));
                        break;
                    }
                    int len=in.readInt();

@@ -695,26 +695,22 @@ public class UDP extends TP {
                     int len=packet.getLength();
                     if(len > receive_buf.length) {
                         if(log.isErrorEnabled())
-                            log.error("size of the received packet (" + len + ") is bigger than allocated buffer (" +
-                                      receive_buf.length + "): will not be able to handle packet. " +
-                                      "Use the FRAG2 protocol and make its frag_size lower than " + receive_buf.length);
+                            log.error(Util.getMessage("SizeOfTheReceivedPacket"),len, receive_buf.length, receive_buf.length);
                     }
 
                     receive(new IpAddress(packet.getAddress(), packet.getPort()),
-                            receive_buf,
-                            packet.getOffset(),
-                            len, true); // copy packet as we're reusing receive_buf
+                            receive_buf, packet.getOffset(), len);
                 }
                 catch(SocketException sock_ex) {
                     if(receiver_socket.isClosed()) {
                         if(log.isDebugEnabled()) log.debug("receiver socket is closed, exception=" + sock_ex);
                         break;
                     }
-                    log.error("failed receiving packet", sock_ex);
+                    log.error(Util.getMessage("FailedReceivingPacket"), sock_ex);
                 }
                 catch(Throwable ex) {
                     if(log.isErrorEnabled())
-                        log.error("failed receiving packet", ex);
+                        log.error(Util.getMessage("FailedReceivingPacket"), ex);
                 }
             }
             if(log.isDebugEnabled()) log.debug(name + " thread terminated");

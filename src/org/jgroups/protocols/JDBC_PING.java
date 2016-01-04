@@ -143,7 +143,7 @@ public class JDBC_PING extends Discovery {
         try {
             deleteSelf();
         } catch (SQLException e) {
-            log.error("Error while unregistering of our own Address from JDBC_PING database during shutdown", e);
+            log.error(Util.getMessage("ErrorWhileUnregisteringOfOurOwnAddressFromJDBCPINGDatabaseDuringShutdown"), e);
         }
         super.stop();
     }
@@ -209,13 +209,13 @@ public class JDBC_PING extends Discovery {
                     delete(connection, clustername, ownAddress);
                 insert(connection, data, clustername, ownAddress);
             } catch (SQLException e) {
-                log.error("Error updating JDBC_PING table", e);
+                log.error(Util.getMessage("ErrorUpdatingJDBCPINGTable"), e);
             } finally {
                 closeConnection(connection);
             }
         }
         else {
-            log.error("Failed to store PingData in database");
+            log.error(Util.getMessage("FailedToStorePingDataInDatabase"));
         }
     }
 
@@ -234,7 +234,7 @@ public class JDBC_PING extends Discovery {
             }
         }
         catch(SQLException e) {
-            log.error("Error reading table", e);
+            log.error(Util.getMessage("ErrorReadingTable"), e);
         }
         return false;
     }
@@ -254,7 +254,7 @@ public class JDBC_PING extends Discovery {
             try {
                 readAll(connection, members, clustername, responses);
             } catch (SQLException e) {
-                log.error("Error reading JDBC_PING table", e);
+                log.error(Util.getMessage("ErrorReadingJDBCPINGTable"), e);
             } finally {
                 closeConnection(connection);
             }
@@ -312,7 +312,7 @@ public class JDBC_PING extends Discovery {
                 connection.close();
             }
             catch(SQLException e) {
-                log.error("Error closing connection", e);
+                log.error(Util.getMessage("ErrorClosingConnection"), e);
             }
         }
     }
@@ -335,11 +335,11 @@ public class JDBC_PING extends Discovery {
             try {
                 connection = DriverManager.getConnection(connection_url, connection_username, connection_password);
             } catch (SQLException e) {
-                log.error("Could not open connection to database", e);
+                log.error(Util.getMessage("CouldNotOpenConnectionToDatabase"), e);
                 return null;
             }
             if (connection == null) {
-                log.error("Received null connection from the DriverManager!");
+                log.error(Util.getMessage("ReceivedNullConnectionFromTheDriverManager"));
             }
             return connection;
         }
@@ -347,7 +347,7 @@ public class JDBC_PING extends Discovery {
             try {
                 return dataSourceFromJNDI.getConnection();
             } catch (SQLException e) {
-                log.error("Could not open connection to database", e);
+                log.error(Util.getMessage("CouldNotOpenConnectionToDatabase"), e);
                 return null;
             }
         }
@@ -381,12 +381,12 @@ public class JDBC_PING extends Discovery {
             try {
                 delete(connection, clustername, addressToDelete);
             } catch (SQLException e) {
-                log.error("Error updating JDBC_PING table", e);
+                log.error(Util.getMessage("ErrorUpdatingJDBCPINGTable"), e);
             } finally {
                 closeConnection(connection);
             }
         } else {
-            log.error("Failed to delete PingData in database");
+            log.error(Util.getMessage("FailedToDeletePingDataInDatabase"));
         }
     }
     
@@ -402,7 +402,7 @@ public class JDBC_PING extends Discovery {
             }
         }
         catch(SQLException e) {
-            log.error("Error clearing table", e);
+            log.error(Util.getMessage("ErrorClearingTable"), e);
         }
     }
 
@@ -411,7 +411,7 @@ public class JDBC_PING extends Discovery {
         try {
             connection.close();
         } catch (SQLException e) {
-            log.error("Error closing connection to JDBC_PING database", e);
+            log.error(Util.getMessage("ErrorClosingConnectionToJDBCPINGDatabase"), e);
         }
     }
     

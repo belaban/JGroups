@@ -135,8 +135,9 @@ public class TcpConnection implements Connection {
      */
     public void send(byte[] data, int offset, int length) throws Exception {
         if(sender != null) {
-            // we don't need to copy as data was created anew when sending the message !
-            sender.addToQueue(new Buffer(data, offset, length));
+            byte[] copy=new byte[length];
+            System.arraycopy(data, offset, copy, 0, length);
+            sender.addToQueue(new Buffer(copy, 0, length));
         }
         else
             _send(data, offset, length, true, true);
@@ -282,6 +283,7 @@ public class TcpConnection implements Connection {
     protected class Receiver implements Runnable {
         protected final Thread     recv;
         protected volatile boolean receiving=true;
+        protected volatile byte[]  buffer;
 
         public Receiver(ThreadFactory f) {
             recv=f.newThread(this,"Connection.Receiver [" + getSockAddress() + "]");
@@ -299,23 +301,20 @@ public class TcpConnection implements Connection {
             return this;
         }
 
-        public boolean isRunning() {
-            return receiving;
-        }
-
-        public boolean canRun() {
-            return isRunning() && isConnected();
-        }
+        public boolean isRunning()  {return receiving;}
+        public boolean canRun()     {return isRunning() && isConnected();}
+        public int     bufferSize() {return buffer != null? buffer.length : 0;}
 
         public void run() {
             Throwable t=null;
             while(canRun()) {
                 try {
                     int len=in.readInt();
-                    byte[] buf=new byte[len];
-                    in.readFully(buf, 0, len);
+                    if(buffer == null || buffer.length < len)
+                        buffer=new byte[len];
+                    in.readFully(buffer, 0, len);
                     updateLastAccessed();
-                    server.receive(peer_addr, buf, 0, len);
+                    server.receive(peer_addr, buffer, 0, len);
                 }
                 catch(OutOfMemoryError mem_ex) {
                     t=mem_ex;
@@ -406,10 +405,10 @@ public class TcpConnection implements Connection {
         InetAddress local=tmp_sock.getLocalAddress(), remote=tmp_sock.getInetAddress();
         String local_str=local != null? Util.shortName(local) : "<null>";
         String remote_str=remote != null? Util.shortName(remote) : "<null>";
-        return String.format("%s:%s --> %s:%s (%d secs old) [%s]",
+        return String.format("%s:%s --> %s:%s (%d secs old) [%s] [recv_buf=%d]",
                              local_str, tmp_sock.getLocalPort(), remote_str, tmp_sock.getPort(),
                              TimeUnit.SECONDS.convert(getTimestamp() - last_access, TimeUnit.NANOSECONDS),
-                             status());
+                             status(), receiver != null? receiver.bufferSize() : 0);
     }
 
     protected String status() {

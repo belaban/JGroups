@@ -1,14 +1,13 @@
 package org.jgroups.blocks.cs;
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.nio.Buffers;
-import org.jgroups.nio.WriteBuffers;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.ByteArrayDataInputStream;
-import org.jgroups.util.ByteArrayDataOutputStream;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -33,13 +32,16 @@ public class NioConnection implements Connection {
     protected long                last_access;  // timestamp of the last access to this connection (read or write)
     protected final NioBaseServer server;
 
-    // {length, data} pair to send a message with a gathering write
-    protected final Buffers       send_buf;
+    protected final Buffers       send_buf;     // send messages via gathering writes
     protected boolean             write_interest_set; // set when a send() didn't manage to send all data
+    protected boolean             copy_on_partial_write=true;
+    protected int                 partial_writes; // number of partial writes (write which did not write all bytes)
     protected final Lock          send_lock=new ReentrantLock(); // serialize send()
 
-    protected Buffers             recv_buf=new Buffers();
-    protected final Lock          recv_lock=new ReentrantLock(); // serialize receive()
+    // creates an array of 2: length buffer (for reading the length of the following data buffer) and data buffer
+    protected Buffers             recv_buf=new Buffers(2).add(ByteBuffer.allocate(Global.INT_SIZE), null);
+    protected Reader              reader=new Reader(); // manages the thread which receives messages
+    protected long                reader_idle_time=20000; // number of ms a reader can be idle (no msgs) until it terminates
 
 
 
@@ -49,7 +51,7 @@ public class NioConnection implements Connection {
         if(peer_addr == null)
             throw new IllegalArgumentException("Invalid parameter peer_addr="+ peer_addr);
         this.peer_addr=peer_addr;
-        send_buf=new WriteBuffers(server.maxSendBuffers());
+        send_buf=new Buffers(server.maxSendBuffers() *2); // space for actual bufs and length bufs!
         channel=SocketChannel.open();
         channel.configureBlocking(false);
         setSocketParameters(channel.socket());
@@ -61,7 +63,7 @@ public class NioConnection implements Connection {
         this.server=server;
         setSocketParameters(this.channel.socket());
         channel.configureBlocking(false);
-        send_buf=new WriteBuffers(server.maxSendBuffers());
+        send_buf=new Buffers(server.maxSendBuffers() *2); // space for actual bufs and length bufs!
         this.peer_addr=server.usePeerConnections()? null /* read by first receive() */
           : new IpAddress((InetSocketAddress)channel.getRemoteAddress());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
@@ -99,22 +101,26 @@ public class NioConnection implements Connection {
         return local_addr != null? new IpAddress(local_addr) : null;
     }
 
-    public Address       peerAddress()       {return peer_addr;}
-    public SelectionKey  key()               {return key;}
-    public NioConnection key(SelectionKey k) {this.key=k; return this;}
+    public Address       peerAddress()                 {return peer_addr;}
+    public SelectionKey  key()                         {return key;}
+    public NioConnection key(SelectionKey k)           {this.key=k; return this;}
+    public NioConnection copyOnPartialWrite(boolean b) {this.copy_on_partial_write=b; return this;}
+    public boolean       copyOnPartialWrite()          {return copy_on_partial_write;}
+    public int           numPartialWrites()            {return partial_writes;}
+    public long          readerIdleTime()              {return reader_idle_time;}
+    public NioConnection readerIdleTime(long t)        {this.reader_idle_time=t; return this;}
+    public boolean       readerRunning()               {return this.reader.isRunning();}
 
-    public synchronized int registerSelectionKey(int interest_ops) {
+    public synchronized void registerSelectionKey(int interest_ops) {
         if(key == null)
-            return 0;
+            return;
         key.interestOps(key.interestOps() | interest_ops);
-        return key.interestOps();
     }
 
-    public synchronized int clearSelectionKey(int interest_ops) {
+    public synchronized void clearSelectionKey(int interest_ops) {
         if(key == null)
-            return 0;
+            return;
         key.interestOps(key.interestOps() & ~interest_ops);
-        return key.interestOps();
     }
 
 
@@ -165,10 +171,16 @@ public class NioConnection implements Connection {
     public void send(ByteBuffer buf) throws Exception {
         send_lock.lock();
         try {
-            boolean success=send_buf.write(channel, buf);
+            // makeLengthBuffer() reuses the same pre-allocated buffer and copies it only if the write didn't complete
+            boolean success=send_buf.add(makeLengthBuffer(buf), buf).write(channel);
             writeInterest(!success);
             if(success)
                 updateLastAccessed();
+            if(!success) {
+                if(copy_on_partial_write)
+                    send_buf.copy(); // copy data on partial write as subsequent writes might corrupt data (https://issues.jboss.org/browse/JGRP-1991)
+                partial_writes++;
+            }
         }
         finally {
             send_lock.unlock();
@@ -183,6 +195,11 @@ public class NioConnection implements Connection {
             writeInterest(!success);
             if(success)
                 updateLastAccessed();
+            if(!success) {
+                if(copy_on_partial_write)
+                    send_buf.copy(); // copy data on partial write as subsequent writes might corrupt data (https://issues.jboss.org/browse/JGRP-1991)
+                partial_writes++;
+            }
         }
         finally {
             send_lock.unlock();
@@ -191,68 +208,28 @@ public class NioConnection implements Connection {
 
 
 
-    /** Read the length first, then the actual data */
+    /** Read the length first, then the actual data. This method is not reentrant and access must be synchronized */
     public void receive() throws Exception {
-        ByteBuffer msg=null;
-        Receiver   receiver=server.receiver();
-
-        recv_lock.lock();
-        try {
-            if((msg=recv_buf.read(channel)) == null)
-                return;
-            if(peer_addr == null && server.usePeerConnections()) {
-                peer_addr=readPeerAddress(msg);
-                server.addConnection(peer_addr, this);
-                return;
-            }
-            updateLastAccessed();
-        }
-        finally {
-            recv_lock.unlock();
-        }
-        // deliver the message outside the receive lock
-        if(receiver != null)
-            receiver.receive(peer_addr, msg);
+        reader.receive();
     }
 
 
-    /**
-     * Tries to receive up to max_num_msgs_to_receive messages in one go
-     * @param max_num_msgs_to_receive
-     * @throws Exception
-     */
-    public void receive(int max_num_msgs_to_receive) throws Exception {
-        ByteBuffer msg=null;
+    protected boolean _receive(boolean update) throws Exception {
+        ByteBuffer msg;
         Receiver   receiver=server.receiver();
-        ByteBuffer[] buffers=new ByteBuffer[max_num_msgs_to_receive];
-        int index=0;
 
-        recv_lock.lock();
-        try {
-            while(index < buffers.length) {
-                if((msg=recv_buf.read(channel)) == null)
-                    break;
-                if(peer_addr == null && server.usePeerConnections()) {
-                    peer_addr=readPeerAddress(msg);
-                    server.addConnection(peer_addr, this);
-                    continue;
-                }
-                buffers[index++]=msg;
-            }
-            updateLastAccessed();
+        if((msg=recv_buf.readLengthAndData(channel)) == null)
+            return false;
+        if(peer_addr == null && server.usePeerConnections()) {
+            peer_addr=readPeerAddress(msg);
+            server.addConnection(peer_addr, this);
+            return true;
         }
-        finally {
-            recv_lock.unlock();
-        }
-
-        // deliver the messages outside the receive lock
-        if(receiver == null)
-            return;
-        for(int i=0; i < buffers.length; i++) {
-            if((msg=buffers[i]) == null)
-                return;
+        if(receiver != null)
             receiver.receive(peer_addr, msg);
-        }
+        if(update)
+            updateLastAccessed();
+        return true;
     }
 
 
@@ -263,7 +240,7 @@ public class NioConnection implements Connection {
             if(send_buf.remaining() > 0) { // try to flush send buffer if it still has pending data to send
                 try {send();} catch(Throwable e) {}
             }
-            Util.close(channel);
+            Util.close(channel, reader);
         }
         finally {
             send_lock.unlock();
@@ -277,9 +254,9 @@ public class NioConnection implements Connection {
         try {remote=channel != null? (InetSocketAddress)channel.getRemoteAddress() : null;} catch(Throwable t) {}
         String loc=local == null ? "n/a" : local.getHostString() + ":" + local.getPort(),
           rem=remote == null? "n/a" : remote.getHostString() + ":" + remote.getPort();
-        return String.format("<%s --> %s> (%d secs old) [%s] [send_buf: %s, recv_buf: %s] [ops=%d]",
+        return String.format("<%s --> %s> (%d secs old) [%s] [recv_buf: %d, reader=%b]",
                              loc, rem, TimeUnit.SECONDS.convert(getTimestamp() - last_access, TimeUnit.NANOSECONDS),
-                             status(), send_buf, recv_buf, key != null? key.interestOps() : -1);
+                             status(), recv_buf.get(1) != null? recv_buf.get(1).capacity() : 0, readerRunning());
     }
 
     protected String status() {
@@ -348,9 +325,7 @@ public class NioConnection implements Connection {
 
     protected Address readPeerAddress(ByteBuffer buf) throws Exception {
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
-
-        // then read the version
-        short version=in.readShort();
+        short version=in.readShort(); // version
         if(!Version.isBinaryCompatible(version))
             throw new IOException("packet from " + channel.getRemoteAddress() + " has different version (" + Version.print(version) +
                                     ") from ours (" + Version.printVersion() + "); discarding it");
@@ -358,6 +333,125 @@ public class NioConnection implements Connection {
         client_peer_addr.readFrom(in);
         updateLastAccessed();
         return client_peer_addr;
+    }
+
+    protected static ByteBuffer makeLengthBuffer(ByteBuffer buf) {
+        return (ByteBuffer)ByteBuffer.allocate(Global.INT_SIZE).putInt(buf.remaining()).clear();
+    }
+
+    protected enum State {reading, waiting_to_terminate, done}
+
+    protected class Reader implements Runnable, Closeable, Condition {
+        protected final Lock       lock=new ReentrantLock(); // to synchronize receive() and state transitions
+        protected State            state=State.done;
+        protected volatile boolean data_available=true;
+        protected final CondVar    data_available_cond=new CondVar();
+        protected volatile Thread  thread;
+        protected volatile boolean running;
+
+        protected void start() {
+            running=true;
+            thread=server.factory.newThread(this, String.format("NioConnection.Reader [%s]", peer_addr));
+            thread.setDaemon(true);
+            thread.start();
+        }
+
+
+        protected void stop() {
+            running=false;
+            data_available=true;
+            data_available_cond.signal(false);
+        }
+
+        public void    close() throws IOException {stop();}
+        public boolean isMet()                    {return data_available;}
+        public boolean isRunning()                {Thread tmp=thread; return tmp != null && tmp.isAlive();}
+
+        /** Called by the selector when data is ready to be read from the SocketChannel */
+        public void receive() {
+            lock.lock();
+            try {
+                data_available=true;
+                // only a single receive() at a time, until OP_READ is registered again (by the reader thread)
+                clear(SelectionKey.OP_READ);
+                switch(state) {
+                    case reading:
+                        break;
+                    case waiting_to_terminate:
+                        data_available_cond.signal(false); // only 1 consumer
+                        break;
+                    case done:
+                        // make sure the selector doesn't wake up for our connection while the reader is reading msgs
+                        state=State.reading;
+                        start();
+                        break;
+                }
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        public void run() {
+            try {
+                _run();
+            }
+            finally {
+                register(SelectionKey.OP_READ);
+            }
+        }
+
+        protected void _run() {
+            while(running) {
+                for(;;) { // try to receive as many msgs as possible, until no more msgs are ready or the conn is closed
+                    try {
+                        if(!_receive(false))
+                            break;
+                    }
+                    catch(Throwable ex) {
+                        server.closeConnection(NioConnection.this, ex);
+                        state(State.done);
+                        return;
+                    }
+                }
+                updateLastAccessed();
+
+                // Transition to state waiting_to_terminate and wait for server.readerIdleTime() ms
+                state(State.waiting_to_terminate);
+                data_available=false;
+                register(SelectionKey.OP_READ); // now we might get receive() calls again
+                if(data_available_cond.waitFor(this, server.readerIdleTime(), TimeUnit.MILLISECONDS))
+                    state(State.reading);
+                else {
+                    state(State.done);
+                    return;
+                }
+            }
+        }
+
+        protected void register(int op) {
+            try {
+                registerSelectionKey(op);
+                key.selector().wakeup(); // no-op if the selector is not blocked in select()
+            }
+            catch(Throwable t) {
+            }
+        }
+
+        protected void clear(int op) {
+            try {
+                clearSelectionKey(op);
+            }
+            catch(Throwable t) {
+            }
+        }
+
+        protected void state(State st) {
+            lock.lock();
+            try {this.state=st;}
+            finally {lock.unlock();}
+        }
+
     }
 
 }

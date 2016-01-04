@@ -161,7 +161,7 @@ public class FORK extends Protocol {
                 bottom_prot.up(mb);
             }
             catch(Throwable t) {
-                log.error("failed passing up batch", t);
+                log.error(Util.getMessage("FailedPassingUpBatch"), t);
             }
         }
 

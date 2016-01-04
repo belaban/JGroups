@@ -172,7 +172,7 @@ public class SimpleAuthorizingCallbackHandler implements CallbackHandler {
                 fis = new FileInputStream(file);
                 properties.load(fis);
             } catch (IOException e) {
-                log.error("An error occurred while loading properties from " + file, e);
+                log.error(Util.getMessage("AnErrorOccurredWhileLoadingPropertiesFrom") + file, e);
             } finally {
                 Util.close(fis);
             }

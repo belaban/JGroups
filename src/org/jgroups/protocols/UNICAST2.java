@@ -446,7 +446,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                         stable(msg.getSrc(), hdr.conn_id, hdr.seqno, hdr.high_seqno);
                         break;
                     default:
-                        log.error("UnicastHeader type " + hdr.type + " not known !");
+                        log.error(Util.getMessage("UnicastHeaderType"), hdr.type);
                         break;
                 }
                 return null;
@@ -670,7 +670,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                         sendStableMessages();
                     }
                     catch(Throwable t) {
-                        log.error("sending of STABLE messages failed", t);
+                        log.error(Util.getMessage("SendingOfSTABLEMessagesFailed"), t);
                     }
                 }
 
@@ -931,7 +931,7 @@ public class UNICAST2 extends Protocol implements AgeOutCache.Handler<Address> {
                     up_prot.up(batch);
                 }
                 catch(Throwable t) {
-                    log.error("failed to deliver batch " + batch, t);
+                    log.error(Util.getMessage("FailedToDeliverBatch"), batch, t);
                 }
             }
         }

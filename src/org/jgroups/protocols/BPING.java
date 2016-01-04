@@ -111,7 +111,7 @@ public class BPING extends PING implements Runnable {
             }
         }
         catch(Exception ex) {
-            log.error("failed sending discovery request", ex);
+            log.error(Util.getMessage("FailedSendingDiscoveryRequest"), ex);
         }
     }
 
@@ -135,7 +135,7 @@ public class BPING extends PING implements Runnable {
                 break;
             }
             catch(Throwable ex) {
-                log.error("failed receiving packet (from " + packet.getSocketAddress() + ")", ex);
+                log.error(Util.getMessage("FailedReceivingPacketFrom"), packet.getSocketAddress(), ex);
             }
         }
         if(log.isTraceEnabled())

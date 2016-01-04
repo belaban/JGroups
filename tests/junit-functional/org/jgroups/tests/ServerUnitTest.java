@@ -14,6 +14,8 @@ import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -23,6 +25,16 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ServerUnitTest {
+    protected static final InetAddress bind_addr;
+
+    static {
+        try {
+            bind_addr=Util.getLocalhost();
+        }
+        catch(UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public void testSetup() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
@@ -255,8 +267,8 @@ public class ServerUnitTest {
 
     protected static BaseServer create(boolean nio, int port) {
         try {
-            BaseServer retval=nio? new NioServer(null, port).maxSendBuffers(1024).maxReadBatchSize(20)
-              : new TcpServer(null, port).useSendQueues(false);
+            BaseServer retval=nio? new NioServer(bind_addr, port).maxSendBuffers(1024)
+              : new TcpServer(bind_addr, port).useSendQueues(false);
             retval.usePeerConnections(true);
             retval.start();
             return retval;

@@ -74,7 +74,7 @@ public class Krb5Token extends AuthToken {
 
     public boolean authenticate(AuthToken token, Message msg) {
         if (!isAuthenticated()) {
-            log.error("Krb5Token failed to setup correctly - cannot authenticate any peers");
+            log.error(Util.getMessage("Krb5TokenFailedToSetupCorrectlyCannotAuthenticateAnyPeers"));
             return false;
         }
         
@@ -87,7 +87,7 @@ public class Krb5Token extends AuthToken {
                 return true;
             }
             catch (Exception e) {
-                log.error("Krb5Token service ticket validation failed", e);
+                log.error(Util.getMessage("Krb5TokenServiceTicketValidationFailed"), e);
                 return false;
             }
                 

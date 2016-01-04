@@ -203,7 +203,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
             }
         }
         catch(Exception ex) {
-            log.error("failed reading data", ex);
+            log.error(Util.getMessage("FailedReadingData"), ex);
         }
     }
 

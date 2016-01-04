@@ -160,7 +160,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
             JmxConfigurator.unregister(this, Util.getMBeanServer(), "jgroups:name=GossipRouter");
         }
         catch(Exception ex) {
-            log.error("MBean de-registration failed", ex);
+            log.error(Util.getMessage("MBeanDeRegistrationFailed"), ex);
         }
         Util.close(server);
         log.debug("router stopped");
@@ -222,7 +222,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
                     route(group, dest, buf, offset, length);
                 }
                 catch(Throwable t) {
-                    log.error("failed reading request", t);
+                    log.error(Util.getMessage("FailedReadingRequest"), t);
                     return;
                 }
                 break;
@@ -277,7 +277,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
             return data;
         }
         catch(Exception ex) {
-            log.error("failed reading request", ex);
+            log.error(Util.getMessage("FailedReadingRequest"), ex);
             return null;
         }
     }

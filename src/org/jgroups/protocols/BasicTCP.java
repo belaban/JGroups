@@ -31,10 +31,12 @@ public abstract class BasicTCP extends TP implements Receiver {
     @Property(description="Max time connection can be idle before being reaped (in ms)")
     protected long        conn_expire_time=0; // max time a conn can be idle before being reaped
 
-    @Property(description="Should separate send queues be used for each connection")
-    protected boolean     use_send_queues=true;
-    
-    @Property(description="Max number of messages in a send queue")
+    @Deprecated
+    @Property(description="Should separate send queues be used for each connection",deprecatedMessage="will be removed in 4.0")
+    protected boolean     use_send_queues=false;
+
+    @Deprecated
+    @Property(description="Max number of messages in a send queue",deprecatedMessage="will be removed in 4.0")
     protected int         send_queue_size=2000;
     
     @Property(description="Receiver buffer size in bytes")
@@ -139,9 +141,7 @@ public abstract class BasicTCP extends TP implements Receiver {
 
     /** BaseServer.Receiver interface */
     public void receive(Address sender, byte[] data, int offset, int length) {
-        // no need to make a copy of the byte[] buffer as TcpServer already created a new buffer
-        // (https://issues.jboss.org/browse/JGRP-1935)
-        super.receive(sender, data, offset, length, false);
+        super.receive(sender, data, offset, length);
     }
 
     public void receive(Address sender, ByteBuffer buf) {

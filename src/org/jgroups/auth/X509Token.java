@@ -108,7 +108,7 @@ public class X509Token extends AuthToken {
     public boolean authenticate(AuthToken token, Message msg) {
         if (!this.valueSet) {
             if (log.isErrorEnabled()) {
-                log.error("X509Token not setup correctly - check token attrs");
+                log.error(Util.getMessage("X509TokenNotSetupCorrectlyCheckTokenAttrs"));
             }
             return false;
         }
@@ -118,7 +118,7 @@ public class X509Token extends AuthToken {
             X509Token serverToken = (X509Token) token;
             if (!serverToken.valueSet) {
                 if (log.isErrorEnabled()) {
-                    log.error("X509Token - received token not valid");
+                    log.error(Util.getMessage("X509TokenReceivedTokenNotValid"));
                 }
                 return false;
             }

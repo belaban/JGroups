@@ -29,13 +29,14 @@ public class TCP_NIO2 extends BasicTCP {
     @Property(description="The max number of outgoing messages that can get queued for a given peer connection " +
       "(before dropping them). Most messages will ge retransmitted; this is mainly used at startup, e.g. to prevent " +
       "dropped discovery requests or responses (sent unreliably, without retransmission).")
-    protected int max_send_buffers=5;
+    protected int     max_send_buffers=10;
 
-    @Property(description="Max number of messages a read will try to read from the socket. Setting this to a higher " +
-      "value will increase speed when receiving a lot of messages. However, when the receive message rate is small, " +
-      "then every read will create an array of max_read_batch_size messages.")
-    protected int max_read_batch_size=10;
+    @Property(description="If true, a partial write will make a copy of the data so a buffer can be reused")
+    protected boolean copy_on_partial_write=true;
 
+    @Property(description="Number of ms a reader thread on a given connection can be idle (not receiving any messages) " +
+      "until it terminates. New messages will start a new reader")
+    protected long    reader_idle_time=5000;
 
 
     public TCP_NIO2() {}
@@ -55,19 +56,6 @@ public class TCP_NIO2 extends BasicTCP {
         server.clearConnections();
     }
 
-    @ManagedAttribute
-    public int maxReadBatchSize() {
-        int tmp=server.maxReadBatchSize();
-        if(tmp != max_read_batch_size)
-            max_read_batch_size=tmp;
-        return max_read_batch_size;
-    }
-
-    @ManagedAttribute
-    public void maxReadBatchSize(int size) {
-        this.max_read_batch_size=size;
-        server.maxReadBatchSize(size);
-    }
 
     @ManagedAttribute(description="Is the selector open")
     public boolean isSelectorOpen() {return server != null && server.selectorOpen();}
@@ -77,6 +65,16 @@ public class TCP_NIO2 extends BasicTCP {
 
     @ManagedAttribute(description="Number of times select() was called")
     public int     numSelects() {return server != null? server.numSelects() : -1;}
+
+    @ManagedAttribute(description="Number of partial writes for all connections (not all bytes were written)")
+    public int     numPartialWrites() {return server.numPartialWrites();}
+
+    @ManagedAttribute(description="Number of ms a reader thread on a given connection can be idle (not receiving any messages) " +
+      "until it terminates. New messages will start a new reader")
+    public void readerIdleTime(long t) {
+        this.reader_idle_time=t;
+        server.readerIdleTime(t);
+    }
 
 
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
@@ -105,8 +103,9 @@ public class TCP_NIO2 extends BasicTCP {
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
           .log(this.log))
-          .maxSendBuffers(max_send_buffers).maxReadBatchSize(this.max_read_batch_size)
-          .usePeerConnections(true);
+          .maxSendBuffers(max_send_buffers).usePeerConnections(true);
+        server.copyOnPartialWrite(this.copy_on_partial_write)
+          .readerIdleTime(this.reader_idle_time);
 
         if(reaper_interval > 0 || conn_expire_time > 0) {
             if(reaper_interval == 0) {
@@ -120,7 +119,6 @@ public class TCP_NIO2 extends BasicTCP {
             server.connExpireTimeout(conn_expire_time).reaperInterval(reaper_interval);
         }
 
-        // we first start threads in TP (http://jira.jboss.com/jira/browse/JGRP-626)
         super.start();
     }
     

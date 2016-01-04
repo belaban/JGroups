@@ -396,7 +396,7 @@ public class RequestCorrelator {
                                 Util.objectFromByteBuffer(buf, offset, length);
                     }
                     catch(Exception e) {
-                        log.error("failed unmarshalling buffer into return value", e);
+                        log.error(Util.getMessage("FailedUnmarshallingBufferIntoReturnValue"), e);
                         retval=e;
                         is_exception=true;
                     }
@@ -406,7 +406,7 @@ public class RequestCorrelator {
 
             default:
                 msg.getHeader(this.id);
-                if(log.isErrorEnabled()) log.error("header's type is neither REQ nor RSP !");
+                if(log.isErrorEnabled()) log.error(Util.getMessage("HeaderSTypeIsNeitherREQNorRSP"));
                 break;
         }
 
@@ -486,31 +486,27 @@ public class RequestCorrelator {
 
 
     protected void sendReply(final Message req, final long req_id, Object reply, boolean is_exception) {
-        Object rsp_buf; // either byte[] or Buffer
+        Buffer rsp_buf;
         try {  // retval could be an exception, or a real value
-            rsp_buf=marshaller != null? marshaller.objectToBuffer(reply) : Util.objectToByteBuffer(reply);
+            rsp_buf=marshaller != null? marshaller.objectToBuffer(reply) : Util.objectToBuffer(reply);
         }
         catch(Throwable t) {
             try {  // this call should succeed (all exceptions are serializable)
-                rsp_buf=marshaller != null? marshaller.objectToBuffer(t) : Util.objectToByteBuffer(t);
+                rsp_buf=marshaller != null? marshaller.objectToBuffer(t) : Util.objectToBuffer(t);
                 is_exception=true;
             }
             catch(NotSerializableException not_serializable) {
-                if(log.isErrorEnabled()) log.error("failed marshalling rsp (" + reply + "): not serializable");
+                if(log.isErrorEnabled()) log.error(Util.getMessage("FailedMarshallingRsp") + reply + "): not serializable");
                 return;
             }
             catch(Throwable tt) {
-                if(log.isErrorEnabled()) log.error("failed marshalling rsp (" + reply + "): " + tt);
+                if(log.isErrorEnabled()) log.error(Util.getMessage("FailedMarshallingRsp") + reply + "): " + tt);
                 return;
             }
         }
 
-        Message rsp=req.makeReply().setFlag(req.getFlags())
+        Message rsp=req.makeReply().setFlag(req.getFlags()).setBuffer(rsp_buf)
           .clearFlag(Message.Flag.RSVP, Message.Flag.SCOPED, Message.Flag.INTERNAL); // JGRP-1940
-        if(rsp_buf instanceof Buffer)
-            rsp.setBuffer((Buffer)rsp_buf);
-        else if(rsp_buf instanceof byte[])
-            rsp.setBuffer((byte[])rsp_buf);
 
        sendResponse(rsp, req_id, is_exception);
     }

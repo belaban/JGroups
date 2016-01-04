@@ -42,7 +42,7 @@ public class MessageTest {
     }
 
 
-    public static void testSettingMultipleFlags() {
+    public void testSettingMultipleFlags() {
         Message msg=new Message();
         msg.setFlag((Message.Flag[])null);
         assert msg.getFlags() == 0;
@@ -403,7 +403,7 @@ public class MessageTest {
     }
 
 
-    public static void testSizeMessageWithDestAndSrcAndHeaders() throws Exception {
+    public void testSizeMessageWithDestAndSrcAndHeaders() throws Exception {
         Message msg=new Message(UUID.randomUUID(), UUID.randomUUID(), "bela".getBytes());
         addHeaders(msg);
         _testSize(msg);

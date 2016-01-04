@@ -4,10 +4,11 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.MERGE3;
+import org.jgroups.protocols.TCP_NIO2;
+import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -22,7 +23,7 @@ import java.util.Properties;
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class DiscardTest extends ChannelTestBase {
-    JChannel ch1, ch2;
+    JChannel a, b;
     static final long NUM_MSGS=10000;
     static final int MSG_SIZE=1000;
     private static final String GROUP="DiscardTest";
@@ -38,8 +39,13 @@ public class DiscardTest extends ChannelTestBase {
     }
     
     @AfterMethod
-    protected void tearDown() throws Exception{
-        Util.close(ch2,ch1);
+    protected void tearDown() throws Exception {
+        TP tp_a=a.getProtocolStack().getTransport(), tp_b=b.getProtocolStack().getTransport();
+        if(tp_a instanceof TCP_NIO2) {
+            System.out.printf("partial writes in A: %d, partial writes in B: %d\n",
+                              ((TCP_NIO2)tp_a).numPartialWrites(), ((TCP_NIO2)tp_b).numPartialWrites());
+        }
+        Util.close(b, a);
     }
 
     public void testDiscardProperties() throws Exception {
@@ -51,64 +57,50 @@ public class DiscardTest extends ChannelTestBase {
     }
 
     private void _testLosslessReception(boolean discard) throws Exception {
-        Address ch1_addr, ch2_addr;
         long start, stop;
 
-        ch1=createChannel(true);
-        ch1.setReceiver(new MyReceiver(ch1_all_received, NUM_MSGS, "ch1"));
-        ch2=createChannel(ch1);
-        ch2.setReceiver(new MyReceiver(ch2_all_received, NUM_MSGS, "ch2"));
+        a=createChannel(true).name("A");
+        a.setReceiver(new MyReceiver(ch1_all_received, NUM_MSGS, "A"));
+        b=createChannel(a).name("B");
+        b.setReceiver(new MyReceiver(ch2_all_received, NUM_MSGS, "B"));
+
+        a.connect(GROUP);
+        b.connect(GROUP);
+        Util.waitUntilAllChannelsHaveSameSize(10000, 500, a, b);
 
         if(discard) {
             DISCARD discard_prot=new DISCARD();
             Properties properties=new Properties();
             properties.setProperty("down", "0.1");
 
-            ch1.getProtocolStack().insertProtocol(discard_prot, ProtocolStack.BELOW, MERGE3.class);
+            a.getProtocolStack().insertProtocol(discard_prot, ProtocolStack.BELOW, MERGE3.class);
             discard_prot=new DISCARD();
             properties=new Properties();
             properties.setProperty("down", "0.1");
-            ch2.getProtocolStack().insertProtocol(discard_prot, ProtocolStack.BELOW, MERGE3.class);
+            b.getProtocolStack().insertProtocol(discard_prot, ProtocolStack.BELOW, MERGE3.class);
         }
 
-        ch1.connect(GROUP);
-        ch1_addr=ch1.getAddress();
-        ch2.connect(GROUP);
-        ch2_addr=ch2.getAddress();
-
-        Util.sleep(2000);
-        View v=ch2.getView();
-        System.out.println("**** ch2's view: " + v);
-        Assert.assertEquals(2, v.size());
-        assertTrue(v.getMembers().contains(ch1_addr));
-        assertTrue(v.getMembers().contains(ch2_addr));
-
-        System.out.println("sending " + NUM_MSGS + " 1K messages to all members (including myself)");
+        System.out.printf("sending %d %d-byte messages to all members (including myself)\n", NUM_MSGS, MSG_SIZE);
         start=System.currentTimeMillis();
         for(int i=0;i < NUM_MSGS;i++) {
             Message msg=createMessage(MSG_SIZE);
-            ch1.send(msg);
+            a.send(msg);
             if(i % 1000 == 0)
                 System.out.println("-- sent " + i + " messages");
         }
 
         System.out.println("-- waiting for ch1 and ch2 to receive " + NUM_MSGS + " messages");
         Long num_msgs;
-        num_msgs=ch1_all_received.getResult();
+        num_msgs=ch1_all_received.getResultWithTimeout(10000);
         System.out.println("-- received " + num_msgs + " messages on ch1");
 
-        num_msgs=ch2_all_received.getResult();
+        num_msgs=ch2_all_received.getResultWithTimeout(10000);
         stop=System.currentTimeMillis();
         System.out.println("-- received " + num_msgs + " messages on ch2");
 
         long diff=stop - start;
         double msgs_sec=NUM_MSGS / (diff / 1000.0);
-        System.out.println("== Sent and received " + NUM_MSGS
-                           + " in "
-                           + diff
-                           + "ms, "
-                           + msgs_sec
-                           + " msgs/sec");
+        System.out.printf("== Sent and received %d in %d ms, %.2f msgs/sec\n", NUM_MSGS, diff, msgs_sec);
     }
 
     static class MyReceiver extends ReceiverAdapter {
@@ -130,19 +122,17 @@ public class DiscardTest extends ChannelTestBase {
             num_msgs++;
 
             if(num_msgs > 0 && num_msgs % 1000 == 0)
-                System.out.println("-- received " + num_msgs + " on " + channel_name);
+                System.out.printf("-- received %d on %s\n", num_msgs, channel_name);
 
             if(num_msgs >= num_msgs_expected) {
-                System.out.println("SUCCESS: received all " + num_msgs_expected
-                                   + " messages on "
-                                   + channel_name);
+                System.out.printf("SUCCESS: received all %d messages on %s\n", num_msgs_expected, channel_name);
                 operational=false;
-                p.setResult(new Long(num_msgs));
+                p.setResult(num_msgs);
             }
         }
 
         public void viewAccepted(View new_view) {
-            System.out.println("-- view (" + channel_name + "): " + new_view);
+            System.out.printf("-- view (%s): %s\n", channel_name, new_view);
         }
     }
 
@@ -150,7 +140,7 @@ public class DiscardTest extends ChannelTestBase {
         byte[] buf=new byte[size];
         for(int i=0;i < buf.length;i++)
             buf[i]=(byte)'x';
-        return new Message(null, null, buf);
+        return new Message(null, buf);
     }
 
 

@@ -605,7 +605,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             case NakAckHeader.XMIT_REQ:
                 if(hdr.range == null) {
                     if(log.isErrorEnabled()) {
-                        log.error("XMIT_REQ: range of xmit msg is null; discarding request from " + msg.getSrc());
+                        log.error(Util.getMessage("XMITREQRangeOfXmitMsgIsNull"), msg.getSrc());
                     }
                     return null;
                 }
@@ -618,7 +618,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             default:
                 if(log.isErrorEnabled()) {
-                    log.error("NakAck header type " + hdr.type + " not known !");
+                    log.error(Util.getMessage("NakAckHeaderType"), hdr.type);
                 }
                 return null;
             }
@@ -705,7 +705,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         Address sender=msg.getSrc();
         if(sender == null) {
             if(log.isErrorEnabled())
-                log.error("sender of message is null");
+                log.error(Util.getMessage("SenderOfMessageIsNull"));
             return;
         }
 
@@ -744,7 +744,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                         up_prot.up(new Event(Event.MSG, msg));
                     }
                     catch(Throwable t) {
-                        log.error("failed to deliver OOB message " + msg, t);
+                        log.error(Util.getMessage("FailedToDeliverOOBMessage"), msg, t);
                     }
                 }
             }
@@ -790,7 +790,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                         up_prot.up(new Event(Event.MSG, msg_to_deliver));
                     }
                     catch(Throwable t) {
-                        log.error("failed to deliver message " + msg_to_deliver, t);
+                        log.error(Util.getMessage("FailedToDeliverMessage"), msg_to_deliver, t);
                     }
                 }
             }
@@ -926,7 +926,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private void sendXmitRsp(Address dest, Message msg) {
         if(msg == null) {
             if(log.isErrorEnabled())
-                log.error("message is null, cannot send retransmission");
+                log.error(Util.getMessage("MessageIsNullCannotSendRetransmission"));
             return;
         }
 
@@ -968,7 +968,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
         catch(Exception ex) {
             if(log.isErrorEnabled()) {
-                log.error("failed reading retransmitted message", ex);
+                log.error(Util.getMessage("FailedReadingRetransmittedMessage"), ex);
             }
         }
     }
@@ -1201,7 +1201,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         StringBuilder sb=new StringBuilder(merge? "\n[" + local_addr + " mergeDigest()]\n" : "\n["+local_addr + " setDigest()]\n");
         sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
-        
+
         boolean set_own_seqno=false;
         for(Digest.Entry entry: digest) {
             Address member=entry.getMember();

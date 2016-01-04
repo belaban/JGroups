@@ -291,7 +291,7 @@ public class FILE_PING extends Discovery {
             write(list, new FileOutputStream(destination));
         }
         catch(Exception ioe) {
-            log.error("attempt to write data failed at " + clustername + " : " + destination.getName(), ioe);
+            log.error(Util.getMessage("AttemptToWriteDataFailedAt") + clustername + " : " + destination.getName(), ioe);
             deleteFile(destination);
         }
     }
@@ -319,7 +319,7 @@ public class FILE_PING extends Discovery {
                 log.trace("Deleted file result: "+file.getAbsolutePath() +" : "+result);
             }
             catch(Throwable e) {
-                log.error("Failed to delete file: " + file.getAbsolutePath(), e);
+                log.error(Util.getMessage("FailedToDeleteFile") + file.getAbsolutePath(), e);
             }
         }
         return result;

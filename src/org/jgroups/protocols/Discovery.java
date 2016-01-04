@@ -169,7 +169,7 @@ public abstract class Discovery extends Protocol {
     public Discovery forceDiscoveryResponses(boolean f) {force_sending_discovery_rsps=f; return this;}
     public boolean   useDiskCache()                     {return use_disk_cache;}
     public Discovery useDiskCache(boolean flag)         {use_disk_cache=flag; return this;}
-
+    public Discovery discoveryRspExpiryTime(long t)     {this.discovery_rsp_expiry_time=t; return this;}
 
 
 
@@ -242,6 +242,7 @@ public abstract class Discovery extends Protocol {
         }
         else
             findMembers(members, initial_discovery, rsps);
+        weedOutCompletedDiscoveryResponses();
         return rsps;
     }
 
@@ -473,7 +474,7 @@ public abstract class Discovery extends Protocol {
                     retval.add(new PingData(uuid, true, name_str, phys_addr).coord(is_coordinator));
                 }
                 catch(Throwable t) {
-                    log.error("failed reading line of input stream", t);
+                    log.error(Util.getMessage("FailedReadingLineOfInputStream"), t);
                 }
             }
             return retval;
@@ -523,6 +524,22 @@ public abstract class Discovery extends Protocol {
         }
     }
 
+    /** Removes responses which are done or whose timeout has expired (in the latter case, an expired response is marked as done) */
+    @ManagedOperation(description="Removes expired or completed responses")
+    public void weedOutCompletedDiscoveryResponses() {
+        synchronized(ping_responses) {
+            for(Iterator<Map.Entry<Long,Responses>> it=ping_responses.entrySet().iterator(); it.hasNext();) {
+                Map.Entry<Long,Responses> entry=it.next();
+                long timestamp=entry.getKey();
+                Responses rsps=entry.getValue();
+                if(rsps.isDone() || TimeUnit.MILLISECONDS.convert(System.nanoTime() - timestamp, TimeUnit.NANOSECONDS) > discovery_rsp_expiry_time) {
+                    it.remove();
+                    rsps.done();
+                }
+            }
+        }
+    }
+
 
     protected boolean addDiscoveryResponseToCaches(Address mbr, String logical_name, PhysicalAddress physical_addr) {
         if(mbr == null)
@@ -550,7 +567,7 @@ public abstract class Discovery extends Protocol {
             return Util.streamableToByteBuffer(clone);
         }
         catch(Exception e) {
-            log.error("error serializing PingData", e);
+            log.error(Util.getMessage("ErrorSerializingPingData"), e);
             return null;
         }
     }

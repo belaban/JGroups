@@ -17,7 +17,9 @@ ANT is currently used. In <<BuildingJGroups>> we'll show how to build JGroups fr
 [[Requirements]]
 === Requirements
 
-* JGroups 3.x requires JDK 6 or higher.
+* JGroups up to (and including) 3.5.0.Final requires JDK 6.
+* JGroups 3.6.x to (excluding) 4.0 requires JDK 7.
+* JGroups 4.0 will require JDK 8.
 * There is no JNI code present so JGroups should run on all platforms.
 * Logging: by default, JGroups tries to use log4j2. If the classes are not found on the classpath, it
   resorts to log4j, and if still not found, it falls back to java.util.logging logger.

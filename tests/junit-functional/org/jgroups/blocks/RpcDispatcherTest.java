@@ -79,13 +79,7 @@ public class RpcDispatcherTest {
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        if(disp3 != null)
-            disp3.stop();
-        if(disp2 != null)
-            disp2.stop();
-        if(disp1 != null)
-            disp1.stop();
-        Util.close(c,b,a);
+        Util.close(disp3,disp2,disp1,c,b,a);
     }
 
     public void testEmptyConstructor() throws Exception {

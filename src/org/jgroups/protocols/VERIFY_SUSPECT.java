@@ -98,7 +98,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             case Event.SUSPECT:  // it all starts here ...
                 Address suspected_mbr=(Address)evt.getArg();
                 if(suspected_mbr == null) {
-                    if(log.isErrorEnabled()) log.error("suspected member is null");
+                    if(log.isErrorEnabled()) log.error(Util.getMessage("SuspectedMemberIsNull"));
                     return null;
                 }
 
@@ -123,7 +123,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                 switch(hdr.type) {
                     case VerifyHeader.ARE_YOU_DEAD:
                         if(hdr.from == null) {
-                            if(log.isErrorEnabled()) log.error("ARE_YOU_DEAD: hdr.from is null");
+                            if(log.isErrorEnabled()) log.error(Util.getMessage("AREYOUDEADHdrFromIsNull"));
                         }
                         else {
                             Message rsp;
@@ -137,7 +137,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                         return null;
                     case VerifyHeader.I_AM_NOT_DEAD:
                         if(hdr.from == null) {
-                            if(log.isErrorEnabled()) log.error("I_AM_NOT_DEAD: hdr.from is null");
+                            if(log.isErrorEnabled()) log.error(Util.getMessage("IAMNOTDEADHdrFromIsNull"));
                             return null;
                         }
                         unsuspect(hdr.from);
@@ -240,7 +240,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         }
         catch(Exception ex) {
             if(log.isErrorEnabled())
-                log.error("failed pinging " + suspected_mbr, ex);
+                log.error(Util.getMessage("FailedPinging"),suspected_mbr, ex);
         }
     }
 

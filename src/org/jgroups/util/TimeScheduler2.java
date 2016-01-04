@@ -244,7 +244,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                 _run();
             }
             catch(Throwable t) {
-                log.error("failed executing tasks(s)", t);
+                log.error(Util.getMessage("FailedExecutingTasksS"), t);
             }
         }
     }
@@ -400,7 +400,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                             tmp.run();
                         }
                         catch(Throwable t) {
-                            log.error("task execution failed", t);
+                            log.error(Util.getMessage("TaskExecutionFailed"), t);
                         }
                         finally {
                             tmp.done=true;
@@ -495,7 +495,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                 task.run();
             }
             catch(Throwable t) {
-                log.error("failed executing task " + task, t);
+                log.error(Util.getMessage("FailedExecutingTask") + task, t);
             }
             finally {
                 done=true;
@@ -563,7 +563,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
                 task.run();
             }
             catch(Throwable t) {
-                log.error("failed running task " + task, t);
+                log.error(Util.getMessage("FailedRunningTask") + task, t);
             }
             if(!cancelled)
                 doSchedule();

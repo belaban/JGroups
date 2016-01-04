@@ -45,7 +45,7 @@ public class ByteArrayDataOutputStream implements DataOutput {
 
     public void write(byte[] b, int off, int len) {
         if ((off < 0) || (off > b.length) || (len < 0) || ((off + len) - b.length > 0))
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException(String.format("off=%d, len=%d, b.length=%d", off, len, b.length));
         ensureCapacity(len);
 
         System.arraycopy(b, off, buf, pos, len);

@@ -208,7 +208,7 @@ public class PDC extends Protocol {
                 log.trace("Moved: " + tmpFile.getName() + "->" + destination.getName());
         }
         catch(Exception ioe) {
-            log.error("attempt to move failed at: " + tmpFile.getName() + "->" + destination.getName(), ioe);
+            log.error(Util.getMessage("AttemptToMoveFailedAt") + tmpFile.getName() + "->" + destination.getName(), ioe);
         }
         finally {
             deleteFile(tmpFile);
@@ -241,7 +241,7 @@ public class PDC extends Protocol {
         }
         catch(Exception e) {
             Util.close(out);
-            log.error("Failed to write temporary file: " + filename, e);
+            log.error(Util.getMessage("FailedToWriteTemporaryFile") + filename, e);
             deleteFile(file);
             return null;
         }
@@ -283,7 +283,7 @@ public class PDC extends Protocol {
                     log.trace("Deleted file result: "+file.getAbsolutePath() +" : "+result);
             }
             catch(Throwable e) {
-                log.error("Failed to delete file: " + file.getAbsolutePath(), e);
+                log.error(Util.getMessage("FailedToDeleteFile") + file.getAbsolutePath(), e);
             }
         }
         return result;

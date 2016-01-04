@@ -8,6 +8,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Util;
 
 import javax.management.*;
 import java.util.List;
@@ -167,7 +168,7 @@ public class JmxConfigurator {
                     server.unregisterMBean(objName);
                 }
                 catch(InstanceNotFoundException e) {
-                    log.error("failed to unregister MBean " + e.getMessage());
+                    log.error(Util.getMessage("FailedToUnregisterMBean") + e.getMessage());
                 }
             }
 

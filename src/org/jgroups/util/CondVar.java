@@ -60,7 +60,6 @@ public class CondVar {
         try {
             for(long wait_time=timeout_ns, start=System.nanoTime(); wait_time > 0 && !condition.isMet();) {
                 try {
-                    // System.out.println("wait(" + TimeUnit.MILLISECONDS.convert(wait_time,TimeUnit.NANOSECONDS) + ")");
                     wait_time=cond.awaitNanos(wait_time);
                 }
                 catch(InterruptedException e) {
