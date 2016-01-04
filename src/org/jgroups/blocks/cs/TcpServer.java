@@ -21,12 +21,10 @@ public class TcpServer extends TcpBaseServer {
 
 
     /**
-     * Creates an instance of {@link TcpServer} that creates a server socket and listens for connections
+     * Creates an instance of {@link TcpServer} that creates a server socket and listens for connections.
+     * The end port defaults to (port + 50).  Needs to be started next.
      * @param bind_addr The local address to bind to. If null, the address will be picked by the OS
      * @param port The local port to bind to. If 0, the port will be picked by the OS.
-     * @param port If srv_port is taken, the next port is tried, until end_port has been reached, in which case an
-     *             exception will be thrown. If srv_port == end_port, only 1 port will be tried.
-     * @return An instance of {@link TcpServer}. Needs to be started next.
      * @throws Exception Thrown if the creation failed
      */
     public TcpServer(InetAddress bind_addr, int port) throws Exception {
@@ -60,6 +58,7 @@ public class TcpServer extends TcpBaseServer {
 
     /**
      * Creates an instance of {@link TcpServer} that creates a server socket and listens for connections
+     * Needs to be started next.
      * @param thread_factory The thread factory used to create new threads
      * @param socket_factory The socket factory used to create sockets
      * @param bind_addr The local address to bind to. If null, the address will be picked by the OS
@@ -68,7 +67,6 @@ public class TcpServer extends TcpBaseServer {
      *                 exception will be thrown. If srv_port == end_port, only 1 port will be tried.
      * @param external_addr The external address in case of NAT. Ignored if null.
      * @param external_port The external port on the NA. If 0, srv_port is used.
-     * @return An instance of {@link TcpServer}. Needs to be started next.
      * @throws Exception Thrown if the creation failed
      */
     public TcpServer(ThreadFactory thread_factory, SocketFactory socket_factory,

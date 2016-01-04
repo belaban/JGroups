@@ -166,7 +166,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     /**
      * Schedule a task for execution at varying intervals. After execution, the task will get rescheduled after
-     * {@link org.jgroups.util.TimeScheduler2.Task#nextInterval()} milliseconds. The task is neve done until nextInterval()
+     * {@link org.jgroups.util.TimeScheduler2.RecurringTask#nextInterval()} milliseconds. The task is never done until nextInterval()
      * return a value <= 0 or the task is cancelled.
      * @param task the task to execute
      * Task is rescheduled relative to the last time it <i>actually</i> started execution<p/>

@@ -86,9 +86,9 @@ abstract public class Executing extends Protocol {
     /**
      * This is a server side store of all the barriers for respective tasks 
      * requests.  When a consumer is starting up they should create a latch
-     * place in map with it's id and wait on it until a request comes in to
-     * wake it up it would only then touch the {@link _tasks} map.  A requestor
-     * should first place in the {@link _tasks} map and then create a latch
+     * place in map with its id and wait on it until a request comes in to
+     * wake it up it would only then touch the {@link Executing#_tasks} map.  A requestor
+     * should first place in the {@link Executing#_tasks} map and then create a latch
      * and notify the consumer
      */
     protected ConcurrentMap<Long, CyclicBarrier> _taskBarriers = 

@@ -27,7 +27,6 @@ public class NioClient extends NioBaseServer implements Client {
      * the client and server.
      * @param bind_addr The address to which the local channel should bind to. Can be null, then the OS picks the address
      * @param server_addr The address of the server to connect to
-     * @return An instance of {@link NioClient}
      * @throws Exception If the creation failed
     */
     public NioClient(IpAddress bind_addr, IpAddress server_addr) {
@@ -46,7 +45,6 @@ public class NioClient extends NioBaseServer implements Client {
      * @param bind_port The local port. Can be 0, then the OS picks the port.
      * @param server_addr The address of the server to connect to
      * @param server_port The port of the server to connect to.
-     * @return An instance of {@link NioClient}
      * @throws Exception If the creation failed
     */
     public NioClient(InetAddress bind_addr, int bind_port, InetAddress server_addr, int server_port) {

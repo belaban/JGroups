@@ -82,7 +82,6 @@ public class DefaultRetransmitter extends Retransmitter {
      * Removes the given seqno and all seqnos lower than it
      * @param seqno
      * @param remove_all_below If true, all seqnos below seqno are removed, too
-     * @return
      */
     public void remove(long seqno, boolean remove_all_below) {
         if(!remove_all_below) {
