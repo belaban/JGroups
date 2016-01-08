@@ -1,15 +1,12 @@
 package org.jgroups.blocks.mux;
 
-import java.util.Collection;
-
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.blocks.RequestCorrelator;
-import org.jgroups.blocks.RequestHandler;
-import org.jgroups.blocks.RspCollector;
-import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.Protocol;
+
+import java.util.Collection;
 
 /**
  * A request correlator that adds a mux header to incoming and outgoing messages.
@@ -28,15 +25,15 @@ public class MuxRequestCorrelator extends RequestCorrelator {
     }
 
     @Override
-    public void sendRequest(long requestId, Collection<Address> dest_mbrs, Message msg, RspCollector coll, RequestOptions options) throws Exception {
+    public void sendRequest(Collection<Address> dest_mbrs, Message msg, Request req, RequestOptions options) throws Exception {
         msg.putHeader(MUX_ID, header);
-        super.sendRequest(requestId, dest_mbrs, msg, coll, options);
+        super.sendRequest(dest_mbrs, msg, req, options);
     }
 
     @Override
-    public void sendUnicastRequest(long id, Address target, Message msg, RspCollector coll) throws Exception {
+    public void sendUnicastRequest(Address target, Message msg, Request req) throws Exception {
         msg.putHeader(MUX_ID, header);
-        super.sendUnicastRequest(id, target, msg, coll);
+        super.sendUnicastRequest(target, msg, req);
     }
 
     @Override

@@ -14,7 +14,6 @@ import org.jgroups.util.Util;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -24,26 +23,18 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author Bela Ban
  */
-public abstract class Request implements RspCollector, NotifyingFuture, org.jgroups.util.Condition {
+public abstract class Request implements NotifyingFuture, org.jgroups.util.Condition {
     protected static final Log        log=LogFactory.getLog(Request.class);
-
-    /** To generate unique request IDs (see getRequestId()) */
-    protected static final AtomicLong REQUEST_ID=new AtomicLong(1);
 
     protected final Lock              lock=new ReentrantLock();
 
     /** Is set as soon as the request has received all required responses */
     protected final CondVar           cond=new CondVar(lock);
-
     protected final Message           request_msg;
     protected final RequestCorrelator corr;         // either use RequestCorrelator or ...
-
     protected final RequestOptions    options;
-
     protected volatile boolean        done;
     protected boolean                 block_for_results=true;
-    protected final long              req_id; // request ID for this request
-
     protected volatile FutureListener listener;
 
 
@@ -52,7 +43,6 @@ public abstract class Request implements RspCollector, NotifyingFuture, org.jgro
         this.request_msg=request;
         this.corr=corr;
         this.options=options;
-        this.req_id=getRequestId();
     }
 
 
@@ -105,6 +95,8 @@ public abstract class Request implements RspCollector, NotifyingFuture, org.jgro
 
     public abstract void siteUnreachable(String site);
 
+    public abstract void transportClosed();
+
     public boolean isMet() {
         return responsesComplete();
     }
@@ -129,7 +121,7 @@ public abstract class Request implements RspCollector, NotifyingFuture, org.jgro
             boolean retval=!done;
             done=true;
             if(corr != null)
-                corr.done(req_id);
+                corr.done(this);
             cond.signal(true);
             return retval;
         }
@@ -157,7 +149,7 @@ public abstract class Request implements RspCollector, NotifyingFuture, org.jgro
     public String toString() {
         StringBuilder ret=new StringBuilder(128);
         ret.append(super.toString());
-        ret.append(", req_id=").append(req_id).append(", mode=" + options.getMode());
+        ret.append(", mode=" + options.getMode());
         return ret.toString();
     }
 
@@ -170,12 +162,8 @@ public abstract class Request implements RspCollector, NotifyingFuture, org.jgro
             listener.futureDone(future);
     }
 
-    /** Generates a new unique request ID */
-    protected static long getRequestId() {
-        return REQUEST_ID.incrementAndGet();
-    }
 
-    /** This method runs with lock locked (called by <code>execute()</code>). */
+    /** This method runs with lock locked (called by {@code execute()}). */
     @GuardedBy("lock")
     protected boolean responsesComplete(final long timeout) throws InterruptedException {
         try {
@@ -183,7 +171,7 @@ public abstract class Request implements RspCollector, NotifyingFuture, org.jgro
         }
         finally {
             if(corr != null)
-                corr.done(req_id);
+                corr.done(this);
         }
     }
 

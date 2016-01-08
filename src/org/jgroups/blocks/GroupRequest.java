@@ -19,36 +19,26 @@ import java.util.concurrent.TimeoutException;
 
 
 /**
- * Sends a message to all members of the group and waits for all responses (or
- * timeout). Returns a boolean value (success or failure). Results (if any) can
- * be retrieved when done.
+ * Sends a message to all members of the group and waits for all responses (or timeout). Returns a boolean value
+ * (success or failure). Results (if any) can be retrieved when done.
  * <p>
- * The supported transport to send requests is currently either a
- * RequestCorrelator or a generic Transport. One of them has to be given in the
- * constructor. It will then be used to send a request. When a message is
- * received by either one, the receiveResponse() of this class has to be called
- * (this class does not actively receive requests/responses itself). Also, when
- * a view change or suspicion is received, the methods viewChange() or suspect()
+ * The supported transport to send requests is currently either a RequestCorrelator or a generic Transport. One of
+ * them has to be given in the constructor. It will then be used to send a request. When a message is received by
+ * either one, the receiveResponse() of this class has to be called (this class does not actively receive
+ * requests/responses itself). Also, when a view change or suspicion is received, the methods viewChange() or suspect()
  * of this class have to be called.
  * <p>
- * When started, an array of responses, correlating to the membership, is
- * created. Each response is added to the corresponding field in the array. When
- * all fields have been set, the algorithm terminates. This algorithm can
- * optionally use a suspicion service (failure detector) to detect (and exclude
- * from the membership) fauly members. If no suspicion service is available,
- * timeouts can be used instead (see <code>execute()</code>). When done, a
+ * When started, an array of responses, correlating to the membership, is created. Each response is added to the
+ * corresponding field in the array. When all fields have been set, the algorithm terminates. This algorithm can
+ * optionally use a suspicion service (failure detector) to detect (and exclude from the membership) fauly members.
+ * If no suspicion service is available, timeouts can be used instead (see {@code execute()}). When done, a
  * list of suspected members can be retrieved.
  * <p>
- * Because a channel might deliver requests, and responses to <em>different</em>
- * requests, the <code>GroupRequest</code> class cannot itself receive and
- * process requests/responses from the channel. A mechanism outside this class
+ * Because a channel might deliver requests, and responses to <em>different</em> requests, the {@code GroupRequest}
+ * class cannot itself receive and process requests/responses from the channel. A mechanism outside this class
  * has to do this; it has to determine what the responses are for the message
- * sent by the <code>execute()</code> method and call
- * <code>receiveResponse()</code> to do so.
- * <p>
- * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message
- * confirmation.
- * 
+ * sent by the {@code execute()} method and call {@code receiveResponse()} to do so.
+ *
  * @author Bela Ban
  */
 public class GroupRequest<T> extends Request {
@@ -69,8 +59,8 @@ public class GroupRequest<T> extends Request {
      /**
      * @param msg The message to be sent
      * @param corr The request correlator to be used. A request correlator sends requests tagged with a unique ID and
-     *             notifies the sender when matching responses are received. The reason <code>GroupRequest</code> uses
-     *             it instead of a <code>Transport</code> is that multiple requests/responses might be sent/received concurrently
+     *             notifies the sender when matching responses are received. The reason {@code GroupRequest} uses
+     *             it instead of a {@code Transport} is that multiple requests/responses might be sent/received concurrently
      * @param targets The targets, which are supposed to receive the message. Any receiver not in this set will
      *                discard the message. Targets are always a subset of the current membership
      * @param options The request options to be used for this call
@@ -100,14 +90,13 @@ public class GroupRequest<T> extends Request {
 
 
     public void sendRequest() throws Exception {
-        sendRequest(requests.keySet(), req_id);
+        sendRequest(requests.keySet());
     }
 
     /* ---------------------- Interface RspCollector -------------------------- */
     /**
      * <b>Callback</b> (called by RequestCorrelator or Transport).
-     * Adds a response to the response table. When all responses have been received,
-     * <code>execute()</code> returns.
+     * Adds a response to the response table. When all responses have been received, {@code execute()} returns.
      */
     @SuppressWarnings("unchecked")
     public void receiveResponse(Object response_value, Address sender, boolean is_exception) {
@@ -138,7 +127,7 @@ public class GroupRequest<T> extends Request {
             if(responseReceived || done)
                 cond.signal(true); // wakes up execute()
             if(done && corr != null)
-                corr.done(req_id);
+                corr.done(this);
         }
         finally {
             lock.unlock();
@@ -150,7 +139,7 @@ public class GroupRequest<T> extends Request {
 
     /**
      * <b>Callback</b> (called by RequestCorrelator or Transport).
-     * Report to <code>GroupRequest</code> that a member is reported as faulty (suspected).
+     * Report to {@code GroupRequest} that a member is reported as faulty (suspected).
      * This method would probably be called when getting a suspect message from a failure detector
      * (where available). It is used to exclude faulty members from the response list.
      */
@@ -355,13 +344,13 @@ public class GroupRequest<T> extends Request {
     }
 
 
-    private void sendRequest(final Collection<Address> targetMembers, long requestId) throws Exception {
+    private void sendRequest(final Collection<Address> targetMembers) throws Exception {
         try {
-            corr.sendRequest(requestId, targetMembers, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this, options);
+            corr.sendRequest(targetMembers, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this, options);
         }
         catch(Exception ex) {
             if(corr != null)
-                corr.done(requestId);
+                corr.done(this);
             throw ex;
         }
     }

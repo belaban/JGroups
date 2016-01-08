@@ -842,10 +842,10 @@ public class SizeTest {
     public static void testRequestCorrelatorHeader() throws Exception {
         RequestCorrelator.Header hdr;
 
-        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.REQ, 322649, false, (short)1000);
+        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.REQ, 0, (short)1000);
         _testSize(hdr);
 
-        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, true, (short)356);
+        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, (short)356);
 
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);
@@ -861,13 +861,13 @@ public class SizeTest {
         hdr=new RequestCorrelator.Header();
         hdr.readFrom(in);
 
-        Assert.assertEquals(322649, hdr.id);
-        assert hdr.rsp_expected;
+        Assert.assertEquals(322649, hdr.req_id);
+        assert hdr.rspExpected();
         Assert.assertEquals((short)356, hdr.corrId);
         Assert.assertEquals(RequestCorrelator.Header.RSP, hdr.type);
 
 
-        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, true, (short)356);
+        hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, (short)356);
 
         output=new ByteArrayOutputStream();
         out=new DataOutputStream(output);
@@ -883,14 +883,14 @@ public class SizeTest {
         hdr=new RequestCorrelator.Header();
         hdr.readFrom(in);
 
-        Assert.assertEquals(322649, hdr.id);
-        assert hdr.rsp_expected;
+        Assert.assertEquals(322649, hdr.req_id);
+        assert hdr.rspExpected();
         Assert.assertEquals(356, hdr.corrId);
         Assert.assertEquals(RequestCorrelator.Header.RSP, hdr.type);
 
         Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B");
 
-        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.REQ, 322649, true, (short)22, new Address[]{a,b});
+        hdr=new RequestCorrelator.MultiDestinationHeader(RequestCorrelator.Header.REQ, 322649, (short)22, new Address[]{a,b});
         _testSize(hdr);
     }
 

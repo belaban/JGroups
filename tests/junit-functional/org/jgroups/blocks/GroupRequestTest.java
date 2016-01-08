@@ -1,11 +1,9 @@
 
 package org.jgroups.blocks;
 
-import org.jgroups.Address;
-import org.jgroups.Global;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.relay.SiteUUID;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.RspList;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
@@ -383,18 +381,24 @@ public class GroupRequestTest {
             this.async=async;
             this.responses=responses;
             this.delay=delay;
+            this.transport=new Protocol() {
+                public Object down(Event evt) {
+                    return null;
+                }
+            };
         }
 
         public void setGroupRequest(GroupRequest r) {
             request=r;
         }
 
-
-        public void sendRequest(long id, List<Address> dest_mbrs, Message msg, RspCollector coll) throws Exception {
+        @Override
+        public void sendRequest(List<Address> dest_mbrs, Message msg, Request req) throws Exception {
             send();
         }
 
-        public void sendRequest(long id, Collection<Address> dest_mbrs, Message msg, RspCollector coll, RequestOptions options) throws Exception {
+        @Override
+        public void sendRequest(Collection<Address> dest_mbrs, Message msg, Request req, RequestOptions options) throws Exception {
             send();
         }
 

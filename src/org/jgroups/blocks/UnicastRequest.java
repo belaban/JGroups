@@ -39,12 +39,11 @@ public class UnicastRequest<T> extends Request {
 
     protected void sendRequest() throws Exception {
         try {
-            if(log.isTraceEnabled()) log.trace(new StringBuilder("sending request (id=").append(req_id).append(')'));
-            corr.sendUnicastRequest(req_id, target, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this);
+            corr.sendUnicastRequest(target, request_msg, options.getMode() == ResponseMode.GET_NONE? null : this);
         }
         catch(Exception ex) {
             if(corr != null)
-                corr.done(req_id);
+                corr.done(this);
             throw ex;
         }
     }
@@ -53,8 +52,7 @@ public class UnicastRequest<T> extends Request {
     /* ---------------------- Interface RspCollector -------------------------- */
     /**
      * <b>Callback</b> (called by RequestCorrelator or Transport).
-     * Adds a response to the response table. When all responses have been received,
-     * <code>execute()</code> returns.
+     * Adds a response to the response table. When all responses have been received, {@code execute()} returns.
      */
     public void receiveResponse(Object response_value, Address sender, boolean is_exception) {
         RspFilter rsp_filter=options.getRspFilter();
@@ -74,7 +72,7 @@ public class UnicastRequest<T> extends Request {
             }
             done=responsesComplete() || (rsp_filter != null && !rsp_filter.needMoreResponses());
             if(done && corr != null)
-                corr.done(req_id);
+                corr.done(this);
         }
         finally {
             cond.signal(true); // wakes up execute()
@@ -88,7 +86,7 @@ public class UnicastRequest<T> extends Request {
 
     /**
      * <b>Callback</b> (called by RequestCorrelator or Transport).
-     * Report to <code>GroupRequest</code> that a member is reported as faulty (suspected).
+     * Report to {@code GroupRequest} that a member is reported as faulty (suspected).
      * This method would probably be called when getting a suspect message from a failure detector
      * (where available). It is used to exclude faulty members from the response list.
      */
@@ -104,7 +102,7 @@ public class UnicastRequest<T> extends Request {
                 result.setSuspected();
             done=true;
             if(corr != null)
-                corr.done(req_id);
+                corr.done(this);
             cond.signal(true);
         }
         finally {
@@ -128,7 +126,7 @@ public class UnicastRequest<T> extends Request {
                 result.setUnreachable();
             done=true;
             if(corr != null)
-                corr.done(req_id);
+                corr.done(this);
             cond.signal(true);
         }
         finally {
@@ -153,7 +151,7 @@ public class UnicastRequest<T> extends Request {
                 result.setSuspected();
                 done=true;
                 if(corr != null)
-                    corr.done(req_id);
+                    corr.done(this);
                 cond.signal(true);
             }
         }
@@ -173,7 +171,7 @@ public class UnicastRequest<T> extends Request {
                 result.setException(new IllegalStateException("transport was closed"));
             done=true;
             if(corr != null)
-                corr.done(req_id);
+                corr.done(this);
             cond.signal(true);
         }
         finally {
