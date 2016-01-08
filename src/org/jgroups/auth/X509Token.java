@@ -169,9 +169,6 @@ public class X509Token extends AuthToken {
     /**
      * Used during setup to get the certification from the keystore and encrypt the auth_value with
      * the private key
-     * 
-     * @return true if the certificate was found and the string encypted correctly otherwise returns
-     *         false
      */
     public void setCertificate() throws KeyStoreException, IOException, NoSuchAlgorithmException,
                     CertificateException, NoSuchPaddingException, InvalidKeyException,

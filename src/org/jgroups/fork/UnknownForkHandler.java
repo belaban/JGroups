@@ -19,7 +19,7 @@ public interface UnknownForkHandler {
     /**
      * Handle a message that refers to an unknown fork channel
      * @param message an incoming message
-     * @param forkStackId the identifier of a fork channel
+     * @param forkChannelId the identifier of a fork channel
      * @return the result of the up handler
      */
     Object handleUnknownForkChannel(Message message, String forkChannelId);
