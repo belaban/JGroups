@@ -31,13 +31,13 @@ public class TestAll extends ReceiverAdapter {
     private JChannel               channel;
     private Address                local_addr;
     private RpcDispatcher          disp;
-    static final String            groupname="ZABCluster";
-	private String propsFile = "conf/ZAB.xml";
-	private static String ProtocotName = "ZAB";
+    static final String            groupname="Cluster";
+	private String propsFile = "conf/Zab.xml";
+	private static String ProtocotName = "";
     protected final List<Address>  members=new ArrayList<Address>();
     protected final List<Address>  site_masters=new ArrayList<Address>();
     private List<String> boxMembers  = new ArrayList<String>();
-	private List<Address> zabBox = new ArrayList<Address>();
+	private List<Address> Box = new ArrayList<Address>();
     private String outputDir;
 	private View view;
 
@@ -102,9 +102,10 @@ public class TestAll extends ReceiverAdapter {
     }
 
 
-    public void init(List<String> zabMembers, String protocolName, String props,
+    public void init(List<String> Members, String protocolName, String props,
 			 int totalNum_msgs, int totalPerThreads, int num_threads,
-			 int msg_size, String outputDir, int numOfClients, int load, int numsOfWarmUpPerThread) throws Throwable {
+			 int msg_size, String outputDir, int numOfClients, int load, int numsOfWarmUpPerThread,
+			 int timeout, boolean sync) throws Throwable {
     	this.ProtocotName = protocolName;
     	this.propsFile = props;
     	this.num_msgs = totalNum_msgs;
@@ -115,6 +116,8 @@ public class TestAll extends ReceiverAdapter {
 		this.numOfClients = numOfClients;
 		this.load = load;
 		this.numsOfWarmUpPerThread = numsOfWarmUpPerThread;
+		this.timeout = timeout;
+		this.sync = sync;
 
         channel=new JChannel(propsFile);
         System.out.println("this.ProtocotName := " + this.ProtocotName+ " propsFile :="+propsFile+
@@ -127,9 +130,9 @@ public class TestAll extends ReceiverAdapter {
             }
         });
         disp.setRequestMarshaller(new CustomMarshaller());
-		channel.connect("ZABCLRPC");
+		channel.connect("CLRPC");
         local_addr=channel.getAddress();
-        this.boxMembers = zabMembers;
+        this.boxMembers = Members;
 
         try {
             MBeanServer server=Util.getMBeanServer();
@@ -146,7 +149,7 @@ public class TestAll extends ReceiverAdapter {
             Util.sleep(1);
 
         Address coord = pickCoordinator();
-        System.out.println("Coordinator := " + coord);
+        //System.out.println("Coordinator := " + coord);
 //        ConfigOptions config=(ConfigOptions)disp.callRemoteMethod(coord, new MethodCall(GET_CONFIG), new RequestOptions(ResponseMode.GET_ALL, timeout));
 //        if(config != null) {
 //            this.oob=config.oob;
@@ -197,12 +200,12 @@ public class TestAll extends ReceiverAdapter {
 		view = new_view;
 		List<Address> mbrs = new_view.getMembers();
 		if (mbrs.size() == 3) {
-			zabBox.addAll(addresses);
+			Box.addAll(addresses);
 		}
 
-		if (mbrs.size() > 3 && zabBox.isEmpty()) {
+		if (mbrs.size() > 3 && Box.isEmpty()) {
 			for (int i = 0; i < 3; i++) {
-				zabBox.add(addresses.get(i));
+				Box.add(addresses.get(i));
 			}
 		}
 		local_addr=channel.getAddress();
@@ -241,7 +244,7 @@ public class TestAll extends ReceiverAdapter {
     }
 
     public Results startTest() throws Throwable {
-    	 System.out.println("Start hereeeeeeeeeeeeeeeeeeeeeeee");
+    	//System.out.println("Start hereeeeeeeeeeeeeeeeeeeeeeee");
         addSiteMastersToMembers();
 
         System.out.println("invoking " + num_msgs + " RPCs of " + Util.printBytes(msg_size) +
@@ -254,7 +257,7 @@ public class TestAll extends ReceiverAdapter {
 
         Random random = new Random();
         Invoker[] invokers=new Invoker[num_threads];
-        // create sender (threads) to send writes to Zab/Zab_1/Zab_2
+        // create sender (threads) to send writes to /_1/_2
         for(int i=0; i < invokers.length; i++){
             invokers[i]=new Invoker(nonBoxMembers, num_msgs, num_msgs_sent, random);
             System.out.println("Create Invoker --------------->>>> " + i);
@@ -325,7 +328,7 @@ public class TestAll extends ReceiverAdapter {
     //Write method, this will invoke as soon as write gets order by ording protocol
     //we just simulate Infinispan key-value store, so using put for write, get for read
     public void put(long key, byte[] val) {
-    	System.out.println("Inside -----------> PUT method**************");
+    	//System.out.println("Inside -----------> PUT method************** "+key);
     }
 
     public ConfigOptions getConfig() {
@@ -620,18 +623,18 @@ public class TestAll extends ReceiverAdapter {
                     	synchronized (members) {
                             removeBoxMembers(members);
                         }
-                        System.out.println("Members at start | " + members);
+                       // System.out.println("Members at start | " + members);
 
                         Collection<Address> dest;
                         if (anycastRequests)
                             dest = members;
                         else
                             dest = null;
-                    	System.out.println("invoker name "+ getName());
+                    	//System.out.println("invoker name "+ getName());
                     	//Creat writes and sends to down prootcols, then it will send to order protocol and finally invoke put RPC
                         Collection<Address> targets = random_destinations ? pickRandomAnycastTargets() : pickAnycastTargets();
                         put_args[0]=i;
-                        RspList rsp = disp.callRemoteMethods(dest, put_call, put_options);
+                        RspList rsp = disp.callRemoteMethods(targets, put_call, put_options);
                         num_puts++;
 
                     }
@@ -870,11 +873,11 @@ public class TestAll extends ReceiverAdapter {
 
 
     public static void main(String[] args) {
-		String propsFile = "conf/sequencer.xml";
-		String name ="ZAB";
+		String propsFile = "conf/.xml";
+		String name ="";
 		String outputDir= "/home/pg/p13/a6915654/"+name+"/";
-		String [] zabboxInits= new String[3];
-		List<String> zabMembers = new ArrayList<String>();
+		String [] boxInits= new String[3];
+		List<String> Members = new ArrayList<String>();
         int msgSize = 1000;
         int load = 1;
         int numsThreads= 10;
@@ -882,6 +885,8 @@ public class TestAll extends ReceiverAdapter {
         int totalMessages= 1000000; // #Msgs to be sent by the whole cluster
         int numOfClients= 10; 
         int numWarmUp= 10000; 
+        int timeout=0;
+        boolean sync=true;
 
 
         for (int i = 0; i < args.length; i++) {
@@ -904,8 +909,8 @@ public class TestAll extends ReceiverAdapter {
                 continue;
             }
         	if ("-hosts".equals(args[i])){
-				zabboxInits = args[++i].split(","); 
-				zabMembers.addAll(Arrays.asList(zabboxInits));
+				boxInits = args[++i].split(","); 
+				Members.addAll(Arrays.asList(boxInits));
 		    }
         	 if("-name".equals(args[i])) {
                 name = args[++i];
@@ -935,15 +940,23 @@ public class TestAll extends ReceiverAdapter {
         		 numOfClients = Integer.parseInt(args[++i]);
                  continue;
              }
+        	 if("-timeout".equals(args[i])) {
+        		 timeout = Integer.parseInt(args[++i]);
+                 continue;
+             }
+        	 if("-syn".equals(args[i])) {
+        		 sync = Boolean.parseBoolean(args[++i]);
+                 continue;
+             }
         	 
         }
 
         TestAll test=null;
         try {
             test=new TestAll();
-            test.init(zabMembers, name, propsFile, totalMessages,
+            test.init(Members, name, propsFile, totalMessages,
 					numberOfMessages, numsThreads, msgSize, 
-					outputDir, numOfClients, load, numWarmUp);
+					outputDir, numOfClients, load, numWarmUp, timeout, sync);
             test.eventLoop();
            
         }

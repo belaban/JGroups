@@ -444,13 +444,6 @@ public class Zab2Phases extends Protocol {
 		if (hdrAck == null)
 			return;
 
-		// if (hdr.getZxid() != lastZxidProposed + 1){
-		// log.info("Got zxid 0x"
-		// + Long.toHexString(hdr.getZxid())
-		// + " expected 0x"
-		// + Long.toHexString(lastZxidProposed + 1));
-		// }
-
 		lastZxidProposed = hdrAck.getZxid();
 		queuedProposalMessage.put(hdrAck.getZxid(), hdrAck);
 		Zab2PhasesHeader hdrACK = new Zab2PhasesHeader(Zab2PhasesHeader.ACK, hdrAck.getZxid(),
@@ -464,13 +457,13 @@ public class Zab2Phases extends Protocol {
 				stats.addLatencyFToLF((int) (System.nanoTime() - stf));
 				//log.info("Latency for forward fro zxid=" +  dZxid + " start time=" + stf + " End Time=" + etf + " latency = "+((etf - stf)/1000000));
 			}
-		}
-		commit(hdrAck.getZxid());
+		}	
 		try {
 			down_prot.down(new Event(Event.MSG, ACKMessage));
 		} catch (Exception ex) {
 			log.error("failed sending ACK message to Leader");
 		}
+		commit(hdrAck.getZxid());
 		
 		//if (hdrAck.getZxid() == lastZxidCommitted + 1) {
 		//outstandingProposals.remove(hdrAck.getZxid());

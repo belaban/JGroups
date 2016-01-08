@@ -24,6 +24,7 @@ import org.jgroups.util.Util;
          public static final byte COUNTMESSAGE = 12;
          public static final byte STARTREALTEST = 13;
          public static final byte SENDMYADDRESS = 14;
+         public static final byte BROADCAST = 15;
 //         public static final byte TEMPSENT = 14;
 //         public static final byte TEMPREC = 15;
 //         public static final byte RESPONCETEMP = 16;
@@ -89,10 +90,7 @@ import org.jgroups.util.Util;
             case COUNTMESSAGE:			 return "COUNTMESSAGE";
             case STARTREALTEST:			 return "STARTREALTEST";
             case SENDMYADDRESS:			 return "SENDMYADDRESS";
-//            case TEMPSENT:			 return "TEMPSENT";
-//            case TEMPREC:			 return "TEMPREC";
-//            case RESPONCETEMP:			 return "RESPONCETEMP";
-
+            case BROADCAST:			 return "BROADCAST";
             default:             return "n/a";
         }
         }
