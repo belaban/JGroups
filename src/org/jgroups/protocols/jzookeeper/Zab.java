@@ -243,6 +243,7 @@ public class Zab extends Protocol {
 				handleOrderingResponse(hdr);
 
 			}
+			//s
 			return null;
 		case Event.VIEW_CHANGE:
 			handleViewChange((View) evt.getArg());
