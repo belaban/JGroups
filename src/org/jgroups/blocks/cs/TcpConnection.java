@@ -10,6 +10,7 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -21,15 +22,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  * @since  3.6.5
  */
-public class TcpConnection implements Connection {
+public class TcpConnection extends Connection {
     protected final Socket           sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
     protected final ReentrantLock    send_lock=new ReentrantLock(); // serialize send()
-    protected static final byte[]    cookie= { 'b', 'e', 'l', 'a' };
     protected static final Buffer    termination=new Buffer(cookie);
     protected DataOutputStream       out;
     protected DataInputStream        in;
-    protected Address                peer_addr; // address of the 'other end' of the connection
-    protected long                   last_access;
     protected volatile Sender        sender;
     protected volatile Receiver      receiver;
     protected final TcpBaseServer    server;
@@ -231,6 +229,7 @@ public class TcpConnection implements Connection {
 
             // write the version
             out.writeShort(Version.version);
+            out.writeShort(local_addr.size()); // address size
             local_addr.writeTo(out);
             out.flush(); // needed ?
             updateLastAccessed();
@@ -253,7 +252,7 @@ public class TcpConnection implements Connection {
             // read the cookie first
             byte[] input_cookie=new byte[cookie.length];
             in.readFully(input_cookie, 0, input_cookie.length);
-            if(!matchCookie(input_cookie))
+            if(!Arrays.equals(cookie, input_cookie))
                 throw new SocketException("BaseServer.TcpConnection.readPeerAddress(): cookie read by "
                                             + server.localAddress() + " does not match own cookie; terminating connection");
             // then read the version
@@ -262,6 +261,8 @@ public class TcpConnection implements Connection {
                 throw new IOException("packet from " + client_sock.getInetAddress() + ":" + client_sock.getPort() +
                                         " has different version (" + Version.print(version) +
                                         ") from ours (" + Version.printVersion() + "); discarding it");
+            short addr_len=in.readShort(); // only needed by NioConnection
+
             Address client_peer_addr=new IpAddress();
             client_peer_addr.readFrom(in);
             updateLastAccessed();
@@ -273,12 +274,6 @@ public class TcpConnection implements Connection {
     }
 
 
-    protected static boolean matchCookie(byte[] input) {
-        if(input == null || input.length < cookie.length) return false;
-        for(int i=0; i < cookie.length; i++)
-            if(cookie[i] != input[i]) return false;
-        return true;
-    }
 
     protected class Receiver implements Runnable {
         protected final Thread     recv;

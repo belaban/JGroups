@@ -16,6 +16,7 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -25,11 +26,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  * @since  3.6.5
  */
-public class NioConnection implements Connection {
+public class NioConnection extends Connection {
     protected SocketChannel       channel;      // the channel to the peer
     protected SelectionKey        key;
-    protected Address             peer_addr;    // address of the 'other end' of the connection
-    protected long                last_access;  // timestamp of the last access to this connection (read or write)
     protected final NioBaseServer server;
 
     protected final Buffers       send_buf;     // send messages via gathering writes
@@ -39,7 +38,8 @@ public class NioConnection implements Connection {
     protected final Lock          send_lock=new ReentrantLock(); // serialize send()
 
     // creates an array of 2: length buffer (for reading the length of the following data buffer) and data buffer
-    protected Buffers             recv_buf=new Buffers(2).add(ByteBuffer.allocate(Global.INT_SIZE), null);
+    // protected Buffers             recv_buf=new Buffers(2).add(ByteBuffer.allocate(Global.INT_SIZE), null);
+    protected Buffers             recv_buf=new Buffers(4).add(ByteBuffer.allocate(cookie.length));
     protected Reader              reader=new Reader(); // manages the thread which receives messages
     protected long                reader_idle_time=20000; // number of ms a reader can be idle (no msgs) until it terminates
 
@@ -169,22 +169,7 @@ public class NioConnection implements Connection {
      */
     @Override
     public void send(ByteBuffer buf) throws Exception {
-        send_lock.lock();
-        try {
-            // makeLengthBuffer() reuses the same pre-allocated buffer and copies it only if the write didn't complete
-            boolean success=send_buf.add(makeLengthBuffer(buf), buf).write(channel);
-            writeInterest(!success);
-            if(success)
-                updateLastAccessed();
-            if(!success) {
-                if(copy_on_partial_write)
-                    send_buf.copy(); // copy data on partial write as subsequent writes might corrupt data (https://issues.jboss.org/browse/JGRP-1991)
-                partial_writes++;
-            }
-        }
-        finally {
-            send_lock.unlock();
-        }
+        send(buf, true);
     }
 
 
@@ -213,18 +198,43 @@ public class NioConnection implements Connection {
         reader.receive();
     }
 
+    protected void send(ByteBuffer buf, boolean send_length) throws Exception {
+        send_lock.lock();
+        try {
+            // makeLengthBuffer() reuses the same pre-allocated buffer and copies it only if the write didn't complete
+            if(send_length)
+                send_buf.add(makeLengthBuffer(buf), buf);
+            else
+                send_buf.add(buf);
+            boolean success=send_buf.write(channel);
+            writeInterest(!success);
+            if(success)
+                updateLastAccessed();
+            if(!success) {
+                if(copy_on_partial_write)
+                    send_buf.copy(); // copy data on partial write as subsequent writes might corrupt data (https://issues.jboss.org/browse/JGRP-1991)
+                partial_writes++;
+            }
+        }
+        finally {
+            send_lock.unlock();
+        }
+    }
 
     protected boolean _receive(boolean update) throws Exception {
         ByteBuffer msg;
         Receiver   receiver=server.receiver();
 
+        if(peer_addr == null && server.usePeerConnections()) {
+            if((peer_addr=readPeerAddress()) != null) {
+                recv_buf=new Buffers(2).add(ByteBuffer.allocate(Global.INT_SIZE), null);
+                server.addConnection(peer_addr, this);
+                return true;
+            }
+        }
+
         if((msg=recv_buf.readLengthAndData(channel)) == null)
             return false;
-        if(peer_addr == null && server.usePeerConnections()) {
-            peer_addr=readPeerAddress(msg);
-            server.addConnection(peer_addr, this);
-            return true;
-        }
         if(receiver != null)
             receiver.receive(peer_addr, msg);
         if(update)
@@ -311,10 +321,12 @@ public class NioConnection implements Connection {
     protected void sendLocalAddress(Address local_addr) throws Exception {
         try {
             ByteArrayDataOutputStream out=new ByteArrayDataOutputStream();
+            out.write(cookie, 0, cookie.length);
             out.writeShort(Version.version);
+            out.writeShort(local_addr.size()); // address size
             local_addr.writeTo(out);
             ByteBuffer buf=out.getByteBuffer();
-            send(buf);
+            send(buf, false);
             updateLastAccessed();
         }
         catch(Exception ex) {
@@ -323,17 +335,51 @@ public class NioConnection implements Connection {
         }
     }
 
-    protected Address readPeerAddress(ByteBuffer buf) throws Exception {
-        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
-        short version=in.readShort(); // version
-        if(!Version.isBinaryCompatible(version))
-            throw new IOException("packet from " + channel.getRemoteAddress() + " has different version (" + Version.print(version) +
-                                    ") from ours (" + Version.printVersion() + "); discarding it");
-        Address client_peer_addr=new IpAddress();
-        client_peer_addr.readFrom(in);
-        updateLastAccessed();
-        return client_peer_addr;
+    protected Address readPeerAddress() throws Exception {
+        while(recv_buf.read(channel)) {
+            int current_position=recv_buf.position()-1;
+            ByteBuffer buf=recv_buf.get(current_position);
+            if(buf == null)
+                return null;
+            buf.flip();
+            switch(current_position) {
+                case 0:      // cookie
+                    byte[] cookie_buf=getBuffer(buf);
+                    if(!Arrays.equals(cookie, cookie_buf))
+                        throw new IllegalStateException("BaseServer.NioConnection.readPeerAddress(): cookie read by "
+                                                          + server.localAddress() + " does not match own cookie; terminating connection");
+                    recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
+                    break;
+                case 1:      // version
+                    short version=buf.getShort();
+                    if(!Version.isBinaryCompatible(version))
+                        throw new IOException("packet from " + channel.getRemoteAddress() + " has different version (" + Version.print(version) +
+                                                ") from ours (" + Version.printVersion() + "); discarding it");
+                    recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
+                    break;
+                case 2:      // length of address
+                    short addr_len=buf.getShort();
+                    recv_buf.add(ByteBuffer.allocate(addr_len));
+                    break;
+                case 3:      // address
+                    byte[] addr_buf=getBuffer(buf);
+                    ByteArrayDataInputStream in=new ByteArrayDataInputStream(addr_buf);
+                    IpAddress addr=new IpAddress();
+                    addr.readFrom(in);
+                    return addr;
+                default:
+                    throw new IllegalStateException(String.format("position %d is invalid", recv_buf.position()));
+            }
+        }
+        return null;
     }
+
+    protected static byte[] getBuffer(final ByteBuffer buf) {
+        byte[] retval=new byte[buf.limit()];
+        buf.get(retval, buf.position(), buf.limit());
+        return retval;
+    }
+
 
     protected static ByteBuffer makeLengthBuffer(ByteBuffer buf) {
         return (ByteBuffer)ByteBuffer.allocate(Global.INT_SIZE).putInt(buf.remaining()).clear();

@@ -192,9 +192,7 @@ public class ClassConfigurator {
 
     public static short getProtocolId(Class protocol) {
         Short retval=protocol_ids.get(protocol);
-        if(retval != null)
-            return retval;
-        return 0;
+        return retval != null? retval : 0;
     }
 
 
