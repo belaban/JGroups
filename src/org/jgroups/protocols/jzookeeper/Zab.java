@@ -71,8 +71,7 @@ public class Zab extends Protocol {
 			.synchronizedList(new ArrayList<Address>());
 	private AtomicLong local = new AtomicLong(0);
 	private AtomicInteger indexs = new AtomicInteger(0);
-
-
+    private final Map<Address, Long> orderStore = Collections.synchronizedMap(new HashMap<Address, Long>());
 	private ProtocolStats stats;
 
 	/*
@@ -161,7 +160,7 @@ public class Zab extends Protocol {
 		switch (evt.getType()) {
 		case Event.MSG:
 			Message m = (Message) evt.getArg();
-			handleClientRequest(evt, m);
+			//handleClientRequest(evt, m);
 			return null; // don't pass down
 		case Event.SET_LOCAL_ADDRESS:
 			local_addr = (Address) evt.getArg();
@@ -178,6 +177,7 @@ public class Zab extends Protocol {
 		case Event.MSG:
 			msg = (Message) evt.getArg();
 			hdr = (ZabHeader) msg.getHeader(this.id);
+			log.info(" Receive Request header = " + hdr);
 			if (hdr == null) {
 				break; // pass up
 			}
@@ -187,7 +187,7 @@ public class Zab extends Protocol {
 					return up_prot.up(new Event(Event.MSG, msg));
 				break;
 			case ZabHeader.REQUEST:
-				//log.info(" Receive Request");
+				log.info(" Receive Request");
 				forwardToLeader(msg);
 				break;
 			case ZabHeader.RESET:
@@ -235,10 +235,6 @@ public class Zab extends Protocol {
 				if (!zabMembers.contains(local_addr))
 					return up_prot.up(new Event(Event.MSG, msg));
 				break;
-			case ZabHeader.BROADCAST:
-				//log.info("I received rpc msg "+msg);
-				up_prot.up(new Event(Event.MSG, msg));
-				break;
 			case ZabHeader.RESPONSE:
 				handleOrderingResponse(hdr);
 
@@ -282,52 +278,52 @@ public class Zab extends Protocol {
 	/*
 	 * Handling all client requests, processing them according to request type
 	 */
-	private synchronized void handleClientRequest(Event event, Message message) {
-		ZabHeader clientHeader = ((ZabHeader) message.getHeader(this.id));
-
-        Address destination = message.getDest();
-        Address zabDestination = null;
-        //Store put here, and Forward write to Zab box to obtain otdering
-        if (destination != null && destination instanceof AnycastAddress && !message.isFlagSet(Message.Flag.NO_TOTAL_ORDER)) {
-			//log.info("-------> AnycastAddress Send to Zab boxes message " + message);
-        	MessageId messageId = new MessageId(local_addr,
-			local.getAndIncrement());
-        	messageStore.put(messageId, message);
-			//log.info("handleClientRequest---> " + messageId);
-			//log.info("handleClientRequest---> " + messageId.getId());
-			//down_prot.up(new Event(Event.MSG, message));
-
-        	ZabHeader hdrReq = new ZabHeader(ZabHeader.REQUEST,
-			messageId);
-        	indexs.incrementAndGet();
-        	if (indexs.get() > 2)
-        		indexs.set(0);
-        	//log.info("Check indexxxxxxxxxxxxxxx " +indexs.get());
-        	zabDestination = zabMembers.get(indexs.get());
-        	Message requestMessage = new Message(zabDestination).putHeader(
-			this.id, hdrReq);
-        	//int diff = 1000 - hdrReq.size();
-        	 //if (diff > 0)
-        	//message.setBuffer(new byte[diff]); // Necessary to ensure that each msgs size is 1kb, necessary for accurate network measurements
-        	down_prot.down(new Event(Event.MSG, requestMessage));
-        }
-        //Forward start call to all destinations to start the benchmark
-        else if (clientHeader != null
-				&& clientHeader.getType() == ZabHeader.BROADCAST) {
-        	
-			//log.info("******* Inside if BROADCAST) ");
-			down_prot.down(new Event(Event.MSG, message));        	
-        }
-        else if (destination != null && !(destination instanceof AnycastAddress)) {
-			//ZabHeader headerCheck = (ZabHeader) message.getHeader(this.id);
-			//if(headerCheck!=null)
-//			log.info("-------> !(destination instanceof AnycastAddress)) " + headerCheck.getType());
-//			log.info("-------> !(destination instanceof AnycastAddress)) " + message.getHeader(this.id));
-			down_prot.down(new Event(Event.MSG, message));
-		}
-
-
-	}
+//	private synchronized void handleClientRequest(Event event, Message message) {
+//		ZabHeader clientHeader = ((ZabHeader) message.getHeader(this.id));
+//
+//        Address destination = message.getDest();
+//        Address zabDestination = null;
+//        //Store put here, and Forward write to Zab box to obtain otdering
+//        if (destination != null && destination instanceof AnycastAddress && !message.isFlagSet(Message.Flag.NO_TOTAL_ORDER)) {
+//			//log.info("-------> AnycastAddress Send to Zab boxes message " + message);
+//        	MessageId messageId = new MessageId(local_addr,
+//			local.getAndIncrement());
+//        	messageStore.put(messageId, message);
+//			//log.info("handleClientRequest---> " + messageId);
+//			//log.info("handleClientRequest---> " + messageId.getId());
+//			//down_prot.up(new Event(Event.MSG, message));
+//
+//        	ZabHeader hdrReq = new ZabHeader(ZabHeader.REQUEST,
+//			messageId);
+//        	indexs.incrementAndGet();
+//        	if (indexs.get() > 2)
+//        		indexs.set(0);
+//        	//log.info("Check indexxxxxxxxxxxxxxx " +indexs.get());
+//        	zabDestination = zabMembers.get(indexs.get());
+//        	Message requestMessage = new Message(zabDestination).putHeader(
+//			this.id, hdrReq);
+//        	//int diff = 1000 - hdrReq.size();
+//        	 //if (diff > 0)
+//        	//message.setBuffer(new byte[diff]); // Necessary to ensure that each msgs size is 1kb, necessary for accurate network measurements
+//        	down_prot.down(new Event(Event.MSG, requestMessage));
+//        }
+//        //Forward start call to all destinations to start the benchmark
+//        else if (clientHeader != null
+//				&& clientHeader.getType() == ZabHeader.BROADCAST) {
+//        	
+//			//log.info("******* Inside if BROADCAST) ");
+//			down_prot.down(new Event(Event.MSG, message));        	
+//        }
+//        else if (destination != null && !(destination instanceof AnycastAddress)) {
+//			//ZabHeader headerCheck = (ZabHeader) message.getHeader(this.id);
+//			//if(headerCheck!=null)
+////			log.info("-------> !(destination instanceof AnycastAddress)) " + headerCheck.getType());
+////			log.info("-------> !(destination instanceof AnycastAddress)) " + message.getHeader(this.id));
+//			down_prot.down(new Event(Event.MSG, message));
+//		}
+//
+//
+//	}
 
 	private void handleViewChange(View v) {
 		List<Address> mbrs = v.getMembers();
@@ -365,7 +361,7 @@ public class Zab extends Protocol {
 	 */
 	private synchronized void forwardToLeader(Message msg) {
 		ZabHeader hdrReq = (ZabHeader) msg.getHeader(this.id);
-		requestQueue.add(hdrReq.getMessageId());
+		requestQueue.add(hdrReq.getMessageOrderInfo().getId());
 //		if (!is_warmUp && is_leader && !startThroughput) {
 //			startThroughput = true;
 //			stats.setStartThroughputTime(System.currentTimeMillis());
@@ -429,11 +425,15 @@ public class Zab extends Protocol {
 		// + " expected 0x"
 		// + Long.toHexString(lastZxidProposed + 1));
 		// }
-
+		MessageOrderInfo messageOrderInfo = hdrAck.getMessageOrderInfo();
+		if (messageOrderInfo==null)
+			log.info("messageOrderInfo >>>>>>>>>>> = null");
+		else
+			log.info("Check messageOrderInfo in sendAck" + hdrAck.getMessageOrderInfo().getOrdering());
+		
 		lastZxidProposed = hdrAck.getZxid();
 		queuedProposalMessage.put(hdrAck.getZxid(), hdrAck);
-		ZabHeader hdrACK = new ZabHeader(ZabHeader.ACK, hdrAck.getZxid(),
-				hdrAck.getMessageId());
+		ZabHeader hdrACK = new ZabHeader(ZabHeader.ACK, hdrAck.getZxid());
 		Message ACKMessage = new Message(leader).putHeader(this.id, hdrACK);
 //		if (!is_warmUp){
 //			countMessageFollower++;
@@ -519,13 +519,15 @@ public class Zab extends Protocol {
 	 */
 	private void deliver(long dZxid) {
 		ZabHeader hdrOrginal = queuedProposalMessage.remove(dZxid);
-//		if (hdrOrginal == null) {
-//			if (log.isInfoEnabled())
-//				log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
-//						+ hdrOrginal + " for zxid " + dZxid);
-//			return;
-//		}
+		MessageOrderInfo messageOrderInfo = hdrOrginal.getMessageOrderInfo();
+		if(messageOrderInfo==null)
+			log.info("messageOrderInfo equal null deliver");
 
+		messageOrderInfo.setOrdering(dZxid);
+		
+        setLastOrderSequences(messageOrderInfo);
+
+        hdrOrginal.setMessageOrderInfo(messageOrderInfo);
 		queuedCommitMessage.put(dZxid, hdrOrginal);
 //		if (!is_warmUp) {
 //			stats.incnumReqDelivered();
@@ -535,42 +537,61 @@ public class Zab extends Protocol {
 		if (log.isInfoEnabled())
 			log.info("queuedCommitMessage size = " + queuedCommitMessage.size()
 					+ " zxid " + dZxid);
-		if (requestQueue.contains(hdrOrginal.getMessageId())) {
+		if (requestQueue.contains(messageOrderInfo.getId())) {
 //			if (!is_warmUp){
 //				long startTime = hdrOrginal.getMessageId().getStartTime();
 //				stats.addLatency((int) (System.nanoTime() - startTime));
 //			}
-			ZabHeader hdrResponse = new ZabHeader(ZabHeader.RESPONSE, dZxid,
-					hdrOrginal.getMessageId());
-			Message msgResponse = new Message(hdrOrginal.getMessageId()
-					.getAddress()).putHeader(this.id, hdrResponse);
-			down_prot.down(new Event(Event.MSG, msgResponse));
+			sendOrderResponse(messageOrderInfo);
+			requestQueue.remove((messageOrderInfo.getId()));
 		}
-
 	}
+	
+	private void sendOrderResponse(MessageOrderInfo messageOrderInfo){
+		CSInteractionHeader hdrResponse = new CSInteractionHeader(CSInteractionHeader.RESPONSE, messageOrderInfo);
+		Message msgResponse = new Message(messageOrderInfo.getId()
+				.getOriginator()).putHeader((short) 120, hdrResponse);
+		down_prot.down(new Event(Event.MSG, msgResponse));
+	}
+	
+	
+	private void setLastOrderSequences(MessageOrderInfo messageOrderInfo) {
+        long[] clientLastOrder = new long[messageOrderInfo.getDestinations().length];
+        List<Address> destinations = getAddresses(messageOrderInfo.getDestinations());
+        for (int i = 0; i < destinations.size(); i++) {
+            Address destination = destinations.get(i);
+            if (!orderStore.containsKey(destination)) {
+            	clientLastOrder[i] = -1;
+                orderStore.put(destinations.get(i), messageOrderInfo.getOrdering());
+            } else {
+            	clientLastOrder[i] = orderStore.put(destination, messageOrderInfo.getOrdering());
+            }
+        }
+        messageOrderInfo.setclientsLastOrder(clientLastOrder);
+    }
 
 	/*
 	 * Send replay to client
 	 */
 	private void handleOrderingResponse(ZabHeader hdrResponse) {
-		Message message = messageStore.get(hdrResponse.getMessageId());
-		Collection<Address> destinations = ((AnycastAddress) message.getDest()).getAddresses();
-		if (destinations.contains(local_addr)){
-			//message.putHeader(this.id, hdrResponse);
-			up_prot.up(new Event(Event.MSG, message));
-		}
-		
-		ZabHeader broadcast = new ZabHeader(ZabHeader.BROADCAST, hdrResponse.getZxid());
-		message.putHeader(this.id, broadcast);
-		for (Address destination : destinations) {
-	          if (destination.equals(local_addr))
-	               continue;
-
-	          Message messageCopy = message.copy();
-	          messageCopy.setDest(destination);
-	          down_prot.down(new Event(Event.MSG, messageCopy));
-			
-		}
+//		Message message = messageStore.get(hdrResponse.getMessageId());
+//		Collection<Address> destinations = ((AnycastAddress) message.getDest()).getAddresses();
+//		if (destinations.contains(local_addr)){
+//			//message.putHeader(this.id, hdrResponse);
+//			up_prot.up(new Event(Event.MSG, message));
+//		}
+//		
+//		ZabHeader broadcast = new ZabHeader(ZabHeader.BROADCAST, hdrResponse.getZxid());
+//		message.putHeader(this.id, broadcast);
+//		for (Address destination : destinations) {
+//	          if (destination.equals(local_addr))
+//	               continue;
+//
+//	          Message messageCopy = message.copy();
+//	          messageCopy.setDest(destination);
+//	          down_prot.down(new Event(Event.MSG, messageCopy));
+//			
+//		}
 
 	}
 	/*
@@ -602,6 +623,17 @@ public class Zab extends Protocol {
 		}
 
 	}
+	
+	private List<Address> getAddresses(byte[] indexes) {
+        if (view == null)
+            throw new IllegalArgumentException("View cannot be null");
+
+        List<Address> addresses = new ArrayList<Address>();
+        for (byte index : indexes) {
+            addresses.add(view.getMembers().get(index));
+        }
+        return addresses;
+    }
 
 
 	/*
@@ -641,14 +673,20 @@ public class Zab extends Protocol {
 //				if (!is_warmUp){
 //					stats.incNumRequest();
 //				}
+				if(hdrReq.getMessageOrderInfo()==null)
+					log.info("getMessageOrderInfo = nullllllllllllllllllllllllllllllll");
+				else
+					log.info("getMessageOrderInfo not null " + hdrReq.getMessageOrderInfo().getOrdering());
 				ZabHeader hdrProposal = new ZabHeader(ZabHeader.PROPOSAL,
-						new_zxid, hdrReq.getMessageId());
+						new_zxid, hdrReq.getMessageOrderInfo(), hdrReq.getMessageId());
 				Message ProposalMessage = new Message().putHeader(this.id,
 						hdrProposal);
 
 				ProposalMessage.setSrc(local_addr);
 				Proposal p = new Proposal();
 				p.setMessageId(hdrReq.getMessageId());
+				p.setMessageOrderInfo(hdrReq.getMessageOrderInfo());
+
 				p.AckCount++;
 				outstandingProposals.put(new_zxid, p);
 				queuedProposalMessage.put(new_zxid, hdrProposal);

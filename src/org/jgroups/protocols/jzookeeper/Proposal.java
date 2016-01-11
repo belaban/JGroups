@@ -14,7 +14,11 @@ public class Proposal implements Comparable<Proposal>{
 	private HashSet<Long> ackSet = new HashSet<Long>();
 
 	private long zxid = -1;
+	
 	private MessageId messageId=null;
+	
+	private MessageOrderInfo messageOrderInfo=null;
+
     
 	private Address messageSrc;
 	
@@ -46,12 +50,19 @@ public class Proposal implements Comparable<Proposal>{
 		this.ackSet = ackSet;
 	}
 
-	public MessageId getMessageInfo() {
+	public MessageId getMessageId() {
 		return messageId;
 	}
 
 	public void setMessageId(MessageId messageId) {
 		this.messageId = messageId;
+	}
+	
+	public MessageOrderInfo getMessageOrderInfo() {
+		return messageOrderInfo;
+	}
+	public void setMessageOrderInfo(MessageOrderInfo messageOrderInfo) {
+		this.messageOrderInfo = messageOrderInfo;
 	}
 	public Address getMessageSrc() {
 		return messageSrc;

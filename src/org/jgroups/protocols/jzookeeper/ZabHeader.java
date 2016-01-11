@@ -24,15 +24,14 @@ import org.jgroups.util.Util;
          public static final byte COUNTMESSAGE = 12;
          public static final byte STARTREALTEST = 13;
          public static final byte SENDMYADDRESS = 14;
-         public static final byte BROADCAST = 15;
-//         public static final byte TEMPSENT = 14;
-//         public static final byte TEMPREC = 15;
-//         public static final byte RESPONCETEMP = 16;
+
 
 
          private byte        type=0;
          private long        seqno=0;
          private MessageId   messageId=null;
+         private MessageOrderInfo messageOrderInfo = null;
+
 
         public ZabHeader() {
         }
@@ -40,9 +39,34 @@ import org.jgroups.util.Util;
         public ZabHeader(byte type) {
             this.type=type;
         }
-        public ZabHeader(byte type, MessageId id) {
+        
+        public ZabHeader(MessageOrderInfo messageOrderInfo) {
+			this.messageOrderInfo = messageOrderInfo;
+		}
+
+		public ZabHeader(byte type, MessageId id) {
             this.type=type;
             this.messageId=id;
+        }
+		
+		public ZabHeader(byte type, MessageOrderInfo messageOrderInfo) {
+            this.type=type;
+            this.messageOrderInfo=messageOrderInfo;
+        }
+		
+		public ZabHeader(byte type, MessageOrderInfo messageOrderInfo, MessageId messageId) {
+            this.type=type;
+            this.messageOrderInfo=messageOrderInfo;
+            this.messageId=messageId;
+
+        }
+		
+		public ZabHeader(byte type, long seqno, MessageOrderInfo messageOrderInfo, MessageId messageId) {
+            this.type=type;
+            this.seqno=seqno;
+            this.messageOrderInfo=messageOrderInfo;
+            this.messageId=messageId;
+
         }
 
         public ZabHeader(byte type, long seqno) {
@@ -53,6 +77,12 @@ import org.jgroups.util.Util;
             this(type);
             this.seqno=seqno;
             this.messageId=messageId;
+        }
+        
+        public ZabHeader(byte type, long seqno, MessageOrderInfo messageOrderInfo) {
+            this(type);
+            this.seqno=seqno;
+            this.messageOrderInfo=messageOrderInfo;
         }
     
         public byte getType() {
@@ -90,7 +120,6 @@ import org.jgroups.util.Util;
             case COUNTMESSAGE:			 return "COUNTMESSAGE";
             case STARTREALTEST:			 return "STARTREALTEST";
             case SENDMYADDRESS:			 return "SENDMYADDRESS";
-            case BROADCAST:			 return "BROADCAST";
             default:             return "n/a";
         }
         }
@@ -102,11 +131,23 @@ import org.jgroups.util.Util;
         public MessageId getMessageId(){
         	return messageId;
         }
-        @Override
+        
+        
+        public MessageOrderInfo getMessageOrderInfo() {
+			return messageOrderInfo;
+		}
+
+		public void setMessageOrderInfo(MessageOrderInfo messageOrderInfo) {
+			this.messageOrderInfo = messageOrderInfo;
+		}
+
+		@Override
         public void writeTo(DataOutput out) throws Exception {
             out.writeByte(type);
             Bits.writeLong(seqno,out);
             Util.writeStreamable(messageId, out);
+            Util.writeStreamable(messageOrderInfo, out);
+            //writeMessageOrderInfo(messageOrderInfo, out);
             //messageId.writeTo(out);
             //out.writeBoolean(flush_ack);
         }
@@ -115,16 +156,38 @@ import org.jgroups.util.Util;
         public void readFrom(DataInput in) throws Exception {
             type=in.readByte();
             seqno=Bits.readLong(in);
-            //messageId = new MessageId();
-            //messageId.readFrom(in);
+            messageId = new MessageId();
             messageId = (MessageId) Util.readStreamable(MessageId.class, in); 
-           // flush_ack=in.readBoolean();
+            messageOrderInfo = new MessageOrderInfo();
+            messageOrderInfo = (MessageOrderInfo) Util.readStreamable(MessageOrderInfo.class, in); 
+
+            //messageOrderInfo = readMessageOrderInfo(in);
+        }
+        
+        private void writeMessageOrderInfo(MessageOrderInfo info, DataOutput out) throws Exception {
+            if (info == null) {
+                out.writeShort(-1);
+            } else {
+                out.writeShort(1);
+                info.writeTo(out);
+            }
+        }
+
+        private MessageOrderInfo readMessageOrderInfo(DataInput in) throws Exception {
+            short length = in.readShort();
+            if (length < 0) {
+                return null;
+            } else {
+                MessageOrderInfo info = new MessageOrderInfo();
+                info.readFrom(in);
+                return info;
+            }
         }
         
         @Override
         public int size() {
         	//(messageInfo != null ? messageInfo.size() : 0)
-            return Global.BYTE_SIZE + Bits.size(seqno) + (messageId != null ? messageId.serializedSize(): 0) + Global.BYTE_SIZE; 
+            return Global.BYTE_SIZE + Bits.size(seqno) + (messageId != null ? messageId.size(): 0) + (messageOrderInfo != null ? messageOrderInfo.size() : 0); 
          }
 
     }

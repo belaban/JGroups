@@ -18,7 +18,7 @@ import java.io.*;
  */
 public class MessageId implements Externalizable, Comparable<MessageId>, Cloneable, Streamable {
     private static final long serialVersionUID = 878801547232534461L;
-    private Address address = null;
+    private Address originator = null;
     private long id = -1;
     private long startSend = 0;
     private long startFToLF = 0;
@@ -28,13 +28,13 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
 
     public MessageId() {}
 
-    public MessageId(Address address, long id) {
-        this.address = address;
+    public MessageId(Address originator, long id) {
+        this.originator = originator;
         this.id = id;
     }
     
     public MessageId(Address address, long id, long startSend) {
-        this.address = address;
+        this.originator = address;
         this.id = id;
         this.startSend = startSend;
     }
@@ -50,13 +50,13 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
             throw new NullPointerException();
         }
 
-        return id == other.id ? this.address.compareTo(other.address) :
+        return id == other.id ? this.originator.compareTo(other.originator) :
                 id < other.id ? -1 : 1;
     }
 
 
-    public Address getAddress() {
-        return address;
+    public Address getOriginator() {
+        return originator;
     }
     
     public long getStartTime(){
@@ -106,13 +106,13 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
     
     @Override
     public String toString() {
-        return "MessageId{" + address + ":" + id + ":" + zxid +"}";
+        return "MessageId{" + originator + ":" + id + ":" + zxid +"}";
     }
 
     public Object clone() {
         try {
             MessageId dolly = (MessageId) super.clone();
-            dolly.address = address;
+            dolly.originator = originator;
             return dolly;
         } catch (CloneNotSupportedException e) {
             throw new IllegalStateException();
@@ -127,24 +127,24 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
         MessageId messageId = (MessageId) o;
 
         return  id == messageId.id &&
-                !(address != null ? !address.equals(messageId.address) : messageId.address != null);
+                !(originator != null ? !originator.equals(messageId.originator) : messageId.originator != null);
 
     }
 
     @Override
     public int hashCode() {
-        int result = address != null ? address.hashCode() : 0;
+        int result = originator != null ? originator.hashCode() : 0;
         result = 31 * result + (int) (id ^ (id >>> 32));
         return result;
     }
 
     public int serializedSize() {
-        return Bits.size(id) + Util.size(address) + Bits.size(startSend) + Bits.size(zxid);
+        return Bits.size(id) + Util.size(originator) + Bits.size(startSend) + Bits.size(zxid);
     }
 
     @Override
     public void writeTo(DataOutput out) throws Exception {
-        Util.writeAddress(address, out);
+        Util.writeAddress(originator, out);
         Bits.writeLong(id, out);
         Bits.writeLong(startSend, out);
         Bits.writeLong(startFToLF, out);
@@ -156,7 +156,7 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
 
     @Override
     public void readFrom(DataInput in) throws Exception {
-        address = Util.readAddress(in);
+    	originator = Util.readAddress(in);
         id = Bits.readLong(in);
         startSend = Bits.readLong(in);
         startFToLF = Bits.readLong(in);
