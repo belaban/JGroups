@@ -19,8 +19,7 @@ import java.util.Arrays;
  * @author Ryan Emerson and Ibrahim EL-Sanosi
  * @since 4.0
  */
-public class MessageOrderInfo implements Comparable<MessageOrderInfo>, SizeStreamable, Externalizable, Cloneable, Streamable {
-    private static final long serialVersionUID = 8788015472325344611L;
+public class MessageOrderInfo implements Comparable<MessageOrderInfo>, SizeStreamable {
     private MessageId id = null;
     private long ordering = -1; // Sequence provided by the Zab*** to emulated Infinspan clients.
     private long[] clientsLastOrder = new long[0];
@@ -31,7 +30,7 @@ public class MessageOrderInfo implements Comparable<MessageOrderInfo>, SizeStrea
     
     public MessageOrderInfo(long ordering) {
  	   this.ordering = ordering;
- }
+     }
 
     public MessageOrderInfo(MessageId id) {
     	   this.id = id;
@@ -50,6 +49,7 @@ public class MessageOrderInfo implements Comparable<MessageOrderInfo>, SizeStrea
         this.id = id;
         this.ordering = ordering;
         this.destinations = destinations;
+        System.out.println(" In public MessageInfoEss " + clientsLastOrder);
         this.clientsLastOrder = clientsLastOrder;
 
     }
@@ -88,45 +88,30 @@ public class MessageOrderInfo implements Comparable<MessageOrderInfo>, SizeStrea
 
     @Override
     public int size() {
-        return (id != null ? id.serializedSize(): 0) + Bits.size(ordering) + longArraySize(clientsLastOrder) + (destinations != null ? Util.size(destinations) : 0);
+        return (id != null ? id.size(): 0) + Bits.size(ordering) + longArraySize(clientsLastOrder) + (destinations != null ? Util.size(destinations) : 0);
       }
 
     @Override
     public void writeTo(DataOutput out) throws Exception {
-        System.out.println("writeTo start");
         writeMessageId(id, out);
-        System.out.println("after id");
         Bits.writeLong(ordering, out);
-        System.out.println("after ordering");
         writeLongArray(clientsLastOrder, out);
-        System.out.println("after clientsLast");
         Util.writeByteBuffer(destinations, out);
-        System.out.println("after destinations");
-        System.out.println("writeTo Done");
     }
 
     @Override
     public void readFrom(DataInput in) throws Exception {
-        System.out.println("readFrom starting");
         id = readMessageId(in);
-        System.out.println("after id");
         ordering = Bits.readLong(in);
-        System.out.println("after ordering");
         clientsLastOrder = readLongArray(in);
-        System.out.println("after clientsLast");
         destinations = Util.readByteBuffer(in);
-        System.out.println("after destinations");
-        System.out.println("readFrom Done");
-
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         MessageOrderInfo that = (MessageOrderInfo) o;
-
         if (ordering != that.ordering) return false;
         if (!Arrays.equals(destinations, that.destinations)) return false;
         if (id != null ? !id.equals(that.id) : that.id != null) return false;
@@ -212,21 +197,5 @@ public class MessageOrderInfo implements Comparable<MessageOrderInfo>, SizeStrea
         }
     }
     
-    @Override
-    public void writeExternal(ObjectOutput objectOutput) throws IOException {
-        try {
-            writeTo(objectOutput);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-    }
-
-    @Override
-    public void readExternal(ObjectInput objectInput) throws IOException, ClassNotFoundException {
-        try {
-            readFrom(objectInput);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-    }
+    
 }

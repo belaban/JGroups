@@ -100,6 +100,8 @@ import org.jgroups.util.Util;
                 sb.append(" seqno=" + seqno);
             if(messageId!=null)
             	sb.append(", message_id=" + messageId);
+            if(messageOrderInfo!=null)
+            	sb.append(", message_Info=" + messageOrderInfo);
             return sb.toString();
         }
 

@@ -106,6 +106,8 @@ public class CSInteraction extends Protocol {
             case Event.MSG:
                 Message message = (Message) event.getArg();
                 CSInteractionHeader header = (CSInteractionHeader) message.getHeader(id);
+            	log.info("CSInteractionHeader.RESPONSE: "+header);
+
                 if (header == null)
                     break;
 
@@ -175,7 +177,8 @@ public class CSInteraction extends Protocol {
         Address destination = message.getDest();
         //Store put here, and Forward write to Z to obtain ordering
         if (destination != null && destination instanceof AnycastAddress && !message.isFlagSet(Message.Flag.NO_TOTAL_ORDER)) {
-			log.info("-------> AnycastAddress Send to Zab boxes message " + message);
+    		log.info("AnycastAddress  destination " + message);
+
         	sendOrderingRequest(((AnycastAddress) destination).getAddresses(), message);
         }
  
@@ -188,24 +191,18 @@ public class CSInteraction extends Protocol {
     private synchronized void sendOrderingRequest(Collection<Address> destinations, Message message) {
     	MessageId messageId = new MessageId(local_addr, local.getAndIncrement());
         messageStore.put(messageId, message);
-        byte[] dest = viewManager.getDestinationsAsByteArray(destinations);
-        if(dest==null)
-        log.info("dest ======== null");
-
-        MessageOrderInfo messageOrderInfo = new MessageOrderInfo(messageId, -1, dest, new long[0]);
-
+        byte[] dest = viewManager.getDestinationsAsByteArray(destinations);        
+        MessageOrderInfo messageOrderInfo = new MessageOrderInfo(messageId, dest);
         ZabHeader hdrReq = new ZabHeader(ZabHeader.REQUEST,
-        		messageOrderInfo, messageId);
+        		messageOrderInfo);
         index++;
         if (index > 2)
             index=0;
-        log.info("It is going to send to " + zabMembers.get(index));
         Message requestMessage = new Message(zabMembers.get(index)).putHeader(
         (short) 75, hdrReq);
         //int diff = 1000 - hdrReq.size();
         //if (diff > 0)
         //message.setBuffer(new byte[diff]); // Necessary to ensure that each msgs size is 1kb, necessary for accurate network measurements
-		log.info("-------> down_prot before " + message);
 
         down_prot.down(new Event(Event.MSG, requestMessage));
             

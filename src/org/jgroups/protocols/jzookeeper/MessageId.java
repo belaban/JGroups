@@ -2,6 +2,7 @@ package org.jgroups.protocols.jzookeeper;
 
 import org.jgroups.Address;
 import org.jgroups.util.Bits;
+import org.jgroups.util.SizeStreamable;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -16,7 +17,7 @@ import java.io.*;
  * @author Pedro Ruivo
  * @since 3.1
  */
-public class MessageId implements Externalizable, Comparable<MessageId>, Cloneable, Streamable {
+public class MessageId implements Comparable<MessageId>, SizeStreamable {
     private static final long serialVersionUID = 878801547232534461L;
     private Address originator = null;
     private long id = -1;
@@ -138,10 +139,6 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
         return result;
     }
 
-    public int serializedSize() {
-        return Bits.size(id) + Util.size(originator) + Bits.size(startSend) + Bits.size(zxid);
-    }
-
     @Override
     public void writeTo(DataOutput out) throws Exception {
         Util.writeAddress(originator, out);
@@ -165,21 +162,10 @@ public class MessageId implements Externalizable, Comparable<MessageId>, Cloneab
         zxid = Bits.readLong(in);
     }
 
-    @Override
-    public void writeExternal(ObjectOutput objectOutput) throws IOException {
-        try {
-            writeTo(objectOutput);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-    }
+    
+	@Override
+	public int size() {
+        return Bits.size(id) + Util.size(originator) + Bits.size(startSend) + Bits.size(zxid);
 
-    @Override
-    public void readExternal(ObjectInput objectInput) throws IOException, ClassNotFoundException {
-        try {
-            readFrom(objectInput);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-    }
+	}
 }

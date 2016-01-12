@@ -394,8 +394,7 @@ public class Zab extends Protocol {
 			return;
 		ZabHeader hdrReq = (ZabHeader) msg.getHeader(this.id);
 		try {
-			ZabHeader hdr = new ZabHeader(ZabHeader.FORWARD,
-					hdrReq.getMessageId());
+			ZabHeader hdr = new ZabHeader(ZabHeader.FORWARD, hdrReq.getMessageOrderInfo());
 			Message forward_msg = new Message(target).putHeader(this.id, hdr);
 			down_prot.down(new Event(Event.MSG, forward_msg));
 		} catch (Exception ex) {
@@ -426,14 +425,9 @@ public class Zab extends Protocol {
 		// + Long.toHexString(lastZxidProposed + 1));
 		// }
 		MessageOrderInfo messageOrderInfo = hdrAck.getMessageOrderInfo();
-		if (messageOrderInfo==null)
-			log.info("messageOrderInfo >>>>>>>>>>> = null");
-		else
-			log.info("Check messageOrderInfo in sendAck" + hdrAck.getMessageOrderInfo().getOrdering());
-		
-		lastZxidProposed = hdrAck.getZxid();
-		queuedProposalMessage.put(hdrAck.getZxid(), hdrAck);
-		ZabHeader hdrACK = new ZabHeader(ZabHeader.ACK, hdrAck.getZxid());
+		lastZxidProposed = messageOrderInfo.getOrdering();
+		queuedProposalMessage.put(messageOrderInfo.getOrdering(), hdrAck);
+		ZabHeader hdrACK = new ZabHeader(ZabHeader.ACK, messageOrderInfo.getOrdering());
 		Message ACKMessage = new Message(leader).putHeader(this.id, hdrACK);
 //		if (!is_warmUp){
 //			countMessageFollower++;
@@ -522,12 +516,8 @@ public class Zab extends Protocol {
 		MessageOrderInfo messageOrderInfo = hdrOrginal.getMessageOrderInfo();
 		if(messageOrderInfo==null)
 			log.info("messageOrderInfo equal null deliver");
-
-		messageOrderInfo.setOrdering(dZxid);
 		
         setLastOrderSequences(messageOrderInfo);
-
-        hdrOrginal.setMessageOrderInfo(messageOrderInfo);
 		queuedCommitMessage.put(dZxid, hdrOrginal);
 //		if (!is_warmUp) {
 //			stats.incnumReqDelivered();
@@ -673,18 +663,16 @@ public class Zab extends Protocol {
 //				if (!is_warmUp){
 //					stats.incNumRequest();
 //				}
-				if(hdrReq.getMessageOrderInfo()==null)
-					log.info("getMessageOrderInfo = nullllllllllllllllllllllllllllllll");
-				else
-					log.info("getMessageOrderInfo not null " + hdrReq.getMessageOrderInfo().getOrdering());
+				MessageOrderInfo messageOrderInfo = hdrReq.getMessageOrderInfo();
+				messageOrderInfo.setOrdering(new_zxid);
 				ZabHeader hdrProposal = new ZabHeader(ZabHeader.PROPOSAL,
-						new_zxid, hdrReq.getMessageOrderInfo(), hdrReq.getMessageId());
+						hdrReq.getMessageOrderInfo());
 				Message ProposalMessage = new Message().putHeader(this.id,
 						hdrProposal);
 
 				ProposalMessage.setSrc(local_addr);
 				Proposal p = new Proposal();
-				p.setMessageId(hdrReq.getMessageId());
+				p.setMessageId(messageOrderInfo.getId());
 				p.setMessageOrderInfo(hdrReq.getMessageOrderInfo());
 
 				p.AckCount++;
