@@ -101,7 +101,7 @@ public class Util {
 
 
     static {
-        resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Util.class.getClassLoader());
+        resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Thread.currentThread().getContextClassLoader());
 
         /* Trying to get value of resolve_dns. PropertyPermission not granted if
         * running in an untrusted environment with JNLP */

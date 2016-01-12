@@ -89,7 +89,7 @@ public final class SaslUtils {
 
             Provider[] providers = Security.getProviders();
             for (Provider currentProvider : providers) {
-                final ClassLoader cl = currentProvider.getClass().getClassLoader();
+                final ClassLoader cl = Thread.currentThread().getContextClassLoader();
                 for (Object currentKey : currentProvider.keySet()) {
                     if (currentKey instanceof String && ((String) currentKey).startsWith(filter)
                             && ((String) currentKey).indexOf(' ') < 0) {
@@ -111,7 +111,7 @@ public final class SaslUtils {
     }
 
     public static SaslServerFactory getSaslServerFactory(String mech, Map<String, ?> props) {
-        Iterator<SaslServerFactory> saslFactories = SaslUtils.getSaslServerFactories(SaslUtils.class.getClassLoader(), true);
+        Iterator<SaslServerFactory> saslFactories = SaslUtils.getSaslServerFactories(Thread.currentThread().getContextClassLoader(), true);
         while (saslFactories.hasNext()) {
             SaslServerFactory saslFactory = saslFactories.next();
             for (String supportedMech : saslFactory.getMechanismNames(props)) {
@@ -124,7 +124,7 @@ public final class SaslUtils {
     }
 
     public static SaslClientFactory getSaslClientFactory(String mech, Map<String, ?> props) {
-        Iterator<SaslClientFactory> saslFactories = SaslUtils.getSaslClientFactories(SaslUtils.class.getClassLoader(), true);
+        Iterator<SaslClientFactory> saslFactories = SaslUtils.getSaslClientFactories(Thread.currentThread().getContextClassLoader(), true);
         while (saslFactories.hasNext()) {
             SaslClientFactory saslFactory = saslFactories.next();
             for (String supportedMech : saslFactory.getMechanismNames(props)) {
