@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * receivers have sent a response, or until a timeout occurred.  MessageDispatcher
  * offers a combination of the above pattern with other patterns.
  * <p>
- * Used on top of channel to implement group requests. Client's <code>handle()</code>
+ * Used on top of channel to implement group requests. Client's {@code handle()}
  * method is called when request is received. Is the equivalent of RpcProtocol on
  * the application instead of protocol level.
  *
@@ -213,17 +213,17 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
      * Sets the given UpHandler as the UpHandler for the channel, or, if the
      * channel already has a Muxer installed as it's UpHandler, sets the given
      * handler as the Muxer's {@link Muxer#setDefaultHandler(Object) default handler}.
-     * If the relevant handler is already installed, the <code>canReplace</code>
+     * If the relevant handler is already installed, the {@code canReplace}
      * controls whether this method replaces it (after logging a WARN) or simply
-     * leaves <code>handler</code> uninstalled.
+     * leaves {@code handler} uninstalled.
      * <p>
-     * Passing <code>false</code> as the <code>canReplace</code> value allows
+     * Passing {@code false} as the {@code canReplace} value allows
      * callers to use this method to install defaults without concern about
      * inadvertently overriding
      *
      * @param handler the UpHandler to install
-     * @param canReplace <code>true</code> if an existing Channel upHandler or
-     *              Muxer default upHandler can be replaced; <code>false</code>
+     * @param canReplace {@code true} if an existing Channel upHandler or
+     *              Muxer default upHandler can be replaced; {@code false}
      *              if this method shouldn't install
      */
     protected void installUpHandler(UpHandler handler, boolean canReplace)
