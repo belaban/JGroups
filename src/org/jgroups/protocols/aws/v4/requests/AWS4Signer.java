@@ -296,7 +296,20 @@ public class AWS4Signer {
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    
+
+    public static HttpURLConnection getHttpRequest(URL endpointUrl,
+            String httpMethod,
+            Map<String, String> headers,
+            String requestBody) {
+
+    	httpMethod = httpMethod.toUpperCase();
+
+    	HttpURLConnection connection = createHttpConnection(endpointUrl, httpMethod, headers);
+
+    	return connection;
+    }
+
+   
     public static String invokeHttpRequest(URL endpointUrl,
                                          String httpMethod,
                                          Map<String, String> headers,
@@ -323,6 +336,7 @@ public class AWS4Signer {
     
     private static String executeHttpRequest(HttpURLConnection connection) {
         try {
+        	
             // Get Response
             InputStream is;
             try {
@@ -424,7 +438,38 @@ public class AWS4Signer {
         return authorization;
 
     }
-    
+  
+    public static String getAWS4AuthorizationForHeader(
+    		URL endpointUrl
+   			, String method
+			, String bucketName // must be valid, we don't check!
+			, String regionName
+    		, Map<String, String> headers
+    		, Map<String, String> queryParameters
+    		, String bodyHash
+    		, String awsAccessKey
+    		, String awsSecretKey) 
+    {
+        String authorization = null;    	
+        String scheme = "https://"; // default is ssl          
+  	
+        try {
+        		AWS4SignerForAuthorizationHeader signer = 
+        				(AWS4SignerForAuthorizationHeader)AWS4Signer.getAWS4SignerForAuthorizationHeader();
+       			                       			
+        		signer.init(method.toUpperCase(), regionName, endpointUrl);
+        		
+        		authorization = signer.computeSignature(
+        				headers, queryParameters, bodyHash, awsAccessKey, awsSecretKey);
+        
+        } catch (Exception e) {
+            throw new RuntimeException( "Exception caught in getAWS4AuthorizationForHeader: " + e.getMessage() );
+        }
+        		
+        return authorization;
+
+    }
+
     public static String getAWS4AuthorizationForHeader(
    		 	boolean isSecure
    			, String method
@@ -459,7 +504,40 @@ public class AWS4Signer {
         return authorization;
 
     }
-   	                           
+
+    
+    public static String getAWS4AuthorizationForHeader(
+    		URL endpointUrl
+   			, String method
+			, String regionName
+    		, Map<String, String> headers
+    		, Map<String, String> queryParameters
+    		, String bodyHash
+    		, String awsAccessKey
+    		, String awsSecretKey) 
+    {
+        String authorization = null;    	
+  	
+        try {
+        		AWS4SignerForAuthorizationHeader signer = 
+        				(AWS4SignerForAuthorizationHeader)AWS4Signer.getAWS4SignerForAuthorizationHeader();
+        		
+       			method = method.toUpperCase();
+       			
+        		signer.init(method, regionName, endpointUrl);
+        		
+        		authorization = signer.computeSignature(
+        				headers, queryParameters, bodyHash, awsAccessKey, awsSecretKey);
+        
+        } catch (Exception e) {
+            throw new RuntimeException( "Exception caught in getAWS4AuthorizationForHeader: " + e.getMessage() );
+        }
+        		
+        return authorization;
+
+    }
+
+    
     public static String getAWS4AuthorizationForHeader(
    		 	boolean isSecure
    			, String method
@@ -473,7 +551,6 @@ public class AWS4Signer {
     		, String awsSecretKey) 
     {
         String authorization = null;    	
-        String scheme = "https://"; // default is ssl          
   	
         try {
         		AWS4SignerForAuthorizationHeader signer = 

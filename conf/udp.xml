@@ -44,9 +44,10 @@
          oob_thread_pool.rejection_policy="discard"/>
 
     <S3_PING2
-    location="us-west-1-tti-mark" 
-    region="us-west-1"
+    
     mdebug="true"
+    region="eu-central-1"
+    location="eu-central-1-tti-bob-2"
     />
     
     <MERGE3 max_interval="30000"

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite guice-stage="DEVELOPMENT" name="Failed suite [Default suite]">
+  <test name="Default test(failed)">
+    <classes>
+      <class name="org.jgroups.protocols.S3_PING2Test">
+        <methods>
+          <include name="testDeleteBucket"/>
+          <include name="testDeleteObject"/>
+          <include name="testGetObject"/>
+          <include name="testCreateBucket"/>
+          <include name="testGetBucketLocation"/>
+          <include name="testListBucket"/>
+          <include name="testGetAcl"/>
+          <include name="testCheckBucketExists"/>
+          <include name="testPutObject"/>
+          <include name="setUp"/>
+          <include name="testListAllMyBuckets"/>
+        </methods>
+      </class> <!-- org.jgroups.protocols.S3_PING2Test -->
+    </classes>
+  </test> <!-- Default test(failed) -->
+</suite> <!-- Failed suite [Default suite] -->

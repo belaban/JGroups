@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.annotations.Property;
+import org.jgroups.protocols.aws.v4.requests.AWS4Signer;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
 import org.xml.sax.Attributes;
@@ -73,13 +74,14 @@ public class S3_PING2 extends FILE_PING {
     protected String getRegion(){return region;}
     
     protected static void mlog(String s){
-    	System.out.println("**************** mlog begin ****************");
+    	System.out.println("\n********************************************");
     	System.out.println(s);
-    	System.out.println("****************  mlog end  ****************");
+    	System.out.println("********************************************");
     }
     
     ////////////////////////////////////////////////////////////////// -mm- //
 
+    public boolean isInitilized = false;
     @Override
     public void init() throws Exception {
         super.init();
@@ -136,10 +138,13 @@ public class S3_PING2 extends FILE_PING {
         }
 
         if(!skip_bucket_existence_check && !conn.checkBucketExists(location)) {
-            conn.createBucket(location, AWSAuthConnection.LOCATION_DEFAULT, null).connection.getResponseMessage();
+            //conn.createBucket(location, AWSAuthConnection.LOCATION_DEFAULT, null).connection.getResponseMessage();
+            conn.createBucket(location, region, null).connection.getResponseMessage();
         }
         
         mlog("init done.");
+        
+        isInitilized = true;
     }
 
     protected AWSAuthConnection createConnection() {
@@ -188,10 +193,12 @@ public class S3_PING2 extends FILE_PING {
         if(rsp.object == null)
             return;
         byte[] buf=rsp.object.data;
+        String response = new String(buf);
         List<PingData> list;
         if(buf != null && buf.length > 0) {
             try {
-                list=read(new ByteArrayInputStream(buf));
+            	ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+                list=read(bais);
                 if(list != null) {
                     for(PingData data : list) {
                         if(mbrs == null || mbrs.contains(data.getAddress()))
@@ -225,8 +232,10 @@ public class S3_PING2 extends FILE_PING {
                 headers.put("x-amz-acl", Arrays.asList("public-read"));
                 httpConn = conn.put(pre_signed_put_url, val, headers).connection;
             } else {
-                Map headers=new TreeMap();
-                headers.put("Content-Type", Arrays.asList("text/plain"));
+                //Map headers=new TreeMap();
+                Map headers=null;
+                //headers.put("Content-Type", Arrays.asList("text/plain"));
+                //headers.put("Content-Type", "text/plain");
                 httpConn = conn.put(location, key, val, headers).connection;
             }
             if(!httpConn.getResponseMessage().equals("OK")) {
@@ -244,12 +253,13 @@ public class S3_PING2 extends FILE_PING {
         String filename=addressToFilename(addr);//  addr instanceof org.jgroups.util.UUID? ((org.jgroups.util.UUID)addr).toStringLong() : addr.toString();
         String key=sanitize(clustername) + "/" + sanitize(filename);
         try {
-            Map headers=new TreeMap();
-            headers.put("Content-Type", Arrays.asList("text/plain"));
+            //Map headers=new TreeMap();
+            //headers.put("Content-Type", Arrays.asList("text/plain"));
             if (usingPreSignedUrls()) {
                 conn.delete(pre_signed_delete_url).connection.getResponseMessage();
             } else {
-                conn.delete(location, key, headers).connection.getResponseMessage();
+                //conn.delete(location, key, headers).connection.getResponseMessage();
+                conn.delete(location, key, null).connection.getResponseMessage();
             }
             if(log.isTraceEnabled())
                 log.trace("removing " + location + "/" + key);
@@ -301,7 +311,10 @@ public class S3_PING2 extends FILE_PING {
         } else if (pre_signed_put_url != null || pre_signed_delete_url != null) {
             throw new IllegalArgumentException("pre_signed_put_url and pre_signed_delete_url must both be set or both unset");
         }
-        if (prefix != null && location != null) {
+        String default_file_location = File.separator + "tmp" + File.separator + "jgroups";
+        
+        if (prefix != null && location != null && !location.equalsIgnoreCase(default_file_location)) 
+        {
             throw new IllegalArgumentException("set either prefix or location, but not both");
         }
         if (prefix != null && (access_key == null || secret_access_key == null)) {
@@ -495,23 +508,38 @@ public class S3_PING2 extends FILE_PING {
          * @throws IllegalArgumentException on invalid location
          */
         public Response createBucket(String bucket, String location, Map headers) throws IOException {
-            String body;
-            if(location == null) {
-                body=null;
+            
+        	String body = null;
+        	S3Object object = null;
+        	HttpURLConnection request=null;
+       	
+            if(region == null) {
+            	throw new IllegalArgumentException("region cannot be null");
             }
-            else if(LOCATION_EU.equals(location)) {
+            else {
                 if(!callingFormat.supportsLocatedBuckets())
                     throw new IllegalArgumentException("Creating location-constrained bucket with unsupported calling-format");
-                body="<CreateBucketConstraint><LocationConstraint>" + location + "</LocationConstraint></CreateBucketConstraint>";
+                
+                //body="<CreateBucketConstraint><LocationConstraint>" 
+                //+ region 
+                //+ "</LocationConstraint></CreateBucketConstraint>";
+                
+                body="<CreateBucketConfiguration><LocationConstraint>" + region + "</LocationConstraint></CreateBucketConfiguration>";
+
+                object = new S3Object(body.getBytes(), null);
             }
-            else
-                throw new IllegalArgumentException("Invalid Location: " + location);
 
             // validate bucket name
             if(!Utils.validateBucketName(bucket, callingFormat))
                 throw new IllegalArgumentException("Invalid Bucket Name: " + bucket);
-
-            HttpURLConnection request=makeRequest("PUT", bucket, "", null, headers);
+            
+            if(body == null) {
+            	request=makeRequest("CreateBucket", "PUT", bucket, "", null, headers);
+            }else{
+            	request=makeRequest("CreateBucket", "PUT", bucket, "", null, headers, object);            	
+            }
+            
+            
             if(body != null) {
                 request.setDoOutput(true);
                 request.getOutputStream().write(body.getBytes("UTF-8"));
@@ -524,14 +552,35 @@ public class S3_PING2 extends FILE_PING {
          * @param bucket The name of the bucket to check
          * @return true if HEAD access returned success
          */
-        public boolean checkBucketExists(String bucket) throws IOException {
-            HttpURLConnection response=makeRequest("HEAD", bucket, "", null, null);
+        public boolean checkBucketExists(String bucket) throws IOException 
+        {
+        	
+            HttpURLConnection response=makeRequest("CheckBucketExists", "HEAD", bucket, "", null, null);
+            
             int httpCode=response.getResponseCode();
 
-            if(httpCode >= 200 && httpCode < 300)
+            if(httpCode >= 200 && httpCode < 300){
+            	
+            	mlog(
+            			"CheckBucketExists httpCode = " 
+            	+ httpCode 
+            	+ " " 
+            	+ response.getResponseMessage()
+            	);
+            	
                 return true;
+            }else{
+            	mlog(
+            			"CheckBucketExists httpCode = " 
+            	+ httpCode 
+            	+ " " 
+            	+ response.getResponseMessage()
+            	);
+            }
+            
             if(httpCode == HttpURLConnection.HTTP_NOT_FOUND) // bucket doesn't exist
                 return false;
+            
             throw new IOException("bucket '" + bucket + "' could not be accessed (rsp=" +
                     httpCode + " (" + response.getResponseMessage() + "). Maybe the bucket is owned by somebody else or " +
                     "the authentication failed");
@@ -569,7 +618,8 @@ public class S3_PING2 extends FILE_PING {
                                              Integer maxKeys, String delimiter, Map headers) throws IOException {
 
             Map pathArgs=Utils.paramsForListOptions(prefix, marker, maxKeys, delimiter);
-            return new ListBucketResponse(makeRequest("GET", bucket, "", pathArgs, headers));
+            HttpURLConnection connection = makeRequest("ListBucket", "GET", bucket, "", pathArgs, headers);
+            return new ListBucketResponse(connection);
         }
 
         /**
@@ -578,7 +628,7 @@ public class S3_PING2 extends FILE_PING {
          * @param headers A Map of String to List of Strings representing the http headers to pass (can be null).
          */
         public Response deleteBucket(String bucket, Map headers) throws IOException {
-            return new Response(makeRequest("DELETE", bucket, "", null, headers));
+            return new Response(makeRequest("DeleteBucket", "DELETE", bucket, "", null, headers));
         }
 
         /**
@@ -591,7 +641,8 @@ public class S3_PING2 extends FILE_PING {
          */
         public Response put(String bucket, String key, S3Object object, Map headers) throws IOException {
             HttpURLConnection request=
-                    makeRequest("PUT", bucket, Utils.urlencode(key), null, headers, object);
+                    //makeRequest("PutObject", "PUT", bucket, Utils.urlencode(key), null, headers, object);
+            		makeRequest("PutObject", "PUT", bucket, key, null, headers, object);
 
             request.setDoOutput(true);
             request.getOutputStream().write(object.data == null? new byte[]{} : object.data);
@@ -682,7 +733,8 @@ public class S3_PING2 extends FILE_PING {
          *                headers to pass (can be null).
          */
         public GetResponse get(String bucket, String key, Map headers) throws IOException {
-            return new GetResponse(makeRequest("GET", bucket, Utils.urlencode(key), null, headers));
+            //return new GetResponse(makeRequest("GetObject", "GET", bucket, Utils.urlencode(key), null, headers));
+            return new GetResponse(makeRequest("GetObject", "GET", bucket, key, null, headers));
         }
 
         /**
@@ -693,7 +745,8 @@ public class S3_PING2 extends FILE_PING {
          *                headers to pass (can be null).
          */
         public Response delete(String bucket, String key, Map headers) throws IOException {
-            return new Response(makeRequest("DELETE", bucket, Utils.urlencode(key), null, headers));
+            //return new Response(makeRequest("DeleteObject", "DELETE", bucket, Utils.urlencode(key), null, headers));
+            return new Response(makeRequest("DeleteObject", "DELETE", bucket, key, null, headers));
         }
 
         public Response delete(String preSignedUrl) throws IOException {
@@ -709,7 +762,7 @@ public class S3_PING2 extends FILE_PING {
         public GetResponse getBucketRequestPayment(String bucket, Map headers) throws IOException {
             Map pathArgs=new HashMap();
             pathArgs.put("requestPayment", null);
-            return new GetResponse(makeRequest("GET", bucket, "", pathArgs, headers));
+            return new GetResponse(makeRequest("GetBucketRequestPayment", "GET", bucket, "", pathArgs, headers));
         }
 
         /**
@@ -724,7 +777,7 @@ public class S3_PING2 extends FILE_PING {
             Map pathArgs=new HashMap();
             pathArgs.put("requestPayment", null);
             S3Object object=new S3Object(requestPaymentXMLDoc.getBytes(), null);
-            HttpURLConnection request=makeRequest("PUT", bucket, "", pathArgs, headers, object);
+            HttpURLConnection request=makeRequest("PutBucketRequestPayment", "PUT", bucket, "", pathArgs, headers, object);
 
             request.setDoOutput(true);
             request.getOutputStream().write(object.data == null? new byte[]{} : object.data);
@@ -740,7 +793,7 @@ public class S3_PING2 extends FILE_PING {
         public GetResponse getBucketLogging(String bucket, Map headers) throws IOException {
             Map pathArgs=new HashMap();
             pathArgs.put("logging", null);
-            return new GetResponse(makeRequest("GET", bucket, "", pathArgs, headers));
+            return new GetResponse(makeRequest("GetBucketLogging", "GET", bucket, "", pathArgs, headers));
         }
 
         /**
@@ -754,7 +807,7 @@ public class S3_PING2 extends FILE_PING {
             Map pathArgs=new HashMap();
             pathArgs.put("logging", null);
             S3Object object=new S3Object(loggingXMLDoc.getBytes(), null);
-            HttpURLConnection request=makeRequest("PUT", bucket, "", pathArgs, headers, object);
+            HttpURLConnection request=makeRequest("PutBucketLogging", "PUT", bucket, "", pathArgs, headers, object);
 
             request.setDoOutput(true);
             request.getOutputStream().write(object.data == null? new byte[]{} : object.data);
@@ -786,7 +839,8 @@ public class S3_PING2 extends FILE_PING {
             pathArgs.put("acl", null);
 
             return new GetResponse(
-                    makeRequest("GET", bucket, Utils.urlencode(key), pathArgs, headers)
+                    //makeRequest("GetAcl", "GET", bucket, Utils.urlencode(key), pathArgs, headers)
+                    makeRequest("GetAcl", "GET", bucket, key, pathArgs, headers)
             );
         }
 
@@ -816,7 +870,8 @@ public class S3_PING2 extends FILE_PING {
             pathArgs.put("acl", null);
 
             HttpURLConnection request=
-                    makeRequest("PUT", bucket, Utils.urlencode(key), pathArgs, headers, object);
+                    //makeRequest("PutAcl", "PUT", bucket, Utils.urlencode(key), pathArgs, headers, object);
+            		makeRequest("PutAcl", "PUT", bucket, key, pathArgs, headers, object);
 
             request.setDoOutput(true);
             request.getOutputStream().write(object.data == null? new byte[]{} : object.data);
@@ -828,7 +883,7 @@ public class S3_PING2 extends FILE_PING {
                 throws IOException {
             Map pathArgs=new HashMap();
             pathArgs.put("location", null);
-            return new LocationResponse(makeRequest("GET", bucket, "", pathArgs, null));
+            return new LocationResponse(makeRequest("GetBucketLocation", "GET", bucket, "", pathArgs, null));
         }
 
 
@@ -839,7 +894,7 @@ public class S3_PING2 extends FILE_PING {
          */
         public ListAllMyBucketsResponse listAllMyBuckets(Map headers)
                 throws IOException {
-            return new ListAllMyBucketsResponse(makeRequest("GET", "", "", null, headers));
+            return new ListAllMyBucketsResponse(makeRequest("ListAllMyBuckets", "GET", "", "", null, headers));
         }
 
 
@@ -855,9 +910,9 @@ public class S3_PING2 extends FILE_PING {
          * @throws MalformedURLException
          * @throws IOException
          */
-        private HttpURLConnection makeRequest(String method, String bucketName, String key, Map pathArgs, Map headers)
+        private HttpURLConnection makeRequest(String cmdName, String method, String bucketName, String key, Map pathArgs, Map headers)
                 throws IOException {
-            return makeRequest(method, bucketName, key, pathArgs, headers, null);
+            return makeRequest(cmdName, method, bucketName, key, pathArgs, headers, null);
         }
 
 
@@ -871,42 +926,814 @@ public class S3_PING2 extends FILE_PING {
          *                   headers to pass (can be null).
          * @param object     The S3Object that is to be written (can be null).
          */
-        private HttpURLConnection makeRequest(String method, String bucket, String key, Map pathArgs, Map headers,
-                                              S3Object object)
-                throws IOException {
+        private HttpURLConnection makeRequest(
+        		String cmdName
+        		, String method
+        		, String bucket
+        		, String key
+        		, Map pathArgs
+        		, Map headers
+        		, S3Object object) throws IOException 
+        {
+        	HttpURLConnection connection = null;
+
+        	if(cmdName.equalsIgnoreCase("CreateBucket")){
+        		connection = makeCreateBucketRequest(bucket, object);
+        	}
+
+        	if(cmdName.equalsIgnoreCase("ListAllMyBuckets")){
+        		connection = makeListAllMyBucketsRequest();
+        	}
+
+        	if(cmdName.equalsIgnoreCase("CheckBucketExists")){
+        		connection = makeCheckBucketExistsRequest(bucket);
+        	}
+        	
+        	if(cmdName.equalsIgnoreCase("ListBucket")){
+        		connection = makeListBucketRequest(bucket, pathArgs, headers);
+        	}
+
+        	if(cmdName.equalsIgnoreCase("GetObject")){
+        		connection = makeGetObjectRequest(bucket, key);
+        	}
+        	
+        	if(cmdName.equalsIgnoreCase("PutObject")){
+        		connection = makePutObjectRequest(bucket, key, headers, object);
+        	}
+        	
+        	if(cmdName.equalsIgnoreCase("DeleteObject")){
+        		connection = makeDeleteObjectRequest(bucket, key);
+        	}
+        	
+        	if(cmdName.equalsIgnoreCase("GetBucketLocation")){
+        		connection = makeGetBucketLocationRequest(bucket, pathArgs);
+        	}
+        	
+        	if(cmdName.equalsIgnoreCase("DeleteBucket")){
+        		connection = makeDeleteBucketRequest(bucket);
+        	}
+
+        	if(cmdName.equalsIgnoreCase("GetBucketRequestPayment")){
+        		connection = makeGetBucketRequestPaymentRequest(bucket);
+        	}
+
+        	if(cmdName.equalsIgnoreCase("GetAcl")){
+        		connection = makeGetAclRequest(bucket);
+        	}
+        	
+        	if(cmdName.equalsIgnoreCase("GetBucketLogging")){
+        		connection = makeGetBucketLoggingRequest(bucket);
+        	}
+
+        	if(cmdName.equalsIgnoreCase("PutAcl")){
+        		connection = makePutAclRequest(bucket, object);
+        	}
+        	
+        	if(cmdName.equalsIgnoreCase("PutBucketRequestPayment")){
+        		connection = makePutBucketRequestPaymentRequest(bucket, object);
+        	}
+
+        	if(cmdName.equalsIgnoreCase("PutBucketLogging")){
+        		connection = makePutBucketLoggingRequest(bucket, object);
+        	}
+
+
+
+        	
+      	return connection;
+        	 
+        }
+
+        private HttpURLConnection makeGetBucketRequestPaymentRequest(String bucket) throws IOException 
+        {
             CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
             if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
                 System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
             }
-
-            //-mm-///////////////////////////////////////////////////
-            // adjust the server for region if not us-east-1
-            // if us-east-1 we use the default server
-            if(region!=null && !region.equalsIgnoreCase("us-east-1")){
-            	server = "s3-" + region + ".amazonaws.com";
-            }
-            S3_PING2.mlog("server: " + server);
-            /////////////////////////////////////////////////////-mm-
+                        
+            Map<String, String>  headers = new HashMap<String, String>();
+            String bodyHash = AWS4Signer.EMPTY_BODY_SHA256;
+            headers.put("x-amz-content-sha256", bodyHash);
             
-            // build the domain based on the calling format
-            URL url=format.getURL(isSecure, server, this.port, bucket, key, pathArgs);
+            //Map<String, String> queryParameters = pathArgs;
+            Map<String, String> queryParameters = new HashMap<String, String>();
+            String cmd = "requestPayment";
+            queryParameters.put(cmd, "");
 
-            HttpURLConnection connection=(HttpURLConnection)url.openConnection();
-            connection.setRequestMethod(method);
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		isSecure, "GET", bucket, region, headers, 
+            		queryParameters, bodyHash, awsAccessKeyId, awsSecretAccessKey);
+            
+            headers.put( "Authorization", authorization );
+            
+            URL endpointUrl = null;
+            String scheme = isSecure?"https://":"http://";
+    		try {
+    			endpointUrl = new URL(scheme + bucket + ".s3.amazonaws.com/?" + cmd);
+    		} catch (MalformedURLException e) {
+    			e.printStackTrace();
+    		}
+			
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "GET", headers, null );
+    		
+    		int rspCode = connection.getResponseCode();
+    		String rspMsg = connection.getResponseMessage();
+    		mlog("GetBucketRequestPayment rspCode " + rspCode + " " + rspMsg);
+ 
+            return connection;
+        }
+        
+        private HttpURLConnection makeGetBucketLoggingRequest(String bucket) throws IOException 
+        {
+            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+                System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+            }
+                        
+            Map<String, String>  headers = new HashMap<String, String>();
+            String bodyHash = AWS4Signer.EMPTY_BODY_SHA256;
+            headers.put("x-amz-content-sha256", bodyHash);
+            
+            //Map<String, String> queryParameters = pathArgs;
+            Map<String, String> queryParameters = new HashMap<String, String>();
+            String cmd = "logging";
+            queryParameters.put(cmd, "");
 
-            // subdomain-style urls may encounter http redirects.
-            // Ensure that redirects are supported.
-            if(!connection.getInstanceFollowRedirects()
-                    && format.supportsLocatedBuckets())
-                throw new RuntimeException("HTTP redirect support required.");
-
-            addHeaders(connection, headers);
-            if(object != null) addMetadataHeaders(connection, object.metadata);
-            addAuthHeader(connection, method, bucket, key, pathArgs);
-
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		isSecure, "GET", bucket, region, headers, 
+            		queryParameters, bodyHash, awsAccessKeyId, awsSecretAccessKey);
+            
+            headers.put( "Authorization", authorization );
+            
+            URL endpointUrl = null;
+            String scheme = isSecure?"https://":"http://";
+    		try {
+    			endpointUrl = new URL(scheme + bucket + ".s3.amazonaws.com/?" + cmd);
+    		} catch (MalformedURLException e) {
+    			e.printStackTrace();
+    		}
+			
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "GET", headers, null );
+    		
+    		int rspCode = connection.getResponseCode();
+    		String rspMsg = connection.getResponseMessage();
+    		mlog("GetBucketLogging rspCode " + rspCode + " " + rspMsg);
+ 
             return connection;
         }
 
+        private HttpURLConnection makeGetAclRequest(String bucket) throws IOException 
+        {
+        	        	
+            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+                System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+            }
+                        
+            Map<String, String>  headers = new HashMap<String, String>();
+            String bodyHash = AWS4Signer.EMPTY_BODY_SHA256;
+            headers.put("x-amz-content-sha256", bodyHash);
+            
+            //Map<String, String> queryParameters = pathArgs;
+            Map<String, String> queryParameters = new HashMap<String, String>();
+            String cmd = "acl";
+            queryParameters.put(cmd, "");
+
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		isSecure, "GET", bucket, region, headers, 
+            		queryParameters, bodyHash, awsAccessKeyId, awsSecretAccessKey);
+            
+            headers.put( "Authorization", authorization );
+            
+            URL endpointUrl = null;
+            String scheme = isSecure?"https://":"http://";
+    		try {
+    			endpointUrl = new URL(scheme + bucket + ".s3.amazonaws.com/?" + cmd);
+    		} catch (MalformedURLException e) {
+    			e.printStackTrace();
+    		}
+			
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "GET", headers, null );
+    		
+    		int rspCode = connection.getResponseCode();
+    		String rspMsg = connection.getResponseMessage();
+    		mlog("GetAcl rspCode " + rspCode + " " + rspMsg);
+ 
+            return connection;
+        }
+        
+        //////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////
+
+        private HttpURLConnection makePutAclRequest(String bucket, S3Object object) throws IOException 
+        {
+        	
+        	CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+        	if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+        		System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+        	}
+
+        	// OBJECT
+        	String objectContent = new String(object.data);
+        	String content_length = "" + objectContent.length();
+        	byte[] contentHash = AWS4Signer.hash(objectContent);
+        	String bodyHash = AWS4Signer.toHex(contentHash);
+
+        	// HEADERS
+        	HashMap<String, String> headers = new HashMap<String, String>();
+        	headers.put("content-length", content_length);
+        	headers.put("x-amz-content-sha256", bodyHash);
+        	headers.put("x-amz-storage-class", "REDUCED_REDUNDANCY");
+
+        	// QUERY PARAMETERS
+            Map<String, String> queryParameters = new HashMap<String, String>();
+            String cmd = "acl";
+            queryParameters.put(cmd, "");
+
+            // AWS V4 AUTH
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		isSecure, "PUT", bucket, region, headers, 
+            		queryParameters, bodyHash, awsAccessKeyId, awsSecretAccessKey);
+            headers.put( "Authorization", authorization );
+            
+            // URL ENDPOINT
+            URL endpointUrl = null;
+            String scheme = isSecure?"https://":"http://";
+    		try {
+    			endpointUrl = new URL(scheme + bucket + ".s3.amazonaws.com/?" + cmd);
+    		} catch (MalformedURLException e) {
+    			e.printStackTrace();
+    		}
+			
+    		// CREATE CONNECTION
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "PUT", headers, null );
+
+    		// RETURN CONNECTION
+        	return connection;
+        }
+
+        private HttpURLConnection makePutBucketRequestPaymentRequest(String bucket, S3Object object) throws IOException 
+        {
+        	CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+        	if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+        		System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+        	}
+
+        	// OBJECT
+        	String objectContent = new String(object.data);
+        	String content_length = "" + objectContent.length();
+        	byte[] contentHash = AWS4Signer.hash(objectContent);
+        	String bodyHash = AWS4Signer.toHex(contentHash);
+
+        	// HEADERS
+        	HashMap<String, String> headers = new HashMap<String, String>();
+        	headers.put("content-length", content_length);
+        	headers.put("x-amz-content-sha256", bodyHash);
+        	headers.put("x-amz-storage-class", "REDUCED_REDUNDANCY");
+
+        	// QUERY PARAMETERS
+            Map<String, String> queryParameters = new HashMap<String, String>();
+            String cmd = "requestPayment";
+            queryParameters.put(cmd, "");
+
+            // AWS V4 AUTH
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		isSecure, "PUT", bucket, region, headers, 
+            		queryParameters, bodyHash, awsAccessKeyId, awsSecretAccessKey);
+            headers.put( "Authorization", authorization );
+            
+            // URL ENDPOINT
+            URL endpointUrl = null;
+            String scheme = isSecure?"https://":"http://";
+    		try {
+    			endpointUrl = new URL(scheme + bucket + ".s3.amazonaws.com/?" + cmd);
+    		} catch (MalformedURLException e) {
+    			e.printStackTrace();
+    		}
+			
+    		// CREATE CONNECTION
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "PUT", headers, null );
+
+    		// RETURN CONNECTION
+        	return connection;
+        }
+        
+        private HttpURLConnection makePutBucketLoggingRequest(String bucket, S3Object object) throws IOException 
+        {
+        	CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+        	if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+        		System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+        	}
+
+        	// OBJECT
+        	String objectContent = new String(object.data);
+        	String content_length = "" + objectContent.length();
+        	byte[] contentHash = AWS4Signer.hash(objectContent);
+        	String bodyHash = AWS4Signer.toHex(contentHash);
+
+        	// HEADERS
+        	HashMap<String, String> headers = new HashMap<String, String>();
+        	headers.put("content-length", content_length);
+        	headers.put("x-amz-content-sha256", bodyHash);
+        	headers.put("x-amz-storage-class", "REDUCED_REDUNDANCY");
+
+        	// QUERY PARAMETERS
+            Map<String, String> queryParameters = new HashMap<String, String>();
+            String cmd = "logging";
+            queryParameters.put(cmd, "");
+
+            // AWS V4 AUTH
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		isSecure, "PUT", bucket, region, headers, 
+            		queryParameters, bodyHash, awsAccessKeyId, awsSecretAccessKey);
+            headers.put( "Authorization", authorization );
+            
+            // URL ENDPOINT
+            URL endpointUrl = null;
+            String scheme = isSecure?"https://":"http://";
+    		try {
+    			endpointUrl = new URL(scheme + bucket + ".s3.amazonaws.com/?" + cmd);
+    		} catch (MalformedURLException e) {
+    			e.printStackTrace();
+    		}
+			
+    		// CREATE CONNECTION
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "PUT", headers, null );
+
+    		// RETURN CONNECTION
+        	return connection;
+        }
+
+        
+        //////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////      
+        
+        private HttpURLConnection makeDeleteBucketRequest(String bucket) throws IOException 
+        {
+                CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+                if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+                    System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+                }
+                            
+                Map<String, String> headers = new HashMap<String, String>();
+                String bodyHash = AWS4Signer.EMPTY_BODY_SHA256;
+                headers.put("x-amz-content-sha256", bodyHash);
+                
+                Map<String, String> queryParameters = new HashMap<String, String>();
+                
+                URL endpointUrl = null;
+        		try {
+                    if(region!=null	&& !region.equalsIgnoreCase("us-east-1")){
+                    	server = "s3-" + region + ".amazonaws.com";
+                    }
+                    String scheme = isSecure?"https://":"http://";
+        			endpointUrl = new URL(scheme + bucket + "." + server);
+        		} catch (MalformedURLException e) {
+        			e.printStackTrace();
+        		}
+                String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+                		endpointUrl, "DELETE", bucket, region, 
+                		headers, queryParameters, bodyHash, awsAccessKeyId, 
+                		awsSecretAccessKey);
+                
+                headers.put( "Authorization", authorization );
+                
+        		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+                		endpointUrl, "DELETE", headers, null );
+                           
+                return connection;
+        }
+        
+        private HttpURLConnection makeGetBucketLocationRequest(String bucket, Map pathArgs) throws IOException 
+        {
+        	        	
+            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+                System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+            }
+                        
+            Map<String, String>  headers = new HashMap<String, String>();
+            String bodyHash = AWS4Signer.EMPTY_BODY_SHA256;
+            headers.put("x-amz-content-sha256", bodyHash);
+            
+            //Map<String, String> queryParameters = pathArgs;
+            Map<String, String> queryParameters = new HashMap<String, String>();
+            String cmd = "location";
+            queryParameters.put(cmd, "");
+
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		isSecure, "GET", bucket, region, headers, 
+            		queryParameters, bodyHash, awsAccessKeyId, awsSecretAccessKey);
+            
+            headers.put( "Authorization", authorization );
+            
+            URL endpointUrl = null;
+            String scheme = isSecure?"https://":"http://";
+    		try {
+    			endpointUrl = new URL(scheme + bucket + ".s3.amazonaws.com/?" + cmd);
+    		} catch (MalformedURLException e) {
+    			e.printStackTrace();
+    		}
+			
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "GET", headers, null );
+    		
+    		int rspCode = connection.getResponseCode();
+    		String rspMsg = connection.getResponseMessage();
+    		mlog("GetBucketLocation rspCode " + rspCode + " " + rspMsg);
+ 
+            return connection;
+        }
+        
+        private HttpURLConnection makeCreateBucketRequest(String bucket, S3Object object) throws IOException 
+        {
+        	        	
+            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+                System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+            }
+                        
+            
+        	String objectContent = new String(object.data);
+            String content_length = "" + objectContent.length();
+            byte[] contentHash = AWS4Signer.hash(objectContent);
+            String bodyHash = AWS4Signer.toHex(contentHash);
+            
+            HashMap<String, String> headers = new HashMap<String, String>();
+            headers.put("content-length", content_length);
+            headers.put("x-amz-acl", "public-read");
+            headers.put("x-amz-content-sha256", bodyHash);
+            headers.put("x-amz-storage-class", "REDUCED_REDUNDANCY");
+            
+            Map<String, String> queryParameters = new HashMap<String, String>();
+
+            URL endpointUrl = null;
+    		try {
+                if(region!=null	&& !region.equalsIgnoreCase("us-east-1")){
+                	server = "s3-" + region + ".amazonaws.com";
+                }
+                String scheme = isSecure?"https://":"http://";
+    			endpointUrl = new URL(scheme + bucket + "." + server);
+    		} catch (MalformedURLException e) {
+    			e.printStackTrace();
+    		}
+            
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		endpointUrl, "PUT", bucket, region, 
+            		headers, queryParameters, bodyHash, awsAccessKeyId, 
+            		awsSecretAccessKey);
+            
+            headers.put( "Authorization", authorization );
+            
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "PUT", headers, null );
+                       
+            return connection;
+        }
+ 
+        private HttpURLConnection makeListAllMyBucketsRequest() throws IOException 
+        {
+        	        	
+            Map<String, String> queryParameters = null;
+            Map<String, String> headers = new HashMap<String, String>();
+            String bodyHash = null;
+            bodyHash = AWS4Signer.EMPTY_BODY_SHA256;
+            headers.put("x-amz-content-sha256", bodyHash);
+            
+            URL endpointUrl = null;
+    		try {
+                //if(region!=null	&& !region.equalsIgnoreCase("us-east-1")){
+                //	server = "s3-" + region + ".amazonaws.com";
+                //}
+                String scheme = isSecure?"https://":"http://";
+    			endpointUrl = new URL(scheme + server);
+
+    		} catch (MalformedURLException e) {
+    			e.printStackTrace();
+    		}
+    		
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		isSecure, "GET", headers, queryParameters, 
+            		bodyHash, awsAccessKeyId, awsSecretAccessKey);
+    		
+             headers.put( "Authorization", authorization );
+
+    		
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "GET", headers, null );
+    		
+    		int rspCode = connection.getResponseCode();
+    		String rspMsg = connection.getResponseMessage();
+    		mlog("ListAllMyBuckets rspCode " + rspCode + " " + rspMsg);
+    		 
+            return connection;
+        }
+  
+        private HttpURLConnection makeDeleteObjectRequest(String bucket, String key) throws IOException 
+        {
+        	        	
+            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+                System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+            }
+                        
+            Map<String, String> headers = new HashMap<String, String>();
+            String bodyHash = AWS4Signer.EMPTY_BODY_SHA256;
+            headers.put("x-amz-content-sha256", bodyHash);
+            
+            Map<String, String> queryParameters = new HashMap<String, String>();
+            
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		isSecure, "DELETE", bucket, key, region, 
+            		headers, queryParameters, bodyHash, awsAccessKeyId, 
+            		awsSecretAccessKey);
+            
+            headers.put( "Authorization", authorization );
+
+            URL endpointUrl = AWS4Signer.buildEndpointURLForVirtualHostedStyle( 
+            		isSecure, region, bucket, key );
+            
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "DELETE", headers, null );
+                       
+            return connection;
+        }
+        
+        private HttpURLConnection makePutObjectRequest(String bucket, String key, Map headers, S3Object object) throws IOException 
+        {
+        	        	
+            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+                System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+            }
+                        
+            
+        	String objectContent = new String(object.data);
+            String content_length = "" + objectContent.length();
+            byte[] contentHash = AWS4Signer.hash(objectContent);
+            String bodyHash = AWS4Signer.toHex(contentHash);
+            
+            headers = new HashMap<String, String>();
+            headers.put("content-length", content_length);
+            headers.put("x-amz-content-sha256", bodyHash);
+            headers.put("x-amz-storage-class", "REDUCED_REDUNDANCY");
+            
+            Map<String, String> queryParameters = new HashMap<String, String>();
+            
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		isSecure, "PUT", bucket, key, region, 
+            		headers, queryParameters, bodyHash, awsAccessKeyId, 
+            		awsSecretAccessKey);
+            
+            headers.put( "Authorization", authorization );
+
+            URL endpointUrl = AWS4Signer.buildEndpointURLForVirtualHostedStyle( 
+            		isSecure, region, bucket, key );
+            
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "PUT", headers, null );
+                       
+            return connection;
+        }
+        
+        private HttpURLConnection makeGetObjectRequest(String bucket, String key) throws IOException 
+        {
+        	        	
+            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+                System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+            }
+                        
+            Map<String, String> queryParameters = null;
+            
+            Map<String, String> headers = new HashMap<String, String>();
+            String bodyHash = null;
+            bodyHash = AWS4Signer.EMPTY_BODY_SHA256;
+            headers.put("x-amz-content-sha256", bodyHash);
+                		
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		isSecure, "GET", bucket, key, region, 
+            		headers, queryParameters, bodyHash, awsAccessKeyId, 
+            		awsSecretAccessKey);
+            
+            headers.put( "Authorization", authorization );
+    		
+            URL endpointUrl = AWS4Signer.buildEndpointURLForVirtualHostedStyle( 
+            		isSecure, region, bucket, key );
+            
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "GET", headers, null );
+    		
+            return connection;
+        }
+        
+        private HttpURLConnection makeListBucketRequest(String bucket, Map pathArgs, Map headers) throws IOException 
+        {
+        	        	
+            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+                System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+            }
+                        
+            Map<String, String> queryParameters = null;
+            
+            if(headers == null)
+            	headers = new HashMap<String, String>();
+            String bodyHash = null;
+            bodyHash = AWS4Signer.EMPTY_BODY_SHA256;
+            headers.put("x-amz-content-sha256", bodyHash);
+            
+            URL endpointUrl = null;
+    		try {
+                if(region!=null	&& !region.equalsIgnoreCase("us-east-1")){
+                	server = "s3-" + region + ".amazonaws.com";
+                }
+                String scheme = isSecure?"https://":"http://";
+    			endpointUrl = new URL(scheme + bucket + "." + server);
+    			
+    		} catch (MalformedURLException e) {
+    			e.printStackTrace();
+    		}
+    		
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		endpointUrl
+     				, "GET"
+     				, bucket
+     				, region
+     				, headers
+     				, queryParameters
+     				, bodyHash
+     				, awsAccessKeyId
+     				, awsSecretAccessKey
+     				);
+             headers.put( "Authorization", authorization );
+
+    		
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "GET", headers, null );
+    		
+    		int rspCode = connection.getResponseCode();
+    		String rspMsg = connection.getResponseMessage();
+    		mlog("ListBucket rspCode " + rspCode + " " + rspMsg);
+    		
+            // subdomain-style urls may encounter http redirects.
+            // Ensure that redirects are supported.
+            if(!connection.getInstanceFollowRedirects() && format.supportsLocatedBuckets())
+                throw new RuntimeException("HTTP redirect support required.");
+ 
+            return connection;
+        }
+        
+        private HttpURLConnection makeCheckBucketExistsRequest(String bucket) throws IOException {
+        	        	
+            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+                System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+            }
+                        
+            Map<String, String> queryParameters = null;
+            Map<String, String> headers = new HashMap<String, String>();
+            String bodyHash = null;
+            bodyHash = AWS4Signer.EMPTY_BODY_SHA256;
+            headers.put("x-amz-content-sha256", bodyHash);
+            
+            URL endpointUrl = AWS4Signer.buildEndpointURLForVirtualHostedStyle( 
+                		isSecure, region, bucket, "" );
+    		
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		endpointUrl
+     				, "HEAD"
+     				, bucket
+     				, region
+     				, headers
+     				, queryParameters
+     				, bodyHash
+     				, awsAccessKeyId
+     				, awsSecretAccessKey
+     				);
+             headers.put( "Authorization", authorization );
+
+    		
+    		HttpURLConnection connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, "HEAD", headers, null );
+    		
+            // subdomain-style urls may encounter http redirects.
+            // Ensure that redirects are supported.
+            if(!connection.getInstanceFollowRedirects() && format.supportsLocatedBuckets())
+                throw new RuntimeException("HTTP redirect support required.");
+ 
+            return connection;
+        }
+        
+        //////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////
+
+        private HttpURLConnection makeRequestBackup(
+        		String cmdName
+        		, String method
+        		, String bucket
+        		, String key
+        		, Map pathArgs
+        		, Map headers
+        		, S3Object object) throws IOException 
+        {
+        	        	
+            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+            
+            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+                System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
+            }
+            
+            //-mm-///////////////////////////////////////////////////
+            // adjust the server for region if not us-east-1
+            // if us-east-1 we use the default server
+            //if(region!=null 
+            //		&& !region.equalsIgnoreCase("us-east-1") 
+            //		&& !cmdName.equalsIgnoreCase("ListAllMyBuckets")
+            //		&& !cmdName.equalsIgnoreCase("CheckBucketExists")
+            //		)
+            //{
+            	//server = "s3-" + region + ".amazonaws.com";
+            //}
+            //S3_PING2.mlog("server: " + server);
+            /////////////////////////////////////////////////////-mm-
+            
+            // build the domain based on the calling format
+            //URL url=format.getURL(isSecure, server, this.port, bucket, key, pathArgs);
+            //HttpURLConnection connection=(HttpURLConnection)url.openConnection();
+            //connection.setRequestMethod(method);
+            //addHeaders(connection, headers);
+            
+            
+            String bodyHash = null;
+            //if(key == null)key = "";
+            Map<String, String> queryParameters = pathArgs;
+            if(headers == null) headers = new HashMap<String, String>();
+            if(object != null)
+            {
+            	String objectContent = new String(object.data);
+                String content_length = "" + objectContent.length();
+                byte[] contentHash = AWS4Signer.hash(objectContent);
+                bodyHash = AWS4Signer.toHex(contentHash);
+                headers.put("content-length", content_length);
+                headers.put("x-amz-content-sha256", bodyHash);
+                headers.put("x-amz-storage-class", "REDUCED_REDUNDANCY");
+            }else{
+            	bodyHash = AWS4Signer.EMPTY_BODY_SHA256;
+                headers.put("x-amz-content-sha256", bodyHash);
+            }
+            
+            String authorization = AWS4Signer.getAWS4AuthorizationForHeader(
+            		isSecure
+     				, method
+     				, bucket
+     				, region
+     				, headers
+     				, queryParameters
+     				, bodyHash
+     				, awsAccessKeyId
+     				, awsSecretAccessKey
+     				);
+             headers.put( "Authorization", authorization );
+
+            URL endpointUrl = null;
+    		try {
+    			endpointUrl = new URL("https://" + bucket + ".s3.amazonaws.com");
+    		} catch (MalformedURLException e) {
+    			e.printStackTrace();
+    		}
+    		
+    		HttpURLConnection connection = null;
+    		if(object == null){
+    			connection = AWS4Signer.getHttpRequest( 
+            		endpointUrl, method, headers, null );
+    		}else{
+    			String requestBody = new String(object.data);
+    			connection = AWS4Signer.getHttpRequest( 
+                		endpointUrl, method, headers, requestBody );    			
+    		}
+
+            // subdomain-style urls may encounter http redirects.
+            // Ensure that redirects are supported.
+            if(!connection.getInstanceFollowRedirects() && format.supportsLocatedBuckets())
+                throw new RuntimeException("HTTP redirect support required.");
+ 
+            //addHeaders(connection, headers);
+            //addMetadataHeaders(connection, object.metadata);
+
+     		//connection.setRequestProperty("Authorization", authorization);
+          
+            //addAuthHeader(connection, method, bucket, key, pathArgs);
+
+            return connection;
+        }
+      
         private HttpURLConnection makePreSignedRequest(String method, String preSignedUrl, Map headers) throws IOException {
             URL url = new URL(preSignedUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -916,7 +1743,11 @@ public class S3_PING2 extends FILE_PING {
 
             return connection;
         }
-
+        
+        //////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////
+        
+        
         /**
          * Add the given headers to the HttpURLConnection.
          * @param connection The HttpURLConnection to which the headers will be added.
@@ -964,20 +1795,44 @@ public class S3_PING2 extends FILE_PING {
          * @param key        the key this request is for
          * @param pathArgs   path arguments which are part of this request
          */
-        private void addAuthHeader(HttpURLConnection connection, String method, String bucket, String key, Map pathArgs) {
-            if(connection.getRequestProperty("Date") == null) {
+        private void addAuthHeader(
+        		HttpURLConnection connection
+        		, String method
+        		, String bucket
+        		, String key
+        		, Map pathArgs
+        		) 
+        {
+            if(connection.getRequestProperty("Date") == null) 
+            {
                 connection.setRequestProperty("Date", httpDate());
             }
-            if(connection.getRequestProperty("Content-Type") == null) {
+            
+            if(connection.getRequestProperty("Content-Type") == null) 
+            {
                 connection.setRequestProperty("Content-Type", "");
             }
 
-            if(this.awsAccessKeyId != null && this.awsSecretAccessKey != null) {
-                String canonicalString=
-                        Utils.makeCanonicalString(method, bucket, key, pathArgs, connection.getRequestProperties());
-                String encodedCanonical=Utils.encode(this.awsSecretAccessKey, canonicalString, false);
-                connection.setRequestProperty("Authorization",
-                                              "AWS " + this.awsAccessKeyId + ":" + encodedCanonical);
+            if(this.awsAccessKeyId != null && this.awsSecretAccessKey != null) 
+            {
+                String canonicalString =
+                        Utils.makeCanonicalString(
+                        		method, bucket, key, pathArgs
+                        		, connection.getRequestProperties()
+                        		);
+                
+                String encodedCanonical = 
+                		Utils.encode(
+                				this.awsSecretAccessKey
+                				, canonicalString
+                				, false
+                		);
+                
+                connection.setRequestProperty(
+                		"Authorization",
+                		"AWS " + this.awsAccessKeyId + ":" 
+                		+ encodedCanonical
+                		);
             }
         }
 

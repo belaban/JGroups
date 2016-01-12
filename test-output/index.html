@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+  <title>TestNG reports</title>
+
+    <link type="text/css" href="testng-reports.css" rel="stylesheet" />  
+    <script type="text/javascript" src="jquery-1.7.1.min.js"></script>
+    <script type="text/javascript" src="testng-reports.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type='text/javascript'>
+      google.load('visualization', '1', {packages:['table']});
+      google.setOnLoadCallback(drawTable);
+      var suiteTableInitFunctions = new Array();
+      var suiteTableData = new Array();
+    </script>
+    <!--
+      <script type="text/javascript" src="jquery-ui/js/jquery-ui-1.8.16.custom.min.js"></script>
+     -->
+  </head>
+
+  <body>
+    <div class="top-banner-root">
+      <span class="top-banner-title-font">Test results</span>
+      <br/>
+      <span class="top-banner-font-1">1 suite</span>
+    </div> <!-- top-banner-root -->
+    <div class="navigator-root">
+      <div class="navigator-suite-header">
+        <span>All suites</span>
+        <a href="#" class="collapse-all-link" title="Collapse/expand all the suites">
+          <img class="collapse-all-icon" src="collapseall.gif">
+          </img> <!-- collapse-all-icon -->
+        </a> <!-- collapse-all-link -->
+      </div> <!-- navigator-suite-header -->
+      <div class="suite">
+        <div class="rounded-window">
+          <div class="suite-header light-rounded-window-top">
+            <a href="#" class="navigator-link" panel-name="suite-Default_suite">
+              <span class="suite-name border-passed">Default suite</span>
+            </a> <!-- navigator-link -->
+          </div> <!-- suite-header light-rounded-window-top -->
+          <div class="navigator-suite-content">
+            <div class="suite-section-title">
+              <span>Info</span>
+            </div> <!-- suite-section-title -->
+            <div class="suite-section-content">
+              <ul>
+                <li>
+                  <a href="#" class="navigator-link " panel-name="test-xml-Default_suite">
+                    <span>C:\Users\dev\AppData\Local\Temp\testng-eclipse-1576772765\testng-customsuite.xml</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+                <li>
+                  <a href="#" class="navigator-link " panel-name="testlist-Default_suite">
+                    <span class="test-stats">1 test</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+                <li>
+                  <a href="#" class="navigator-link " panel-name="group-Default_suite">
+                    <span>1 group</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+                <li>
+                  <a href="#" class="navigator-link " panel-name="times-Default_suite">
+                    <span>Times</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+                <li>
+                  <a href="#" class="navigator-link " panel-name="reporter-Default_suite">
+                    <span>Reporter output</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+                <li>
+                  <a href="#" class="navigator-link " panel-name="ignored-methods-Default_suite">
+                    <span>Ignored methods</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+                <li>
+                  <a href="#" class="navigator-link " panel-name="chronological-Default_suite">
+                    <span>Chronological view</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+              </ul>
+            </div> <!-- suite-section-content -->
+            <div class="result-section">
+              <div class="suite-section-title">
+                <span>Results</span>
+              </div> <!-- suite-section-title -->
+              <div class="suite-section-content">
+                <ul>
+                  <li>
+                    <span class="method-stats">32 methods,   32 passed</span>
+                  </li>
+                  <li>
+                    <span class="method-list-title passed">Passed methods</span>
+                    <span class="show-or-hide-methods passed">
+                      <a href="#" panel-name="suite-Default_suite" class="hide-methods passed suite-Default_suite"> (hide)</a> <!-- hide-methods passed suite-Default_suite -->
+                      <a href="#" panel-name="suite-Default_suite" class="show-methods passed suite-Default_suite"> (show)</a> <!-- show-methods passed suite-Default_suite -->
+                    </span>
+                    <div class="method-list-content passed suite-Default_suite">
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testCheckBucketExists">testCheckBucketExists</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testCreateBucket">testCreateBucket</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testDeleteBucket">testDeleteBucket</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testDeleteObject">testDeleteObject</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testGeneratePreSignedUrlForDelete">testGeneratePreSignedUrlForDelete</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testGeneratePreSignedUrlForPut">testGeneratePreSignedUrlForPut</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testGenerateQueryStringAuthenticationWithBasicGet">testGenerateQueryStringAuthenticationWithBasicGet</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testGenerateQueryStringAuthenticationWithBasicPost">testGenerateQueryStringAuthenticationWithBasicPost</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testGenerateQueryStringAuthenticationWithBasicPutAndHeaders">testGenerateQueryStringAuthenticationWithBasicPutAndHeaders</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testGetAcl">testGetAcl</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testGetBucketLocation">testGetBucketLocation</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testGetBucketLogging">testGetBucketLogging</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testGetBucketRequestPayment">testGetBucketRequestPayment</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testGetObject">testGetObject</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testListAllMyBuckets">testListAllMyBuckets</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testListBucket">testListBucket</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testPreSignedUrlParserNoPrefix">testPreSignedUrlParserNoPrefix</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testPreSignedUrlParserWithComplexBucketName">testPreSignedUrlParserWithComplexBucketName</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testPreSignedUrlParserWithPrefix">testPreSignedUrlParserWithPrefix</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testPutAcl">testPutAcl</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testPutBucketLogging">testPutBucketLogging</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testPutBucketRequestPayment">testPutBucketRequestPayment</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testPutObject">testPutObject</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testUsingPreSignedUrlWhenNotSet">testUsingPreSignedUrlWhenNotSet</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testUsingPreSignedUrlWhenSet">testUsingPreSignedUrlWhenSet</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testValidatePropertiesWithBothPreSignedSetButNoBucket">testValidatePropertiesWithBothPreSignedSetButNoBucket</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testValidatePropertiesWithBothPreSignedSetButNoFile">testValidatePropertiesWithBothPreSignedSetButNoFile</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories">testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testValidatePropertiesWithBothPreSignedSetToValid">testValidatePropertiesWithBothPreSignedSetToValid</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testValidatePropertiesWithBothPreSignedSetToValidSubdirectory">testValidatePropertiesWithBothPreSignedSetToValidSubdirectory</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testValidatePropertiesWithPreSignedDeleteSet">testValidatePropertiesWithPreSignedDeleteSet</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="passed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="org.jgroups.protocols.S3_PING2Test" hash-for-method="testValidatePropertiesWithPreSignedPutSet">testValidatePropertiesWithPreSignedPutSet</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                    </div> <!-- method-list-content passed suite-Default_suite -->
+                  </li>
+                </ul>
+              </div> <!-- suite-section-content -->
+            </div> <!-- result-section -->
+          </div> <!-- navigator-suite-content -->
+        </div> <!-- rounded-window -->
+      </div> <!-- suite -->
+    </div> <!-- navigator-root -->
+    <div class="wrapper">
+      <div class="main-panel-root">
+        <div panel-name="suite-Default_suite" class="panel Default_suite">
+          <div class="suite-Default_suite-class-passed">
+            <div class="main-panel-header rounded-window-top">
+              <img src="passed.png"/>
+              <span class="class-name">org.jgroups.protocols.S3_PING2Test</span>
+            </div> <!-- main-panel-header rounded-window-top -->
+            <div class="main-panel-content rounded-window-bottom">
+              <div class="method">
+                <div class="method-content">
+                  <a name="testCheckBucketExists">
+                  </a> <!-- testCheckBucketExists -->
+                  <span class="method-name">testCheckBucketExists</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testCreateBucket">
+                  </a> <!-- testCreateBucket -->
+                  <span class="method-name">testCreateBucket</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testDeleteBucket">
+                  </a> <!-- testDeleteBucket -->
+                  <span class="method-name">testDeleteBucket</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testDeleteObject">
+                  </a> <!-- testDeleteObject -->
+                  <span class="method-name">testDeleteObject</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testGeneratePreSignedUrlForDelete">
+                  </a> <!-- testGeneratePreSignedUrlForDelete -->
+                  <span class="method-name">testGeneratePreSignedUrlForDelete</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testGeneratePreSignedUrlForPut">
+                  </a> <!-- testGeneratePreSignedUrlForPut -->
+                  <span class="method-name">testGeneratePreSignedUrlForPut</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testGenerateQueryStringAuthenticationWithBasicGet">
+                  </a> <!-- testGenerateQueryStringAuthenticationWithBasicGet -->
+                  <span class="method-name">testGenerateQueryStringAuthenticationWithBasicGet</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testGenerateQueryStringAuthenticationWithBasicPost">
+                  </a> <!-- testGenerateQueryStringAuthenticationWithBasicPost -->
+                  <span class="method-name">testGenerateQueryStringAuthenticationWithBasicPost</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testGenerateQueryStringAuthenticationWithBasicPutAndHeaders">
+                  </a> <!-- testGenerateQueryStringAuthenticationWithBasicPutAndHeaders -->
+                  <span class="method-name">testGenerateQueryStringAuthenticationWithBasicPutAndHeaders</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testGetAcl">
+                  </a> <!-- testGetAcl -->
+                  <span class="method-name">testGetAcl</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testGetBucketLocation">
+                  </a> <!-- testGetBucketLocation -->
+                  <span class="method-name">testGetBucketLocation</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testGetBucketLogging">
+                  </a> <!-- testGetBucketLogging -->
+                  <span class="method-name">testGetBucketLogging</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testGetBucketRequestPayment">
+                  </a> <!-- testGetBucketRequestPayment -->
+                  <span class="method-name">testGetBucketRequestPayment</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testGetObject">
+                  </a> <!-- testGetObject -->
+                  <span class="method-name">testGetObject</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testListAllMyBuckets">
+                  </a> <!-- testListAllMyBuckets -->
+                  <span class="method-name">testListAllMyBuckets</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testListBucket">
+                  </a> <!-- testListBucket -->
+                  <span class="method-name">testListBucket</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testPreSignedUrlParserNoPrefix">
+                  </a> <!-- testPreSignedUrlParserNoPrefix -->
+                  <span class="method-name">testPreSignedUrlParserNoPrefix</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testPreSignedUrlParserWithComplexBucketName">
+                  </a> <!-- testPreSignedUrlParserWithComplexBucketName -->
+                  <span class="method-name">testPreSignedUrlParserWithComplexBucketName</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testPreSignedUrlParserWithPrefix">
+                  </a> <!-- testPreSignedUrlParserWithPrefix -->
+                  <span class="method-name">testPreSignedUrlParserWithPrefix</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testPutAcl">
+                  </a> <!-- testPutAcl -->
+                  <span class="method-name">testPutAcl</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testPutBucketLogging">
+                  </a> <!-- testPutBucketLogging -->
+                  <span class="method-name">testPutBucketLogging</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testPutBucketRequestPayment">
+                  </a> <!-- testPutBucketRequestPayment -->
+                  <span class="method-name">testPutBucketRequestPayment</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testPutObject">
+                  </a> <!-- testPutObject -->
+                  <span class="method-name">testPutObject</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testUsingPreSignedUrlWhenNotSet">
+                  </a> <!-- testUsingPreSignedUrlWhenNotSet -->
+                  <span class="method-name">testUsingPreSignedUrlWhenNotSet</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testUsingPreSignedUrlWhenSet">
+                  </a> <!-- testUsingPreSignedUrlWhenSet -->
+                  <span class="method-name">testUsingPreSignedUrlWhenSet</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testValidatePropertiesWithBothPreSignedSetButNoBucket">
+                  </a> <!-- testValidatePropertiesWithBothPreSignedSetButNoBucket -->
+                  <span class="method-name">testValidatePropertiesWithBothPreSignedSetButNoBucket</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testValidatePropertiesWithBothPreSignedSetButNoFile">
+                  </a> <!-- testValidatePropertiesWithBothPreSignedSetButNoFile -->
+                  <span class="method-name">testValidatePropertiesWithBothPreSignedSetButNoFile</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories">
+                  </a> <!-- testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories -->
+                  <span class="method-name">testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testValidatePropertiesWithBothPreSignedSetToValid">
+                  </a> <!-- testValidatePropertiesWithBothPreSignedSetToValid -->
+                  <span class="method-name">testValidatePropertiesWithBothPreSignedSetToValid</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testValidatePropertiesWithBothPreSignedSetToValidSubdirectory">
+                  </a> <!-- testValidatePropertiesWithBothPreSignedSetToValidSubdirectory -->
+                  <span class="method-name">testValidatePropertiesWithBothPreSignedSetToValidSubdirectory</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testValidatePropertiesWithPreSignedDeleteSet">
+                  </a> <!-- testValidatePropertiesWithPreSignedDeleteSet -->
+                  <span class="method-name">testValidatePropertiesWithPreSignedDeleteSet</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testValidatePropertiesWithPreSignedPutSet">
+                  </a> <!-- testValidatePropertiesWithPreSignedPutSet -->
+                  <span class="method-name">testValidatePropertiesWithPreSignedPutSet</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+            </div> <!-- main-panel-content rounded-window-bottom -->
+          </div> <!-- suite-Default_suite-class-passed -->
+        </div> <!-- panel Default_suite -->
+        <div panel-name="test-xml-Default_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">C:\Users\dev\AppData\Local\Temp\testng-eclipse-1576772765\testng-customsuite.xml</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+            <pre>
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;!DOCTYPE suite SYSTEM &quot;http://testng.org/testng-1.0.dtd&quot;&gt;
+&lt;suite guice-stage=&quot;DEVELOPMENT&quot; name=&quot;Default suite&quot;&gt;
+  &lt;test verbose=&quot;2&quot; name=&quot;Default test&quot;&gt;
+    &lt;classes&gt;
+      &lt;class name=&quot;org.jgroups.protocols.S3_PING2Test&quot;/&gt;
+    &lt;/classes&gt;
+  &lt;/test&gt; &lt;!-- Default test --&gt;
+&lt;/suite&gt; &lt;!-- Default suite --&gt;
+            </pre>
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+        <div panel-name="testlist-Default_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">Tests for Default suite</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+            <ul>
+              <li>
+                <span class="test-name">Default test (1 class)</span>
+              </li>
+            </ul>
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+        <div panel-name="group-Default_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">Groups for Default suite</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+            <div class="test-group">
+              <span class="test-group-name">stack-independent</span>
+              <br/>
+              <div class="method-in-group">
+                <span class="method-in-group-name">testCheckBucketExists</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testCreateBucket</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testDeleteBucket</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testDeleteObject</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testGeneratePreSignedUrlForDelete</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testGeneratePreSignedUrlForPut</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testGenerateQueryStringAuthenticationWithBasicGet</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testGenerateQueryStringAuthenticationWithBasicPost</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testGenerateQueryStringAuthenticationWithBasicPutAndHeaders</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testGetAcl</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testGetBucketLocation</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testGetBucketLogging</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testGetBucketRequestPayment</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testGetObject</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testListAllMyBuckets</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testListBucket</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testPreSignedUrlParserNoPrefix</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testPreSignedUrlParserWithComplexBucketName</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testPreSignedUrlParserWithPrefix</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testPutAcl</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testPutBucketLogging</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testPutBucketRequestPayment</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testPutObject</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testUsingPreSignedUrlWhenNotSet</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testUsingPreSignedUrlWhenSet</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testValidatePropertiesWithBothPreSignedSetButNoBucket</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testValidatePropertiesWithBothPreSignedSetButNoFile</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testValidatePropertiesWithBothPreSignedSetToValid</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testValidatePropertiesWithBothPreSignedSetToValidSubdirectory</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testValidatePropertiesWithPreSignedDeleteSet</span>
+                <br/>
+              </div> <!-- method-in-group -->
+              <div class="method-in-group">
+                <span class="method-in-group-name">testValidatePropertiesWithPreSignedPutSet</span>
+                <br/>
+              </div> <!-- method-in-group -->
+            </div> <!-- test-group -->
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+        <div panel-name="times-Default_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">Times for Default suite</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+            <div class="times-div">
+              <script type="text/javascript">
+suiteTableInitFunctions.push('tableData_Default_suite');
+function tableData_Default_suite() {
+var data = new google.visualization.DataTable();
+data.addColumn('number', 'Number');
+data.addColumn('string', 'Method');
+data.addColumn('string', 'Class');
+data.addColumn('number', 'Time (ms)');
+data.addRows(32);
+data.setCell(0, 0, 0)
+data.setCell(0, 1, 'testGetBucketLocation')
+data.setCell(0, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(0, 3, 1471);
+data.setCell(1, 0, 1)
+data.setCell(1, 1, 'testPutAcl')
+data.setCell(1, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(1, 3, 1407);
+data.setCell(2, 0, 2)
+data.setCell(2, 1, 'testCheckBucketExists')
+data.setCell(2, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(2, 3, 977);
+data.setCell(3, 0, 3)
+data.setCell(3, 1, 'testListAllMyBuckets')
+data.setCell(3, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(3, 3, 503);
+data.setCell(4, 0, 4)
+data.setCell(4, 1, 'testPutBucketRequestPayment')
+data.setCell(4, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(4, 3, 391);
+data.setCell(5, 0, 5)
+data.setCell(5, 1, 'testDeleteObject')
+data.setCell(5, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(5, 3, 360);
+data.setCell(6, 0, 6)
+data.setCell(6, 1, 'testPutBucketLogging')
+data.setCell(6, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(6, 3, 344);
+data.setCell(7, 0, 7)
+data.setCell(7, 1, 'testGetAcl')
+data.setCell(7, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(7, 3, 203);
+data.setCell(8, 0, 8)
+data.setCell(8, 1, 'testGetObject')
+data.setCell(8, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(8, 3, 187);
+data.setCell(9, 0, 9)
+data.setCell(9, 1, 'testListBucket')
+data.setCell(9, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(9, 3, 187);
+data.setCell(10, 0, 10)
+data.setCell(10, 1, 'testGetBucketRequestPayment')
+data.setCell(10, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(10, 3, 172);
+data.setCell(11, 0, 11)
+data.setCell(11, 1, 'testGetBucketLogging')
+data.setCell(11, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(11, 3, 172);
+data.setCell(12, 0, 12)
+data.setCell(12, 1, 'testPutObject')
+data.setCell(12, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(12, 3, 172);
+data.setCell(13, 0, 13)
+data.setCell(13, 1, 'testGeneratePreSignedUrlForDelete')
+data.setCell(13, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(13, 3, 140);
+data.setCell(14, 0, 14)
+data.setCell(14, 1, 'testGenerateQueryStringAuthenticationWithBasicPost')
+data.setCell(14, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(14, 3, 16);
+data.setCell(15, 0, 15)
+data.setCell(15, 1, 'testValidatePropertiesWithBothPreSignedSetToValid')
+data.setCell(15, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(15, 3, 0);
+data.setCell(16, 0, 16)
+data.setCell(16, 1, 'testGeneratePreSignedUrlForPut')
+data.setCell(16, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(16, 3, 0);
+data.setCell(17, 0, 17)
+data.setCell(17, 1, 'testPreSignedUrlParserWithPrefix')
+data.setCell(17, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(17, 3, 0);
+data.setCell(18, 0, 18)
+data.setCell(18, 1, 'testPreSignedUrlParserNoPrefix')
+data.setCell(18, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(18, 3, 0);
+data.setCell(19, 0, 19)
+data.setCell(19, 1, 'testValidatePropertiesWithPreSignedPutSet')
+data.setCell(19, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(19, 3, 0);
+data.setCell(20, 0, 20)
+data.setCell(20, 1, 'testCreateBucket')
+data.setCell(20, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(20, 3, 0);
+data.setCell(21, 0, 21)
+data.setCell(21, 1, 'testDeleteBucket')
+data.setCell(21, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(21, 3, 0);
+data.setCell(22, 0, 22)
+data.setCell(22, 1, 'testValidatePropertiesWithBothPreSignedSetToValidSubdirectory')
+data.setCell(22, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(22, 3, 0);
+data.setCell(23, 0, 23)
+data.setCell(23, 1, 'testUsingPreSignedUrlWhenNotSet')
+data.setCell(23, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(23, 3, 0);
+data.setCell(24, 0, 24)
+data.setCell(24, 1, 'testValidatePropertiesWithPreSignedDeleteSet')
+data.setCell(24, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(24, 3, 0);
+data.setCell(25, 0, 25)
+data.setCell(25, 1, 'testGenerateQueryStringAuthenticationWithBasicGet')
+data.setCell(25, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(25, 3, 0);
+data.setCell(26, 0, 26)
+data.setCell(26, 1, 'testValidatePropertiesWithBothPreSignedSetButNoFile')
+data.setCell(26, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(26, 3, 0);
+data.setCell(27, 0, 27)
+data.setCell(27, 1, 'testValidatePropertiesWithBothPreSignedSetButNoBucket')
+data.setCell(27, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(27, 3, 0);
+data.setCell(28, 0, 28)
+data.setCell(28, 1, 'testPreSignedUrlParserWithComplexBucketName')
+data.setCell(28, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(28, 3, 0);
+data.setCell(29, 0, 29)
+data.setCell(29, 1, 'testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories')
+data.setCell(29, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(29, 3, 0);
+data.setCell(30, 0, 30)
+data.setCell(30, 1, 'testGenerateQueryStringAuthenticationWithBasicPutAndHeaders')
+data.setCell(30, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(30, 3, 0);
+data.setCell(31, 0, 31)
+data.setCell(31, 1, 'testUsingPreSignedUrlWhenSet')
+data.setCell(31, 2, 'org.jgroups.protocols.S3_PING2Test')
+data.setCell(31, 3, 0);
+window.suiteTableData['Default_suite']= { tableData: data, tableDiv: 'times-div-Default_suite'}
+return data;
+}
+              </script>
+              <span class="suite-total-time">Total running time: 6 seconds</span>
+              <div id="times-div-Default_suite">
+              </div> <!-- times-div-Default_suite -->
+            </div> <!-- times-div -->
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+        <div panel-name="reporter-Default_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">Reporter output for Default suite</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+        <div panel-name="ignored-methods-Default_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">0 ignored methods</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+        <div panel-name="chronological-Default_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">Methods in chronological order</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+            <div class="chronological-class">
+              <div class="chronological-class-name">org.jgroups.protocols.S3_PING2Test</div> <!-- chronological-class-name -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">0 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1000 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testCreateBucket</span>
+                <span class="method-start">1000 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testGeneratePreSignedUrlForDelete</span>
+                <span class="method-start">1000 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1140 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1140 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1140 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testGeneratePreSignedUrlForPut</span>
+                <span class="method-start">1140 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testGenerateQueryStringAuthenticationWithBasicGet</span>
+                <span class="method-start">1140 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testGenerateQueryStringAuthenticationWithBasicPost</span>
+                <span class="method-start">1140 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testGenerateQueryStringAuthenticationWithBasicPutAndHeaders</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testPreSignedUrlParserNoPrefix</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testPreSignedUrlParserWithComplexBucketName</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testPreSignedUrlParserWithPrefix</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testUsingPreSignedUrlWhenSet</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testValidatePropertiesWithBothPreSignedSetButNoBucket</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testValidatePropertiesWithBothPreSignedSetButNoFile</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testValidatePropertiesWithBothPreSignedSetButTooManySubdirectories</span>
+                <span class="method-start">1156 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1172 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1172 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1172 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1172 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1172 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">1172 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testCheckBucketExists</span>
+                <span class="method-start">1172 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testUsingPreSignedUrlWhenNotSet</span>
+                <span class="method-start">1172 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testValidatePropertiesWithBothPreSignedSetToValid</span>
+                <span class="method-start">1172 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testValidatePropertiesWithBothPreSignedSetToValidSubdirectory</span>
+                <span class="method-start">1172 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testValidatePropertiesWithPreSignedDeleteSet</span>
+                <span class="method-start">1172 ms</span>
+              </div> <!-- test-method -->
+              <div class="test-method">
+                <span class="method-name">testValidatePropertiesWithPreSignedPutSet</span>
+                <span class="method-start">1172 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">2149 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testListAllMyBuckets</span>
+                <span class="method-start">2149 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">2652 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testPutAcl</span>
+                <span class="method-start">2652 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">4073 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testPutBucketLogging</span>
+                <span class="method-start">4073 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">4417 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testPutBucketRequestPayment</span>
+                <span class="method-start">4417 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">4808 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testPutObject</span>
+                <span class="method-start">4808 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">4980 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testGetObject</span>
+                <span class="method-start">4980 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">5175 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testListBucket</span>
+                <span class="method-start">5176 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">5363 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testDeleteObject</span>
+                <span class="method-start">5363 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">5723 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testGetAcl</span>
+                <span class="method-start">5723 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">5926 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testGetBucketLocation</span>
+                <span class="method-start">5926 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">7397 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testGetBucketLogging</span>
+                <span class="method-start">7397 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">7584 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testGetBucketRequestPayment</span>
+                <span class="method-start">7584 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method before">
+                <span class="method-name">setUp</span>
+                <span class="method-start">7756 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">testDeleteBucket</span>
+                <span class="method-start">7756 ms</span>
+              </div> <!-- test-method -->
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+      </div> <!-- main-panel-root -->
+    </div> <!-- wrapper -->
+  </body>
+</html>
