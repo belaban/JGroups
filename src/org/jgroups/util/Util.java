@@ -521,7 +521,7 @@ public class Util {
             return TYPE_NULL_ARRAY;
 
         if(obj instanceof Streamable) {
-            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);
             out.write(TYPE_STREAMABLE);
             writeGenericStreamable((Streamable)obj,out);
             return Arrays.copyOf(out.buf,out.position());
@@ -529,12 +529,12 @@ public class Util {
 
         Byte type=PRIMITIVE_TYPES.get(obj.getClass());
         if(type == null) { // will throw an exception if object is not serializable
-            final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+            final ByteArrayDataOutputStream out_stream=new ByteArrayDataOutputStream(512, true);
             out_stream.write(TYPE_SERIALIZABLE);
-            try(ObjectOutputStream out=new ObjectOutputStream(out_stream)) {
+            try(ObjectOutputStream out=new ObjectOutputStream(new OutputStreamAdapter(out_stream))) {
                 out.writeObject(obj);
                 out.flush();
-                return out_stream.toByteArray();
+                return Arrays.copyOf(out_stream.buffer(), out_stream.position());
             }
         }
 
@@ -597,7 +597,7 @@ public class Util {
             return new Buffer(TYPE_NULL_ARRAY);
 
         if(obj instanceof Streamable) {
-            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512, true);
             out.write(TYPE_STREAMABLE);
             writeGenericStreamable((Streamable)obj,out);
             return out.getBuffer();
@@ -605,12 +605,12 @@ public class Util {
 
         Byte type=PRIMITIVE_TYPES.get(obj.getClass());
         if(type == null) { // will throw an exception if object is not serializable
-            final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+            final ByteArrayDataOutputStream out_stream=new ByteArrayDataOutputStream(512, true);
             out_stream.write(TYPE_SERIALIZABLE);
-            try(ObjectOutputStream out=new ObjectOutputStream(out_stream)) {
+            try(ObjectOutputStream out=new ObjectOutputStream(new OutputStreamAdapter(out_stream))) {
                 out.writeObject(obj);
                 out.flush();
-                return new Buffer(out_stream.toByteArray());
+                return out_stream.getBuffer();
             }
         }
 
