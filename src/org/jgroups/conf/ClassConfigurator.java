@@ -168,7 +168,7 @@ public class ClassConfigurator {
      * @return a Class object that represents a class that implements java.io.Externalizable
      */
     public static Class get(String clazzname, ClassLoader loader) throws ClassNotFoundException {
-        return Util.loadClass(clazzname, loader != null? loader : ClassConfigurator.class.getClassLoader());
+        return Util.loadClass(clazzname, loader != null? loader : Thread.currentThread().getContextClassLoader());
     }
 
     public static Class get(String clazzname) throws ClassNotFoundException {
