@@ -606,7 +606,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             else
             {
                sockAddr=new InetSocketAddress(bind_addr, start_port);
-               m_serverSocketChannel.socket().bind(sockAddr, backlog);
+               m_serverSocketChannel.socket().bind(sockAddr, BACK_LOG);
             }
          }
          catch (BindException bind_ex)

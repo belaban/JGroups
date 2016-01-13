@@ -21,16 +21,16 @@ public class JmxDemo extends NotificationBroadcasterSupport {
     private int age;   // exposed as read-only 'age'
 
     @ManagedAttribute
-    private static final String last_name="Ban";  // read-only (because final) 'last_name'
+    private static final String LAST_NAME = "Ban";  // read-only (because final) 'last_name'
 
     @ManagedAttribute
-    private static final String first_name="Bela";  // read-only (final) 'first_name'
+    private static final String FIRST_NAME = "Bela";  // read-only (final) 'first_name'
 
     @ManagedAttribute(description="social security number") // read-only
-    private static final long id=322649L;
+    private static final long ID = 322649L;
 
     public void foo() { // must be exposed because we have @MBean on the class
-        System.out.println("foo(" + number + "): age=" + age + ", name=" + first_name + " " + last_name);
+        System.out.println("foo(" + number + "): age=" + age + ", name=" + FIRST_NAME + " " + LAST_NAME);
     }
 
     @ManagedAttribute
@@ -91,7 +91,7 @@ public class JmxDemo extends NotificationBroadcasterSupport {
 
     @ManagedOperation
     public String sayName() {
-        return "I'm " + first_name + " " + last_name;
+        return "I'm " + FIRST_NAME + " " + LAST_NAME;
     }
 
     public int add(int a, int b) {return a+b;} // exposed because @MBean is on the class

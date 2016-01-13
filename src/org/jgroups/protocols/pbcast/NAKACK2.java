@@ -747,7 +747,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return;
         if(log_discard_msgs && log.isWarnEnabled()) {
             if(suppress_log_non_member != null)
-                suppress_log_non_member.log(SuppressLog.Level.warn, sender, suppress_time_non_member_warnings,
+                suppress_log_non_member.log(SuppressLog.Level.WARN, sender, suppress_time_non_member_warnings,
                                             local_addr, message, sender, view);
             else
                 log.warn(Util.getMessage("MsgDroppedNak"), local_addr, message, sender, view);

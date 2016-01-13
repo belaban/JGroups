@@ -42,7 +42,7 @@ public class GossipRouterTest {
     @BeforeClass
     protected void setUp() throws Exception {
         StackType type=Util.getIpStackType();
-        bind_addr_str=type == StackType.IPv6? "::1" : "127.0.0.1";
+        bind_addr_str=type == StackType.IP_V6 ? "::1" : "127.0.0.1";
         bind_addr=InetAddress.getByName(bind_addr_str);
         gossip_router_port=ResourceManager.getNextTcpPort(bind_addr);
         gossip_router_hosts=bind_addr.getHostAddress() + "[" + gossip_router_port + "]";

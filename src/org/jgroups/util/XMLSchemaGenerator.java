@@ -58,7 +58,7 @@ public class XMLSchemaGenerator {
             }
         }
 
-        File f = new File(outputDir, "jgroups-" + Version.major + "." + Version.minor + ".xsd");
+        File f = new File(outputDir, "jgroups-" + Version.MAJOR + "." + Version.MINOR + ".xsd");
         try {
             FileWriter fw = new FileWriter(f, false);
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();

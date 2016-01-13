@@ -236,7 +236,7 @@ public class PropertyConverters {
 
 
     public static class Default implements PropertyConverter {
-        static final String prefix;
+        static final String PREFIX;
 
         static {
             String tmp="FF0e::";
@@ -246,7 +246,7 @@ public class PropertyConverters {
             catch(Throwable t) {
                 tmp="FF0e::";
             }
-            prefix=tmp != null? tmp : "FF0e::";
+            PREFIX =tmp != null? tmp : "FF0e::";
         }
 
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
@@ -288,8 +288,8 @@ public class PropertyConverters {
                         retval=InetAddress.getByName(propertyValue);
                 }
 
-                if(retval instanceof Inet4Address && retval.isMulticastAddress() && Util.getIpStackType() == StackType.IPv6) {
-                    String tmp=prefix + propertyValue;
+                if(retval instanceof Inet4Address && retval.isMulticastAddress() && Util.getIpStackType() == StackType.IP_V6) {
+                    String tmp= PREFIX + propertyValue;
                     retval=InetAddress.getByName(tmp);
                     return retval;
                 }

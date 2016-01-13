@@ -311,7 +311,7 @@ public class NioConnection implements Connection {
     protected void sendLocalAddress(Address local_addr) throws Exception {
         try {
             ByteArrayDataOutputStream out=new ByteArrayDataOutputStream();
-            out.writeShort(Version.version);
+            out.writeShort(Version.VERSION);
             local_addr.writeTo(out);
             ByteBuffer buf=out.getByteBuffer();
             send(buf);
@@ -339,11 +339,11 @@ public class NioConnection implements Connection {
         return (ByteBuffer)ByteBuffer.allocate(Global.INT_SIZE).putInt(buf.remaining()).clear();
     }
 
-    protected enum State {reading, waiting_to_terminate, done}
+    protected enum State {READING, WAITING_TO_TERMINATE, DONE}
 
     protected class Reader implements Runnable, Closeable, Condition {
         protected final Lock       lock=new ReentrantLock(); // to synchronize receive() and state transitions
-        protected State            state=State.done;
+        protected State            state=State.DONE;
         protected volatile boolean data_available=true;
         protected final CondVar    data_available_cond=new CondVar();
         protected volatile Thread  thread;
@@ -375,14 +375,14 @@ public class NioConnection implements Connection {
                 // only a single receive() at a time, until OP_READ is registered again (by the reader thread)
                 clear(SelectionKey.OP_READ);
                 switch(state) {
-                    case reading:
+                    case READING:
                         break;
-                    case waiting_to_terminate:
+                    case WAITING_TO_TERMINATE:
                         data_available_cond.signal(false); // only 1 consumer
                         break;
-                    case done:
+                    case DONE:
                         // make sure the selector doesn't wake up for our connection while the reader is reading msgs
-                        state=State.reading;
+                        state=State.READING;
                         start();
                         break;
                 }
@@ -410,20 +410,20 @@ public class NioConnection implements Connection {
                     }
                     catch(Throwable ex) {
                         server.closeConnection(NioConnection.this, ex);
-                        state(State.done);
+                        state(State.DONE);
                         return;
                     }
                 }
                 updateLastAccessed();
 
                 // Transition to state waiting_to_terminate and wait for server.readerIdleTime() ms
-                state(State.waiting_to_terminate);
+                state(State.WAITING_TO_TERMINATE);
                 data_available=false;
                 register(SelectionKey.OP_READ); // now we might get receive() calls again
                 if(data_available_cond.waitFor(this, server.readerIdleTime(), TimeUnit.MILLISECONDS))
-                    state(State.reading);
+                    state(State.READING);
                 else {
-                    state(State.done);
+                    state(State.DONE);
                     return;
                 }
             }

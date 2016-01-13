@@ -80,7 +80,7 @@ public class MPerf extends ReceiverAdapter {
         sb.append("\n\n----------------------- MPerf -----------------------\n");
         sb.append("Date: ").append(new Date()).append('\n');
         sb.append("Run by: ").append(System.getProperty("user.name")).append("\n");
-        sb.append("JGroups version: ").append(Version.description).append('\n');
+        sb.append("JGroups version: ").append(Version.DESCRIPTION).append('\n');
         System.out.println(sb);
 
         channel=new JChannel(props);

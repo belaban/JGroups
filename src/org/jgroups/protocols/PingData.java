@@ -24,8 +24,8 @@ public class PingData implements SizeStreamable {
     protected PhysicalAddress               physical_addr;
     protected Collection<? extends Address> mbrs; // list of members to find, sent with discovery request (can be null)
 
-    protected static final byte is_server = 1;
-    protected static final byte is_coord  = 1 << 1;
+    protected static final byte IS_SERVER = 1;
+    protected static final byte IS_COORD = 1 << 1;
 
 
     public PingData() {
@@ -63,28 +63,28 @@ public class PingData implements SizeStreamable {
 
     public PingData coord(boolean c) {
         if(c) {
-            flags=Util.setFlag(flags, is_coord);
-            flags=Util.setFlag(flags, is_server); // coord has to be a server
+            flags=Util.setFlag(flags, IS_COORD);
+            flags=Util.setFlag(flags, IS_SERVER); // coord has to be a server
         }
         else
-            flags=Util.clearFlags(flags, is_coord);
+            flags=Util.clearFlags(flags, IS_COORD);
         return this;
     }
 
     public PingData server(boolean c) {
         if(c)
-            flags=Util.setFlag(flags, is_server);
+            flags=Util.setFlag(flags, IS_SERVER);
         else
-            flags=Util.clearFlags(flags, is_server);
+            flags=Util.clearFlags(flags, IS_SERVER);
         return this;
     }
 
     public boolean isCoord() {
-        return Util.isFlagSet(flags, is_coord);
+        return Util.isFlagSet(flags, IS_COORD);
     }
     
     public boolean isServer() {
-        return Util.isFlagSet(flags, is_server) || Util.isFlagSet(flags, is_coord); // a coord is always a server
+        return Util.isFlagSet(flags, IS_SERVER) || Util.isFlagSet(flags, IS_COORD); // a coord is always a server
     }
 
     public Address getAddress() {

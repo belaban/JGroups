@@ -32,8 +32,8 @@ public class StompChat implements StompConnection.Listener {
     protected StompConnection      stomp_client;
 
     static enum Destination {
-        messages("/messages"),
-        client_joined("/client-joined");
+        MESSAGES("/messages"),
+        CLIENT_JOINED("/client-joined");
 
         final String name;
 

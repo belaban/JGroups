@@ -32,11 +32,11 @@ public class QuoteServer extends ReceiverAdapter {
     final Hashtable stocks=new Hashtable();
     Channel channel;
     RpcDispatcher disp;
-    static final String channel_name="Quotes";
+    static final String CHANNEL_NAME ="Quotes";
     final int num_members=1;
     Log            log=LogFactory.getLog(getClass());
 
-    final String props=null; // default stack from JChannel
+    final String PROPS =null; // default stack from JChannel
 
     private void integrate(Hashtable state) {
         String key;
@@ -56,11 +56,11 @@ public class QuoteServer extends ReceiverAdapter {
 
     public void start() {
         try {
-            channel=new JChannel(props);
+            channel=new JChannel(PROPS);
             disp=new RpcDispatcher(channel, this, this, this);
-            channel.connect(channel_name);
+            channel.connect(CHANNEL_NAME);
             System.out.println("\nQuote Server started at " + new Date());
-            System.out.println("Joined channel '" + channel_name + "' (" + channel.getView().size() + " members)");
+            System.out.println("Joined channel '" + CHANNEL_NAME + "' (" + channel.getView().size() + " members)");
             channel.getState(null, 0);
             System.out.println("Ready to serve requests");
         }

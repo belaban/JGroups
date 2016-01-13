@@ -20,12 +20,12 @@ public class CanBeSiteMasterTopology extends TopologyUUID {
     protected CanBeSiteMasterTopology(TopologyUUID uuid, boolean can_become_site_master) {
         super(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits(), uuid.getSiteId(), uuid.getRackId(), uuid.getMachineId());
         if(can_become_site_master)
-            setFlag(ExtendedUUID.can_become_site_master);
+            setFlag(ExtendedUUID.CAN_BECOME_SITE_MASTER);
     }
 
 
     public boolean canBecomeSiteMaster() {
-        return isFlagSet(ExtendedUUID.can_become_site_master);
+        return isFlagSet(ExtendedUUID.CAN_BECOME_SITE_MASTER);
     }
 
 }

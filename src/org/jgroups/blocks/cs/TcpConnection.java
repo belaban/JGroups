@@ -230,7 +230,7 @@ public class TcpConnection implements Connection {
             out.write(cookie, 0, cookie.length);
 
             // write the version
-            out.writeShort(Version.version);
+            out.writeShort(Version.VERSION);
             local_addr.writeTo(out);
             out.flush(); // needed ?
             updateLastAccessed();

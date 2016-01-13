@@ -47,8 +47,8 @@ public class TotalOrder extends Frame {
     long timeout=0;
     int field_size=0;
     int num_fields=0;
-    static final int x_offset=30;
-    static final int y_offset=40;
+    static final int X_OFFSET = 30;
+    static final int Y_OFFSET = 40;
     private int num=0;
 
     private int num_additions=0, num_subtractions=0, num_divisions=0, num_multiplications=0;
@@ -211,7 +211,7 @@ public class TotalOrder extends Frame {
         setMenuBar(menubar);
 
         setLayout(new BorderLayout());
-        canvas=new MyCanvas(num_fields, field_size, x_offset, y_offset);
+        canvas=new MyCanvas(num_fields, field_size, X_OFFSET, Y_OFFSET);
 
         add("Center", canvas);
         button_panel.setLayout(new FlowLayout());

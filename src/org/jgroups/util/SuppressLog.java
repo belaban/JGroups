@@ -13,7 +13,7 @@ public class SuppressLog<T> {
     protected final String           message_format;
     protected final String           suppress_format;
 
-    public static enum Level {error,warn,trace};
+    public static enum Level {ERROR, WARN, TRACE};
 
     public SuppressLog(Log log, String message_key, String suppress_msg) {
         this.log=log;
@@ -40,13 +40,13 @@ public class SuppressLog<T> {
           String.format(message_format, args) + " " + String.format(suppress_format, val.count(), key, val.age());
 
         switch(level) {
-            case error:
+            case ERROR:
                 log.error(message);
                 break;
-            case warn:
+            case WARN:
                 log.warn(message);
                 break;
-            case trace:
+            case TRACE:
                 log.trace(message);
                 break;
         }

@@ -4,7 +4,7 @@ import org.jgroups.util.ExtendedUUID;
 import org.jgroups.util.UUID;
 
 /**
- * Subclass of {@link org.jgroups.util.ExtendedUUID} using flag {@link ExtendedUUID#can_become_site_master}. The flag i
+ * Subclass of {@link org.jgroups.util.ExtendedUUID} using flag {@link ExtendedUUID#CAN_BECOME_SITE_MASTER}. The flag i
  * ndicates whether the current address can become a site master, or not.
  * @author Bela Ban
  * @deprecated Use {@link ExtendedUUID} directly. This class will get dropped in 4.0.
@@ -19,13 +19,13 @@ public class CanBeSiteMaster extends ExtendedUUID {
     protected CanBeSiteMaster(byte[] data, boolean can_become_site_master) {
         super(data);
         if(can_become_site_master)
-            setFlag(ExtendedUUID.can_become_site_master);
+            setFlag(ExtendedUUID.CAN_BECOME_SITE_MASTER);
     }
 
     protected CanBeSiteMaster(UUID uuid, boolean can_become_site_master) {
         super(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
         if(can_become_site_master)
-            setFlag(ExtendedUUID.can_become_site_master);
+            setFlag(ExtendedUUID.CAN_BECOME_SITE_MASTER);
     }
 
     public static CanBeSiteMaster randomUUID(boolean can_become_site_master) {
@@ -39,7 +39,7 @@ public class CanBeSiteMaster extends ExtendedUUID {
     }
 
     public boolean canBecomeSiteMaster() {
-        return isFlagSet(ExtendedUUID.can_become_site_master);
+        return isFlagSet(ExtendedUUID.CAN_BECOME_SITE_MASTER);
     }
 
 }

@@ -238,7 +238,7 @@ public class UnicastTestTcp {
         byte flags=0;
         if(msg.getDest() == null)
             flags+=(byte)2;
-        out.writeShort(Version.version); // write the version
+        out.writeShort(Version.VERSION); // write the version
         out.writeByte(flags);
         msg.writeTo(out);
     }

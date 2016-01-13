@@ -47,7 +47,7 @@ public class TUNNELDeadLockTest extends ChannelTestBase {
     @BeforeMethod
     void setUp() throws Exception {
         StackType type=Util.getIpStackType();
-        if(type == StackType.IPv6)
+        if(type == StackType.IP_V6)
             bind_addr="::1";
         else
             bind_addr="127.0.0.1";

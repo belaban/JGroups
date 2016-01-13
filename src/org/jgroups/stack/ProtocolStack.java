@@ -38,7 +38,7 @@ public class ProtocolStack extends Protocol {
     public static final int       ABOVE = 1; // used by insertProtocol()
     public static final int       BELOW = 2; // used by insertProtocol()
 
-    protected static final String max_list_print_size="max-list-print-size";
+    protected static final String MAX_LIST_PRINT_SIZE = "max-list-print-size";
     /**
      * Holds the shared transports, keyed by 'TP.singleton_name'. The values are the transport and the use count for
      * init() (decremented by destroy()) and start() (decremented by stop()
@@ -64,13 +64,13 @@ public class ProtocolStack extends Protocol {
                     map.put("props", tmp);
                     return map;
                 }
-                if(key.startsWith(max_list_print_size)) {
+                if(key.startsWith(MAX_LIST_PRINT_SIZE)) {
                     int index=key.indexOf("=");
                     if(index >= 0) {
                         Util.MAX_LIST_PRINT_SIZE=Integer.valueOf(key.substring(index+1));
                     }
                     HashMap<String, String> map=new HashMap<>(1);
-                    map.put(max_list_print_size, String.valueOf(Util.MAX_LIST_PRINT_SIZE));
+                    map.put(MAX_LIST_PRINT_SIZE, String.valueOf(Util.MAX_LIST_PRINT_SIZE));
                     return map;
                 }
                 if(key.startsWith("print-protocols")) {
@@ -166,7 +166,7 @@ public class ProtocolStack extends Protocol {
         }
 
         public String[] supportedKeys() {
-            return new String[]{"props", max_list_print_size + "[=number]", "print-protocols", "\nremove-protocol=<name>",
+            return new String[]{"props", MAX_LIST_PRINT_SIZE + "[=number]", "print-protocols", "\nremove-protocol=<name>",
               "\ninsert-protocol=<name>=above | below=<name>"};
         }
     };
@@ -791,7 +791,7 @@ public class ProtocolStack extends Protocol {
 
 
     protected Protocol createProtocol(String classname) throws Exception {
-        String defaultProtocolName=ProtocolConfiguration.protocol_prefix + '.' + classname;
+        String defaultProtocolName=ProtocolConfiguration.PROTOCOL_PREFIX + '.' + classname;
         Class<?> clazz=null;
 
         try {

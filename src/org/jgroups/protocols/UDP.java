@@ -130,12 +130,12 @@ public class UDP extends TP {
 
     protected SuppressLog<InetAddress> suppress_log_out_of_buffer_space;
 
-    protected static final boolean is_android, is_mac;
+    protected static final boolean IS_ANDROID, IS_MAC;
 
 
     static  {
-        is_android=Util.checkForAndroid();
-        is_mac=Util.checkForMac();
+        IS_ANDROID =Util.checkForAndroid();
+        IS_MAC =Util.checkForMac();
     }
 
 
@@ -225,7 +225,7 @@ public class UDP extends TP {
             }
             catch(IOException ex) {
                 if(suppress_log_out_of_buffer_space != null)
-                    suppress_log_out_of_buffer_space.log(SuppressLog.Level.warn, dest, suppress_time_out_of_buffer_space,
+                    suppress_log_out_of_buffer_space.log(SuppressLog.Level.WARN, dest, suppress_time_out_of_buffer_space,
                                                          local_addr, dest == null? "cluster" : dest, ex);
                 else
                     throw ex;
@@ -254,7 +254,7 @@ public class UDP extends TP {
 
     public void init() throws Exception {
         super.init();
-        if(is_mac && suppress_time_out_of_buffer_space > 0)
+        if(IS_MAC && suppress_time_out_of_buffer_space > 0)
             suppress_log_out_of_buffer_space=new SuppressLog<>(log, "FailureSendingToPhysAddr", "SuppressMsg");
     }
 
@@ -367,7 +367,7 @@ public class UDP extends TP {
 
             // If possible, the MulticastSocket(SocketAddress) ctor is used which binds to mcast_addr:mcast_port.
             // This acts like a filter, dropping multicasts to different multicast addresses
-            if(can_bind_to_mcast_addr)
+            if(CAN_BIND_TO_MCAST_ADDR)
                 mcast_sock=Util.createMulticastSocket(getSocketFactory(), "jgroups.udp.mcast_sock", mcast_group_addr, mcast_port, log);
             else
                 mcast_sock=getSocketFactory().createMulticastSocket("jgroups.udp.mcast_sock", mcast_port);
@@ -688,7 +688,7 @@ public class UDP extends TP {
                 try {
 
                     // solves Android ISSUE #24748 - DatagramPacket truncated UDP in ICS
-                    if(is_android)
+                    if(IS_ANDROID)
                         packet.setLength(receive_buf.length);
 
                     receiver_socket.receive(packet);

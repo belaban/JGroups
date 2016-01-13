@@ -260,7 +260,7 @@ public class RELAY2 extends Protocol {
                 public Address generateAddress() {
                     ExtendedUUID retval=ExtendedUUID.randomUUID();
                     if(can_become_site_master)
-                        retval.setFlag(ExtendedUUID.can_become_site_master);
+                        retval.setFlag(ExtendedUUID.CAN_BECOME_SITE_MASTER);
                     return retval;
                 }
             });
@@ -693,7 +693,7 @@ public class RELAY2 extends Protocol {
         int selected=0;
 
         for(Address member: view) {
-            if(member instanceof ExtendedUUID && !((ExtendedUUID)member).isFlagSet(ExtendedUUID.can_become_site_master))
+            if(member instanceof ExtendedUUID && !((ExtendedUUID)member).isFlagSet(ExtendedUUID.CAN_BECOME_SITE_MASTER))
                 continue;
 
             if(selected++ < max_site_masters)

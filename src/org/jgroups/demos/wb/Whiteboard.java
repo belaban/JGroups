@@ -27,7 +27,7 @@ public class Whiteboard extends Applet implements MessageListener, MembershipLis
     private Label                  mbr_label;
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
     private String                 props=null;
-    public static final String     groupname="WbGrp";
+    public static final String     GROUP_NAME ="WbGrp";
     private boolean                application=false;
     Log                            log=LogFactory.getLog(getClass());
 
@@ -101,7 +101,7 @@ public class Whiteboard extends Applet implements MessageListener, MembershipLis
         try {
             channel = new JChannel(props);
             disp = new RpcDispatcher(channel, this, this, this);
-            channel.connect(groupname);
+            channel.connect(GROUP_NAME);
             channel.getState(null, 0);
         } catch (Exception e) {
             log.error("Whiteboard.init(): " + e);

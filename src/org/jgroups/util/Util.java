@@ -127,8 +127,8 @@ public class Util {
         PRIMITIVE_TYPES.put(String.class,TYPE_STRING);
         PRIMITIVE_TYPES.put(byte[].class,TYPE_BYTEARRAY);
 
-        if(ip_stack_type == StackType.Unknown)
-            ip_stack_type=StackType.IPv6;
+        if(ip_stack_type == StackType.UNKNOWN)
+            ip_stack_type=StackType.IP_V6;
 
         try {
             String cchm_initial_capacity=System.getProperty(Global.CCHM_INITIAL_CAPACITY);
@@ -3307,7 +3307,7 @@ public class Util {
 
     /** IP related utilities */
     public static InetAddress getLocalhost(StackType ip_version) throws UnknownHostException {
-        if(ip_version == StackType.IPv4)
+        if(ip_version == StackType.IP_V4)
             return InetAddress.getByName("127.0.0.1");
         else
             return InetAddress.getByName("::1");
@@ -3442,8 +3442,8 @@ public class Util {
             }
 
             if(match) {
-                if((addr instanceof Inet4Address && ip_version == StackType.IPv4) ||
-                  (addr instanceof Inet6Address && ip_version == StackType.IPv6))
+                if((addr instanceof Inet4Address && ip_version == StackType.IP_V4) ||
+                  (addr instanceof Inet6Address && ip_version == StackType.IP_V6))
                     return addr;
             }
         }
@@ -3467,8 +3467,8 @@ public class Util {
                 InetAddress address=(InetAddress)addresses.nextElement();
 
                 // check if we find an address of correct version
-                if((address instanceof Inet4Address && (ip_version == StackType.IPv4)) ||
-                  (address instanceof Inet6Address && (ip_version == StackType.IPv6))) {
+                if((address instanceof Inet4Address && (ip_version == StackType.IP_V4)) ||
+                  (address instanceof Inet6Address && (ip_version == StackType.IP_V6))) {
                     supportsVersion=true;
                     break;
                 }
@@ -3504,20 +3504,20 @@ public class Util {
 
         // if only IPv4 stack available
         if(isIPv4StackAvailable && !isIPv6StackAvailable) {
-            return StackType.IPv4;
+            return StackType.IP_V4;
         }
         // if only IPv6 stack available
         else if(isIPv6StackAvailable && !isIPv4StackAvailable) {
-            return StackType.IPv6;
+            return StackType.IP_V6;
         }
         // if dual stack
         else if(isIPv4StackAvailable && isIPv6StackAvailable) {
             // get the System property which records user preference for a stack on a dual stack machine
-            if(Boolean.getBoolean(Global.IPv4)) // has preference over java.net.preferIPv6Addresses
-                return StackType.IPv4;
-            return StackType.IPv6;
+            if(Boolean.getBoolean(Global.IP_V4)) // has preference over java.net.preferIPv6Addresses
+                return StackType.IP_V4;
+            return StackType.IP_V6;
         }
-        return StackType.Unknown;
+        return StackType.UNKNOWN;
     }
 
 

@@ -26,7 +26,7 @@ public class IpAddressTest {
     @BeforeClass
     void setUp() throws Exception {
         StackType type=Util.getIpStackType();
-        if(type == StackType.IPv6) {
+        if(type == StackType.IP_V6) {
             a=new IpAddress("::1", 5555);
             b=new IpAddress("::1", 5555);
             d=new IpAddress("::1", 5556);
@@ -83,7 +83,7 @@ public class IpAddressTest {
         IpAddress x1, x2, x3;
 
         StackType type=Util.getIpStackType();
-        String tmp=type == StackType.IPv6? "::1" : "127.0.0.1";
+        String tmp=type == StackType.IP_V6 ? "::1" : "127.0.0.1";
         InetAddress addr=InetAddress.getByName(tmp);
         byte[] rawAddr=addr.getAddress();
 
@@ -339,7 +339,7 @@ public class IpAddressTest {
 
     private static IpAddress createStackConformantAddress(int port) throws UnknownHostException {
         StackType type=Util.getIpStackType();
-        if(type == StackType.IPv6)
+        if(type == StackType.IP_V6)
             return new IpAddress("::1", port);
         else
             return new IpAddress("127.0.0.1", port);

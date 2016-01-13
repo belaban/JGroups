@@ -147,7 +147,7 @@ public class BuffersTest {
         byte[] cookie={'b', 'e', 'l', 'a'};
         int num=322649;
         ByteBuffer input=(ByteBuffer)ByteBuffer.allocate(Global.SHORT_SIZE + cookie.length + Global.INT_SIZE)
-          .putShort(Version.version)
+          .putShort(Version.VERSION)
           .putInt(num).put(cookie, 0, cookie.length).flip();
         MockSocketChannel ch=new MockSocketChannel().bytesToRead(input);
         Buffers bufs=new Buffers(ByteBuffer.allocate(2), ByteBuffer.allocate(4), ByteBuffer.allocate(4));
@@ -161,7 +161,7 @@ public class BuffersTest {
             b.clear();
 
         short version=bufs.get(0).getShort(0);
-        assert version == Version.version;
+        assert version == Version.VERSION;
 
         int num2=bufs.get(1).getInt(0);
         assert num2 == num;

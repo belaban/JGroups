@@ -27,7 +27,7 @@ import java.util.Hashtable;
  */
 public class QuoteClient extends Frame implements WindowListener, ActionListener,
         MembershipListener {
-    static final String channel_name="Quotes";
+    static final String CHANNEL_NAME = "Quotes";
     RpcDispatcher disp;
     Channel channel;
     final Button get=new Button("Get");
@@ -42,16 +42,16 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
     final java.awt.List listbox=new java.awt.List();
     final Font default_font=new Font("Helvetica", Font.PLAIN, 12);
 
-    static final String props=null; // default stack from JChannel
+    static final String PROPS = null; // default stack from JChannel
 
 
     public QuoteClient() {
         super();
         try {
-            channel=new JChannel(props);
+            channel=new JChannel(PROPS);
             channel.setDiscardOwnMessages(true);
             disp=new RpcDispatcher(channel, null, this, this);
-            channel.connect(channel_name);
+            channel.connect(CHANNEL_NAME);
         }
         catch(Exception e) {
             System.err.println("QuoteClient(): " + e);
@@ -242,7 +242,7 @@ public class QuoteClient extends Frame implements WindowListener, ActionListener
 
 
     public void viewAccepted(View new_view) {
-        setTitle("Members in " + channel_name + ": " + (new_view.size() - 1));
+        setTitle("Members in " + CHANNEL_NAME + ": " + (new_view.size() - 1));
     }
 
     public void suspect(Address suspected_mbr) {

@@ -127,7 +127,7 @@ public class UnicastTestTcpSlow {
 
         ByteArrayDataOutputStream dos=new ByteArrayDataOutputStream((int)(msg.size()));
         byte flags=0;
-        dos.writeShort(Version.version); // write the version
+        dos.writeShort(Version.VERSION); // write the version
         if(msg.getDest() == null)
             flags+=(byte)2;
         dos.writeByte(flags);
@@ -334,7 +334,7 @@ public class UnicastTestTcpSlow {
         protected Buffer writeMessage(final Message msg) throws Exception {
             dos.position(0);
             byte flags=0;
-            dos.writeShort(Version.version); // write the version
+            dos.writeShort(Version.VERSION); // write the version
             if(msg.getDest() == null)
                 flags+=(byte)2;
             dos.writeByte(flags);

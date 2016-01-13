@@ -93,7 +93,7 @@ public class ProtocolConfigurationTest {
 		// process the defaults
 		protocol_configs.add(new ProtocolConfiguration(defaultProps)) ;
 		protocols.add(protocol) ;
-		Configurator.setDefaultValues(protocol_configs, protocols, StackType.IPv4) ;
+		Configurator.setDefaultValues(protocol_configs, protocols, StackType.IP_V4) ;
 		
 		// get the value which should have been assigned a default
 		int a = ((DEFAULTS)protocol).getA() ;

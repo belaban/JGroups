@@ -26,11 +26,11 @@ import java.util.Map;
  */
 public class MPING extends PING implements Runnable {
     
-    private static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
+    private static final boolean CAN_BIND_TO_MCAST_ADDR; // are we running on Linux ?
 
 
     static {
-        can_bind_to_mcast_addr=(Util.checkForLinux() && !Util.checkForAndroid())
+        CAN_BIND_TO_MCAST_ADDR =(Util.checkForLinux() && !Util.checkForAndroid())
           || Util.checkForSolaris()
           || Util.checkForHp();
     }
@@ -186,7 +186,7 @@ public class MPING extends PING implements Runnable {
     }
 
     public void start() throws Exception {
-        if(can_bind_to_mcast_addr) // https://jira.jboss.org/jira/browse/JGRP-836 - prevent cross talking on Linux
+        if(CAN_BIND_TO_MCAST_ADDR) // https://jira.jboss.org/jira/browse/JGRP-836 - prevent cross talking on Linux
             mcast_sock=Util.createMulticastSocket(getSocketFactory(), "jgroups.mping.mcast_sock", mcast_addr, mcast_port, log);
         else
             mcast_sock=getSocketFactory().createMulticastSocket("jgroups.mping.mcast_sock", mcast_port);
@@ -239,8 +239,8 @@ public class MPING extends PING implements Runnable {
             NetworkInterface i=(NetworkInterface)it.next();
             for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
                 InetAddress addr=(InetAddress)en2.nextElement();
-                if ((Util.getIpStackType() == StackType.IPv4 && addr instanceof Inet4Address)
-                  || (Util.getIpStackType() == StackType.IPv6 && addr instanceof Inet6Address)) {
+                if ((Util.getIpStackType() == StackType.IP_V4 && addr instanceof Inet4Address)
+                  || (Util.getIpStackType() == StackType.IP_V6 && addr instanceof Inet6Address)) {
                     s.joinGroup(tmp_mcast_addr, i);
                     if(log.isTraceEnabled())
                         log.trace("joined " + tmp_mcast_addr + " on " + i.getName() + " (" + addr + ")");

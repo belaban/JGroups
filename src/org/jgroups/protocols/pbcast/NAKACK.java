@@ -715,7 +715,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 return;
             if(log.isWarnEnabled() && log_discard_msgs) {
                 if(suppress_log_non_member != null) {
-                    suppress_log_non_member.log(SuppressLog.Level.warn, sender, suppress_time_non_member_warnings,
+                    suppress_log_non_member.log(SuppressLog.Level.WARN, sender, suppress_time_non_member_warnings,
                                                 local_addr, hdr.seqno, sender, view);
                 }
                 else

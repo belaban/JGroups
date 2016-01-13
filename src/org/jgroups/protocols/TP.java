@@ -56,14 +56,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected static final byte    LIST=1; // we have a list of messages rather than a single message when set
     protected static final byte    MULTICAST=2; // message is a multicast (versus a unicast) message when set
     protected static final int     MSG_OVERHEAD=Global.SHORT_SIZE + Global.BYTE_SIZE; // version + flags
-    protected static final boolean can_bind_to_mcast_addr;
+    protected static final boolean CAN_BIND_TO_MCAST_ADDR;
     protected static final String  BUNDLE_MSG="%s: sending %d msgs (%d bytes (%.2f%% of max_bundle_size) to %d dests(s): %s";
     protected static final long    MIN_WAIT_BETWEEN_DISCOVERIES=TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);  // ns
 
     protected static NumberFormat f;
 
     static {
-        can_bind_to_mcast_addr=(Util.checkForLinux() && !Util.checkForAndroid())
+        CAN_BIND_TO_MCAST_ADDR =(Util.checkForLinux() && !Util.checkForAndroid())
           || Util.checkForSolaris()
           || Util.checkForHp()
           || Util.checkForMac();
@@ -1571,7 +1571,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(log_discard_msgs && log.isWarnEnabled()) {
                 Address sender=msg.getSrc();
                 if(suppress_log_different_cluster != null)
-                    suppress_log_different_cluster.log(SuppressLog.Level.warn, sender,
+                    suppress_log_different_cluster.log(SuppressLog.Level.WARN, sender,
                                                        suppress_time_different_cluster_warnings,
                                                        cluster_name,this.cluster_name, sender);
                 else
@@ -1604,7 +1604,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             if(log_discard_msgs && log.isWarnEnabled()) {
                 Address sender=batch.sender();
                 if(suppress_log_different_cluster != null)
-                    suppress_log_different_cluster.log(SuppressLog.Level.warn, sender,
+                    suppress_log_different_cluster.log(SuppressLog.Level.WARN, sender,
                                                        suppress_time_different_cluster_warnings,
                                                        ch_name,cluster_name, sender);
                 else
@@ -1760,7 +1760,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(!match) {
             if(log_discard_msgs_version && log.isWarnEnabled()) {
                 if(suppress_log_different_version != null)
-                    suppress_log_different_version.log(SuppressLog.Level.warn, sender,
+                    suppress_log_different_version.log(SuppressLog.Level.WARN, sender,
                                                        suppress_time_different_version_warnings,
                                                        sender, Version.print(version), Version.printVersion());
                 else
@@ -1994,7 +1994,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      */
     protected static void writeMessage(Message msg, DataOutput dos, boolean multicast) throws Exception {
         byte flags=0;
-        dos.writeShort(Version.version); // write the version
+        dos.writeShort(Version.VERSION); // write the version
         if(multicast)
             flags+=MULTICAST;
         dos.writeByte(flags);
@@ -2036,7 +2036,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     public static void writeMessageListHeader(Address dest, Address src, byte[] cluster_name, int numMsgs, DataOutput dos, boolean multicast) throws Exception {
-        dos.writeShort(Version.version);
+        dos.writeShort(Version.VERSION);
 
         byte flags=LIST;
         if(multicast)

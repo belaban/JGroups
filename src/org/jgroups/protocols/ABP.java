@@ -76,7 +76,7 @@ public class ABP extends Protocol {
                 if(hdr == null)
                     break;
                 switch(hdr.type) {
-                    case data:
+                    case DATA:
                         Entry entry=getEntry(recv_map, sender);
                         log.trace("%s: <-- %s.msg(%d)", local_addr, sender, hdr.bit);
                         if(entry.handleMessage(sender, hdr.bit)) {
@@ -84,7 +84,7 @@ public class ABP extends Protocol {
                             return up_prot.up(evt);
                         }
                         break;
-                    case ack:
+                    case ACK:
                         log.trace("%s: <-- %s.ack(%d)", local_addr, sender, hdr.bit);
                         entry=getEntry(send_map, sender);
                         entry.handleAck(hdr.bit);
@@ -105,7 +105,7 @@ public class ABP extends Protocol {
         return entry;
     }
 
-    protected static enum Type {data, ack};
+    protected static enum Type {DATA, ACK};
 
     protected class Entry implements Runnable {
         protected byte                         bit=0;
@@ -127,7 +127,7 @@ public class ABP extends Protocol {
             }
 
             byte ack_bit=(byte)(this.bit ^ 1);
-            Message ack=new Message(sender).putHeader(id, new ABPHeader(Type.ack, ack_bit));
+            Message ack=new Message(sender).putHeader(id, new ABPHeader(Type.ACK, ack_bit));
             log.trace("%s: --> %s.ack(%d)", local_addr, sender, ack_bit);
             down_prot.down(new Event(Event.MSG, ack));
             return retval;
@@ -165,7 +165,7 @@ public class ABP extends Protocol {
                         return;
                     }
 
-                    copy=msg.copy().putHeader(id, new ABPHeader(Type.data, bit));
+                    copy=msg.copy().putHeader(id, new ABPHeader(Type.DATA, bit));
                 }
                 log.trace("%s: --> %s.msg(%d). Msg: %s", local_addr, copy.dest(), bit, copy.printHeaders());
                 down_prot.down(new Event(Event.MSG, copy));

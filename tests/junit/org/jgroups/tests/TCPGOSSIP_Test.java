@@ -41,7 +41,7 @@ public class TCPGOSSIP_Test {
         String tmp=Util.getProperty(Global.BIND_ADDR);
         if(tmp == null) {
             StackType type=Util.getIpStackType();
-            tmp=type == StackType.IPv6? "::1" : "127.0.0.1";
+            tmp=type == StackType.IP_V6 ? "::1" : "127.0.0.1";
         }
 
         bind_addr=InetAddress.getByName(tmp);

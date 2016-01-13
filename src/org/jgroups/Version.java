@@ -26,13 +26,13 @@ import java.util.regex.Pattern;
  */
 @Immutable
 public class Version {
-    public static final short    major;
-    public static final short    minor;
-    public static final short    micro;
-    public static final String   description;
+    public static final short    MAJOR;
+    public static final short    MINOR;
+    public static final short    MICRO;
+    public static final String   DESCRIPTION;
 
-    public static final short    version;
-    public static final String   string_version;
+    public static final short    VERSION;
+    public static final String   STRING_VERSION;
 
     private static final int     MAJOR_SHIFT = 11;
     private static final int     MINOR_SHIFT = 6;
@@ -67,12 +67,12 @@ public class Version {
         Matcher versionMatcher = VERSION_REGEXP.matcher(value);
         versionMatcher.find();
 
-        description = value;
-        major = Short.parseShort(versionMatcher.group(2));
-        minor = Short.parseShort(versionMatcher.group(3));
-        micro = Short.parseShort(versionMatcher.group(4));
-        version=encode(major, minor, micro);
-        string_version=print(version);
+        DESCRIPTION = value;
+        MAJOR = Short.parseShort(versionMatcher.group(2));
+        MINOR = Short.parseShort(versionMatcher.group(3));
+        MICRO = Short.parseShort(versionMatcher.group(4));
+        VERSION =encode(MAJOR, MINOR, MICRO);
+        STRING_VERSION =print(VERSION);
     }
 
 
@@ -81,7 +81,7 @@ public class Version {
      * @param args
      */
     public static void main(String[] args) {
-        System.out.println("\nVersion:      " + description);
+        System.out.println("\nVersion:      " + DESCRIPTION);
     }
 
 
@@ -90,7 +90,7 @@ public class Version {
      * @return String with description
      */
     public static String printDescription() {
-        return "JGroups " + description;
+        return "JGroups " + DESCRIPTION;
     }
 
     /**
@@ -98,7 +98,7 @@ public class Version {
      * @return String with version
      */
     public static String printVersion() {
-        return string_version;
+        return STRING_VERSION;
     }
 
 
@@ -108,7 +108,7 @@ public class Version {
      * @return Result of == operator.
      */
     public static boolean isSame(short v) {
-        return version == v;
+        return VERSION == v;
     }
 
     /** Method copied from http://www.jboss.com/index.html?module=bb&op=viewtopic&t=77231 */
@@ -139,11 +139,11 @@ public class Version {
      * @return
      */
     public static boolean isBinaryCompatible(short ver) {
-        if(version == ver)
+        if(VERSION == ver)
             return true;
         short tmp_major=(short)((ver & MAJOR_MASK) >> MAJOR_SHIFT);
         short tmp_minor=(short)((ver & MINOR_MASK) >> MINOR_SHIFT);
-        return major == tmp_major && minor == tmp_minor;
+        return MAJOR == tmp_major && MINOR == tmp_minor;
     }
 
 

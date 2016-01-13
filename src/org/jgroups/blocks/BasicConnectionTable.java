@@ -47,7 +47,7 @@ public abstract class BasicConnectionTable {
     protected final Log   log= LogFactory.getLog(getClass());
     final byte[]          cookie={'b', 'e', 'l', 'a'};
     boolean               use_reaper=false;            // by default we don't reap idle conns
-    static final int      backlog=20;                  // 20 conn requests are queued by ServerSocket (addtl will be discarded)
+    static final int      BACK_LOG =20;                  // 20 conn requests are queued by ServerSocket (addtl will be discarded)
     volatile ServerSocket srv_sock=null;
     boolean               tcp_nodelay=false;
     int                   linger=-1;
@@ -610,7 +610,7 @@ public abstract class BasicConnectionTable {
                    out.write(cookie, 0, cookie.length);
 
                    // write the version
-                   out.writeShort(Version.version);
+                   out.writeShort(Version.VERSION);
                    local_addr.writeTo(out);
                    out.flush(); // needed ?
                    updateLastAccessed();

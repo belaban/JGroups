@@ -19,8 +19,8 @@ public class ExtendedUUID extends UUID {
     protected byte[][]        values;
 
     // reserved flags
-    public static final short site_master            = 1 << 0;
-    public static final short can_become_site_master = 1 << 1;
+    public static final short SITEMASTER = 1 << 0;
+    public static final short CAN_BECOME_SITE_MASTER = 1 << 1;
 
     public ExtendedUUID() {
         super();
@@ -309,8 +309,8 @@ public class ExtendedUUID extends UUID {
     protected String flagsToString() {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        for(Tuple<Short,String> flag: Arrays.asList(new Tuple<>(site_master, "sm"),
-                                                    new Tuple<>(can_become_site_master, "can_be_sm"))) {
+        for(Tuple<Short,String> flag: Arrays.asList(new Tuple<>(SITEMASTER, "sm"),
+                                                    new Tuple<>(CAN_BECOME_SITE_MASTER, "can_be_sm"))) {
             if(isFlagSet(flag.getVal1())) {
                 if(first)
                     first=false;

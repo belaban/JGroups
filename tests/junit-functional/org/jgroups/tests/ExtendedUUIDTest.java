@@ -22,14 +22,14 @@ import java.util.Map;
 public class ExtendedUUIDTest {
 
     public void testCreation() {
-        ExtendedUUID uuid=ExtendedUUID.randomUUID("A").setFlag(ExtendedUUID.site_master);
+        ExtendedUUID uuid=ExtendedUUID.randomUUID("A").setFlag(ExtendedUUID.SITEMASTER);
         System.out.println("uuid = " + uuid);
     }
 
     public void testFlags() {
-        ExtendedUUID uuid=ExtendedUUID.randomUUID("A").setFlag(ExtendedUUID.site_master).setFlag((short)2).setFlag((short)4);
+        ExtendedUUID uuid=ExtendedUUID.randomUUID("A").setFlag(ExtendedUUID.SITEMASTER).setFlag((short)2).setFlag((short)4);
         System.out.println("uuid = " + uuid);
-        assert uuid.isFlagSet(ExtendedUUID.site_master);
+        assert uuid.isFlagSet(ExtendedUUID.SITEMASTER);
         assert uuid.isFlagSet((short)2);
         assert uuid.isFlagSet((short)4);
         uuid.clearFlag((short)2);
@@ -249,7 +249,7 @@ public class ExtendedUUIDTest {
     public void testSiteUUID() throws Exception {
         UUID a=(UUID)Util.createRandomAddress("A"), b=(UUID)Util.createRandomAddress("B");
         SiteUUID sa=new SiteUUID(a, "sm-a", "sfo");
-        SiteUUID sb=(SiteUUID)new SiteUUID(b, "b", "lon").setFlag(ExtendedUUID.can_become_site_master)
+        SiteUUID sb=(SiteUUID)new SiteUUID(b, "b", "lon").setFlag(ExtendedUUID.CAN_BECOME_SITE_MASTER)
           .put(Util.stringToBytes("id"),Util.objectToByteBuffer(322649));
         System.out.println("sb = " + sb);
         assert sa.getName().equals("sm-a");

@@ -40,7 +40,7 @@ public class ChannelTestBase {
             throw new Exception("Test is not marked with @Test annotation");
 
         StackType type=Util.getIpStackType();
-        bind_addr=type == StackType.IPv6 ? "::1" : "127.0.0.1";
+        bind_addr=type == StackType.IP_V6 ? "::1" : "127.0.0.1";
         this.channel_conf = chconf;
         bind_addr = Util.getProperty(new String[]{Global.BIND_ADDR}, null, "bind_addr", bind_addr);
         System.setProperty(Global.BIND_ADDR, bind_addr);

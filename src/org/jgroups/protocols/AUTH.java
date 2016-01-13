@@ -50,7 +50,7 @@ public class AUTH extends Protocol {
     /** Used on the coordinator to authentication joining member requests against */
     protected AuthToken             auth_token=null;
 
-    protected static final short    gms_id=ClassConfigurator.getProtocolId(GMS.class);
+    protected static final short    GMS_ID =ClassConfigurator.getProtocolId(GMS.class);
 
     /** List of UpHandler which are called when an up event has been received. Usually used by AuthToken impls */
     protected final List<UpHandler> up_handlers=new ArrayList<>();
@@ -249,7 +249,7 @@ public class AUTH extends Protocol {
             return;
 
         JoinRsp joinRes=new JoinRsp(error_msg); // specify the error message on the JoinRsp
-        Message msg = new Message(dest).putHeader(gms_id, new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP))
+        Message msg = new Message(dest).putHeader(GMS_ID, new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP))
           .setBuffer(GMS.marshal(joinRes));
         down_prot.down(new Event(Event.MSG, msg));
     }
@@ -258,7 +258,7 @@ public class AUTH extends Protocol {
         Message msg=new Message(dest).setFlag(Message.Flag.OOB);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
         hdr.setMergeRejected(true);
-        msg.putHeader(gms_id, hdr);
+        msg.putHeader(GMS_ID, hdr);
         if(log.isDebugEnabled()) log.debug("merge response=" + hdr);
         down_prot.down(new Event(Event.MSG, msg));
     }
@@ -282,7 +282,7 @@ public class AUTH extends Protocol {
     }
 
     protected static GMS.GmsHeader getGMSHeader(Message msg){
-        Header hdr = msg.getHeader(gms_id);
+        Header hdr = msg.getHeader(GMS_ID);
         if(hdr instanceof GMS.GmsHeader)
             return (GMS.GmsHeader)hdr;
         return null;

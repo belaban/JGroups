@@ -1112,7 +1112,7 @@ public class JChannel extends Channel {
 
             }
 
-            map.put("version", Version.description);
+            map.put("version", Version.DESCRIPTION);
             if(my_view != null && !map.containsKey("view"))
                 map.put("view", my_view.toString());
             map.put("local_addr", getAddressAsString() + " [" + getAddressAsUUID() + "]");

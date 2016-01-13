@@ -105,9 +105,9 @@ public class Configurator {
             // Else pass
 
             for(InetAddress addr: addrs) {
-                if(addr instanceof Inet6Address && ip_version == StackType.IPv4)
+                if(addr instanceof Inet6Address && ip_version == StackType.IP_V4)
                     throw new IllegalArgumentException("found IPv6 address " + addr + " in an IPv4 stack");
-                if(addr instanceof Inet4Address && addr.isMulticastAddress() && ip_version == StackType.IPv6)
+                if(addr instanceof Inet4Address && addr.isMulticastAddress() && ip_version == StackType.IP_V6)
                     throw new Exception("found IPv4 multicast address " + addr + " in an IPv6 stack");
             }
         }
@@ -139,9 +139,9 @@ public class Configurator {
             // Else pass
 
             for(InetAddress addr : addrs) {
-                if(addr instanceof Inet6Address && ip_version == StackType.IPv4)
+                if(addr instanceof Inet6Address && ip_version == StackType.IP_V4)
                     throw new IllegalArgumentException("found IPv6 address " + addr + " in an IPv4 stack");
-                if(addr instanceof Inet4Address && addr.isMulticastAddress() && ip_version == StackType.IPv6)
+                if(addr instanceof Inet4Address && addr.isMulticastAddress() && ip_version == StackType.IP_V6)
                     throw new Exception("found IPv4 multicast address " + addr + " in an IPv6 stack");
             }
         }
@@ -412,7 +412,7 @@ public class Configurator {
         if(protocol_name == null || properties == null)
             return null;
 
-        String defaultProtocolName=ProtocolConfiguration.protocol_prefix + '.' + protocol_name;
+        String defaultProtocolName=ProtocolConfiguration.PROTOCOL_PREFIX + '.' + protocol_name;
         Class<?> clazz=null;
 
         try {
@@ -606,9 +606,9 @@ public class Configurator {
                 throw new RuntimeException("all addresses have to be either IPv4 or IPv6: IPv4 addresses=" +
                         ipv4_addrs + ", IPv6 addresses=" + ipv6_addrs);
             }
-            return !ipv6_addrs.isEmpty()? StackType.IPv6 : StackType.IPv4;
+            return !ipv6_addrs.isEmpty()? StackType.IP_V6 : StackType.IP_V4;
         }
-        return StackType.Unknown;
+        return StackType.UNKNOWN;
     }
 
 
@@ -775,7 +775,7 @@ public class Configurator {
                         // get the default value for the method- check for InetAddress types
                         String defaultValue=null;
                         if(InetAddressInfo.isInetAddressRelated(methods[j])) {
-                            defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
+                            defaultValue=ip_version == StackType.IP_V4 ? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
                             if(defaultValue != null && !defaultValue.isEmpty()) {
                                 Object converted=null;
                                 try {
@@ -808,7 +808,7 @@ public class Configurator {
                     // get the default value for the field - check for InetAddress types
                     String defaultValue=null;
                     if(InetAddressInfo.isInetAddressRelated(protocol, fields[j])) {
-                        defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
+                        defaultValue=ip_version == StackType.IP_V4 ? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
                         if(defaultValue != null && !defaultValue.isEmpty()) {
                             // condition for invoking converter
                             if(defaultValue != null || !PropertyHelper.usesDefaultConverter(fields[j])) {
@@ -856,7 +856,7 @@ public class Configurator {
                         // add to collection of @Properties with no user specified value
                         Property annotation=fields[j].getAnnotation(Property.class);
 
-                        String defaultValue=ip_version == StackType.IPv4? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
+                        String defaultValue=ip_version == StackType.IP_V4 ? annotation.defaultValueIPv4() : annotation.defaultValueIPv6();
                         if(defaultValue != null && !defaultValue.isEmpty()) {
                             // condition for invoking converter
                             Object converted=null;

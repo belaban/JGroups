@@ -8,7 +8,7 @@ import org.jgroups.blocks.atomic.CounterService;
 import org.jgroups.util.Util;
 
 public class CounterServiceDemo {
-    static final String props="SHARED_LOOPBACK:PING(timeout=1000):" +
+    static final String PROPS = "SHARED_LOOPBACK:PING(timeout=1000):" +
       "pbcast.NAKACK(use_mcast_xmit=false;log_discard_msgs=false;log_not_found_msgs=false)" +
       ":UNICAST:pbcast.STABLE(stability_delay=200):pbcast.GMS:FC:FRAG2:COUNTER";
     
@@ -114,7 +114,7 @@ public class CounterServiceDemo {
 
 
     public static void main(final String[] args) throws Exception {
-        String properties=props;
+        String properties= PROPS;
         String name=null;
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-props")) {

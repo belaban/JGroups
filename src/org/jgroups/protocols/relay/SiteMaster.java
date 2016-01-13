@@ -17,7 +17,7 @@ public class SiteMaster extends SiteUUID {
     private static final long serialVersionUID=-6147979304449032483L;
 
     public SiteMaster() {
-        setFlag(site_master);
+        setFlag(SITEMASTER);
     }
 
     public SiteMaster(String site) {
@@ -26,7 +26,7 @@ public class SiteMaster extends SiteUUID {
 
     public SiteMaster(byte[] site) {
         super(0, 0, null, site);
-        setFlag(site_master);
+        setFlag(SITEMASTER);
     }
 
     public int compareTo(Address other) {

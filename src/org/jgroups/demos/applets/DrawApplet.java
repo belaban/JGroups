@@ -29,7 +29,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
     private Button clear_button, leave_button;
     private Label mbr_label;
     private final Font default_font=new Font("Helvetica", Font.PLAIN, 12);
-    private static final String groupname="DrawGroup";
+    private static final String GROUP_NAME ="DrawGroup";
     private Channel channel=null;
     private int member_size=1;
     private int red=0, green=0, blue=0;
@@ -97,8 +97,8 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
                     }
                 }
             });
-            showStatus("Connecting to group " + groupname);
-            channel.connect(groupname);
+            showStatus("Connecting to group " + GROUP_NAME);
+            channel.connect(GROUP_NAME);
         }
         catch(Exception e) {
             e.printStackTrace();
@@ -114,7 +114,7 @@ public class DrawApplet extends Applet implements MouseMotionListener, ActionLis
 
     public void destroy() {
         System.out.println("------- DESTROY");
-        showStatus("Disconnecting from " + groupname);
+        showStatus("Disconnecting from " + GROUP_NAME);
         channel.close();
         showStatus("Disconnected");
     }

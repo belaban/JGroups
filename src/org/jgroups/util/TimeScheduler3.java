@@ -30,7 +30,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
 
     protected ThreadFactory                           timer_thread_factory;
 
-    protected enum TaskType                           {dynamic, fixed_rate, fixed_delay}
+    protected enum TaskType                           {DYNAMIC, FIXED_RATE, FIXED_DELAY}
 
 
     /**
@@ -84,7 +84,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
 
     public void execute(Runnable task) {
         submitToPool(task instanceof TimeScheduler.Task?
-                       new RecurringTask(task, TaskType.dynamic, 0, ((TimeScheduler.Task)task).nextInterval(), TimeUnit.MILLISECONDS)
+                       new RecurringTask(task, TaskType.DYNAMIC, 0, ((TimeScheduler.Task)task).nextInterval(), TimeUnit.MILLISECONDS)
                        : new Task(task)); // we'll execute the task directly
     }
 
@@ -96,12 +96,12 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
 
 
     public Future<?> scheduleWithFixedDelay(Runnable work, long initial_delay, long delay, TimeUnit unit) {
-        return scheduleRecurring(work, TaskType.fixed_delay, initial_delay, delay, unit);
+        return scheduleRecurring(work, TaskType.FIXED_DELAY, initial_delay, delay, unit);
     }
 
 
     public Future<?> scheduleAtFixedRate(Runnable work, long initial_delay, long delay, TimeUnit unit) {
-        return scheduleRecurring(work,TaskType.fixed_rate,initial_delay,delay,unit);
+        return scheduleRecurring(work,TaskType.FIXED_RATE,initial_delay,delay,unit);
     }
 
 
@@ -114,7 +114,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
      * @param work the task to execute
      */
     public Future<?> scheduleWithDynamicInterval(TimeScheduler.Task work) {
-        return scheduleRecurring(work, TaskType.dynamic, work.nextInterval(), 0, TimeUnit.MILLISECONDS);
+        return scheduleRecurring(work, TaskType.DYNAMIC, work.nextInterval(), 0, TimeUnit.MILLISECONDS);
     }
 
 
@@ -315,7 +315,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
             this.initial_delay=TimeUnit.NANOSECONDS.convert(initial_delay, TimeUnit.MILLISECONDS);
             this.type=type;
             period=TimeUnit.NANOSECONDS.convert(delay, unit);
-            if(type == TaskType.dynamic && !(runnable instanceof TimeScheduler.Task))
+            if(type == TaskType.DYNAMIC && !(runnable instanceof TimeScheduler.Task))
                 throw new IllegalArgumentException("Need to provide a TimeScheduler.Task as runnable when type is dynamic");
         }
 
@@ -328,7 +328,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
             done=false; // run again
 
             switch(type) {
-                case dynamic:
+                case DYNAMIC:
                     long next_interval=TimeUnit.NANOSECONDS.convert(((TimeScheduler.Task)runnable).nextInterval(), TimeUnit.MILLISECONDS);
                     if(next_interval <= 0) {
                         if(log.isTraceEnabled())
@@ -339,10 +339,10 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
                     creation_time=System.nanoTime();
                     delay=next_interval;
                     break;
-                case fixed_rate:
+                case FIXED_RATE:
                     delay=initial_delay + cnt++ * period;
                     break;
-                case fixed_delay:
+                case FIXED_DELAY:
                     creation_time=System.nanoTime();
                     delay=period;
                     break;

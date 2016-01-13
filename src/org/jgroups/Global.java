@@ -21,8 +21,8 @@ public class Global {
 
     public static final short SCOPE_ID=ClassConfigurator.getProtocolId(SCOPE.class);
 
-    public static final String IPv4="java.net.preferIPv4Stack";
-    public static final String IPv6="java.net.preferIPv6Addresses";
+    public static final String IP_V4 ="java.net.preferIPv4Stack";
+    public static final String IP_V6 ="java.net.preferIPv6Addresses";
 
     public static final String NON_LOOPBACK_ADDRESS="NON_LOOPBACK_ADDRESS";
 

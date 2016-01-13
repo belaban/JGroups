@@ -33,13 +33,13 @@ public class Topology extends Frame implements WindowListener {
     private final FontMetrics fm;
     private final Color node_color=new Color(250, 220, 100);
     private boolean coordinator=false;
-    private static final int NormalStyle=0;
-    private static final int CheckStyle=1;
+    private static final int NORMAL_STYLE =0;
+    private static final int CHECK_STYLE =1;
     private JChannel channel;
     private Object my_addr=null;
     private String props="udp.xml";
     private String name;
-    private static final String channel_name="FD-Heartbeat";
+    private static final String CHANNEL_NAME ="FD-Heartbeat";
 
 
     public Topology(String props, String name) {
@@ -88,7 +88,7 @@ public class Topology extends Frame implements WindowListener {
         g.setColor(old);
         g.drawString(label, x + 5, y + 15);
         g.drawRoundRect(x - 1, y - 1, width + 1, height + 1, 10, 10);
-        if(style == CheckStyle) {
+        if(style == CHECK_STYLE) {
             g.drawRoundRect(x - 2, y - 2, width + 2, height + 2, 10, 10);
             g.drawRoundRect(x - 3, y - 3, width + 3, height + 3, 10, 10);
         }
@@ -112,7 +112,7 @@ public class Topology extends Frame implements WindowListener {
 
         for(int i=0; i < members.size(); i++) {
             label=members.get(i).toString();
-            drawNode(g, x, y, label, NormalStyle);
+            drawNode(g, x, y, label, NORMAL_STYLE);
             y+=50;
         }
 
@@ -177,7 +177,7 @@ public class Topology extends Frame implements WindowListener {
                 repaint();
             }
         });
-        channel.connect(channel_name);
+        channel.connect(CHANNEL_NAME);
         my_addr=channel.getAddress();
         if(my_addr != null)
             setTitle(my_addr.toString());

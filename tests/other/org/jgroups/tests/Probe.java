@@ -246,7 +246,7 @@ public class Probe {
             Probe p=new Probe();
             if(addrs.isEmpty()) {
                 StackType stack_type=Util.getIpStackType();
-                boolean ipv6=stack_type == StackType.IPv6;
+                boolean ipv6=stack_type == StackType.IP_V6;
                 InetAddress addr=ipv6? InetAddress.getByName(DEFAULT_DIAG_ADDR_IPv6) : InetAddress.getByName(DEFAULT_DIAG_ADDR);
                 addrs.add(addr);
             }

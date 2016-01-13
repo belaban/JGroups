@@ -97,7 +97,7 @@ public class MessageSizeTest {
     
     protected static void writeMessage(Message msg, DataOutput dos, boolean multicast) throws Exception {
         byte flags=0;
-        dos.writeShort(Version.version); // write the version
+        dos.writeShort(Version.VERSION); // write the version
         if(multicast)
             flags+=MULTICAST;
         dos.writeByte(flags);

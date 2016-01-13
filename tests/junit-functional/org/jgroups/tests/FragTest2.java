@@ -25,7 +25,7 @@ import java.net.InetAddress;
 public class FragTest2 {
     protected JChannel a, b;
     protected static final StackType type=Util.getIpStackType();
-    protected static final String bind_addr=type == StackType.IPv6 ? "::1" : "127.0.0.1";
+    protected static final String bind_addr=type == StackType.IP_V6 ? "::1" : "127.0.0.1";
     protected static final String MSG="Hello world from Bela Ban";
 
     @BeforeMethod protected void setup() throws Exception {

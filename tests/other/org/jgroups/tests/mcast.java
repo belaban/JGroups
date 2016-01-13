@@ -31,7 +31,7 @@ public class mcast {
           || Util.checkForHp()
           || Util.checkForMac();
         ip_version=Util.getIpStackType();
-        prot_family=ip_version == StackType.IPv6? StandardProtocolFamily.INET6 : StandardProtocolFamily.INET;
+        prot_family=ip_version == StackType.IP_V6 ? StandardProtocolFamily.INET6 : StandardProtocolFamily.INET;
     }
 
 
@@ -117,10 +117,10 @@ public class mcast {
             }
             if(mcast_addr == null) {
                 switch(ip_version) {
-                    case IPv4:
+                    case IP_V4:
                         mcast_addr=InetAddress.getByName("232.5.5.5");
                         break;
-                    case IPv6:
+                    case IP_V6:
                         mcast_addr=InetAddress.getByName("ff0e::8:8:8");
                         break;
                 }

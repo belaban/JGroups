@@ -24,8 +24,8 @@ public class RACKSPACE_PING extends FILE_PING {
 
     protected static final Log log = LogFactory.getLog(RACKSPACE_PING.class);
 
-    private static final String UKService = "https://lon.auth.api.rackspacecloud.com/v1.0";
-    private static final String USService = "https://auth.api.rackspacecloud.com/v1.0";
+    private static final String UK_SERVICE = "https://lon.auth.api.rackspacecloud.com/v1.0";
+    private static final String US_SERVICE = "https://auth.api.rackspacecloud.com/v1.0";
 
     protected RackspaceClient rackspaceClient = null;
 
@@ -53,7 +53,7 @@ public class RACKSPACE_PING extends FILE_PING {
             throw new IllegalArgumentException("Invalid 'region', must be UK or US");
         }
 
-        URL authURL = new URL(region.equals("UK") ? UKService : USService);
+        URL authURL = new URL(region.equals("UK") ? UK_SERVICE : US_SERVICE);
         rackspaceClient = new RackspaceClient(authURL, username, apiKey);
 
         super.init();

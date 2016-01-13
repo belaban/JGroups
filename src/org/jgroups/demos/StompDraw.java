@@ -34,8 +34,8 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
     private final Set<String>      clients=new HashSet<>();
 
     protected StompConnection      stomp_client;
-    protected static final String  draw_dest="/topics/draw-demo";
-    protected static final String  clients_dest="/topics/clients";
+    protected static final String  DRAW_DEST ="/topics/draw-demo";
+    protected static final String  CLIENTS_DEST ="/topics/clients";
 
 
     public StompDraw(String host, String port) throws Exception {
@@ -95,14 +95,14 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
 
     private void sendToAll(byte[] buf) throws Exception {
         if(buf != null)
-            stomp_client.send(draw_dest, buf, 0, buf.length);
+            stomp_client.send(DRAW_DEST, buf, 0, buf.length);
     }
 
 
     public void go() throws Exception {
         stomp_client.connect();
-        stomp_client.subscribe(draw_dest);
-        stomp_client.subscribe(clients_dest);
+        stomp_client.subscribe(DRAW_DEST);
+        stomp_client.subscribe(CLIENTS_DEST);
 
         mainFrame=new JFrame();
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -130,7 +130,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
 
         String session_id=stomp_client.getSessionId();
         if(session_id != null)
-            stomp_client.send(clients_dest, null, 0, 0, "client-joined", session_id);
+            stomp_client.send(CLIENTS_DEST, null, 0, 0, "client-joined", session_id);
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 StompDraw.this.stop();
@@ -197,7 +197,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
         if(buf == null)
             return;
         String destination=headers.get("destination");
-        if(destination != null && destination.equals(clients_dest)) {
+        if(destination != null && destination.equals(CLIENTS_DEST)) {
             String new_client=headers.get("client-joined");
             if(new_client != null) {
                 synchronized(clients) {
@@ -207,7 +207,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
                     }
                 }
 
-                stomp_client.send(clients_dest, null, 0, 0, "clients", getAllClients());
+                stomp_client.send(CLIENTS_DEST, null, 0, 0, "clients", getAllClients());
             }
 
             String left_client=headers.get("client-left");
@@ -301,7 +301,7 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
             return;
         String session_id=stomp_client.getSessionId();
         if(session_id != null) {
-            stomp_client.send(clients_dest, null, 0, 0, "client-left", session_id);
+            stomp_client.send(CLIENTS_DEST, null, 0, 0, "client-left", session_id);
         }
         stomp_client.disconnect();
     }
