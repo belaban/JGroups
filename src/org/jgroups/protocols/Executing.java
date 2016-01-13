@@ -121,7 +121,7 @@ abstract public class Executing extends Protocol {
      */
     protected Queue<Owner> _consumersAvailable = new ArrayDeque<>();
     
-    protected static enum Type {
+    protected enum Type {
         RUN_REQUEST,            // request to coordinator from client to tell of a new task request
         CONSUMER_READY,         // request to coordinator from server to tell of a new consumer ready
         CONSUMER_UNREADY,       // request to coordinator from server to tell of a consumer stopping
