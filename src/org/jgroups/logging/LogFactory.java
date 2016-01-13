@@ -10,12 +10,15 @@ import org.jgroups.Global;
  * @author Bela Ban
  * @since 4.0
  */
-public class LogFactory {
+public final class LogFactory {
     public static final boolean    IS_LOG4J2_AVAILABLE; // log4j2 is the default
     protected static final boolean USE_JDK_LOGGER;
 
     protected static CustomLogFactory custom_log_factory;
 
+	private LogFactory() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
 
     static {
         String customLogFactoryClass=System.getProperty(Global.CUSTOM_LOG_FACTORY);

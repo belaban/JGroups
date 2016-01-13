@@ -30,13 +30,17 @@ import javax.crypto.SecretKey;
  * @author S Woodcock
  * 
  */
-public class KeyStoreGenerator {
+public final class KeyStoreGenerator {
 
     static String symAlg="AES";
     static int keySize=128;
     static String keyStoreName="defaultStore.keystore";
     static String storePass="changeit";
     static String alias="myKey";
+
+	private KeyStoreGenerator() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
 
     public static void main(String[] args) {
 

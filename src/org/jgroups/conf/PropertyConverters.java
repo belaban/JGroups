@@ -28,7 +28,11 @@ import java.util.concurrent.Callable;
  *
  * @author Vladimir Blagojevic
  */
-public class PropertyConverters {
+public final class PropertyConverters {
+
+	private PropertyConverters() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
 
     public static class NetworkInterfaceList implements PropertyConverter {
 

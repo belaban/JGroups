@@ -15,7 +15,7 @@ import java.util.*;
  * @author Bela Ban
  * @since 3.2
  */
-public class RelayConfig {
+public final class RelayConfig {
     protected static final String RELAY_CONFIG  = "RelayConfiguration";
     protected static final String SITES         = "sites";
     protected static final String SITE          = "site";
@@ -24,6 +24,9 @@ public class RelayConfig {
     protected static final String FORWARDS      = "forwards";
     protected static final String FORWARD       = "forward";
     
+	private RelayConfig() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
 
 
     /*public String toString() {

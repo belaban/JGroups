@@ -17,11 +17,14 @@ import java.util.Map;
  * @author Bela Ban
  * @since  3.4
  */
-public class ForkConfig {
+public final class ForkConfig {
     protected static final String FORK_STACKS   = "fork-stacks";
     protected static final String FORK_STACK    = "fork-stack";
     protected static final String ID            = "id";
 
+	private ForkConfig() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
 
     /**
      * Parses the input and returns a map of fork-stack IDs and lists of ProtocolConfigurations
