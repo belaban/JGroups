@@ -360,7 +360,7 @@ public class ENCRYPTAsymmetricTest {
         Util.assertEquals("hello2", new String(((Message)tempEvt.getArg()).getBuffer()));
     }
 
-    public static void testKeyChangesDuringKeyServerChange() throws Exception {
+    public void testKeyChangesDuringKeyServerChange() throws Exception {
         // create peers and server
         ENCRYPT peer=new ENCRYPT();
         peer.init();

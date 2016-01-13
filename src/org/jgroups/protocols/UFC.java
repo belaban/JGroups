@@ -112,7 +112,7 @@ public class UFC extends FlowControl {
 
     protected Object handleDownMessage(final Event evt, final Message msg, Address dest, int length) {
         if(dest == null) { // 2nd line of defense, not really needed
-            log.error(getClass().getSimpleName() + " doesn't handle multicast messages; passing message down");
+            log.error("%s doesn't handle multicast messages; passing message down", getClass().getSimpleName());
             return down_prot.down(evt);
         }
 
@@ -161,12 +161,8 @@ public class UFC extends FlowControl {
             return;
 
         long new_credit=Math.min(max_credits, cred.get() + increase);
-        if(log.isTraceEnabled()) {
-            StringBuilder sb=new StringBuilder();
-            sb.append("received " + increase + " credits from ").append(sender).append(", old credits: ").append(cred)
-                    .append(", new credits: ").append(new_credit);
-            log.trace(sb);
-        }
+        if(log.isTraceEnabled())
+            log.trace("received %d credits from %s, old credits: %s, new credits: %d", increase, sender, cred, new_credit);
         cred.increment(increase);
     }
     

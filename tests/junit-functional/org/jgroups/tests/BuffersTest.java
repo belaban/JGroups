@@ -4,6 +4,9 @@ import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.nio.Buffers;
 import org.jgroups.nio.MockSocketChannel;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.ByteArrayDataInputStream;
+import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -77,6 +80,73 @@ public class BuffersTest {
         System.out.println("b = " + b);
         assert b != null;
         assert Arrays.equals(data, b.array());
+    }
+
+    public void testRead2() throws Exception {
+        byte[] cookie={'b', 'e', 'l', 'a'};
+        IpAddress addr=new IpAddress(7500);
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream();
+        addr.writeTo(out);
+
+        MockSocketChannel ch=new MockSocketChannel()
+          .bytesToRead((ByteBuffer)ByteBuffer.allocate(cookie.length + Global.SHORT_SIZE + out.position())
+            .put(cookie).putShort(Version.version).put(out.buffer(), 0, out.position()).flip());
+
+        Buffers bufs=new Buffers(ByteBuffer.allocate(cookie.length), ByteBuffer.allocate(Global.SHORT_SIZE), ByteBuffer.allocate(out.position()));
+        boolean rc=bufs.read(ch);
+        assert rc;
+        readCookieVersionAndAddress(bufs, cookie, addr);
+    }
+
+    public void testRead3() throws Exception {
+        byte[] cookie={'b', 'e', 'l', 'a'};
+        IpAddress addr=new IpAddress(7500);
+        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream();
+        addr.writeTo(out);
+
+        MockSocketChannel ch=new MockSocketChannel()
+          .bytesToRead((ByteBuffer)ByteBuffer.allocate(cookie.length + Global.SHORT_SIZE + out.position())
+            .put(cookie).putShort(Version.version).put(out.buffer(), 0, out.position()).flip());
+
+        int remaining=ch.bytesToRead().remaining();
+        ch.bytesToRead().limit(remaining -10);
+
+        Buffers bufs=new Buffers(ByteBuffer.allocate(cookie.length), ByteBuffer.allocate(Global.SHORT_SIZE), ByteBuffer.allocate(out.position()));
+        boolean rc=bufs.read(ch);
+        assert !rc;
+
+        ch.bytesToRead().limit(remaining-2);
+        rc=bufs.read(ch);
+        assert !rc;
+
+        ch.bytesToRead().limit(remaining);
+        rc=bufs.read(ch);
+        assert rc;
+
+        readCookieVersionAndAddress(bufs, cookie, addr);
+    }
+
+
+    protected void readCookieVersionAndAddress(final Buffers bufs, final byte[] cookie, final IpAddress addr) throws Exception {
+        // cookie
+        ByteBuffer cookie_buf=bufs.get(0);
+        byte[] cookie2=new byte[cookie_buf.position()];
+        cookie_buf.flip();
+        cookie_buf.get(cookie2, 0, cookie2.length);
+        assert Arrays.equals(cookie, cookie2);
+
+        // version
+        ByteBuffer version_buf=bufs.get(1);
+        short ver=version_buf.getShort(0);
+        assert Version.version == ver;
+
+        // address
+        ByteBuffer addr_buf=bufs.get(2);
+        addr_buf.flip();
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(addr_buf);
+        IpAddress address=new IpAddress();
+        address.readFrom(in);
+        assert addr.equals(address);
     }
 
     public void testPartialRead() throws Exception {

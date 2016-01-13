@@ -48,6 +48,8 @@ public class MockSocketChannel extends SocketChannel {
         return this;
     }
 
+    public ByteBuffer bytesToRead() {return bytes_to_read;}
+
     public MockSocketChannel recorder(ByteBuffer buf) {this.recorder=buf; return this;}
     public ByteBuffer        recorder()               {return recorder;}
 

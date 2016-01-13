@@ -362,11 +362,9 @@ public class ProtocolStack extends Protocol {
         int len, max_len=30;
 
         sb.append("<config>\n");
-        while(prot != null) {
-            String prot_name=prot.getName();
+        while(prot != null && !prot.getClass().equals(ProtocolStack.class)) {
+            String prot_name=prot.getClass().getName();
             if(prot_name != null) {
-                if("ProtocolStack".equals(prot_name))
-                    break;
                 sb.append("  <").append(prot_name).append(" ");
                 Map<String,String> tmpProps=getProps(prot);
                 if(tmpProps != null) {

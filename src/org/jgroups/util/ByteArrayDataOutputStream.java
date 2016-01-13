@@ -13,25 +13,30 @@ import java.util.Arrays;
  * @since  3.5
  */
 public class ByteArrayDataOutputStream implements DataOutput {
-    protected byte[] buf;
-    protected int    pos;
+    protected byte[]  buf;
+    protected int     pos;
+    protected boolean grow_exponentially; // if true, the buffer will double every time
 
     public ByteArrayDataOutputStream() {
-        this(32);
+        this(32, false);
     }
 
     public ByteArrayDataOutputStream(int capacity) {
+        this(capacity, false);
+    }
+
+    public ByteArrayDataOutputStream(int capacity, boolean grow_exponentially) {
         this.buf=new byte[capacity];
+        this.grow_exponentially=grow_exponentially;
     }
 
-    public ByteArrayDataOutputStream position(int pos) {
-        this.pos=checkBounds(pos); return this;
-    }
-
-    public int        position()      {return pos;}
-    public byte[]     buffer()        {return buf;}
-    public Buffer     getBuffer()     {return new Buffer(buf, 0, pos);}
-    public ByteBuffer getByteBuffer() {return ByteBuffer.wrap(buf, 0, pos);}
+    public ByteArrayDataOutputStream position(int pos)            {this.pos=checkBounds(pos); return this;}
+    public int                       position()                   {return pos;}
+    public byte[]                    buffer()                     {return buf;}
+    public Buffer                    getBuffer()                  {return new Buffer(buf, 0, pos);}
+    public ByteBuffer                getByteBuffer()              {return ByteBuffer.wrap(buf, 0, pos);}
+    public boolean                   growExponentially()          {return grow_exponentially;}
+    public ByteArrayDataOutputStream growExponentially(boolean b) {grow_exponentially=b; return this;}
 
 
     public void write(int b) {
@@ -181,10 +186,21 @@ public class ByteArrayDataOutputStream implements DataOutput {
         return pos;
     }
 
+    /** Grows the buffer; whether it grow linearly or exponentially depends on grow_exponentially */
     protected void ensureCapacity(int bytes) {
-        if(pos + bytes > buf.length) {
-            int new_size=buf.length + bytes + 32;
-            buf=Arrays.copyOf(buf, new_size);
+        int minCapacity=pos+bytes;
+
+        if(minCapacity - buf.length > 0) {
+            int newCapacity=this.grow_exponentially? buf.length << 1 : buf.length + bytes + 32;
+            if(newCapacity - minCapacity < 0)
+                newCapacity=minCapacity;
+            if(newCapacity < 0) {
+                if(minCapacity < 0) // overflow
+                    throw new OutOfMemoryError();
+                newCapacity=Integer.MAX_VALUE;
+            }
+            // System.out.printf("growing buffer from %d -> %d (pos=%d, bytes=%d)\n", buf.length, newCapacity, pos, bytes);
+            buf=Arrays.copyOf(buf, newCapacity);
         }
     }
 }

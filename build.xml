@@ -384,6 +384,10 @@
     </target>
 
 
+    <target name="javadocs" description="Creates Javadoc documentation in ./dist/javadoc"
+            depends="javadoc"/>
+
+
     <target name="javadoc"
             depends="prepare,check-javadoc" unless="javadoc.exists"
             description="Creates Javadoc documentation in ./dist/javadoc">

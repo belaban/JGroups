@@ -187,8 +187,7 @@ public abstract class FlowControl extends Protocol {
             prev_val=val;
             max_block_times.put(key, val);
         }
-        if(log.isDebugEnabled())
-            log.debug("max_block_times: " + max_block_times);
+        log.debug("max_block_times: %s", max_block_times);
     }
 
     public String getMaxBlockTimes() {
@@ -295,9 +294,8 @@ public abstract class FlowControl extends Protocol {
             log.warn("No fragmentation protocol was found. When flow control is used, we recommend " +
                        "a fragmentation protocol, due to http://jira.jboss.com/jira/browse/JGRP-590");
         if(frag_size > 0 && frag_size >= min_credits) {
-            log.warn("The fragmentation size of the fragmentation protocol is " + frag_size +
-                       ", which is greater than min_credits (" + min_credits +  "). This can lead to blockings " +
-                       "(https://issues.jboss.org/browse/JGRP-1659)");
+            log.warn("The fragmentation size of the fragmentation protocol is %d, which is greater than min_credits (%d). " +
+                       "This can lead to blockings (https://issues.jboss.org/browse/JGRP-1659)", frag_size, min_credits);
         }
         running=true;
     }
@@ -480,7 +478,7 @@ public abstract class FlowControl extends Protocol {
         if(sender == null || length == 0 || (cred=map.get(sender)) == null)
             return 0;
         if(log.isTraceEnabled())
-            log.trace(sender + " used " + length + " credits, " + (cred.get() - length) + " remaining");
+            log.trace("%s used %d credits, %d remaining", sender, length, cred.get() - length);
         return cred.decrementAndGet(length);
     }
 
@@ -495,7 +493,7 @@ public abstract class FlowControl extends Protocol {
             if(cred == null)
                 return;
             if(log.isTraceEnabled())
-                log.trace("received credit request from " + sender + ": sending " + requested_credits + " credits");
+                log.trace("received credit request from %s: sending %d credits", sender, requested_credits);
             cred.increment(requested_credits);
             sendCredit(sender, requested_credits);
         }
@@ -504,7 +502,7 @@ public abstract class FlowControl extends Protocol {
 
     protected void sendCredit(Address dest, long credits) {
         if(log.isTraceEnabled())
-            if(log.isTraceEnabled()) log.trace("sending " + credits + " credits to " + dest);
+            log.trace("sending %d credits to %s", credits, dest);
         Message msg=new Message(dest, credits).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
           .putHeader(this.id,REPLENISH_HDR);
         down_prot.down(new Event(Event.MSG, msg));
@@ -517,9 +515,9 @@ public abstract class FlowControl extends Protocol {
      * @param dest The member to which we send the credit request
      * @param credits_needed The number of bytes (of credits) left for dest
      */
-    protected void sendCreditRequest(final Address dest, Long credits_needed) {
+    protected void sendCreditRequest(final Address dest, long credits_needed) {
         if(log.isTraceEnabled())
-            log.trace("sending request for " + credits_needed + " credits to " + dest);
+            log.trace("sending request for %d credits to %s", credits_needed, dest);
         Message msg=new Message(dest, credits_needed).setFlag(Message.Flag.OOB, Message.Flag.INTERNAL, Message.Flag.DONT_BUNDLE)
           .putHeader(this.id, CREDIT_REQUEST_HDR);
         down_prot.down(new Event(Event.MSG, msg));
@@ -529,7 +527,7 @@ public abstract class FlowControl extends Protocol {
 
     protected void handleViewChange(List<Address> mbrs) {
         if(mbrs == null) return;
-        if(log.isTraceEnabled()) log.trace("new membership: " + mbrs);
+        if(log.isTraceEnabled()) log.trace("new membership: %s", mbrs);
 
         // add members not in membership to received and sent hashmap (with full credits)
         for(Address addr: mbrs) {

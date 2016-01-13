@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.blocks.LazyRemovalCache;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -1085,7 +1086,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     public void init() throws Exception {
-        super.init();
+        this.id=ClassConfigurator.getProtocolId(TP.class);
+        // super.init();
 
         // Create the default thread factory
         if(global_thread_factory == null)
