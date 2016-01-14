@@ -2247,26 +2247,7 @@ public class S3_PING extends FILE_PING {
                 return null;
             }   // end catch
             finally {
-                try {
-                    oos.close();
-                }
-                catch(Exception e) {
-                }
-                try {
-                    gzos.close();
-                }
-                catch(Exception e) {
-                }
-                try {
-                    b64os.close();
-                }
-                catch(Exception e) {
-                }
-                try {
-                    baos.close();
-                }
-                catch(Exception e) {
-                }
+                Util.close(oos, gzos, b64os, baos);
             }   // end finally
 
             // Return value according to relevant encoding.

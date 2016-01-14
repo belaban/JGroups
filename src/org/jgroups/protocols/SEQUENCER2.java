@@ -335,7 +335,8 @@ public class SEQUENCER2 extends Protocol {
 
             // todo: if I'm the new coord, get the highest seqno from all members. If not, re-send my pending seqno reqs
         }
-        is_coord=new_coord.equals(local_addr);
+        if(new_coord != null)
+            is_coord=new_coord.equals(local_addr);
     }
 
 
