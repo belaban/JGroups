@@ -2253,7 +2253,9 @@ public class S3_PING extends FILE_PING {
                 catch(Exception e) {
                 }
                 try {
-                    gzos.close();
+                    if (gzos != null) {
+                        gzos.close();
+                    }
                 }
                 catch(Exception e) {
                 }

@@ -78,7 +78,7 @@ public class MergeView extends View {
             return true;
         MergeView other_view=(MergeView)other;
         if(subgroups == null && other_view.subgroups == null) return true;
-        if(subgroups.length != other_view.subgroups.length)   return false;
+        if(subgroups != null && subgroups.length != other_view.subgroups.length)   return false;
         for(int i=0; i < subgroups.length; i++) {
             View my_view=subgroups[i], oth_view=other_view.subgroups[i];
             if(!my_view.deepEquals(oth_view))

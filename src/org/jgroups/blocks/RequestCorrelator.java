@@ -411,7 +411,10 @@ public class RequestCorrelator {
         }
 
         try {
-            retval=request_handler.handle(req);
+            retval= null;
+            if (request_handler != null) {
+                retval = request_handler.handle(req);
+            }
         }
         catch(Throwable t) {
             threw_exception=true;

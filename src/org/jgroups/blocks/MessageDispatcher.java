@@ -173,7 +173,9 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         if(channel instanceof JChannel) {
             TP transport=channel.getProtocolStack().getTransport();
             transport.unregisterProbeHandler(probe_handler);
-            corr.unregisterProbeHandler(transport);
+            if (corr != null) {
+                corr.unregisterProbeHandler(transport);
+            }
         }
     }
 
