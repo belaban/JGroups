@@ -516,14 +516,15 @@ public class RequestCorrelator {
             this.corrId=corr_id;
         }
 
-        public Header requestId(long req_id) {
+        public Header  requestId(long req_id) {
             if(this.req_id > 0)
                 throw new IllegalStateException(String.format("request-id (%d) is already set: trying to set it again (%d)", this.req_id, req_id));
             this.req_id=req_id;
             return this;
         }
-
+        public long    requestId()   {return req_id;}
         public boolean rspExpected() {return req_id > 0;}
+        public short   corrId()      {return corrId;}
 
         public String toString() {
             StringBuilder ret=new StringBuilder();

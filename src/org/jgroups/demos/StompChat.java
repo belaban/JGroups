@@ -31,7 +31,7 @@ public class StompChat implements StompConnection.Listener {
     private final Set<String>      clients=new HashSet<>();
     protected StompConnection      stomp_client;
 
-    static enum Destination {
+    enum Destination {
         messages("/messages"),
         client_joined("/client-joined");
 

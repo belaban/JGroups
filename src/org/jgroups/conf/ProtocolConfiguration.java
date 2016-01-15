@@ -47,11 +47,11 @@ public class ProtocolConfiguration {
             }
         }
         parsePropertiesString(properties);
-        this.loader = ProtocolConfiguration.class.getClassLoader();
+        this.loader = Thread.currentThread().getContextClassLoader();
     }
 
     public ProtocolConfiguration(String protocol_name, Map<String,String> properties) {
-        this(protocol_name, properties, ProtocolConfiguration.class.getClassLoader());
+        this(protocol_name, properties, Thread.currentThread().getContextClassLoader());
     }
 
     public ProtocolConfiguration(String protocol_name, Map<String,String> properties, ClassLoader loader) {

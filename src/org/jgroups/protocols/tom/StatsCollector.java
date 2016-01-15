@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class StatsCollector {
 
-    private static enum Counter {
+    private enum Counter {
         PROPOSE_MESSAGE_RECEIVED,
         LAST_PROPOSE_MESSAGE_RECEIVED,
         FINAL_MESSAGE_RECEIVED,
@@ -22,7 +22,7 @@ public class StatsCollector {
         UNICAST_MESSAGE_SENT
     }
 
-    private static enum Duration {
+    private enum Duration {
         PROPOSE_MESSAGE,
         LAST_PROPOSE_MESSAGE,
         FINAL_MESSAGE,
