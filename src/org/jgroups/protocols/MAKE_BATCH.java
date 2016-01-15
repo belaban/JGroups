@@ -103,8 +103,10 @@ public class MAKE_BATCH extends Protocol {
         Address sender=msg.src();
         synchronized(map) {
             List<Message> list=map.get(sender);
-            if(list == null)
-                map.put(sender, list=new ArrayList<>());
+            if(list == null) {
+                list = new ArrayList<>();
+                map.put(sender, list);
+            }
             list.add(msg);
         }
     }

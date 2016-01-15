@@ -98,7 +98,8 @@ public class ABP extends Protocol {
     protected Entry getEntry(ConcurrentMap<Address,Entry> map, Address dest) {
         Entry entry=map.get(dest);
         if(entry == null) {
-            Entry existing=map.putIfAbsent(dest, entry=new Entry());
+            entry=new Entry();
+            Entry existing=map.putIfAbsent(dest, entry);
             if(existing != null)
                 entry=existing;
         }

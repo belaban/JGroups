@@ -178,7 +178,8 @@ public class GossipData implements SizeStreamable {
         length=in.readInt();
         if(length > 0) {
             buffer=new byte[length];
-            in.readFully(buffer, offset=0, length);
+            offset=0;
+            in.readFully(buffer, offset, length);
         }
     }
 

@@ -1096,16 +1096,25 @@ public class COUNTER extends Protocol {
 
         /** num == 0 --> GET */
         protected synchronized long[] addAndGet(long num) {
-            return num == 0? new long[]{value, version} : new long[]{value+=num, ++version};
+            if (num == 0) {
+                return new long[]{value, version};
+            }
+            else {
+                value+=num;
+                return new long[]{value, ++version};
+            }
         }
 
         protected synchronized long[] set(long value) {
-            return new long[]{this.value=value,++version};
+            this.value=value;
+            return new long[]{this.value,++version};
         }
 
         protected synchronized long[] compareAndSet(long expected, long update) {
-            if(value == expected)
-                return new long[]{value=update, ++version};
+            if(value == expected) {
+                value = update;
+                return new long[]{value, ++version};
+            }
             return null;
         }
 

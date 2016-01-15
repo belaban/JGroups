@@ -338,8 +338,10 @@ public class MERGE3 extends Protocol {
                 Address key=entry.getKey();
                 ViewId view_id=entry.getValue();
                 Set<Address> existing=retval.get(view_id);
-                if(existing == null)
-                    retval.put(view_id, existing=new ConcurrentSkipListSet<>());
+                if(existing == null) {
+                    existing=new ConcurrentSkipListSet<>();
+                    retval.put(view_id, existing);
+                }
                 existing.add(key);
             }
         }

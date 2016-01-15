@@ -32,8 +32,10 @@ public class Merger2 extends Merger {
         for(View view: views.values()) {
             Address coord=view.getCreator();
             Collection<Address> members=retval.get(coord);
-            if(members == null)
-                retval.put(coord, members=new ArrayList<>());
+            if(members == null) {
+                members=new ArrayList<>();
+                retval.put(coord, members);
+            }
             for(Address mbr: view.getMembersRaw())
                 if(!members.contains(mbr))
                     members.add(mbr);

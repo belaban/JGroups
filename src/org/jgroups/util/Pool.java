@@ -57,7 +57,8 @@ public class Pool<T> {
             if(lock.tryLock()) {
                 if(pool[index] != null)
                     return new Element<>(pool[index], lock);
-                return new Element<>(pool[index]=creator.create(), lock);
+                pool[index]=creator.create();
+                return new Element<>(pool[index], lock);
             }
         }
         return new Element<>(creator.create(), null);

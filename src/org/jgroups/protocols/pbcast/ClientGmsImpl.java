@@ -150,7 +150,8 @@ public class ClientGmsImpl extends GmsImpl {
             else if(block_for_rsp)
                 rsp=join_promise.getResult(gms.join_timeout, true);
 
-            return success=rsp != null && isJoinResponseValid(rsp) && installView(rsp.getView(), rsp.getDigest());
+            success= rsp != null && isJoinResponseValid(rsp) && installView(rsp.getView(), rsp.getDigest());
+            return success;
         }
         finally {
             if(success)

@@ -294,7 +294,8 @@ public class FORK extends Protocol {
         }
 
         List<Protocol> prots=new ArrayList<>();
-        prots.add(bottom=new ForkProtocol(fork_stack_id).setDownProtocol(this)); // add a ForkProtocol as bottom protocol
+        bottom=new ForkProtocol(fork_stack_id).setDownProtocol(this);
+        prots.add(bottom); // add a ForkProtocol as bottom protocol
         if(protocols != null)
             prots.addAll(protocols);
 

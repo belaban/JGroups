@@ -447,8 +447,10 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
             }
 
             List<Message> list=msgs.get(hdr.conn_id);
-            if(list == null)
-                msgs.put(hdr.conn_id, list=new ArrayList<>(size));
+            if(list == null) {
+                list=new ArrayList<>(size);
+                msgs.put(hdr.conn_id, list);
+            }
             list.add(msg);
         }
 

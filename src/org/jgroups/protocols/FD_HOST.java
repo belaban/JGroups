@@ -217,8 +217,10 @@ public class FD_HOST extends Protocol {
                 if(key == null)
                     continue;
                 List<Address> mbrs=hosts.get(key);
-                if(mbrs == null)
-                    hosts.put(key, mbrs=new ArrayList<>());
+                if(mbrs == null) {
+                    mbrs = new ArrayList<>();
+                    hosts.put(key, mbrs);
+                }
                 mbrs.add(mbr);
             }
             is_pinger=isPinger(local_addr);
