@@ -105,8 +105,11 @@ public class ByteArrayDataOutputStream implements DataOutput {
         int len=s != null? s.length() : 0;
         if(len > 0)
             ensureCapacity(len);
-        for(int i = 0 ; i < len ; i++)
-            write((byte)s.charAt(i));
+        for(int i = 0 ; i < len ; i++) {
+            if (s != null) {
+                write((byte) s.charAt(i));
+            }
+        }
     }
 
     public void writeChars(String s) {
@@ -115,7 +118,10 @@ public class ByteArrayDataOutputStream implements DataOutput {
             ensureCapacity(len *2); // 2 bytes per char
 
         for(int i = 0 ; i < len ; i++) {
-            int v = s.charAt(i);
+            int v = 0;
+            if (s != null) {
+                v = s.charAt(i);
+            }
             writeChar(v);
         }
     }

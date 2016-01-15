@@ -835,9 +835,8 @@ public class FD_SOCK extends Protocol implements Runnable {
     public static Buffer marshal(Map<Address,IpAddress> addrs) {
         final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(512);
         try {
-            int size=addrs != null? addrs.size() : 0;
-            out.writeInt(size);
-            if(size > 0) {
+            if (addrs != null) {
+                out.writeInt(addrs.size());
                 for(Map.Entry<Address,IpAddress> entry: addrs.entrySet()) {
                     Address key=entry.getKey();
                     IpAddress val=entry.getValue();

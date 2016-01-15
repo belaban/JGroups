@@ -1281,7 +1281,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 digest.readFrom(in);
             }
             else {
-                digest=new Digest(tmp_view.getMembersRaw());
+                if (tmp_view != null && tmp_view.getMembersRaw() != null) {
+                    digest=new Digest(tmp_view.getMembersRaw());
+                }
                 digest.readFrom(in,false);
             }
         }

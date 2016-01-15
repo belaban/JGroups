@@ -641,7 +641,10 @@ public class Bits {
         if(len == 0)
             return utflen;
         for(int i = 0; i < len; i++) {
-           int  c=str.charAt(i);
+            int c = 0;
+            if (str != null) {
+                c = str.charAt(i);
+            }
             if((c >= 0x0001) && (c <= 0x007F))
                 utflen++;
             else if (c > 0x07FF)

@@ -1373,8 +1373,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             sb.append("\nnew seqno for " + local_addr + ": " + seqno);
         if(sb != null)
             digest_history.add(sb.toString());
-        if(log.isDebugEnabled())
+        if(log.isDebugEnabled() && sb != null) {
             log.debug(sb.toString());
+        }
     }
 
 
