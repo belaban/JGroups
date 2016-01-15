@@ -82,8 +82,8 @@ public class STOMP extends Protocol implements Runnable {
     // Subscriptions and connections which are subscribed
     protected final ConcurrentMap<String,Set<Connection>> subscriptions=Util.createConcurrentMap(20);
 
-    public static enum ClientVerb      {CONNECT, SEND, SUBSCRIBE, UNSUBSCRIBE, BEGIN, COMMIT, ABORT, ACK, DISCONNECT}
-    public static enum ServerVerb      {MESSAGE, RECEIPT, ERROR, CONNECTED, INFO}
+    public enum ClientVerb      {CONNECT, SEND, SUBSCRIBE, UNSUBSCRIBE, BEGIN, COMMIT, ABORT, ACK, DISCONNECT}
+    public enum ServerVerb      {MESSAGE, RECEIPT, ERROR, CONNECTED, INFO}
 
     public static final byte           NULL_BYTE=0;
 
@@ -613,7 +613,7 @@ public class STOMP extends Protocol implements Runnable {
 
 
     public static class StompHeader extends org.jgroups.Header {
-        public static enum Type {MESSAGE, ENDPOINT}
+        public enum Type {MESSAGE, ENDPOINT}
 
         protected Type                      type;
         protected final Map<String,String>  headers=new HashMap<>();

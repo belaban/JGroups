@@ -64,7 +64,7 @@ public class COUNTER extends Protocol {
     protected static final byte RESPONSE = 2;
     
 
-    protected static enum RequestType {
+    protected enum RequestType {
         GET_OR_CREATE,
         DELETE,
         SET,
@@ -75,7 +75,7 @@ public class COUNTER extends Protocol {
         RESEND_PENDING_REQUESTS
     }
 
-    protected static enum ResponseType {
+    protected enum ResponseType {
         VOID,
         GET_OR_CREATE,
         BOOLEAN,

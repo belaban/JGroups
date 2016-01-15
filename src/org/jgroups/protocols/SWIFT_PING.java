@@ -190,7 +190,7 @@ public class SWIFT_PING extends FILE_PING {
     /**
      * Supported Swift authentication providers
      */
-    private static enum AUTH_TYPE {
+    private enum AUTH_TYPE {
 
         KEYSTONE_V_2_0("keystone_v_2_0");
 

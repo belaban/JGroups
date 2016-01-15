@@ -622,7 +622,7 @@ public class RELAY extends Protocol {
 
 
     public static class RelayHeader extends Header {
-        public static enum Type {DISSEMINATE, FORWARD, VIEW, BROADCAST_VIEW};
+        public enum Type {DISSEMINATE, FORWARD, VIEW, BROADCAST_VIEW};
         protected Type                type;
         protected Address             original_sender; // with DISSEMINATE
 

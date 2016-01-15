@@ -13,7 +13,7 @@ public class SuppressLog<T> {
     protected final String           message_format;
     protected final String           suppress_format;
 
-    public static enum Level {error,warn,trace};
+    public enum Level {error,warn,trace};
 
     public SuppressLog(Log log, String message_key, String suppress_msg) {
         this.log=log;
