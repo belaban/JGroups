@@ -122,7 +122,8 @@ public class ByteBufferInputStream implements DataInput {
         int c;
 
         loop:	while (true) {
-            switch (c = readByte()) {
+            c = readByte();
+            switch (c) {
                 case -1:
                 case '\n':
                     break loop;

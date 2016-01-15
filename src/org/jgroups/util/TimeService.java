@@ -32,7 +32,10 @@ public class TimeService  implements Runnable {
      * @return the result of the last call to {@link System#nanoTime()} (ns)
      */
     public long timestamp() {
-        return timestamp > 0? timestamp : (timestamp=System.nanoTime());
+        if (timestamp < 1) {
+            timestamp=System.nanoTime();
+        }
+        return timestamp;
     }
 
     public long interval() {

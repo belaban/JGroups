@@ -114,7 +114,8 @@ public class GroupRequest<T> extends Request {
             if(!rsp.wasReceived()) {
                 if(!(rsp.wasSuspected() || rsp.wasUnreachable()))
                     num_received++;
-                if((responseReceived=(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender))) {
+                responseReceived=(rsp_filter == null);
+                if( responseReceived || rsp_filter.isAcceptable(response_value, sender)) {
                     if(is_exception && response_value instanceof Throwable)
                         rsp.setException((Throwable)response_value);
                     else

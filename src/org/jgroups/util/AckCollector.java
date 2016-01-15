@@ -74,7 +74,8 @@ public class AckCollector {
         boolean retval=false;
         synchronized(this) {
             suspected_mbrs.retainAll(members);
-            if((retval=missing_acks.retainAll(members)) && missing_acks.isEmpty())
+            retval=missing_acks.retainAll(members);
+            if(retval && missing_acks.isEmpty())
                 all_acks_received.setResult(Boolean.TRUE);
         }
         return retval;

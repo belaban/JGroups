@@ -30,10 +30,13 @@ public class ForkProtocol extends Protocol {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
                 FORK.ForkHeader hdr=(FORK.ForkHeader)msg.getHeader(FORK.ID);
-                if(hdr == null)
-                    msg.putHeader(FORK.ID, hdr=new FORK.ForkHeader(fork_stack_id, null));
-                else
+                if(hdr == null) {
+                    hdr = new FORK.ForkHeader(fork_stack_id, null);
+                    msg.putHeader(FORK.ID, hdr);
+                }
+                else {
                     hdr.setForkStackId(fork_stack_id);
+                }
                 break;
             case Event.SET_LOCAL_ADDRESS:
             case Event.VIEW_CHANGE:

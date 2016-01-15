@@ -293,7 +293,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     protected void addAddressMapping(Address sender, String group, Address addr, PhysicalAddress phys_addr, String logical_name) {
         ConcurrentMap<Address,Entry> m=address_mappings.get(group);
         if(m == null) {
-            ConcurrentMap<Address,Entry> existing=this.address_mappings.putIfAbsent(group, m=new ConcurrentHashMap<>());
+            m=new ConcurrentHashMap<>();
+            ConcurrentMap<Address,Entry> existing=this.address_mappings.putIfAbsent(group, m);
             if(existing != null)
                 m=existing;
         }

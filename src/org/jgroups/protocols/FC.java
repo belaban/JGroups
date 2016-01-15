@@ -659,8 +659,10 @@ public class FC extends Protocol {
         }
         else {
             Credit cred=map.get(dest);
-            if(cred != null)
-                return lowest=cred.decrement(credits);
+            if(cred != null) {
+                lowest = cred.decrement(credits);
+                return lowest;
+            }
             }
         return -1;
     }
@@ -843,7 +845,8 @@ public class FC extends Protocol {
         }
 
         private synchronized long decrement(long credits) {
-            return credits_left=Math.max(0, credits_left - credits);
+            credits_left=Math.max(0, credits_left - credits);
+            return credits_left;
         }
 
         private synchronized long get() {return credits_left;}
@@ -851,7 +854,8 @@ public class FC extends Protocol {
         private synchronized void set(long new_credits) {credits_left=Math.min(max_credits, new_credits);}
 
         private synchronized long increment(long credits) {
-            return credits_left=Math.min(max_credits, credits_left + credits);
+            credits_left=Math.min(max_credits, credits_left + credits);
+            return credits_left;
         }
 
         public String toString() {

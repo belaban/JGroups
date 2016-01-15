@@ -452,7 +452,8 @@ public class Util {
 
 
     public static byte setFlag(byte bits,byte flag) {
-        return bits|=flag;
+        bits|=flag;
+        return bits;
     }
 
 
@@ -462,7 +463,8 @@ public class Util {
 
 
     public static byte clearFlags(byte bits,byte flag) {
-        return bits&=~flag;
+        bits&=~flag;
+        return bits;
     }
 
 

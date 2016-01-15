@@ -1938,8 +1938,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         long current_time=0;
         boolean do_send=false;
         synchronized(this) {
+            current_time = time_service.timestamp();
             if(last_discovery_request == 0 ||
-              (current_time=time_service.timestamp()) - last_discovery_request >= MIN_WAIT_BETWEEN_DISCOVERIES) {
+              (current_time) - last_discovery_request >= MIN_WAIT_BETWEEN_DISCOVERIES) {
                 last_discovery_request=current_time == 0? time_service.timestamp() : current_time;
                 do_send=true;
             }
