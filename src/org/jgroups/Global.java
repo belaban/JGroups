@@ -9,7 +9,7 @@ import org.jgroups.protocols.SCOPE;
  * @since 2.0
  * @author Bela Ban 
  */
-public class Global {
+public final class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
     public static final int SHORT_SIZE  = Short.SIZE   / 8; // 2
     public static final int INT_SIZE    = Integer.SIZE / 8; // 4
@@ -107,6 +107,9 @@ public class Global {
     public static final int IPV4_SIZE=4;
     public static final int IPV6_SIZE=16;
 
+	private Global() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
 
     public static boolean getPropertyAsBoolean(String property, boolean defaultValue) {
         boolean result = defaultValue;

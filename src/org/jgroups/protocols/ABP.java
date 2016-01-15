@@ -105,7 +105,7 @@ public class ABP extends Protocol {
         return entry;
     }
 
-    protected static enum Type {data, ack};
+    protected enum Type {data, ack};
 
     protected class Entry implements Runnable {
         protected byte                         bit=0;

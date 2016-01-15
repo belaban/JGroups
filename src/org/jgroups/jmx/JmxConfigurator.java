@@ -11,14 +11,19 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
 import javax.management.*;
+
 import java.util.List;
 import java.util.Set;
 
 /**
  * @author Bela Ban, Vladimir Blagojevic
  */
-public class JmxConfigurator {
+public final class JmxConfigurator {
     static final Log log = LogFactory.getLog(JmxConfigurator.class);
+
+	private JmxConfigurator() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
 
     /**
      * Registers an already created channel with the given MBeanServer. Wraps instance of JChannel

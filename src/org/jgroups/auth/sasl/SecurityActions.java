@@ -14,6 +14,11 @@ import java.util.Properties;
  * @since 3.6
  */
 final class SecurityActions {
+	
+	private SecurityActions() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
+
    private static <T> T doPrivileged(PrivilegedAction<T> action) {
       if (System.getSecurityManager() != null) {
          return AccessController.doPrivileged(action);

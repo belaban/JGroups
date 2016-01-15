@@ -66,7 +66,7 @@ abstract public class Locking extends Protocol {
     
 
 
-    protected static enum Type {
+    protected enum Type {
         GRANT_LOCK,        // request to acquire a lock
         LOCK_GRANTED,      // response to sender of GRANT_LOCK on succcessful lock acquisition
         LOCK_DENIED,       // response to sender of GRANT_LOCK on unsuccessful lock acquisition (e.g. on tryLock())

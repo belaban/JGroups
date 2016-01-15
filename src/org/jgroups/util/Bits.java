@@ -32,8 +32,11 @@ import java.nio.ByteBuffer;
  * @author Sanne Grinovero
  * @since  3.5
  */
-public class Bits {
+public final class Bits {
 
+	private Bits() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
 
     // -------------------- char ------------------------ //
 

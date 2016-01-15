@@ -576,6 +576,6 @@ public class MERGE3 extends Protocol {
             return sb.toString();
         }
 
-        protected static enum Type {INFO, VIEW_REQ, VIEW_RSP}
+        protected enum Type {INFO, VIEW_REQ, VIEW_RSP}
     }
 }

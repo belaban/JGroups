@@ -359,7 +359,7 @@ public class MemcachedConnector implements Runnable {
 
 
     public static class Request {
-        public static enum Type {SET, ADD, REPLACE, PREPEND, APPEND, CAS, INCR, DECR, GET, GETS, DELETE, STAT, STATS};
+        public enum Type {SET, ADD, REPLACE, PREPEND, APPEND, CAS, INCR, DECR, GET, GETS, DELETE, STAT, STATS};
 
         Type type;
         String key;
