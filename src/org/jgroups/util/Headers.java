@@ -24,8 +24,12 @@ import java.util.Map;
  * This class is synchronized for writes (put(), resize()), but not for reads (size(), get())
  * @author Bela Ban
  */
-public class Headers {
+public final class Headers {
     private static final int RESIZE_INCR=3;
+
+	private Headers() {
+		throw new InstantiationError( "Must not instantiate this class" );
+	}
 
     /**
      * Returns the header associated with an ID
