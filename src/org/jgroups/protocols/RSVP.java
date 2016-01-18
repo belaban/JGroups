@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.AckCollector;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
  * @since  3.1
  */
 @MBean(description="Implements synchronous acks for messages which have their RSVP flag set)")
-public class RSVP extends Protocol {
+public class RSVP extends AbstractProtocol {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     @Property(description="Max time in milliseconds to block for an RSVP'ed message (0 blocks forever).")
@@ -368,7 +368,7 @@ public class RSVP extends Protocol {
     }
 
     
-    protected static class RsvpHeader extends Header {
+    protected static class RsvpHeader extends AbstractHeader {
         protected static final byte REQ      = 1;
         protected static final byte REQ_ONLY = 2;
         protected static final byte RSP      = 3;

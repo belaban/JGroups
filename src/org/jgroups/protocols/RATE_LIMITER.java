@@ -3,7 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 
 import java.util.Map;
@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Experimental
 @MBean(description="Limits the sending rate to max_bytes per time_period")
-public class RATE_LIMITER extends Protocol {
+public class RATE_LIMITER extends AbstractProtocol {
 
     @Property(description="Max number of bytes to be sent in time_period ms. Blocks the sender if exceeded until a new " +
             "time period has started")

@@ -8,7 +8,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.locking.AwaitInfo;
 import org.jgroups.blocks.locking.LockInfo;
 import org.jgroups.blocks.locking.LockNotification;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Bits;
 import org.jgroups.util.Owner;
 import org.jgroups.util.Streamable;
@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @see org.jgroups.protocols.CENTRAL_LOCK
  */
 @MBean(description="Based class for locking functionality")
-abstract public class Locking extends Protocol {
+abstract public class AbstractLocking extends AbstractProtocol {
 
     @Property(description="bypasses message bundling if set")
     protected boolean bypass_bundling=true;
@@ -84,7 +84,7 @@ abstract public class Locking extends Protocol {
 
 
 
-    public Locking() {
+    public AbstractLocking() {
     }
 
 
@@ -1396,7 +1396,7 @@ abstract public class Locking extends Protocol {
     }
 
 
-    public static class LockingHeader extends Header {
+    public static class LockingHeader extends AbstractHeader {
 
         public LockingHeader() {
         }

@@ -12,7 +12,7 @@ import org.jgroups.util.Util;
  * @author Bela Ban
  */
 public class MessageDispatcherSpeedTest implements MembershipListener, RequestHandler {
-    Channel             channel;
+    AbstractChannel channel;
     MessageDispatcher   disp;
     String              props=null;
     boolean             server=false; // role is client by default

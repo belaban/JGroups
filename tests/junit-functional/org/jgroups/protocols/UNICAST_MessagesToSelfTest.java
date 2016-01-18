@@ -5,7 +5,7 @@ import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -42,7 +42,7 @@ public class UNICAST_MessagesToSelfTest {
     }
 
     @Test(dataProvider="configProvider")
-    public void testReceptionOfAllMessages(Protocol prot) throws Throwable {
+    public void testReceptionOfAllMessages(AbstractProtocol prot) throws Throwable {
         System.out.println("prot=" + prot.getClass().getSimpleName());
         ch=createChannel(prot, null).name("A");
         ch.connect("UNICAST_Test.testReceptionOfAllMessages");
@@ -53,7 +53,7 @@ public class UNICAST_MessagesToSelfTest {
 
 
     @Test(dataProvider="configProvider")
-    public void testReceptionOfAllMessagesWithDISCARD(Protocol prot) throws Throwable {
+    public void testReceptionOfAllMessagesWithDISCARD(AbstractProtocol prot) throws Throwable {
         System.out.println("prot=" + prot.getClass().getSimpleName());
         DISCARD discard=new DISCARD();
         discard.setDownDiscardRate(0.1); // discard all down message with 10% probability
@@ -70,7 +70,7 @@ public class UNICAST_MessagesToSelfTest {
         return ByteBuffer.allocate(size).putInt(seqno).array();
     }
 
-    protected static JChannel createChannel(Protocol unicast, DISCARD discard) throws Exception {
+    protected static JChannel createChannel(AbstractProtocol unicast, DISCARD discard) throws Exception {
         JChannel ch=new JChannel(false);
         ProtocolStack stack=new ProtocolStack();
         ch.setProtocolStack(stack);

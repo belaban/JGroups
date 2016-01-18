@@ -4,7 +4,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 
 /**
  * Discards a message whose sequence number (in the payload, as a Long) matches seqno 2 times,
@@ -13,7 +13,7 @@ import org.jgroups.stack.Protocol;
  * @author Bela Ban
  */
 @Unsupported
-public class DISCARD_PAYLOAD extends Protocol {
+public class DISCARD_PAYLOAD extends AbstractProtocol {
     @Property protected long seqno=3; // drop 3
     @Property protected long duplicate=4; // duplicate 4 (one time)
     protected int            num_discards=0;

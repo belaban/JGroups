@@ -30,7 +30,7 @@ public class NioConnection implements Connection {
     protected SelectionKey        key;
     protected Address             peer_addr;    // address of the 'other end' of the connection
     protected long                last_access;  // timestamp of the last access to this connection (read or write)
-    protected final NioBaseServer server;
+    protected final AbstractNioBaseServer server;
 
     protected final Buffers       send_buf;     // send messages via gathering writes
     protected boolean             write_interest_set; // set when a send() didn't manage to send all data
@@ -46,7 +46,7 @@ public class NioConnection implements Connection {
 
 
      /** Creates a connection stub and binds it, use {@link #connect(Address)} to connect */
-    public NioConnection(Address peer_addr, NioBaseServer server) throws Exception {
+    public NioConnection(Address peer_addr, AbstractNioBaseServer server) throws Exception {
         this.server=server;
         if(peer_addr == null)
             throw new IllegalArgumentException("Invalid parameter peer_addr="+ peer_addr);
@@ -58,7 +58,7 @@ public class NioConnection implements Connection {
         last_access=getTimestamp(); // last time a message was sent or received (ns)
     }
 
-    public NioConnection(SocketChannel channel, NioBaseServer server) throws Exception {
+    public NioConnection(SocketChannel channel, AbstractNioBaseServer server) throws Exception {
         this.channel=channel;
         this.server=server;
         setSocketParameters(this.channel.socket());

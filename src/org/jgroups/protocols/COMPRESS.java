@@ -2,11 +2,11 @@ package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Global;
-import org.jgroups.Header;
+import org.jgroups.AbstractHeader;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
@@ -26,7 +26,7 @@ import java.util.zip.Inflater;
  * @author Bela Ban
  */
 @MBean(description="Compresses messages to send and uncompresses received messages")
-public class COMPRESS extends Protocol {   
+public class COMPRESS extends AbstractProtocol {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
@@ -191,7 +191,7 @@ public class COMPRESS extends Protocol {
 
 
 
-    public static class CompressHeader extends Header {
+    public static class CompressHeader extends AbstractHeader {
         int original_size=0;
 
         public CompressHeader() {

@@ -4,14 +4,14 @@ import java.io.DataInput;
 import java.io.DataOutput;
 
 import org.jgroups.Global;
-import org.jgroups.Header;
+import org.jgroups.AbstractHeader;
 
 /**
  * Header that identifies the target handler for multiplexed dispatches.
  * @author Bela Ban
  * @author Paul Ferraro
  */
-public class MuxHeader extends Header {
+public class MuxHeader extends AbstractHeader {
 
     private short id;
 

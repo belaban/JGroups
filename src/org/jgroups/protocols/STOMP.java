@@ -2,7 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentMap;
  * @since 2.11
  */
 @MBean(description="Server side STOPM protocol, STOMP clients can connect to it")
-public class STOMP extends Protocol implements Runnable {
+public class STOMP extends AbstractProtocol implements Runnable {
 
     /* -----------------------------------------    Properties     ----------------------------------------------- */
 
@@ -477,7 +477,7 @@ public class STOMP extends Protocol implements Runnable {
                     }
 
                     Message msg=new Message(null, frame.getBody());
-                    Header hdr=StompHeader.createHeader(StompHeader.Type.MESSAGE, headers);
+                    AbstractHeader hdr=StompHeader.createHeader(StompHeader.Type.MESSAGE, headers);
                     msg.putHeader(id, hdr);
                     down_prot.down(new Event(Event.MSG, msg));
                     String receipt=headers.get("receipt");
@@ -612,7 +612,7 @@ public class STOMP extends Protocol implements Runnable {
     }
 
 
-    public static class StompHeader extends org.jgroups.Header {
+    public static class StompHeader extends AbstractHeader {
         public static enum Type {MESSAGE, ENDPOINT}
 
         protected Type                      type;

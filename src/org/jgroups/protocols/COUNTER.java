@@ -3,7 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.blocks.atomic.Counter;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 
 import java.io.*;
@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * @since 3.0.0
  */
 @MBean(description="Protocol to maintain distributed atomic counters")
-public class COUNTER extends Protocol {
+public class COUNTER extends AbstractProtocol {
 
     @Property(description="Bypasses message bundling if true")
     protected boolean bypass_bundling=true;
@@ -58,7 +58,7 @@ public class COUNTER extends Protocol {
     protected final ConcurrentMap<String,VersionedValue> counters=Util.createConcurrentMap(20);
 
     // (client side) pending requests
-    protected final Map<Owner,Tuple<Request,Promise>> pending_requests=Util.createConcurrentMap(20);
+    protected final Map<Owner,Tuple<AbstractRequest,Promise>> pending_requests=Util.createConcurrentMap(20);
 
     protected static final byte REQUEST  = 1;
     protected static final byte RESPONSE = 2;
@@ -84,7 +84,7 @@ public class COUNTER extends Protocol {
         RECONCILE
     }
 
-    protected static RequestType requestToRequestType(Request req) {
+    protected static RequestType requestToRequestType(AbstractRequest req) {
         if(req instanceof GetOrCreateRequest)    return RequestType.GET_OR_CREATE;
         if(req instanceof DeleteRequest)         return RequestType.DELETE;
         if(req instanceof AddAndGetRequest)      return RequestType.ADD_AND_GET;
@@ -96,7 +96,7 @@ public class COUNTER extends Protocol {
         throw new IllegalStateException("request " + req + " cannot be mapped to request type");
     }
 
-    protected static ResponseType responseToResponseType(Response rsp) {
+    protected static ResponseType responseToResponseType(AbstractResponse rsp) {
         if(rsp instanceof GetOrCreateResponse) return ResponseType.GET_OR_CREATE;
         if(rsp instanceof BooleanResponse) return ResponseType.BOOLEAN;
         if(rsp instanceof ValueResponse) return ResponseType.VALUE;
@@ -138,7 +138,7 @@ public class COUNTER extends Protocol {
         Owner owner=getOwner();
         GetOrCreateRequest req=new GetOrCreateRequest(owner, name, initial_value);
         Promise<long[]> promise=new Promise<>();
-        pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
+        pending_requests.put(owner, new Tuple<AbstractRequest,Promise>(req, promise));
         sendRequest(coord, req);
         long[] result=promise.getResultWithTimeout(timeout);
         long value=result[0], version=result[1];
@@ -150,7 +150,7 @@ public class COUNTER extends Protocol {
     /** Sent asynchronously - we don't wait for an ack */
     public void deleteCounter(String name) {
         Owner owner=getOwner();
-        Request req=new DeleteRequest(owner, name);
+        AbstractRequest req=new DeleteRequest(owner, name);
         sendRequest(coord, req);
         if(!local_addr.equals(coord))
             counters.remove(name);
@@ -180,11 +180,11 @@ public class COUNTER extends Protocol {
                     if(log.isTraceEnabled())
                         log.trace("[" + local_addr + "] <-- [" + msg.getSrc() + "] " + obj);
 
-                    if(obj instanceof Request) {
-                        handleRequest((Request)obj, msg.getSrc());
+                    if(obj instanceof AbstractRequest) {
+                        handleRequest((AbstractRequest)obj, msg.getSrc());
                     }
-                    else if(obj instanceof Response) {
-                        handleResponse((Response)obj, msg.getSrc());
+                    else if(obj instanceof AbstractResponse) {
+                        handleResponse((AbstractResponse)obj, msg.getSrc());
                     }
                     else {
                         log.error(Util.getMessage("ReceivedObjectIsNeitherARequestNorAResponse") + obj);
@@ -203,7 +203,7 @@ public class COUNTER extends Protocol {
     }
 
     
-    protected void handleRequest(Request req, Address sender) {
+    protected void handleRequest(AbstractRequest req, Address sender) {
         RequestType type=requestToRequestType(req);
         switch(type) {
             case GET_OR_CREATE:
@@ -214,7 +214,7 @@ public class COUNTER extends Protocol {
                 VersionedValue val=counters.putIfAbsent(tmp.name, new_val);
                 if(val == null)
                     val=new_val;
-                Response rsp=new GetOrCreateResponse(tmp.owner, val.value, val.version);
+                AbstractResponse rsp=new GetOrCreateResponse(tmp.owner, val.value, val.version);
                 sendResponse(sender,rsp);
                 if(backup_coords != null)
                     updateBackups(tmp.name, val.value, val.version);
@@ -313,8 +313,8 @@ public class COUNTER extends Protocol {
                 sendResponse(sender, rsp);
                 break;
             case RESEND_PENDING_REQUESTS:
-                for(Tuple<Request,Promise> tuple: pending_requests.values()) {
-                    Request request=tuple.getVal1();
+                for(Tuple<AbstractRequest,Promise> tuple: pending_requests.values()) {
+                    AbstractRequest request=tuple.getVal1();
                     if(log.isTraceEnabled())
                         log.trace("[" + local_addr + "] --> [" + coord + "] resending " + request);
                     sendRequest(coord, request);
@@ -335,7 +335,7 @@ public class COUNTER extends Protocol {
     }
 
     @SuppressWarnings("unchecked")
-    protected void handleResponse(Response rsp, Address sender) {
+    protected void handleResponse(AbstractResponse rsp, Address sender) {
         if(rsp instanceof ReconcileResponse) {
             if(log.isTraceEnabled() && ((ReconcileResponse)rsp).names != null && ((ReconcileResponse)rsp).names.length > 0)
                 log.trace("[" + local_addr + "] <-- [" + sender + "] RECONCILE-RSP: " +
@@ -345,7 +345,7 @@ public class COUNTER extends Protocol {
             return;
         }
 
-        Tuple<Request,Promise> tuple=pending_requests.remove(((SimpleResponse)rsp).owner);
+        Tuple<AbstractRequest,Promise> tuple=pending_requests.remove(((SimpleResponse)rsp).owner);
         if(tuple == null) {
             log.warn("response for " + ((SimpleResponse)rsp).owner + " didn't have an entry");
             return;
@@ -385,8 +385,8 @@ public class COUNTER extends Protocol {
     @ManagedOperation(description="Dumps all pending requests")
     public String dumpPendingRequests() {
         StringBuilder sb=new StringBuilder();
-        for(Tuple<Request,Promise> tuple: pending_requests.values()) {
-            Request tmp=tuple.getVal1();
+        for(Tuple<AbstractRequest,Promise> tuple: pending_requests.values()) {
+            AbstractRequest tmp=tuple.getVal1();
             sb.append(tmp + " (" + tmp.getClass().getCanonicalName() + ") ");
         }
         return sb.toString();
@@ -429,7 +429,7 @@ public class COUNTER extends Protocol {
     }
 
 
-    protected void sendRequest(Address dest, Request req) {
+    protected void sendRequest(Address dest, AbstractRequest req) {
         try {
             Buffer buffer=requestToBuffer(req);
             Message msg=new Message(dest, buffer).putHeader(id, new CounterHeader());
@@ -446,7 +446,7 @@ public class COUNTER extends Protocol {
     }
 
 
-    protected void sendResponse(Address dest, Response rsp) {
+    protected void sendResponse(Address dest, AbstractResponse rsp) {
         try {
             Buffer buffer=responseToBuffer(rsp);
             Message rsp_msg=new Message(dest, buffer).putHeader(id, new CounterHeader());
@@ -464,7 +464,7 @@ public class COUNTER extends Protocol {
     }
 
     protected void updateBackups(String name, long value, long version) {
-        Request req=new UpdateRequest(name, value, version);
+        AbstractRequest req=new UpdateRequest(name, value, version);
         try {
             Buffer buffer=requestToBuffer(req);
             if(backup_coords != null && !backup_coords.isEmpty()) {
@@ -490,16 +490,16 @@ public class COUNTER extends Protocol {
     }
 
     protected void sendCounterNotFoundExceptionResponse(Address dest, Owner owner, String counter_name) {
-        Response rsp=new ExceptionResponse(owner, "counter \"" + counter_name + "\" not found");
+        AbstractResponse rsp=new ExceptionResponse(owner, "counter \"" + counter_name + "\" not found");
         sendResponse(dest, rsp);
     }
 
 
-    protected static Buffer requestToBuffer(Request req) throws Exception {
+    protected static Buffer requestToBuffer(AbstractRequest req) throws Exception {
         return streamableToBuffer(REQUEST,(byte)requestToRequestType(req).ordinal(), req);
     }
 
-    protected static Buffer responseToBuffer(Response rsp) throws Exception {
+    protected static Buffer responseToBuffer(AbstractResponse rsp) throws Exception {
         return streamableToBuffer(RESPONSE,(byte)responseToResponseType(rsp).ordinal(), rsp);
     }
 
@@ -522,16 +522,16 @@ public class COUNTER extends Protocol {
         }
     }
 
-    protected static final Request requestFromBuffer(byte[] buf, int offset, int length) throws Exception {
+    protected static final AbstractRequest requestFromBuffer(byte[] buf, int offset, int length) throws Exception {
         ByteArrayInputStream input=new ByteArrayInputStream(buf, offset, length);
         DataInputStream in=new DataInputStream(input);
         RequestType type=RequestType.values()[in.readByte()];
-        Request retval=createRequest(type);
+        AbstractRequest retval=createRequest(type);
         retval.readFrom(in);
         return retval;
     }
 
-    protected static Request createRequest(RequestType type) {
+    protected static AbstractRequest createRequest(RequestType type) {
         switch(type) {
             case COMPARE_AND_SET:         return new CompareAndSetRequest();
             case ADD_AND_GET:             return new AddAndGetRequest();
@@ -545,16 +545,16 @@ public class COUNTER extends Protocol {
         }
     }
 
-    protected static final Response responseFromBuffer(byte[] buf, int offset, int length) throws Exception {
+    protected static final AbstractResponse responseFromBuffer(byte[] buf, int offset, int length) throws Exception {
         ByteArrayInputStream input=new ByteArrayInputStream(buf, offset, length);
         DataInputStream in=new DataInputStream(input);
         ResponseType type=ResponseType.values()[in.readByte()];
-        Response retval=createResponse(type);
+        AbstractResponse retval=createResponse(type);
         retval.readFrom(in);
         return retval;
     }
 
-    protected static Response createResponse(ResponseType type) {
+    protected static AbstractResponse createResponse(ResponseType type) {
         switch(type) {
             case VOID:          return new SimpleResponse();
             case GET_OR_CREATE: return new GetOrCreateResponse();
@@ -649,9 +649,9 @@ public class COUNTER extends Protocol {
                 return;
             }
             Owner owner=getOwner();
-            Request req=new SetRequest(owner, name, new_value);
+            AbstractRequest req=new SetRequest(owner, name, new_value);
             Promise<long[]> promise=new Promise<>();
-            pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
+            pending_requests.put(owner, new Tuple<AbstractRequest,Promise>(req, promise));
             sendRequest(coord, req);
             Object obj=promise.getResultWithTimeout(timeout);
             if(obj instanceof Throwable)
@@ -672,9 +672,9 @@ public class COUNTER extends Protocol {
                 return retval;
             }
             Owner owner=getOwner();
-            Request req=new CompareAndSetRequest(owner, name, expect, update);
+            AbstractRequest req=new CompareAndSetRequest(owner, name, expect, update);
             Promise<long[]> promise=new Promise<>();
-            pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
+            pending_requests.put(owner, new Tuple<AbstractRequest,Promise>(req, promise));
             sendRequest(coord, req);
             Object obj=promise.getResultWithTimeout(timeout);
             if(obj instanceof Throwable)
@@ -708,9 +708,9 @@ public class COUNTER extends Protocol {
                 return retval;
             }
             Owner owner=getOwner();
-            Request req=new AddAndGetRequest(owner, name, delta);
+            AbstractRequest req=new AddAndGetRequest(owner, name, delta);
             Promise<long[]> promise=new Promise<>();
-            pending_requests.put(owner, new Tuple<Request,Promise>(req, promise));
+            pending_requests.put(owner, new Tuple<AbstractRequest,Promise>(req, promise));
             sendRequest(coord, req);
             Object obj=promise.getResultWithTimeout(timeout);
             if(obj instanceof Throwable)
@@ -732,12 +732,12 @@ public class COUNTER extends Protocol {
 
 
 
-    protected abstract static class Request implements Streamable {
+    protected abstract static class AbstractRequest implements Streamable {
 
     }
 
 
-    protected static class SimpleRequest extends Request {
+    protected static class SimpleRequest extends AbstractRequest {
         protected Owner   owner;
         protected String  name;
 
@@ -766,7 +766,7 @@ public class COUNTER extends Protocol {
         }
     }
 
-    protected static class ResendPendingRequests extends Request {
+    protected static class ResendPendingRequests extends AbstractRequest {
         public void writeTo(DataOutput out) throws Exception {}
         public void readFrom(DataInput in) throws Exception {}
         public String toString() {return "ResendPendingRequests";}
@@ -869,7 +869,7 @@ public class COUNTER extends Protocol {
     }
 
 
-    protected static class ReconcileRequest extends Request {
+    protected static class ReconcileRequest extends AbstractRequest {
         protected String[] names;
         protected long[]   values;
         protected long[]   versions;
@@ -898,7 +898,7 @@ public class COUNTER extends Protocol {
     }
 
 
-    protected static class UpdateRequest extends Request {
+    protected static class UpdateRequest extends AbstractRequest {
         protected String name;
         protected long   value;
         protected long   version;
@@ -928,11 +928,11 @@ public class COUNTER extends Protocol {
 
 
 
-    protected static abstract class Response implements Streamable {}
+    protected static abstract class AbstractResponse implements Streamable {}
 
     
     /** Response without data */
-    protected static class SimpleResponse extends Response {
+    protected static class SimpleResponse extends AbstractResponse {
         protected Owner owner;
         protected long  version;
 
@@ -1041,7 +1041,7 @@ public class COUNTER extends Protocol {
 
 
     
-    protected static class ReconcileResponse extends Response {
+    protected static class ReconcileResponse extends AbstractResponse {
         protected String[] names;
         protected long[]   values;
         protected long[]   versions;
@@ -1074,7 +1074,7 @@ public class COUNTER extends Protocol {
     
 
 
-    public static class CounterHeader extends Header {
+    public static class CounterHeader extends AbstractHeader {
         public int size() {return 0;}
         public void writeTo(DataOutput out) throws Exception {}
         public void readFrom(DataInput in) throws Exception {}
@@ -1133,7 +1133,7 @@ public class COUNTER extends Protocol {
                 discard_requests=false;
             }
 
-            Request req=new ResendPendingRequests();
+            AbstractRequest req=new ResendPendingRequests();
             sendRequest(null, req);
         }
 
@@ -1153,7 +1153,7 @@ public class COUNTER extends Protocol {
             List<Address> targets=new ArrayList<>(view.getMembers());
             targets.remove(local_addr);
             responses=new ResponseCollector<>(targets); // send to everyone but us
-            Request req=new ReconcileRequest(names, values, versions);
+            AbstractRequest req=new ReconcileRequest(names, values, versions);
             sendRequest(null, req);
 
             responses.waitForAllResponses(reconciliation_timeout);

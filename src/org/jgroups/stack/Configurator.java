@@ -10,7 +10,7 @@ import org.jgroups.conf.PropertyHelper;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.util.AsciiString;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Tuple;
@@ -53,12 +53,12 @@ public class Configurator {
          stack=protocolStack;
     }
 
-    public Protocol setupProtocolStack(List<ProtocolConfiguration> config) throws Exception {
+    public AbstractProtocol setupProtocolStack(List<ProtocolConfiguration> config) throws Exception {
          return setupProtocolStack(config, stack);
     }
      
-    public Protocol setupProtocolStack(ProtocolStack copySource) throws Exception {
-        List<Protocol> protocols=copySource.copyProtocols(stack);
+    public AbstractProtocol setupProtocolStack(ProtocolStack copySource) throws Exception {
+        List<AbstractProtocol> protocols=copySource.copyProtocols(stack);
         Collections.reverse(protocols);
         return connectProtocols(protocols);                  
     }
@@ -86,8 +86,8 @@ public class Configurator {
      *   -----------------------
      * </pre>
      */
-    public static Protocol setupProtocolStack(List<ProtocolConfiguration> protocol_configs, ProtocolStack st) throws Exception {
-        List<Protocol> protocols=createProtocols(protocol_configs, st);
+    public static AbstractProtocol setupProtocolStack(List<ProtocolConfiguration> protocol_configs, ProtocolStack st) throws Exception {
+        List<AbstractProtocol> protocols=createProtocols(protocol_configs, st);
         if(protocols == null)
             return null;
 
@@ -118,13 +118,13 @@ public class Configurator {
         ensureValidBindAddresses(protocols);
 
         // Fixes NPE with concurrent channel creation when using a shared stack (https://issues.jboss.org/browse/JGRP-1488)
-        Protocol top_protocol=protocols.get(protocols.size() - 1);
+        AbstractProtocol top_protocol=protocols.get(protocols.size() - 1);
         top_protocol.setUpProtocol(st);
         return connectProtocols(protocols);
     }
 
 
-    public static void setDefaultValues(List<Protocol> protocols) throws Exception {
+    public static void setDefaultValues(List<AbstractProtocol> protocols) throws Exception {
         if(protocols == null)
             return;
 
@@ -162,9 +162,9 @@ public class Configurator {
      * @return Protocol The newly created protocol
      * @exception Exception Will be thrown when the new protocol cannot be created
      */
-    public static Protocol createProtocol(String prot_spec, ProtocolStack stack) throws Exception {
+    public static AbstractProtocol createProtocol(String prot_spec, ProtocolStack stack) throws Exception {
         ProtocolConfiguration config;
-        Protocol prot;
+        AbstractProtocol prot;
 
         if(prot_spec == null) throw new Exception("Configurator.createProtocol(): prot_spec is null");
 
@@ -190,8 +190,8 @@ public class Configurator {
      * @param protocol_list List of Protocol elements (from top to bottom)
      * @return Protocol stack
      */
-    public static Protocol connectProtocols(List<Protocol> protocol_list) throws Exception {
-        Protocol current_layer=null, next_layer=null;
+    public static AbstractProtocol connectProtocols(List<AbstractProtocol> protocol_list) throws Exception {
+        AbstractProtocol current_layer=null, next_layer=null;
 
         for(int i=0; i < protocol_list.size(); i++) {
             current_layer=protocol_list.get(i);
@@ -201,10 +201,10 @@ public class Configurator {
             next_layer.setDownProtocol(current_layer);
             current_layer.setUpProtocol(next_layer);
 
-             if(current_layer instanceof TP) {
-                TP transport = (TP)current_layer;                
+             if(current_layer instanceof AbstractTP) {
+                AbstractTP transport = (AbstractTP)current_layer;
                 if(transport.isSingleton()) {                   
-                    ConcurrentMap<AsciiString, Protocol> up_prots=transport.getUpProtocols();
+                    ConcurrentMap<AsciiString, AbstractProtocol> up_prots=transport.getUpProtocols();
                     synchronized(up_prots) {
                         while(true) {
                             AsciiString key=new AsciiString(Global.DUMMY + System.currentTimeMillis());
@@ -364,23 +364,23 @@ public class Configurator {
      * @param stack The protocol stack
      * @return List of Protocols
      */
-    public static List<Protocol> createProtocols(List<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
-        List<Protocol> retval=new LinkedList<>();
+    public static List<AbstractProtocol> createProtocols(List<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
+        List<AbstractProtocol> retval=new LinkedList<>();
         ProtocolConfiguration protocol_config;
-        Protocol layer;
+        AbstractProtocol layer;
         String singleton_name;
 
         for(int i=0; i < protocol_configs.size(); i++) {
             protocol_config=protocol_configs.get(i);
             singleton_name=protocol_config.getProperties().get(Global.SINGLETON_NAME);
             if(singleton_name != null && !singleton_name.trim().isEmpty()) {
-               Map<String,Tuple<TP, ProtocolStack.RefCounter>> singleton_transports=ProtocolStack.getSingletonTransports();
+               Map<String,Tuple<AbstractTP, ProtocolStack.RefCounter>> singleton_transports=ProtocolStack.getSingletonTransports();
                 synchronized(singleton_transports) {
                     if(i > 0) { // crude way to check whether protocol is a transport
                         throw new IllegalArgumentException("Property 'singleton_name' can only be used in a transport" +
                                 " protocol (was used in " + protocol_config.getProtocolName() + ")");
                     }
-                    Tuple<TP, ProtocolStack.RefCounter> val=singleton_transports.get(singleton_name);
+                    Tuple<AbstractTP, ProtocolStack.RefCounter> val=singleton_transports.get(singleton_name);
                     layer=val != null? val.getVal1() : null;
                     if(layer != null) {
                         retval.add(layer);
@@ -389,7 +389,7 @@ public class Configurator {
                         layer=createLayer(stack, protocol_config);
                         if(layer == null)
                             return null;
-                        singleton_transports.put(singleton_name, new Tuple<>((TP)layer,new ProtocolStack.RefCounter((short)0,(short)0)));
+                        singleton_transports.put(singleton_name, new Tuple<>((AbstractTP)layer,new ProtocolStack.RefCounter((short)0,(short)0)));
                         retval.add(layer);
                     }
                 }
@@ -404,10 +404,10 @@ public class Configurator {
     }
 
 
-    protected static Protocol createLayer(ProtocolStack stack, ProtocolConfiguration config) throws Exception {
+    protected static AbstractProtocol createLayer(ProtocolStack stack, ProtocolConfiguration config) throws Exception {
         String              protocol_name=config.getProtocolName();
         Map<String, String> properties=new HashMap<>(config.getProperties());
-        Protocol            retval=null;
+        AbstractProtocol retval=null;
 
         if(protocol_name == null || properties == null)
             return null;
@@ -432,7 +432,7 @@ public class Configurator {
         }
 
         try {
-            retval=(Protocol)clazz.newInstance();
+            retval=(AbstractProtocol)clazz.newInstance();
             if(stack != null)
                 retval.setProtocolStack(stack);
 
@@ -477,11 +477,11 @@ public class Configurator {
     /**
      Throws an exception if sanity check fails. Possible sanity check is uniqueness of all protocol names
      */
-    public static void sanityCheck(List<Protocol> protocols) throws Exception {
+    public static void sanityCheck(List<AbstractProtocol> protocols) throws Exception {
 
         // check for unique IDs
         Set<Short> ids=new HashSet<>();
-        for(Protocol protocol: protocols) {
+        for(AbstractProtocol protocol: protocols) {
             short id=protocol.getId();
             if(id > 0 && !ids.add(id))
                 throw new Exception("Protocol ID " + id + " (name=" + protocol.getName() +
@@ -490,7 +490,7 @@ public class Configurator {
 
 
         // For each protocol, get its required up and down services and check (if available) if they're satisfied
-        for(Protocol protocol: protocols) {
+        for(AbstractProtocol protocol: protocols) {
             List<Integer> required_down_services=protocol.requiredDownServices();
             List<Integer> required_up_services=protocol.requiredUpServices();
 
@@ -529,10 +529,10 @@ public class Configurator {
      * @param protocol
      * @param events
      */
-    protected static void removeProvidedUpServices(Protocol protocol, List<Integer> events) {
+    protected static void removeProvidedUpServices(AbstractProtocol protocol, List<Integer> events) {
         if(protocol == null || events == null)
             return;
-        for(Protocol prot=protocol.getDownProtocol(); prot != null && !events.isEmpty(); prot=prot.getDownProtocol()) {
+        for(AbstractProtocol prot = protocol.getDownProtocol(); prot != null && !events.isEmpty(); prot=prot.getDownProtocol()) {
             List<Integer> provided_up_services=prot.providedUpServices();
             if(provided_up_services != null && !provided_up_services.isEmpty())
                 events.removeAll(provided_up_services);
@@ -544,10 +544,10 @@ public class Configurator {
      * @param protocol
      * @param events
      */
-    protected static void removeProvidedDownServices(Protocol protocol, List<Integer> events) {
+    protected static void removeProvidedDownServices(AbstractProtocol protocol, List<Integer> events) {
         if(protocol == null || events == null)
             return;
-        for(Protocol prot=protocol.getUpProtocol(); prot != null && !events.isEmpty(); prot=prot.getUpProtocol()) {
+        for(AbstractProtocol prot = protocol.getUpProtocol(); prot != null && !events.isEmpty(); prot=prot.getUpProtocol()) {
             List<Integer> provided_down_services=prot.providedDownServices();
             if(provided_down_services != null && !provided_down_services.isEmpty())
                 events.removeAll(provided_down_services);
@@ -625,14 +625,14 @@ public class Configurator {
      * of the Fields and Methods.
      */
     public static Map<String, Map<String,InetAddressInfo>> createInetAddressMap(List<ProtocolConfiguration> protocol_configs,
-                                                                                List<Protocol> protocols) throws Exception {
+                                                                                List<AbstractProtocol> protocols) throws Exception {
     	// Map protocol -> Map<String, InetAddressInfo>, where the latter is protocol specific
     	Map<String, Map<String,InetAddressInfo>> inetAddressMap = new HashMap<>() ;
 
     	// collect InetAddressInfo
     	for (int i = 0; i < protocol_configs.size(); i++) {    		        	
     		ProtocolConfiguration protocol_config = protocol_configs.get(i) ;
-    		Protocol protocol = protocols.get(i) ;
+    		AbstractProtocol protocol = protocols.get(i) ;
     		String protocolName = protocol.getName();
 
     		// regenerate the Properties which were destroyed during basic property processing
@@ -713,11 +713,11 @@ public class Configurator {
     }
 
 
-    public static List<InetAddress> getInetAddresses(List<Protocol> protocols) throws Exception {
+    public static List<InetAddress> getInetAddresses(List<AbstractProtocol> protocols) throws Exception {
         List<InetAddress> retval=new LinkedList<>();
 
         // collect InetAddressInfo
-        for(Protocol protocol : protocols) {
+        for(AbstractProtocol protocol : protocols) {
             //traverse class hierarchy and find all annotated fields and add them to the list if annotated
             for(Class<?> clazz=protocol.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
                 Field[] fields=clazz.getDeclaredFields();
@@ -747,7 +747,7 @@ public class Configurator {
     * - if the defaultValue attribute is not "", generate a value for the field using the
     * property converter for that property and assign it to the field
     */
-    public static void setDefaultValues(List<ProtocolConfiguration> protocol_configs, List<Protocol> protocols,
+    public static void setDefaultValues(List<ProtocolConfiguration> protocol_configs, List<AbstractProtocol> protocols,
                                         StackType ip_version) throws Exception {
         InetAddress default_ip_address=Util.getNonLoopbackAddress();
         if(default_ip_address == null) {
@@ -757,7 +757,7 @@ public class Configurator {
 
         for(int i=0; i < protocol_configs.size(); i++) {
             ProtocolConfiguration protocol_config=protocol_configs.get(i);
-            Protocol protocol=protocols.get(i);
+            AbstractProtocol protocol=protocols.get(i);
             String protocolName=protocol.getName();
 
             // regenerate the Properties which were destroyed during basic property processing
@@ -836,14 +836,14 @@ public class Configurator {
     }
 
 
-    public static void setDefaultValues(List<Protocol> protocols, StackType ip_version) throws Exception {
+    public static void setDefaultValues(List<AbstractProtocol> protocols, StackType ip_version) throws Exception {
         InetAddress default_ip_address=Util.getNonLoopbackAddress();
         if(default_ip_address == null) {
             log.warn(Util.getMessage("OnlyLoopbackFound"), ip_version);
             default_ip_address=Util.getLocalhost(ip_version);
         }
 
-        for(Protocol protocol : protocols) {
+        for(AbstractProtocol protocol : protocols) {
             String protocolName=protocol.getName();
 
             //traverse class hierarchy and find all annotated fields and add them to the list if annotated
@@ -888,8 +888,8 @@ public class Configurator {
      * @param protocols
      * @throws Exception
      */
-    public static void ensureValidBindAddresses(List<Protocol> protocols) throws Exception {
-        for(Protocol protocol : protocols) {
+    public static void ensureValidBindAddresses(List<AbstractProtocol> protocols) throws Exception {
+        for(AbstractProtocol protocol : protocols) {
             String protocolName=protocol.getName();
 
             //traverse class hierarchy and find all annotated fields and add them to the list if annotated
@@ -907,7 +907,7 @@ public class Configurator {
 
 
 
-    public static Object getValueFromProtocol(Protocol protocol, Field field) throws IllegalAccessException {
+    public static Object getValueFromProtocol(AbstractProtocol protocol, Field field) throws IllegalAccessException {
         if(protocol == null || field == null) return null;
         if(!Modifier.isPublic(field.getModifiers()))
             field.setAccessible(true);
@@ -915,7 +915,7 @@ public class Configurator {
     }
 
 
-    public static Object getValueFromProtocol(Protocol protocol, String field_name) throws IllegalAccessException {
+    public static Object getValueFromProtocol(AbstractProtocol protocol, String field_name) throws IllegalAccessException {
         if(protocol == null || field_name == null) return null;
         Field field=Util.getField(protocol.getClass(), field_name);
         return field != null? getValueFromProtocol(protocol, field) : null;
@@ -1101,7 +1101,7 @@ public class Configurator {
     				method.invoke(obj, converted);
     			}
     			catch(Exception e) {
-    				String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+    				String name=obj instanceof AbstractProtocol ? ((AbstractProtocol)obj).getName() : obj.getClass().getName();
     				throw new Exception("Could not assign property " + propertyName + " in "
     						+ name + ", method is " + methodName + ", converted value is " + converted, e);
     			}
@@ -1150,7 +1150,7 @@ public class Configurator {
     					Util.setField(field, obj, converted);
     			}
     			catch(Exception e) {
-    				String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+    				String name=obj instanceof AbstractProtocol ? ((AbstractProtocol)obj).getName() : obj.getClass().getName();
     				throw new Exception("Property assignment of " + propertyName + " in "
     						+ name + " with original property value " + propertyValue + " and converted to " + converted 
     						+ " could not be assigned", e);
@@ -1172,7 +1172,7 @@ public class Configurator {
                     String propertyValue=props.get(propertyName);
                     if(propertyValue != null) {
                         if(log.isWarnEnabled()) {
-                            String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+                            String name=obj instanceof AbstractProtocol ? ((AbstractProtocol)obj).getName() : obj.getClass().getName();
                             log.warn(Util.getMessage("Deprecated"), name + "." + propertyName, "will be ignored");
                         }
                         props.remove(propertyName);
@@ -1217,7 +1217,7 @@ public class Configurator {
 
 
     public static class InetAddressInfo {
-    	Protocol protocol ;
+    	AbstractProtocol protocol ;
     	AccessibleObject fieldOrMethod ;
     	Map<String,String> properties ;
     	String propertyName ;
@@ -1227,8 +1227,8 @@ public class Configurator {
     	boolean isParameterized ; // is the associated type parametrized? (e.g. Collection<String>)
     	Object baseType ;         // what is the base type (e.g. Collection)
 
-    	InetAddressInfo(Protocol protocol, AccessibleObject fieldOrMethod, Map<String,String> properties, String stringValue,
-    			Object convertedValue) {
+    	InetAddressInfo(AbstractProtocol protocol, AccessibleObject fieldOrMethod, Map<String,String> properties, String stringValue,
+                        Object convertedValue) {
     		// check input values
     		if (protocol == null) {
     			throw new IllegalArgumentException("Protocol for Field/Method must be non-null") ;
@@ -1304,7 +1304,7 @@ public class Configurator {
     		return (types[0] instanceof ParameterizedType) ;
     	}
 
-    	static boolean isInetAddressRelated(Protocol prot, Field f) {
+    	static boolean isInetAddressRelated(AbstractProtocol prot, Field f) {
     		if (hasParameterizedType(f)) {
     			// check for List<InetAddress>, List<InetSocketAddress>, List<IpAddress>
     			ParameterizedType fieldtype = (ParameterizedType) f.getGenericType() ;

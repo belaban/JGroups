@@ -4,7 +4,6 @@ import static org.testng.AssertJUnit.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.Properties;
 
 import org.jgroups.Global;
@@ -13,7 +12,7 @@ import org.jgroups.auth.sasl.SimpleAuthorizingCallbackHandler;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -56,7 +55,7 @@ public class SASL_SimpleAuthorizingCallbackTest {
         sasl.setServerCallbackHandler(new SimpleAuthorizingCallbackHandler(properties));
         sasl.setTimeout(5000);
         sasl.sasl_props.put("com.sun.security.sasl.digest.realm", REALM);
-        return new JChannel(new Protocol[] { new SHARED_LOOPBACK(), new PING(), new NAKACK2(), new UNICAST3(),
+        return new JChannel(new AbstractProtocol[] { new SHARED_LOOPBACK(), new PING(), new NAKACK2(), new UNICAST3(),
                 new STABLE(), sasl, new GMS() }).name(channelName);
     }
 

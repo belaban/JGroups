@@ -10,7 +10,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.ENCRYPT.EncryptHeader;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -451,7 +451,7 @@ public class ENCRYPTAsymmetricTest {
 
 
     
-    static class MockProtocol extends Protocol {
+    static class MockProtocol extends AbstractProtocol {
         private final TreeMap<String, Event> upMessages=new TreeMap<>();
         private final TreeMap<String, Event> downMessages=new TreeMap<>();
         private int counter;

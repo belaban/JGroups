@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  */
 @Deprecated
-public abstract class Retransmitter {
+public abstract class AbstractRetransmitter {
 
     /** Default retransmit intervals (ms) - exponential approx. */
     protected Interval                       retransmit_timeouts=new ExponentialInterval(300);
@@ -33,7 +33,7 @@ public abstract class Retransmitter {
     protected final RetransmitCommand        cmd;
     protected final TimeScheduler            timer;
     protected long                           xmit_stagger_timeout=0;
-    protected static final Log log=LogFactory.getLog(Retransmitter.class);
+    protected static final Log log=LogFactory.getLog(AbstractRetransmitter.class);
 
 
     /** Retransmit command (see Gamma et al.) used to retrieve missing messages */
@@ -57,7 +57,7 @@ public abstract class Retransmitter {
      * @param cmd the retransmission callback reference
      * @param sched retransmissions scheduler
      */
-    public Retransmitter(Address sender, RetransmitCommand cmd, TimeScheduler sched) {
+    public AbstractRetransmitter(Address sender, RetransmitCommand cmd, TimeScheduler sched) {
         this.sender=sender;
         this.cmd=cmd;
         timer=sched;
@@ -105,14 +105,14 @@ public abstract class Retransmitter {
 
     /* ---------------------------- End of Private Methods ------------------------------------ */
 
-    protected abstract class Task implements TimeScheduler.Task {
+    protected abstract class AbstractTask implements TimeScheduler.Task {
         protected final Interval       intervals;
         protected volatile Future      future;
         protected Address              msg_sender=null;
         protected RetransmitCommand    command;
         protected volatile boolean     cancelled=false;
 
-        protected Task(Interval intervals, RetransmitCommand cmd, Address msg_sender) {
+        protected AbstractTask(Interval intervals, RetransmitCommand cmd, Address msg_sender) {
             this.intervals=intervals;
             this.command=cmd;
             this.msg_sender=msg_sender;

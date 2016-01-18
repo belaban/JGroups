@@ -23,7 +23,7 @@ import java.util.*;
  *
  * @author Bela Ban
  */
-public class TCPPING extends Discovery {
+public class TCPPING extends AbstractDiscovery {
 
     /* -----------------------------------------    Properties     --------------------------------------- */
 

@@ -10,7 +10,7 @@ import org.jgroups.fork.ForkProtocol;
 import org.jgroups.fork.ForkProtocolStack;
 import org.jgroups.fork.UnknownForkHandler;
 import org.jgroups.stack.Configurator;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Bits;
 import org.jgroups.util.*;
@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 @XmlInclude(schema="fork-stacks.xsd",type=XmlInclude.Type.IMPORT,namespace="fork",alias="fork")
 @XmlElement(name="fork-stacks",type="fork:ForkStacksType")
 @MBean(description="Implementation of FORK protocol")
-public class FORK extends Protocol {
+public class FORK extends AbstractProtocol {
     public static short ID=ClassConfigurator.getProtocolId(FORK.class);
 
     @Property(description="Points to an XML file defining the fork-stacks, which will be created at initialization. " +
@@ -61,7 +61,7 @@ public class FORK extends Protocol {
     };
 
     // mappings between fork-stack-ids and fork-stacks (bottom-most protocol)
-    protected final ConcurrentMap<String,Protocol> fork_stacks=new ConcurrentHashMap<>();
+    protected final ConcurrentMap<String,AbstractProtocol> fork_stacks=new ConcurrentHashMap<>();
 
     protected Address local_addr;
 
@@ -73,14 +73,14 @@ public class FORK extends Protocol {
         return this.unknownForkHandler;
     }
 
-    public Protocol get(String fork_stack_id)                        {return fork_stacks.get(fork_stack_id);}
-    public Protocol putIfAbsent(String fork_stack_id, Protocol prot) {return fork_stacks.put(fork_stack_id, prot);}
+    public AbstractProtocol get(String fork_stack_id)                        {return fork_stacks.get(fork_stack_id);}
+    public AbstractProtocol putIfAbsent(String fork_stack_id, AbstractProtocol prot) {return fork_stacks.put(fork_stack_id, prot);}
     public void     remove(String fork_stack_id)                     {fork_stacks.remove(fork_stack_id);}
 
     @ManagedAttribute(description="Number of fork-stacks")
     public int getForkStacks() {return fork_stacks.size();}
 
-    public static ForkProtocolStack getForkStack(Protocol prot) {
+    public static ForkProtocolStack getForkStack(AbstractProtocol prot) {
         while(prot != null && !(prot instanceof ForkProtocolStack))
             prot=prot.getUpProtocol();
         return prot instanceof ForkProtocolStack? (ForkProtocolStack)prot : null;
@@ -110,11 +110,11 @@ public class FORK extends Protocol {
                     break;
                 if(hdr.fork_stack_id == null)
                     throw new IllegalArgumentException("header has a null fork_stack_id");
-                Protocol bottom_prot=get(hdr.fork_stack_id);
+                AbstractProtocol bottom_prot=get(hdr.fork_stack_id);
                 return bottom_prot != null? bottom_prot.up(evt) : this.unknownForkHandler.handleUnknownForkStack(msg, hdr.fork_stack_id);
 
             case Event.VIEW_CHANGE:
-                for(Protocol bottom: fork_stacks.values())
+                for(AbstractProtocol bottom: fork_stacks.values())
                     bottom.up(evt);
                 break;
 
@@ -153,7 +153,7 @@ public class FORK extends Protocol {
         for(Map.Entry<String,List<Message>> entry: map.entrySet()) {
             String fork_stack_id=entry.getKey();
             List<Message> list=entry.getValue();
-            Protocol bottom_prot=get(fork_stack_id);
+            AbstractProtocol bottom_prot=get(fork_stack_id);
             if(bottom_prot == null)
                 continue;
             MessageBatch mb=new MessageBatch(batch.dest(), batch.sender(), batch.clusterName(), batch.multicast(), list);
@@ -177,9 +177,9 @@ public class FORK extends Protocol {
             getStateFrom(null, up_prot, null, null, dos);
 
             // now fetch state from all fork channels
-            for(Map.Entry<String,Protocol> entry: fork_stacks.entrySet()) {
+            for(Map.Entry<String,AbstractProtocol> entry: fork_stacks.entrySet()) {
                 String stack_name=entry.getKey();
-                Protocol prot=entry.getValue();
+                AbstractProtocol prot=entry.getValue();
                 ForkProtocolStack fork_stack=getForkStack(prot);
                 for(Map.Entry<String,JChannel> en: fork_stack.getForkChannels().entrySet()) {
                     String fc_name=en.getKey();
@@ -194,7 +194,7 @@ public class FORK extends Protocol {
     }
 
 
-    protected void getStateFrom(JChannel channel, Protocol prot, String stack, String ch, DataOutputStream out) throws Exception {
+    protected void getStateFrom(JChannel channel, AbstractProtocol prot, String stack, String ch, DataOutputStream out) throws Exception {
         ByteArrayDataOutputStream output=new ByteArrayDataOutputStream(1024);
         OutputStreamAdapter out_ad=new OutputStreamAdapter(output);
         Event evt=new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, out_ad);
@@ -225,7 +225,7 @@ public class FORK extends Protocol {
                     if(stack_name == null && ch_name == null)
                         up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, tmp));
                     else {
-                        Protocol prot=fork_stacks.get(stack_name);
+                        AbstractProtocol prot=fork_stacks.get(stack_name);
                         if(prot == null) {
                             log.warn("%s: fork stack %s not found, dropping state for %s:%s", local_addr, stack_name, stack_name, ch_name);
                             continue;
@@ -263,7 +263,7 @@ public class FORK extends Protocol {
             if(get(fork_stack_id) != null)
                 continue;
 
-            List<Protocol> prots=createProtocols(null,entry.getValue());
+            List<AbstractProtocol> prots=createProtocols(null,entry.getValue());
             createForkStack(fork_stack_id, prots, false);
         }
     }
@@ -286,14 +286,14 @@ public class FORK extends Protocol {
      *                   in the fork stack will only get initialized on the first ForkChannel creation
      * @return The new {@link ForkProtocolStack}, or the existing stack (if present)
      */
-    public synchronized ProtocolStack createForkStack(String fork_stack_id, List<Protocol> protocols, boolean initialize) throws Exception {
-        Protocol bottom;
+    public synchronized ProtocolStack createForkStack(String fork_stack_id, List<AbstractProtocol> protocols, boolean initialize) throws Exception {
+        AbstractProtocol bottom;
         if((bottom=get(fork_stack_id)) != null) {
             ForkProtocolStack retval=getForkStack(bottom);
             return initialize? retval.incrInits() : retval;
         }
 
-        List<Protocol> prots=new ArrayList<>();
+        List<AbstractProtocol> prots=new ArrayList<>();
         prots.add(bottom=new ForkProtocol(fork_stack_id).setDownProtocol(this)); // add a ForkProtocol as bottom protocol
         if(protocols != null)
             prots.addAll(protocols);
@@ -311,7 +311,7 @@ public class FORK extends Protocol {
     /** Creates a fork-stack from the configuration, initializes all protocols (setting values),
      * sets the protocol stack as top protocol, connects the protocols and calls init() on them. Returns
      * the protocols in a list, from bottom to top */
-    protected static List<Protocol> createProtocols(ProtocolStack stack, List<ProtocolConfiguration> protocol_configs) throws Exception {
+    protected static List<AbstractProtocol> createProtocols(ProtocolStack stack, List<ProtocolConfiguration> protocol_configs) throws Exception {
         return Configurator.createProtocols(protocol_configs,stack);
     }
 
@@ -340,7 +340,7 @@ public class FORK extends Protocol {
     }
 
 
-    public static class ForkHeader extends Header {
+    public static class ForkHeader extends AbstractHeader {
         protected String fork_stack_id, fork_channel_id;
 
         public ForkHeader() {

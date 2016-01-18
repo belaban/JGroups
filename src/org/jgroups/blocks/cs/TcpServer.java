@@ -14,7 +14,7 @@ import java.net.SocketException;
  * @author Vladimir Blagojevic
  * @author Bela Ban
  */
-public class TcpServer extends TcpBaseServer {
+public class TcpServer extends AbstractTcpBaseServer {
     protected ServerSocket srv_sock;
     protected Thread       acceptor;
 

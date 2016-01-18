@@ -10,7 +10,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -105,7 +105,7 @@ public class FragTest {
     public void testMessageOrdering() throws Exception {
         OrderingReceiver receiver=new OrderingReceiver();
         ch.setReceiver(receiver);
-        Protocol frag=ch.getProtocolStack().findProtocol(FRAG2.class, FRAG.class);
+        AbstractProtocol frag=ch.getProtocolStack().findProtocol(FRAG2.class, FRAG.class);
         frag.setValue("frag_size", 5000);
 
         Message first=new Message(null, new Payload(1, 10));

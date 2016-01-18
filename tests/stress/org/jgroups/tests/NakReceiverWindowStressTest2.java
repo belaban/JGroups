@@ -3,7 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.stack.NakReceiverWindow;
-import org.jgroups.stack.Retransmitter;
+import org.jgroups.stack.AbstractRetransmitter;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.TimeScheduler3;
 import org.jgroups.util.Util;
@@ -40,7 +40,7 @@ public class NakReceiverWindowStressTest2 {
         Address sender=Util.createRandomAddress("A");
         TimeScheduler timer=new TimeScheduler3();
 
-        NakReceiverWindow win=new NakReceiverWindow(sender, new Retransmitter.RetransmitCommand() {
+        NakReceiverWindow win=new NakReceiverWindow(sender, new AbstractRetransmitter.RetransmitCommand() {
 
             public void retransmit(long first_seqno, long last_seqno, Address sender) {
                 System.out.println("-- retransmit(" + first_seqno + "-" + last_seqno);

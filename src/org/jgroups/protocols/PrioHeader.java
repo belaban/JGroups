@@ -1,7 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Global;
-import org.jgroups.Header;
+import org.jgroups.AbstractHeader;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -21,7 +21,7 @@ import java.io.DataOutput;
  * </code>
  * @author Michael Earl
  */
-public class PrioHeader extends Header {
+public class PrioHeader extends AbstractHeader {
 	private byte priority = 0;
 
 	public PrioHeader() {

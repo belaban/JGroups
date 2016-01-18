@@ -1,7 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Global;
-import org.jgroups.Header;
+import org.jgroups.AbstractHeader;
 import org.jgroups.util.Bits;
 
 import java.io.DataInput;
@@ -11,7 +11,7 @@ import java.io.DataOutput;
 /**
  * @author Bela Ban
  */
-public class FragHeader extends Header {
+public class FragHeader extends AbstractHeader {
     public long id;
     public int  frag_id;
     public int  num_frags;

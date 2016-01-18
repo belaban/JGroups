@@ -11,7 +11,7 @@ import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -81,7 +81,7 @@ public class NioServerTest2 {
 
 
     protected static JChannel create(String name) throws Exception {
-        return new JChannel(new Protocol[] {
+        return new JChannel(new AbstractProtocol[] {
           new TCP_NIO2()
             .setValue("bind_addr", Util.getLocalhost())
             .setValue("recv_buf_size", recv_buf_size).setValue("send_buf_size", send_buf_size),

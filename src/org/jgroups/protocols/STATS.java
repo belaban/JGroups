@@ -1,7 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.annotations.MBean;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.Address;
@@ -16,7 +16,7 @@ import java.util.*;
  * @author Bela Ban
  */
 @MBean(description="Protocol which exposes various statistics")
-public class STATS extends Protocol {
+public class STATS extends AbstractProtocol {
     long sent_msgs, sent_bytes, sent_ucasts, sent_mcasts, received_ucasts, received_mcasts;
     long received_msgs, received_bytes, sent_ucast_bytes, sent_mcast_bytes, received_ucast_bytes, received_mcast_bytes;
 

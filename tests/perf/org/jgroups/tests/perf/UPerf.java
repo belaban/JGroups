@@ -5,11 +5,11 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.stack.AddressGenerator;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 
 import javax.management.MBeanServer;
@@ -92,7 +92,7 @@ public class UPerf extends ReceiverAdapter {
             channel.setName(name);
 
         if(bind_port > 0) {
-            TP transport=channel.getProtocolStack().getTransport();
+            AbstractTP transport=channel.getProtocolStack().getTransport();
             transport.setBindPort(bind_port);
         }
 
@@ -370,7 +370,7 @@ public class UPerf extends ReceiverAdapter {
         double total_reqs_sec=total_reqs / ( total_time/ 1000.0);
         double throughput=total_reqs_sec * BUFFER.length;
         double ms_per_req=total_time / (double)total_reqs;
-        Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
+        AbstractProtocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         System.out.println("\n");
         System.out.println(Util.bold("Average of " + f.format(total_reqs_sec) + " requests / sec (" +
                                        Util.printBytes(throughput) + " / sec), " +

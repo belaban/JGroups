@@ -5,7 +5,7 @@ import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.MERGE3;
 import org.jgroups.protocols.TCP_NIO2;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
@@ -40,7 +40,7 @@ public class DiscardTest extends ChannelTestBase {
     
     @AfterMethod
     protected void tearDown() throws Exception {
-        TP tp_a=a.getProtocolStack().getTransport(), tp_b=b.getProtocolStack().getTransport();
+        AbstractTP tp_a=a.getProtocolStack().getTransport(), tp_b=b.getProtocolStack().getTransport();
         if(tp_a instanceof TCP_NIO2) {
             System.out.printf("partial writes in A: %d, partial writes in B: %d\n",
                               ((TCP_NIO2)tp_a).numPartialWrites(), ((TCP_NIO2)tp_b).numPartialWrites());

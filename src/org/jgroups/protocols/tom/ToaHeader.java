@@ -2,7 +2,7 @@ package org.jgroups.protocols.tom;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.Header;
+import org.jgroups.AbstractHeader;
 import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
 
@@ -18,7 +18,7 @@ import java.util.Collections;
  * @author Pedro Ruivo
  * @since 3.1
  */
-public class ToaHeader extends Header {
+public class ToaHeader extends AbstractHeader {
 
     //type
     public static final byte DATA_MESSAGE = 1 << 0;

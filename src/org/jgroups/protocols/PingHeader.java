@@ -2,7 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Global;
-import org.jgroups.Header;
+import org.jgroups.AbstractHeader;
 import org.jgroups.util.Bits;
 
 import java.io.DataInput;
@@ -12,7 +12,7 @@ import java.io.DataOutput;
 /**
  * @author Bela Ban
  */
-public class PingHeader extends Header {
+public class PingHeader extends AbstractHeader {
     public static final byte GET_MBRS_REQ=1;
     public static final byte GET_MBRS_RSP=2;
 

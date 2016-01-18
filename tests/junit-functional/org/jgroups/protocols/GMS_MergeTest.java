@@ -8,7 +8,7 @@ import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MergeId;
@@ -30,16 +30,16 @@ public class GMS_MergeTest {
 
     static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
 
-    protected static Protocol[] getProps() {
+    protected static AbstractProtocol[] getProps() {
         return modify(Util.getTestStack());
     }
 
-    protected static Protocol[] getFlushProps() {
+    protected static AbstractProtocol[] getFlushProps() {
         return modify(Util.getTestStack(new FLUSH()));
     }
 
-    protected static Protocol[] modify(Protocol[] retval) {
-        for(Protocol prot: retval) {
+    protected static AbstractProtocol[] modify(AbstractProtocol[] retval) {
+        for(AbstractProtocol prot: retval) {
             if(prot instanceof GMS)
                 ((GMS)prot).setJoinTimeout(1000);
             if(prot instanceof STABLE)
@@ -513,7 +513,7 @@ public class GMS_MergeTest {
 
         for(int i=0; i < retval.length; i++) {
             JChannel ch;
-            Protocol[] props=use_flush_props? getFlushProps() : getProps();
+            AbstractProtocol[] props=use_flush_props? getFlushProps() : getProps();
             if(simple_ids) {
                 ch=new MyChannel(props);
                 ((MyChannel)ch).setId(i+1);
@@ -721,11 +721,11 @@ public class GMS_MergeTest {
             super(configurator);
         }
 
-        public MyChannel(Collection<Protocol> protocols) throws Exception {
+        public MyChannel(Collection<AbstractProtocol> protocols) throws Exception {
             super(protocols);
         }
 
-        public MyChannel(Protocol... protocols) throws Exception {
+        public MyChannel(AbstractProtocol... protocols) throws Exception {
             super(protocols);
         }
 

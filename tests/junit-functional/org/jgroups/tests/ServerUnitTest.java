@@ -4,7 +4,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.blocks.cs.BaseServer;
+import org.jgroups.blocks.cs.AbstractBaseServer;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.blocks.cs.ReceiverAdapter;
 import org.jgroups.blocks.cs.TcpServer;
@@ -38,8 +38,8 @@ public class ServerUnitTest {
 
     public void testSetup() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
-            try(BaseServer a=create(nio, 0);
-                BaseServer b=create(nio, 0)) {
+            try(AbstractBaseServer a=create(nio, 0);
+                AbstractBaseServer b=create(nio, 0)) {
                 Assert.assertNotSame(a.localAddress(), b.localAddress());
             }
         }
@@ -48,7 +48,7 @@ public class ServerUnitTest {
 
     public void testSendEmptyData() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
-            try(BaseServer a=create(nio, 0)) {
+            try(AbstractBaseServer a=create(nio, 0)) {
                 byte[] data=new byte[0];
                 Address myself=a.localAddress();
                 a.receiver(new ReceiverAdapter() {});
@@ -59,7 +59,7 @@ public class ServerUnitTest {
 
     public void testSendNullData() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
-            try(BaseServer a=create(nio, 0)) {
+            try(AbstractBaseServer a=create(nio, 0)) {
                 Address myself=a.localAddress();
                 a.send(myself, null, 0, 0); // the test passes if send() doesn't throw an exception
             }
@@ -69,7 +69,7 @@ public class ServerUnitTest {
 
     public void testSendToSelf() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
-            try(BaseServer a=create(nio, 0)) {
+            try(AbstractBaseServer a=create(nio, 0)) {
                 long NUM=1000, total_time;
                 Address myself=a.localAddress();
                 MyReceiver r=new MyReceiver(a, NUM, false);
@@ -90,8 +90,8 @@ public class ServerUnitTest {
 
     public void testSendToAll() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
-            try(BaseServer a=create(nio, 0);
-                BaseServer b=create(nio, 0)) {
+            try(AbstractBaseServer a=create(nio, 0);
+                AbstractBaseServer b=create(nio, 0)) {
                 long NUM=1000, total_time;
                 MyReceiver r1=new MyReceiver(a, NUM, false);
                 MyReceiver r2=new MyReceiver(b, NUM, false);
@@ -120,8 +120,8 @@ public class ServerUnitTest {
 
     public void testSendToOther() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
-            try(BaseServer a=create(nio, 0);
-                BaseServer b=create(nio, 0)) {
+            try(AbstractBaseServer a=create(nio, 0);
+                AbstractBaseServer b=create(nio, 0)) {
                 long NUM=1000, total_time;
                 Address other=b.localAddress();
                 MyReceiver r=new MyReceiver(b, NUM, false);
@@ -145,8 +145,8 @@ public class ServerUnitTest {
 
     public void testSendToOtherGetResponse() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
-            try(BaseServer a=create(nio, 0);
-                BaseServer b=create(nio, 0)) {
+            try(AbstractBaseServer a=create(nio, 0);
+                AbstractBaseServer b=create(nio, 0)) {
                 long NUM=1000, total_time;
                 Address other=b.localAddress();
                 MyReceiver r1=new MyReceiver(a, NUM, false);
@@ -179,8 +179,8 @@ public class ServerUnitTest {
      */
     public void testReuseOfConnection() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
-            try(BaseServer a=create(nio, 0);
-                BaseServer b=create(nio, 0)) {
+            try(AbstractBaseServer a=create(nio, 0);
+                AbstractBaseServer b=create(nio, 0)) {
 
                 int num_conns;
                 num_conns=a.getNumConnections();
@@ -213,8 +213,8 @@ public class ServerUnitTest {
 
     public void testConnectionCountOnStop() throws Exception {
         for(boolean nio : new boolean[]{false, true}) {
-            try(BaseServer a=create(nio, 0);
-                BaseServer b=create(nio, 0)) {
+            try(AbstractBaseServer a=create(nio, 0);
+                AbstractBaseServer b=create(nio, 0)) {
                 Address addr1=a.localAddress(), addr2=b.localAddress();
                 byte[] data="hello world".getBytes();
                 a.send(addr1, data, 0, data.length); // send to self
@@ -265,9 +265,9 @@ public class ServerUnitTest {
         System.out.println("-- [" + Thread.currentThread() + "]: " + msg);
     }
 
-    protected static BaseServer create(boolean nio, int port) {
+    protected static AbstractBaseServer create(boolean nio, int port) {
         try {
-            BaseServer retval=nio? new NioServer(bind_addr, port).maxSendBuffers(1024)
+            AbstractBaseServer retval=nio? new NioServer(bind_addr, port).maxSendBuffers(1024)
               : new TcpServer(bind_addr, port).useSendQueues(false);
             retval.usePeerConnections(true);
             retval.start();
@@ -278,10 +278,10 @@ public class ServerUnitTest {
         }
     }
 
-    protected void waitForOpenConns(int expected, BaseServer... servers) {
+    protected void waitForOpenConns(int expected, AbstractBaseServer... servers) {
         for(int i=0; i < 10; i++) {
             boolean all_ok=true;
-            for(BaseServer server: servers) {
+            for(AbstractBaseServer server: servers) {
                 if(server.getNumOpenConnections() != expected) {
                     all_ok=false;
                     break;
@@ -294,7 +294,7 @@ public class ServerUnitTest {
     }
 
 
-    protected void connectionEstablished(BaseServer server, Address dest) {
+    protected void connectionEstablished(AbstractBaseServer server, Address dest) {
         for(int i=0; i < 10; i++) {
             if(server.connectionEstablishedTo(dest))
                 break;
@@ -313,9 +313,9 @@ public class ServerUnitTest {
         protected final  CondVar   done=new CondVar();
         protected boolean          send_response=false;
         protected final long       modulo;
-        protected final BaseServer server;
+        protected final AbstractBaseServer server;
 
-        MyReceiver(BaseServer server, long num_expected, boolean send_response) {
+        MyReceiver(AbstractBaseServer server, long num_expected, boolean send_response) {
             this.server=server;
             this.num_expected=num_expected;
             this.send_response=send_response;

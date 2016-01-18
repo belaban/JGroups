@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Shared class for TCP connection tables.
  * @author Scott Marlow
  */
-public abstract class BasicConnectionTable {
+public abstract class AbstractBasicConnectionTable {
     private ThreadFactory factory;
     final Map<Address,Connection>  conns=new HashMap<>();         // keys: Addresses (peer address), values: Connection
     Receiver              receiver=null;
@@ -69,7 +69,7 @@ public abstract class BasicConnectionTable {
 
 
 
-    protected BasicConnectionTable() {        
+    protected AbstractBasicConnectionTable() {
         factory = new DefaultThreadFactory("Connection Table", false);
     }
 

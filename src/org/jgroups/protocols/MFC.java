@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  */
 @MBean(description="Simple flow control protocol based on a credit system")
-public class MFC extends FlowControl {
+public class MFC extends AbstractFlowControl {
 
     
     

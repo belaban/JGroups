@@ -1,8 +1,8 @@
 package org.jgroups.blocks.locking;
 
 import org.jgroups.Event;
-import org.jgroups.Channel;
-import org.jgroups.protocols.Locking;
+import org.jgroups.AbstractChannel;
+import org.jgroups.protocols.AbstractLocking;
 
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -12,7 +12,7 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * LockService is the main class for to use for distributed locking functionality. LockService needs access to a
- * {@link Channel} and interacts with a locking protocol (e.g. {@link org.jgroups.protocols.CENTRAL_LOCK}) via events.<p/>
+ * {@link AbstractChannel} and interacts with a locking protocol (e.g. {@link org.jgroups.protocols.CENTRAL_LOCK}) via events.<p/>
  * When no locking protocol is seen on the channel's stack, LockService will throw an exception at startup. An example
  * of using LockService is:
  * <pre>
@@ -37,24 +37,24 @@ import java.util.concurrent.locks.Lock;
  * @since 2.12
  */
 public class LockService {
-    protected Channel ch;
-    protected Locking  lock_prot;
+    protected AbstractChannel ch;
+    protected AbstractLocking lock_prot;
 
 
     public LockService() {
         
     }
 
-    public LockService(Channel ch) {
+    public LockService(AbstractChannel ch) {
         setChannel(ch);
     }
 
-    public void setChannel(Channel ch) {
+    public void setChannel(AbstractChannel ch) {
         this.ch=ch;
-        lock_prot=(Locking)ch.getProtocolStack().findProtocol(Locking.class);
+        lock_prot=(AbstractLocking)ch.getProtocolStack().findProtocol(AbstractLocking.class);
         if(lock_prot == null)
             throw new IllegalStateException("Channel configuration must include a locking protocol " +
-                                              "(subclass of " + Locking.class.getName() + ")");
+                                              "(subclass of " + AbstractLocking.class.getName() + ")");
     }
 
     public Lock getLock(String lock_name) {

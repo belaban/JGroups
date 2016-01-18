@@ -39,7 +39,7 @@ import java.util.concurrent.Future;
  * @author Sanne Grinovero
  * @since 2.12
  */
-public class JDBC_PING extends Discovery {
+public class JDBC_PING extends AbstractDiscovery {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 

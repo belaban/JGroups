@@ -40,7 +40,7 @@ import java.util.concurrent.RejectedExecutionException;
  * @since 3.0
  */
 @MBean(description="State trasnfer protocol based on streaming state transfer")
-public class STATE_SOCK extends StreamingStateTransfer {
+public class STATE_SOCK extends AbstractStreamingStateTransfer {
 
     /*
      * ----------------------------------------------Properties -----------------------------------

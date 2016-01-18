@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -76,7 +76,7 @@ public class UnicastLoopbackTest extends ChannelTestBase {
      * @throws Exception
      */
     private static long getNumMessagesSentViaNetwork(JChannel ch) throws Exception {
-        TP transport = ch.getProtocolStack().getTransport();
+        AbstractTP transport = ch.getProtocolStack().getTransport();
         if (transport == null)
             throw new Exception("transport layer is not present - check default stack configuration") ;
         return transport.getNumMessagesSent();

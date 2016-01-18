@@ -24,7 +24,7 @@ import java.util.concurrent.Future;
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
  */
-public class FILE_PING extends Discovery {
+public class FILE_PING extends AbstractDiscovery {
     protected static final String SUFFIX=".list";
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */

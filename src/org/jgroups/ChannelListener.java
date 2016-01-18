@@ -10,9 +10,9 @@ package org.jgroups;
  * by JGroups building block installed on top of a channel (RpcDispatcher etc) while a client needs
  * to be notified about major channel lifecycle events.
  * 
- * @see Channel#addChannelListener(ChannelListener)
- * @see Channel#removeChannelListener(ChannelListener)
- * @see Channel#clearChannelListeners()
+ * @see AbstractChannel#addChannelListener(ChannelListener)
+ * @see AbstractChannel#removeChannelListener(ChannelListener)
+ * @see AbstractChannel#clearChannelListeners()
  * 
  * @author Bela Ban
  * @since 2.0
@@ -25,19 +25,19 @@ public interface ChannelListener {
     * 
     * @param channel the channel that has been connected
     */
-   void channelConnected(Channel channel);
+   void channelConnected(AbstractChannel channel);
 
    /**
     * Channel has been disconnected notification callback
     * 
     * @param channel the disconnected channel
     */
-   void channelDisconnected(Channel channel);
+   void channelDisconnected(AbstractChannel channel);
 
    /**
     * Channel has been closed notification callback
     * 
     * @param channel the closed channel
     */
-   void channelClosed(Channel channel);
+   void channelClosed(AbstractChannel channel);
 }

@@ -4,12 +4,12 @@ import org.jgroups.*;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.conf.ProtocolStackConfigurator;
-import org.jgroups.protocols.BasicTCP;
+import org.jgroups.protocols.AbstractBasicTCP;
 import org.jgroups.protocols.TCPPING;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.TimeScheduler;
@@ -321,7 +321,7 @@ public class SharedTransportTest extends ChannelTestBase {
     public void testFailedFirstChannel() throws Exception {
         a=createSharedChannel(SINGLETON_1, "A");
 
-        TP transport=a.getProtocolStack().getTransport();
+        AbstractTP transport=a.getProtocolStack().getTransport();
         transport.setBindPort(128); // set the bind_port to an incorrect value (< 1024), this will fail on connect()
         a.setReceiver(new MyReceiver("A"));
         try {
@@ -569,9 +569,9 @@ public class SharedTransportTest extends ChannelTestBase {
     }
 
 
-    protected static void makeUnique(Channel channel, int num) throws Exception {
+    protected static void makeUnique(AbstractChannel channel, int num) throws Exception {
         ProtocolStack stack=channel.getProtocolStack();
-        TP transport=stack.getTransport();
+        AbstractTP transport=stack.getTransport();
         InetAddress bind_addr=transport.getBindAddress();
 
         if(transport instanceof UDP) {
@@ -580,12 +580,12 @@ public class SharedTransportTest extends ChannelTestBase {
             ((UDP)transport).setMulticastAddress(InetAddress.getByName(mcast_addr));
             ((UDP)transport).setMulticastPort(mcast_port);
         }
-        else if(transport instanceof BasicTCP) {
+        else if(transport instanceof AbstractBasicTCP) {
             List<Short> ports=ResourceManager.getNextTcpPorts(bind_addr, num);
             transport.setBindPort(ports.get(0));
             transport.setPortRange(num);
 
-            Protocol ping=stack.findProtocol(TCPPING.class);
+            AbstractProtocol ping=stack.findProtocol(TCPPING.class);
             if(ping == null)
                 throw new IllegalStateException("TCP stack must consist of TCP:TCPPING - other config are not supported");
 
@@ -647,13 +647,13 @@ public class SharedTransportTest extends ChannelTestBase {
     
     private static class ConnectTask implements Runnable
     {
-       private final Channel channel;
+       private final AbstractChannel channel;
        private final String clusterName;
        private final CountDownLatch startLatch;
        private final CountDownLatch finishLatch;
        private Exception exception;
        
-       ConnectTask(Channel channel, String clusterName, CountDownLatch startLatch, CountDownLatch finishLatch)
+       ConnectTask(AbstractChannel channel, String clusterName, CountDownLatch startLatch, CountDownLatch finishLatch)
        {
           this.channel = channel;
           this.clusterName = clusterName;

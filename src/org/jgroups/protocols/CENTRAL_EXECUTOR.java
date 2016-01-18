@@ -19,7 +19,7 @@ import java.util.Set;
  * @author wburns
  * @since 2.12.0
  */
-public class CENTRAL_EXECUTOR extends Executing {
+public class CENTRAL_EXECUTOR extends AbstractExecuting {
 
     @Property(description="Number of backups to the coordinator.  Queue State gets replicated to these nodes as well")
     protected int num_backups=1;

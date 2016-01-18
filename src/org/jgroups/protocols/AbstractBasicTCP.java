@@ -21,7 +21,7 @@ import java.util.Set;
  * @author Scott Marlow
  * @author Bela Ban
  */
-public abstract class BasicTCP extends TP implements Receiver {
+public abstract class AbstractBasicTCP extends AbstractTP implements Receiver {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
@@ -74,7 +74,7 @@ public abstract class BasicTCP extends TP implements Receiver {
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
 
-    protected BasicTCP() {
+    protected AbstractBasicTCP() {
         super();        
     }
 
@@ -88,7 +88,7 @@ public abstract class BasicTCP extends TP implements Receiver {
     public void init() throws Exception {
         super.init();
         if(!isSingleton() && bind_port <= 0) {
-            Discovery discovery_prot=(Discovery)stack.findProtocol(Discovery.class);
+            AbstractDiscovery discovery_prot=(AbstractDiscovery)stack.findProtocol(AbstractDiscovery.class);
             if(discovery_prot != null && !discovery_prot.isDynamic())
                 throw new IllegalArgumentException("bind_port cannot be set to " + bind_port +
                                                      ", as no dynamic discovery protocol (e.g. MPING or TCPGOSSIP) has been detected.");

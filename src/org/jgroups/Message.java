@@ -35,7 +35,7 @@ public class Message implements Streamable {
     protected int               length;
 
     /** All headers are placed here */
-    protected volatile Header[] headers;
+    protected volatile AbstractHeader[] headers;
 
     protected volatile short    flags;
 
@@ -326,7 +326,7 @@ public class Message implements Streamable {
     * Returns a reference to the headers hashmap, which is <em>immutable</em>. Any attempt to modify
     * the returned map will cause a runtime exception
     */
-    public Map<Short,Header> getHeaders() {
+    public Map<Short,AbstractHeader> getHeaders() {
         return Headers.getHeaders(this.headers);
     }
 
@@ -520,13 +520,13 @@ public class Message implements Streamable {
     /*---------------------- Used by protocol layers ----------------------*/
 
     /** Puts a header given an ID into the hashmap. Overwrites potential existing entry. */
-    public Message putHeader(short id, Header hdr) {
+    public Message putHeader(short id, AbstractHeader hdr) {
         if(id < 0)
             throw new IllegalArgumentException("An ID of " + id + " is invalid");
         if(hdr != null)
             hdr.setProtId(id);
         synchronized(this) {
-            Header[] resized_array=Headers.putHeader(this.headers, id, hdr, true);
+            AbstractHeader[] resized_array=Headers.putHeader(this.headers, id, hdr, true);
             if(resized_array != null)
                 this.headers=resized_array;
         }
@@ -536,13 +536,13 @@ public class Message implements Streamable {
    /**
     * Puts a header given a key into the map, only if the key doesn't exist yet
     */
-    public Message putHeaderIfAbsent(short id, Header hdr) {
+    public Message putHeaderIfAbsent(short id, AbstractHeader hdr) {
         if(id <= 0)
             throw new IllegalArgumentException("An ID of " + id + " is invalid");
         if(hdr != null)
             hdr.setProtId(id);
         synchronized(this) {
-            Header[] resized_array=Headers.putHeader(this.headers, id, hdr, false);
+            AbstractHeader[] resized_array=Headers.putHeader(this.headers, id, hdr, false);
             if(resized_array != null)
                 this.headers=resized_array;
         }
@@ -550,7 +550,7 @@ public class Message implements Streamable {
     }
 
 
-    public Header getHeader(short id) {
+    public AbstractHeader getHeader(short id) {
         if(id <= 0)
             throw new IllegalArgumentException("An ID of " + id + " is invalid. Add the protocol which calls " +
                                                  "getHeader() to jg-protocol-ids.xml");
@@ -581,7 +581,7 @@ public class Message implements Streamable {
     * copy.<p/>
     * Note that for headers, only the arrays holding references to the headers are copied, not the headers themselves !
     * The consequence is that the headers array of the copy hold the *same* references as the original, so do *not*
-    * modify the headers ! If you want to change a header, copy it and call {@link Message#putHeader(short,Header)} again.
+    * modify the headers ! If you want to change a header, copy it and call {@link Message#putHeader(short, AbstractHeader)} again.
     *
     * @param copy_buffer
     * @param copy_headers
@@ -625,7 +625,7 @@ public class Message implements Streamable {
      */
     public Message copy(boolean copy_buffer, short starting_id, short ... copy_only_ids) {
         Message retval=copy(copy_buffer, false);
-        for(Map.Entry<Short,Header> entry: getHeaders().entrySet()) {
+        for(Map.Entry<Short,AbstractHeader> entry: getHeaders().entrySet()) {
             short id=entry.getKey();
             if(id >= starting_id || Util.containsId(id, copy_only_ids))
                 retval.putHeader(id, entry.getValue());
@@ -732,10 +732,10 @@ public class Message implements Streamable {
             Util.writeAddress(src_addr, out);
 
         // 5. headers
-        Header[] hdrs=this.headers;
+        AbstractHeader[] hdrs=this.headers;
         int size=Headers.size(hdrs);
         out.writeShort(size);
-        for(Header hdr: hdrs) {
+        for(AbstractHeader hdr: hdrs) {
             if(hdr == null)
                 break;
             out.writeShort(hdr.getProtId());
@@ -780,10 +780,10 @@ public class Message implements Streamable {
             Util.writeAddress(src_addr, out);
 
         // 5. headers
-        Header[] hdrs=this.headers;
+        AbstractHeader[] hdrs=this.headers;
         int size=Headers.size(hdrs, excluded_headers);
         out.writeShort(size);
-        for(Header hdr: hdrs) {
+        for(AbstractHeader hdr: hdrs) {
             if(hdr == null)
                 break;
             short id=hdr.getProtId();
@@ -822,7 +822,7 @@ public class Message implements Streamable {
         this.headers=createHeaders(len);
         for(int i=0; i < len; i++) {
             short id=in.readShort();
-            Header hdr=readHeader(in).setProtId(id);
+            AbstractHeader hdr=readHeader(in).setProtId(id);
             this.headers[i]=hdr;
         }
 
@@ -859,7 +859,7 @@ public class Message implements Streamable {
         headers=createHeaders(len);
         for(int i=0; i < len; i++) {
             short id=in.readShort();
-            Header hdr=readHeader(in).setProtId(id);
+            AbstractHeader hdr=readHeader(in).setProtId(id);
             this.headers[i]=hdr;
         }
 
@@ -937,7 +937,7 @@ public class Message implements Streamable {
         return sb.toString();
     }
 
-    protected static void writeHeader(Header hdr, DataOutput out) throws Exception {
+    protected static void writeHeader(AbstractHeader hdr, DataOutput out) throws Exception {
         short magic_number=ClassConfigurator.getMagicNumber(hdr.getClass());
         out.writeShort(magic_number);
         hdr.writeTo(out);
@@ -945,19 +945,19 @@ public class Message implements Streamable {
 
 
 
-    protected static Header readHeader(DataInput in) throws Exception {
+    protected static AbstractHeader readHeader(DataInput in) throws Exception {
         short magic_number=in.readShort();
         Class clazz=ClassConfigurator.get(magic_number);
         if(clazz == null)
             throw new IllegalArgumentException("magic number " + magic_number + " is not available in magic map");
 
-        Header hdr=(Header)clazz.newInstance();
+        AbstractHeader hdr=(AbstractHeader)clazz.newInstance();
         hdr.readFrom(in);
         return hdr;
     }
 
-    protected static Header[] createHeaders(int size) {
-        return size > 0? new Header[size] : new Header[3];
+    protected static AbstractHeader[] createHeaders(int size) {
+        return size > 0? new AbstractHeader[size] : new AbstractHeader[3];
     }
 
     /* ------------------------------- End of Private methods ---------------------------- */

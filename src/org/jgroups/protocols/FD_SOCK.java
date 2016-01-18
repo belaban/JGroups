@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
 
@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  * @author Bela Ban May 29 2001
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
-public class FD_SOCK extends Protocol implements Runnable {
+public class FD_SOCK extends AbstractProtocol implements Runnable {
     protected static final int NORMAL_TERMINATION=9;
     protected static final int ABNORMAL_TERMINATION=-1;
 
@@ -896,7 +896,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     /* ------------------------------- End of Private Methods ------------------------------------ */
 
 
-    public static class FdHeader extends Header {
+    public static class FdHeader extends AbstractHeader {
         public static final byte SUSPECT       = 10;
         public static final byte UNSUSPECT     = 11;
         public static final byte WHO_HAS_SOCK  = 12;

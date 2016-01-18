@@ -5,7 +5,7 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.stack.NakReceiverWindow;
-import org.jgroups.stack.Retransmitter;
+import org.jgroups.stack.AbstractRetransmitter;
 import org.jgroups.util.DefaultTimeScheduler;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
@@ -19,7 +19,7 @@ import java.io.IOException;
  *
  * @author Bela Ban
  */
-public class NakReceiverWindowStressTest implements Retransmitter.RetransmitCommand {
+public class NakReceiverWindowStressTest implements AbstractRetransmitter.RetransmitCommand {
     NakReceiverWindow win=null;
     final Address sender=Util.createRandomAddress("A");
     int num_msgs=1000, prev_value=0;

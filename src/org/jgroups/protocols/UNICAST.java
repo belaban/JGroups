@@ -6,7 +6,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 
 import java.io.DataInput;
@@ -42,7 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Deprecated
 @MBean(description="Reliable unicast layer")
-public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
+public class UNICAST extends AbstractProtocol implements AgeOutCache.Handler<Address> {
     public static final long DEFAULT_FIRST_SEQNO=Global.DEFAULT_FIRST_UNICAST_SEQNO;
 
 
@@ -993,7 +993,7 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
      * | SEND_FIRST_SEQNO |
      * </pre>
      */
-    public static class UnicastHeader extends Header {
+    public static class UnicastHeader extends AbstractHeader {
         public static final byte DATA             = 0;
         public static final byte ACK              = 1;
         public static final byte SEND_FIRST_SEQNO = 2;

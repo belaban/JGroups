@@ -12,7 +12,7 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 
 import javax.management.MBeanServer;
@@ -252,8 +252,8 @@ public class Util {
      * @param additional_protocols Any number of protocols to add to the top of the returned protocol list
      * @return
      */
-    public static Protocol[] getTestStack(Protocol... additional_protocols) {
-        Protocol[] protocols={
+    public static AbstractProtocol[] getTestStack(AbstractProtocol... additional_protocols) {
+        AbstractProtocol[] protocols={
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
           new NAKACK2(),
@@ -265,7 +265,7 @@ public class Util {
 
         if(additional_protocols == null)
             return protocols;
-        Protocol[] tmp=Arrays.copyOf(protocols,protocols.length + additional_protocols.length);
+        AbstractProtocol[] tmp=Arrays.copyOf(protocols,protocols.length + additional_protocols.length);
         System.arraycopy(additional_protocols, 0, tmp, protocols.length, additional_protocols.length);
         return tmp;
     }
@@ -278,7 +278,7 @@ public class Util {
      * @param channels The channels which should form the view. The expected view size is channels.length.
      *                 Must be non-null
      */
-    public static void waitUntilAllChannelsHaveSameSize(long timeout,long interval,Channel... channels) throws TimeoutException {
+    public static void waitUntilAllChannelsHaveSameSize(long timeout,long interval,AbstractChannel... channels) throws TimeoutException {
         int size=channels.length;
 
         if(interval >= timeout || timeout <= 0)
@@ -286,7 +286,7 @@ public class Util {
         long target_time=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() <= target_time) {
             boolean all_channels_have_correct_size=true;
-            for(Channel ch : channels) {
+            for(AbstractChannel ch : channels) {
                 View view=ch.getView();
                 if(view == null || view.size() != size) {
                     all_channels_have_correct_size=false;
@@ -422,12 +422,12 @@ public class Util {
      * Drops messages to/from other members and then closes the channel. Note that this member won't get excluded from
      * the view until failure detection has kicked in and the new coord installed the new view
      */
-    public static void shutdown(Channel ch) throws Exception {
+    public static void shutdown(AbstractChannel ch) throws Exception {
         DISCARD discard=new DISCARD();
         discard.setLocalAddress(ch.getAddress());
         discard.setDiscardAll(true);
         ProtocolStack stack=ch.getProtocolStack();
-        TP transport=stack.getTransport();
+        AbstractTP transport=stack.getTransport();
         stack.insertProtocol(discard,ProtocolStack.ABOVE,transport.getClass());
 
         //abruptly shutdown FD_SOCK just as in real life when member gets killed non gracefully
@@ -1606,10 +1606,10 @@ public class Util {
                     if(type == Event.MSG) {
                         s+="[";
                         Message m=(Message)event.getArg();
-                        Map<Short,Header> headers=new HashMap<>(m.getHeaders());
-                        for(Map.Entry<Short,Header> entry : headers.entrySet()) {
+                        Map<Short,AbstractHeader> headers=new HashMap<>(m.getHeaders());
+                        for(Map.Entry<Short,AbstractHeader> entry : headers.entrySet()) {
                             short id=entry.getKey();
-                            Header value=entry.getValue();
+                            AbstractHeader value=entry.getValue();
                             String headerToString=null;
                             if(value instanceof FD.FdHeader) {
                                 headerToString=value.toString();
@@ -2204,11 +2204,11 @@ public class Util {
     }
 
 
-    public static JChannel createChannel(Protocol... prots) throws Exception {
+    public static JChannel createChannel(AbstractProtocol... prots) throws Exception {
         JChannel ch=new JChannel(false);
         ProtocolStack stack=new ProtocolStack();
         ch.setProtocolStack(stack);
-        for(Protocol prot : prots) {
+        for(AbstractProtocol prot : prots) {
             stack.addProtocol(prot);
             prot.setProtocolStack(stack);
         }
@@ -2900,10 +2900,10 @@ public class Util {
      * @param randomSleepTimeoutFloor   the minimum sleep time between attempts in ms
      * @param randomSleepTimeoutCeiling the maximum sleep time between attempts in ms
      * @return true if channel was flushed successfully, false otherwise
-     * @see Channel#startFlush(List,boolean)
+     * @see AbstractChannel#startFlush(List,boolean)
      */
-    public static boolean startFlush(Channel c,List<Address> flushParticipants,
-                                     int numberOfAttempts,long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
+    public static boolean startFlush(AbstractChannel c, List<Address> flushParticipants,
+                                     int numberOfAttempts, long randomSleepTimeoutFloor, long randomSleepTimeoutCeiling) {
         int attemptCount=0;
         while(attemptCount < numberOfAttempts) {
             try {
@@ -2922,9 +2922,9 @@ public class Util {
      * Performs the flush of the given channel and the specified flush participants
      * @param c                 the channel
      * @param flushParticipants the flush participants in this flush attempt
-     * @see Channel#startFlush(List,boolean)
+     * @see AbstractChannel#startFlush(List,boolean)
      */
-    public static boolean startFlush(Channel c,List<Address> flushParticipants) {
+    public static boolean startFlush(AbstractChannel c, List<Address> flushParticipants) {
         return startFlush(c,flushParticipants,4,1000,5000);
     }
 
@@ -2936,9 +2936,9 @@ public class Util {
      * @param randomSleepTimeoutFloor   the minimum sleep time between attempts in ms
      * @param randomSleepTimeoutCeiling the maximum sleep time between attempts in ms
      * @return true if channel was flushed successfully, false otherwise
-     * @see Channel#startFlush(boolean)
+     * @see AbstractChannel#startFlush(boolean)
      */
-    public static boolean startFlush(Channel c,int numberOfAttempts,long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
+    public static boolean startFlush(AbstractChannel c, int numberOfAttempts, long randomSleepTimeoutFloor, long randomSleepTimeoutCeiling) {
         int attemptCount=0;
         while(attemptCount < numberOfAttempts) {
             try {
@@ -2957,9 +2957,9 @@ public class Util {
      * Performs the flush of the given channel
      * @param c the channel
      * @return true if channel was flushed successfully, false otherwise
-     * @see Channel#startFlush(boolean)
+     * @see AbstractChannel#startFlush(boolean)
      */
-    public static boolean startFlush(Channel c) {
+    public static boolean startFlush(AbstractChannel c) {
         return startFlush(c,4,1000,5000);
     }
 

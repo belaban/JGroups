@@ -411,13 +411,13 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
 
     /* ------------------------------ ChannelListener interface -------------------------- */
 
-    public void channelConnected(Channel channel) {
+    public void channelConnected(AbstractChannel channel) {
         if(jmx) {
             Util.registerChannel((JChannel)channel, "jgroups");
         }
     }
 
-    public void channelDisconnected(Channel channel) {
+    public void channelDisconnected(AbstractChannel channel) {
         if(jmx) {
             MBeanServer server=Util.getMBeanServer();
             if(server != null) {
@@ -431,7 +431,7 @@ public class Draw extends ReceiverAdapter implements ActionListener, ChannelList
         }
     }
 
-    public void channelClosed(Channel channel) {
+    public void channelClosed(AbstractChannel channel) {
 
     }
 

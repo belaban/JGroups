@@ -23,8 +23,8 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author Bela Ban
  */
-public abstract class Request implements NotifyingFuture, org.jgroups.util.Condition {
-    protected static final Log        log=LogFactory.getLog(Request.class);
+public abstract class AbstractRequest implements NotifyingFuture, org.jgroups.util.Condition {
+    protected static final Log        log=LogFactory.getLog(AbstractRequest.class);
 
     protected final Lock              lock=new ReentrantLock();
 
@@ -39,7 +39,7 @@ public abstract class Request implements NotifyingFuture, org.jgroups.util.Condi
 
 
     
-    public Request(Message request, RequestCorrelator corr, RequestOptions options) {
+    public AbstractRequest(Message request, RequestCorrelator corr, RequestOptions options) {
         this.request_msg=request;
         this.corr=corr;
         this.options=options;

@@ -2,7 +2,7 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.Global;
-import org.jgroups.Header;
+import org.jgroups.AbstractHeader;
 import org.jgroups.util.AsciiString;
 
 import java.io.DataInput;
@@ -14,7 +14,7 @@ import java.io.DataOutput;
  * Generic transport header, used by TP.
  * @author Bela Ban
  */
-public class TpHeader extends Header {
+public class TpHeader extends AbstractHeader {
     protected byte[] cluster_name;
 
     public TpHeader() { // used for externalization

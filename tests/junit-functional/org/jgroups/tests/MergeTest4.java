@@ -138,7 +138,7 @@ public class MergeTest4 {
         members.add(coord);
         View coord_view=new View(coord, 4, members);
         System.out.println("coord_view: " + coord_view);
-        Channel coord_channel = findChannel(coord);
+        AbstractChannel coord_channel = findChannel(coord);
         System.out.println("coord_channel: " + coord_channel.getAddress());
         
         MutableDigest digest=new MutableDigest(coord_view.getMembersRaw());

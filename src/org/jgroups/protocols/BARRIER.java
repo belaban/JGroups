@@ -8,7 +8,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Blocks all multicast threads when closed")
-public class BARRIER extends Protocol {
+public class BARRIER extends AbstractProtocol {
     
     @Property(description="Max time barrier can be closed. Default is 60000 ms")
     protected long                       max_close_time=60000; // how long can the barrier stay closed (in ms) ? 0 means forever
@@ -65,7 +65,7 @@ public class BARRIER extends Protocol {
     // queues unicast messages or message batches (dest != null)
     protected final Map<Address,Message> ucast_queue=new ConcurrentHashMap<>();
 
-    protected TP                         transport;
+    protected AbstractTP transport;
 
     protected static final Object        NULL=new Object();
 

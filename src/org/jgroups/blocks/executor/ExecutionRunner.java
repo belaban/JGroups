@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.jgroups.JChannel;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.Executing;
+import org.jgroups.protocols.AbstractExecuting;
 
 /**
  * This class is to be used to pick up execution requests and actually run
@@ -21,7 +21,7 @@ import org.jgroups.protocols.Executing;
  */
 public class ExecutionRunner implements Runnable {
     protected JChannel ch;
-    protected Executing _execProt;
+    protected AbstractExecuting _execProt;
     
     public ExecutionRunner(JChannel channel) {
         setChannel(channel);
@@ -29,10 +29,10 @@ public class ExecutionRunner implements Runnable {
     
     public void setChannel(JChannel ch) {
         this.ch=ch;
-        _execProt=(Executing)ch.getProtocolStack().findProtocol(Executing.class);
+        _execProt=(AbstractExecuting)ch.getProtocolStack().findProtocol(AbstractExecuting.class);
         if(_execProt == null)
             throw new IllegalStateException("Channel configuration must include a executing protocol " +
-                                              "(subclass of " + Executing.class.getName() + ")");
+                                              "(subclass of " + AbstractExecuting.class.getName() + ")");
     }
     
     protected static class Holder<T> {

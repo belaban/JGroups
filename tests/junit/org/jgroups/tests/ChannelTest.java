@@ -133,7 +133,7 @@ public class ChannelTest extends ChannelTestBase {
         ch1.setReceiver(checker);
         ch1.connect("testViewChange");
 
-        Channel ch2=createChannel(ch1);
+        AbstractChannel ch2=createChannel(ch1);
         try {
             ch2.connect("testViewChange");
             assertTrue(checker.getReason(), checker.isSuccess());
@@ -148,7 +148,7 @@ public class ChannelTest extends ChannelTestBase {
 
     public void testIsConnectedOnFirstViewChange() throws Exception {
         JChannel ch1 = createChannel(true,2);        
-        Channel ch2=createChannel(ch1);
+        AbstractChannel ch2=createChannel(ch1);
         ConnectedChecker tmp=new ConnectedChecker(ch2);
         ch2.setReceiver(tmp);
         try {
@@ -165,7 +165,7 @@ public class ChannelTest extends ChannelTestBase {
 
     public void testNoViewIsReceivedAfterDisconnect() throws Exception {
         JChannel ch1 = createChannel(true,2);        
-        Channel ch2=createChannel(ch1);
+        AbstractChannel ch2=createChannel(ch1);
         MyViewChecker ra = new MyViewChecker(ch2);
         ch2.setReceiver(ra);
 
@@ -185,7 +185,7 @@ public class ChannelTest extends ChannelTestBase {
 
     public void testNoViewIsReceivedAfterClose() throws Exception {
         JChannel ch1 = createChannel(true,2);        
-        Channel ch2=createChannel(ch1);
+        AbstractChannel ch2=createChannel(ch1);
         MyViewChecker ra = new MyViewChecker(ch2);
         ch2.setReceiver(ra);
 
@@ -284,11 +284,11 @@ public class ChannelTest extends ChannelTestBase {
     private static class ConnectedChecker extends ReceiverAdapter {
         boolean connected=false;
 
-        public ConnectedChecker(Channel channel) {
+        public ConnectedChecker(AbstractChannel channel) {
             this.channel=channel;
         }
 
-        final Channel channel;
+        final AbstractChannel channel;
 
         public boolean isConnected() {
             return connected;
@@ -300,11 +300,11 @@ public class ChannelTest extends ChannelTestBase {
     }
 
     private static class ViewChecker extends ReceiverAdapter {
-        final Channel channel;
+        final AbstractChannel channel;
         boolean success=true;
         String reason="";
 
-        public ViewChecker(Channel channel) {
+        public ViewChecker(AbstractChannel channel) {
             this.channel=channel;
         }
 
@@ -330,9 +330,9 @@ public class ChannelTest extends ChannelTestBase {
 
     private static class MyViewChecker extends ReceiverAdapter {
         private boolean receivedViewWhenDisconnected;
-        private final Channel ch;
+        private final AbstractChannel ch;
 
-        public MyViewChecker(Channel ch) {
+        public MyViewChecker(AbstractChannel ch) {
             this.ch=ch;
         }
 

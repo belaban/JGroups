@@ -1,8 +1,8 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Global;
-import org.jgroups.Header;
-import org.jgroups.auth.AuthToken;
+import org.jgroups.AbstractHeader;
+import org.jgroups.auth.AbstractAuthToken;
 import org.jgroups.conf.ClassConfigurator;
 
 import java.io.DataInput;
@@ -12,22 +12,22 @@ import java.io.DataOutput;
  * @author Chris Mills
  * @author Bela Ban
  */
-public class AuthHeader extends Header {
-    protected AuthToken token=null;
+public class AuthHeader extends AbstractHeader {
+    protected AbstractAuthToken token=null;
 
 
     public AuthHeader() {
     }
 
-    public AuthHeader(AuthToken token) {
+    public AuthHeader(AbstractAuthToken token) {
         this.token=token;
     }
 
 
-    public void       setToken(AuthToken token) {this.token = token;}
-    public AuthToken  getToken()                {return this.token;}
-    public AuthHeader token(AuthToken token)    {this.token=token; return this;}
-    public AuthToken  token()                   {return this.token;}
+    public void       setToken(AbstractAuthToken token) {this.token = token;}
+    public AbstractAuthToken getToken()                {return this.token;}
+    public AuthHeader token(AbstractAuthToken token)    {this.token=token; return this;}
+    public AbstractAuthToken token()                   {return this.token;}
 
 
     public void writeTo(DataOutput out) throws Exception {
@@ -47,7 +47,7 @@ public class AuthHeader extends Header {
     }
 
 
-    protected static void writeAuthToken(DataOutput out, AuthToken tok) throws Exception {
+    protected static void writeAuthToken(DataOutput out, AbstractAuthToken tok) throws Exception {
         out.writeByte(tok == null? 0 : 1);
         if(tok == null) return;
         short id=ClassConfigurator.getMagicNumber(tok.getClass());
@@ -59,7 +59,7 @@ public class AuthHeader extends Header {
         tok.writeTo(out);
     }
 
-    protected static AuthToken readAuthToken(DataInput in) throws Exception {
+    protected static AbstractAuthToken readAuthToken(DataInput in) throws Exception {
         if(in.readByte() == 0) return null;
         short id=in.readShort();
         Class<?> clazz;
@@ -70,12 +70,12 @@ public class AuthHeader extends Header {
             String classname=in.readUTF();
             clazz=Class.forName(classname);
         }
-        AuthToken retval=(AuthToken)clazz.newInstance();
+        AbstractAuthToken retval=(AbstractAuthToken)clazz.newInstance();
         retval.readFrom(in);
         return retval;
     }
 
-    protected static int sizeOf(AuthToken tok) {
+    protected static int sizeOf(AbstractAuthToken tok) {
         int retval=Global.BYTE_SIZE; // null token ?
         if(tok == null) return retval;
 

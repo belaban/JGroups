@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -37,7 +37,7 @@ public class NAKACK_Delivery_Test {
         b=Util.createRandomAddress("B");
         nak=new NAKACK2();
 
-        TP transport=new TP() {
+        AbstractTP transport=new AbstractTP() {
             public boolean supportsMulticasting() {return false;}
             public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {}
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
@@ -163,7 +163,7 @@ public class NAKACK_Delivery_Test {
     }
 
 
-    static class MyReceiver extends Protocol {
+    static class MyReceiver extends AbstractProtocol {
         final ConcurrentMap<Address, Collection<Message>> msgs=new ConcurrentHashMap<>();
 
         public ConcurrentMap<Address, Collection<Message>> getMsgs() {

@@ -22,10 +22,10 @@ import java.io.DataOutput;
  * <li>auth_value (required) = the string to encrypt</li>
  * </ul>
  * 
- * @see org.jgroups.auth.AuthToken
+ * @see AbstractAuthToken
  * @author Chris Mills
  */
-public class MD5Token extends AuthToken {
+public class MD5Token extends AbstractAuthToken {
 
     @Property(exposeAsManagedAttribute=false)
     private String auth_value = null;
@@ -91,7 +91,7 @@ public class MD5Token extends AuthToken {
         return hashedToken;
     }
 
-    public boolean authenticate(AuthToken token, Message msg) {
+    public boolean authenticate(AbstractAuthToken token, Message msg) {
 
         if ((token != null) && (token instanceof MD5Token)) {
             // Found a valid Token to authenticate against

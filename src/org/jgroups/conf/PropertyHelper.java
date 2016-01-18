@@ -4,7 +4,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.Configurator;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
@@ -68,7 +68,7 @@ import java.util.Map;
     					field.getName() + " which is not annotated with @Property") ;
     		}
 			String propertyName = getPropertyName(field, props) ;
-			String name = obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+			String name = obj instanceof AbstractProtocol ? ((AbstractProtocol)obj).getName() : obj.getClass().getName();
 
     		PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
     		if(propertyConverter == null) {    				
@@ -77,7 +77,7 @@ import java.util.Map;
     		}
     		Object converted = null ;
 			try {
-                String tmp=obj instanceof Protocol? ((Protocol)obj).getName() + "." + propertyName : propertyName;
+                String tmp=obj instanceof AbstractProtocol ? ((AbstractProtocol)obj).getName() + "." + propertyName : propertyName;
 				converted=propertyConverter.convert(obj, field.getType(), tmp, prop, check_scope);
 			}
 			catch(Exception e) {
@@ -100,7 +100,7 @@ import java.util.Map;
                         field.getName() + " which is not annotated with @Property");
             }
             String propertyName=field.getName();
-            String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+            String name=obj instanceof AbstractProtocol ? ((AbstractProtocol)obj).getName() : obj.getClass().getName();
 
             PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
             if(propertyConverter == null) {
@@ -109,7 +109,7 @@ import java.util.Map;
             }
             Object converted=null;
             try {
-                String tmp=obj instanceof Protocol? ((Protocol)obj).getName() + "." + propertyName : propertyName;
+                String tmp=obj instanceof AbstractProtocol ? ((AbstractProtocol)obj).getName() + "." + propertyName : propertyName;
                 converted=propertyConverter.convert(obj, field.getType(), tmp, value, check_scope);
             }
             catch(Exception e) {
@@ -139,7 +139,7 @@ import java.util.Map;
     					method.getName() + " which is not annotated with @Property") ;
     		}
     		String propertyName = getPropertyName(method) ;
-    		String name = obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+    		String name = obj instanceof AbstractProtocol ? ((AbstractProtocol)obj).getName() : obj.getClass().getName();
     		PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
     		if(propertyConverter == null) {    				
     			throw new Exception("Could not find property converter for method " + propertyName
@@ -147,7 +147,7 @@ import java.util.Map;
     		}
     		Object converted = null ;
     		try {
-                String tmp=obj instanceof Protocol? ((Protocol)obj).getName() + "." + propertyName : propertyName;
+                String tmp=obj instanceof AbstractProtocol ? ((AbstractProtocol)obj).getName() + "." + propertyName : propertyName;
     			converted=propertyConverter.convert(obj, method.getParameterTypes()[0], tmp, prop, check_scope);
     		}
     		catch(Exception e) {

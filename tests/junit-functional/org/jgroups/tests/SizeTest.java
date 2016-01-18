@@ -925,13 +925,13 @@ public class SizeTest {
         assert len == serialized_form.length;
     }
 
-    private static void _testSize(Header hdr) throws Exception {
+    private static void _testSize(AbstractHeader hdr) throws Exception {
         long size=hdr.size();
         byte[] serialized_form=Util.streamableToByteBuffer(hdr);
         System.out.println(hdr.getClass().getSimpleName() + ": size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
 
-        Header hdr2=(Header)Util.streamableFromByteBuffer(hdr.getClass(), serialized_form);
+        AbstractHeader hdr2=(AbstractHeader)Util.streamableFromByteBuffer(hdr.getClass(), serialized_form);
         assert hdr2.size() == hdr.size();
     }
 

@@ -9,7 +9,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ConfiguratorFactory;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 import org.w3c.dom.*;
 
@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * @since  3.3
  */
 @MBean(description="Supervises the running stack, taking corrective actions if necessary")
-public class SUPERVISOR extends Protocol {
+public class SUPERVISOR extends AbstractProtocol {
     protected Address                     local_addr;
 
     protected volatile View               view;
@@ -43,7 +43,7 @@ public class SUPERVISOR extends Protocol {
     protected String                      config;
 
     // hashmap of rules, keys are rule names and values futures to the rules
-    protected final Map<String,Tuple<Rule,Future<?>>> rules=new HashMap<>();
+    protected final Map<String,Tuple<AbstractRule,Future<?>>> rules=new HashMap<>();
 
     protected final List<EventHandler>    event_handlers=new ArrayList<>();
 
@@ -82,10 +82,10 @@ public class SUPERVISOR extends Protocol {
     @ManagedOperation(description="Prints all currently installed rules")
     public String dumpRules() {
         StringBuilder sb=new StringBuilder();
-        for(Map.Entry<String,Tuple<Rule,Future<?>>> entry: rules.entrySet()) {
+        for(Map.Entry<String,Tuple<AbstractRule,Future<?>>> entry: rules.entrySet()) {
             String key=entry.getKey();
-            Tuple<Rule,Future<?>> tuple=entry.getValue();
-            Rule rule=tuple.getVal1();
+            Tuple<AbstractRule,Future<?>> tuple=entry.getValue();
+            AbstractRule rule=tuple.getVal1();
             sb.append(key + ": " + rule.description() + "\n");
         }
         return sb.toString();
@@ -115,7 +115,7 @@ public class SUPERVISOR extends Protocol {
     }
 
     public void destroy() {
-        for(Tuple<Rule,Future<?>> tuple: rules.values())
+        for(Tuple<AbstractRule,Future<?>> tuple: rules.values())
             tuple.getVal2().cancel(true);
         rules.clear();
         super.destroy();
@@ -126,7 +126,7 @@ public class SUPERVISOR extends Protocol {
      * @param interval Number of ms between executions of the rule
      * @param rule The rule
      */
-    public void installRule(long interval, Rule rule) {
+    public void installRule(long interval, AbstractRule rule) {
         installRule(null, interval, rule);
     }
 
@@ -136,18 +136,18 @@ public class SUPERVISOR extends Protocol {
      * @param interval Number of ms between executions of the rule
      * @param rule The rule
      */
-    public void installRule(String name, long interval, Rule rule) {
+    public void installRule(String name, long interval, AbstractRule rule) {
         rule.supervisor(this).log(log).init();
         Future<?> future=timer.scheduleAtFixedRate(rule, interval, interval, TimeUnit.MILLISECONDS);
-        Tuple<Rule,Future<?>> existing=rules.put(name != null? name : rule.name(), new Tuple<Rule,Future<?>>(rule, future));
+        Tuple<AbstractRule,Future<?>> existing=rules.put(name != null? name : rule.name(), new Tuple<AbstractRule,Future<?>>(rule, future));
         if(existing != null)
             existing.getVal2().cancel(true);
     }
 
     @ManagedOperation(description="Installs the given rule with the given classname")
     public void installRule(String name, long interval, String classname) throws Exception {
-        Class<Rule> clazz=Util.loadClass(classname,getClass());
-        Rule rule=clazz.newInstance();
+        Class<AbstractRule> clazz=Util.loadClass(classname,getClass());
+        AbstractRule rule=clazz.newInstance();
         installRule(name, interval, rule);
     }
 
@@ -159,7 +159,7 @@ public class SUPERVISOR extends Protocol {
     @ManagedOperation(description="Uninstalls the named rule")
     public void uninstallRule(String name) {
         if(name != null) {
-            Tuple<Rule,Future<?>> tuple=rules.remove(name);
+            Tuple<AbstractRule,Future<?>> tuple=rules.remove(name);
             if(tuple != null) {
                 tuple.getVal2().cancel(true);
                 tuple.getVal1().destroy();
@@ -275,8 +275,8 @@ public class SUPERVISOR extends Protocol {
           classname_attr=(Attr)attrs.getNamedItem(CLASS),
           interval_attr=(Attr)attrs.getNamedItem(INTERVAL);
 
-        Class<Rule> clazz=Util.loadClass(classname_attr.getValue(), getClass());
-        Rule rule=clazz.newInstance();
+        Class<AbstractRule> clazz=Util.loadClass(classname_attr.getValue(), getClass());
+        AbstractRule rule=clazz.newInstance();
         long interval=Long.parseLong(interval_attr.getValue());
         installRule(name_attr.getValue(), interval, rule);
     }

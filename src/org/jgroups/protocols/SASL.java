@@ -25,7 +25,7 @@ import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.GMS.GmsHeader;
 import org.jgroups.protocols.pbcast.JoinRsp;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 
 /**
@@ -34,7 +34,7 @@ import org.jgroups.util.MessageBatch;
  * @author Tristan Tarrant
  */
 @MBean(description = "Provides SASL authentication")
-public class SASL extends Protocol {
+public class SASL extends AbstractProtocol {
     public static final short GMS_ID = ClassConfigurator.getProtocolId(GMS.class);
     public static final short SASL_ID = ClassConfigurator.getProtocolId(SASL.class);
     public static final String SASL_PROTOCOL_NAME = "jgroups";

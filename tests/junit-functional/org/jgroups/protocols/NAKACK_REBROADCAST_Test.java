@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -29,7 +29,7 @@ public class NAKACK_REBROADCAST_Test {
         nak=new NAKACK2();
         interceptor = new MessageInterceptor();
         nak.setDownProtocol(interceptor);
-        TP transport=new TP() {
+        AbstractTP transport=new AbstractTP() {
             public boolean supportsMulticasting() {return false;}
             public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {}
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
@@ -73,7 +73,7 @@ public class NAKACK_REBROADCAST_Test {
         	Assert.assertTrue(i == 1);
     }
 
-    static class MessageInterceptor extends Protocol {
+    static class MessageInterceptor extends AbstractProtocol {
         private SeqnoList range;
 
         public MessageInterceptor () {

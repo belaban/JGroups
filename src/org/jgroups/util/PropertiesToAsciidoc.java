@@ -3,7 +3,7 @@ package org.jgroups.util;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -45,13 +45,13 @@ public class PropertiesToAsciidoc {
             copy(new FileReader(new File(prot_file)), new FileWriter(f));
             String s = fileToString(f);
 
-            Set<Class<Protocol>> classes = Util.findClassesAssignableFrom("org.jgroups.protocols",Protocol.class);
-            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.pbcast",Protocol.class));
-            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.relay",Protocol.class));
-            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.rules",Protocol.class));
-            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.tom",Protocol.class));
+            Set<Class<AbstractProtocol>> classes = Util.findClassesAssignableFrom("org.jgroups.protocols",AbstractProtocol.class);
+            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.pbcast",AbstractProtocol.class));
+            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.relay",AbstractProtocol.class));
+            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.rules",AbstractProtocol.class));
+            classes.addAll(Util.findClassesAssignableFrom("org.jgroups.protocols.tom",AbstractProtocol.class));
             Properties props = new Properties();
-            for (Class<Protocol> clazz : classes)
+            for (Class<AbstractProtocol> clazz : classes)
                 convertProtocolToAsciidocTable(props,clazz);
             String result = Util.replaceProperties(s, props);
             FileWriter fw = new FileWriter(f, false);
@@ -120,7 +120,7 @@ public class PropertiesToAsciidoc {
     }
 
 
-    private static void convertProtocolToAsciidocTable(Properties props, Class<Protocol> clazz) throws Exception {
+    private static void convertProtocolToAsciidocTable(Properties props, Class<AbstractProtocol> clazz) throws Exception {
         boolean isUnsupported = clazz.isAnnotationPresent(Unsupported.class);
         if (isUnsupported)
             return;

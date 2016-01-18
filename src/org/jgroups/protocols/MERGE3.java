@@ -6,7 +6,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 
@@ -34,7 +34,7 @@ import java.util.concurrent.Future;
  * @since 3.1
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
-public class MERGE3 extends Protocol {
+public class MERGE3 extends AbstractProtocol {
     
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
@@ -513,7 +513,7 @@ public class MERGE3 extends Protocol {
     }
 
 
-    public static class MergeHeader extends Header {
+    public static class MergeHeader extends AbstractHeader {
         protected Type                        type=Type.INFO;
         protected ViewId                      view_id;
         protected String                      logical_name;

@@ -5,7 +5,7 @@ import org.jgroups.JChannel;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.StateTransferException;
 import org.jgroups.protocols.pbcast.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ArrayIterator;
 import org.jgroups.util.Util;
@@ -103,13 +103,13 @@ public class StateTransferTest2 extends ChannelTestBase {
         ProtocolStack stack=ch.getProtocolStack();
         if(stack.findProtocol(state_transfer_class) != null)
             return; // protocol of the right class is already in stack
-        Protocol prot=stack.findProtocol(STATE_TRANSFER.class, StreamingStateTransfer.class);
-        Protocol new_state_transfer_protcol=(Protocol)state_transfer_class.newInstance();
+        AbstractProtocol prot=stack.findProtocol(STATE_TRANSFER.class, AbstractStreamingStateTransfer.class);
+        AbstractProtocol new_state_transfer_protcol=(AbstractProtocol)state_transfer_class.newInstance();
         if(prot != null) {
             stack.replaceProtocol(prot, new_state_transfer_protcol);
         }
         else { // no state transfer protocol found in stack
-            Protocol flush=stack.findProtocol(FLUSH.class);
+            AbstractProtocol flush=stack.findProtocol(FLUSH.class);
             if(flush != null)
                 stack.insertProtocol(new_state_transfer_protcol, ProtocolStack.BELOW, FLUSH.class);
             else

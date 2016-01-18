@@ -3,7 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -110,7 +110,7 @@ public class NAKACK_RetransmitTest {
 
     protected static void change(JChannel ... channels) {
         for(JChannel ch: channels) {
-            TP transport=ch.getProtocolStack().getTransport();
+            AbstractTP transport=ch.getProtocolStack().getTransport();
             transport.setMaxBundleSize(MAX_BUNDLE_SIZE);
             NAKACK2 nak=(NAKACK2)ch.getProtocolStack().findProtocol(NAKACK2.class);
             if(nak == null)
@@ -161,13 +161,13 @@ public class NAKACK_RetransmitTest {
 
     protected static void setLevel(String level, JChannel ... channels) {
         for(JChannel ch: channels) {
-            Protocol prot=ch.getProtocolStack().findProtocol(NAKACK2.class);
+            AbstractProtocol prot=ch.getProtocolStack().findProtocol(NAKACK2.class);
             prot.level(level);
         }
     }
 
 
-    protected static class DiscardEveryOtherMulticastMessage extends Protocol {
+    protected static class DiscardEveryOtherMulticastMessage extends AbstractProtocol {
         protected boolean discard=false;
 
         public Object down(Event evt) {

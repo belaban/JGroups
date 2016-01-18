@@ -7,7 +7,7 @@ import org.jgroups.Global;
 import org.jgroups.stack.DefaultRetransmitter;
 import org.jgroups.stack.ExponentialInterval;
 import org.jgroups.stack.RangeBasedRetransmitter;
-import org.jgroups.stack.Retransmitter;
+import org.jgroups.stack.AbstractRetransmitter;
 import org.jgroups.util.*;
 import org.testng.Assert;
 import org.testng.annotations.*;
@@ -34,16 +34,16 @@ public class RetransmitterTest {
 
 
     @DataProvider(name="createRetransmitter")
-    protected Retransmitter[][] createRetransmitter() {
-        Retransmitter range_based_retransmitter=new RangeBasedRetransmitter(sender, new MyXmitter(), timer);
-        Retransmitter old_retransmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
+    protected AbstractRetransmitter[][] createRetransmitter() {
+        AbstractRetransmitter range_based_retransmitter=new RangeBasedRetransmitter(sender, new MyXmitter(), timer);
+        AbstractRetransmitter old_retransmitter=new DefaultRetransmitter(sender, new MyXmitter(), timer);
 
         range_based_retransmitter.setRetransmitTimeouts(new ExponentialInterval(1000));
         range_based_retransmitter.reset();
         old_retransmitter.setRetransmitTimeouts(new ExponentialInterval(1000));
         old_retransmitter.reset();
 
-        return new Retransmitter[][] {
+        return new AbstractRetransmitter[][] {
           {old_retransmitter},
           {range_based_retransmitter}
         };
@@ -53,7 +53,7 @@ public class RetransmitterTest {
 
 
     @Test(dataProvider="createRetransmitter")
-    public void testNoEntry(Retransmitter xmitter) {
+    public void testNoEntry(AbstractRetransmitter xmitter) {
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
         Assert.assertEquals(0, size);
@@ -61,7 +61,7 @@ public class RetransmitterTest {
 
 
     @Test(dataProvider="createRetransmitter")
-    public void testSingleEntry(Retransmitter xmitter) {
+    public void testSingleEntry(AbstractRetransmitter xmitter) {
         xmitter.add(1, 1);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
@@ -70,7 +70,7 @@ public class RetransmitterTest {
 
 
     @Test(dataProvider="createRetransmitter")
-    public void testEntry(Retransmitter xmitter) {
+    public void testEntry(AbstractRetransmitter xmitter) {
         xmitter.add(1, 10);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
@@ -79,7 +79,7 @@ public class RetransmitterTest {
 
 
     @Test(dataProvider="createRetransmitter")
-    public void testMultipleEntries(Retransmitter xmitter) {
+    public void testMultipleEntries(AbstractRetransmitter xmitter) {
         xmitter.add(1, 10);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
@@ -138,7 +138,7 @@ public class RetransmitterTest {
      * @param xmitter
      */
     @Test(dataProvider="createRetransmitter")
-    public void testRanges(Retransmitter xmitter) {
+    public void testRanges(AbstractRetransmitter xmitter) {
         xmitter.add(100, 200);
         xmitter.add(300, 400);
         System.out.println("xmitter (" + xmitter.getClass().getCanonicalName() + "): " + xmitter);
@@ -146,7 +146,7 @@ public class RetransmitterTest {
     }
 
     @Test(dataProvider="createRetransmitter")
-    public void testAddAndRemoveIndividualSeqnos(Retransmitter xmitter) {
+    public void testAddAndRemoveIndividualSeqnos(AbstractRetransmitter xmitter) {
         int NUM=100;
         List<Long> seqnos=new ArrayList<>(NUM);
         for(long i=1; i <= NUM; i++) {
@@ -167,7 +167,7 @@ public class RetransmitterTest {
 
 
     @Test(dataProvider="createRetransmitter")
-    public void testAddAndRemoveRanges(Retransmitter xmitter) {
+    public void testAddAndRemoveRanges(AbstractRetransmitter xmitter) {
         int NUM=100;
         List<Long> seqnos=new ArrayList<>(NUM);
         for(long i=1; i <= NUM; i++)
@@ -187,7 +187,7 @@ public class RetransmitterTest {
     }
 
 
-    static class MyXmitter implements Retransmitter.RetransmitCommand {
+    static class MyXmitter implements AbstractRetransmitter.RetransmitCommand {
 
         public void retransmit(long first_seqno, long last_seqno, Address sender) {
         }

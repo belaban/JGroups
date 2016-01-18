@@ -6,7 +6,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
@@ -47,8 +47,8 @@ public class JmxConfigurator {
 
         if (register_protocols) {
             ProtocolStack stack = channel.getProtocolStack();
-            List<Protocol> protocols = stack.getProtocols();
-            for (Protocol p : protocols) {
+            List<AbstractProtocol> protocols = stack.getProtocols();
+            for (AbstractProtocol p : protocols) {
                 if (p.getClass().isAnnotationPresent(MBean.class)) {
                     String jmx_name=getProtocolRegistrationName(cluster_name,domain,p);
                     register(p, server, jmx_name);
@@ -97,8 +97,8 @@ public class JmxConfigurator {
             clusterName=ObjectName.quote(clusterName);
 
         ProtocolStack stack = c.getProtocolStack();
-        List<Protocol> protocols = stack.getProtocols();
-        for (Protocol p : protocols) {
+        List<AbstractProtocol> protocols = stack.getProtocols();
+        for (AbstractProtocol p : protocols) {
             if (p.getClass().isAnnotationPresent(MBean.class)) {
                 try {
                     String obj_name=getProtocolRegistrationName(clusterName, domain, p);
@@ -148,7 +148,7 @@ public class JmxConfigurator {
      * @param p protocol to be wrapped
      * @return Protocol p as a DynamicMBean
      */
-    public static DynamicMBean wrap(Protocol p) {
+    public static DynamicMBean wrap(AbstractProtocol p) {
         return new ResourceDMBean(p);
     }
 
@@ -230,7 +230,7 @@ public class JmxConfigurator {
         return domain + ":type=channel,cluster=" + clusterName;
     }
 
-    private static String getProtocolRegistrationName(String clusterName, String domain, Protocol p) {
+    private static String getProtocolRegistrationName(String clusterName, String domain, AbstractProtocol p) {
         return domain + ":type=protocol,cluster=" + clusterName + ",protocol=" + p.getName();
     }
 

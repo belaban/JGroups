@@ -1,7 +1,7 @@
 package org.jgroups.blocks;
 
 
-import org.jgroups.Channel;
+import org.jgroups.AbstractChannel;
 import org.jgroups.Global;
 import org.jgroups.tests.ChannelTestBase;
 import org.testng.annotations.AfterClass;
@@ -16,7 +16,7 @@ import java.io.NotSerializableException;
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
 public class RpcDispatcherExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
-    Channel channel;
+    AbstractChannel channel;
     private final Target target=new Target();
 
     @BeforeClass

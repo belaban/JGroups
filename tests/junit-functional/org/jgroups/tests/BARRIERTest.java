@@ -17,9 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class BARRIERTest {
     protected JChannel  ch;
-    protected Discovery discovery_prot;
+    protected AbstractDiscovery discovery_prot;
     protected BARRIER   barrier_prot;
-    protected TP        tp;
+    protected AbstractTP tp;
 
 
     @BeforeMethod void setUp() throws Exception {

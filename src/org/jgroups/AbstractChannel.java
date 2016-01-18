@@ -6,7 +6,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.DefaultSocketFactory;
 import org.jgroups.util.SocketFactory;
@@ -54,7 +54,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @see JChannel
  */
 @MBean(description="Channel")
-public abstract class Channel implements Closeable {
+public abstract class AbstractChannel implements Closeable {
 
     public enum State {
         OPEN,       // initial state, after channel has been created, or after a disconnect()
@@ -88,7 +88,7 @@ public abstract class Channel implements Closeable {
     public void setSocketFactory(SocketFactory factory) {
         socket_factory=factory;
         ProtocolStack stack=getProtocolStack();
-        Protocol prot=stack != null? stack.getTopProtocol() : null;
+        AbstractProtocol prot=stack != null? stack.getTopProtocol() : null;
         if(prot != null)
             prot.setSocketFactory(factory);
     }
@@ -171,7 +171,7 @@ public abstract class Channel implements Closeable {
    @ManagedAttribute public boolean isConnected()  {return state == State.CONNECTED;}
 
     /**
-     * Determines whether the channel is in the connecting state; this means {@link Channel#connect(String)} has been
+     * Determines whether the channel is in the connecting state; this means {@link AbstractChannel#connect(String)} has been
      * called, but hasn't returned yet
      * @return true if the channel is in the connecting state, false otherwise
      */
@@ -317,7 +317,7 @@ public abstract class Channel implements Closeable {
     abstract public void setName(String name);
 
     /** Names a channel, same as {@link #setName(String)} */
-    abstract public Channel name(String name);
+    abstract public AbstractChannel name(String name);
 
 
    /**
@@ -402,7 +402,7 @@ public abstract class Channel implements Closeable {
 
    /**
     * Returns a receiver for this channel if it has been installed using
-    * {@link Channel#setReceiver(Receiver)} , null otherwise
+    * {@link AbstractChannel#setReceiver(Receiver)} , null otherwise
     * 
     * @return a receiver installed on this channel
     */
@@ -440,7 +440,7 @@ public abstract class Channel implements Closeable {
     * @param automatic_resume
     *           if true call {@link #stopFlush()} after the flush
     * @see #startFlush(boolean)
-    * @see Util#startFlush(Channel, List, int, long, long)
+    * @see Util#startFlush(AbstractChannel, List, int, long, long)
     */
     abstract public void startFlush(List<Address> flushParticipants, boolean automatic_resume)
                 throws Exception;
@@ -458,7 +458,7 @@ public abstract class Channel implements Closeable {
     * @param automatic_resume
     *           if true call {@link #stopFlush()} after the flush
     *
-    * @see Util#startFlush(Channel, List, int, long, long)
+    * @see Util#startFlush(AbstractChannel, List, int, long, long)
     */
     abstract public void startFlush(boolean automatic_resume) throws Exception;
     
@@ -466,8 +466,8 @@ public abstract class Channel implements Closeable {
     * Stops the current flush of the cluster. Cluster members are unblocked and allowed to send new
     * and pending messages.
     *
-    * @see Channel#startFlush(boolean)
-    * @see Channel#startFlush(List, boolean)
+    * @see AbstractChannel#startFlush(boolean)
+    * @see AbstractChannel#startFlush(List, boolean)
     */
    abstract public void stopFlush();
     
@@ -514,7 +514,7 @@ public abstract class Channel implements Closeable {
 
 
 
-    protected void notifyChannelConnected(Channel c) {
+    protected void notifyChannelConnected(AbstractChannel c) {
         if(channel_listeners == null) return;
         for(ChannelListener channelListener: channel_listeners) {
             try {
@@ -526,7 +526,7 @@ public abstract class Channel implements Closeable {
         }
     }
 
-    protected void notifyChannelDisconnected(Channel c) {
+    protected void notifyChannelDisconnected(AbstractChannel c) {
         if(channel_listeners == null) return;
         for(ChannelListener channelListener: channel_listeners) {
             try {
@@ -538,7 +538,7 @@ public abstract class Channel implements Closeable {
         }
     }
 
-    protected void notifyChannelClosed(Channel c) {
+    protected void notifyChannelClosed(AbstractChannel c) {
         if(channel_listeners == null) return;
         for(ChannelListener channelListener: channel_listeners) {
             try {

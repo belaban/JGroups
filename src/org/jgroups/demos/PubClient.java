@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
  * @since  3.6.5
  */
 public class PubClient extends ReceiverAdapter implements ConnectionListener {
-    protected BaseServer       client;
+    protected AbstractBaseServer client;
     protected final String     name;
     protected volatile boolean running=true;
     protected InputStream      in;

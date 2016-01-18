@@ -12,7 +12,7 @@ import org.jgroups.util.Streamable;
  * @author Chris Mills
  * @author Bela Ban
  */
-public abstract class AuthToken implements Streamable {
+public abstract class AbstractAuthToken implements Streamable {
     protected final Log log = LogFactory.getLog(this.getClass());
 
     /** A reference to AUTH */
@@ -49,5 +49,5 @@ public abstract class AuthToken implements Streamable {
      *            the Message object containing the actual JOIN_REQ
      * @return true if authenticaion passed or false if it failed.
      */
-    public abstract boolean authenticate(AuthToken token, Message msg);
+    public abstract boolean authenticate(AbstractAuthToken token, Message msg);
 }

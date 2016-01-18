@@ -14,7 +14,7 @@ import java.nio.channels.Selector;
  * @author Bela Ban
  * @since  3.6.5
  */
-public class NioClient extends NioBaseServer implements Client {
+public class NioClient extends AbstractNioBaseServer implements Client {
     protected Address       remote_addr; // the address of the server (needs to be set before connecting)
     protected NioConnection conn;        // connection to the server
 

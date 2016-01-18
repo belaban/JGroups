@@ -5,7 +5,7 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
@@ -26,7 +26,7 @@ import java.util.concurrent.Executor;
  */
 @Experimental
 @MBean(description="Protocol just above the transport which disseminates multicasts via daisy chaining")
-public class DAISYCHAIN extends Protocol {
+public class DAISYCHAIN extends AbstractProtocol {
 
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
@@ -194,7 +194,7 @@ public class DAISYCHAIN extends Protocol {
     }
 
 
-    public static class DaisyHeader extends Header {
+    public static class DaisyHeader extends AbstractHeader {
         private short   ttl;
 
         public DaisyHeader() {

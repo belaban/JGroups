@@ -8,7 +8,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -25,7 +25,7 @@ import java.util.Vector;
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ProtocolConfigurationTest {
 	ProtocolStack stack = null;
-	Protocol protocol = null ;
+	AbstractProtocol protocol = null ;
 	static final String orderProps="org.jgroups.tests.ProtocolConfigurationTest$ORDERING(a=1;b=2;c=3)";
 	static final String refsProps="org.jgroups.tests.ProtocolConfigurationTest$REFS(a=1;b=2;c=3)";
 	static final String defaultProps="org.jgroups.tests.ProtocolConfigurationTest$DEFAULTS(b=333)";
@@ -86,7 +86,7 @@ public class ProtocolConfigurationTest {
 	public void testDefaultAssignment() throws Exception {
 
 		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
-		Vector<Protocol> protocols = new Vector<>() ;
+		Vector<AbstractProtocol> protocols = new Vector<>() ;
 		
 		// create the layer described by DEFAULTS
 		protocol = Configurator.createProtocol(defaultProps, stack) ;
@@ -119,7 +119,7 @@ public class ProtocolConfigurationTest {
 	public void testAssignmentInetAddresses() throws Exception {
 
 		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
-		Vector<Protocol> protocols = new Vector<>() ;
+		Vector<AbstractProtocol> protocols = new Vector<>() ;
 		
 		// create the layer described by INETADDRESSES
 		protocol = Configurator.createProtocol(addressProps, stack) ;
@@ -148,7 +148,7 @@ public class ProtocolConfigurationTest {
 	public void testConfigurableObject() throws Exception {
 
 		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
-		Vector<Protocol> protocols = new Vector<>() ;
+		Vector<AbstractProtocol> protocols = new Vector<>() ;
 		
 		// create the layer described by INETADDRESSES
 		protocol = Configurator.createProtocol(configurableObjectsProps, stack) ;
@@ -167,7 +167,7 @@ public class ProtocolConfigurationTest {
 	}
 
 	
-	public static class ORDERING extends Protocol {
+	public static class ORDERING extends AbstractProtocol {
 		List<String> list = new LinkedList<>() ;
 		
 		@Property(name="a", dependsUpon="b") 
@@ -197,7 +197,7 @@ public class ProtocolConfigurationTest {
 			return up_prot.up(evt);
 		}
 	}
-	public static class REFS extends Protocol {
+	public static class REFS extends AbstractProtocol {
 
 		@Property(name="a", dependsUpon="b") 
 		public void setA(int a) {
@@ -220,7 +220,7 @@ public class ProtocolConfigurationTest {
 			return up_prot.up(evt);
 		}
 	}
-	public static class DEFAULTS extends Protocol {
+	public static class DEFAULTS extends AbstractProtocol {
 		int a ;
 		int b ;
 		InetAddress c ;
@@ -258,7 +258,7 @@ public class ProtocolConfigurationTest {
 			return up_prot.up(evt);
 		}
 	}
-	public static class INETADDRESSES extends Protocol {
+	public static class INETADDRESSES extends AbstractProtocol {
 		InetAddress inetAddressMethod ;
 		
 		@Property(name="inetAddressField")
@@ -307,7 +307,7 @@ public class ProtocolConfigurationTest {
 			return up_prot.up(evt);
 		}
 	}
-	public static class CONFIGOBJPROTOCOL extends Protocol {
+	public static class CONFIGOBJPROTOCOL extends AbstractProtocol {
 
 	    private Object configObjInstance=null;
 		

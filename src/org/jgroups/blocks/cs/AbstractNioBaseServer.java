@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  * @since  3.6.5
  */
-public abstract class NioBaseServer extends BaseServer {
+public abstract class AbstractNioBaseServer extends AbstractBaseServer {
     protected Selector          selector; // get notified about accepts, data ready to read/write etc
     protected Thread            acceptor; // the thread which calls select() in a loop
     protected final Lock        reg_lock=new ReentrantLock(); // for OP_CONNECT registrations
@@ -33,22 +33,22 @@ public abstract class NioBaseServer extends BaseServer {
 
 
 
-    protected NioBaseServer(ThreadFactory f) {
+    protected AbstractNioBaseServer(ThreadFactory f) {
         super(f);
     }
 
 
 
     public int            maxSendBuffers()              {return max_send_buffers;}
-    public NioBaseServer  maxSendBuffers(int num)       {this.max_send_buffers=num; return this;}
+    public AbstractNioBaseServer maxSendBuffers(int num)       {this.max_send_buffers=num; return this;}
     public boolean        selectorOpen()                {return selector != null && selector.isOpen();}
     public boolean        acceptorRunning()             {return acceptor != null && acceptor.isAlive();}
     public int            numSelects()                  {return num_selects;}
     public boolean        copyOnPartialWrite()          {return copy_on_partial_write;}
     public long           readerIdleTime()              {return reader_idle_time;}
-    public NioBaseServer  readerIdleTime(long t)        {reader_idle_time=t; return this;}
+    public AbstractNioBaseServer readerIdleTime(long t)        {reader_idle_time=t; return this;}
 
-    public NioBaseServer  copyOnPartialWrite(boolean b) {
+    public AbstractNioBaseServer copyOnPartialWrite(boolean b) {
         this.copy_on_partial_write=b;
         synchronized(this) {
             for(Connection c: conns.values()) {

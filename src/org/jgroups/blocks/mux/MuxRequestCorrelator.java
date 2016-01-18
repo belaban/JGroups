@@ -1,10 +1,11 @@
 package org.jgroups.blocks.mux;
 
+import org.jgroups.AbstractHeader;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.blocks.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 
 import java.util.Collection;
 
@@ -17,21 +18,21 @@ import java.util.Collection;
 public class MuxRequestCorrelator extends RequestCorrelator {
 
     protected final static short MUX_ID = ClassConfigurator.getProtocolId(MuxRequestCorrelator.class);
-    private final org.jgroups.Header header;
+    private final AbstractHeader header;
     
-    public MuxRequestCorrelator(short id, Protocol transport, RequestHandler handler, Address localAddr) {
+    public MuxRequestCorrelator(short id, AbstractProtocol transport, RequestHandler handler, Address localAddr) {
         super(ClassConfigurator.getProtocolId(RequestCorrelator.class), transport, handler, localAddr);
         this.header = new MuxHeader(id);
     }
 
     @Override
-    public void sendRequest(Collection<Address> dest_mbrs, Message msg, Request req, RequestOptions options) throws Exception {
+    public void sendRequest(Collection<Address> dest_mbrs, Message msg, AbstractRequest req, RequestOptions options) throws Exception {
         msg.putHeader(MUX_ID, header);
         super.sendRequest(dest_mbrs, msg, req, options);
     }
 
     @Override
-    public void sendUnicastRequest(Address target, Message msg, Request req) throws Exception {
+    public void sendUnicastRequest(Address target, Message msg, AbstractRequest req) throws Exception {
         msg.putHeader(MUX_ID, header);
         super.sendUnicastRequest(target, msg, req);
     }

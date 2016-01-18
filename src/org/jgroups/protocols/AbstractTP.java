@@ -7,7 +7,7 @@ import org.jgroups.blocks.LazyRemovalCache;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.DiagnosticsHandler;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.UUID;
@@ -51,7 +51,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Transport protocol")
-public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHandler {
+public abstract class AbstractTP extends AbstractProtocol implements DiagnosticsHandler.ProbeHandler {
 
     protected static final byte    LIST=1; // we have a list of messages rather than a single message when set
     protected static final byte    MULTICAST=2; // message is a multicast (versus a unicast) message when set
@@ -648,7 +648,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * names (attached to the message by the transport anyway). The values are the next protocols above the
      * transports.
      */
-    protected final ConcurrentMap<AsciiString,Protocol> up_prots=Util.createConcurrentMap(16, 0.75f, 16);
+    protected final ConcurrentMap<AsciiString,AbstractProtocol> up_prots=Util.createConcurrentMap(16, 0.75f, 16);
 
     /** The header including the cluster name, sent with each message. Not used with a shared transport (instead
      * TP.ProtocolAdapter attaches the header to the message */
@@ -705,7 +705,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * Creates the TP protocol, and initializes the state variables, does
      * however not start any sockets or threads.
      */
-    protected TP() {
+    protected AbstractTP() {
     }
 
     /** Whether or not hardware multicasting is supported */
@@ -919,7 +919,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Deprecated public boolean isLoopback() {return true;}
     @Deprecated public void setLoopback(boolean b) {}
 
-    public ConcurrentMap<AsciiString,Protocol> getUpProtocols() {return up_prots;}
+    public ConcurrentMap<AsciiString,AbstractProtocol> getUpProtocols() {return up_prots;}
 
     
     @ManagedAttribute(description="Current number of threads in the OOB thread pool")
@@ -1221,7 +1221,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 }
 
                 public String toString() {
-                    return TP.this.getClass().getSimpleName() + ": LogicalAddressCacheReaper (interval=" + logical_addr_cache_expiration + " ms)";
+                    return AbstractTP.this.getClass().getSimpleName() + ": LogicalAddressCacheReaper (interval=" + logical_addr_cache_expiration + " ms)";
                 }
             }, logical_addr_cache_reaper_interval, logical_addr_cache_reaper_interval, TimeUnit.MILLISECONDS);
         }
@@ -1385,7 +1385,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     if(up_prots != null) {
                         boolean match=false;
                         List<String> cluster_names=new ArrayList<>();
-                        for(Protocol prot: up_prots.values())
+                        for(AbstractProtocol prot: up_prots.values())
                             if(prot instanceof ProtocolAdapter)
                                 cluster_names.add(((ProtocolAdapter)prot).getClusterName());
                         for(String cname: cluster_names) {
@@ -1562,7 +1562,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(log.isTraceEnabled())
             log.trace("%s: received %s, headers are %s", local_addr, msg, msg.printHeaders());
 
-        final Protocol tmp_prot=isSingleton()? up_prots.get(cluster_name) : up_prot;
+        final AbstractProtocol tmp_prot=isSingleton()? up_prots.get(cluster_name) : up_prot;
         if(tmp_prot == null)
             return;
         boolean is_protocol_adapter=tmp_prot instanceof ProtocolAdapter;
@@ -1594,7 +1594,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             log.trace("%s: received message batch of %d messages from %s", local_addr, batch.size(), batch.sender());
 
         AsciiString ch_name=batch.clusterName();
-        final Protocol tmp_prot=isSingleton()? up_prots.get(ch_name) : up_prot;
+        final AbstractProtocol tmp_prot=isSingleton()? up_prots.get(ch_name) : up_prot;
         if(tmp_prot == null)
             return;
 
@@ -1958,9 +1958,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             return (Responses)up_prot.up(new Event(Event.FIND_MBRS, missing));
         int size=missing == null? 16 : missing.size();
         final Responses rsps=new Responses(size, false, size);
-        Collection<Protocol> prots=up_prots.values();
+        Collection<AbstractProtocol> prots=up_prots.values();
         if(prots != null) {
-            for(Protocol prot: prots) {
+            for(AbstractProtocol prot: prots) {
                 Responses tmp_rsp=(Responses)prot.up(new Event(Event.FIND_MBRS, missing));
                 if(tmp_rsp != null) {
                     for(PingData data: tmp_rsp)
@@ -2153,7 +2153,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     }
                     else {
                         // add all members from all clusters
-                        for(Protocol prot: up_prots.values()) {
+                        for(AbstractProtocol prot: up_prots.values()) {
                             if(prot instanceof ProtocolAdapter) {
                                 ProtocolAdapter ad=(ProtocolAdapter)prot;
                                 Set<Address> tmp=ad.getMembers();
@@ -2276,7 +2276,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
         }
         else {
-            for(Protocol prot: up_prots.values()) {
+            for(AbstractProtocol prot: up_prots.values()) {
                 Address addr=(Address)prot.up(new Event(Event.GET_LOCAL_ADDRESS));
                 registerLocalAddress(addr);
             }
@@ -2350,7 +2350,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     protected void passToAllUpProtocols(Event evt) {
-        for(Protocol prot: up_prots.values()) {
+        for(AbstractProtocol prot: up_prots.values()) {
             try {
                 prot.up(evt);
             }
@@ -2493,7 +2493,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         @GuardedBy("lock") protected void addMessage(Message msg, long size) {
-            byte[] cname=!isSingleton()? TP.this.cluster_name.chars():
+            byte[] cname=!isSingleton()? AbstractTP.this.cluster_name.chars():
               ((TpHeader)msg.getHeader(id)).cluster_name;
 
             SingletonAddress dest=new SingletonAddress(cname, msg.getDest());
@@ -2561,7 +2561,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
         }
 
-        public String toString() {return TP.this.getClass() + ": BundlingTimer";}
+        public String toString() {return AbstractTP.this.getClass() + ": BundlingTimer";}
     }
 
 
@@ -2790,7 +2790,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * Used when the transport is shared (singleton_name != null). Maintains the cluster name, local address and view
      */
     @MBean(description="Protocol adapter (used when the shared transport is enabled)")
-    public static class ProtocolAdapter extends Protocol implements DiagnosticsHandler.ProbeHandler {
+    public static class ProtocolAdapter extends AbstractProtocol implements DiagnosticsHandler.ProbeHandler {
         AsciiString             cluster_name;
         final short             transport_id;
         TpHeader                header;
@@ -2800,7 +2800,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         Address                 local_addr;
 
 
-        public ProtocolAdapter(AsciiString cluster_name, Address local_addr, short transport_id, Protocol up, Protocol down, String pattern) {
+        public ProtocolAdapter(AsciiString cluster_name, Address local_addr, short transport_id, AbstractProtocol up, AbstractProtocol down, String pattern) {
             this.cluster_name=cluster_name;
             this.local_addr=local_addr;
             this.transport_id=transport_id;
@@ -2856,13 +2856,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         public void start() throws Exception {
-            TP tp=getTransport();
+            AbstractTP tp=getTransport();
             if(tp != null)
                 tp.registerProbeHandler(this);
         }
 
         public void stop() {
-            TP tp=getTransport();
+            AbstractTP tp=getTransport();
             if(tp != null)
                 tp.unregisterProbeHandler(this);
         }

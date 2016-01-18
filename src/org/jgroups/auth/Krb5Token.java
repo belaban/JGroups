@@ -20,7 +20,7 @@ import java.util.Properties;
  * @since 3.4
  */
 @Experimental
-public class Krb5Token extends AuthToken {
+public class Krb5Token extends AbstractAuthToken {
     private static final String JASS_SECURITY_CONFIG   = "JGoupsKrb5TokenSecurityConf";
     public  static final String CLIENT_PRINCIPAL_NAME  = "client_principal_name";
     public  static final String CLIENT_PASSWORD        = "client_password";
@@ -72,7 +72,7 @@ public class Krb5Token extends AuthToken {
         return Krb5Token.class.getName();
     }
 
-    public boolean authenticate(AuthToken token, Message msg) {
+    public boolean authenticate(AbstractAuthToken token, Message msg) {
         if (!isAuthenticated()) {
             log.error(Util.getMessage("Krb5TokenFailedToSetupCorrectlyCannotAuthenticateAnyPeers"));
             return false;

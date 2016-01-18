@@ -35,12 +35,12 @@ public class RpcDispatcher extends MessageDispatcher {
     }
 
 
-    public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj) {
+    public RpcDispatcher(AbstractChannel channel, MessageListener l, MembershipListener l2, Object server_obj) {
         super(channel, l, l2);
         this.server_obj=server_obj;
     }
 
-    public RpcDispatcher(Channel channel, Object server_obj) {
+    public RpcDispatcher(AbstractChannel channel, Object server_obj) {
         this(channel, null, null, server_obj);
     }
 

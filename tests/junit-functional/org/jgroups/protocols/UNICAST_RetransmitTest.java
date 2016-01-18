@@ -1,7 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -76,7 +76,7 @@ public class UNICAST_RetransmitTest {
 
     protected static void change(JChannel ... channels) {
         for(JChannel ch: channels) {
-            TP transport=ch.getProtocolStack().getTransport();
+            AbstractTP transport=ch.getProtocolStack().getTransport();
             transport.setMaxBundleSize(MAX_BUNDLE_SIZE);
             UNICAST3 ucast=(UNICAST3)ch.getProtocolStack().findProtocol(UNICAST3.class);
             if(ucast == null)
@@ -124,13 +124,13 @@ public class UNICAST_RetransmitTest {
 
     protected static void setLevel(String level, JChannel ... channels) {
         for(JChannel ch: channels) {
-            Protocol prot=ch.getProtocolStack().findProtocol(UNICAST3.class);
+            AbstractProtocol prot=ch.getProtocolStack().findProtocol(UNICAST3.class);
             prot.level(level);
         }
     }
 
 
-    protected static class DiscardEveryOtherUnicastMessage extends Protocol {
+    protected static class DiscardEveryOtherUnicastMessage extends AbstractProtocol {
         protected boolean discard=false;
 
         public Object down(Event evt) {

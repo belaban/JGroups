@@ -5,7 +5,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 
 import java.io.DataInput;
@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since  3.3
  */
 @MBean(description="Reliable unicast layer")
-public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
+public class UNICAST3 extends AbstractProtocol implements AgeOutCache.Handler<Address> {
     protected static final long DEFAULT_FIRST_SEQNO=Global.DEFAULT_FIRST_UNICAST_SEQNO;
 
 
@@ -240,7 +240,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /** Used for testing only */
     public boolean hasSendConnectionTo(Address dest) {
-        Entry entry=send_table.get(dest);
+        AbstractEntry entry=send_table.get(dest);
         return entry != null && entry.state() == State.OPEN;
     }
 
@@ -248,7 +248,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute
     public int getNumUnackedMessages() {
         int num=0;
-        for(Entry entry: send_table.values()) {
+        for(AbstractEntry entry: send_table.values()) {
             if(entry.msgs != null)
                 num+=entry.msgs.size();
         }
@@ -259,7 +259,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Total number of undelivered messages in all receive windows")
     public long getXmitTableUndeliveredMessages() {
         long retval=0;
-        for(Entry entry: recv_table.values()) {
+        for(AbstractEntry entry: recv_table.values()) {
             if(entry.msgs != null)
                 retval+=entry.msgs.size();
         }
@@ -269,7 +269,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Total number of missing messages in all receive windows")
     public long getXmitTableMissingMessages() {
         long retval=0;
-        for(Entry entry: recv_table.values()) {
+        for(AbstractEntry entry: recv_table.values()) {
             if(entry.msgs != null)
                 retval+=entry.msgs.getNumMissing();
         }
@@ -279,11 +279,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Number of compactions in all (receive and send) windows")
     public int getXmitTableNumCompactions() {
         int retval=0;
-        for(Entry entry: recv_table.values()) {
+        for(AbstractEntry entry: recv_table.values()) {
             if(entry.msgs != null)
                 retval+=entry.msgs.getNumCompactions();
         }
-        for(Entry entry: send_table.values()) {
+        for(AbstractEntry entry: send_table.values()) {
             if(entry.msgs != null)
                 retval+=entry.msgs.getNumCompactions();
         }
@@ -293,11 +293,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Number of moves in all (receive and send) windows")
     public int getXmitTableNumMoves() {
         int retval=0;
-        for(Entry entry: recv_table.values()) {
+        for(AbstractEntry entry: recv_table.values()) {
             if(entry.msgs != null)
                 retval+=entry.msgs.getNumMoves();
         }
-        for(Entry entry: send_table.values()) {
+        for(AbstractEntry entry: send_table.values()) {
             if(entry.msgs != null)
                 retval+=entry.msgs.getNumMoves();
         }
@@ -307,11 +307,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Number of resizes in all (receive and send) windows")
     public int getXmitTableNumResizes() {
         int retval=0;
-        for(Entry entry: recv_table.values()) {
+        for(AbstractEntry entry: recv_table.values()) {
             if(entry.msgs != null)
                 retval+=entry.msgs.getNumResizes();
         }
-        for(Entry entry: send_table.values()) {
+        for(AbstractEntry entry: send_table.values()) {
             if(entry.msgs != null)
                 retval+=entry.msgs.getNumResizes();
         }
@@ -321,11 +321,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Number of purges in all (receive and send) windows")
     public int getXmitTableNumPurges() {
         int retval=0;
-        for(Entry entry: recv_table.values()) {
+        for(AbstractEntry entry: recv_table.values()) {
             if(entry.msgs != null)
                 retval+=entry.msgs.getNumPurges();
         }
-        for(Entry entry: send_table.values()) {
+        for(AbstractEntry entry: send_table.values()) {
             if(entry.msgs != null)
                 retval+=entry.msgs.getNumPurges();
         }
@@ -476,7 +476,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
 
         if(local_addr == null || local_addr.equals(batch.sender())) {
-            Entry entry=local_addr != null? send_table.get(local_addr) : null;
+            AbstractEntry entry=local_addr != null? send_table.get(local_addr) : null;
             if(entry != null)
                 handleBatchFromSelf(batch, entry);
             return;
@@ -523,7 +523,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
 
-    protected void handleBatchFromSelf(MessageBatch batch, Entry entry) {
+    protected void handleBatchFromSelf(MessageBatch batch, AbstractEntry entry) {
         List<Tuple<Long,Message>> list=new ArrayList<>(batch.size());
 
         for(Message msg: batch) {
@@ -649,7 +649,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 }
                 if(!new_members.isEmpty()) {
                     for(Address mbr: new_members) {
-                        Entry e=send_table.get(mbr);
+                        AbstractEntry e=send_table.get(mbr);
                         if(e != null && e.state() == State.CLOSING)
                             e.state(State.OPEN);
                         e=recv_table.get(mbr);
@@ -793,7 +793,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     /** Called when the sender of a message is the local member. In this case, we don't need to add the message
      * to the table as the sender already did that */
     protected void handleDataReceivedFromSelf(final Address sender, long seqno, Message msg) {
-        Entry entry=send_table.get(sender);
+        AbstractEntry entry=send_table.get(sender);
         if(entry == null || entry.state() == State.CLOSED) {
             log.warn("%s: entry not found for %s; dropping message", local_addr, sender);
             return;
@@ -1214,7 +1214,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return num_removed;
     }
 
-    protected void update(Entry entry, int num_received) {
+    protected void update(AbstractEntry entry, int num_received) {
         if(conn_expiry_timeout > 0)
             entry.update();
         if(entry.state() == State.CLOSING)
@@ -1241,7 +1241,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
      * | CLOSE | conn_id |
      * </pre>
      */
-    public static class Header extends org.jgroups.Header {
+    public static class Header extends AbstractHeader {
         public static final byte DATA             = 0;
         public static final byte ACK              = 1;
         public static final byte SEND_FIRST_SEQNO = 2;
@@ -1400,13 +1400,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
     }
 
-    protected abstract class Entry {
+    protected abstract class AbstractEntry {
         protected final Table<Message>  msgs; // stores sent or received messages
         protected final short           conn_id;
         protected final AtomicLong      timestamp=new AtomicLong(0); // ns
         protected volatile State        state=State.OPEN;
 
-        protected Entry(short conn_id, Table<Message> msgs) {
+        protected AbstractEntry(short conn_id, Table<Message> msgs) {
             this.conn_id=conn_id;
             this.msgs=msgs;
             update();
@@ -1415,12 +1415,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         short       connId()              {return conn_id;}
         void        update()              {timestamp.set(getTimestamp());}
         State       state()               {return state;}
-        Entry       state(State state)    {if(this.state != state) {this.state=state; update();} return this;}
+        AbstractEntry state(State state)    {if(this.state != state) {this.state=state; update();} return this;}
         /** Returns the age of the entry in ms */
         long        age()                 {return TimeUnit.MILLISECONDS.convert(getTimestamp() - timestamp.longValue(), TimeUnit.NANOSECONDS);}
     }
 
-    protected final class SenderEntry extends Entry {
+    protected final class SenderEntry extends AbstractEntry {
         final AtomicLong            sent_msgs_seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
         protected final long[]      watermark={0,0};   // the highest acked and highest sent seqno
         protected long              last_timestamp; // to prevent out-of-order ACKs from a receiver
@@ -1456,7 +1456,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
     }
 
-    protected final class ReceiverEntry extends Entry {
+    protected final class ReceiverEntry extends AbstractEntry {
         protected volatile boolean  send_ack;
 
         public ReceiverEntry(Table<Message> received_msgs, short recv_conn_id) {

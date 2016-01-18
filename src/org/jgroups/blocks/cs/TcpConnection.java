@@ -32,10 +32,10 @@ public class TcpConnection implements Connection {
     protected long                   last_access;
     protected volatile Sender        sender;
     protected volatile Receiver      receiver;
-    protected final TcpBaseServer    server;
+    protected final AbstractTcpBaseServer server;
 
     /** Creates a connection stub and binds it, use {@link #connect(Address)} to connect */
-    public TcpConnection(Address peer_addr, TcpBaseServer server) throws Exception {
+    public TcpConnection(Address peer_addr, AbstractTcpBaseServer server) throws Exception {
         this.server=server;
         if(peer_addr == null)
             throw new IllegalArgumentException("Invalid parameter peer_addr="+ peer_addr);

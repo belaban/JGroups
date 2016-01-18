@@ -7,7 +7,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MutableDigest;
 import org.jgroups.util.Util;
@@ -217,7 +217,7 @@ public class SequencerMergeTest {
             GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
 
-            Protocol nak=ch.getProtocolStack().findProtocol(NAKACK.class, NAKACK2.class);
+            AbstractProtocol nak=ch.getProtocolStack().findProtocol(NAKACK.class, NAKACK2.class);
             if(nak != null)
                 nak.down(new Event(Event.SET_DIGEST, digest));
         }
@@ -233,7 +233,7 @@ public class SequencerMergeTest {
     protected static Digest getDigest(final View view, JChannel ... channels) {
         MutableDigest digest=new MutableDigest(view.getMembersRaw());
         for(JChannel ch: channels) {
-            Protocol nak=ch.getProtocolStack().findProtocol(NAKACK.class, NAKACK2.class);
+            AbstractProtocol nak=ch.getProtocolStack().findProtocol(NAKACK.class, NAKACK2.class);
             Digest tmp=(Digest)nak.down(new Event(Event.GET_DIGEST, ch.getAddress()));
             if(tmp != null)
                 digest.set(tmp);

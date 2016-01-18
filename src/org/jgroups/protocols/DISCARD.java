@@ -6,7 +6,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 
 import javax.swing.*;
@@ -23,7 +23,7 @@ import java.util.List;
  */
 @Unsupported
 @MBean(description="Discards messages")
-public class DISCARD extends Protocol {
+public class DISCARD extends AbstractProtocol {
     @Property
     protected double                    up=0.0;    // probability of dropping up   msgs
 

@@ -5,10 +5,10 @@ import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.stack.DiagnosticsHandler;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Bits;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
@@ -31,10 +31,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class RequestCorrelator {
 
     /** The protocol layer to use to pass up/down messages. Can be either a Protocol or a Transport */
-    protected Protocol                               transport;
+    protected AbstractProtocol transport;
 
     /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
-    protected final ConcurrentMap<Long,Request>      requests=Util.createConcurrentMap();
+    protected final ConcurrentMap<Long,AbstractRequest>      requests=Util.createConcurrentMap();
 
     /** To generate unique request IDs */
     protected static final AtomicLong                REQUEST_ID=new AtomicLong(1);
@@ -77,7 +77,7 @@ public class RequestCorrelator {
      *
      * @param handler Request handler. Method {@code handle(Message)} will be called when a request is received.
      */
-    public RequestCorrelator(short corr_id, Protocol transport, RequestHandler handler, Address local_addr) {
+    public RequestCorrelator(short corr_id, AbstractProtocol transport, RequestHandler handler, Address local_addr) {
         this.corr_id=corr_id;
         this.transport  = transport;
         this.local_addr = local_addr;
@@ -85,7 +85,7 @@ public class RequestCorrelator {
         start();
     }
 
-    public RequestCorrelator(Protocol transport, RequestHandler handler, Address local_addr) {
+    public RequestCorrelator(AbstractProtocol transport, RequestHandler handler, Address local_addr) {
         this.transport  = transport;
         this.local_addr = local_addr;
         request_handler = handler;
@@ -108,7 +108,7 @@ public class RequestCorrelator {
     public boolean                  wrapExceptions()               {return wrap_exceptions;}
     public RequestCorrelator        wrapExceptions(boolean flag)   {wrap_exceptions=flag; return this;}
 
-    public void sendRequest(List<Address> dest_mbrs, Message msg, Request req) throws Exception {
+    public void sendRequest(List<Address> dest_mbrs, Message msg, AbstractRequest req) throws Exception {
         sendRequest(dest_mbrs, msg, req, new RequestOptions().setAnycasting(false));
     }
 
@@ -121,7 +121,7 @@ public class RequestCorrelator {
      * @param req A request (usually the object that invokes this method). Its methods {@code receiveResponse()} and
      *            {@code suspect()} will be invoked when a message has been received or a member is suspected.
      */
-    public void sendRequest(Collection<Address> dest_mbrs, Message msg, Request req, RequestOptions options) throws Exception {
+    public void sendRequest(Collection<Address> dest_mbrs, Message msg, AbstractRequest req, RequestOptions options) throws Exception {
         if(transport == null) {
             log.warn("transport is not available !");
             return;
@@ -166,7 +166,7 @@ public class RequestCorrelator {
     }
 
     /** Sends a request to a single destination */
-    public void sendUnicastRequest(Address target, Message msg, Request req) throws Exception {
+    public void sendUnicastRequest(Address target, Message msg, AbstractRequest req) throws Exception {
         if(transport == null) {
             if(log.isWarnEnabled()) log.warn("transport is not available !");
             return;
@@ -200,7 +200,7 @@ public class RequestCorrelator {
         removeEntry(id);
     }
 
-    public void done(Request req) {
+    public void done(AbstractRequest req) {
         if(req != null)
             requests.values().remove(req);
     }
@@ -253,18 +253,18 @@ public class RequestCorrelator {
 
     public void stop() {
         started=false;
-        for(Request req: requests.values())
+        for(AbstractRequest req: requests.values())
             req.transportClosed();
         requests.clear();
     }
 
 
-    public void registerProbeHandler(TP transport) {
+    public void registerProbeHandler(AbstractTP transport) {
         if(transport != null)
             transport.registerProbeHandler(probe_handler);
     }
 
-    public void unregisterProbeHandler(TP transport) {
+    public void unregisterProbeHandler(AbstractTP transport) {
         if(transport != null)
             transport.unregisterProbeHandler(probe_handler);
     }
@@ -284,7 +284,7 @@ public class RequestCorrelator {
 
         // copy so we don't run into bug #761804 - Bela June 27 2003
         // copy=new ArrayList(requests.values()); // removed because ConcurrentReaderHashMap can tolerate concurrent mods (bela May 8 2006)
-        for(Request req: requests.values()) {
+        for(AbstractRequest req: requests.values()) {
             if(req != null)
                 req.suspect(mbr);
         }
@@ -293,7 +293,7 @@ public class RequestCorrelator {
 
     /** An entire site is down; mark all requests that point to that site as unreachable (used by RELAY2) */
     public void setSiteUnreachable(String site) {
-        for(Request req: requests.values()) {
+        for(AbstractRequest req: requests.values()) {
             if(req != null)
                 req.siteUnreachable(site);
         }
@@ -311,7 +311,7 @@ public class RequestCorrelator {
         // copy so we don't run into bug #761804 - Bela June 27 2003
         // copy=new ArrayList(requests.values());  // removed because ConcurrentHashMap can tolerate concurrent mods (bela May 8 2006)
         view=new_view; // move this before the iteration (JGRP-1428)
-        for(Request req: requests.values()) {
+        for(AbstractRequest req: requests.values()) {
             if(req != null)
                 req.viewChange(new_view);
         }
@@ -354,7 +354,7 @@ public class RequestCorrelator {
 
             case Header.RSP:
             case Header.EXC_RSP:
-                Request req=requests.get(hdr.req_id);
+                AbstractRequest req=requests.get(hdr.req_id);
                 if(req != null) {
                     boolean is_exception=hdr.type == Header.EXC_RSP;
                     Address sender=msg.getSrc();
@@ -487,7 +487,7 @@ public class RequestCorrelator {
     /**
      * The header for <tt>RequestCorrelator</tt> messages
      */
-    public static class Header extends org.jgroups.Header {
+    public static class Header extends AbstractHeader {
         public static final byte REQ     = 0;
         public static final byte RSP     = 1;
         public static final byte EXC_RSP = 2; // exception
@@ -609,7 +609,7 @@ public class RequestCorrelator {
                 switch(key) {
                     case "requests":
                         StringBuilder sb=new StringBuilder();
-                        for(Map.Entry<Long,Request> entry: requests.entrySet())
+                        for(Map.Entry<Long,AbstractRequest> entry: requests.entrySet())
                             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
                         retval.put(key, sb.toString());
                         break;

@@ -8,9 +8,9 @@ package org.jgroups.stack;
 public interface ProtocolHook {
     /**
      * Called after all protocols have been created, connected and its attributes set, but
-     * before {@link Protocol#init()} is called. The order of calling the hooks is from bottom to top protocol.
+     * before {@link AbstractProtocol#init()} is called. The order of calling the hooks is from bottom to top protocol.
      * @param prot The protocol that was created.
      * @throws Exception Thrown is the method failed.
      */
-    void afterCreation(Protocol prot) throws Exception;
+    void afterCreation(AbstractProtocol prot) throws Exception;
 }

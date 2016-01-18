@@ -4,7 +4,7 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.Header;
+import org.jgroups.AbstractHeader;
 import org.jgroups.util.Bits;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
@@ -16,7 +16,7 @@ import java.io.DataOutput;
 /**
  * @author Bela Ban
  */
-public class NakAckHeader extends Header {
+public class NakAckHeader extends AbstractHeader {
     public static final byte MSG=1;       // regular msg
     public static final byte XMIT_REQ=2;  // retransmit request
     public static final byte XMIT_RSP=3;  // retransmit response (contains one or more messages)

@@ -3,7 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -32,7 +32,7 @@ public class FlushTest {
         s.release(1);
 
         // Make sure everyone is in sync
-        Channel[] tmp = new Channel[receivers.length];
+        AbstractChannel[] tmp = new AbstractChannel[receivers.length];
         for (int i = 0; i < receivers.length; i++)
             tmp[i] = receivers[i].getChannel();
         Util.waitUntilAllChannelsHaveSameSize(10000, 1000, tmp);
@@ -95,7 +95,7 @@ public class FlushTest {
     }
     
     public void testSequentialFlushInvocation() throws Exception {
-        Channel a=null, b=null, c=null;
+        AbstractChannel a=null, b=null, c=null;
         try {
             a = createChannel("A");
             a.connect("testSequentialFlushInvocation");
@@ -289,7 +289,7 @@ public class FlushTest {
                 first = false;
             }
 
-            Channel[] tmp = new Channel[channels.size()];
+            AbstractChannel[] tmp = new AbstractChannel[channels.size()];
             int cnt = 0;
             for (FlushTestReceiver receiver : channels)
                 tmp[cnt++] = receiver.getChannel();
@@ -376,7 +376,7 @@ public class FlushTest {
     }
 
     protected JChannel createChannel(String name) throws Exception {
-          Protocol[] protocols={
+          AbstractProtocol[] protocols={
             new SHARED_LOOPBACK(),
             new SHARED_LOOPBACK_PING(),
             new FD_ALL().setValue("timeout", 3000).setValue("interval", 1000),
@@ -483,10 +483,10 @@ public class FlushTest {
     }
 
     private static class SimpleReplier extends ReceiverAdapter {
-        protected final Channel channel;
+        protected final AbstractChannel channel;
         protected boolean       handle_requests=false;
 
-        public SimpleReplier(Channel channel, boolean handle_requests) {
+        public SimpleReplier(AbstractChannel channel, boolean handle_requests) {
             this.channel = channel;
             this.handle_requests = handle_requests;
         }

@@ -21,7 +21,7 @@ import java.io.OutputStream;
  */
 public class Whiteboard extends Applet implements MessageListener, MembershipListener, ActionListener, ComponentListener, FocusListener {
     public RpcDispatcher           disp;
-    Channel                        channel;
+    AbstractChannel channel;
     GraphPanel                     panel;
     private Button                 leave_button;
     private Label                  mbr_label;

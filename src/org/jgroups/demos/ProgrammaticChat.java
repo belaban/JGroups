@@ -8,7 +8,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 
 import java.net.InetAddress;
@@ -19,7 +19,7 @@ import java.net.InetAddress;
 public class ProgrammaticChat {
 
     public static void main(String[] args) throws Exception {
-        Protocol[] prot_stack={
+        AbstractProtocol[] prot_stack={
           new UDP().setValue("bind_addr", InetAddress.getByName("127.0.0.1")),
           new PING(),
           new MERGE3(),

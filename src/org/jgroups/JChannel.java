@@ -8,7 +8,7 @@ import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.jmx.ResourceDMBean;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.stack.*;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentMap;
  * @since 2.0
  */
 @MBean(description="JGroups channel")
-public class JChannel extends Channel {
+public class JChannel extends AbstractChannel {
 
     /** The default protocol stack used by the default constructor  */
     public static final String                      DEFAULT_PROTOCOL_STACK="udp.xml";
@@ -168,7 +168,7 @@ public class JChannel extends Channel {
      *                  the last the top protocol
      * @throws Exception
      */
-    public JChannel(Protocol ... protocols) throws Exception {
+    public JChannel(AbstractProtocol... protocols) throws Exception {
         this(Arrays.asList(protocols));
     }
 
@@ -180,19 +180,19 @@ public class JChannel extends Channel {
      *                  the last the top protocol
      * @throws Exception
      */
-    public JChannel(Collection<Protocol> protocols) throws Exception {
+    public JChannel(Collection<AbstractProtocol> protocols) throws Exception {
         prot_stack=new ProtocolStack();
         setProtocolStack(prot_stack);
-        for(Protocol prot: protocols) {
+        for(AbstractProtocol prot: protocols) {
             prot_stack.addProtocol(prot);
             prot.setProtocolStack(prot_stack);
         }
         prot_stack.init();
 
         // Substitute vars with defined system props (if any)
-        List<Protocol> prots=prot_stack.getProtocols();
+        List<AbstractProtocol> prots=prot_stack.getProtocols();
         Map<String,String> map=new HashMap<>();
-        for(Protocol prot: prots)
+        for(AbstractProtocol prot: prots)
             Configurator.resolveAndAssignFields(prot, map);
     }
 
@@ -894,7 +894,7 @@ public class JChannel extends Channel {
         t.add(local_addr);
         my_view=new View(local_addr, 0, t);  // create a dummy view
 
-        TP transport=prot_stack.getTransport();
+        AbstractTP transport=prot_stack.getTransport();
         transport.registerProbeHandler(probe_handler);
     }
 
@@ -1008,7 +1008,7 @@ public class JChannel extends Channel {
                 log.error(Util.getMessage("StackDestroyFailure"), e);
             }
 
-            TP transport=prot_stack.getTransport();
+            AbstractTP transport=prot_stack.getTransport();
             if(transport != null)
                 transport.unregisterProbeHandler(probe_handler);
         }
@@ -1076,7 +1076,7 @@ public class JChannel extends Channel {
 
     protected TimeScheduler getTimer() {
         if(prot_stack != null) {
-            TP transport=prot_stack.getTransport();
+            AbstractTP transport=prot_stack.getTransport();
             if(transport != null)
                 return transport.getTimer();
         }
@@ -1128,8 +1128,8 @@ public class JChannel extends Channel {
         }
 
         protected void resetAllStats() {
-            List<Protocol> prots=getProtocolStack().getProtocols();
-            for(Protocol prot: prots)
+            List<AbstractProtocol> prots=getProtocolStack().getProtocols();
+            for(AbstractProtocol prot: prots)
                 prot.resetStatistics();
             resetStats();
         }
@@ -1154,7 +1154,7 @@ public class JChannel extends Channel {
                         if(index != -1) {
                             String attrname=tmp.substring(0, index);
                             String attrvalue=tmp.substring(index+1);
-                            Protocol prot=prot_stack.findProtocol(protocol_name);
+                            AbstractProtocol prot=prot_stack.findProtocol(protocol_name);
                             Field field=prot != null? Util.getField(prot.getClass(), attrname) : null;
                             if(field != null) {
                                 Object value=MethodCall.convert(attrvalue,field.getType());
@@ -1216,7 +1216,7 @@ public class JChannel extends Channel {
             if(index == -1)
                 throw new IllegalArgumentException("operation " + operation + " is missing the protocol name");
             String prot_name=operation.substring(0, index);
-            Protocol prot=prot_stack.findProtocol(prot_name);
+            AbstractProtocol prot=prot_stack.findProtocol(prot_name);
             if(prot == null)
                 return; // less drastic than throwing an exception...
 

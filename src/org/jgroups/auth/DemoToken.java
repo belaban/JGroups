@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  * @since  3.3
  */
-public class DemoToken extends AuthToken implements AUTH.UpHandler {
+public class DemoToken extends AbstractAuthToken implements AUTH.UpHandler {
     protected static final short ID=1555; // the ID to fetch a DemoHeader from a message
 
     @Property(description="How long to wait (in ms) for a response to a challenge")
@@ -38,7 +38,7 @@ public class DemoToken extends AuthToken implements AUTH.UpHandler {
     public void   init()    {auth.register(this);}
 
 
-    public boolean authenticate(AuthToken token, Message msg) {
+    public boolean authenticate(AbstractAuthToken token, Message msg) {
         Address sender=msg.getSrc();
 
         // 1. send a challenge to the sender
@@ -141,7 +141,7 @@ public class DemoToken extends AuthToken implements AUTH.UpHandler {
     }
 
 
-    public static class DemoHeader extends Header {
+    public static class DemoHeader extends AbstractHeader {
         protected static final byte CHALLENGE = 1;
         protected static final byte RESPONSE  = 2;
 

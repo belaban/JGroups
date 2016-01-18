@@ -3,7 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 
@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * @author Matej Cimbora
  */
 @MBean(description="Written by Sanne")
-public class DELAY extends Protocol {
+public class DELAY extends AbstractProtocol {
 
     private static final Random randomNumberGenerator = new Random();
 

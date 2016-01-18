@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
-import org.jgroups.Header;
+import org.jgroups.AbstractHeader;
 import org.jgroups.util.Headers;
 import org.testng.annotations.Test;
 
@@ -21,7 +21,7 @@ public class HeadersTest {
 
 
     public void testGetHeader() {
-        Header[] hdrs=createHeaders(3);
+        AbstractHeader[] hdrs=createHeaders(3);
         assert null == Headers.getHeader(null, (short)400);
         assert null == Headers.getHeader(hdrs, (short)400);
         assert Headers.getHeader(hdrs, UDP_ID) == h3;
@@ -29,9 +29,9 @@ public class HeadersTest {
 
 
     public void testGetHeaders() {
-        Header[] hdrs=createHeaders(3);
+        AbstractHeader[] hdrs=createHeaders(3);
         System.out.printf("hdrs are: %s\n", Headers.printObjectHeaders(hdrs));
-        Map<Short, Header> map=Headers.getHeaders(hdrs);
+        Map<Short, AbstractHeader> map=Headers.getHeaders(hdrs);
         System.out.println("map = " + map);
         assert map != null && map.size() == 3;
         assert map.get(NAKACK_ID) == h1;
@@ -41,9 +41,9 @@ public class HeadersTest {
 
 
     public void testPutHeader() {
-        Header[] hdrs=createHeaders(3);
+        AbstractHeader[] hdrs=createHeaders(3);
         assert Headers.getHeader(hdrs, NAKACK_ID) == h1;
-        Header[] retval=Headers.putHeader(hdrs, NAKACK_ID, new MyHeader(NAKACK_ID), true);
+        AbstractHeader[] retval=Headers.putHeader(hdrs, NAKACK_ID, new MyHeader(NAKACK_ID), true);
         assert retval == null;
         assert Headers.size(hdrs) == 3;
         assert Headers.getHeader(hdrs, NAKACK_ID) != h1;
@@ -57,8 +57,8 @@ public class HeadersTest {
 
 
     public void testPutHeaderIfAbsent() {
-        Header[] hdrs=createHeaders(3);
-        Header[] retval=Headers.putHeader(hdrs, FRAG_ID, new MyHeader(FRAG_ID), false);
+        AbstractHeader[] hdrs=createHeaders(3);
+        AbstractHeader[] retval=Headers.putHeader(hdrs, FRAG_ID, new MyHeader(FRAG_ID), false);
         assert retval == null;
 
         assert Headers.getHeader(hdrs, FRAG_ID) == h2;
@@ -86,11 +86,11 @@ public class HeadersTest {
 
 
     public void testResize() {
-        Header[] hdrs=createHeaders(3);
+        AbstractHeader[] hdrs=createHeaders(3);
         int capacity=hdrs.length;
         System.out.println("hdrs = " + Headers.printHeaders(hdrs) + ", capacity=" + capacity);
 
-        Header[] retval=Headers.putHeader(hdrs, (short)400, new MyHeader((short)400), true);
+        AbstractHeader[] retval=Headers.putHeader(hdrs, (short)400, new MyHeader((short)400), true);
         assert retval != null;
         hdrs=retval;
         System.out.println("hdrs = " + Headers.printHeaders(hdrs) + ", capacity=" + hdrs.length);
@@ -108,24 +108,24 @@ public class HeadersTest {
 
 
     public void testCopy() {
-        Header[] hdrs=createHeaders(3);
-        Header[] retval=Headers.putHeader(hdrs, (short)400, new MyHeader((short)400), true);
+        AbstractHeader[] hdrs=createHeaders(3);
+        AbstractHeader[] retval=Headers.putHeader(hdrs, (short)400, new MyHeader((short)400), true);
         assert retval != null;
         hdrs=retval;
-        Header[] copy=Headers.copy(hdrs);
+        AbstractHeader[] copy=Headers.copy(hdrs);
         assert copy.length == hdrs.length;
         assert Headers.size(copy) == Headers.size(hdrs);
     }
 
 
     public void testSize() {
-        Header[] hdrs=createHeaders(3);
+        AbstractHeader[] hdrs=createHeaders(3);
         assert Headers.size(hdrs) == 3;
     }
 
 
-    private static Header[] createHeaders(int initial_capacity) {
-        Header[] hdrs=new Header[initial_capacity];
+    private static AbstractHeader[] createHeaders(int initial_capacity) {
+        AbstractHeader[] hdrs=new AbstractHeader[initial_capacity];
         hdrs[0]=h1;
         hdrs[1]=h2;
         hdrs[2]=h3;
@@ -134,7 +134,7 @@ public class HeadersTest {
 
 
 
-    public static class MyHeader extends Header {
+    public static class MyHeader extends AbstractHeader {
 
         public MyHeader(short prot_id) {
             this.prot_id=prot_id;

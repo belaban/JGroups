@@ -12,7 +12,7 @@ import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.Relayer;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.config.RelayConfig;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -180,8 +180,8 @@ public class Relay2RpcDispatcherTest {
     
     public static class ServerObject {
     	int i;
-    	Channel ch;
-    	public ServerObject(Channel ch, int i) {
+    	AbstractChannel ch;
+    	public ServerObject(AbstractChannel ch, int i) {
     		this.ch = ch;
     		this.i=i;
     	}
@@ -210,8 +210,8 @@ public class Relay2RpcDispatcherTest {
         return relay;
     }
 
-    protected static Protocol[] createBridgeStack() {
-        return new Protocol[]{
+    protected static AbstractProtocol[] createBridgeStack() {
+        return new AbstractProtocol[]{
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
           new NAKACK2(),

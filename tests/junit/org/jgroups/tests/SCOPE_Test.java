@@ -3,7 +3,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.SCOPE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -51,7 +51,7 @@ public class SCOPE_Test extends ChannelTestBase {
 
     public void testOrderWithScopedMulticasts() throws Exception {
         ProtocolStack stack=b.getProtocolStack();
-        Protocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
+        AbstractProtocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
         SCOPE scope=new SCOPE();
         stack.insertProtocolInStack(scope, neighbor, ProtocolStack.ABOVE);
         scope.init();
@@ -112,7 +112,7 @@ public class SCOPE_Test extends ChannelTestBase {
     protected void sendMessages(Address dest, boolean use_scopes) throws Exception {
         if(use_scopes) {
             ProtocolStack stack=b.getProtocolStack();
-            Protocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
+            AbstractProtocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
             SCOPE scope=new SCOPE();
             stack.insertProtocolInStack(scope, neighbor, ProtocolStack.ABOVE);
             scope.init();

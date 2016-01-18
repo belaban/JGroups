@@ -21,9 +21,9 @@ import java.io.DataOutput;
  * </ul>
  * 
  * @author Chris Mills
- * @see org.jgroups.auth.AuthToken
+ * @see AbstractAuthToken
  */
-public class SimpleToken extends AuthToken {
+public class SimpleToken extends AbstractAuthToken {
 
     @Property(exposeAsManagedAttribute=false)
     private String auth_value = null;
@@ -47,7 +47,7 @@ public class SimpleToken extends AuthToken {
         this.auth_value = auth_value;
     }
 
-    public boolean authenticate(AuthToken token, Message msg) {
+    public boolean authenticate(AbstractAuthToken token, Message msg) {
         if ((token != null) && (token instanceof SimpleToken)) {
             // Found a valid Token to authenticate against
             SimpleToken serverToken = (SimpleToken) token;

@@ -2,7 +2,6 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.blocks.Request;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
@@ -32,7 +31,7 @@ import org.jgroups.util.Util;
  */
 public class RpcDispatcherBlocking implements MembershipListener {
     RpcDispatcher disp;
-    Channel       channel;
+    AbstractChannel channel;
     long          timeout=30000;
     String        props=null;
     int           i=0;

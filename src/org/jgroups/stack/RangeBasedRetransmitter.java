@@ -25,13 +25,13 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Bela Ban
  */
-public class RangeBasedRetransmitter extends Retransmitter {
+public class RangeBasedRetransmitter extends AbstractRetransmitter {
 
     /** Sorted hashmap storing the ranges */
     private final Map<Seqno,Seqno> ranges=new ConcurrentSkipListMap<>(new SeqnoComparator());
 
     /** Association between ranges and retransmission tasks */
-    private final Map<Seqno,Task> tasks=new ConcurrentHashMap<>();
+    private final Map<Seqno,AbstractTask> tasks=new ConcurrentHashMap<>();
 
 
     private final AtomicLong num_missing_seqnos=new AtomicLong(0);
@@ -101,7 +101,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
 
         // if the range has no missing messages, get the associated task and cancel it
         if(range.getNumberOfMissingMessages() == 0) {
-            Task task=tasks.remove(range);
+            AbstractTask task=tasks.remove(range);
             if(task != null)
                 task.cancel();
             else
@@ -121,7 +121,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
         synchronized(ranges) {
             for(Seqno range: ranges.keySet()) {
                 // get task associated with range and cancel it
-                Task task=tasks.get(range);
+                AbstractTask task=tasks.get(range);
                 if(task != null) {
                     task.cancel();
                     tasks.remove(range);
@@ -131,7 +131,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
             ranges.clear();
         }
 
-        for(Task task: tasks.values())
+        for(AbstractTask task: tasks.values())
             task.cancel();
 
         num_missing_seqnos.set(0);
@@ -183,7 +183,7 @@ public class RangeBasedRetransmitter extends Retransmitter {
     }
 
 
-    protected class RangeTask extends Task {
+    protected class RangeTask extends AbstractTask {
         protected final Seqno range;
 
         protected RangeTask(Seqno range, Interval intervals, RetransmitCommand cmd, Address msg_sender) {

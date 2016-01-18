@@ -5,7 +5,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.annotations.XmlAttribute;
 import org.jgroups.annotations.XmlElement;
 import org.jgroups.annotations.XmlInclude;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -103,7 +103,7 @@ public class XMLSchemaGenerator {
     protected static void generateProtocolSchema(Document xmldoc, Element parent, String... suffixes) throws Exception {
         for(String suffix: suffixes) {
             String package_name=PROT_PACKAGE + (suffix == null || suffix.isEmpty()? "" : "." + suffix);
-            Set<Class<?>> classes=getClasses(Protocol.class, package_name);
+            Set<Class<?>> classes=getClasses(AbstractProtocol.class, package_name);
             for (Class<?> clazz : classes)
                 classToXML(xmldoc, parent, clazz, package_name);
         }

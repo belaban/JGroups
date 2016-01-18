@@ -27,7 +27,7 @@ import java.util.Collection;
  * 
  * @author Bela Ban
  */
-public class TCP extends BasicTCP {
+public class TCP extends AbstractBasicTCP {
     
     private TcpServer server=null;
 

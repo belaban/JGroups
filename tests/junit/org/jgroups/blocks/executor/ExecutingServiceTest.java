@@ -8,7 +8,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.CENTRAL_EXECUTOR;
-import org.jgroups.protocols.Executing.Owner;
+import org.jgroups.protocols.AbstractExecuting.Owner;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.NotifyingFuture;

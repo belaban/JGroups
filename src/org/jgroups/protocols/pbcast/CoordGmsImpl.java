@@ -16,7 +16,7 @@ import java.util.*;
  * accordingly.
  * @author Bela Ban
  */
-public class CoordGmsImpl extends ServerGmsImpl {
+public class CoordGmsImpl extends AbstractServerGmsImpl {
     protected static final Long  MAX_SUSPEND_TIMEOUT=30000L;
 
     public CoordGmsImpl(GMS g) {

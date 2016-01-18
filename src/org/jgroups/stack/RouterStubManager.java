@@ -30,7 +30,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     // List of destinations that the reconnect task needs to create and connect
     protected volatile Set<Target>                      reconnect_list;
 
-    protected final Protocol                            owner;
+    protected final AbstractProtocol owner;
     protected final TimeScheduler                       timer;
     protected final String                              cluster_name;
     protected final Address                             local_addr;
@@ -47,7 +47,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     }
 
 
-    public RouterStubManager(Protocol owner, String cluster_name, Address local_addr,
+    public RouterStubManager(AbstractProtocol owner, String cluster_name, Address local_addr,
                              String logical_name, PhysicalAddress phys_addr, long interval) {
         this.owner = owner;
         this.stubs = new ArrayList<>();
@@ -61,7 +61,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
         this.interval = interval;
     }
 
-    public static RouterStubManager emptyGossipClientStubManager(Protocol p) {
+    public static RouterStubManager emptyGossipClientStubManager(AbstractProtocol p) {
         return new RouterStubManager(p,null,null,null, null,0L);
     }
     

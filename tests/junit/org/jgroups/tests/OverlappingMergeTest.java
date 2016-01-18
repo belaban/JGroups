@@ -372,7 +372,7 @@ public class OverlappingMergeTest extends ChannelTestBase {
             MERGE3 merge_prot=(MERGE3)ch.getProtocolStack().findProtocol(MERGE3.class);
             if(merge_prot == null) {
                 merge_prot=new MERGE3();
-                ch.getProtocolStack().insertProtocol(merge_prot, ProtocolStack.ABOVE, Discovery.class);
+                ch.getProtocolStack().insertProtocol(merge_prot, ProtocolStack.ABOVE, AbstractDiscovery.class);
                 merge_prot.init();
                 merge_prot.down(new Event(Event.SET_LOCAL_ADDRESS, ch.getAddress()));
                 merge_prot.setMinInterval(2000);

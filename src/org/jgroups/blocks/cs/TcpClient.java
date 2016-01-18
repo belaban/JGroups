@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
  * @author Bela Ban
  * @since  3.6.5
  */
-public class TcpClient extends TcpBaseServer implements Client, ConnectionListener {
+public class TcpClient extends AbstractTcpBaseServer implements Client, ConnectionListener {
     protected Address       remote_addr; // the address of the server (needs to be set before connecting)
     protected TcpConnection conn;        // connection to the server
 

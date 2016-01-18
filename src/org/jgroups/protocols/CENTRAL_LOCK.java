@@ -27,10 +27,10 @@ import java.util.*;
  * An alternative is also the {@link org.jgroups.protocols.PEER_LOCK} protocol.
  * @author Bela Ban
  * @since 2.12
- * @see Locking
+ * @see AbstractLocking
  * @see PEER_LOCK
  */
-public class CENTRAL_LOCK extends Locking implements LockNotification {
+public class CENTRAL_LOCK extends AbstractLocking implements LockNotification {
 
     @Property(description="Number of backups to the coordinator. Server locks get replicated to these nodes as well")
     protected int                 num_backups=1;

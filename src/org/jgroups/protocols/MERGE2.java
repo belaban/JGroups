@@ -3,7 +3,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 
 import java.io.DataInput;
@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @Deprecated
-public class MERGE2 extends Protocol {
+public class MERGE2 extends AbstractProtocol {
     
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
@@ -475,7 +475,7 @@ public class MERGE2 extends Protocol {
     }
 
 
-    protected static class MergeHeader extends Header {
+    protected static class MergeHeader extends AbstractHeader {
         protected byte    type=1; // 1 == req, 2 == rsp
         protected View    view;
         protected static final byte REQ=1;

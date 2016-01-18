@@ -32,7 +32,7 @@ import java.util.StringTokenizer;
  * 
  * @author Chris Mills (millsy@jboss.com)
  */
-public class FixedMembershipToken extends AuthToken {
+public class FixedMembershipToken extends AbstractAuthToken {
     private final List<InetSocketAddress> memberList = new ArrayList<>();
     private String                        token = "emptyToken";
 
@@ -63,7 +63,7 @@ public class FixedMembershipToken extends AuthToken {
             throw new IllegalStateException("own physical address " + self + " is not in members (" + memberList + ")");
     } */
 
-    public boolean authenticate(AuthToken token, Message msg) {
+    public boolean authenticate(AbstractAuthToken token, Message msg) {
         if ((token != null) && (token instanceof FixedMembershipToken) && (this.memberList != null)) {
             PhysicalAddress src = (PhysicalAddress) auth.down(new Event(Event.GET_PHYSICAL_ADDRESS, msg.getSrc()));
             if (src == null) {

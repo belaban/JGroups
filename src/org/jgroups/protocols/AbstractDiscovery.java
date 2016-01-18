@@ -7,7 +7,7 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 
@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  */
 @MBean
-public abstract class Discovery extends Protocol {
+public abstract class AbstractDiscovery extends AbstractProtocol {
 
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
@@ -154,22 +154,22 @@ public abstract class Discovery extends Protocol {
     public void      setNumInitialMembers(int num)      {}
     public int       getNumberOfDiscoveryRequestsSent() {return num_discovery_requests;}
     public long      timeout()                          {return timeout;}
-    public Discovery timeout(long timeout)              {this.timeout=timeout; return this;}
+    public AbstractDiscovery timeout(long timeout)              {this.timeout=timeout; return this;}
     @Deprecated
     public long      numInitialMembers()                {return -1;}
     @Deprecated
-    public Discovery numInitialMembers(int num)         {return this;}
+    public AbstractDiscovery numInitialMembers(int num)         {return this;}
     public boolean   breakOnCoordResponse()             {return break_on_coord_rsp;}
-    public Discovery breakOnCoordResponse(boolean flag) {break_on_coord_rsp=flag; return this;}
+    public AbstractDiscovery breakOnCoordResponse(boolean flag) {break_on_coord_rsp=flag; return this;}
     public boolean   returnEntireCache()                {return return_entire_cache;}
-    public Discovery returnEntireCache(boolean flag)    {return_entire_cache=flag; return this;}
+    public AbstractDiscovery returnEntireCache(boolean flag)    {return_entire_cache=flag; return this;}
     public long      staggerTimeout()                   {return stagger_timeout;}
-    public Discovery staggerTimeout(long timeout)       {stagger_timeout=timeout; return this;}
+    public AbstractDiscovery staggerTimeout(long timeout)       {stagger_timeout=timeout; return this;}
     public boolean   forceDiscoveryResponses()          {return force_sending_discovery_rsps;}
-    public Discovery forceDiscoveryResponses(boolean f) {force_sending_discovery_rsps=f; return this;}
+    public AbstractDiscovery forceDiscoveryResponses(boolean f) {force_sending_discovery_rsps=f; return this;}
     public boolean   useDiskCache()                     {return use_disk_cache;}
-    public Discovery useDiskCache(boolean flag)         {use_disk_cache=flag; return this;}
-    public Discovery discoveryRspExpiryTime(long t)     {this.discovery_rsp_expiry_time=t; return this;}
+    public AbstractDiscovery useDiskCache(boolean flag)         {use_disk_cache=flag; return this;}
+    public AbstractDiscovery discoveryRspExpiryTime(long t)     {this.discovery_rsp_expiry_time=t; return this;}
 
 
 

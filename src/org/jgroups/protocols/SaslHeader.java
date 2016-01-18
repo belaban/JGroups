@@ -3,10 +3,10 @@ package org.jgroups.protocols;
 import java.io.DataInput;
 import java.io.DataOutput;
 
-import org.jgroups.Header;
+import org.jgroups.AbstractHeader;
 import org.jgroups.util.Util;
 
-public class SaslHeader extends Header {
+public class SaslHeader extends AbstractHeader {
     public enum Type {
         CHALLENGE, RESPONSE
     };

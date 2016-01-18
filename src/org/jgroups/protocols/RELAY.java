@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.AddressGenerator;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * @since 2.12
  */
 @MBean(description="RELAY protocol")
-public class RELAY extends Protocol {
+public class RELAY extends AbstractProtocol {
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
     @Property(description="Description of the local cluster, e.g. \"nyc\". This is added to every address, so it" +
@@ -621,7 +621,7 @@ public class RELAY extends Protocol {
     }
 
 
-    public static class RelayHeader extends Header {
+    public static class RelayHeader extends AbstractHeader {
         public static enum Type {DISSEMINATE, FORWARD, VIEW, BROADCAST_VIEW};
         protected Type                type;
         protected Address             original_sender; // with DISSEMINATE

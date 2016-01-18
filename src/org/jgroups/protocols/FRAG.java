@@ -8,7 +8,7 @@ import org.jgroups.View;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 
 import java.io.DataInput;
@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Filip Hanik
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
-public class FRAG extends Protocol {
+public class FRAG extends AbstractProtocol {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 

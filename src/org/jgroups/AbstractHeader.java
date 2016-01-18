@@ -10,12 +10,12 @@ import org.jgroups.util.Streamable;
  * @author Bela Ban
  * @since 2.0
  */
-public abstract class Header implements Streamable {
-    /** The ID of the protocol which added a header to a message. Set externally, e.g. by {@link Message#putHeader(short,Header)} */
+public abstract class AbstractHeader implements Streamable {
+    /** The ID of the protocol which added a header to a message. Set externally, e.g. by {@link Message#putHeader(short, AbstractHeader)} */
     protected short prot_id;
 
     public short  getProtId()         {return prot_id;}
-    public Header setProtId(short id) {this.prot_id=id; return this;}
+    public AbstractHeader setProtId(short id) {this.prot_id=id; return this;}
 
 
     /**

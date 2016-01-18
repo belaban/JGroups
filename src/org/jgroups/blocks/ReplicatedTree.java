@@ -412,7 +412,7 @@ public class ReplicatedTree extends ReceiverAdapter {
     * Returns the Channel the DistributedTree is connected to 
     * @return Channel
     */
-    public Channel getChannel()             {return channel;}
+    public AbstractChannel getChannel()             {return channel;}
 
    /**
     * Returns the number of current members joined to the group

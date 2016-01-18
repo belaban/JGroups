@@ -6,7 +6,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -114,7 +114,7 @@ public class NakackTest {
     }
 
     protected static JChannel createChannel() throws Exception {
-        Protocol[] protocols={
+        AbstractProtocol[] protocols={
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
           new MERGE3().setValue("min_interval", 1000).setValue("max_interval", 3000),

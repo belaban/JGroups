@@ -6,7 +6,7 @@ import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 
 /**
  * Tests UnicastTest with SHARED_LOOPBACK and 2 UnicastTest instances
@@ -29,8 +29,8 @@ public class UnicastTestSharedLoopback {
     }
 
 
-    protected static Protocol[] props() {
-        return new Protocol[]{
+    protected static AbstractProtocol[] props() {
+        return new AbstractProtocol[]{
           new SHARED_LOOPBACK().setValue("bundler_type", "sender-sends").setValue("ignore_dont_bundle", false),
           new SHARED_LOOPBACK_PING(),
           new NAKACK2(),

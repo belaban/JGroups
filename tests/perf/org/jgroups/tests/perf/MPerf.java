@@ -728,7 +728,7 @@ public class MPerf extends ReceiverAdapter {
         }
     }
 
-    protected static class MPerfHeader extends Header {
+    protected static class MPerfHeader extends AbstractHeader {
         protected static final byte DATA          =  1;
         protected static final byte START_SENDING =  2;
         protected static final byte SENDING_DONE  =  3;

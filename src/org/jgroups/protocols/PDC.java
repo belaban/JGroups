@@ -7,7 +7,7 @@ import org.jgroups.View;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 
@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentMap;
  * @since  3.3
  */
 @MBean(description="Persistent Discovery Cache. Caches discovery information on disk.")
-public class PDC extends Protocol {
+public class PDC extends AbstractProtocol {
     protected final ConcurrentMap<Address,PhysicalAddress> cache=new ConcurrentHashMap<>();
 
     /* -----------------------------------------    Properties     ----------------------------------------------- */

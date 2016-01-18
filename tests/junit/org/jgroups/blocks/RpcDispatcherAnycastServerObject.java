@@ -1,7 +1,7 @@
 package org.jgroups.blocks;
 
 import org.jgroups.Address;
-import org.jgroups.Channel;
+import org.jgroups.AbstractChannel;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
@@ -10,10 +10,10 @@ import java.util.*;
 
 public class RpcDispatcherAnycastServerObject extends ReceiverAdapter {
     int i=0;
-    private final Channel c;
+    private final AbstractChannel c;
     private final RpcDispatcher d;
 
-    public RpcDispatcherAnycastServerObject(Channel channel) throws Exception {
+    public RpcDispatcherAnycastServerObject(AbstractChannel channel) throws Exception {
         c=channel;
         d=new RpcDispatcher(c, this, this, this);
     }

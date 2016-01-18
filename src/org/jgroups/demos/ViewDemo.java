@@ -11,7 +11,7 @@ import org.jgroups.util.Util;
  * randomly. The view should always be correct.
  */
 public class ViewDemo extends ReceiverAdapter {
-    private Channel channel;
+    private AbstractChannel channel;
 
 
     public void viewAccepted(View new_view) {

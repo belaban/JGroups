@@ -3,7 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Event;
 import org.jgroups.Global ;
 import org.jgroups.conf.ProtocolConfiguration;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.Configurator ;
 import org.jgroups.stack.Configurator.InetAddressInfo;
@@ -23,7 +23,7 @@ import java.net.InetAddress ;
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class InetAddressChecksTest {
 	ProtocolStack stack = null;
-	Protocol protocol = null ;
+	AbstractProtocol protocol = null ;
 	static final String ipCheckNoConsistentProps="org.jgroups.tests.InetAddressChecksTest$IPCHECK(" + 
 								"inetAddress1=127.0.0.1;inetAddress2=::1;inetAddress3=192.168.0.100;i=3)" ;
 	static final String ipCheckConsistentProps="org.jgroups.tests.InetAddressChecksTest$IPCHECK(" + 
@@ -43,7 +43,7 @@ public class InetAddressChecksTest {
 	public void testIPVersionCheckingNoConsistentVersion() throws Exception {
 
 		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
-		Vector<Protocol> protocols = new Vector<>() ;
+		Vector<AbstractProtocol> protocols = new Vector<>() ;
 		
 		// create the layer described by IPCHECK
 		protocol = Configurator.createProtocol(ipCheckNoConsistentProps, stack) ;
@@ -80,7 +80,7 @@ public class InetAddressChecksTest {
 	public void testIPVersionCheckingConsistentVersion() throws Exception {
 
 		Vector<ProtocolConfiguration> protocol_configs = new Vector<>() ;
-		Vector<Protocol> protocols = new Vector<>() ;
+		Vector<AbstractProtocol> protocols = new Vector<>() ;
 		
 		// create the layer described by IPCHECK
 		protocol = Configurator.createProtocol(ipCheckConsistentProps, stack) ;
@@ -118,7 +118,7 @@ public class InetAddressChecksTest {
 	}
 
 	
-	public static class IPCHECK extends Protocol {
+	public static class IPCHECK extends AbstractProtocol {
 
 		@Property(name="inetAddress1")
 		InetAddress inetAddress1 ;

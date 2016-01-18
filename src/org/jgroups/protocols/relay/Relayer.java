@@ -64,14 +64,14 @@ public class Relayer {
      * @param my_site_id The ID of this site
      * @throws Throwable
      */
-    public void start(List<RelayConfig.BridgeConfig> bridge_configs, String bridge_name, final String my_site_id)
+    public void start(List<RelayConfig.AbstractBridgeConfig> bridge_configs, String bridge_name, final String my_site_id)
       throws Throwable {
         if(done) {
             log.trace(relay.getLocalAddress() + ": will not start the Relayer as stop() has been called");
             return;
         }
         try {
-            for(RelayConfig.BridgeConfig bridge_config: bridge_configs) {
+            for(RelayConfig.AbstractBridgeConfig bridge_config: bridge_configs) {
                 Bridge bridge=new Bridge(bridge_config.createChannel(), bridge_config.getClusterName(), bridge_name,
                                          new AddressGenerator() {
                                              public Address generateAddress() {

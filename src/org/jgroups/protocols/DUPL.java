@@ -4,7 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 
 import java.util.ArrayList;
@@ -13,7 +13,7 @@ import java.util.List;
 /** Duplicates outgoing or incoming messages by copying them
  * @author Bela Ban
  */
-public class DUPL extends Protocol {
+public class DUPL extends AbstractProtocol {
     protected static enum Direction {UP,DOWN};
 
     @Property(description="Number of copies of each incoming message (0=no copies)")

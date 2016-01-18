@@ -8,11 +8,11 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.logging.Log;
-import org.jgroups.protocols.TP;
-import org.jgroups.protocols.pbcast.GmsImpl.Request;
+import org.jgroups.protocols.AbstractTP;
+import org.jgroups.protocols.pbcast.AbstractGmsImpl.Request;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.MembershipChangePolicy;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
 import org.jgroups.util.UUID;
@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  */
 @MBean(description="Group membership protocol")
-public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
+public class GMS extends AbstractProtocol implements DiagnosticsHandler.ProbeHandler {
     protected static final String CLIENT="Client";
     protected static final String COORD="Coordinator";
     protected static final String PART="Participant";
@@ -130,9 +130,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Property(converter=PropertyConverters.FlushInvoker.class,name="flush_invoker_class")
     protected Class<Callable<Boolean>>  flushInvokerClass;
 
-    protected GmsImpl                   impl;
+    protected AbstractGmsImpl impl;
     protected final Object              impl_mutex=new Object(); // synchronizes event entry into impl
-    protected final Map<String,GmsImpl> impls=new HashMap<>(3);
+    protected final Map<String,AbstractGmsImpl> impls=new HashMap<>(3);
 
     // Handles merge related tasks
     protected Merger                    merger;
@@ -368,7 +368,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         return Arrays.asList(Event.IS_MERGE_IN_PROGRESS);
     }
 
-    public void setImpl(GmsImpl new_impl) {
+    public void setImpl(AbstractGmsImpl new_impl) {
         synchronized(impl_mutex) {
             if(impl == new_impl) // unnecessary ?
                 return;
@@ -377,7 +377,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
 
-    public GmsImpl getImpl() {
+    public AbstractGmsImpl getImpl() {
         return impl;
     }
 
@@ -390,7 +390,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             throw new IllegalArgumentException("merge_timeout has to be greater than 0");
         prev_members=new BoundedList<>(num_prev_mbrs);
         prev_views=new BoundedList<>(num_prev_views);
-        TP transport=getTransport();
+        AbstractTP transport=getTransport();
         timer=transport.getTimer();
         if(timer == null)
             throw new Exception("timer is null");
@@ -401,7 +401,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public void start() throws Exception {
         if(impl != null) impl.start();
-        Protocol state_transfer_prot=stack.findProtocol(STATE_TRANSFER.class, StreamingStateTransfer.class);
+        AbstractProtocol state_transfer_prot=stack.findProtocol(STATE_TRANSFER.class, AbstractStreamingStateTransfer.class);
         if(state_transfer_prot != null)
             install_view_locally_first=true;
     }
@@ -1365,7 +1365,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
 
-    public static class GmsHeader extends Header {
+    public static class GmsHeader extends AbstractHeader {
         public static final byte JOIN_REQ                     =  1;
         public static final byte JOIN_RSP                     =  2;
         public static final byte LEAVE_REQ                    =  3;

@@ -5,10 +5,10 @@ import org.jgroups.*;
 import org.jgroups.blocks.mux.Muxer;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.protocols.relay.SiteAddress;
 import org.jgroups.stack.DiagnosticsHandler;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
 
@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Bela Ban
  */
 public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, Closeable {
-    protected Channel                               channel;
+    protected AbstractChannel channel;
     protected RequestCorrelator                     corr;
     protected MessageListener                       msg_listener;
     protected MembershipListener                    membership_listener;
@@ -63,7 +63,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     public MessageDispatcher() {
     }
 
-    public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2) {
+    public MessageDispatcher(AbstractChannel channel, MessageListener l, MembershipListener l2) {
         this.channel=channel;
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
@@ -78,11 +78,11 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     }
 
 
-    public MessageDispatcher(Channel channel, RequestHandler req_handler) {
+    public MessageDispatcher(AbstractChannel channel, RequestHandler req_handler) {
         this(channel, null, null, req_handler);
     }
 
-    public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler) {
+    public MessageDispatcher(AbstractChannel channel, MessageListener l, MembershipListener l2, RequestHandler req_handler) {
         this(channel, l, l2);
         setRequestHandler(req_handler);
     }
@@ -147,16 +147,16 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
             List<Address> tmp_mbrs=channel.getView() != null ? channel.getView().getMembers() : null;
             setMembers(tmp_mbrs);
             if(channel instanceof JChannel) {
-                TP transport=channel.getProtocolStack().getTransport();
+                AbstractTP transport=channel.getProtocolStack().getTransport();
                 corr.registerProbeHandler(transport);
             }
-            TP transport=channel.getProtocolStack().getTransport();
+            AbstractTP transport=channel.getProtocolStack().getTransport();
             hardware_multicast_supported=transport.supportsMulticasting();
             transport.registerProbeHandler(probe_handler);
         }
     }
 
-    protected RequestCorrelator createRequestCorrelator(Protocol transport, RequestHandler handler, Address local_addr) {
+    protected RequestCorrelator createRequestCorrelator(AbstractProtocol transport, RequestHandler handler, Address local_addr) {
         return new RequestCorrelator(transport, handler, local_addr);
     }
 
@@ -171,7 +171,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
             corr.stop();
 
         if(channel instanceof JChannel) {
-            TP transport=channel.getProtocolStack().getTransport();
+            AbstractTP transport=channel.getProtocolStack().getTransport();
             transport.unregisterProbeHandler(probe_handler);
             corr.unregisterProbeHandler(transport);
         }
@@ -193,11 +193,11 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         req_handler=rh;
     }
 
-    public Channel getChannel() {
+    public AbstractChannel getChannel() {
         return channel;
     }
 
-    public void setChannel(Channel ch) {
+    public void setChannel(AbstractChannel ch) {
         if(ch == null)
             return;
         this.channel=ch;
@@ -330,7 +330,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
         // if local delivery is off, then we should not wait for the message from the local member.
         // therefore remove it from the membership
-        Channel tmp=channel;
+        AbstractChannel tmp=channel;
         if((tmp != null && tmp.getDiscardOwnMessages()) || msg.isTransientFlagSet(Message.TransientFlag.DONT_LOOPBACK)) {
             if(local_addr == null)
                 local_addr=tmp != null? tmp.getAddress() : null;
@@ -530,7 +530,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     /* --------------------- Interface ChannelListener ---------------------- */
 
     @Override
-    public void channelConnected(Channel channel) {
+    public void channelConnected(AbstractChannel channel) {
         for(ChannelListener l: channel_listeners) {
             try {
                 l.channelConnected(channel);
@@ -542,7 +542,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     }
 
     @Override
-    public void channelDisconnected(Channel channel) {
+    public void channelDisconnected(AbstractChannel channel) {
         stop();
         for(ChannelListener l: channel_listeners) {
             try {
@@ -555,7 +555,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     }
 
     @Override
-    public void channelClosed(Channel channel) {
+    public void channelClosed(AbstractChannel channel) {
         stop();
         for(ChannelListener l: channel_listeners) {
             try {
@@ -675,7 +675,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     }
 
 
-    class ProtocolAdapter extends Protocol implements UpHandler {
+    class ProtocolAdapter extends AbstractProtocol implements UpHandler {
 
 
         /* ------------------------- Protocol Interface --------------------------- */

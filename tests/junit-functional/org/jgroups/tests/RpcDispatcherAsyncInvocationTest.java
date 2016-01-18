@@ -7,7 +7,7 @@ import org.jgroups.blocks.*;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -122,11 +122,11 @@ public class RpcDispatcherAsyncInvocationTest {
 
 
     protected static JChannel createChannel(String name) throws Exception {
-        TP transport=new SHARED_LOOPBACK();
+        AbstractTP transport=new SHARED_LOOPBACK();
         transport.setOOBThreadPoolMinThreads(10);
         transport.setOOBThreadPoolMaxThreads(20);
         transport.setOOBThreadPoolQueueEnabled(false);
-        return new JChannel(new Protocol[]{
+        return new JChannel(new AbstractProtocol[]{
           transport,
           new SHARED_LOOPBACK_PING(),
           new NAKACK2(),

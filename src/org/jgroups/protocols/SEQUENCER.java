@@ -6,7 +6,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 
 import java.io.DataInput;
@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Implementation of total order protocol using a sequencer")
-public class SEQUENCER extends Protocol {
+public class SEQUENCER extends AbstractProtocol {
     protected Address                           local_addr;
     protected volatile Address                  coord;
     protected volatile View                     view;
@@ -617,7 +617,7 @@ public class SEQUENCER extends Protocol {
 
 
 
-    public static class SequencerHeader extends Header {
+    public static class SequencerHeader extends AbstractHeader {
         protected static final byte FORWARD       = 1;
         protected static final byte FLUSH         = 2;
         protected static final byte BCAST         = 3;

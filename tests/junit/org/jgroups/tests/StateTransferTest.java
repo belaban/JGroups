@@ -3,7 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ArrayIterator;
 import org.jgroups.util.Util;
@@ -95,7 +95,7 @@ public class StateTransferTest extends ChannelTestBase {
         }
 
         // Make sure everyone is in sync
-        Channel[] tmp=new Channel[apps.length];
+        AbstractChannel[] tmp=new AbstractChannel[apps.length];
         for(int i=0; i < apps.length; i++)
             tmp[i]=apps[i].getChannel();
 
@@ -193,14 +193,14 @@ public class StateTransferTest extends ChannelTestBase {
 
     protected long getSeqno(Message msg) {
         for(short id: ids) {
-            Header hdr=msg.getHeader(id);
+            AbstractHeader hdr=msg.getHeader(id);
             if(hdr != null)
                 return getSeqnoFromHeader(hdr);
         }
         return -1;
     }
 
-    protected long getSeqnoFromHeader(Header hdr) {
+    protected long getSeqnoFromHeader(AbstractHeader hdr) {
         Field field=Util.getField(hdr.getClass(), "seqno");
         return (Long)Util.getField(field, hdr);
     }
@@ -210,13 +210,13 @@ public class StateTransferTest extends ChannelTestBase {
         ProtocolStack stack=ch.getProtocolStack();
         if(stack.findProtocol(state_transfer_class) != null)
             return; // protocol of the right class is already in stack
-        Protocol prot=stack.findProtocol(STATE_TRANSFER.class, StreamingStateTransfer.class);
-        Protocol new_state_transfer_protcol=(Protocol)state_transfer_class.newInstance();
+        AbstractProtocol prot=stack.findProtocol(STATE_TRANSFER.class, AbstractStreamingStateTransfer.class);
+        AbstractProtocol new_state_transfer_protcol=(AbstractProtocol)state_transfer_class.newInstance();
         if(prot != null) {
             stack.replaceProtocol(prot, new_state_transfer_protcol);
         }
         else { // no state transfer protocol found in stack
-            Protocol flush=stack.findProtocol(FLUSH.class);
+            AbstractProtocol flush=stack.findProtocol(FLUSH.class);
             if(flush != null)
                 stack.insertProtocol(new_state_transfer_protcol, ProtocolStack.BELOW, FLUSH.class);
             else

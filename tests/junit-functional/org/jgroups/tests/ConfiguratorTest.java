@@ -5,7 +5,7 @@ import org.jgroups.JChannel;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.protocols.*;
 import org.jgroups.stack.Configurator;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -37,9 +37,9 @@ public class ConfiguratorTest {
     
     public void testRemovalOfTop() throws Exception {
         stack.setup(Configurator.parseConfigurations(props));
-        Protocol prot=stack.removeProtocol("FC");
+        AbstractProtocol prot=stack.removeProtocol("FC");
         assert prot != null;
-        List<Protocol> protocols=stack.getProtocols();
+        List<AbstractProtocol> protocols=stack.getProtocols();
         Assert.assertEquals(5, protocols.size());
         assert protocols.get(0).getName().endsWith("UNICAST");
         assert  stack.getTopProtocol().getUpProtocol() != null;
@@ -50,18 +50,18 @@ public class ConfiguratorTest {
     
     public void testRemovalOfBottom() throws Exception {
         stack.setup(Configurator.parseConfigurations(props));
-        Protocol prot=stack.removeProtocol("UDP");
+        AbstractProtocol prot=stack.removeProtocol("UDP");
         assert prot != null;
-        List<Protocol> protocols=stack.getProtocols();
+        List<AbstractProtocol> protocols=stack.getProtocols();
         Assert.assertEquals(5, protocols.size());
         assert protocols.get(protocols.size() -1).getName().endsWith("PING");
     }
     
     public void testAddingAboveTop() throws Exception{
         stack.setup(Configurator.parseConfigurations(props));
-        Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
+        AbstractProtocol new_prot=(AbstractProtocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
         stack.insertProtocol(new_prot, ProtocolStack.ABOVE, FC.class);
-        List<Protocol> protocols=stack.getProtocols();
+        List<AbstractProtocol> protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());       
         assert protocols.get(0).getName().endsWith("TRACE");
         assert  stack.getTopProtocol().getUpProtocol() != null;
@@ -73,7 +73,7 @@ public class ConfiguratorTest {
     @Test(expectedExceptions={IllegalArgumentException.class})
     public void testAddingBelowBottom() throws Exception{
         stack.setup(Configurator.parseConfigurations(props));           
-        Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
+        AbstractProtocol new_prot=(AbstractProtocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
         stack.insertProtocol(new_prot, ProtocolStack.BELOW, UDP.class);
     }
     
@@ -81,46 +81,46 @@ public class ConfiguratorTest {
 
     public void testInsertion() throws Exception {
         stack.setup(Configurator.parseConfigurations(props));
-        List<Protocol> protocols=stack.getProtocols();
+        List<AbstractProtocol> protocols=stack.getProtocols();
         assert protocols != null;
         Assert.assertEquals(6, protocols.size());
 
         for(int i=0; i < names.length; i++) {
             String name=names[i];
-            Protocol p=protocols.get(i);
+            AbstractProtocol p=protocols.get(i);
             Assert.assertEquals(name, p.getName());
         }
 
         // insert below
-        Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
+        AbstractProtocol new_prot=(AbstractProtocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
         stack.insertProtocol(new_prot, ProtocolStack.BELOW, UNICAST.class);
         protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());
         for(int i=0; i < below.length; i++) {
             String name=below[i];
-            Protocol p=protocols.get(i);
+            AbstractProtocol p=protocols.get(i);
             Assert.assertEquals(name, p.getName());
         }
 
         // remove
-        Protocol prot=stack.removeProtocol("TRACE");
+        AbstractProtocol prot=stack.removeProtocol("TRACE");
         assert prot != null;
         protocols=stack.getProtocols();
         Assert.assertEquals(6, protocols.size());
         for(int i=0; i < names.length; i++) {
             String name=names[i];
-            Protocol p=protocols.get(i);
+            AbstractProtocol p=protocols.get(i);
             Assert.assertEquals(name, p.getName());
         }
 
         // insert above
-        new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
+        new_prot=(AbstractProtocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
         stack.insertProtocol(new_prot, ProtocolStack.ABOVE, UNICAST.class);
         protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());
         for(int i=0; i < above.length; i++) {
             String name=above[i];
-            Protocol p=protocols.get(i);
+            AbstractProtocol p=protocols.get(i);
             Assert.assertEquals(name, p.getName());
         }
     }
@@ -177,7 +177,7 @@ public class ConfiguratorTest {
           new SHARED_LOOPBACK() /* dummy stack */
         ).name("A");
 
-        TP tp=ch.getProtocolStack().getTransport();
+        AbstractTP tp=ch.getProtocolStack().getTransport();
         assert tp.getValue("external_port").equals(10000);
         assert tp.getValue("bind_addr").equals(InetAddress.getByName("127.0.0.1"));
 

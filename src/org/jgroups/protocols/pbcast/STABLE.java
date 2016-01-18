@@ -3,7 +3,7 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 
 import java.io.DataInput;
@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Computes the broadcast messages that are stable")
-public class STABLE extends Protocol {
+public class STABLE extends AbstractProtocol {
     protected static final long MAX_SUSPEND_TIME=200000;
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
@@ -736,7 +736,7 @@ public class STABLE extends Protocol {
 
 
 
-    public static class StableHeader extends Header {
+    public static class StableHeader extends AbstractHeader {
         public static final byte STABLE_GOSSIP=1;
         public static final byte STABILITY=2;
 

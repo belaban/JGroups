@@ -28,7 +28,7 @@ import java.util.concurrent.*;
  *
  * @author Bela Ban, Scott Marlow, Alex Fu
  */
-public class ConnectionTableNIO extends BasicConnectionTable implements Runnable {
+public class ConnectionTableNIO extends AbstractBasicConnectionTable implements Runnable {
 
    private ServerSocketChannel m_serverSocketChannel;
    private Selector m_acceptSelector;
@@ -216,7 +216,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
     /**
     * Try to obtain correct Connection (or create one if not yet existent)
     */
-   BasicConnectionTable.Connection getConnection(Address dest) throws Exception
+   AbstractBasicConnectionTable.Connection getConnection(Address dest) throws Exception
    {
       Connection conn;
       SocketChannel sock_ch;
@@ -958,7 +958,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       }
    }
 
-   class Connection extends BasicConnectionTable.Connection {
+   class Connection extends AbstractBasicConnectionTable.Connection {
       private SocketChannel sock_ch = null;
       private WriteHandler m_writeHandler;
       private SelectorWriteHandler m_selectorWriteHandler;

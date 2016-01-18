@@ -177,7 +177,7 @@ public class RpcLockingTest {
 
     protected void enableTracing() {
         for(JChannel ch: Arrays.asList(a,b))
-            ch.getProtocolStack().findProtocol(Locking.class).setLevel("TRACE");
+            ch.getProtocolStack().findProtocol(AbstractLocking.class).setLevel("TRACE");
     }
 
 

@@ -5,7 +5,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 
 
@@ -13,7 +13,7 @@ import org.jgroups.util.MessageBatch;
  * Prints the headers of all sent or received messages
  */
 @MBean(description="Prints the headers of all sent and/or received messages")
-public class HDRS extends Protocol {
+public class HDRS extends AbstractProtocol {
     @Property(description="Enables printing of down messages")
     protected volatile boolean print_down=true;
 

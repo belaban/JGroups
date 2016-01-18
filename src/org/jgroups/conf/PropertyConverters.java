@@ -4,7 +4,7 @@ import org.jgroups.Global;
 import org.jgroups.View;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 
@@ -63,7 +63,7 @@ public class PropertyConverters {
     public static class InitialHosts implements PropertyConverter {
 
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String prop_val, boolean check_scope) throws Exception {
-            int port_range = getPortRange((Protocol)obj) ;
+            int port_range = getPortRange((AbstractProtocol)obj) ;
             return Util.parseCommaDelimitedHosts(prop_val, port_range);
         }
 
@@ -85,7 +85,7 @@ public class PropertyConverters {
                 return value.getClass().getName();
 		}
 
-        private static int getPortRange(Protocol protocol) throws Exception {
+        private static int getPortRange(AbstractProtocol protocol) throws Exception {
             Field f = protocol.getClass().getDeclaredField("port_range") ;
             return ((Integer) Util.getField(f,protocol)).intValue();
 		}
@@ -122,13 +122,13 @@ public class PropertyConverters {
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope) throws Exception {
 
         	// get the existing bind address - possibly null
-        	InetAddress	old_bind_addr = (InetAddress)Configurator.getValueFromProtocol((Protocol)obj, "bind_addr");
+        	InetAddress	old_bind_addr = (InetAddress)Configurator.getValueFromProtocol((AbstractProtocol)obj, "bind_addr");
 
         	// apply a bind interface constraint
             InetAddress new_bind_addr = Util.validateBindAddressFromInterface(old_bind_addr, propertyValue);
 
             if (new_bind_addr != null)
-            	setBindAddress((Protocol)obj, new_bind_addr) ;
+            	setBindAddress((AbstractProtocol)obj, new_bind_addr) ;
 
             // if no bind_interface specified, set it to the empty string to avoid exception
             // from @Property processing
@@ -139,7 +139,7 @@ public class PropertyConverters {
         }
 
 
-        private static void setBindAddress(Protocol protocol, InetAddress bind_addr) throws Exception {
+        private static void setBindAddress(AbstractProtocol protocol, InetAddress bind_addr) throws Exception {
             Field f=Util.getField(protocol.getClass(), "bind_addr");
 			Util.setField(f, protocol, bind_addr) ;
 		}

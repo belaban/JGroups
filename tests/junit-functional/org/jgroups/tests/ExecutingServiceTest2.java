@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Channel;
+import org.jgroups.AbstractChannel;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.executor.ExecutionRunner;
@@ -26,13 +26,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ExecutingServiceTest2 {
 
     Set<Thread> threads=new HashSet<>();
-    Set<Channel> channels=new HashSet<>();
+    Set<AbstractChannel> channels=new HashSet<>();
 
     @AfterMethod
     public void tearDown() {
         for(Thread thread : threads)
             thread.interrupt();
-        for(Channel channel : channels)
+        for(AbstractChannel channel : channels)
             channel.close();
     }
 

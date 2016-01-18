@@ -6,7 +6,7 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Bits;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Table;
@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer (unicast-unicast-multicast)")
-public class SEQUENCER2 extends Protocol {
+public class SEQUENCER2 extends AbstractProtocol {
     protected Address                           local_addr;
     protected volatile Address                  coord;
     protected volatile View                     view;
@@ -449,7 +449,7 @@ public class SEQUENCER2 extends Protocol {
     /* ----------------------------- End of Private Methods -------------------------------- */
     
 
-    public static class SequencerHeader extends Header {
+    public static class SequencerHeader extends AbstractHeader {
         protected static final byte REQUEST       = 1;
         protected static final byte BCAST         = 2;
         protected static final byte RESPONSE      = 3;

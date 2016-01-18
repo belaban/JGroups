@@ -6,7 +6,7 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MyReceiver;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -27,7 +27,7 @@ public class UNICAST_DropFirstAndLastTest {
     protected MyReceiver<Integer> rb;
     protected DISCARD             discard; // on A
 
-    protected void setup(Class<? extends Protocol> unicast_class) throws Exception {
+    protected void setup(Class<? extends AbstractProtocol> unicast_class) throws Exception {
         a=createChannel(unicast_class, "A");
         discard=(DISCARD)a.getProtocolStack().findProtocol(DISCARD.class);
         assert discard != null;
@@ -56,7 +56,7 @@ public class UNICAST_DropFirstAndLastTest {
      * within a short time period, and we don't have to rely on the stable task to kick in.
      */
     @Test(dataProvider="configProvider")
-    public void testLastMessageDropped(Class<? extends Protocol> unicast_class) throws Exception {
+    public void testLastMessageDropped(Class<? extends AbstractProtocol> unicast_class) throws Exception {
         setup(unicast_class);
         setLevel("trace", a, b);
         Address dest=b.getAddress();
@@ -78,13 +78,13 @@ public class UNICAST_DropFirstAndLastTest {
      * within a short time period, and we don't have to rely on the stable task to kick in.
      */
     @Test(dataProvider="configProvider")
-    public void testFirstMessageDropped(Class<? extends Protocol> unicast_class) throws Exception {
+    public void testFirstMessageDropped(Class<? extends AbstractProtocol> unicast_class) throws Exception {
         setup(unicast_class);
 
         System.out.println("**** closing all connections ****");
         // close all connections, so we can start from scratch and send message A1 to B
         for(JChannel ch: Arrays.asList(a,b)) {
-            Protocol unicast=ch.getProtocolStack().findProtocol(Util.getUnicastProtocols());
+            AbstractProtocol unicast=ch.getProtocolStack().findProtocol(Util.getUnicastProtocols());
             removeAllConnections(unicast);
         }
 
@@ -109,8 +109,8 @@ public class UNICAST_DropFirstAndLastTest {
     }
 
 
-    protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
-        Protocol unicast=unicast_class.newInstance();
+    protected JChannel createChannel(Class<? extends AbstractProtocol> unicast_class, String name) throws Exception {
+        AbstractProtocol unicast=unicast_class.newInstance();
         if(unicast instanceof UNICAST2)
             unicast.setValue("stable_interval", 1000);
         return new JChannel(new SHARED_LOOPBACK().setValue("enable_batching", true),
@@ -125,7 +125,7 @@ public class UNICAST_DropFirstAndLastTest {
     protected void printConnectionTables(JChannel ... channels) {
         System.out.println("**** CONNECTIONS:");
         for(JChannel ch: channels) {
-            Protocol ucast=ch.getProtocolStack().findProtocol(Util.getUnicastProtocols());
+            AbstractProtocol ucast=ch.getProtocolStack().findProtocol(Util.getUnicastProtocols());
             System.out.println(ch.getName() + ":\n" + printConnections(ucast) + "\n");
         }
     }
@@ -135,7 +135,7 @@ public class UNICAST_DropFirstAndLastTest {
             ch.getProtocolStack().findProtocol(Util.getUnicastProtocols()).level(level);
     }
 
-    protected String printConnections(Protocol prot) {
+    protected String printConnections(AbstractProtocol prot) {
         if(prot instanceof UNICAST) {
             UNICAST unicast=(UNICAST)prot;
             return unicast.printConnections();
@@ -152,7 +152,7 @@ public class UNICAST_DropFirstAndLastTest {
             throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST, UNICAST2 or UNICAST3");
     }
 
-    protected void removeAllConnections(Protocol prot) {
+    protected void removeAllConnections(AbstractProtocol prot) {
         if(prot instanceof UNICAST) {
             UNICAST unicast=(UNICAST)prot;
             unicast.removeAllConnections();

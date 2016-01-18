@@ -4,7 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.logging.Log;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 
 import java.util.List;
 import java.util.Map;
@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since 3.3
  */
 public class ForwardQueue {
-    protected Protocol                          up_prot, down_prot;
+    protected AbstractProtocol up_prot, down_prot;
 
     protected Address                           local_addr;
 
@@ -64,11 +64,11 @@ public class ForwardQueue {
         this.log=log;
     }
 
-    public Protocol getUpProt()                           {return up_prot;}
-    public void     setUpProt(Protocol up_prot)           {this.up_prot=up_prot;}
+    public AbstractProtocol getUpProt()                           {return up_prot;}
+    public void     setUpProt(AbstractProtocol up_prot)           {this.up_prot=up_prot;}
 
-    public Protocol getDownProt()                         {return down_prot;}
-    public void     setDownProt(Protocol down_prot)       {this.down_prot=down_prot;}
+    public AbstractProtocol getDownProt()                         {return down_prot;}
+    public void     setDownProt(AbstractProtocol down_prot)       {this.down_prot=down_prot;}
 
     public Address  getLocalAddr()                        {return local_addr;}
     public void     setLocalAddr(Address local_addr)      {this.local_addr=local_addr;}

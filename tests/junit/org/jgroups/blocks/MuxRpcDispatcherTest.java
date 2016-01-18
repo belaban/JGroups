@@ -173,7 +173,7 @@ public class MuxRpcDispatcherTest extends ChannelTestBase {
     }
 
 
-    private static void verifyResponse(Map<Address,Rsp<String>> responses, Channel channel, Object expected) {
+    private static void verifyResponse(Map<Address,Rsp<String>> responses, AbstractChannel channel, Object expected) {
         Rsp<?> response = responses.get(channel.getAddress());
         String address = channel.getAddress().toString();
         Assert.assertNotNull(response, address);

@@ -27,7 +27,7 @@ import java.io.OutputStream;
  * @author Bela Ban Dec 13 2001
  */
 public class LargeState extends ReceiverAdapter {
-    Channel  channel;
+    AbstractChannel channel;
     byte[]   state=null;
     boolean  rc=false;
     String   props;

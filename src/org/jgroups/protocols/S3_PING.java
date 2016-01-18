@@ -385,7 +385,7 @@ public class S3_PING extends FILE_PING {
         private boolean isSecure;
         private String server;
         private int port;
-        private CallingFormat callingFormat;
+        private AbstractCallingFormat callingFormat;
 
         public AWSAuthConnection(String awsAccessKeyId, String awsSecretAccessKey) {
             this(awsAccessKeyId, awsSecretAccessKey, true);
@@ -403,12 +403,12 @@ public class S3_PING extends FILE_PING {
 
         public AWSAuthConnection(String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
                                  String server, int port) {
-            this(awsAccessKeyId, awsSecretAccessKey, isSecure, server, port, CallingFormat.getSubdomainCallingFormat());
+            this(awsAccessKeyId, awsSecretAccessKey, isSecure, server, port, AbstractCallingFormat.getSubdomainCallingFormat());
 
         }
 
         public AWSAuthConnection(String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
-                                 String server, CallingFormat format) {
+                                 String server, AbstractCallingFormat format) {
             this(awsAccessKeyId, awsSecretAccessKey, isSecure, server,
                  isSecure? Utils.SECURE_PORT : Utils.INSECURE_PORT,
                  format);
@@ -425,7 +425,7 @@ public class S3_PING extends FILE_PING {
          * @param format             Type of request Regular/Vanity or Pure Vanity domain
          */
         public AWSAuthConnection(String awsAccessKeyId, String awsSecretAccessKey, boolean isSecure,
-                                 String server, int port, CallingFormat format) {
+                                 String server, int port, AbstractCallingFormat format) {
             this.awsAccessKeyId=awsAccessKeyId;
             this.awsSecretAccessKey=awsSecretAccessKey;
             this.isSecure=isSecure;
@@ -831,8 +831,8 @@ public class S3_PING extends FILE_PING {
         private HttpURLConnection makeRequest(String method, String bucket, String key, Map pathArgs, Map headers,
                                               S3Object object)
                 throws IOException {
-            CallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
-            if(isSecure && format != CallingFormat.getPathCallingFormat() && bucket.contains(".")) {
+            AbstractCallingFormat format=Utils.getCallingFormatForBucket(this.callingFormat, bucket);
+            if(isSecure && format != AbstractCallingFormat.getPathCallingFormat() && bucket.contains(".")) {
                 System.err.println("You are making an SSL connection, however, the bucket contains periods and the wildcard certificate will not match by default.  Please consider using HTTP.");
             }
 
@@ -1477,11 +1477,11 @@ public class S3_PING extends FILE_PING {
     }
 
 
-    abstract static class CallingFormat {
+    abstract static class AbstractCallingFormat {
 
-        protected static CallingFormat pathCallingFormat=new PathCallingFormat();
-        protected static CallingFormat subdomainCallingFormat=new SubdomainCallingFormat();
-        protected static CallingFormat vanityCallingFormat=new VanityCallingFormat();
+        protected static AbstractCallingFormat pathCallingFormat=new PathCallingFormat();
+        protected static AbstractCallingFormat subdomainCallingFormat=new SubdomainCallingFormat();
+        protected static AbstractCallingFormat vanityCallingFormat=new VanityCallingFormat();
 
         public abstract boolean supportsLocatedBuckets();
 
@@ -1492,19 +1492,19 @@ public class S3_PING extends FILE_PING {
         public abstract URL getURL(boolean isSecure, String server, int port, String bucket, String key, Map pathArgs)
                 throws MalformedURLException;
 
-        public static CallingFormat getPathCallingFormat() {
+        public static AbstractCallingFormat getPathCallingFormat() {
             return pathCallingFormat;
         }
 
-        public static CallingFormat getSubdomainCallingFormat() {
+        public static AbstractCallingFormat getSubdomainCallingFormat() {
             return subdomainCallingFormat;
         }
 
-        public static CallingFormat getVanityCallingFormat() {
+        public static AbstractCallingFormat getVanityCallingFormat() {
             return vanityCallingFormat;
         }
 
-        private static class PathCallingFormat extends CallingFormat {
+        private static class PathCallingFormat extends AbstractCallingFormat {
             public boolean supportsLocatedBuckets() {
                 return false;
             }
@@ -1529,7 +1529,7 @@ public class S3_PING extends FILE_PING {
             }
         }
 
-        private static class SubdomainCallingFormat extends CallingFormat {
+        private static class SubdomainCallingFormat extends AbstractCallingFormat {
             public boolean supportsLocatedBuckets() {
                 return true;
             }
@@ -1825,8 +1825,8 @@ public class S3_PING extends FILE_PING {
         /**
          * Validate bucket-name
          */
-        static boolean validateBucketName(String bucketName, CallingFormat callingFormat) {
-            if(callingFormat == CallingFormat.getPathCallingFormat()) {
+        static boolean validateBucketName(String bucketName, AbstractCallingFormat callingFormat) {
+            if(callingFormat == AbstractCallingFormat.getPathCallingFormat()) {
                 final int MIN_BUCKET_LENGTH=3;
                 final int MAX_BUCKET_LENGTH=255;
                 final String BUCKET_NAME_REGEX="^[0-9A-Za-z\\.\\-_]*$";
@@ -1860,10 +1860,10 @@ public class S3_PING extends FILE_PING {
                     bucketName.matches(BUCKET_NAME_REGEX);
         }
 
-        static CallingFormat getCallingFormatForBucket(CallingFormat desiredFormat, String bucketName) {
-            CallingFormat callingFormat=desiredFormat;
-            if(callingFormat == CallingFormat.getSubdomainCallingFormat() && !Utils.isValidSubdomainBucketName(bucketName)) {
-                callingFormat=CallingFormat.getPathCallingFormat();
+        static AbstractCallingFormat getCallingFormatForBucket(AbstractCallingFormat desiredFormat, String bucketName) {
+            AbstractCallingFormat callingFormat=desiredFormat;
+            if(callingFormat == AbstractCallingFormat.getSubdomainCallingFormat() && !Utils.isValidSubdomainBucketName(bucketName)) {
+                callingFormat= AbstractCallingFormat.getPathCallingFormat();
             }
             return callingFormat;
         }

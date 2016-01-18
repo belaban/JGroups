@@ -3,7 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -114,7 +114,7 @@ public class RATE_LIMITER_Test {
     }
 
 
-    protected static class Throughput extends Protocol implements Runnable {
+    protected static class Throughput extends AbstractProtocol implements Runnable {
         protected final AtomicInteger    bytes_in_period=new AtomicInteger(0);
         protected final Collection<Long> measurements=new ConcurrentLinkedQueue<>(); // measurement taken every second
         protected Thread                 runner;

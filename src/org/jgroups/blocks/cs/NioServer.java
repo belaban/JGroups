@@ -22,7 +22,7 @@ import java.nio.channels.SocketChannel;
  * @author Bela Ban
  * @since  3.6.5
  */
-public class NioServer extends NioBaseServer {
+public class NioServer extends AbstractNioBaseServer {
     protected ServerSocketChannel channel;  // used to accept connections from peers
 
 

@@ -12,7 +12,7 @@ import org.jgroups.protocols.COUNTER;
 import org.jgroups.protocols.FORK;
 import org.jgroups.protocols.FRAG2;
 import org.jgroups.protocols.pbcast.STATE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MyReceiver;
 import org.jgroups.util.Util;
@@ -33,7 +33,7 @@ public class ForkChannelTest {
     protected ForkChannel             fc1, fc2, fc3, fc4;
     protected static final String     CLUSTER="ForkChannelTest";
 
-    protected Protocol[] protocols() {return Util.getTestStack(new STATE(), new FORK());}
+    protected AbstractProtocol[] protocols() {return Util.getTestStack(new STATE(), new FORK());}
 
     @BeforeMethod protected void setup() throws Exception {
         a=new JChannel(protocols()).name("A");
@@ -117,7 +117,7 @@ public class ForkChannelTest {
 
     public void testRefcount() throws Exception {
         FORK fork=(FORK)a.getProtocolStack().findProtocol(FORK.class);
-        Protocol prot=fork.get("stack");
+        AbstractProtocol prot=fork.get("stack");
         assert prot == null;
         fc1=new ForkChannel(a, "stack", "fc1");
         prot=fork.get("stack");
@@ -176,7 +176,7 @@ public class ForkChannelTest {
         assert p1.inits == 1 && p2.inits == 1;
 
         FORK fork=(FORK)a.getProtocolStack().findProtocol(FORK.class);
-        Protocol prot=fork.get("stack");
+        AbstractProtocol prot=fork.get("stack");
         ForkProtocolStack fork_stack=(ForkProtocolStack)getProtStack(prot);
         int inits=fork_stack.getInits();
         assert inits == 3;
@@ -341,7 +341,7 @@ public class ForkChannelTest {
     }
 
 
-    protected static ProtocolStack getProtStack(Protocol prot) {
+    protected static ProtocolStack getProtStack(AbstractProtocol prot) {
         while(prot != null && !(prot instanceof ProtocolStack)) {
             prot=prot.getUpProtocol();
         }
@@ -365,7 +365,7 @@ public class ForkChannelTest {
         }
     }*/
 
-    protected static class Prot extends Protocol {
+    protected static class Prot extends AbstractProtocol {
         protected final String myname;
         protected int          inits, starts, stops, destroys;
 

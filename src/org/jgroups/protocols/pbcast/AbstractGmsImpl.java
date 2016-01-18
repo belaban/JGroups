@@ -13,14 +13,14 @@ import java.util.Collection;
 import java.util.Map;
 
 
-public abstract class GmsImpl {
+public abstract class AbstractGmsImpl {
     protected final GMS    gms;
     protected final Merger merger;
     protected final Log    log;
     volatile boolean       leaving=false;
 
 
-    protected GmsImpl(GMS gms) {
+    protected AbstractGmsImpl(GMS gms) {
         this.gms=gms;
         merger=gms.merger;
         log=gms.getLog();

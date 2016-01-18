@@ -18,7 +18,7 @@ public class NAKACK_SET_DIGEST_Test {
     private Address   a, b, c;
     private View      v1, v2;
 
-    private static final short TP_ID=101;
+    private static final short AbstractTP_ID=101;
 
     @BeforeMethod
     protected void setUp() throws Exception {
@@ -32,7 +32,7 @@ public class NAKACK_SET_DIGEST_Test {
         d1=new Digest(v1.getMembersRaw(), new long[]{11,11, 30,35});
         d2=new Digest(v2.getMembersRaw(), new long[]{10,10, 30,30, 50,50});
 
-        TP transport=new TP() {
+        AbstractTP transport=new AbstractTP() {
             public boolean supportsMulticasting() {return false;}
             public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {}
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
@@ -41,7 +41,7 @@ public class NAKACK_SET_DIGEST_Test {
             protected PhysicalAddress getPhysicalAddress() {return null;}
             public TimeScheduler getTimer() {return new DefaultTimeScheduler(1);}
         };
-        transport.setId(TP_ID);
+        transport.setId(AbstractTP_ID);
         nak.setDownProtocol(transport);
         nak.start();
     }

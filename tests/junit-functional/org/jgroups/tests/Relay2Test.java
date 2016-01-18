@@ -7,7 +7,7 @@ import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.relay.RELAY2;
 import org.jgroups.protocols.relay.Relayer;
 import org.jgroups.protocols.relay.config.RelayConfig;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
@@ -279,8 +279,8 @@ public class Relay2Test {
         return relay;
     }
 
-    protected static Protocol[] createBridgeStack() {
-        return new Protocol[]{
+    protected static AbstractProtocol[] createBridgeStack() {
+        return new AbstractProtocol[]{
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
           new MERGE3().setValue("max_interval", 3000).setValue("min_interval", 1000),

@@ -5,7 +5,7 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.ConcurrentLinkedBlockingQueue;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Experimental @Unsupported
 @MBean(description="Alternating Bit Protocol, for reliable p2p unicasts")
-public class ABP extends Protocol {
+public class ABP extends AbstractProtocol {
 
     @Property(description="Interval (in ms) at which a sent msg is resent")
     protected long resend_interval=1000;
@@ -173,7 +173,7 @@ public class ABP extends Protocol {
         }
     }
 
-    protected static class ABPHeader extends Header {
+    protected static class ABPHeader extends AbstractHeader {
         protected Type type;
         protected byte bit;  // either 1 or 0
 

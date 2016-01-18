@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentMap;
  * us to test various protocols (with ProtocolTester) at maximum speed.
  * @author Bela Ban
  */
-public class SHARED_LOOPBACK extends TP {
+public class SHARED_LOOPBACK extends AbstractTP {
     protected PhysicalAddress  physical_addr;
 
     @ManagedAttribute(description="The current view",writable=false)

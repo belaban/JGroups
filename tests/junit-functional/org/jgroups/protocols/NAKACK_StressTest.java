@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.MutableDigest;
 import org.jgroups.util.Util;
@@ -54,9 +54,9 @@ public class NAKACK_StressTest {
         final Address sender=Util.createRandomAddress("B");
 
 
-        nak.setDownProtocol(new Protocol() {public Object down(Event evt) {return null;}});
+        nak.setDownProtocol(new AbstractProtocol() {public Object down(Event evt) {return null;}});
 
-        nak.setUpProtocol(new Protocol() {
+        nak.setUpProtocol(new AbstractProtocol() {
             public Object up(Event evt) {
                 if(evt.getType() == Event.MSG) {
                     delivered_msgs.incrementAndGet();

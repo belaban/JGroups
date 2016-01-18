@@ -46,7 +46,7 @@ public class ConcurrentStartupTest {
                 channels[i].connect(5+i);
 
             // Make sure everyone is in sync
-            Channel[] tmp=new Channel[channels.length];
+            AbstractChannel[] tmp=new AbstractChannel[channels.length];
             for(int i=0; i < channels.length; i++)
                 tmp[i]=channels[i].getChannel();
 

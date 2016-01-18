@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since 3.6.5
  */
 @MBean(description="Server used to accept connections from other servers (or clients) and send data to servers")
-public abstract class BaseServer implements Closeable, ConnectionListener {
+public abstract class AbstractBaseServer implements Closeable, ConnectionListener {
     protected Address                         local_addr; // typically the address of the server socket or channel
     protected final List<ConnectionListener>  conn_listeners=new CopyOnWriteArrayList<>();
     protected final Map<Address,Connection>   conns=new HashMap<>();
@@ -59,41 +59,41 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected TimeService                     time_service;
 
 
-    protected BaseServer(ThreadFactory f) {
+    protected AbstractBaseServer(ThreadFactory f) {
         this.factory=f;
     }
 
 
 
     public Receiver         receiver()                              {return receiver;}
-    public BaseServer       receiver(Receiver r)                    {this.receiver=r; return this;}
+    public AbstractBaseServer receiver(Receiver r)                    {this.receiver=r; return this;}
     public long             reaperInterval()                        {return reaperInterval;}
-    public BaseServer       reaperInterval(long interval)           {this.reaperInterval=interval; return this;}
+    public AbstractBaseServer reaperInterval(long interval)           {this.reaperInterval=interval; return this;}
     public Log              log()                                   {return log;}
-    public BaseServer       log(Log the_log)                        {this.log=the_log; return this;}
+    public AbstractBaseServer log(Log the_log)                        {this.log=the_log; return this;}
     public Address          localAddress()                          {return local_addr;}
     public InetAddress      clientBindAddress()                     {return client_bind_addr;}
-    public BaseServer       clientBindAddress(InetAddress addr)     {this.client_bind_addr=addr; return this;}
+    public AbstractBaseServer clientBindAddress(InetAddress addr)     {this.client_bind_addr=addr; return this;}
     public int              clientBindPort()                        {return client_bind_port;}
-    public BaseServer       clientBindPort(int port)                {this.client_bind_port=port; return this;}
+    public AbstractBaseServer clientBindPort(int port)                {this.client_bind_port=port; return this;}
     public boolean          deferClientBinding()                    {return defer_client_binding;}
-    public BaseServer       deferClientBinding(boolean defer)       {this.defer_client_binding=defer; return this;}
+    public AbstractBaseServer deferClientBinding(boolean defer)       {this.defer_client_binding=defer; return this;}
     public boolean          usePeerConnections()                    {return use_peer_connections;}
-    public BaseServer       usePeerConnections(boolean flag)        {this.use_peer_connections=flag; return this;}
+    public AbstractBaseServer usePeerConnections(boolean flag)        {this.use_peer_connections=flag; return this;}
     public int              socketConnectionTimeout()               {return sock_conn_timeout;}
-    public BaseServer       socketConnectionTimeout(int timeout)    {this.sock_conn_timeout = timeout; return this;}
+    public AbstractBaseServer socketConnectionTimeout(int timeout)    {this.sock_conn_timeout = timeout; return this;}
     public long             connExpireTime()                        {return conn_expire_time;}
-    public BaseServer       connExpireTimeout(long t)               {conn_expire_time=TimeUnit.NANOSECONDS.convert(t, TimeUnit.MILLISECONDS); return this;}
+    public AbstractBaseServer connExpireTimeout(long t)               {conn_expire_time=TimeUnit.NANOSECONDS.convert(t, TimeUnit.MILLISECONDS); return this;}
     public TimeService      timeService()                           {return time_service;}
-    public BaseServer       timeService(TimeService ts)             {this.time_service=ts; return this;}
+    public AbstractBaseServer timeService(TimeService ts)             {this.time_service=ts; return this;}
     public int              receiveBufferSize()                     {return recv_buf_size;}
-    public BaseServer       receiveBufferSize(int recv_buf_size)    {this.recv_buf_size = recv_buf_size; return this;}
+    public AbstractBaseServer receiveBufferSize(int recv_buf_size)    {this.recv_buf_size = recv_buf_size; return this;}
     public int              sendBufferSize()                        {return send_buf_size;}
-    public BaseServer       sendBufferSize(int send_buf_size)       {this.send_buf_size = send_buf_size; return this;}
+    public AbstractBaseServer sendBufferSize(int send_buf_size)       {this.send_buf_size = send_buf_size; return this;}
     public int              linger()                                {return linger;}
-    public BaseServer       linger(int linger)                      {this.linger=linger; return this;}
+    public AbstractBaseServer linger(int linger)                      {this.linger=linger; return this;}
     public boolean          tcpNodelay()                            {return tcp_nodelay;}
-    public BaseServer       tcpNodelay(boolean tcp_nodelay)         {this.tcp_nodelay = tcp_nodelay; return this;}
+    public AbstractBaseServer tcpNodelay(boolean tcp_nodelay)         {this.tcp_nodelay = tcp_nodelay; return this;}
     @ManagedAttribute(description="True if the server is running, else false")
     public boolean          running()                               {return running.get();}
 
@@ -510,7 +510,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
         public void run() {
             while(!Thread.currentThread().isInterrupted()) {
-                synchronized(BaseServer.this) {
+                synchronized(AbstractBaseServer.this) {
                     for(Iterator<Entry<Address,Connection>> it=conns.entrySet().iterator();it.hasNext();) {
                         Entry<Address,Connection> entry=it.next();
                         Connection c=entry.getValue();

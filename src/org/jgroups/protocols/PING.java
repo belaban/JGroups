@@ -20,7 +20,7 @@ import java.util.List;
  * with a discovery response.
  * @author Bela Ban
  */
-public class PING extends Discovery {
+public class PING extends AbstractDiscovery {
 
     public boolean isDynamic() {
         return true;

@@ -2,7 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.JChannel;
 import org.jgroups.Global;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.testng.annotations.Test;
 
 /**
@@ -32,7 +32,7 @@ public class CustomProtocolTest {
     }
 
 
-    public static class MyProtocol extends Protocol {
+    public static class MyProtocol extends AbstractProtocol {
 
     }
 }

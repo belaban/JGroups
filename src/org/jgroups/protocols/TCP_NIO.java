@@ -6,7 +6,7 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
-import org.jgroups.blocks.BasicConnectionTable;
+import org.jgroups.blocks.AbstractBasicConnectionTable;
 import org.jgroups.blocks.ConnectionTableNIO;
 
 import java.net.InetAddress;
@@ -19,7 +19,7 @@ import java.util.Collection;
  * @author Bela Ban
  */
 @Experimental @Unsupported @Deprecated
-public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
+public class TCP_NIO extends AbstractBasicTCP implements AbstractBasicConnectionTable.Receiver
 {
 
     /*

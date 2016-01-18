@@ -5,7 +5,7 @@ import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.stack.NakReceiverWindow;
-import org.jgroups.stack.Retransmitter;
+import org.jgroups.stack.AbstractRetransmitter;
 import org.jgroups.util.DefaultTimeScheduler;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -39,7 +39,7 @@ public class NakReceiverWindowTest2 {
     @BeforeMethod
     void init() {
         latch=new CountDownLatch(1);
-        win=new NakReceiverWindow(self, new Retransmitter.RetransmitCommand() {
+        win=new NakReceiverWindow(self, new AbstractRetransmitter.RetransmitCommand() {
             public void retransmit(long first_seqno, long last_seqno, Address sender) {
             }
         }, 0, new DefaultTimeScheduler(2));

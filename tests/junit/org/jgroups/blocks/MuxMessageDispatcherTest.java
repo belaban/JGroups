@@ -177,7 +177,7 @@ public class MuxMessageDispatcherTest extends ChannelTestBase {
 //        Assert.assertEquals(response, "muxDispatcher[1][0]");
     }
 
-    private static void verifyResponse(Map<Address, Rsp<Object>> responses, Channel channel, Object expected) {
+    private static void verifyResponse(Map<Address, Rsp<Object>> responses, AbstractChannel channel, Object expected) {
         Rsp<?> response = responses.get(channel.getAddress());
         String address = channel.getAddress().toString();
         Assert.assertNotNull(response, address);

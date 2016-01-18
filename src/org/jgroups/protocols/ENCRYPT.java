@@ -3,7 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.AsciiString;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.MessageBatch;
@@ -104,7 +104,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Protocol which encrypts and decrypts cluster traffic")
-public class ENCRYPT extends Protocol {
+public class ENCRYPT extends AbstractProtocol {
     private static final String DEFAULT_SYM_ALGO="AES";
     Address local_addr;
     Address keyServerAddr;
@@ -986,7 +986,7 @@ public class ENCRYPT extends Protocol {
     }
 
 
-    public static class EncryptHeader extends org.jgroups.Header {
+    public static class EncryptHeader extends AbstractHeader {
         public static final byte ENCRYPT            = 1 << 0;
         public static final byte KEY_REQUEST        = 1 << 1;
         public static final byte SECRETKEY          = 1 << 2;

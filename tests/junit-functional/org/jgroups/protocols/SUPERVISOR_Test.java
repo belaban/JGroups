@@ -6,7 +6,7 @@ import org.jgroups.JChannel;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.protocols.rules.Rule;
+import org.jgroups.protocols.rules.AbstractRule;
 import org.jgroups.protocols.rules.SUPERVISOR;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -92,7 +92,7 @@ public class SUPERVISOR_Test {
     }
 
 
-    protected static class RestartFailureDetector extends Rule {
+    protected static class RestartFailureDetector extends AbstractRule {
         protected FD fd;
 
         public String name()        {return "MyRule";}

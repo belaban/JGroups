@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Bits;
 import org.jgroups.util.ForwardQueue;
 import org.jgroups.util.Util;
@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @since 3.2
  */
 @MBean(description="Forwards unicast messages to the current coordinator")
-public class FORWARD_TO_COORD extends Protocol {
+public class FORWARD_TO_COORD extends AbstractProtocol {
 
     @Property(description="The delay (in ms) to wait until we resend a message to member P after P told us that " +
       "it isn't the coordinator. Thsi can happen when we see P as new coordinator, but P hasn't yet installed the view " +
@@ -188,7 +188,7 @@ public class FORWARD_TO_COORD extends Protocol {
 
 
 
-    protected static class ForwardHeader extends Header {
+    protected static class ForwardHeader extends AbstractHeader {
         protected static final byte MSG       = 1; // attached to the messages to the coord
         protected static final byte ACK       = 2; // sent back by the coord
         protected static final byte NOT_COORD = 3; // sent by the coord when it is *not* the coord

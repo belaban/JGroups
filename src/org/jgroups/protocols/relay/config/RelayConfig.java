@@ -1,7 +1,7 @@
 package org.jgroups.protocols.relay.config;
 
 import org.jgroups.JChannel;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.w3c.dom.*;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -123,7 +123,7 @@ public class RelayConfig {
             Attr config_attr=(Attr)attrs.getNamedItem("config");
             String name=name_attr != null? name_attr.getValue() : null;
             String config=config_attr.getValue();
-            BridgeConfig bridge_config=new PropertiesBridgeConfig(name, config);
+            AbstractBridgeConfig bridge_config=new PropertiesBridgeConfig(name, config);
             site_config.addBridge(bridge_config);
         }
     }
@@ -159,7 +159,7 @@ public class RelayConfig {
 
     public static class SiteConfig {
         protected final String              name;
-        protected final List<BridgeConfig>  bridges=new ArrayList<>();
+        protected final List<AbstractBridgeConfig>  bridges=new ArrayList<>();
         protected final List<ForwardConfig> forwards=new ArrayList<>();
 
         public SiteConfig(String name) {
@@ -168,16 +168,16 @@ public class RelayConfig {
 
         public String getName() {return name;}
 
-        public List<BridgeConfig>  getBridges()   {return bridges;}
+        public List<AbstractBridgeConfig>  getBridges()   {return bridges;}
         public List<ForwardConfig> getForwards()  {return forwards;}
 
-        public SiteConfig addBridge(BridgeConfig bridge_config)    {bridges.add(bridge_config);   return this;}
+        public SiteConfig addBridge(AbstractBridgeConfig bridge_config)    {bridges.add(bridge_config);   return this;}
         public SiteConfig addForward(ForwardConfig forward_config) {forwards.add(forward_config); return this;}
 
         public String toString() {
             StringBuilder sb=new StringBuilder("name=" + name + "\n");
             if(!bridges.isEmpty())
-                for(BridgeConfig bridge_config: bridges)
+                for(AbstractBridgeConfig bridge_config: bridges)
                     sb.append(bridge_config).append("\n");
             if(!forwards.isEmpty())
                 for(ForwardConfig forward_config: forwards)
@@ -186,10 +186,10 @@ public class RelayConfig {
         }
     }
 
-    public abstract static class BridgeConfig {
+    public abstract static class AbstractBridgeConfig {
         protected final String cluster_name;
 
-        protected BridgeConfig(String cluster_name) {this.cluster_name=cluster_name;}
+        protected AbstractBridgeConfig(String cluster_name) {this.cluster_name=cluster_name;}
 
         public String            getClusterName()  {return cluster_name;}
         public abstract JChannel  createChannel() throws Exception;
@@ -197,7 +197,7 @@ public class RelayConfig {
         public String toString() {return "cluster=" + cluster_name;}
     }
 
-    public static class PropertiesBridgeConfig extends BridgeConfig {
+    public static class PropertiesBridgeConfig extends AbstractBridgeConfig {
         protected final String config;
 
         public PropertiesBridgeConfig(String cluster_name, String config) {
@@ -210,10 +210,10 @@ public class RelayConfig {
     }
 
 
-    public static class ProgrammaticBridgeConfig extends BridgeConfig {
-        protected Protocol[] protocols;
+    public static class ProgrammaticBridgeConfig extends AbstractBridgeConfig {
+        protected AbstractProtocol[] protocols;
 
-        public ProgrammaticBridgeConfig(String cluster_name, Protocol[] prots) {
+        public ProgrammaticBridgeConfig(String cluster_name, AbstractProtocol[] prots) {
             super(cluster_name);
             this.protocols=prots;
         }
@@ -227,10 +227,10 @@ public class RelayConfig {
         }
 
 
-        protected static String printProtocols(Protocol[] protocols) {
+        protected static String printProtocols(AbstractProtocol[] protocols) {
             StringBuilder sb=new StringBuilder("[");
             boolean first=true;
-            for(Protocol prot: protocols) {
+            for(AbstractProtocol prot: protocols) {
                 if(first)
                     first=false;
                 else

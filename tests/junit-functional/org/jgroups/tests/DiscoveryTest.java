@@ -3,7 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
-import org.jgroups.protocols.Discovery;
+import org.jgroups.protocols.AbstractDiscovery;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
@@ -58,9 +58,9 @@ public class DiscoveryTest {
 
     protected void testLeak(JChannel discovery_initiator) throws Exception {
         ProtocolStack stack=discovery_initiator.getProtocolStack();
-        Discovery ping=(Discovery)stack.findProtocol(Discovery.class);
+        AbstractDiscovery ping=(AbstractDiscovery)stack.findProtocol(AbstractDiscovery.class);
         ping.discoveryRspExpiryTime(1000);
-        Field ping_rsps_field=Util.getField(Discovery.class, "ping_responses");
+        Field ping_rsps_field=Util.getField(AbstractDiscovery.class, "ping_responses");
         Map<Long,Responses> ping_rsps=(Map<Long,Responses>)Util.getField(ping_rsps_field, ping);
         for(int i=1; i <= 10; i++) {
             ping.down(Event.FIND_INITIAL_MBRS_EVT);

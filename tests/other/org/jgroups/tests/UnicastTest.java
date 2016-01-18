@@ -6,7 +6,7 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.UNICAST2;
 import org.jgroups.protocols.UNICAST3;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
@@ -34,7 +34,7 @@ public class UnicastTest {
     protected static final byte    DATA  = 2; // | length (int) | data (byte[]) |
 
 
-    public void init(Protocol[] props, long sleep_time, String name) throws Exception {
+    public void init(AbstractProtocol[] props, long sleep_time, String name) throws Exception {
         _init(new JChannel(props), sleep_time, name);
     }
 
@@ -112,7 +112,7 @@ public class UnicastTest {
     }
 
     protected void printConnections() {
-        Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
+        AbstractProtocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         if(prot instanceof UNICAST)
             System.out.println(((UNICAST)prot).printConnections());
         else if(prot instanceof UNICAST2)
@@ -123,7 +123,7 @@ public class UnicastTest {
 
 
     protected void removeAllConnections() {
-        Protocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
+        AbstractProtocol prot=channel.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         if(prot instanceof UNICAST)
             ((UNICAST)prot).removeAllConnections();
         else if(prot instanceof UNICAST2)

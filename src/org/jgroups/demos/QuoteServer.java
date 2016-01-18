@@ -30,7 +30,7 @@ import java.util.Hashtable;
 
 public class QuoteServer extends ReceiverAdapter {
     final Hashtable stocks=new Hashtable();
-    Channel channel;
+    AbstractChannel channel;
     RpcDispatcher disp;
     static final String channel_name="Quotes";
     final int num_members=1;

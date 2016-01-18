@@ -2,7 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 
 import java.io.DataInput;
@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Experimental
 @MBean(description="Failure detection based on simple heartbeat protocol")
-public class FD_ALL2 extends Protocol {
+public class FD_ALL2 extends AbstractProtocol {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
@@ -170,7 +170,7 @@ public class FD_ALL2 extends Protocol {
                 Message msg=(Message)evt.getArg();
                 Address sender=msg.getSrc();
 
-                Header hdr=msg.getHeader(this.id);
+                AbstractHeader hdr=msg.getHeader(this.id);
                 if(hdr != null) {
                     update(sender); // updates the heartbeat entry for 'sender'
                     num_heartbeats_received++;
@@ -379,7 +379,7 @@ public class FD_ALL2 extends Protocol {
     }
 
 
-    public static class HeartbeatHeader extends Header {
+    public static class HeartbeatHeader extends AbstractHeader {
         public HeartbeatHeader() {}
         public String toString() {return "heartbeat";}
         public int size() {return 0;}

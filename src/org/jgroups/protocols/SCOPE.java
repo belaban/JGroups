@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.annotations.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @MBean(description="Implementation of scopes (concurrent delivery of messages from the same sender)")
 @Deprecated
-public class SCOPE extends Protocol {
+public class SCOPE extends AbstractProtocol {
 
     protected int thread_pool_min_threads=2;
 
@@ -488,7 +488,7 @@ public class SCOPE extends Protocol {
     }
 
 
-    public static class ScopeHeader extends Header {
+    public static class ScopeHeader extends AbstractHeader {
         public static final byte MSG    = 1;
         public static final byte EXPIRE = 2;
 

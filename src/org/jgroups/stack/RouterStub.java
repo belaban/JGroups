@@ -25,7 +25,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     public interface MembersNotification {void members(List<PingData> mbrs);}
     public interface CloseListener       {void closed(RouterStub stub);}
 
-    protected BaseServer                                  client;
+    protected AbstractBaseServer client;
     protected final IpAddress                             local;  // bind address
     protected final IpAddress                             remote; // address of remote GossipRouter
     protected final boolean                               use_nio;

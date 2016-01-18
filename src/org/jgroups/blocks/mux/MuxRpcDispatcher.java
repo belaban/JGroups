@@ -2,7 +2,7 @@ package org.jgroups.blocks.mux;
 
 import org.jgroups.*;
 import org.jgroups.blocks.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.RspList;
 
@@ -34,7 +34,7 @@ public class MuxRpcDispatcher extends RpcDispatcher {
         this.scope_id = scopeId;
     }
 
-    public MuxRpcDispatcher(short scopeId, Channel channel, MessageListener messageListener, MembershipListener membershipListener, Object serverObject) {
+    public MuxRpcDispatcher(short scopeId, AbstractChannel channel, MessageListener messageListener, MembershipListener membershipListener, Object serverObject) {
         this(scopeId);
         
         setMessageListener(messageListener);
@@ -45,7 +45,7 @@ public class MuxRpcDispatcher extends RpcDispatcher {
         start();
     }
 
-    public MuxRpcDispatcher(short scopeId, Channel channel, MessageListener messageListener, MembershipListener membershipListener, Object serverObject, MethodLookup method_lookup) {
+    public MuxRpcDispatcher(short scopeId, AbstractChannel channel, MessageListener messageListener, MembershipListener membershipListener, Object serverObject, MethodLookup method_lookup) {
         this(scopeId);
         
         setMethodLookup(method_lookup);
@@ -63,7 +63,7 @@ public class MuxRpcDispatcher extends RpcDispatcher {
     }
 
     @Override
-    protected RequestCorrelator createRequestCorrelator(Protocol transport, RequestHandler handler, Address localAddr) {
+    protected RequestCorrelator createRequestCorrelator(AbstractProtocol transport, RequestHandler handler, Address localAddr) {
         // We can't set the scope of the request correlator here
         // since this method is called from start() triggered in the
         // MessageDispatcher constructor, when this.scope is not yet defined

@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.tom.TOA;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
@@ -319,7 +319,7 @@ public class TOATest {
     }
 
     private TOANode createNewChannel(String name) throws Exception {
-        JChannel channel = new JChannel(new Protocol[]{
+        JChannel channel = new JChannel(new AbstractProtocol[]{
                 new SHARED_LOOPBACK(),
                 new SHARED_LOOPBACK_PING(),
                 new MERGE3(),

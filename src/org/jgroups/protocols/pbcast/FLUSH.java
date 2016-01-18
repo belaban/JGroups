@@ -2,7 +2,7 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 
 import java.io.*;
@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since 2.4
  */
 @MBean(description = "Flushes the cluster")
-public class FLUSH extends Protocol {
+public class FLUSH extends AbstractProtocol {
 
     private static final FlushStartResult SUCCESS_START_FLUSH = new FlushStartResult(Boolean.TRUE,null);
 
@@ -989,7 +989,7 @@ public class FLUSH extends Protocol {
       }
     }
 
-    public static class FlushHeader extends Header {
+    public static class FlushHeader extends AbstractHeader {
         public static final byte START_FLUSH         = 0;
         public static final byte STOP_FLUSH          = 2;
         public static final byte FLUSH_COMPLETED     = 3;

@@ -23,7 +23,7 @@ import org.jgroups.View;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -45,7 +45,7 @@ public class SASLTest {
         sasl.setLevel("trace");
         GMS gms = new GMS();
         gms.setJoinTimeout(3000);
-        return new JChannel(new Protocol[] { new SHARED_LOOPBACK(), new PING(), new MERGE3(), new NAKACK2(),
+        return new JChannel(new AbstractProtocol[] { new SHARED_LOOPBACK(), new PING(), new MERGE3(), new NAKACK2(),
                 new UNICAST3(), new STABLE(), sasl, gms }).name(channelName);
     }
 
@@ -121,7 +121,7 @@ public class SASLTest {
         for (JChannel ch : channels) {
             DISCARD discard = new DISCARD();
             discard.setDiscardAll(true);
-            ch.getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE, TP.class);
+            ch.getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE, AbstractTP.class);
         }
 
         for (JChannel ch : channels) {

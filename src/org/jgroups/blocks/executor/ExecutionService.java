@@ -24,8 +24,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.jgroups.Channel;
-import org.jgroups.protocols.Executing;
+import org.jgroups.AbstractChannel;
+import org.jgroups.protocols.AbstractExecuting;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.NotifyingFuture;
 import org.jgroups.util.Streamable;
@@ -50,8 +50,8 @@ import org.jgroups.util.Util;
  * @since 2.12.0
  */
 public class ExecutionService extends AbstractExecutorService {
-    protected Channel ch;
-    protected Executing _execProt;
+    protected AbstractChannel ch;
+    protected AbstractExecuting _execProt;
     
     protected Lock _unfinishedLock = new ReentrantLock();
     protected Condition _unfinishedCondition = _unfinishedLock.newCondition();
@@ -64,16 +64,16 @@ public class ExecutionService extends AbstractExecutorService {
         
     }
 
-    public ExecutionService(Channel ch) {
+    public ExecutionService(AbstractChannel ch) {
         setChannel(ch);
     }
 
-    public void setChannel(Channel ch) {
+    public void setChannel(AbstractChannel ch) {
         this.ch=ch;
-        _execProt=(Executing)ch.getProtocolStack().findProtocol(Executing.class);
+        _execProt=(AbstractExecuting)ch.getProtocolStack().findProtocol(AbstractExecuting.class);
         if(_execProt == null)
             throw new IllegalStateException("Channel configuration must include a executing protocol " +
-                                              "(subclass of " + Executing.class.getName() + ")");
+                                              "(subclass of " + AbstractExecuting.class.getName() + ")");
     }
     
     // @see java.util.concurrent.AbstractExecutorService#submit(java.lang.Runnable, java.lang.Object)
@@ -110,7 +110,7 @@ public class ExecutionService extends AbstractExecutorService {
         protected final Sync<V> sync;
         
         /** The following values are only used on the client side */
-        private final Channel channel;
+        private final AbstractChannel channel;
         private final Set<Future<?>> _unfinishedFutures;
         private final Lock _unfinishedLock;
         private final Condition _unfinishedCondition;
@@ -128,10 +128,10 @@ public class ExecutionService extends AbstractExecutorService {
          *        it is finished. 
          * @param callable The callable to actually run on the server side
          */
-        public DistributedFuture(Channel channel, Lock unfinishedLock,
-                          Condition condition,
-                          Set<Future<?>> futuresToFinish, 
-                          Callable<V> callable) {
+        public DistributedFuture(AbstractChannel channel, Lock unfinishedLock,
+                                 Condition condition,
+                                 Set<Future<?>> futuresToFinish,
+                                 Callable<V> callable) {
             if (callable == null)
                 throw new NullPointerException();
             sync = new Sync<>(this, callable);
@@ -160,9 +160,9 @@ public class ExecutionService extends AbstractExecutorService {
          * <tt>Future&lt;?&gt; f = new FutureTask&lt;Object&gt;(runnable, null)</tt>
          * @throws NullPointerException if runnable is null
          */
-        public DistributedFuture(Channel channel, Lock unfinishedLock,
-                          Condition condition, Set<Future<?>> futuresToFinish, 
-                          Runnable runnable, V result) {
+        public DistributedFuture(AbstractChannel channel, Lock unfinishedLock,
+                                 Condition condition, Set<Future<?>> futuresToFinish,
+                                 Runnable runnable, V result) {
             sync = new Sync<>(this, new RunnableAdapter<>(runnable, result));
             this.channel = channel;
             // We keep the real copy to update the outside

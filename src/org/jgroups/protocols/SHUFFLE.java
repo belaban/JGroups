@@ -4,7 +4,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
 
@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  *
  */
 @Experimental
-public class SHUFFLE extends Protocol {
+public class SHUFFLE extends AbstractProtocol {
     protected TimeScheduler       timer=null;
     protected final List<Message> up_msgs=new LinkedList<>();
     protected final List<Message> down_msgs=new LinkedList<>();

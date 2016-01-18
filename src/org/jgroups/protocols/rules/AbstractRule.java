@@ -8,12 +8,12 @@ import org.jgroups.logging.Log;
  * @author Bela Ban
  * @since  3.3
  */
-public abstract class Rule implements Runnable {
+public abstract class AbstractRule implements Runnable {
     protected SUPERVISOR sv;  // set when rule is installed
     protected Log        log;         // set when rule is installed
 
-    public Rule supervisor(SUPERVISOR sv) {this.sv=sv;   return this;}
-    public Rule log(Log log)              {this.log=log; return this;}
+    public AbstractRule supervisor(SUPERVISOR sv) {this.sv=sv;   return this;}
+    public AbstractRule log(Log log)              {this.log=log; return this;}
 
     /** Returns the name of the rule. Should be unique if a rule needs to be uninstalled */
     public abstract String name();

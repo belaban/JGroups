@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * @author Bela Ban
  */
-public class ParticipantGmsImpl extends ServerGmsImpl {
+public class ParticipantGmsImpl extends AbstractServerGmsImpl {
     private final List<Address>     suspected_mbrs=new ArrayList<>(11);
     private final Promise<Boolean>  leave_promise=new Promise<>();
 

@@ -1,7 +1,7 @@
 package org.jgroups.util;
 
 import org.jgroups.Global;
-import org.jgroups.Header;
+import org.jgroups.AbstractHeader;
 import org.jgroups.conf.ClassConfigurator;
 
 import java.util.HashMap;
@@ -32,10 +32,10 @@ public class Headers {
      * @param id The ID
      * @return
      */
-    public static Header getHeader(final Header[] hdrs, short id) {
+    public static AbstractHeader getHeader(final AbstractHeader[] hdrs, short id) {
         if(hdrs == null)
             return null;
-        for(Header hdr: hdrs) {
+        for(AbstractHeader hdr: hdrs) {
             if(hdr == null)
                 return null;
             if(hdr.getProtId() == id)
@@ -45,11 +45,11 @@ public class Headers {
     }
 
 
-    public static Map<Short,Header> getHeaders(final Header[] hdrs) {
+    public static Map<Short,AbstractHeader> getHeaders(final AbstractHeader[] hdrs) {
         if(hdrs == null)
             return new HashMap<>();
-        Map<Short,Header> retval=new HashMap<>(hdrs.length);
-        for(Header hdr: hdrs) {
+        Map<Short,AbstractHeader> retval=new HashMap<>(hdrs.length);
+        for(AbstractHeader hdr: hdrs) {
             if(hdr == null)
                 break;
             retval.put(hdr.getProtId(), hdr);
@@ -57,12 +57,12 @@ public class Headers {
         return retval;
     }
 
-    public static String printHeaders(final Header[] hdrs) {
+    public static String printHeaders(final AbstractHeader[] hdrs) {
         if(hdrs == null)
             return "";
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        for(Header hdr: hdrs) {
+        for(AbstractHeader hdr: hdrs) {
             if(hdr == null)
                 break;
             short id=hdr.getProtId();
@@ -87,9 +87,9 @@ public class Headers {
      * @param replace_if_present Whether or not to overwrite an existing header
      * @return A new copy of headers if the array needed to be expanded, or null otherwise
      */
-    public static Header[] putHeader(final Header[] headers, short id, Header hdr, boolean replace_if_present) {
+    public static AbstractHeader[] putHeader(final AbstractHeader[] headers, short id, AbstractHeader hdr, boolean replace_if_present) {
         int i=0;
-        Header[] hdrs=headers;
+        AbstractHeader[] hdrs=headers;
         boolean resized=false;
         while(i < hdrs.length) {
             if(hdrs[i] == null) {
@@ -114,26 +114,26 @@ public class Headers {
     /**
      * Increases the capacity of the array and copies the contents of the old into the new array
      */
-    public static Header[] resize(final Header[] headers) {
+    public static AbstractHeader[] resize(final AbstractHeader[] headers) {
         int new_capacity=headers.length + RESIZE_INCR;
-        Header[] new_hdrs=new Header[new_capacity];
+        AbstractHeader[] new_hdrs=new AbstractHeader[new_capacity];
         System.arraycopy(headers, 0, new_hdrs, 0, headers.length);
         return new_hdrs;
     }
 
-     public static Header[] copy(final Header[] headers) {
+     public static AbstractHeader[] copy(final AbstractHeader[] headers) {
          if(headers == null)
-             return new Header[0];
-         Header[] retval=new Header[headers.length];
+             return new AbstractHeader[0];
+         AbstractHeader[] retval=new AbstractHeader[headers.length];
          System.arraycopy(headers, 0, retval, 0, headers.length);
          return retval;
      }
 
-    public static String printObjectHeaders(final Header[] hdrs) {
+    public static String printObjectHeaders(final AbstractHeader[] hdrs) {
         if(hdrs == null)
             return "";
         StringBuilder sb=new StringBuilder();
-        for(Header hdr: hdrs) {
+        for(AbstractHeader hdr: hdrs) {
             if(hdr == null)
                 break;
             sb.append(hdr.getProtId()).append(": ").append(hdr).append('\n');
@@ -141,11 +141,11 @@ public class Headers {
         return sb.toString();
     }
 
-    public static int marshalledSize(final Header[] hdrs) {
+    public static int marshalledSize(final AbstractHeader[] hdrs) {
         int retval=0;
         if(hdrs == null)
             return retval;
-        for(Header hdr: hdrs) {
+        for(AbstractHeader hdr: hdrs) {
             if(hdr == null)
                 break;
             retval+=Global.SHORT_SIZE *2;    // for protocol ID and magic number
@@ -154,11 +154,11 @@ public class Headers {
         return retval;
     }
 
-    public static int size(Header[] hdrs) {
+    public static int size(AbstractHeader[] hdrs) {
         int retval=0;
         if(hdrs == null)
             return retval;
-        for(Header hdr: hdrs) {
+        for(AbstractHeader hdr: hdrs) {
             if(hdr == null)
                 break;
             retval++;
@@ -166,11 +166,11 @@ public class Headers {
         return retval;
     }
 
-    public static int size(Header[] hdrs, short... excluded_ids) {
+    public static int size(AbstractHeader[] hdrs, short... excluded_ids) {
         int retval=0;
         if(hdrs == null)
             return retval;
-        for(Header hdr: hdrs) {
+        for(AbstractHeader hdr: hdrs) {
             if(hdr == null)
                 break;
             if(!Util.containsId(hdr.getProtId(), excluded_ids))

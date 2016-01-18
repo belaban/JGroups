@@ -9,7 +9,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
@@ -36,8 +36,8 @@ public class FCTest {
         };
     }
 
-    protected void setUp(Class<? extends Protocol> flow_control_class) throws Exception {
-        Protocol flow_control_prot=flow_control_class.newInstance();
+    protected void setUp(Class<? extends AbstractProtocol> flow_control_class) throws Exception {
+        AbstractProtocol flow_control_prot=flow_control_class.newInstance();
         flow_control_prot.setValue("min_credits", 1000).setValue("max_credits", 10000).setValue("max_block_time", 1000);
 
         ch=new JChannel(new SHARED_LOOPBACK().setValue("thread_pool_rejection_policy", "run"),
@@ -55,7 +55,7 @@ public class FCTest {
 
 
     @Test(dataProvider="configProvider")
-    public void testReceptionOfAllMessages(Class<? extends Protocol> flow_control_class) throws Exception {
+    public void testReceptionOfAllMessages(Class<? extends AbstractProtocol> flow_control_class) throws Exception {
         int num_received=0;
         Receiver r=new Receiver();
         setUp(flow_control_class);

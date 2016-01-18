@@ -6,7 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.stack.*;
 import org.jgroups.util.*;
 
@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Deprecated
 @MBean(description="Reliable transmission multipoint FIFO protocol")
-public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, DiagnosticsHandler.ProbeHandler {
+public class NAKACK extends AbstractProtocol implements AbstractRetransmitter.RetransmitCommand, DiagnosticsHandler.ProbeHandler {
     private static final int NUM_REBROADCAST_MSGS=3;
 
     /* -----------------------------------------------------    Properties     --------------------- ------------------------------------ */
@@ -317,7 +317,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
 
-        TP transport=getTransport();
+        AbstractTP transport=getTransport();
         if(transport != null) {
             transport.registerProbeHandler(this);
             if(!transport.supportsMulticasting()) {
@@ -897,7 +897,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(log.isTraceEnabled())
                 log.trace(local_addr + ": flushing become_server_queue (" + become_server_queue.size() + " elements)");
 
-            TP transport=getTransport();
+            AbstractTP transport=getTransport();
             Executor thread_pool=transport.getDefaultThreadPool(), oob_thread_pool=transport.getOOBThreadPool();
 
             for(final Message msg: become_server_queue) {

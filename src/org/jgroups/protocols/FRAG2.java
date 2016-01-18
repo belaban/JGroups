@@ -5,7 +5,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
@@ -39,7 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
-public class FRAG2 extends Protocol {
+public class FRAG2 extends AbstractProtocol {
     
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
@@ -86,7 +86,7 @@ public class FRAG2 extends Protocol {
         if(frag_size <=0)
             throw new Exception("frag_size=" + old_frag_size + ", new frag_size=" + frag_size + ": new frag_size is invalid");
 
-        TP transport=getTransport();
+        AbstractTP transport=getTransport();
         if(transport != null) {
             int max_bundle_size=transport.getMaxBundleSize();
             if(frag_size >= max_bundle_size)

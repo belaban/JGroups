@@ -297,7 +297,7 @@ public class MessageBatchTest {
         List<Message> msgs=createMessages();
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);
-        TP.writeMessageList(b, a, "cluster".getBytes(), msgs, out, false, UDP_ID);
+        AbstractTP.writeMessageList(b, a, "cluster".getBytes(), msgs, out, false, UDP_ID);
         out.flush();
 
         byte[] buf=output.toByteArray();
@@ -306,7 +306,7 @@ public class MessageBatchTest {
         DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
         in.readShort(); // version
         in.readByte(); // flags
-        List<Message> list=TP.readMessageList(in, UDP_ID);
+        List<Message> list= AbstractTP.readMessageList(in, UDP_ID);
         assert msgs.size() == list.size();
     }
 

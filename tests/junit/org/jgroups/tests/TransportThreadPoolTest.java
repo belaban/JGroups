@@ -4,7 +4,7 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -44,7 +44,7 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         Util.waitUntilAllChannelsHaveSameSize(10000, 1000, c1, c2);
         assert c2.getView().size() == 2 : "view is " + c2.getView() + ", but should have had a size of 2";
         
-        TP transport=c1.getProtocolStack().getTransport();
+        AbstractTP transport=c1.getProtocolStack().getTransport();
         ExecutorService thread_pool=Executors.newFixedThreadPool(2);
         transport.setDefaultThreadPool(thread_pool);
 

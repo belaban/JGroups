@@ -3,7 +3,7 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
 
@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @since 3.0
  */
 @MBean(description="Streaming state transfer protocol base class")
-public abstract class StreamingStateTransfer extends Protocol implements ProcessingQueue.Handler<Address> {
+public abstract class AbstractStreamingStateTransfer extends AbstractProtocol implements ProcessingQueue.Handler<Address> {
 
     /*
      * ----------------------------------------------Properties -----------------------------------
@@ -89,7 +89,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
 
     /** Thread pool (configured with {@link #max_pool} and {@link #pool_thread_keep_alive}) to run
-     * {@link StreamingStateTransfer.StateGetter} threads on */
+     * {@link AbstractStreamingStateTransfer.StateGetter} threads on */
     protected ThreadPoolExecutor  thread_pool;
 
     /** List of members requesting state. Only a single state request is handled at any time */
@@ -507,7 +507,7 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
 
 
     
-    public static class StateHeader extends Header {
+    public static class StateHeader extends AbstractHeader {
         public static final byte STATE_REQ  = 1;
         public static final byte STATE_RSP  = 2;
         public static final byte STATE_PART = 3;

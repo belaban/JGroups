@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.StackType;
@@ -162,7 +162,7 @@ public class ChannelTestBase {
             return createChannel(channel_conf);
         }
 
-        public Channel createChannel(boolean unique, int num) throws Exception {
+        public AbstractChannel createChannel(boolean unique, int num) throws Exception {
             JChannel c = createChannel(channel_conf);
             UNICAST2 uni=(UNICAST2)c.getProtocolStack().findProtocol(UNICAST2.class);
             if(uni != null) {
@@ -174,7 +174,7 @@ public class ChannelTestBase {
             return c;
         }
 
-        public Channel createChannel(final JChannel ch) throws Exception {
+        public AbstractChannel createChannel(final JChannel ch) throws Exception {
             return new JChannel(ch);
         }
 
@@ -182,15 +182,15 @@ public class ChannelTestBase {
             return new JChannel(configFile);
         }
 
-        protected void makeUnique(Channel channel, int num) throws Exception {
+        protected void makeUnique(AbstractChannel channel, int num) throws Exception {
             String str = Util.getProperty(new String[]{ Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup" },
                                           null, "mcast_addr", null);
             makeUnique(channel, num, str);
         }
 
-        protected void makeUnique(Channel channel, int num, String mcast_address) throws Exception {
+        protected void makeUnique(AbstractChannel channel, int num, String mcast_address) throws Exception {
             ProtocolStack stack = channel.getProtocolStack();
-            Protocol transport = stack.getTransport();
+            AbstractProtocol transport = stack.getTransport();
 
             if (transport instanceof UDP) {
                 short mcast_port = ResourceManager.getNextMulticastPort(InetAddress.getByName(bind_addr));
@@ -201,12 +201,12 @@ public class ChannelTestBase {
                     String mcast_addr = ResourceManager.getNextMulticastAddress();
                     ((UDP) transport).setMulticastAddress(InetAddress.getByName(mcast_addr));
                 }
-            } else if (transport instanceof BasicTCP) {
+            } else if (transport instanceof AbstractBasicTCP) {
                 List<Short> ports = ResourceManager.getNextTcpPorts(InetAddress.getByName(bind_addr), num);
-                ((TP) transport).setBindPort(ports.get(0));
-                ((TP) transport).setPortRange(num);
+                ((AbstractTP) transport).setBindPort(ports.get(0));
+                ((AbstractTP) transport).setPortRange(num);
 
-                Protocol ping = stack.findProtocol(TCPPING.class);
+                AbstractProtocol ping = stack.findProtocol(TCPPING.class);
                 if (ping == null)
                     throw new IllegalStateException("TCP stack must consist of TCP:TCPPING - other config are not supported");
 
@@ -236,7 +236,7 @@ public class ChannelTestBase {
      * Base class for all aplications using channel
      */
     protected abstract class ChannelApplication extends ReceiverAdapter implements EventSequence, Runnable {
-        protected Channel channel;
+        protected AbstractChannel channel;
         protected Thread thread;
         protected Throwable exception;
         protected StringBuilder events;
@@ -291,7 +291,7 @@ public class ChannelTestBase {
             thread.start();
         }
 
-        public Channel getChannel() {
+        public AbstractChannel getChannel() {
             return channel;
         }
 

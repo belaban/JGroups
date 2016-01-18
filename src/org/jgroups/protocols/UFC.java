@@ -34,7 +34,7 @@ import java.util.Map;
  * @author Bela Ban
  */
 @MBean(description="Simple flow control protocol based on a credit system")
-public class UFC extends FlowControl {
+public class UFC extends AbstractFlowControl {
     
     /**
      * Map<Address,Long>: keys are members, values are credits left. For each send,
@@ -91,8 +91,8 @@ public class UFC extends FlowControl {
 
     public void init() throws Exception {
         super.init();
-        TP transport=getTransport();
-        if(transport instanceof BasicTCP)
+        AbstractTP transport=getTransport();
+        if(transport instanceof AbstractBasicTCP)
             log.info(this.getClass().getSimpleName() + " is not needed (and can be removed) as we're running on a TCP transport");
     }
 

@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Digest;
 import org.jgroups.util.ProcessingQueue;
@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @see STATE_SOCK
  */
 @MBean(description="State transfer protocol based on byte array transfer")
-public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<Address> {
+public class STATE_TRANSFER extends AbstractProtocol implements ProcessingQueue.Handler<Address> {
     protected long                           start, stop; // to measure state transfer time
     protected final AtomicInteger            num_state_reqs=new AtomicInteger(0);
     protected final AtomicLong               num_bytes_sent=new AtomicLong(0);
@@ -384,7 +384,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
      * be stored in the header itself, but in the message's buffer.
      *
      */
-    public static class StateHeader extends Header {
+    public static class StateHeader extends AbstractHeader {
         public static final byte STATE_REQ = 1;
         public static final byte STATE_RSP = 2;
         public static final byte STATE_EX  = 3;

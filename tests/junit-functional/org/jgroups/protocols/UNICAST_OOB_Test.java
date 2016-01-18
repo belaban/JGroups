@@ -4,7 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -24,7 +24,7 @@ public class UNICAST_OOB_Test {
     JChannel a, b;
 
 
-    void setUp(Class<? extends Protocol> unicast_class) throws Exception {
+    void setUp(Class<? extends AbstractProtocol> unicast_class) throws Exception {
         a=createChannel(unicast_class, "A");
         b=createChannel(unicast_class, "B");
     }
@@ -44,13 +44,13 @@ public class UNICAST_OOB_Test {
     }
 
     @Test(dataProvider="configProvider")
-    public void testRegularMessages(Class<? extends Protocol> unicast_class) throws Exception {
+    public void testRegularMessages(Class<? extends AbstractProtocol> unicast_class) throws Exception {
         setUp(unicast_class);
         sendMessages(false);
     }
 
     @Test(dataProvider="configProvider")
-    public void testOutOfBandMessages(Class<? extends Protocol> unicast_class) throws Exception {
+    public void testOutOfBandMessages(Class<? extends AbstractProtocol> unicast_class) throws Exception {
         setUp(unicast_class);
         sendMessages(true);
     }
@@ -66,7 +66,7 @@ public class UNICAST_OOB_Test {
 
         // the first channel will discard the unicast messages with seqno #3 two times, the let them pass down
         ProtocolStack stack=a.getProtocolStack();
-        Protocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
+        AbstractProtocol neighbor=stack.findProtocol(Util.getUnicastProtocols());
         System.out.println("Found unicast protocol " + neighbor.getClass().getSimpleName());
         stack.insertProtocolInStack(discard,neighbor,ProtocolStack.BELOW);
 
@@ -116,8 +116,8 @@ public class UNICAST_OOB_Test {
     }
 
 
-    protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
-        Protocol unicast=unicast_class.newInstance().setValue("xmit_interval",500);
+    protected JChannel createChannel(Class<? extends AbstractProtocol> unicast_class, String name) throws Exception {
+        AbstractProtocol unicast=unicast_class.newInstance().setValue("xmit_interval",500);
         if(unicast instanceof UNICAST2)
             unicast.setValue("stable_interval", 1000);
         return new JChannel(

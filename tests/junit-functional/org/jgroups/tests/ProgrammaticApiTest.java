@@ -5,7 +5,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -37,7 +37,7 @@ public class ProgrammaticApiTest {
         stack.init();
         c1.connect("demo");
 
-        Protocol transport=stack.getTransport();
+        AbstractProtocol transport=stack.getTransport();
         transport.up(new Event(Event.MSG, new Message(null, Util.createRandomAddress(), "hello world")));
         assert receiver.getNumMsgsReceived() == 1;
     }
@@ -81,16 +81,16 @@ public class ProgrammaticApiTest {
 
 
 
-    protected static class MockProtocol1 extends Protocol {
+    protected static class MockProtocol1 extends AbstractProtocol {
 
     }
 
-    protected static class MockProtocol2 extends Protocol {
+    protected static class MockProtocol2 extends AbstractProtocol {
         
     }
 
-    static Protocol[] createProtocols() {
-        return new Protocol[] {
+    static AbstractProtocol[] createProtocols() {
+        return new AbstractProtocol[] {
                 new PING(),
                 new MERGE3(),
                 new FD_SOCK(),

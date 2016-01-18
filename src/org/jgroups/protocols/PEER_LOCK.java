@@ -29,11 +29,11 @@ import java.util.Map;
  * An alternative is also the {@link org.jgroups.protocols.CENTRAL_LOCK} protocol.
  * @author Bela Ban
  * @since 2.12
- * @see Locking
+ * @see AbstractLocking
  * @see CENTRAL_LOCK
  * @deprecated Use {@link org.jgroups.protocols.CENTRAL_LOCK} instead
  */
-public class PEER_LOCK extends Locking {
+public class PEER_LOCK extends AbstractLocking {
 
     public PEER_LOCK() {
         super();

@@ -7,8 +7,8 @@ import org.jgroups.JChannel;
 import org.jgroups.View;
 import org.jgroups.protocols.FRAG;
 import org.jgroups.protocols.FRAG2;
-import org.jgroups.protocols.TP;
-import org.jgroups.stack.Protocol;
+import org.jgroups.protocols.AbstractTP;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.FutureListener;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
@@ -519,7 +519,7 @@ public class RpcDispatcherTest {
 
     protected static void setProps(JChannel... channels) {
         for(JChannel ch: channels) {
-            Protocol prot=ch.getProtocolStack().findProtocol(FRAG2.class);
+            AbstractProtocol prot=ch.getProtocolStack().findProtocol(FRAG2.class);
             if(prot != null) {
                 ((FRAG2)prot).setFragSize(12000);
             }
@@ -530,7 +530,7 @@ public class RpcDispatcherTest {
 
             prot=ch.getProtocolStack().getTransport();
             if(prot != null)
-                ((TP)prot).setMaxBundleSize(14000);
+                ((AbstractTP)prot).setMaxBundleSize(14000);
         }
     }
 

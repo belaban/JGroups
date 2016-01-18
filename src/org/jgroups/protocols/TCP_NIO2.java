@@ -23,7 +23,7 @@ import java.util.Collection;
  * @author Bela Ban
  * @since 3.6.5
  */
-public class TCP_NIO2 extends BasicTCP {
+public class TCP_NIO2 extends AbstractBasicTCP {
     protected NioServer server;
 
     @Property(description="The max number of outgoing messages that can get queued for a given peer connection " +

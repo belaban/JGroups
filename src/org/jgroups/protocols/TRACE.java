@@ -1,11 +1,11 @@
 
 package org.jgroups.protocols;
 import org.jgroups.Event;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 
 
-public class TRACE extends Protocol {
+public class TRACE extends AbstractProtocol {
 
     public TRACE() {}
 

@@ -9,7 +9,7 @@ import org.jgroups.protocols.FD;
  * @author Bela Ban
  * @since  3.3
  */
-public class CheckFDMonitor extends Rule {
+public class CheckFDMonitor extends AbstractRule {
     protected FD fd;
 
     public String name() {

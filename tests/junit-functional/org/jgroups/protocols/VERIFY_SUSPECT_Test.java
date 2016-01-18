@@ -3,7 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Global;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
@@ -78,7 +78,7 @@ public class VERIFY_SUSPECT_Test {
         VERIFY_SUSPECT ver=new VERIFY_SUSPECT();
         ProtImpl impl=new ProtImpl();
         ver.setUpProtocol(impl);
-        ver.setDownProtocol(new Protocol() {
+        ver.setDownProtocol(new AbstractProtocol() {
             public Object down(Event evt) {
                 return null;
             }
@@ -101,7 +101,7 @@ public class VERIFY_SUSPECT_Test {
     }
 
 
-    protected class ProtImpl extends Protocol {
+    protected class ProtImpl extends AbstractProtocol {
         protected final Map<Address,Long> map=new HashMap<>();
 
         public Map<Address,Long> getMap() {
@@ -119,7 +119,7 @@ public class VERIFY_SUSPECT_Test {
         }
     }
 
-    protected static class NoopProtocol extends Protocol {
+    protected static class NoopProtocol extends AbstractProtocol {
         public Object down(Event evt) {return null;}
         public ThreadFactory getThreadFactory() {return new DefaultThreadFactory("y",false,true);}
     }

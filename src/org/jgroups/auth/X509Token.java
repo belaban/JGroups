@@ -41,9 +41,9 @@ import java.security.cert.X509Certificate;
  * </ul>
  * 
  * @author Chris Mills
- * @see org.jgroups.auth.AuthToken
+ * @see AbstractAuthToken
  */
-public class X509Token extends AuthToken {
+public class X509Token extends AbstractAuthToken {
 
     public static final String KEYSTORE_TYPE = "keystore_type";
     public static final String KEYSTORE_PATH = "keystore_path";
@@ -105,7 +105,7 @@ public class X509Token extends AuthToken {
         return "org.jgroups.auth.X509Token";
     }
 
-    public boolean authenticate(AuthToken token, Message msg) {
+    public boolean authenticate(AbstractAuthToken token, Message msg) {
         if (!this.valueSet) {
             if (log.isErrorEnabled()) {
                 log.error(Util.getMessage("X509TokenNotSetupCorrectlyCheckTokenAttrs"));

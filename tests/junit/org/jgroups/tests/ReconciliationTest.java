@@ -6,7 +6,7 @@ import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -221,7 +221,7 @@ public class ReconciliationTest {
     }
 
     protected JChannel createChannel(String name) throws Exception {
-        Protocol[] protocols={
+        AbstractProtocol[] protocols={
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
           new FD_ALL().setValue("timeout", 3000).setValue("interval", 1000),
@@ -269,10 +269,10 @@ public class ReconciliationTest {
 
     protected static class MyReceiver extends ReceiverAdapter {
         protected final Map<Address,List<Integer>> msgs=new HashMap<>(10);
-        protected final Channel channel;
+        protected final AbstractChannel channel;
         protected final String  name;
 
-        public MyReceiver(Channel ch,String name) {
+        public MyReceiver(AbstractChannel ch, String name) {
             this.channel=ch;
             this.name=name;
         }
@@ -329,7 +329,7 @@ public class ReconciliationTest {
         Util.close(b,a);
     }
 
-    protected static void flush(Channel channel) {
+    protected static void flush(AbstractChannel channel) {
         try {
             assert Util.startFlush(channel);
         }
@@ -340,10 +340,10 @@ public class ReconciliationTest {
 
     protected static class Cache extends ReceiverAdapter {
         protected final Map<Object,Object> data;
-        protected Channel                  ch;
+        protected AbstractChannel ch;
         protected String                   name;
 
-        public Cache(Channel ch,String name) {
+        public Cache(AbstractChannel ch, String name) {
             this.data=new HashMap<>();
             this.ch=ch;
             this.name=name;

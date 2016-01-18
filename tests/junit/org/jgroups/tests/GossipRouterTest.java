@@ -9,7 +9,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.GossipRouter;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
@@ -110,7 +110,7 @@ public class GossipRouterTest {
     protected JChannel createTunnelChannel(String name, boolean include_failure_detection) throws Exception {
         TUNNEL tunnel=(TUNNEL)new TUNNEL().setValue("bind_addr", bind_addr).setValue("reconnect_interval", 1000);
         tunnel.setGossipRouterHosts(gossip_router_hosts);
-        List<Protocol> protocols=new ArrayList<>();
+        List<AbstractProtocol> protocols=new ArrayList<>();
         protocols.addAll(Arrays.asList(tunnel,new PING(),new MERGE3().setValue("min_interval",1000).setValue("max_interval",3000)));
         if(include_failure_detection)
             protocols.addAll(Arrays.asList(new FD().setValue("timeout", 2000).setValue("max_tries", 2), new VERIFY_SUSPECT()));

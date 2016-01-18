@@ -3,7 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.conf.PropertyConverter;
 import org.jgroups.conf.PropertyConverters;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.testng.annotations.Test;
 
 import java.net.NetworkInterface;
@@ -70,7 +70,7 @@ public class PropertyConvertersTest {
         assert map.get("com.sun.security.sasl.digest.realm").equals("MyRealm");
     }
 
-    private static void check(Protocol protocol, Class<?> type, String prop, Object result, PropertyConverter converter) throws Exception {
+    private static void check(AbstractProtocol protocol, Class<?> type, String prop, Object result, PropertyConverter converter) throws Exception {
         Object tmp=converter.convert(protocol, type, "bela", prop, false);
         assert tmp.equals(result) : " conversion result: " + tmp + " (" + tmp.getClass() + ")" +
                 ", expected result: " + result + " (" + result.getClass() + ")";
@@ -79,7 +79,7 @@ public class PropertyConvertersTest {
         assert output.equals(prop) : "output=" + output + ", prop=" + prop;
     }
 
-    private static void checkArray(Protocol protocol, Class<?> type, String prop, Object result, PropertyConverter converter) throws Exception {
+    private static void checkArray(AbstractProtocol protocol, Class<?> type, String prop, Object result, PropertyConverter converter) throws Exception {
         Object tmp=converter.convert(protocol, type, "bela", prop, false);
         assert Arrays.equals((long[])tmp, (long[])result) : " conversion result: " + tmp + " (" + tmp.getClass() + ")" +
                 ", expected result: " + result + " (" + result.getClass() + ")";

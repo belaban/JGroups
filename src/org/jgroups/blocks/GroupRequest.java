@@ -41,7 +41,7 @@ import java.util.concurrent.TimeoutException;
  *
  * @author Bela Ban
  */
-public class GroupRequest<T> extends Request {
+public class GroupRequest<T> extends AbstractRequest {
 
     /** Correlates requests and responses */
     @GuardedBy("lock")

@@ -13,11 +13,11 @@ import java.util.List;
  * @author Bela Ban
  * @since  3.5
  */
-public class SHARED_LOOPBACK_PING extends Discovery {
+public class SHARED_LOOPBACK_PING extends AbstractDiscovery {
 
     public void init() throws Exception {
         super.init();
-        TP tmp=getTransport();
+        AbstractTP tmp=getTransport();
         if(!(tmp instanceof SHARED_LOOPBACK))
             throw new IllegalStateException("the transport must be " + SHARED_LOOPBACK.class.getSimpleName());
         if(tmp.isSingleton())

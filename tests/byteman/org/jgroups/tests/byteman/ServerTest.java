@@ -4,7 +4,7 @@ import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jboss.byteman.contrib.bmunit.BMScript;
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.blocks.cs.BaseServer;
+import org.jgroups.blocks.cs.AbstractBaseServer;
 import org.jgroups.blocks.cs.TcpServer;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.blocks.cs.ReceiverAdapter;
@@ -25,7 +25,7 @@ import java.util.List;
  */
 @Test(groups=Global.BYTEMAN,singleThreaded=true,dataProvider="configProvider")
 public class ServerTest extends BMNGRunner {
-    protected BaseServer               a, b;
+    protected AbstractBaseServer a, b;
     protected static final InetAddress loopback;
     protected MyReceiver               receiver_a, receiver_b;
     protected static final int         PORT_A, PORT_B;
@@ -55,7 +55,7 @@ public class ServerTest extends BMNGRunner {
     }
 
 
-    protected void setup(BaseServer one, BaseServer two) throws Exception {
+    protected void setup(AbstractBaseServer one, AbstractBaseServer two) throws Exception {
         a=one;
         a.usePeerConnections(true);
         b=two;
@@ -75,13 +75,13 @@ public class ServerTest extends BMNGRunner {
     }
 
 
-    public void testStart(BaseServer a, BaseServer b) throws Exception {
+    public void testStart(AbstractBaseServer a, AbstractBaseServer b) throws Exception {
         setup(a, b);
         assert !a.hasConnection(B) && !b.hasConnection(A);
         assert a.getNumConnections() == 0 && b.getNumConnections() == 0;
     }
 
-    public void testSimpleSend(BaseServer a, BaseServer b) throws Exception {
+    public void testSimpleSend(AbstractBaseServer a, AbstractBaseServer b) throws Exception {
         setup(a,b);
         byte[] data=STRING_A.getBytes();
         a.send(B, data, 0, data.length);
@@ -93,7 +93,7 @@ public class ServerTest extends BMNGRunner {
      * Tests A connecting to B, and then B connecting to A; no concurrent connections
      */
     // @Test(dataProvider="configProvider",invocationCount=5)
-    public void testSimpleConnection(BaseServer first, BaseServer second) throws Exception {
+    public void testSimpleConnection(AbstractBaseServer first, AbstractBaseServer second) throws Exception {
         setup(first,second);
         byte[] buf="hello".getBytes();
         a.send(B, buf, 0, buf.length);
@@ -120,7 +120,7 @@ public class ServerTest extends BMNGRunner {
      */
     @BMScript(dir="scripts/ServerTest", value="testConcurrentConnect")
     // @Test(dataProvider="configProvider",invocationCount=5)
-    public void testConcurrentConnect(BaseServer first, BaseServer second) throws Exception {
+    public void testConcurrentConnect(AbstractBaseServer first, AbstractBaseServer second) throws Exception {
         setup(first, second);
         _testConcurrentConnect(1, 1, 0);
     }
@@ -166,10 +166,10 @@ public class ServerTest extends BMNGRunner {
     }
 
 
-    protected void waitForOpenConns(int expected, BaseServer... servers) {
+    protected void waitForOpenConns(int expected, AbstractBaseServer... servers) {
         for(int i=0; i < 10; i++) {
             boolean all_ok=true;
-            for(BaseServer server: servers) {
+            for(AbstractBaseServer server: servers) {
                 if(server.getNumOpenConnections() != expected) {
                     all_ok=false;
                     break;
@@ -182,7 +182,7 @@ public class ServerTest extends BMNGRunner {
     }
 
 
-    protected BaseServer create(boolean nio, int port) {
+    protected AbstractBaseServer create(boolean nio, int port) {
         try {
             return nio? new NioServer(loopback, port) : new TcpServer(loopback, port).useSendQueues(false);
         }
@@ -193,12 +193,12 @@ public class ServerTest extends BMNGRunner {
 
 
     protected static class Sender implements Runnable {
-        protected final BaseServer server;
+        protected final AbstractBaseServer server;
         protected final Address    dest;
         protected final String     req_to_send;
 
 
-        public Sender(BaseServer server, Address dest, String req_to_send) {
+        public Sender(AbstractBaseServer server, Address dest, String req_to_send) {
             this.server=server;
             this.dest=dest;
             this.req_to_send=req_to_send;

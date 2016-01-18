@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @since 3.1
  */
 @MBean(description = "Implementation of Total Order Anycast based on Skeen's Algorithm")
-public class TOA extends Protocol implements DeliveryProtocol {
+public class TOA extends AbstractProtocol implements DeliveryProtocol {
     //managers
     private DeliveryManagerImpl deliverManager;
     private SenderManager senderManager;

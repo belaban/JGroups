@@ -8,7 +8,7 @@ import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 import org.testng.annotations.Test;
 
@@ -182,7 +182,7 @@ public class ENCRYPTKeystoreTest {
     }
 
 
-    protected static class MockProtocol extends Protocol {
+    protected static class MockProtocol extends AbstractProtocol {
         private final Map<String,Event> upMessages=new HashMap<>();
         private final Map<String,Event> downMessages=new HashMap<>();
         private int                     counter;

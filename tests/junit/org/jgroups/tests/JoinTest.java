@@ -3,7 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -185,7 +185,7 @@ public class JoinTest extends ChannelTestBase {
     }
 
 
-    protected class DELAY_JOIN_REQ extends Protocol {
+    protected class DELAY_JOIN_REQ extends AbstractProtocol {
         private long        delay=4000;
         private final short gms_id=ClassConfigurator.getProtocolId(GMS.class);
 

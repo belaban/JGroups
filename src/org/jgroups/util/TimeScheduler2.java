@@ -147,7 +147,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             throw new NullPointerException();
         if (isShutdown())
             return null;
-        RecurringTask wrapper=new FixedIntervalTask(task, delay);
+        AbstractRecurringTask wrapper=new FixedIntervalTask(task, delay);
         wrapper.doSchedule(initial_delay);
         return wrapper;
     }
@@ -158,7 +158,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             throw new NullPointerException();
         if (isShutdown())
             return null;
-        RecurringTask wrapper=new FixedRateTask(task, delay);
+        AbstractRecurringTask wrapper=new FixedRateTask(task, delay);
         wrapper.doSchedule(initial_delay);
         return wrapper;
     }
@@ -166,7 +166,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
 
     /**
      * Schedule a task for execution at varying intervals. After execution, the task will get rescheduled after
-     * {@link org.jgroups.util.TimeScheduler2.RecurringTask#nextInterval()} milliseconds. The task is never done until nextInterval()
+     * {@link AbstractRecurringTask#nextInterval()} milliseconds. The task is never done until nextInterval()
      * return a value <= 0 or the task is cancelled.
      * @param task the task to execute
      * Task is rescheduled relative to the last time it <i>actually</i> started execution<p/>
@@ -179,7 +179,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
             throw new NullPointerException();
         if (isShutdown())
             return null;
-        RecurringTask task_wrapper=new DynamicIntervalTask(task);
+        AbstractRecurringTask task_wrapper=new DynamicIntervalTask(task);
         task_wrapper.doSchedule(); // calls schedule() in ScheduledThreadPoolExecutor
         return task_wrapper;
     }
@@ -514,13 +514,13 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
      * {@link #nextInterval()} method determines the time to wait until the next execution.
      * @param <V>
      */
-    private abstract class RecurringTask<V> implements Runnable, Future<V> {
+    private abstract class AbstractRecurringTask<V> implements Runnable, Future<V> {
         protected final Runnable      task;
         protected volatile Future<?>  future; // cannot be null !
         protected volatile boolean    cancelled=false;
 
 
-        private RecurringTask(Runnable task) {
+        private AbstractRecurringTask(Runnable task) {
             this.task=task;
         }
 
@@ -602,7 +602,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     }
 
 
-    private class FixedIntervalTask<V> extends RecurringTask<V> {
+    private class FixedIntervalTask<V> extends AbstractRecurringTask<V> {
         final long interval;
 
         private FixedIntervalTask(Runnable task, long interval) {
@@ -615,7 +615,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
         }
     }
 
-    private class FixedRateTask<V> extends RecurringTask<V> {
+    private class FixedRateTask<V> extends AbstractRecurringTask<V> {
         final long interval;
         final long first_execution;
         int num_executions=0;
@@ -635,7 +635,7 @@ public class TimeScheduler2 implements TimeScheduler, Runnable  {
     }
 
 
-   private class DynamicIntervalTask<V> extends RecurringTask<V> {
+   private class DynamicIntervalTask<V> extends AbstractRecurringTask<V> {
 
        private DynamicIntervalTask(Task task) {
            super(task);

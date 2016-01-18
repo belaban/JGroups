@@ -3,7 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.MERGE3;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.stack.ProtocolStack;
@@ -123,7 +123,7 @@ public class MergeTest extends ChannelTestBase {
         for(JChannel ch: channels) {
             DISCARD discard=new DISCARD();
             discard.setDiscardAll(true);
-            ch.getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE,TP.class);
+            ch.getProtocolStack().insertProtocol(discard, ProtocolStack.ABOVE,AbstractTP.class);
         }
 
         for(JChannel ch: channels) {

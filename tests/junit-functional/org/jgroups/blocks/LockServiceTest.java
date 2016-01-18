@@ -4,7 +4,7 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.locking.LockService;
 import org.jgroups.protocols.CENTRAL_LOCK;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -310,13 +310,13 @@ public class LockServiceTest {
 
 
     protected JChannel createChannel(String name) throws Exception {
-        Protocol[] stack=Util.getTestStack(new CENTRAL_LOCK().level("trace"));
+        AbstractProtocol[] stack=Util.getTestStack(new CENTRAL_LOCK().level("trace"));
         return new JChannel(stack).name(name);
     }
 
     protected void setProp(Class<?> clazz, String prop_name, Object value, JChannel ... channels) {
         for(JChannel ch: channels) {
-            Protocol prot=ch.getProtocolStack().findProtocol(clazz);
+            AbstractProtocol prot=ch.getProtocolStack().findProtocol(clazz);
             prot.setValue(prop_name, value);
         }
     }

@@ -4,7 +4,7 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
@@ -142,7 +142,7 @@ public class MessageBundlingTest extends ChannelTestBase {
 
     private static void setBundling(JChannel ch, int max_bytes, long timeout) {
         ProtocolStack stack=ch.getProtocolStack();
-        TP transport=stack.getTransport();
+        AbstractTP transport=stack.getTransport();
         transport.setMaxBundleSize(max_bytes);
         transport.setMaxBundleTimeout(timeout);
         GMS gms=(GMS)stack.findProtocol(GMS.class);

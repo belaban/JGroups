@@ -5,12 +5,12 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.XmlAttribute;
-import org.jgroups.auth.AuthToken;
+import org.jgroups.auth.AbstractAuthToken;
 import org.jgroups.auth.X509Token;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.JoinRsp;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ import java.util.List;
   "cert_password", "keystore_password"                                  // X509Token
 })
 @MBean(description="Provides authentication of joiners, to prevent un-authorized joining of a cluster")
-public class AUTH extends Protocol {
+public class AUTH extends AbstractProtocol {
 
     /** Interface to provide callbacks for handling up events */
     public interface UpHandler {
@@ -48,7 +48,7 @@ public class AUTH extends Protocol {
 
 
     /** Used on the coordinator to authentication joining member requests against */
-    protected AuthToken             auth_token=null;
+    protected AbstractAuthToken auth_token=null;
 
     protected static final short    gms_id=ClassConfigurator.getProtocolId(GMS.class);
 
@@ -70,13 +70,13 @@ public class AUTH extends Protocol {
     @Property(name="auth_class")
     public void setAuthClass(String class_name) throws Exception {
         Object obj=Class.forName(class_name).newInstance();
-        auth_token=(AuthToken)obj;
+        auth_token=(AbstractAuthToken)obj;
         auth_token.setAuth(this);
     }
 
     public String    getAuthClass()                {return auth_token != null? auth_token.getClass().getName() : null;}
-    public AuthToken getAuthToken()                {return auth_token;}
-    public void      setAuthToken(AuthToken token) {this.auth_token=token;}
+    public AbstractAuthToken getAuthToken()                {return auth_token;}
+    public void      setAuthToken(AbstractAuthToken token) {this.auth_token=token;}
     public void      register(UpHandler handler)   {up_handlers.add(handler);}
     public void      unregister(UpHandler handler) {up_handlers.remove(handler);}
     public Address   getAddress()                  {return local_addr;}
@@ -282,7 +282,7 @@ public class AUTH extends Protocol {
     }
 
     protected static GMS.GmsHeader getGMSHeader(Message msg){
-        Header hdr = msg.getHeader(gms_id);
+        AbstractHeader hdr = msg.getHeader(gms_id);
         if(hdr instanceof GMS.GmsHeader)
             return (GMS.GmsHeader)hdr;
         return null;

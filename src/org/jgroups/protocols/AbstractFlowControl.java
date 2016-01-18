@@ -8,7 +8,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Average;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  */
 @MBean(description="Simple flow control protocol based on a credit system")
-public abstract class FlowControl extends Protocol {
+public abstract class AbstractFlowControl extends AbstractProtocol {
 
     protected final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
     protected final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);  

@@ -3,7 +3,7 @@ package org.jgroups.fork;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.protocols.FORK;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 
 import java.util.Map;
 
@@ -13,7 +13,7 @@ import java.util.Map;
  * @author Bela Ban
  * @since  3.4
  */
-public class ForkProtocol extends Protocol {
+public class ForkProtocol extends AbstractProtocol {
     protected final String       fork_stack_id;
 
     public ForkProtocol(String fork_stack_id) {

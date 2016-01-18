@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @since 2.4
  */
 @MBean(description="Streaming state transfer protocol")
-public class STATE extends StreamingStateTransfer {
+public class STATE extends AbstractStreamingStateTransfer {
 
 
     /*

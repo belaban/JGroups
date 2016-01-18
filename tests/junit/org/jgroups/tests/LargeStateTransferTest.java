@@ -4,7 +4,7 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.ReceiverAdapter;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
@@ -90,7 +90,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
     private static void setOOBPoolSize(JChannel... channels) {
         for(JChannel channel: channels) {
-            TP transport=channel.getProtocolStack().getTransport();
+            AbstractTP transport=channel.getProtocolStack().getTransport();
             transport.setOOBThreadPoolMinThreads(2);
             transport.setOOBThreadPoolMaxThreads(8);
             transport.setOOBThreadPoolQueueEnabled(false);

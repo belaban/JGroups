@@ -4,7 +4,7 @@ import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
 import org.testng.annotations.BeforeMethod;
@@ -122,7 +122,7 @@ public class NAKACK2_RetransmissionTest {
 
 
     /** Used to catch retransmit requests sent by NAKACK to the transport */
-    protected static class MockTransport extends TP {
+    protected static class MockTransport extends AbstractTP {
         protected final List<Long> xmit_requests=new LinkedList<>();
 
         public List<Long>         getXmitRequests() {return xmit_requests;}
@@ -155,7 +155,7 @@ public class NAKACK2_RetransmissionTest {
 
     }
 
-    protected static class MockProtocol extends Protocol {
+    protected static class MockProtocol extends AbstractProtocol {
         protected final List<Long> msgs=new LinkedList<>();
 
         public List<Long> getMsgs() {return msgs;}

@@ -5,7 +5,7 @@ import org.jgroups.Address;
 import java.nio.ByteBuffer;
 
 /**
- * Receiver interface to be used with {@link BaseServer} instances
+ * Receiver interface to be used with {@link AbstractBaseServer} instances
  * @author Bela Ban
  * @since  3.6.5
  */

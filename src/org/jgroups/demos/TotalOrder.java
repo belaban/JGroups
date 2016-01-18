@@ -43,7 +43,7 @@ public class TotalOrder extends Frame {
     final Button quit=new Button("Quit");
     final Panel button_panel=new Panel();
     SenderThread sender=null;
-    Channel channel;
+    AbstractChannel channel;
     long timeout=0;
     int field_size=0;
     int num_fields=0;

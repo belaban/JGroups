@@ -29,7 +29,7 @@
     <class id="61"  name="org.jgroups.protocols.FD_ALL$HeartbeatHeader"/>
     <class id="62"  name="org.jgroups.protocols.FD_ALL2$HeartbeatHeader"/>
     <class id="64"  name="org.jgroups.protocols.pbcast.FLUSH$FlushHeader"/>
-    <class id="65"  name="org.jgroups.protocols.pbcast.StreamingStateTransfer$StateHeader"/>
+    <class id="65"  name="org.jgroups.protocols.pbcast.AbstractStreamingStateTransfer$StateHeader"/>
     <class id="67"  name="org.jgroups.protocols.AuthHeader"/>
     <class id="68"  name="org.jgroups.util.UUID"/>
     <class id="71"  name="org.jgroups.blocks.RequestCorrelator$Header"/>
@@ -41,12 +41,12 @@
     <class id="77"  name="org.jgroups.protocols.RELAY$RelayHeader"/>
     <class id="78"  name="org.jgroups.protocols.STOMP$StompHeader"/>
     <class id="80"  name="org.jgroups.protocols.PrioHeader"/>
-    <class id="81"  name="org.jgroups.protocols.Locking$LockingHeader"/>
+    <class id="81"  name="org.jgroups.protocols.AbstractLocking$LockingHeader"/>
     <class id="82"  name="org.jgroups.util.PayloadUUID"/>
     <class id="83"  name="org.jgroups.util.AdditionalDataUUID"/>
     <class id="84"  name="org.jgroups.util.TopologyUUID"/>
-    <class id="85"  name="org.jgroups.protocols.Executing$ExecutorHeader"/>
-    <class id="86"  name="org.jgroups.protocols.Executing$Request"/>
+    <class id="85"  name="org.jgroups.protocols.AbstractExecuting$ExecutorHeader"/>
+    <class id="86"  name="org.jgroups.protocols.AbstractExecuting$Request"/>
     <class id="87"  name="org.jgroups.blocks.executor.ExecutionService$RunnableAdapter"/>
     <class id="88"  name="org.jgroups.blocks.executor.Executions$StreamableCallable"/>
     <class id="89"  name="org.jgroups.protocols.COUNTER$CounterHeader"/>

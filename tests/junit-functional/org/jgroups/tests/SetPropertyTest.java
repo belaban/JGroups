@@ -2,7 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -27,7 +27,7 @@ public class SetPropertyTest {
 
 
     public void testSetter() {
-        TP transport=ch.getProtocolStack().getTransport();
+        AbstractTP transport=ch.getProtocolStack().getTransport();
         int port=transport.getBindPort();
         System.out.println("port = " + port);
         transport.setBindPort(port +20);

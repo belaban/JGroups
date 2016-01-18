@@ -3,6 +3,7 @@
 package org.jgroups.stack;
 
 
+import org.jgroups.AbstractChannel;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
@@ -12,7 +13,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.SocketFactory;
 import org.jgroups.util.ThreadFactory;
@@ -42,8 +43,8 @@ import java.util.*;
  *
  * @author Bela Ban
  */
-public abstract class Protocol {
-    protected Protocol         up_prot, down_prot;
+public abstract class AbstractProtocol {
+    protected AbstractProtocol up_prot, down_prot;
     protected ProtocolStack    stack;
     
     @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true",writable=true)
@@ -77,23 +78,23 @@ public abstract class Protocol {
      * @param level The new level. Valid values are "fatal", "error", "warn", "info", "debug", "trace"
      * (capitalization not relevant)
      */
-    public Protocol      setLevel(String level)            {log.setLevel(level); return this;}
+    public AbstractProtocol setLevel(String level)            {log.setLevel(level); return this;}
     @Property(name="level", description="logger level (see javadocs)")
     public String        getLevel()                        {return log.getLevel();}
-    public Protocol      level(String level)               {this.log.setLevel(level); return this;}
+    public AbstractProtocol level(String level)               {this.log.setLevel(level); return this;}
     public boolean       isErgonomics()                    {return ergonomics;}
-    public Protocol      setErgonomics(boolean ergonomics) {this.ergonomics=ergonomics; return this;}
+    public AbstractProtocol setErgonomics(boolean ergonomics) {this.ergonomics=ergonomics; return this;}
     public ProtocolStack getProtocolStack()                {return stack;}
     public boolean       statsEnabled()                    {return stats;}
     public void          enableStats(boolean flag)         {stats=flag;}
     public String        getName()                         {return name;}
     public short         getId()                           {return id;}
-    public Protocol      setId(short id)                   {this.id=id; return this;}
-    public Protocol      getUpProtocol()                   {return up_prot;}
-    public Protocol      getDownProtocol()                 {return down_prot;}
-    public Protocol      setUpProtocol(Protocol prot)      {this.up_prot=prot; return this;}
-    public Protocol      setDownProtocol(Protocol prot)    {this.down_prot=prot; return this;}
-    public Protocol      setProtocolStack(ProtocolStack s) {this.stack=s; return this;}
+    public AbstractProtocol setId(short id)                   {this.id=id; return this;}
+    public AbstractProtocol getUpProtocol()                   {return up_prot;}
+    public AbstractProtocol getDownProtocol()                 {return down_prot;}
+    public AbstractProtocol setUpProtocol(AbstractProtocol prot)      {this.up_prot=prot; return this;}
+    public AbstractProtocol setDownProtocol(AbstractProtocol prot)    {this.down_prot=prot; return this;}
+    public AbstractProtocol setProtocolStack(ProtocolStack s) {this.stack=s; return this;}
     public String        afterCreationHook()               {return after_creation_hook;}
 
 
@@ -105,7 +106,7 @@ public abstract class Protocol {
         return Util.getField(field, this);
     }
 
-    public Protocol setValues(Map<String,Object> values) {
+    public AbstractProtocol setValues(Map<String,Object> values) {
         if(values == null)
             return this;
         for(Map.Entry<String,Object> entry: values.entrySet()) {
@@ -120,7 +121,7 @@ public abstract class Protocol {
     }
 
 
-    public Protocol setValue(String name, Object value) {
+    public AbstractProtocol setValue(String name, Object value) {
         if(name == null || value == null)
             return this;
         Field field=Util.getField(getClass(), name);
@@ -155,7 +156,7 @@ public abstract class Protocol {
     public short[] getIdsAbove() {
         short[]     retval;
         List<Short> ids=new ArrayList<>();
-        Protocol    current=up_prot;
+        AbstractProtocol current=up_prot;
         while(current != null) {
             ids.add(current.getId());
             current=current.up_prot;
@@ -167,12 +168,12 @@ public abstract class Protocol {
     }
 
 
-    protected TP getTransport() {
-        Protocol retval=this;
+    protected AbstractTP getTransport() {
+        AbstractProtocol retval=this;
         while(retval != null && retval.down_prot != null) {
             retval=retval.down_prot;
         }
-        return (TP)retval;
+        return (AbstractTP)retval;
     }
 
     /** Supposed to be overwritten by subclasses. Usually the transport returns a valid non-null thread factory, but
@@ -193,8 +194,8 @@ public abstract class Protocol {
 
 
     /**
-     * Sets a SocketFactory. Socket factories are typically provided by the transport ({@link org.jgroups.protocols.TP})
-     * or {@link org.jgroups.protocols.TP.ProtocolAdapter}
+     * Sets a SocketFactory. Socket factories are typically provided by the transport ({@link org.jgroups.protocols.AbstractTP})
+     * or {@link org.jgroups.protocols.AbstractTP.ProtocolAdapter}
      * @param factory
      */
     public void setSocketFactory(SocketFactory factory) {
@@ -289,18 +290,18 @@ public abstract class Protocol {
     }
 
     /**
-     * This method is called on a {@link org.jgroups.Channel#connect(String)}. Starts work.
+     * This method is called on a {@link AbstractChannel#connect(String)}. Starts work.
      * Protocols are connected and queues are ready to receive events.
      * Will be called <em>from bottom to top</em>. This call will replace
      * the <b>START</b> and <b>START_OK</b> events.
      * @exception Exception Thrown if protocol cannot be started successfully. This will cause the ProtocolStack
-     *                      to fail, so {@link org.jgroups.Channel#connect(String)} will throw an exception
+     *                      to fail, so {@link AbstractChannel#connect(String)} will throw an exception
      */
     public void start() throws Exception {
     }
 
     /**
-     * This method is called on a {@link org.jgroups.Channel#disconnect()}. Stops work (e.g. by closing multicast socket).
+     * This method is called on a {@link AbstractChannel#disconnect()}. Stops work (e.g. by closing multicast socket).
      * Will be called <em>from top to bottom</em>. This means that at the time of the method invocation the
      * neighbor protocol below is still working. This method will replace the
      * <b>STOP</b>, <b>STOP_OK</b>, <b>CLEANUP</b> and <b>CLEANUP_OK</b> events. The ProtocolStack guarantees that
@@ -311,7 +312,7 @@ public abstract class Protocol {
 
 
     /**
-     * This method is called on a {@link org.jgroups.Channel#close()}.
+     * This method is called on a {@link AbstractChannel#close()}.
      * Does some cleanup; after the call the VM will terminate
      */
     public void destroy() {
@@ -341,7 +342,7 @@ public abstract class Protocol {
     /** Returns all services provided by protocols below the current protocol */
     public final List<Integer> getDownServices() {
         List<Integer> retval=new ArrayList<>();
-        Protocol prot=down_prot;
+        AbstractProtocol prot=down_prot;
         while(prot != null) {
             List<Integer> tmp=prot.providedUpServices();
             if(tmp != null && !tmp.isEmpty())
@@ -354,7 +355,7 @@ public abstract class Protocol {
     /** Returns all services provided by the protocols above the current protocol */
     public final List<Integer> getUpServices() {
         List<Integer> retval=new ArrayList<>();
-        Protocol prot=up_prot;
+        AbstractProtocol prot=up_prot;
         while(prot != null) {
             List<Integer> tmp=prot.providedDownServices();
             if(tmp != null && !tmp.isEmpty())

@@ -2,7 +2,7 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
@@ -39,7 +39,7 @@ public class UNICAST_ContentionTest {
 
 
     @Test(dataProvider="provider")
-    public void testSimpleMessageReception(Class<? extends Protocol> unicast_class) throws Exception {
+    public void testSimpleMessageReception(Class<? extends AbstractProtocol> unicast_class) throws Exception {
         a=create(unicast_class, "A");
         b=create(unicast_class, "B");
         MyReceiver r1=new MyReceiver("A"), r2=new MyReceiver("B");
@@ -76,7 +76,7 @@ public class UNICAST_ContentionTest {
      * @throws Exception
      */
     @Test(dataProvider="provider")
-    public void testMessageReceptionUnderHighLoad(Class<? extends Protocol> unicast_class) throws Exception {
+    public void testMessageReceptionUnderHighLoad(Class<? extends AbstractProtocol> unicast_class) throws Exception {
         CountDownLatch latch=new CountDownLatch(1);
         a=create(unicast_class, "A");
         b=create(unicast_class, "B");
@@ -127,12 +127,12 @@ public class UNICAST_ContentionTest {
         assert r2.getNum() == NUM_EXPECTED_MSGS : "expected " + NUM_EXPECTED_MSGS + ", but got " + r2.getNum();
     }
 
-    protected JChannel create(Class<? extends Protocol> unicast_class, String name) throws Exception {
+    protected JChannel create(Class<? extends AbstractProtocol> unicast_class, String name) throws Exception {
         return new JChannel(new SHARED_LOOPBACK(), unicast_class.newInstance().setValue("xmit_interval", 500)).name(name);
     }
 
     private static long getNumberOfRetransmissions(JChannel ch) {
-        Protocol prot=ch.getProtocolStack().findProtocol(Util.getUnicastProtocols());
+        AbstractProtocol prot=ch.getProtocolStack().findProtocol(Util.getUnicastProtocols());
         if(prot instanceof UNICAST)
             return ((UNICAST)prot).getNumXmits();
         return 0;

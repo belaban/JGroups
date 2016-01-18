@@ -5,7 +5,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Property;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.AsciiString;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * @since  3.5
  */
 @MBean(description="Intercepts single messages and passes them up as batches")
-public class MAKE_BATCH extends Protocol {
+public class MAKE_BATCH extends AbstractProtocol {
     @Property(description="handle multicast messages")
     protected boolean multicasts=false;
 

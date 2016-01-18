@@ -3,7 +3,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.Header;
+import org.jgroups.AbstractHeader;
 import org.jgroups.Message;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.TpHeader;
@@ -261,7 +261,7 @@ public class MessageTest {
 
         Message m2=m1.copy(true, Global.BLOCKS_START_ID);
         System.out.println("Headers for m2: " + m2.printHeaders());
-        Map<Short,Header> hdrs=m2.getHeaders();
+        Map<Short,AbstractHeader> hdrs=m2.getHeaders();
         assert hdrs.size() == 2;
         assert hdrs.containsKey(Global.BLOCKS_START_ID);
 
@@ -477,7 +477,7 @@ public class MessageTest {
     }
 
 
-    protected static class DummyHeader extends Header {
+    protected static class DummyHeader extends AbstractHeader {
         protected final short num;
 
         public DummyHeader(short num) {

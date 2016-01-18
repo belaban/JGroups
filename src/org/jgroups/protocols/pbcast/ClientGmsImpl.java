@@ -24,7 +24,7 @@ import java.util.*;
  * @author Bela Ban
  * @version $Revision: 1.78 $
  */
-public class ClientGmsImpl extends GmsImpl {
+public class ClientGmsImpl extends AbstractGmsImpl {
     protected final Promise<JoinRsp> join_promise=new Promise<>();
 
 

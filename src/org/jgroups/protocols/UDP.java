@@ -48,7 +48,7 @@ import java.util.Map;
  * 
  * @author Bela Ban
  */
-public class UDP extends TP {
+public class UDP extends AbstractTP {
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
 

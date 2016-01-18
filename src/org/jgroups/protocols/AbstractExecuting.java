@@ -7,7 +7,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.executor.ExecutionService.DistributedFuture;
 import org.jgroups.blocks.executor.ExecutorEvent;
 import org.jgroups.blocks.executor.ExecutorNotification;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @see org.jgroups.protocols.CENTRAL_EXECUTOR
  */
 @MBean(description="Based class for executor service functionality")
-abstract public class Executing extends Protocol {
+abstract public class AbstractExecuting extends AbstractProtocol {
 
     @Property(description="bypasses message bundling if set")
     protected boolean bypass_bundling=true;
@@ -87,8 +87,8 @@ abstract public class Executing extends Protocol {
      * This is a server side store of all the barriers for respective tasks 
      * requests.  When a consumer is starting up they should create a latch
      * place in map with its id and wait on it until a request comes in to
-     * wake it up it would only then touch the {@link Executing#_tasks} map.  A requestor
-     * should first place in the {@link Executing#_tasks} map and then create a latch
+     * wake it up it would only then touch the {@link AbstractExecuting#_tasks} map.  A requestor
+     * should first place in the {@link AbstractExecuting#_tasks} map and then create a latch
      * and notify the consumer
      */
     protected ConcurrentMap<Long, CyclicBarrier> _taskBarriers = 
@@ -137,7 +137,7 @@ abstract public class Executing extends Protocol {
         DELETE_CONSUMER_READY   // request to backups from coordinator to delete a consumer ready. Used by CENTRAL_LOCKING
     }
     
-    public Executing() {
+    public AbstractExecuting() {
         _awaitingReturn = Collections.synchronizedMap(new HashMap<Owner, Runnable>());
         _running = Collections.synchronizedMap(new HashMap<Runnable, Owner>());
     }
@@ -1033,7 +1033,7 @@ abstract public class Executing extends Protocol {
     }
 
 
-    public static class ExecutorHeader extends Header {
+    public static class ExecutorHeader extends AbstractHeader {
 
         public ExecutorHeader() {
         }

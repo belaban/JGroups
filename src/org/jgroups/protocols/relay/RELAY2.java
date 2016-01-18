@@ -6,7 +6,7 @@ import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.protocols.FORWARD_TO_COORD;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.AddressGenerator;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 import org.w3c.dom.Node;
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @XmlInclude(schema="relay.xsd",type=XmlInclude.Type.IMPORT,namespace="urn:jgroups:relay:1.0",alias="relay")
 @XmlElement(name="RelayConfiguration",type="relay:RelayConfigurationType")
 @MBean(description="RELAY2 protocol")
-public class RELAY2 extends Protocol {
+public class RELAY2 extends AbstractProtocol {
 
     /* ------------------------------------------    Properties     ---------------------------------------------- */
     @Property(description="Name of the site (needs to be defined in the configuration)",writable=false)
@@ -715,7 +715,7 @@ public class RELAY2 extends Protocol {
 
 
 
-    public static class Relay2Header extends Header {
+    public static class Relay2Header extends AbstractHeader {
         public static final byte DATA             = 1;
         public static final byte SITE_UNREACHABLE = 2; // final_dest is a SiteMaster
         public static final byte HOST_UNREACHABLE = 3; // final_dest is a SiteUUID (not currently used)

@@ -5,7 +5,7 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.blocks.cs.BaseServer;
+import org.jgroups.blocks.cs.AbstractBaseServer;
 import org.jgroups.blocks.cs.Connection;
 import org.jgroups.blocks.cs.ConnectionListener;
 import org.jgroups.blocks.cs.TcpServer;
@@ -77,7 +77,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener 
     protected boolean                                           emit_suspect_events=true;
 
 
-    protected BaseServer                                        server;
+    protected AbstractBaseServer server;
     protected final AtomicBoolean                               running=new AtomicBoolean(false);
     protected Timer                                             timer;
     protected final Log                                         log=LogFactory.getLog(this.getClass());

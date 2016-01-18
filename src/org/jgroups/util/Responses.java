@@ -2,6 +2,7 @@ package org.jgroups.util;
 
 import org.jgroups.Address;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.protocols.AbstractDiscovery;
 import org.jgroups.protocols.PingData;
 
 import java.util.*;
@@ -10,7 +11,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Manages responses for the discovery protocol. Moved from {@link org.jgroups.protocols.Discovery}
+ * Manages responses for the discovery protocol. Moved from {@link AbstractDiscovery}
  * into this standalone class. Responses are only added but never removed.
  * @author Bela Ban
  * @since  3.5

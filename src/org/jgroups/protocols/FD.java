@@ -4,7 +4,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
@@ -41,7 +41,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
-public class FD extends Protocol {
+public class FD extends AbstractProtocol {
     
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
@@ -371,7 +371,7 @@ public class FD extends Protocol {
 
 
 
-    public static class FdHeader extends Header {
+    public static class FdHeader extends AbstractHeader {
         public static final byte HEARTBEAT     = 0;
         public static final byte HEARTBEAT_ACK = 1;
         public static final byte SUSPECT       = 2;

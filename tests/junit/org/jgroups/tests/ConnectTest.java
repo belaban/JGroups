@@ -3,7 +3,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
@@ -121,9 +121,9 @@ public class ConnectTest extends ChannelTestBase {
     }
 
 
-    private static void changeProps(Channel ch) {
+    private static void changeProps(AbstractChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        TP transport=stack.getTransport();
+        AbstractTP transport=stack.getTransport();
         transport.setLogDiscardMessages(false);
     }
 

@@ -8,7 +8,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  */
 @MBean(description="Double-checks suspicions reports")
-public class VERIFY_SUSPECT extends Protocol implements Runnable {
+public class VERIFY_SUSPECT extends AbstractProtocol implements Runnable {
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
     
@@ -337,7 +337,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
 
-    public static class VerifyHeader extends Header {
+    public static class VerifyHeader extends AbstractHeader {
         static final short ARE_YOU_DEAD=1;  // 'from' is sender of verify msg
         static final short I_AM_NOT_DEAD=2;  // 'from' is suspected member
 

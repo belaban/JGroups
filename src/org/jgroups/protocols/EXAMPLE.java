@@ -4,7 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.Unsupported;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.MessageBatch;
 
 import java.io.DataInput;
@@ -21,7 +21,7 @@ import java.util.List;
  */
 @Unsupported
 @MBean(description="Sample protocol")
-public class EXAMPLE extends Protocol {
+public class EXAMPLE extends AbstractProtocol {
     final List<Address> members=new ArrayList<>();
 
 
@@ -78,7 +78,7 @@ public class EXAMPLE extends Protocol {
     }
 
 
-    public static class ExampleHeader extends Header {
+    public static class ExampleHeader extends AbstractHeader {
         // your variables
 
         public int size() {

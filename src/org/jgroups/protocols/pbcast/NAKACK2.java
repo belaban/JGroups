@@ -2,9 +2,9 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
-import org.jgroups.protocols.TP;
+import org.jgroups.protocols.AbstractTP;
 import org.jgroups.stack.DiagnosticsHandler;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.*;
 
 import java.util.*;
@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
-public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler {
+public class NAKACK2 extends AbstractProtocol implements DiagnosticsHandler.ProbeHandler {
     protected static final int NUM_REBROADCAST_MSGS=3;
 
     /* -----------------------------------------------------    Properties     --------------------- ------------------------------------ */
@@ -415,7 +415,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             }
         }
 
-        TP transport=getTransport();
+        AbstractTP transport=getTransport();
         transport.registerProbeHandler(this);
         if(!transport.supportsMulticasting()) {
             if(use_mcast_xmit) {
@@ -995,7 +995,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         if(become_server_queue != null && !become_server_queue.isEmpty()) {
             log.trace("%s: flushing become_server_queue (%d elements)", local_addr, become_server_queue.size());
 
-            TP transport=getTransport();
+            AbstractTP transport=getTransport();
             Executor thread_pool=transport.getDefaultThreadPool(), oob_thread_pool=transport.getOOBThreadPool();
 
             for(final Message msg: become_server_queue) {

@@ -2,7 +2,7 @@ package org.jgroups.fork;
 
 import org.jgroups.*;
 import org.jgroups.protocols.FORK;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
@@ -24,7 +24,7 @@ public class ForkProtocolStack extends ProtocolStack {
     protected final String                         fork_stack_id;
     protected final ConcurrentMap<String,JChannel> fork_channels=new ConcurrentHashMap<>();
     protected final UnknownForkHandler             unknownForkHandler;
-    protected final List<Protocol>                 protocols;
+    protected final List<AbstractProtocol>                 protocols;
 
     // init() increments and destroy() decrements
     // 1 -> 0: destroy the stack and remove it from FORK. Calls destroy() in all fork stack protocols before
@@ -36,7 +36,7 @@ public class ForkProtocolStack extends ProtocolStack {
     protected int                                  connects;
 
 
-    public ForkProtocolStack(UnknownForkHandler unknownForkHandler, List<Protocol> protocols, String fork_stack_id) {
+    public ForkProtocolStack(UnknownForkHandler unknownForkHandler, List<AbstractProtocol> protocols, String fork_stack_id) {
         this.unknownForkHandler = unknownForkHandler;
         this.fork_stack_id=fork_stack_id;
         this.protocols=new ArrayList<>(protocols != null? protocols.size() : 0);
@@ -64,7 +64,7 @@ public class ForkProtocolStack extends ProtocolStack {
     }
 
     @Override
-    public List<Protocol> getProtocols() {
+    public List<AbstractProtocol> getProtocols() {
         return new ArrayList<>(protocols); // copy because Collections.reverse() will be called on the return value
     }
 

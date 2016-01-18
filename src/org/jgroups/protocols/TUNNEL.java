@@ -38,7 +38,7 @@ import java.util.List;
  * @author Vladimir Blagojevic
  */
 @Experimental
-public class TUNNEL extends TP implements RouterStub.StubReceiver {
+public class TUNNEL extends AbstractTP implements RouterStub.StubReceiver {
 
     public interface TUNNELPolicy {
         void sendToAllMembers(String group, byte[] data, int offset, int length) throws Exception;

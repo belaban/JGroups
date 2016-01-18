@@ -77,7 +77,7 @@ public class NakReceiverWindow {
 
     /** if not set, no retransmitter thread will be started. Useful if
      * protocols do their own retransmission (e.g PBCAST) */
-    private Retransmitter retransmitter=null;
+    private AbstractRetransmitter retransmitter=null;
 
     private Listener listener=null;
 
@@ -96,14 +96,14 @@ public class NakReceiverWindow {
      * @param sched the external scheduler to use for retransmission
      * requests of missing msgs. If it's not provided or is null, an internal
      */
-    public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd, long highest_delivered_seqno,
+    public NakReceiverWindow(Address sender, AbstractRetransmitter.RetransmitCommand cmd, long highest_delivered_seqno,
                              TimeScheduler sched) {
         this(sender, cmd, highest_delivered_seqno, sched, true);
     }
 
 
 
-    public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd,
+    public NakReceiverWindow(Address sender, AbstractRetransmitter.RetransmitCommand cmd,
                              long highest_delivered_seqno, TimeScheduler sched,
                              boolean use_range_based_retransmitter) {
         this(sender, cmd, highest_delivered_seqno, sched, use_range_based_retransmitter,
@@ -111,7 +111,7 @@ public class NakReceiverWindow {
     }
 
 
-    public NakReceiverWindow(final Address sender, Retransmitter.RetransmitCommand cmd,
+    public NakReceiverWindow(final Address sender, AbstractRetransmitter.RetransmitCommand cmd,
                              long highest_delivered_seqno, TimeScheduler sched,
                              boolean use_range_based_retransmitter,
                              int num_rows, int msgs_per_row, double resize_factor, long max_compaction_time,

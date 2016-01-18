@@ -3,7 +3,7 @@ package org.jgroups.blocks;
 
 import org.jgroups.*;
 import org.jgroups.protocols.relay.SiteUUID;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.AbstractProtocol;
 import org.jgroups.util.RspList;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
@@ -249,7 +249,7 @@ public class GroupRequestTest {
         checkComplete(req, true);
     }
 
-    protected static void checkComplete(Request req, boolean expect) {
+    protected static void checkComplete(AbstractRequest req, boolean expect) {
         System.out.println("req = " + req);
         assert req.getResponsesComplete() == expect;
     }
@@ -381,7 +381,7 @@ public class GroupRequestTest {
             this.async=async;
             this.responses=responses;
             this.delay=delay;
-            this.transport=new Protocol() {
+            this.transport=new AbstractProtocol() {
                 public Object down(Event evt) {
                     return null;
                 }
@@ -393,12 +393,12 @@ public class GroupRequestTest {
         }
 
         @Override
-        public void sendRequest(List<Address> dest_mbrs, Message msg, Request req) throws Exception {
+        public void sendRequest(List<Address> dest_mbrs, Message msg, AbstractRequest req) throws Exception {
             send();
         }
 
         @Override
-        public void sendRequest(Collection<Address> dest_mbrs, Message msg, Request req, RequestOptions options) throws Exception {
+        public void sendRequest(Collection<Address> dest_mbrs, Message msg, AbstractRequest req, RequestOptions options) throws Exception {
             send();
         }
 

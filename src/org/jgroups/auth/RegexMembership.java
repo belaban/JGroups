@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * pattern matching
  * @author Bela Ban
  */
-public class RegexMembership extends AuthToken {
+public class RegexMembership extends AbstractAuthToken {
 
     @Property(description="The regular expression against which the IP address or logical host of a joiner will be matched")
     protected String  match_string=null;
@@ -54,7 +54,7 @@ public class RegexMembership extends AuthToken {
     }
 
 
-    public boolean authenticate(AuthToken token, Message msg) {
+    public boolean authenticate(AbstractAuthToken token, Message msg) {
         Address sender=msg.getSrc();
 
 

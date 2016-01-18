@@ -27,8 +27,8 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * informal tests.
  * @author Bela Ban
  */
-public class DefaultRetransmitter extends Retransmitter {
-    private final ConcurrentNavigableMap<Long,Task> msgs=new ConcurrentSkipListMap<>();
+public class DefaultRetransmitter extends AbstractRetransmitter {
+    private final ConcurrentNavigableMap<Long,AbstractTask> msgs=new ConcurrentSkipListMap<>();
 
 
     /**
@@ -55,11 +55,11 @@ public class DefaultRetransmitter extends Retransmitter {
             last_seqno=tmp;
         }
 
-        Task new_task;
+        AbstractTask new_task;
         for(long seqno=first_seqno; seqno <= last_seqno; seqno++) {
             // each task needs its own retransmission interval, as they are stateful *and* mutable, so we *need* to copy !
             new_task=new SeqnoTask(seqno, retransmit_timeouts.copy(), cmd, sender);
-            Task old_task=msgs.putIfAbsent(seqno, new_task);
+            AbstractTask old_task=msgs.putIfAbsent(seqno, new_task);
             if(old_task == null) // only schedule if we actually *added* the new task !
                 new_task.doSchedule(); // Entry adds itself to the timer
         }
@@ -73,7 +73,7 @@ public class DefaultRetransmitter extends Retransmitter {
      * scheduler and remove it from the pending entries
      */
     public void remove(long seqno) {
-        Task task=msgs.remove(seqno);
+        AbstractTask task=msgs.remove(seqno);
         if(task != null)
             task.cancel();
     }
@@ -90,11 +90,11 @@ public class DefaultRetransmitter extends Retransmitter {
         }
         if(msgs.isEmpty())
             return;
-        ConcurrentNavigableMap<Long,Task> to_be_removed=msgs.headMap(seqno, true);
+        ConcurrentNavigableMap<Long,AbstractTask> to_be_removed=msgs.headMap(seqno, true);
         if(to_be_removed.isEmpty())
             return;
-        Collection<Task> values=to_be_removed.values();
-        for(Task task: values) {
+        Collection<AbstractTask> values=to_be_removed.values();
+        for(AbstractTask task: values) {
             if(task != null)
                 task.cancel();
         }
@@ -106,7 +106,7 @@ public class DefaultRetransmitter extends Retransmitter {
      * respective tasks
      */
     public void reset() {
-        for(Task task: msgs.values())
+        for(AbstractTask task: msgs.values())
             task.cancel();
         msgs.clear();
     }
@@ -128,7 +128,7 @@ public class DefaultRetransmitter extends Retransmitter {
     }
 
 
-    protected class SeqnoTask extends Task {
+    protected class SeqnoTask extends AbstractTask {
         private long              seqno=-1;
 
         protected SeqnoTask(long seqno, Interval intervals, RetransmitCommand cmd, Address msg_sender) {
