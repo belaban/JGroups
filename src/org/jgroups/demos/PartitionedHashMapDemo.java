@@ -1,7 +1,7 @@
 package org.jgroups.demos;
 
-import org.jgroups.blocks.PartitionedHashMap;
 import org.jgroups.blocks.Cache;
+import org.jgroups.blocks.PartitionedHashMap;
 import org.jgroups.util.Util;
 
 import java.io.BufferedReader;

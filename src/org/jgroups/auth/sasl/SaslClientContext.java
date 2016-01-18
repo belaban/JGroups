@@ -1,8 +1,10 @@
 package org.jgroups.auth.sasl;
 
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-import java.util.Map;
+import org.jgroups.Address;
+import org.jgroups.Message;
+import org.jgroups.protocols.SASL;
+import org.jgroups.protocols.SaslHeader;
+import org.jgroups.protocols.SaslHeader.Type;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
@@ -10,12 +12,9 @@ import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslClient;
 import javax.security.sasl.SaslClientFactory;
 import javax.security.sasl.SaslException;
-
-import org.jgroups.Address;
-import org.jgroups.Message;
-import org.jgroups.protocols.SASL;
-import org.jgroups.protocols.SaslHeader;
-import org.jgroups.protocols.SaslHeader.Type;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.util.Map;
 
 public class SaslClientContext implements SaslContext {
     private static final byte[] EMPTY_CHALLENGE = new byte[0];

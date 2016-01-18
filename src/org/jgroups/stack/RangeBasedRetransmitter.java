@@ -2,9 +2,16 @@
 package org.jgroups.stack;
 
 import org.jgroups.Address;
-import org.jgroups.util.*;
+import org.jgroups.util.Range;
+import org.jgroups.util.Seqno;
+import org.jgroups.util.SeqnoComparator;
+import org.jgroups.util.SeqnoRange;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;

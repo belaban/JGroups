@@ -1,13 +1,12 @@
 package org.jgroups.auth.sasl;
 
-import java.io.IOException;
-
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.sasl.RealmCallback;
+import java.io.IOException;
 
 /**
  * SaslClientCallbackHandler.

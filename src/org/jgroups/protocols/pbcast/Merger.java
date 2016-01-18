@@ -1,10 +1,29 @@
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Membership;
+import org.jgroups.MergeView;
+import org.jgroups.Message;
+import org.jgroups.TimeoutException;
+import org.jgroups.View;
+import org.jgroups.ViewId;
 import org.jgroups.logging.Log;
-import org.jgroups.util.*;
+import org.jgroups.util.BoundedList;
+import org.jgroups.util.Digest;
+import org.jgroups.util.MergeId;
+import org.jgroups.util.MutableDigest;
+import org.jgroups.util.ResponseCollector;
+import org.jgroups.util.Util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;

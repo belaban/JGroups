@@ -6,8 +6,8 @@ import org.jgroups.blocks.PartitionedHashMap;
 import org.jgroups.jmx.JmxConfigurator;
 
 import javax.management.MBeanServer;
-import java.net.InetAddress;
 import java.lang.management.ManagementFactory;
+import java.net.InetAddress;
 
 /** Server process which listens for memcached requests and forwards them to an instance of PartitionedHashMap.
  * Uses MemcachedConnector and PartitionedHashMap.

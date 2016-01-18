@@ -5,7 +5,11 @@ import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.nio.Buffers;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.*;
+import org.jgroups.util.ByteArrayDataInputStream;
+import org.jgroups.util.ByteArrayDataOutputStream;
+import org.jgroups.util.CondVar;
+import org.jgroups.util.Condition;
+import org.jgroups.util.Util;
 
 import java.io.Closeable;
 import java.io.IOException;

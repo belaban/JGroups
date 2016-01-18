@@ -3,7 +3,13 @@ package org.jgroups.stack;
 import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.GuardedBy;
-import org.jgroups.blocks.cs.*;
+import org.jgroups.blocks.cs.BaseServer;
+import org.jgroups.blocks.cs.Client;
+import org.jgroups.blocks.cs.Connection;
+import org.jgroups.blocks.cs.ConnectionListener;
+import org.jgroups.blocks.cs.NioClient;
+import org.jgroups.blocks.cs.ReceiverAdapter;
+import org.jgroups.blocks.cs.TcpClient;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.PingData;
@@ -13,7 +19,11 @@ import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**

@@ -2,7 +2,11 @@ package org.jgroups.blocks.cs;
 
 import org.jgroups.Address;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.*;
+import org.jgroups.util.DefaultSocketFactory;
+import org.jgroups.util.DefaultThreadFactory;
+import org.jgroups.util.SocketFactory;
+import org.jgroups.util.ThreadFactory;
+import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.net.ServerSocket;

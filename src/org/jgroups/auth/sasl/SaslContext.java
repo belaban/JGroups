@@ -1,10 +1,10 @@
 package org.jgroups.auth.sasl;
 
-import javax.security.sasl.SaslException;
-
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.protocols.SaslHeader;
+
+import javax.security.sasl.SaslException;
 
 public interface SaslContext {
     boolean isSuccessful();

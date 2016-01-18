@@ -1,15 +1,5 @@
 package org.jgroups.protocols;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.security.auth.Subject;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.login.LoginContext;
-import javax.security.sasl.SaslClientFactory;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServerFactory;
-
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
@@ -27,6 +17,15 @@ import org.jgroups.protocols.pbcast.GMS.GmsHeader;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.login.LoginContext;
+import javax.security.sasl.SaslClientFactory;
+import javax.security.sasl.SaslException;
+import javax.security.sasl.SaslServerFactory;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The SASL protocol implements authentication and, if requested by the mech, encryption

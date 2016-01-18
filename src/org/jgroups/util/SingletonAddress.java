@@ -3,7 +3,11 @@ package org.jgroups.util;
 import org.jgroups.Address;
 import org.jgroups.protocols.relay.SiteUUID;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * Address with a cluster name. Used by TP.Bundler.

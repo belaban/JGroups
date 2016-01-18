@@ -1,6 +1,17 @@
 package org.jgroups.blocks.executor;
 
-import java.io.*;
+import org.jgroups.Channel;
+import org.jgroups.protocols.Executing;
+import org.jgroups.util.FutureListener;
+import org.jgroups.util.NotifyingFuture;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.io.NotSerializableException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -23,13 +34,6 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.jgroups.Channel;
-import org.jgroups.protocols.Executing;
-import org.jgroups.util.FutureListener;
-import org.jgroups.util.NotifyingFuture;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
 
 /**
  * This is a jgroups implementation of an ExecutorService, where the consumers

@@ -1,5 +1,7 @@
 package org.jgroups.auth.sasl;
 
+import javax.security.sasl.SaslClientFactory;
+import javax.security.sasl.SaslServerFactory;
 import java.security.Provider;
 import java.security.Security;
 import java.util.HashSet;
@@ -8,9 +10,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-
-import javax.security.sasl.SaslClientFactory;
-import javax.security.sasl.SaslServerFactory;
 
 /**
  * Utility methods for handling SASL authentication

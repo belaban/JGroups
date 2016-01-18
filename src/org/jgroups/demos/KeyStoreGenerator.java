@@ -3,12 +3,11 @@ package org.jgroups.demos;
 
 import org.jgroups.util.Util;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.security.KeyStore;
-
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
 
 /**
  * Generates a keystore file that has a SecretKey in it. It is not possible to

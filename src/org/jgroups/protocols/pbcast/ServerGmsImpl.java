@@ -1,8 +1,8 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.Address;
-import org.jgroups.util.MergeId;
 import org.jgroups.util.Digest;
+import org.jgroups.util.MergeId;
 
 import java.util.Collection;
 

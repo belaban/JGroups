@@ -6,7 +6,10 @@ import org.jgroups.annotations.Immutable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static java.lang.Math.max;
 

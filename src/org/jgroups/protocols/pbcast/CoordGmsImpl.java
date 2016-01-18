@@ -6,9 +6,18 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.util.*;
+import org.jgroups.util.Digest;
+import org.jgroups.util.MergeId;
+import org.jgroups.util.MutableDigest;
+import org.jgroups.util.Tuple;
+import org.jgroups.util.Util;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 
 
 /**

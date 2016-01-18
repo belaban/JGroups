@@ -1,18 +1,39 @@
 package org.jgroups.protocols;
 
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.Header;
+import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
+import org.jgroups.View;
+import org.jgroups.ViewId;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
+import org.jgroups.util.Bits;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.ResponseCollector;
+import org.jgroups.util.Responses;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Tuple;
 import org.jgroups.util.UUID;
+import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
 

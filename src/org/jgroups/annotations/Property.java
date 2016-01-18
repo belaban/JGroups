@@ -1,9 +1,12 @@
 package org.jgroups.annotations;
 
-import java.lang.annotation.*;
-
 import org.jgroups.conf.PropertyConverter;
 import org.jgroups.conf.PropertyConverters;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Represents a Protocol property assigned from corresponding field in JGroups

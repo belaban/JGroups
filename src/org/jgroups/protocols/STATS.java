@@ -1,15 +1,20 @@
 package org.jgroups.protocols;
 
-import org.jgroups.annotations.MBean;
-import org.jgroups.stack.Protocol;
+import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.Address;
 import org.jgroups.View;
+import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Provides various stats

@@ -1,10 +1,12 @@
 package org.jgroups.blocks;
 
+import org.jgroups.annotations.Experimental;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.annotations.Experimental;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * @author Bela Ban

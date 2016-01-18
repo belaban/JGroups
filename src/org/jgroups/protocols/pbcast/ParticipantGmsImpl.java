@@ -1,7 +1,11 @@
 
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.ViewId;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Promise;
 

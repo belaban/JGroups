@@ -1,20 +1,38 @@
 package org.jgroups.protocols.relay;
 
-import org.jgroups.*;
-import org.jgroups.annotations.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.Header;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
+import org.jgroups.annotations.XmlElement;
+import org.jgroups.annotations.XmlInclude;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.protocols.FORWARD_TO_COORD;
 import org.jgroups.protocols.relay.config.RelayConfig;
 import org.jgroups.stack.AddressGenerator;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
+import org.jgroups.util.ExtendedUUID;
+import org.jgroups.util.MessageBatch;
+import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.UUID;
+import org.jgroups.util.Util;
 import org.w3c.dom.Node;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 

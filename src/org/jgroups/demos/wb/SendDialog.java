@@ -1,6 +1,9 @@
 package org.jgroups.demos.wb;
 
-import org.jgroups.blocks.*;
+import org.jgroups.blocks.MethodCall;
+import org.jgroups.blocks.RequestOptions;
+import org.jgroups.blocks.ResponseMode;
+import org.jgroups.blocks.RpcDispatcher;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;

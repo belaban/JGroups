@@ -11,7 +11,11 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 
 /**

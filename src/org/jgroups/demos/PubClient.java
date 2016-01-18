@@ -1,7 +1,13 @@
 package org.jgroups.demos;
 
 import org.jgroups.Address;
-import org.jgroups.blocks.cs.*;
+import org.jgroups.blocks.cs.BaseServer;
+import org.jgroups.blocks.cs.Client;
+import org.jgroups.blocks.cs.Connection;
+import org.jgroups.blocks.cs.ConnectionListener;
+import org.jgroups.blocks.cs.NioClient;
+import org.jgroups.blocks.cs.ReceiverAdapter;
+import org.jgroups.blocks.cs.TcpClient;
 import org.jgroups.util.Util;
 
 import java.io.BufferedInputStream;

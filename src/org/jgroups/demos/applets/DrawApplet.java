@@ -1,6 +1,11 @@
 package org.jgroups.demos.applets;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Channel;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.View;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 

@@ -2,7 +2,10 @@ package org.jgroups.blocks.mux;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.blocks.*;
+import org.jgroups.blocks.Request;
+import org.jgroups.blocks.RequestCorrelator;
+import org.jgroups.blocks.RequestHandler;
+import org.jgroups.blocks.RequestOptions;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.Protocol;
 

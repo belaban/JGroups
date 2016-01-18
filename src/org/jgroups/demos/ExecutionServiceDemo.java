@@ -1,5 +1,13 @@
 package org.jgroups.demos;
 
+import org.jgroups.JChannel;
+import org.jgroups.blocks.executor.ExecutionCompletionService;
+import org.jgroups.blocks.executor.ExecutionRunner;
+import org.jgroups.blocks.executor.ExecutionService;
+import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.nio.ByteBuffer;
@@ -14,14 +22,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.jgroups.JChannel;
-import org.jgroups.blocks.executor.ExecutionCompletionService;
-import org.jgroups.blocks.executor.ExecutionRunner;
-import org.jgroups.blocks.executor.ExecutionService;
-import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
 
 public class ExecutionServiceDemo {
     protected String props;

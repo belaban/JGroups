@@ -1,10 +1,10 @@
 package org.jgroups.blocks.mux;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-
 import org.jgroups.Global;
 import org.jgroups.Header;
+
+import java.io.DataInput;
+import java.io.DataOutput;
 
 /**
  * Header that identifies the target handler for multiplexed dispatches.

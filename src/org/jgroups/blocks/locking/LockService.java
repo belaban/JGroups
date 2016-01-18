@@ -1,7 +1,7 @@
 package org.jgroups.blocks.locking;
 
-import org.jgroups.Event;
 import org.jgroups.Channel;
+import org.jgroups.Event;
 import org.jgroups.protocols.Locking;
 
 import java.util.Date;

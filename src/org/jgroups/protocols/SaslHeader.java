@@ -1,10 +1,10 @@
 package org.jgroups.protocols;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-
 import org.jgroups.Header;
 import org.jgroups.util.Util;
+
+import java.io.DataInput;
+import java.io.DataOutput;
 
 public class SaslHeader extends Header {
     public enum Type {

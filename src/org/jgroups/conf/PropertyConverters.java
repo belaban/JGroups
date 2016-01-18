@@ -9,7 +9,12 @@ import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
-import java.net.*;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;

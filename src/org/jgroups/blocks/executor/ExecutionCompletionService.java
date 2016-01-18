@@ -1,5 +1,8 @@
 package org.jgroups.blocks.executor;
 
+import org.jgroups.util.FutureListener;
+import org.jgroups.util.NotifyingFuture;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -7,9 +10,6 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import org.jgroups.util.FutureListener;
-import org.jgroups.util.NotifyingFuture;
 
 /**
  * A {@link CompletionService} that uses a supplied {@link ExecutionService}

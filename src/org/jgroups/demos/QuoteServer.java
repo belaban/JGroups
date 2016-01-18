@@ -2,11 +2,14 @@
 package org.jgroups.demos;
 
 
-import org.jgroups.*;
+import org.jgroups.Channel;
+import org.jgroups.JChannel;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.View;
 import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.util.Util;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

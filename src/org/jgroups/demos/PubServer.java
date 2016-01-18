@@ -1,7 +1,10 @@
 package org.jgroups.demos;
 
 import org.jgroups.Address;
-import org.jgroups.blocks.cs.*;
+import org.jgroups.blocks.cs.BaseServer;
+import org.jgroups.blocks.cs.NioServer;
+import org.jgroups.blocks.cs.ReceiverAdapter;
+import org.jgroups.blocks.cs.TcpServer;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;

@@ -1,11 +1,26 @@
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.*;
-import org.jgroups.annotations.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.Header;
+import org.jgroups.Message;
+import org.jgroups.MessageListener;
+import org.jgroups.View;
+import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.*;
+import org.jgroups.util.Digest;
+import org.jgroups.util.ProcessingQueue;
+import org.jgroups.util.ShutdownRejectedExecutionHandler;
+import org.jgroups.util.StateTransferResult;
+import org.jgroups.util.Tuple;
+import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;

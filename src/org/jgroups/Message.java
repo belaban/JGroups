@@ -3,7 +3,11 @@ package org.jgroups;
 
 
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.util.*;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.ByteArrayDataInputStream;
+import org.jgroups.util.Headers;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;

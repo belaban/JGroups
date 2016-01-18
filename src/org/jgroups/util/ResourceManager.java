@@ -2,7 +2,11 @@ package org.jgroups.util;
 
 import org.jgroups.Global;
 
-import java.net.*;
+import java.net.DatagramSocket;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;

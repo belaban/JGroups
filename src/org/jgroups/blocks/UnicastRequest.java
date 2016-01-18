@@ -1,7 +1,11 @@
 package org.jgroups.blocks;
 
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Message;
+import org.jgroups.SuspectedException;
+import org.jgroups.UnreachableException;
+import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.protocols.relay.SiteAddress;
 import org.jgroups.util.Rsp;

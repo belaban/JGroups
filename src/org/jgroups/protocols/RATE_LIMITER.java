@@ -2,7 +2,11 @@ package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 

@@ -1,6 +1,12 @@
 package org.jgroups.fork;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Channel;
+import org.jgroups.ChannelListener;
+import org.jgroups.Event;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.protocols.FORK;
 import org.jgroups.stack.AddressGenerator;
 import org.jgroups.stack.Protocol;

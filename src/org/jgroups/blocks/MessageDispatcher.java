@@ -1,7 +1,20 @@
 
 package org.jgroups.blocks;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.AnycastAddress;
+import org.jgroups.Channel;
+import org.jgroups.ChannelListener;
+import org.jgroups.Event;
+import org.jgroups.JChannel;
+import org.jgroups.MembershipListener;
+import org.jgroups.Message;
+import org.jgroups.MessageListener;
+import org.jgroups.SuspectedException;
+import org.jgroups.TimeoutException;
+import org.jgroups.UnreachableException;
+import org.jgroups.UpHandler;
+import org.jgroups.View;
 import org.jgroups.blocks.mux.Muxer;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -10,10 +23,26 @@ import org.jgroups.protocols.relay.SiteAddress;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.*;
+import org.jgroups.util.FutureListener;
+import org.jgroups.util.NotifyingFuture;
+import org.jgroups.util.NullFuture;
+import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
+import org.jgroups.util.StateTransferResult;
 
-import java.io.*;
-import java.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 

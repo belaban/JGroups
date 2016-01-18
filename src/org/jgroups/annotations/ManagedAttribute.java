@@ -1,5 +1,9 @@
 package org.jgroups.annotations;
-import java.lang.annotation.*;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Indicates that a public method or a field (any visibility) in 

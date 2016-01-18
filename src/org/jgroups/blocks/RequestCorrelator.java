@@ -1,7 +1,12 @@
 
 package org.jgroups.blocks;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.AnycastAddress;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -17,7 +22,11 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.NotSerializableException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 

@@ -1,12 +1,30 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
-import org.jgroups.annotations.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Header;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.blocks.atomic.Counter;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
+import org.jgroups.util.Bits;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.ByteArrayDataOutputStream;
+import org.jgroups.util.Owner;
+import org.jgroups.util.Promise;
+import org.jgroups.util.ResponseCollector;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Tuple;
+import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

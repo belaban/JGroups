@@ -2,7 +2,10 @@ package org.jgroups.util;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /** Cache which removes its elements after a certain time
  * @author Bela Ban
