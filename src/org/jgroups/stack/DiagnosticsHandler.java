@@ -1,7 +1,11 @@
 package org.jgroups.stack;
 
+import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.Version;
+import org.jgroups.View;
 import org.jgroups.logging.Log;
+import org.jgroups.protocols.TP;
 import org.jgroups.util.SocketFactory;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
@@ -20,13 +24,14 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 
 public class DiagnosticsHandler implements Runnable {
-    public static final String        THREAD_NAME = "DiagnosticsHandler";
-    protected Thread                  thread=null;
-    protected MulticastSocket         diag_sock=null;
-    protected InetAddress             diagnostics_addr=null;
+    public static final String        THREAD_NAME="DiagnosticsHandler";
+    protected TP                      transport;
+    protected Thread                  thread;
+    protected MulticastSocket         diag_sock;
+    protected InetAddress             diagnostics_addr;
     protected int                     diagnostics_port=7500;
     protected int                     ttl=8;
-    protected List<NetworkInterface>  bind_interfaces=null;
+    protected List<NetworkInterface>  bind_interfaces;
     protected final Set<ProbeHandler> handlers=new CopyOnWriteArraySet<>();
     protected final Log               log;
     protected final SocketFactory     socket_factory;
@@ -56,6 +61,9 @@ public class DiagnosticsHandler implements Runnable {
         this.bind_interfaces=bind_interfaces;
         this.ttl=diagnostics_ttl;
     }
+
+    public TP                 transport()      {return transport;}
+    public DiagnosticsHandler transport(TP tp) {transport=tp; return this;}
 
     public Thread getThread(){
         return thread;
@@ -140,8 +148,28 @@ public class DiagnosticsHandler implements Runnable {
 
         while(tok.hasMoreTokens()) {
             String req=tok.nextToken().trim();
-            if(!req.isEmpty())
+            if(!req.isEmpty()) {
+                 // if -cluster=<name>: discard requests that have a cluster name != our own cluster name
+                if(req.startsWith("cluster=")) {
+                    if(!sameCluster(req))
+                        return;
+                    continue;
+                }
                 list.add(req);
+            }
+        }
+
+        if(list.isEmpty()) {
+            Address local_addr=transport.localAddress();
+            String default_rsp=String.format("local_addr=%s [%s]\nphysical_addr=%s\nview=%s\ncluster=%s\nversion=%s",
+                                             local_addr != null? local_addr : "n/a",
+                                             local_addr != null? ((org.jgroups.util.UUID)local_addr).toStringLong() : "n/a",
+                                             transport.getLocalPhysicalAddress(),
+                                             transport.view(),
+                                             transport.getClusterName(),
+                                             Version.description);
+            sendResponse(sock, sender, default_rsp.getBytes());
+            return;
         }
 
         String[] tokens=new String[list.size()];
@@ -159,25 +187,66 @@ public class DiagnosticsHandler implements Runnable {
             }
             if(map == null || map.isEmpty())
                 continue;
-            StringBuilder info=new StringBuilder();
+            StringBuilder info=new StringBuilder(defaultHeaders());
             for(Map.Entry<String,String> entry: map.entrySet())
-                info.append(entry.getKey()).append("=").append(entry.getValue()).append("\r\n");
+                info.append(String.format("%s=%s\r\n", entry.getKey(), entry.getValue()));
 
             byte[] diag_rsp=info.toString().getBytes();
             log.debug("sending diag response to %s", sender);
-            try {
-                sendResponse(sock, sender, diag_rsp);
-            }
-            catch(Throwable t) {
-                log.error(Util.getMessage("FailedSendingDiagRspTo") + sender, t);
-            }
+            sendResponse(sock, sender, diag_rsp);
         }
     }
 
+    protected String defaultHeaders() {
+        Address local_addr=transport.localAddress();
+        View view=transport.view();
+        int num_members=view != null? view.size() : 0;
+        return String.format("local_addr=%s [ip=%s, version=%s, cluster=%s, %d mbr(s)]\n",
+                             local_addr != null? local_addr : "n/a", transport.getLocalPhysicalAddress(),
+                             Version.description, transport.getClusterName(), num_members);
+    }
+
+
+    protected boolean sameCluster(String req) {
+        if(!req.startsWith("cluster="))
+            return true;
+
+        String cluster_name_pattern=req.substring("cluster=".length()).trim();
+        if(!transport.isSingleton()) {
+            String cname=transport.getClusterName();
+            if(cluster_name_pattern != null && !Util.patternMatch(cluster_name_pattern,cname != null? cname : null)) {
+                log.warn("Probe request dropped as cluster name %s does not match pattern %s", cname, cluster_name_pattern);
+                return false;
+            }
+            return true;
+        }
+        // not optimal, this matches *any* of the shared clusters. would be better to return only
+        // responses for matching clusters
+        if(transport.getUpProtocols() != null) {
+            boolean match=false;
+            List<String> cnames=new ArrayList<>();
+            for(Protocol prot: transport.getUpProtocols().values())
+                if(prot instanceof TP.ProtocolAdapter)
+                    cnames.add(((TP.ProtocolAdapter)prot).getClusterName());
+            for(String cname: cnames) {
+                if(Util.patternMatch(cluster_name_pattern, cname)) {
+                    match=true;
+                    break;
+                }
+            }
+            if(!match) {
+                log.warn("Probe request dropped as cluster names %s do not match pattern %s", cnames, cluster_name_pattern);
+                return false;
+            }
+        }
+        return true;
+    }
+
+
     /**
-    * Performs authorization on given DatagramPacket. 
-    * 
-    * @param packet to authorize
+     * Performs authorization on given DatagramPacket.
+     *
+     * @param packet to authorize
     * @return offset in DatagramPacket where request payload starts
     * @throws Exception thrown if passcode received from client does not match set passcode
     */
@@ -202,9 +271,14 @@ public class DiagnosticsHandler implements Runnable {
       return offset;
    }
 
-   protected static void sendResponse(DatagramSocket sock, SocketAddress sender, byte[] buf) throws IOException {
-        DatagramPacket p=new DatagramPacket(buf, 0, buf.length, sender);
-        sock.send(p);
+   protected void sendResponse(DatagramSocket sock, SocketAddress sender, byte[] buf) {
+       try {
+           DatagramPacket p=new DatagramPacket(buf, 0, buf.length, sender);
+           sock.send(p);
+       }
+       catch(Throwable t) {
+           log.error(Util.getMessage("FailedSendingDiagRspTo") + sender, t);
+       }
     }
 
     protected void bindToInterfaces(List<NetworkInterface> interfaces, MulticastSocket s) {

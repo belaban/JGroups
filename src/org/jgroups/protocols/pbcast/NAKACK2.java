@@ -714,12 +714,15 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public Map<String, String> handleProbe(String... keys) {
         Map<String,String> retval=new HashMap<>();
         for(String key: keys) {
-            if(key.equals("digest-history"))
-                retval.put(key, printDigestHistory());
-            if(key.equals("dump-digest"))
-                retval.put(key, "\n" + printMessages());
+            switch(key) {
+                case "digest-history":
+                    retval.put(key, printDigestHistory());
+                    break;
+                case "dump-digest":
+                    retval.put(key, "\n" + printMessages());
+                    break;
+            }
         }
-
         return retval;
     }
 

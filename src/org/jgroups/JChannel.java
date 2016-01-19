@@ -1088,7 +1088,7 @@ public class JChannel extends Channel {
     class MyProbeHandler implements DiagnosticsHandler.ProbeHandler {
 
         public Map<String, String> handleProbe(String... keys) {
-            Map<String, String> map=new HashMap<>(2);
+            Map<String, String> map=new HashMap<>(3);
             for(String key: keys) {
                 if(key.startsWith("jmx")) {
                     handleJmx(map, key);
@@ -1109,22 +1109,12 @@ public class JChannel extends Channel {
                         }
                     }
                 }
-
             }
-
-            map.put("version", Version.description);
-            if(my_view != null && !map.containsKey("view"))
-                map.put("view", my_view.toString());
-            map.put("local_addr", getAddressAsString() + " [" + getAddressAsUUID() + "]");
-            PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
-            if(physical_addr != null)
-                map.put("physical_addr", physical_addr.toString());
-            map.put("cluster", getClusterName());
             return map;
         }
 
         public String[] supportedKeys() {
-            return new String[]{"reset-stats", "jmx", "invoke=<operation>[<args>]", "\nop=<operation>[<args>]"};
+            return new String[]{"reset-stats", "jmx", "op=<operation>[<args>]"};
         }
 
         protected void resetAllStats() {
