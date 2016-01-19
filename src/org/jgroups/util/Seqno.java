@@ -81,7 +81,7 @@ public class Seqno {
     }
 
     public boolean equals(Object obj) {
-        return obj instanceof Seqno && low == ((Seqno)obj).low;
+        return this.getClass() == obj.getClass() && low == ((Seqno)obj).low;
     }
 
     public String toString() {

@@ -30,7 +30,7 @@ public class MergeId implements Streamable {
     }
 
     public boolean equals(Object obj) {
-        return obj instanceof MergeId && initiator.equals(((MergeId)obj).initiator) && id == ((MergeId)obj).id;
+        return this.getClass() == obj && initiator.equals(((MergeId)obj).initiator) && id == ((MergeId)obj).id;
     }
 
     public int hashCode() {

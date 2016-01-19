@@ -64,7 +64,7 @@ public class AsciiString implements Comparable<AsciiString> {
 
 
     public boolean equals(Object obj) {
-        return obj instanceof AsciiString && compareTo((AsciiString)obj) == 0;
+        return this.getClass() == obj.getClass() && compareTo((AsciiString)obj) == 0;
     }
 
     public int hashCode() {

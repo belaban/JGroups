@@ -103,8 +103,9 @@ public class PingData implements SizeStreamable {
 
 
     public boolean equals(Object obj) {
-        if(!(obj instanceof PingData))
+        if(this.getClass() != obj.getClass()) {
             return false;
+        }
         PingData other=(PingData)obj;
         return sender != null && sender.equals(other.sender);
     }

@@ -63,8 +63,9 @@ public class SingletonAddress implements Address {
     }
 
     public boolean equals(Object obj) {
-        if(!(obj instanceof Address))
+        if(this.getClass() != obj.getClass()) {
             throw new IllegalArgumentException("argument is " + obj.getClass());
+        }
         return compareTo((Address)obj) == 0;
     }
 

@@ -93,7 +93,7 @@ public class ViewId implements Comparable<ViewId>, Streamable {
 
 
     public boolean equals(Object other) {
-        return other instanceof ViewId && (this == other  || compareTo((ViewId)other) == 0);
+        return this.getClass() == other.getClass() && (this == other  || compareTo((ViewId)other) == 0);
     }
 
 
