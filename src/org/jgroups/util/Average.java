@@ -12,6 +12,11 @@ public class Average {
 
 
     public void add(long num) {
+        // If the product of the average and the number of samples would be greater than Long.MAX_VALUE, we have
+        // to reset the count and average to prevent a long overflow. This will temporarily lose the sample history, and
+        // the next sample will be the new average, but with more data points, the average should become more precise.
+        // Note that overflow should be extremely seldom, as we usually use Average in cases where we don't have a huge
+        // number of sample and the average is pretty small (e.g. an RPC invocation)
         if(Util.productGreaterThan(count, (long)Math.ceil(avg), Long.MAX_VALUE))
             clear();
         double total=count*avg;
