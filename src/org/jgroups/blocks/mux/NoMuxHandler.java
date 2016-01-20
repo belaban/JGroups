@@ -21,7 +21,7 @@ public class NoMuxHandler implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        if ((object == null) || !(object instanceof NoMuxHandler)) return false;
+        if ((object == null) || (this.getClass() != object.getClass())) { return false; }
         NoMuxHandler handler = (NoMuxHandler) object;
         return (id == handler.id);
     }

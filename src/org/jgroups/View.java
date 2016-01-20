@@ -144,7 +144,7 @@ public class View implements Comparable<View>, Streamable, Iterable<Address> {
     }
 
     public boolean equals(Object obj) {
-        return obj instanceof View && (this == obj || compareTo((View)obj) == 0);
+        return this.getClass() == obj.getClass() && (this == obj || compareTo((View)obj) == 0);
     }
 
     public boolean deepEquals(View other) {

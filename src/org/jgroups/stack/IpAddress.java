@@ -133,8 +133,9 @@ public class IpAddress implements PhysicalAddress {
     public final boolean equals(Object obj) {
         if(this == obj) return true; // added Nov 7 2005, makes sense with canonical addresses
 
-        if(!(obj instanceof IpAddress))
+        if(this.getClass() != obj.getClass()) {
             return false;
+        }
         IpAddress other=(IpAddress)obj;
         boolean sameIP;
         if(this.ip_addr != null)

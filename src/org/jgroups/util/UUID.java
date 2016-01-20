@@ -264,8 +264,9 @@ public class UUID implements Address {
      * @return  {@code true} if the objects are the same; {@code false} otherwise
      */
     public boolean equals(Object obj) {
-        if (!(obj instanceof UUID))
+        if (this.getClass() != obj.getClass()) {
             return false;
+        }
         UUID id = (UUID)obj;
         return this == id || (mostSigBits == id.mostSigBits && leastSigBits == id.leastSigBits);
     }
