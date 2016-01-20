@@ -215,7 +215,7 @@ public class DiagnosticsHandler implements Runnable {
         if(!transport.isSingleton()) {
             String cname=transport.getClusterName();
             if(cluster_name_pattern != null && !Util.patternMatch(cluster_name_pattern,cname != null? cname : null)) {
-                log.warn("Probe request dropped as cluster name %s does not match pattern %s", cname, cluster_name_pattern);
+                log.debug("Probe request dropped as cluster name %s does not match pattern %s", cname, cluster_name_pattern);
                 return false;
             }
             return true;
@@ -235,7 +235,7 @@ public class DiagnosticsHandler implements Runnable {
                 }
             }
             if(!match) {
-                log.warn("Probe request dropped as cluster names %s do not match pattern %s", cnames, cluster_name_pattern);
+                log.debug("Probe request dropped as cluster names %s do not match pattern %s", cnames, cluster_name_pattern);
                 return false;
             }
         }
@@ -262,12 +262,10 @@ public class DiagnosticsHandler implements Runnable {
       offset = 8 + 8 + 4 + digest.length;
 
       byte[] local = Util.createDigest(passcode, t1, q1);
-      if (!MessageDigest.isEqual(digest, local)) {
+      if(!MessageDigest.isEqual(digest, local))
          throw new Exception("Authorization failed! Make sure correct passcode is used");
-      } else {
-         if(log.isDebugEnabled())
-            log.debug("Request authorized");
-      }
+      else
+          log.debug("Request authorized");
       return offset;
    }
 
