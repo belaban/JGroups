@@ -42,7 +42,7 @@ public class UFC extends FlowControl {
      */
     protected final Map<Address,Credit> sent=Util.createConcurrentMap();
 
-    protected final Average             avg_block_time=new Average(50); // in ns
+    protected final Average             avg_block_time=new Average(); // in ns
 
 
 

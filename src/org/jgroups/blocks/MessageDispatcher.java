@@ -15,7 +15,6 @@ import org.jgroups.util.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -50,13 +49,8 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     protected Address                               local_addr;
     protected final Log                             log=LogFactory.getLog(MessageDispatcher.class);
     protected boolean                               hardware_multicast_supported=false;
-    protected final AtomicInteger                   sync_unicasts=new AtomicInteger(0);
-    protected final AtomicInteger                   async_unicasts=new AtomicInteger(0);
-    protected final AtomicInteger                   sync_multicasts=new AtomicInteger(0);
-    protected final AtomicInteger                   async_multicasts=new AtomicInteger(0);
-    protected final AtomicInteger                   sync_anycasts=new AtomicInteger(0);
-    protected final AtomicInteger                   async_anycasts=new AtomicInteger(0);
     protected final Set<ChannelListener>            channel_listeners=new CopyOnWriteArraySet<>();
+    protected final RpcStats                        rpc_stats=new RpcStats(false);
     protected final DiagnosticsHandler.ProbeHandler probe_handler=new MyProbeHandler();
 
 
@@ -87,8 +81,10 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         setRequestHandler(req_handler);
     }
 
-
-    public boolean asyncDispatching() {return async_dispatching;}
+    public RpcStats          rpcStats()                {return rpc_stats;}
+    public MessageDispatcher extendedStats(boolean fl) {rpc_stats.extendedStats(fl); return this;}
+    public boolean           extendedStats()           {return rpc_stats.extendedStats();}
+    public boolean           asyncDispatching()        {return async_dispatching;}
 
     public MessageDispatcher asyncDispatching(boolean flag) {
         async_dispatching=flag;
@@ -345,24 +341,18 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
                 real_dests.remove(excluding);
         }
 
-        // don't even send the message if the destination list is empty
-        if(log.isTraceEnabled())
-            log.trace("real_dests=%s", real_dests);
-
         if(real_dests.isEmpty()) {
-            if(log.isTraceEnabled())
-                log.trace("destination list is empty, won't send message");
+            log.trace("destination list is empty, won't send message");
             return null;
         }
 
-        boolean async=options.getMode() == ResponseMode.GET_NONE;
-        if(options.getAnycasting()) {
-            if(async) async_anycasts.incrementAndGet();
-            else sync_anycasts.incrementAndGet();
-        }
-        else {
-            if(async) async_multicasts.incrementAndGet();
-            else sync_multicasts.incrementAndGet();
+        boolean sync=options.getMode() != ResponseMode.GET_NONE;
+        boolean non_blocking=!sync || !block_for_results, anycast=options.getAnycasting();
+        if(non_blocking) {
+            if(anycast)
+                rpc_stats.addAnycast(sync, 0, real_dests);
+            else
+                rpc_stats.add(RpcStats.Type.MULTICAST, null, sync, 0);
         }
 
         GroupRequest<T> req=new GroupRequest<>(msg, corr, real_dests, options);
@@ -371,7 +361,15 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         req.setResponseFilter(options.getRspFilter());
         req.setAnycasting(options.getAnycasting());
         req.setBlockForResults(block_for_results);
+        long start=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime();
         req.execute();
+        long time=non_blocking || !rpc_stats.extendedStats()? 0 : System.nanoTime() - start;
+        if(!non_blocking) {
+            if(anycast)
+                rpc_stats.addAnycast(sync, time, real_dests);
+            else
+                rpc_stats.add(RpcStats.Type.MULTICAST, null, sync, time);
+        }
         return req;
     }
 
@@ -408,17 +406,16 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         msg.setFlag(opts.getFlags()).setTransientFlag(opts.getTransientFlags());
         if(opts.getScope() > 0)
             msg.setScope(opts.getScope());
-        if(opts.getMode() == ResponseMode.GET_NONE)
-            async_unicasts.incrementAndGet();
-        else
-            sync_unicasts.incrementAndGet();
-
+        boolean async_rpc=opts.getMode() == ResponseMode.GET_NONE;
+        if(async_rpc)
+            rpc_stats.add(RpcStats.Type.UNICAST, dest, false, 0);
         UnicastRequest<T> req=new UnicastRequest<>(msg, corr, dest, opts);
+        long start=async_rpc || !rpc_stats.extendedStats()? 0 : System.nanoTime();
         req.execute();
-
-        if(opts.getMode() == ResponseMode.GET_NONE)
+        if(async_rpc)
             return null;
-
+        long time=!rpc_stats.extendedStats()? 0 : System.nanoTime() - start;
+        rpc_stats.add(RpcStats.Type.UNICAST, dest, true, time);
         Rsp<T> rsp=req.getResult();
         if(rsp.wasSuspected())
             throw new SuspectedException(dest);
@@ -463,11 +460,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         msg.setFlag(options.getFlags()).setTransientFlag(options.getTransientFlags());
         if(options.getScope() > 0)
             msg.setScope(options.getScope());
-        if(options.getMode() == ResponseMode.GET_NONE)
-            async_unicasts.incrementAndGet();
-        else
-            sync_unicasts.incrementAndGet();
-
+        rpc_stats.add(RpcStats.Type.UNICAST, dest, options.getMode() != ResponseMode.GET_NONE, 0);
         UnicastRequest<T> req=new UnicastRequest<>(msg, corr, dest, options);
         if(listener != null)
             req.setListener(listener);
@@ -642,28 +635,37 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
     }
 
 
-    class MyProbeHandler implements DiagnosticsHandler.ProbeHandler {
+    protected class MyProbeHandler implements DiagnosticsHandler.ProbeHandler {
 
         @Override
         public Map<String,String> handleProbe(String... keys) {
-            Map<String,String> retval=new HashMap<>();
+            Map<String,String> retval=new HashMap<>(16);
             for(String key: keys) {
-                if("rpcs".equals(key)) {
-                    String channel_name = channel != null ? channel.getClusterName() : "";
-                    retval.put(channel_name + ": sync  unicast   RPCs", sync_unicasts.toString());
-                    retval.put(channel_name + ": sync  multicast RPCs", sync_multicasts.toString());
-                    retval.put(channel_name + ": async unicast   RPCs", async_unicasts.toString());
-                    retval.put(channel_name + ": async multicast RPCs", async_multicasts.toString());
-                    retval.put(channel_name + ": sync  anycast   RPCs", sync_anycasts.toString());
-                    retval.put(channel_name + ": async anycast   RPCs", async_anycasts.toString());
-                }
-                if("rpcs-reset".equals(key)) {
-                    sync_unicasts.set(0);
-                    sync_multicasts.set(0);
-                    async_unicasts.set(0);
-                    async_multicasts.set(0);
-                    sync_anycasts.set(0);
-                    async_anycasts.set(0);
+                switch(key) {
+                    case "rpcs":
+                        String channel_name=channel != null? channel.getClusterName() : "";
+                        retval.put(channel_name + ": sync  unicast   RPCs", String.valueOf(rpc_stats.unicasts(true)));
+                        retval.put(channel_name + ": sync  multicast RPCs", String.valueOf(rpc_stats.multicasts(true)));
+                        retval.put(channel_name + ": async unicast   RPCs", String.valueOf(rpc_stats.unicasts(false)));
+                        retval.put(channel_name + ": async multicast RPCs", String.valueOf(rpc_stats.multicasts(false)));
+                        retval.put(channel_name + ": sync  anycast   RPCs", String.valueOf(rpc_stats.anycasts(true)));
+                        retval.put(channel_name + ": async anycast   RPCs", String.valueOf(rpc_stats.anycasts(false)));
+                        break;
+                    case "rpcs-reset":
+                        rpc_stats.reset();
+                        break;
+                    case "rpcs-enable-details":
+                        rpc_stats.extendedStats(true);
+                        break;
+                    case "rpcs-disable-details":
+                        rpc_stats.extendedStats(false);
+                        break;
+                    case "rpcs-details":
+                        if(!rpc_stats.extendedStats())
+                            retval.put(key, "<details not enabled: use rpc-enable-details to enable>");
+                        else
+                            retval.put(key, rpc_stats.printOrderByDest());
+                        break;
                 }
             }
             return retval;
@@ -671,7 +673,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
 
         @Override
         public String[] supportedKeys() {
-            return new String[]{"rpcs", "rpcs-reset"};
+            return new String[]{"rpcs", "rpcs-reset", "rpcs-enable-details", "rpcs-disable-details", "rpcs-details"};
         }
     }
 

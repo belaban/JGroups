@@ -1447,6 +1447,10 @@ public class Util {
         return matcher.matches();
     }
 
+    public static boolean productGreaterThan(long n1, long n2, long val) {
+        long div=(long)Math.floor(val/(double)n1);
+        return div < n2;
+    }
 
     public static <T> boolean different(T one,T two) {
         return !match(one,two);
@@ -1519,6 +1523,10 @@ public class Util {
      * chances are that in 80% of all cases, true will be returned and false in 20%.
      */
     public static boolean tossWeightedCoin(double probability) {
+        if(probability >= 1)
+            return true;
+        if(probability <= 0)
+            return false;
         long r=random(100);
         long cutoff=(long)(probability * 100);
         return r < cutoff;

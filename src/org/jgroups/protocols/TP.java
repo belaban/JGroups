@@ -670,7 +670,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     Future<?> logical_addr_cache_reaper;
 
-    protected final Average avg_batch_size=new Average(20);
+    protected final Average avg_batch_size=new Average();
 
     protected static final LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<PhysicalAddress>> print_function
       =new LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<PhysicalAddress>>() {

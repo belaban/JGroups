@@ -137,7 +137,12 @@ public class UtilTest {
         }
     }
 
-
+    public void testTossWeightedCoin() {
+        boolean rc=Util.tossWeightedCoin(1.0);
+        assert true;
+        rc=Util.tossWeightedCoin(0.0);
+        assert !rc;
+    }
 
     public static void testPrintBytes() {
         long num;
@@ -207,6 +212,29 @@ public class UtilTest {
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
         Assert.assertEquals("1.2GB", s);
+    }
+
+
+    public void testProductBiggerThan() {
+        boolean rc=Util.productGreaterThan(3, 4, 12);
+        assert !rc;
+        rc=Util.productGreaterThan(3, 4, 11);
+        assert rc;
+
+        long n2=Short.MAX_VALUE/2;
+        rc=Util.productGreaterThan(2, n2, Short.MAX_VALUE);
+        assert !rc;
+        n2++;
+        rc=Util.productGreaterThan(2, n2, Short.MAX_VALUE);
+        assert rc;
+
+        n2=Long.MAX_VALUE/10;
+        rc=Util.productGreaterThan(9, n2, Long.MAX_VALUE);
+        assert !rc;
+        rc=Util.productGreaterThan(10, n2, Long.MAX_VALUE);
+        assert !rc;
+        rc=Util.productGreaterThan(11, n2, Long.MAX_VALUE);
+        assert rc;
     }
 
 

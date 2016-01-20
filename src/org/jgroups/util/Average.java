@@ -1,18 +1,40 @@
 package org.jgroups.util;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 /**
- * A class which uses a simple array (of configurable length) to store stats samples. The average is then taken as
- * the sum of all values >= 0 (the array is initialized with -1 values) divided by the number of non -1 values. This is
- * best used in cases where we have a lot of sample data entered by different threads. Each thread picks a random
- * array index and sets the value at the index. This will be an <em>approximation</em> of an average as all values
- * are updated after some time.
+ * Maintains an approximation of an average of values. Done by keeping track of the number of samples, and computing
+ * the new average as (count*avg + new-sample) / ++count. We reset the count if count*avg would lead to an overflow.
  * @author Bela Ban
  * @since  3.4
  */
 public class Average {
-    protected final long[]  samples;
+    protected double avg;
+    protected long   count;
+
+
+    public void add(long num) {
+        if(Util.productGreaterThan(count, (long)Math.ceil(avg), Long.MAX_VALUE))
+            clear();
+        double total=count*avg;
+        avg=(total + num) / ++count;
+    }
+
+    public double getAverage() {
+        return avg;
+    }
+
+    public long getCount() {return count;}
+
+    public void clear() {
+        avg=0.0;
+        count=0;
+    }
+
+    public String toString() {
+        return String.valueOf(getAverage());
+    }
+
+
+   /* protected final long[]  samples;
     protected AtomicInteger index=new AtomicInteger(0);
 
     public Average() {
@@ -54,5 +76,5 @@ public class Average {
 
     public String toString() {
         return String.valueOf(getAverage());
-    }
+    }*/
 }

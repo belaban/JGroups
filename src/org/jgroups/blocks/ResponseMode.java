@@ -13,6 +13,7 @@ public enum ResponseMode {
     GET_ALL,
 
     /** return majority (of all non-faulty members) */
+    @Deprecated /** use filter */
     GET_MAJORITY,
 
     /** return no response (async call) */

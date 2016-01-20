@@ -23,7 +23,7 @@ public class CreditMap {
     protected final Lock              lock=new ReentrantLock();
     protected final Condition         credits_available=lock.newCondition();
     protected int                     num_blockings;
-    protected final Average           avg_block_time=new Average(50); // in ns
+    protected final Average           avg_block_time=new Average(); // in ns
 
 
     public CreditMap(long max_credits) {

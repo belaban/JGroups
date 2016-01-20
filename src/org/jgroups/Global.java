@@ -2,6 +2,7 @@ package org.jgroups;
 
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.SCOPE;
+import org.jgroups.util.UUID;
 
 /**
  * Global is a JGroups internal class defining global variables.
@@ -18,7 +19,7 @@ public final class Global {
     public static final int FLOAT_SIZE  = Float.SIZE   / 8; // 4;
 
     public static final int MAX_DATAGRAM_PACKET_SIZE=1 << 16;
-
+    public static final Address NULL_ADDRESS=new UUID(0,0);
     public static final short SCOPE_ID=ClassConfigurator.getProtocolId(SCOPE.class);
 
     public static final String IPv4="java.net.preferIPv4Stack";
