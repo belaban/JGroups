@@ -1415,12 +1415,12 @@ public class Configurator {
     	
     	public String toString() {
     		StringBuilder sb = new StringBuilder() ;
-    		sb.append("InetAddressInfo(") ;
-    		sb.append("protocol=" + protocol.getName()) ;
-    		sb.append(", propertyName=" + getPropertyName()) ;
-    		sb.append(", string value=" + getStringValue()) ;
-    		sb.append(", parameterized=" + isParameterized()) ;
-    		if (isParameterized())
+            sb.append("InetAddressInfo(")
+                    .append("protocol=" + protocol.getName())
+                    .append(", propertyName=" + getPropertyName())
+                    .append(", string value=" + getStringValue())
+                    .append(", parameterized=" + isParameterized());
+            if (isParameterized())
     			sb.append(", baseType=" + getBaseType()) ;
     		sb.append(")") ;
     		return sb.toString();

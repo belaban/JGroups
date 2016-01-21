@@ -189,9 +189,9 @@ public class STATS extends Protocol {
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
-            sb.append(msgs).append(" (").append(bytes).append(" bytes)");
-            sb.append(": ").append(ucasts).append(" ucasts (").append(ucast_bytes).append(" bytes), ");
-            sb.append(mcasts).append(" mcasts (").append(mcast_bytes).append(" bytes)");
+            sb.append(msgs).append(" (").append(bytes).append(" bytes)")
+                    .append(": ").append(ucasts).append(" ucasts (").append(ucast_bytes)
+                    .append(" bytes), ").append(mcasts).append(" mcasts (").append(mcast_bytes).append(" bytes)");
             return sb.toString();
         }
     }

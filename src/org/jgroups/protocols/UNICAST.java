@@ -1159,8 +1159,8 @@ public class UNICAST extends Protocol implements AgeOutCache.Handler<Address> {
             StringBuilder sb=new StringBuilder();
             if(received_msgs != null)
                 sb.append(received_msgs).append(", ");
-            sb.append("recv_conn_id=" + recv_conn_id);
-            sb.append(" (" + age() + " ms old)");
+            sb.append("recv_conn_id=" + recv_conn_id)
+                    .append(" (" + age() + " ms old)");
             return sb.toString();
         }
     }

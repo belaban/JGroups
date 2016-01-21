@@ -796,10 +796,9 @@ public class JChannel extends Channel {
     @ManagedOperation
     public String toString(boolean details) {
         StringBuilder sb=new StringBuilder();
-        sb.append("local_addr=").append(local_addr).append('\n');
-        sb.append("cluster_name=").append(cluster_name).append('\n');
-        sb.append("my_view=").append(my_view).append('\n');
-        sb.append("state=").append(state).append('\n');
+        sb.append("local_addr=").append(local_addr).append('\n').append("cluster_name=")
+        		.append(cluster_name).append('\n').append("my_view=").append(my_view).append('\n')
+                .append("state=").append(state).append('\n');
         if(details) {
             sb.append("discard_own_messages=").append(discard_own_messages).append('\n');
             sb.append("state_transfer_supported=").append(state_transfer_supported).append('\n');
