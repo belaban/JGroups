@@ -359,6 +359,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * Max number of milliseconds until queued messages are sent. Messages are sent when max_bundle_size
      * or max_bundle_timeout has been exceeded (whichever occurs faster)
      */
+    @Deprecated
     @Property(name="max_bundle_timeout", description="Max number of milliseconds until queued messages are sent")
     protected long max_bundle_timeout=20;
 
