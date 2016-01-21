@@ -174,9 +174,9 @@ public class RangeBasedRetransmitter extends Retransmitter {
 
     public String printStats() {
         StringBuilder sb=new StringBuilder();
-        sb.append("total seqnos=" + num_missing_seqnos);
-        sb.append(", single seqnos=" + num_single_msgs);
-        sb.append(", ranges=" + num_ranges);
+        sb.append("total seqnos=" + num_missing_seqnos)
+                .append(", single seqnos=" + num_single_msgs)
+                .append(", ranges=" + num_ranges);
         double avg_seqnos_per_range=(double)(num_missing_seqnos.get() - num_single_msgs.get()) / num_ranges.get();
         sb.append(", seqnos / range: " + avg_seqnos_per_range);
         return sb.toString();

@@ -210,9 +210,9 @@ public class FRAG extends Protocol {
 
             if(log.isTraceEnabled()) {
                 StringBuilder sb=new StringBuilder();
-                sb.append("fragmenting packet to ").append(dest != null ? dest.toString() : "<all members>");
-                sb.append(" (size=").append(buffer.length).append(") into ").append(num_frags);
-                sb.append(" fragment(s) [frag_size=").append(frag_size).append(']');
+                sb.append("fragmenting packet to ").append(dest != null ? dest.toString() : "<all members>")
+                        .append(" (size=").append(buffer.length).append(") into ").append(num_frags)
+                        .append(" fragment(s) [frag_size=").append(frag_size).append(']');
                 log.trace(sb.toString());
             }
 

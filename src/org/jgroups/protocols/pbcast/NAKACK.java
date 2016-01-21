@@ -386,8 +386,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     public String printStats() {
         StringBuilder sb=new StringBuilder();
-        sb.append("\nStability messages received\n");
-        sb.append(printStabilityMessages()).append("\n");
+        sb.append("\nStability messages received\n")
+                .append(printStabilityMessages()).append("\n");
 
         return sb.toString();
     }
@@ -819,8 +819,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
-            sb.append(local_addr).append(": received xmit request from ").append(xmit_requester).append(" for ");
-            sb.append(original_sender).append(" [").append(first_seqno).append(" - ").append(last_seqno).append("]");
+            sb.append(local_addr).append(": received xmit request from ").append(xmit_requester).append(" for ")
+                    .append(original_sender).append(" [").append(first_seqno).append(" - ").append(last_seqno).append("]");
             log.trace(sb.toString());
         }
 
@@ -831,8 +831,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(win == null) {
             if(log.isErrorEnabled()) {
                 StringBuilder sb=new StringBuilder();
-                sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
-                sb.append(") ").append(original_sender).append(" not found in retransmission table");
+                sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr)
+                        .append(") ").append(original_sender).append(" not found in retransmission table");
                 // don't print the table unless we are in trace mode because it can be LARGE
                 if (log.isTraceEnabled()) {
                     sb.append(":\n").append(printMessages());
@@ -859,9 +859,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 if(msg == null) {
                     if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(xmit_requester)) {
                         StringBuilder sb=new StringBuilder();
-                        sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
-                        sb.append(") message ").append(original_sender).append("::").append(i);
-                        sb.append(" not found in retransmission table of ").append(original_sender).append(":\n").append(win);
+                        sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr)
+                                .append(") message ").append(original_sender).append("::").append(i)
+                                .append(" not found in retransmission table of ").append(original_sender).append(":\n").append(win);
                         if(print_stability_history_on_failed_xmit) {
                             sb.append(" (stability history:\n").append(printStabilityHistory());
                         }

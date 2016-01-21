@@ -252,8 +252,8 @@ public abstract class BasicConnectionTable {
        synchronized(conns) {
            copy=new HashMap<>(conns);
        }
-       ret.append("local_addr=" + local_addr).append("\n");
-       ret.append("connections (" + copy.size() + "):\n");
+       ret.append("local_addr=" + local_addr).append("\n")
+               .append("connections (" + copy.size() + "):\n");
        for(Iterator<Entry<Address,Connection>> it=copy.entrySet().iterator(); it.hasNext();) {
            entry=it.next();
            key=entry.getKey();
@@ -388,8 +388,8 @@ public abstract class BasicConnectionTable {
            if(sock != null) {
                StringBuilder sb;
                sb=new StringBuilder();
-               sb.append(sock.getLocalAddress().getHostAddress()).append(':').append(sock.getLocalPort());
-               sb.append(" - ").append(sock.getInetAddress().getHostAddress()).append(':').append(sock.getPort());
+               sb.append(sock.getLocalAddress().getHostAddress()).append(':').append(sock.getLocalPort())
+                       .append(" - ").append(sock.getInetAddress().getHostAddress()).append(':').append(sock.getPort());
                sock_addr=sb.toString();
            }
            return sock_addr;
