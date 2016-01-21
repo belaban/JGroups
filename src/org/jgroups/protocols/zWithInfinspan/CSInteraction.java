@@ -1,4 +1,4 @@
-package org.jgroups.protocols.jzookeeper;
+package org.jgroups.protocols.zWithInfinspan;
 
 import java.util.ArrayList;
 import java.util.Arrays;

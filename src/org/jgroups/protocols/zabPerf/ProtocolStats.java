@@ -1,4 +1,4 @@
-package org.jgroups.protocols.jzookeeper;
+package org.jgroups.protocols.zabPerf;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.jgroups.Message;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.protocols.jzookeeper.MessageId;
 
 /*
  * It uses to gathering protocol stats like throughput, latency and load.
@@ -26,12 +27,18 @@ import org.jgroups.logging.LogFactory;
 public class ProtocolStats {
 	private List<Integer> latencies;
 	private List<Integer> fromfollowerToLeaderF;
+	private List<Integer> fromFToLOneRound;
+
 	private List<Integer> fromLeaderToFollowerP;
 	private List<Integer> latencyPropForward;
 	private final Map<MessageId, Long> latencyProposalForwardST;
 	private List<Integer> latencyProp;
 	private final Map<MessageId, Long> latencyProposalST;
-//	private List<Integer> fromFollowerToLeaderA1;
+	private final Map<MessageId, Long>  ackProcessTime;
+	private final Map<MessageId, Long>  commitProcessTimeL;
+	private List<Integer>  commitPTL;
+	private final Map<MessageId, Long>  deliveryProcessTimeFL;
+	private List<Integer>  deliveryPTime;
 //	private List<Integer> fromFollowerToLeaderA2;
 //	private List<Integer> fromFollowerToLeaderF1;
 //	private List<Integer> fromFollowerToLeaderF2;
@@ -49,16 +56,15 @@ public class ProtocolStats {
     private static PrintWriter outFile;
     private String outDir;
     private AtomicInteger countDummyCall;
-    private boolean is_warmup = true;
     protected final Log        log=LogFactory.getLog(this.getClass());
    
 
   
-	public ProtocolStats(String protocolName, int numberOfClients, int numberOfSenderInEachClient,
-			String outDir, boolean stopWarmup) {
+	public ProtocolStats(String protocolName, int numberOfClients, int numberOfSenderInEachClient, String outDir) {
 
 		this.latencies = new ArrayList<Integer>();
 		this.fromfollowerToLeaderF = new ArrayList<Integer>();
+		this.fromFToLOneRound = new ArrayList<Integer>();
 		this.fromLeaderToFollowerP = new ArrayList<Integer>();
 		this.latencyProp = new ArrayList<Integer>();;
 		this.latencyProposalST= Collections
@@ -66,6 +72,11 @@ public class ProtocolStats {
 		this.latencyPropForward = new ArrayList<Integer>();;
 		this.latencyProposalForwardST= Collections
 				.synchronizedMap(new HashMap<MessageId, Long>());
+		this.ackProcessTime =  Collections.synchronizedMap(new HashMap<MessageId, Long>());
+		this.commitProcessTimeL =  Collections.synchronizedMap(new HashMap<MessageId, Long>());
+		this.commitPTL = new ArrayList<Integer>();
+		this.deliveryProcessTimeFL =  Collections.synchronizedMap(new HashMap<MessageId, Long>());
+		this.deliveryPTime = new ArrayList<Integer>();
 //		this.fromFollowerToLeaderA1 = new ArrayList<Integer>();
 //		this.fromFollowerToLeaderA2 = new ArrayList<Integer>();
 //		this.fromFollowerToLeaderF1 = new ArrayList<Integer>();;
@@ -80,7 +91,6 @@ public class ProtocolStats {
 		countMessageFollower =  new AtomicInteger(0);;
 	    countTotalMessagesFollowers = new AtomicInteger(0);
 	    this.countDummyCall =  new AtomicInteger(0);
-	    this.is_warmup = stopWarmup;
 	    this.outDir = outDir;
 		try {
 			this.outFile = new PrintWriter(new BufferedWriter(new FileWriter(outDir
@@ -295,6 +305,10 @@ public class ProtocolStats {
 		fromfollowerToLeaderF.add(latency);
 	}
 	
+	public void addLatencyFToLFOneRound(int latency){	
+		fromFToLOneRound.add(latency);
+	}
+	
 	public void addLatencyLToFP(int latency){	
 		fromLeaderToFollowerP.add(latency);
 	}
@@ -315,7 +329,7 @@ public class ProtocolStats {
 	public void addLatencyPropForward(int latency){	
 		latencyPropForward.add(latency);
 	}
-	public void addLatencyProposalForwardST(MessageId mid, Long st){	
+	public void addLatencyProposalForwardST(MessageId mid, long st){	
 		latencyProposalForwardST.put(mid,st);
 	}
 	public Long getLatencyProposalForwardST(MessageId mid){	
@@ -325,9 +339,44 @@ public class ProtocolStats {
 		latencyProposalForwardST.remove(mid);
 	}
 	
-//	public void addLatencyFToLA2(int latency){	
-//		fromFollowerToLeaderA2.add(latency);
-//	}
+	public Long getAckProcessTime(MessageId mid){	
+		return ackProcessTime.get(mid);
+	}
+	public void addAckProcessTime(MessageId mid, long latency){	
+		ackProcessTime.put(mid, latency);
+	}
+	
+	public void removeAckProcessTime(MessageId mid){	
+		ackProcessTime.remove(mid);
+	}
+	
+	public void addCommitProcessTime(MessageId mid, Long st){	
+		commitProcessTimeL.put(mid,st);
+	}
+	public Long getCommitProcessTime(MessageId mid){	
+		return commitProcessTimeL.get(mid);
+	}
+	public void removeCommitProcessTime(MessageId mid){	
+		commitProcessTimeL.remove(mid);
+	}
+	
+	public void addCommitPTL(int commitTime){	
+		commitPTL.add(commitTime);
+	}
+
+	public void addDeliveryProcessTime(MessageId mid, Long st){	
+		deliveryProcessTimeFL.put(mid,st);
+	}
+	public Long getDeliveryProcessTime(MessageId mid){	
+		return deliveryProcessTimeFL.get(mid);
+	}
+	public void removeDeliveryProcessTime(MessageId mid){	
+		deliveryProcessTimeFL.remove(mid);
+	}
+	
+	public void addDeliveryPT(int deliveryTime){	
+		deliveryPTime.add(deliveryTime);
+	}
 //	
 //	public void addLatencyFToLF1(int latency){	
 //		fromFollowerToLeaderF1.add(latency);
@@ -344,13 +393,6 @@ public class ProtocolStats {
 		this.countMessageLeader.incrementAndGet();
 	}
 
-	public boolean isWarmup() {
-		return is_warmup;
-	}
-
-	public void setWarmup(boolean is_warmup) {
-		this.is_warmup = is_warmup;
-	}
 
 	public void printProtocolStats(boolean isLeader) {
 		
@@ -359,7 +401,7 @@ public class ProtocolStats {
 		int count = 0;
 		long avgTemp = 0;
 		long min = Long.MAX_VALUE, avg = 0, max = Long.MIN_VALUE, FToLFAvg=0, LToFPAvg=0, avgAll=0, latProp=0, latLeader=0;
-		double latPropD=0, FToLFAvgD=0, LToFPAvgD=0, avgAllD=0, latLeaderD=0;
+		double latPropD=0, FToLFAvgD=0, LToFPAvgD=0, avgAllD=0, latLeaderD=0, ackPTAvg=0, FToLOneRoundF=0, commitPT=0, deliveryPT=0;
 		for (long lat : latencies) {
 			if (lat < min) {
 				min = lat;
@@ -395,14 +437,34 @@ public class ProtocolStats {
 					   latLeader += lat;
 				 }
 				   latLeaderD = (double) latLeader/latencyPropForward.size();
+				   
+				   for (long lat : fromFToLOneRound) {
+					   FToLOneRoundF += lat;
+					}
+				   FToLOneRoundF = (double) FToLOneRoundF/fromFToLOneRound.size();
+				   
+				   for (long lat :commitPTL) {
+					   commitPT += lat;
+					}
+				   commitPT = (double) commitPT/commitPTL.size();
+				   
 			}
 		   else{
 			   for (long lat : fromfollowerToLeaderF) {
-					lat += lat;
+				   FToLFAvgD += lat;
 				}
-			   FToLFAvgD = (double) FToLFAvg/fromfollowerToLeaderF.size();
+			   FToLFAvgD = (double) FToLFAvgD/fromfollowerToLeaderF.size();
+			   
+			   for (long lat : ackProcessTime.values()) {
+				   ackPTAvg += lat;
+				}
+			   ackPTAvg = (double) ackPTAvg/ackProcessTime.size();
 			   	
 		   }
+			for (long lat :deliveryPTime) {
+				   deliveryPT += lat;
+				}
+			deliveryPT = (double) deliveryPT/deliveryPTime.size();
 		}
 		
 		outFile.println("Start");
@@ -422,13 +484,16 @@ public class ProtocolStats {
 				outFile.println("Latency From Leader to Follower (round-trip) (Proposal) " + (double)(LToFPAvgD)/1000000);
 				outFile.println("Latency From FORWARD case to Proposal sent (Proposal) " + "latencyProp Size " + 
 						latencyProp.size() + " " +(double)(latPropD)/1000000);
+				outFile.println("Latency From FToL One round for Forward" +(double)(FToLOneRoundF)/1000000);
 				outFile.println("Latency From leader to Proposal sent (Proposal) " + "latencyPropForward Size " + 
 						latencyPropForward.size() + " " +(double)(latLeaderD)/1000000);
+				outFile.println("Commit process Time " + +(double)(commitPT)/1000000);
 			}
 			else{
 				outFile.println("Latency From Folower to Leader (round-trip) (Forward) " + (double)(FToLFAvgD)/1000000);
-	
+				outFile.println("ACK process Time " + (double)(ackPTAvg)/1000000);
 			}
+			outFile.println("Delivery Process Time " + +(double)(deliveryPT)/1000000);
 		}
 		else{
 			outFile.println("Number of call Dummy " + countDummyCall.get());

@@ -105,8 +105,8 @@ public class ZabClient extends ReceiverAdapter {
 		channel.setReceiver(this);
 		channel.connect("ZABCluster");
 		local_addr = channel.getAddress();
-		JmxConfigurator.registerChannel(channel, Util.getMBeanServer(),
-				"jgroups", "ZABCluster", true);
+		//JmxConfigurator.registerChannel(channel, Util.getMBeanServer(),
+				//"jgroups", "ZABCluster", true);
 		Address coord = channel.getView().getMembers().get(0);
 
 	}

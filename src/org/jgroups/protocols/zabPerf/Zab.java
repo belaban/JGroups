@@ -1,4 +1,5 @@
-package org.jgroups.protocols.jzookeeper;
+package org.jgroups.protocols.zabPerf;
+
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,8 +25,12 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.protocols.jzookeeper.MessageId;
+import org.jgroups.protocols.jzookeeper.Proposal;
+import org.jgroups.protocols.jzookeeper.ZabHeader;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
+
 
 /*
  * It is orignal protocol of Apache Zookeeper. Also it has features of testing throuhput, latency (in Nano), ant etc. 
@@ -61,6 +66,7 @@ public class Zab extends Protocol {
 	private final static String outDir = "/home/pg/p13/a6915654/Zab/";
 	private AtomicLong countMessageLeader = new AtomicLong(0);
 	private long countMessageFollower = 0;
+	private boolean is_warmUp = true;
 	private List<Address> clients = Collections
 			.synchronizedList(new ArrayList<Address>());
 	private ProtocolStats stats;
@@ -97,12 +103,12 @@ public class Zab extends Protocol {
 		executor = Executors.newSingleThreadExecutor();
 		executor.execute(new FollowerMessageHandler(this.id));
 		log.setLevel("trace");
+		
 
 	}
-
 	/*
-	 * reset all protocol fields, reset invokes after warm up has finished, then
-	 * callback the clients to start main test
+	 * reset all protocol fields, reset invokes after warm up has finished, then callback the clients to start 
+	 * main test
 	 */
 	public void reset(Address client) {
 		zxid.set(0);
@@ -117,12 +123,17 @@ public class Zab extends Protocol {
 		startThroughput = false;
 		countMessageLeader = new AtomicLong(0);// timer.cancel();
 		countMessageFollower = 0;
-		this.stats = new ProtocolStats(ProtocolName, clients.size(),
-				numberOfSenderInEachClient, outDir, false);
+		is_warmUp = false;
+		this.stats = new ProtocolStats(ProtocolName, clients.size(), numberOfSenderInEachClient, outDir);
 		log.info("Reset done");
 		MessageId messageId = new MessageId(local_addr, -10,
 				System.currentTimeMillis());
-
+//		log.info("Start of run SystemStats");
+//		SystemStats stats = new SystemStats();
+//		Thread t = new Thread(new StatsCollector(stats,2));
+//		t.start();
+//		log.info("End of run SystemStats");
+		//it only ensures one server (leader) call clients to start real test
 		if (is_leader) {
 			for (Address c : clients) {
 				ZabHeader startTest = new ZabHeader(ZabHeader.STARTREALTEST,
@@ -178,31 +189,38 @@ public class Zab extends Protocol {
 				reset(msg.getSrc());
 				break;
 			case ZabHeader.FORWARD:
-				if (!stats.isWarmup()) {
-					stats.addLatencyProposalST(hdr.getMessageId(),
-							System.nanoTime());
+				if (!is_warmUp){
+					stats.addLatencyProposalST(hdr.getMessageId(), System.nanoTime());
+					long stf1Round = hdr.getMessageId().getStartFToLF();
+					stats.addLatencyFToLFOneRound((int) (System.nanoTime() - stf1Round));
 				}
 				queuedMessages.add(hdr);
 				break;
 			case ZabHeader.PROPOSAL:
-				if (!is_leader) {
-					if (!stats.isWarmup() && !startThroughput) {
+					if (!is_warmUp && !startThroughput) {
 						startThroughput = true;
 						stats.setStartThroughputTime(System.currentTimeMillis());
 					}
+					if (!is_warmUp){
+						stats.addAckProcessTime(hdr.getMessageId(), System.nanoTime());
+					}
+
 					sendACK(msg, hdr);
-				}
 				break;
 			case ZabHeader.ACK:
-				if (is_leader) {
+					if(!is_warmUp){
+						stats.addCommitProcessTime(hdr.getMessageId(), System.nanoTime());
+					}
 					processACK(msg, msg.getSrc());
-				}
 				break;
 			case ZabHeader.COMMIT:
-				deliver(hdr.getZxid());
+				if(!is_warmUp){
+					stats.addDeliveryProcessTime(hdr.getMessageId(), System.nanoTime());
+				}
+				deliver(hdr.getZxid(), hdr);
 				break;
 			case ZabHeader.STATS:
-				// log.info(" " + clients);
+				//log.info(" " + clients);
 				stats.printProtocolStats(is_leader);
 				break;
 			case ZabHeader.COUNTMESSAGE:
@@ -234,6 +252,7 @@ public class Zab extends Protocol {
 		return up_prot.up(evt);
 	}
 
+	
 	public void up(MessageBatch batch) {
 		for (Message msg : batch) {
 			if (msg.isFlagSet(Message.Flag.NO_TOTAL_ORDER)
@@ -253,9 +272,9 @@ public class Zab extends Protocol {
 			up_prot.up(batch);
 	}
 
+	
 	/*
-	 * --------------------------------- Private Methods
-	 * --------------------------------
+	 * --------------------------------- Private Methods  --------------------------------
 	 */
 
 	/*
@@ -325,9 +344,12 @@ public class Zab extends Protocol {
 			destination = zabMembers.get(index);
 			Message requestMessage = new Message(destination).putHeader(
 					this.id, hdrReq);
-			// int diff = 1000 - hdrReq.size();
-			// if (diff > 0)
-			// requestMessage.setBuffer(new byte[diff]);
+//			int diff = 1000 - hdrReq.size();
+//			if (diff > 0)
+//				requestMessage.setBuffer(new byte[diff]); // Necessary to ensure that
+													// each msgs size is 1kb,
+													// necessary for accurate
+													// network measurements
 			down_prot.down(new Event(Event.MSG, requestMessage));
 		}
 
@@ -335,7 +357,7 @@ public class Zab extends Protocol {
 				&& clientHeader.getType() == ZabHeader.SENDMYADDRESS) {
 			Address destination = null;
 			destination = zabMembers.get(0);
-			// destination = zabMembers.get(0);
+			//destination = zabMembers.get(0);
 			log.info("ZabMemberSize = " + zabMembers.size());
 			for (Address server : zabMembers) {
 				log.info("server address = " + server);
@@ -353,7 +375,7 @@ public class Zab extends Protocol {
 		if (leader.equals(local_addr)) {
 			is_leader = true;
 		}
-		// make the first three joined server as ZK servers
+		//make the first three joined server as ZK servers
 		if (mbrs.size() == 3) {
 			zabMembers.addAll(v.getMembers());
 		}
@@ -383,22 +405,21 @@ public class Zab extends Protocol {
 	private synchronized void forwardToLeader(Message msg) {
 		ZabHeader hdrReq = (ZabHeader) msg.getHeader(this.id);
 		requestQueue.add(hdrReq.getMessageId());
-		if (!stats.isWarmup() && is_leader && !startThroughput) {
+		if (!is_warmUp && is_leader && !startThroughput) {
 			startThroughput = true;
 			stats.setStartThroughputTime(System.currentTimeMillis());
 		}
 
 		if (is_leader) {
-			if (!stats.isWarmup()) {
+			if (!is_warmUp){
 				long stp = System.nanoTime();
 				hdrReq.getMessageId().setStartLToFP(stp);
 				hdrReq.getMessageId().setStartTime(stp);
-				stats.addLatencyProposalForwardST(hdrReq.getMessageId(),
-						System.nanoTime());
+				stats.addLatencyProposalForwardST(hdrReq.getMessageId(), System.nanoTime());
 			}
 			queuedMessages.add(hdrReq);
 		} else {
-			if (!stats.isWarmup()) {
+			if (!is_warmUp){
 				long stf = System.nanoTime();
 				hdrReq.getMessageId().setStartFToLF(stf);
 				hdrReq.getMessageId().setStartTime(stf);
@@ -407,7 +428,6 @@ public class Zab extends Protocol {
 		}
 
 	}
-
 	/*
 	 * Forward request to the leader
 	 */
@@ -428,33 +448,42 @@ public class Zab extends Protocol {
 	}
 
 	/*
-	 * This method is invoked by follower. Follower receives a proposal. This
-	 * method generates ACK message and send it to the leader.
+	 * This method is invoked by follower. 
+	 * Follower receives a proposal. This method generates ACK message and send it to the leader.
 	 */
 	private void sendACK(Message msg, ZabHeader hdrAck) {
-		if (!stats.isWarmup()) {
+		if (!is_warmUp){
 			stats.incNumRequest();
 		}
 		if (msg == null)
 			return;
 
+		// ZABHeader hdr = (ZABHeader) msg.getHeader(this.id);
 		if (hdrAck == null)
 			return;
+
+		// if (hdr.getZxid() != lastZxidProposed + 1){
+		// log.info("Got zxid 0x"
+		// + Long.toHexString(hdr.getZxid())
+		// + " expected 0x"
+		// + Long.toHexString(lastZxidProposed + 1));
+		// }
 
 		lastZxidProposed = hdrAck.getZxid();
 		queuedProposalMessage.put(hdrAck.getZxid(), hdrAck);
 		ZabHeader hdrACK = new ZabHeader(ZabHeader.ACK, hdrAck.getZxid(),
 				hdrAck.getMessageId());
 		Message ACKMessage = new Message(leader).putHeader(this.id, hdrACK);
-		if (!stats.isWarmup()) {
+		if (!is_warmUp){
 			countMessageFollower++;
 			stats.incCountMessageFollower();
+			long stAck = stats.getAckProcessTime(hdrAck.getMessageId());
+			stats.removeAckProcessTime(hdrAck.getMessageId());
+			stats.addLatencyFToLF((int) (System.nanoTime() - stAck));
 			if (requestQueue.contains(hdrAck.getMessageId())) {
 				long stf = hdrAck.getMessageId().getStartFToLF();
 				stats.addLatencyFToLF((int) (System.nanoTime() - stf));
-				// log.info("Latency for forward fro zxid=" + dZxid +
-				// " start time=" + stf + " End Time=" + etf +
-				// " latency = "+((etf - stf)/1000000));
+				//log.info("Latency for forward fro zxid=" +  dZxid + " start time=" + stf + " End Time=" + etf + " latency = "+((etf - stf)/1000000));
 			}
 		}
 		try {
@@ -467,10 +496,9 @@ public class Zab extends Protocol {
 
 	/*
 	 * This method is invoked by leader. It receives ACK message from a follower
-	 * and check if a majority is reached for particular proposal.
+	 * and check if a majority is reached for particular proposal. 
 	 */
 	private synchronized void processACK(Message msgACK, Address sender) {
-
 		ZabHeader hdr = (ZabHeader) msgACK.getHeader(this.id);
 		long ackZxid = hdr.getZxid();
 		if (lastZxidCommitted >= ackZxid) {
@@ -484,14 +512,12 @@ public class Zab extends Protocol {
 		if (isQuorum(p.getAckCount())) {
 			if (ackZxid == lastZxidCommitted + 1) {
 				outstandingProposals.remove(ackZxid);
-				if (!stats.isWarmup() && requestQueue.contains(hdr.getMessageId())) {
+				if(!is_warmUp && requestQueue.contains(hdr.getMessageId())){
 					long stf = hdr.getMessageId().getStartLToFP();
-					// log.info("Latency for Prposal for zxid=" + ackZxid +
-					// " start time=" + stf + " End Time=" + etf +
-					// " latency = "+((etf - stf)/1000000));
+					//log.info("Latency for Prposal for zxid=" +  ackZxid + " start time=" + stf + " End Time=" + etf + " latency = "+((etf - stf)/1000000));
 					stats.addLatencyLToFP((int) (System.nanoTime() - stf));
 				}
-				commit(ackZxid);
+				commit(ackZxid, hdr);
 			} else
 				System.out.println(">>> Can't commit >>>>>>>>>");
 		}
@@ -499,59 +525,68 @@ public class Zab extends Protocol {
 	}
 
 	/*
-	 * This method is invoked by leader. It sends COMMIT message to all follower
-	 * and itself.
+	 * This method is invoked by leader. It sends COMMIT message to all follower and itself.
 	 */
-	private void commit(long zxidd) {
-		// ZABHeader hdrOrg = queuedProposalMessage.get(zxidd);
+	private void commit(long zxidd, ZabHeader hdr) {
+		//ZABHeader hdrOrg = queuedProposalMessage.get(zxidd);
 		synchronized (this) {
 			lastZxidCommitted = zxidd;
 		}
 		ZabHeader hdrCommit = new ZabHeader(ZabHeader.COMMIT, zxidd);
 		Message commitMessage = new Message().putHeader(this.id, hdrCommit);
+		if(!is_warmUp){
+			long commitStartTime = stats.getCommitProcessTime(hdr.getMessageId());
+			stats.removeCommitProcessTime(hdr.getMessageId());
+			stats.addCommitPTL((int) (System.nanoTime() - commitStartTime));			
+		}
 		for (Address address : zabMembers) {
-			if (!address.equals(leader) && !stats.isWarmup()) {
+			if (!address.equals(leader) && !is_warmUp){
 				countMessageLeader.incrementAndGet();
 				stats.incCountMessageLeader();
 			}
 			Message cpy = commitMessage.copy();
-			cpy.setDest(address);
+			cpy.setDest(address);			
 			down_prot.down(new Event(Event.MSG, cpy));
 
 		}
 
-		// if (hdrOrg == null) {
-		// log.info("??????????????????????????? Header is null (commit)"
-		// + hdrOrg + " for zxid " + zxidd);
-		// return;
-		// }
+//		if (hdrOrg == null) {
+//			log.info("??????????????????????????? Header is null (commit)"
+//					+ hdrOrg + " for zxid " + zxidd);
+//			return;
+//		}
+
 
 	}
-
+	
 	/*
-	 * Deliver the proposal locally and if the current server is the receiver of
-	 * the request, replay to the client.
+	 * Deliver the proposal locally and if the current server is the receiver of the request, 
+	 * replay to the client.
 	 */
-	private void deliver(long dZxid) {
+	private void deliver(long dZxid, ZabHeader hdr) {
 		ZabHeader hdrOrginal = queuedProposalMessage.remove(dZxid);
-		// if (hdrOrginal == null) {
-		// if (log.isInfoEnabled())
-		// log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
-		// + hdrOrginal + " for zxid " + dZxid);
-		// return;
-		// }
+//		if (hdrOrginal == null) {
+//			if (log.isInfoEnabled())
+//				log.info("$$$$$$$$$$$$$$$$$$$$$ Header is null (deliver)"
+//						+ hdrOrginal + " for zxid " + dZxid);
+//			return;
+//		}
 
 		queuedCommitMessage.put(dZxid, hdrOrginal);
-		if (!stats.isWarmup()) {
+		if (!is_warmUp) {
 			stats.incnumReqDelivered();
 			stats.setEndThroughputTime(System.currentTimeMillis());
+			long deliveryStartTime = stats.getDeliveryProcessTime(hdr.getMessageId());
+			stats.removeDeliveryProcessTime(hdr.getMessageId());
+			stats.addDeliveryPT((int) (System.nanoTime() - deliveryStartTime));	
+			
 		}
 
 		if (log.isInfoEnabled())
 			log.info("queuedCommitMessage size = " + queuedCommitMessage.size()
 					+ " zxid " + dZxid);
 		if (requestQueue.contains(hdrOrginal.getMessageId())) {
-			if (!stats.isWarmup()) {
+			if (!is_warmUp){
 				long startTime = hdrOrginal.getMessageId().getStartTime();
 				stats.addLatency((int) (System.nanoTime() - startTime));
 			}
@@ -574,7 +609,6 @@ public class Zab extends Protocol {
 		up_prot.up(new Event(Event.MSG, message));
 
 	}
-
 	/*
 	 * Check a majority
 	 */
@@ -600,14 +634,14 @@ public class Zab extends Protocol {
 			down_prot.down(new Event(Event.MSG, requestMessage));
 		} else {
 			long followerMsg = CarryCountMessageLeader.getZxid();
-			stats.addCountTotalMessagesFollowers((int) followerMsg);
+			stats.addCountTotalMessagesFollowers((int)followerMsg);
 		}
 
 	}
 
+
 	/*
-	 * ----------------------------- End of Private Methods
-	 * --------------------------------
+	 * ----------------------------- End of Private Methods --------------------------------
 	 */
 
 	final class FollowerMessageHandler implements Runnable {
@@ -640,7 +674,7 @@ public class Zab extends Protocol {
 				}
 
 				long new_zxid = getNewZxid();
-				if (!stats.isWarmup()) {
+				if (!is_warmUp){
 					stats.incNumRequest();
 				}
 				ZabHeader hdrProposal = new ZabHeader(ZabHeader.PROPOSAL,
@@ -654,21 +688,19 @@ public class Zab extends Protocol {
 				p.AckCount++;
 				outstandingProposals.put(new_zxid, p);
 				queuedProposalMessage.put(new_zxid, hdrProposal);
-				if (!stats.isWarmup()) {
+				if (!is_warmUp){
 					Long st = stats.getLatencyProposalST(hdrReq.getMessageId());
-					if (st != null) {
+					if (st!=null){
 						stats.removeLatencyProposalST(hdrReq.getMessageId());
 						stats.addLatencyProp((int) (System.nanoTime() - st));
-					} else {
-						Long stL = stats.getLatencyProposalForwardST(hdrReq
-								.getMessageId());
-						if (stL != null) {
-							stats.removeLatencyProposalForwardST(hdrReq
-									.getMessageId());
-							stats.addLatencyPropForward((int) (System
-									.nanoTime() - stL));
+					}					
+					else{
+						Long stL = stats.getLatencyProposalForwardST(hdrReq.getMessageId());
+						if (stL!=null){
+							stats.removeLatencyProposalForwardST(hdrReq.getMessageId());
+							stats.addLatencyPropForward((int) (System.nanoTime() - stL));
 						}
-					}
+				    }
 				}
 
 				try {
@@ -676,7 +708,7 @@ public class Zab extends Protocol {
 					for (Address address : zabMembers) {
 						if (address.equals(leader))
 							continue;
-						if (!stats.isWarmup()) {
+						if (!is_warmUp){
 							countMessageLeader.incrementAndGet();
 							stats.incCountMessageLeader();
 						}
@@ -694,4 +726,52 @@ public class Zab extends Protocol {
 
 	}
 
+	public class StatsThread extends Thread {
+		public void run() {
+			int avg = 0, elementCount = 0;
+//			for (int i = lastArrayIndex; i < latencies.size(); i++) {
+//				avg += latencies.get(i);
+//				elementCount++;
+//			}
+
+		//	lastArrayIndex = latencies.size() - 1;
+			avg = avg / elementCount;
+			//avgLatencies.add(avg);
+		}
+	}
+
+	class ResubmitTimer extends TimerTask {
+
+		@Override
+		public void run() {
+			//int finished = numReqDelivered.get();
+			//currentCpuTime = System.currentTimeMillis();
+
+			// Find average latency
+			int avg = 0, elementCount = 0;
+
+			// List<Integer> latCopy = new ArrayList<Integer>(latencies);
+			//for (int i = lastArrayIndexUsingTime; i < latencies.size(); i++) {
+				//if (latencies.get(i) > 50) {
+				//	largeLatCount++;
+					//largeLatencies.add((currentCpuTime - startThroughputTime)
+							//+ "/" + latencies.get(i));
+			//	}
+				//avg += latencies.get(i);
+				//elementCount++;
+			//}
+
+			//lastArrayIndexUsingTime = latencies.size() - 1;
+			avg = avg / elementCount;
+
+			//String mgsLat = (currentCpuTime - startThroughputTime) + "/"
+					//+ ((finished - lastFinished) + "/" + avg);// (TimeUnit.MILLISECONDS.toSeconds(currentCpuTime
+																// -
+																// lastCpuTime)));
+			//avgLatenciesTimer.add(mgsLat);
+			//lastFinished = finished;
+			//lastCpuTime = currentCpuTime;
+		}
+
+	}
 }

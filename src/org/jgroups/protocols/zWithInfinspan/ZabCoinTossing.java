@@ -1,4 +1,4 @@
-package org.jgroups.protocols.jzookeeper;
+package org.jgroups.protocols.zWithInfinspan;
 	import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -99,6 +99,7 @@ import org.jgroups.util.MessageBatch;
 		private  AtomicInteger                  numRequest=new AtomicInteger(0);
 		private long rateInterval = 10000;
 		private long rateCount = 0;
+	    private boolean is_warmUp=true;
 		private int longWait = Integer.MIN_VALUE;
 		private volatile boolean makeAllFollowersAck=false;
 		private List<Address>  clients = Collections.synchronizedList(new ArrayList<Address>());
@@ -137,6 +138,7 @@ import org.jgroups.util.MessageBatch;
 	        rateInterval = 10000;rateCount = 0;   	
 	    	largeLatCount = 0;largeLatencies.clear();   	
 	    	lastArrayIndex = 0;lastArrayIndexUsingTime = 0 ;  	
+	        is_warmUp=false;//_timer.cancel();        
 	        countMessageLeader = new AtomicLong(0);        
 	        countMessageFollower = 0;countTotalMessagesFollowers = 0;        
 	    	currentCpuTime = 0; rateCountTime = 0;
@@ -145,7 +147,7 @@ import org.jgroups.util.MessageBatch;
 	    	avgLatencies.clear();avgLatenciesTimer.clear();   	
 	    	currentCpuTime=0;
 	    	this.stats = new ProtocolStats(ProtocolName, clients.size(),
-					numberOfSenderInEachClient, outDir,false);
+					numberOfSenderInEachClient, outDir);
 			log.info("Reset done");
 	    	MessageId messageId = new MessageId(local_addr,
 					-10, System.currentTimeMillis());
@@ -235,7 +237,7 @@ import org.jgroups.util.MessageBatch;
 	  	                    reset(msg.getSrc());
 		                	break;
 	                	case ZabCoinTossingHeader.REQUEST:
-	                		if (!stats.isWarmup() && !is_leader && !startThroughput){
+	                		if (!is_warmUp && !is_leader && !startThroughput){
 	                			startThroughput = true;
 	                			stats.setStartThroughputTime(System.currentTimeMillis());
 	                		}
@@ -433,7 +435,7 @@ import org.jgroups.util.MessageBatch;
 	    private void forwardToLeader(Message msg) {
 		   ZabCoinTossingHeader hdrReq = (ZabCoinTossingHeader) msg.getHeader(this.id);
 		   requestQueue.add(hdrReq.getMessageId());
-		   if (!stats.isWarmup() && is_leader && !startThroughput){
+		   if (!is_warmUp && is_leader && !startThroughput){
 				startThroughput = true;
 				stats.setStartThroughputTime(System.currentTimeMillis());
 			}
@@ -468,7 +470,7 @@ import org.jgroups.util.MessageBatch;
 	    
 
 	    private void sendACK(Message msg, ZabCoinTossingHeader hrdAck){
-	    	if(!stats.isWarmup()){
+	    	if(!is_warmUp){
 				stats.incNumRequest();
 			}
 	    	Proposal p;
@@ -504,7 +506,7 @@ import org.jgroups.util.MessageBatch;
 //				lastZxidProposed = hdr.getZxid();
 
 			//}
-			if (stats.isWarmup()){
+			if (is_warmUp){
 				ZabCoinTossingHeader hdrACK = new ZabCoinTossingHeader(ZabCoinTossingHeader.ACK, hrdAck.getZxid());
 				Message ackMessage = new Message().putHeader(this.id, hdrACK);
 				//log.info("Sending ACK for " + hdr.getZxid()+" "+getCurrentTimeStamp()+ " " +getCurrentTimeStamp());
@@ -527,7 +529,7 @@ import org.jgroups.util.MessageBatch;
 				Message ackMessage = new Message().putHeader(this.id, hdrACK);
 				try{
 				for (Address address : zabMembers) {
-					if (!stats.isWarmup() && !address.equals(local_addr)) {
+					if (!is_warmUp && !address.equals(local_addr)) {
 						countMessageFollower++;
 						stats.incCountMessageFollower();
 					}
@@ -698,17 +700,17 @@ import org.jgroups.util.MessageBatch;
 					return;
 				}
 		    	queuedCommitMessage.put(committedZxid, hdrOrginal);
-		    	if (!stats.isWarmup()) {
+		    	if (!is_warmUp) {
 					stats.incnumReqDelivered();
 					stats.setEndThroughputTime(System.currentTimeMillis());
 				
 					
 					if (stats.getnumReqDelivered().get() > 999000){
 						makeAllFollowersAck=true;
-						//if (startSending==true){
+						if (startSending==true){
 							//_timer.cancel();
-							//startSending = true;
-						//}
+							startSending = true;
+						}
 					}
 		    	}
 					//long startTime  = hdrOrginal.getMessageId().getStartTime();
@@ -730,7 +732,7 @@ import org.jgroups.util.MessageBatch;
 						log.info("queuedCommitMessage size = " + queuedCommitMessage.size() + " zxid "+committedZxid);
 
 		    	if (requestQueue.contains(hdrOrginal.getMessageId())){
-		    		if (!stats.isWarmup()) {
+		    		if (!is_warmUp) {
 						long startTime = hdrOrginal.getMessageId().getStartTime();
 						stats.addLatency((int) (System.nanoTime() - startTime));
 					}
@@ -866,7 +868,7 @@ import org.jgroups.util.MessageBatch;
 	            	
 	                
 	            	long new_zxid = getNewZxid();
-	            	if (!stats.isWarmup()) {
+	            	if (!is_warmUp) {
 						stats.incNumRequest();
 					}
 	    			 //log.info("Queue Size------> "+ queuedMessages.size());
@@ -895,7 +897,7 @@ import org.jgroups.util.MessageBatch;
 	                 	for (Address address : zabMembers) {
 	                        if(address.equals(leader))
 	                        	continue; 
-	                        if (!stats.isWarmup()) {
+	                        if (!is_warmUp) {
 								countMessageLeader.incrementAndGet();
 								stats.incCountMessageLeader();
 							}
