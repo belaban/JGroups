@@ -229,9 +229,7 @@ public class UnicastRequest<T> extends Request {
     }
 
     public String toString() {
-        StringBuilder ret=new StringBuilder(128);
-        ret.append(super.toString()).append(", target=" + target);
-        return ret.toString();
+        return String.format("%s, target=%s", super.toString(), target);
     }
 
 

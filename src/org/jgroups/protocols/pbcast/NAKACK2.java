@@ -363,9 +363,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     @ManagedOperation(description="Prints the stability messages received")
     public String printStabilityMessages() {
-        StringBuilder sb=new StringBuilder();
-        sb.append(Util.printListWithDelimiter(stability_msgs, "\n"));
-        return sb.toString();
+        return Util.printListWithDelimiter(stability_msgs, "\n");
     }
 
     @ManagedOperation(description="Keeps information about the last N times a digest was set or merged")
@@ -387,9 +385,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
       "This value will not be lower than xmit_table_now_rows")
     public String dumpXmitTablesNumCurrentRows() {
         StringBuilder sb=new StringBuilder();
-        for(Map.Entry<Address,Table<Message>> entry: xmit_table.entrySet()) {
-            sb.append(entry.getKey()).append(": ").append(entry.getValue().getNumRows()).append("\n");
-        }
+        for(Map.Entry<Address,Table<Message>> entry: xmit_table.entrySet())
+            sb.append(String.format("%s: %d\n", entry.getKey(), entry.getValue().getNumRows()));
         return sb.toString();
     }
 
@@ -456,11 +453,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
     public String printStats() {
-        StringBuilder sb=new StringBuilder();
-        sb.append("\nStability messages received\n")
-                .append(printStabilityMessages()).append("\n");
-
-        return sb.toString();
+        return String.format("\nStability messages received\n%s\n", printStabilityMessages());
     }
 
 
@@ -502,7 +495,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
 
     /**
-     * <b>Callback</b>. Called by superclass when event may be handled.<p> <b>Do not use <code>down_prot.down()</code> in this
+     * <b>Callback</b>. Called by superclass when event may be handled.<p> <b>Do not use {@code down_prot.down()} in this
      * method as the event is passed down by default by the superclass after this method returns !</b>
      */
     public Object down(Event evt) {
@@ -593,7 +586,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
 
     /**
-     * <b>Callback</b>. Called by superclass when event may be handled.<p> <b>Do not use <code>PassUp</code> in this
+     * <b>Callback</b>. Called by superclass when event may be handled.<p> <b>Do not use {@code passUp} in this
      * method as the event is passed up by default by the superclass after this method returns !</b>
      */
     public Object up(Event evt) {

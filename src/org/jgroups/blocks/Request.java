@@ -147,9 +147,7 @@ public abstract class Request implements NotifyingFuture, org.jgroups.util.Condi
 
 
     public String toString() {
-        StringBuilder ret=new StringBuilder(128);
-        ret.append(super.toString()).append(", mode=" + options.getMode());
-        return ret.toString();
+        return String.format("%s, mode=%s", super.toString(), options.getMode());
     }
 
 

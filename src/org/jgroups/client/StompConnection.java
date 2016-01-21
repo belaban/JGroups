@@ -1,20 +1,22 @@
 package org.jgroups.client;
 
 import org.jgroups.annotations.Experimental;
-import org.jgroups.annotations.Unsupported;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.STOMP;
 import org.jgroups.util.Util;
 
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.*;
-import javax.net.SocketFactory;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.SSLContext;
-import java.util.*;
+import java.net.Socket;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * STOMP client to access the STOMP [1] protocol. Note that the full STOMP protocol is not implemented, e.g. transactions
@@ -159,7 +161,7 @@ public class StompConnection implements Runnable {
     protected void sendSubscribe(String destination) {
         StringBuilder sb=new StringBuilder();
         sb.append(STOMP.ClientVerb.SUBSCRIBE.name()).append("\n").append("destination: ")
-                .append(destination).append("\n").append("\n");
+                .append(destination).append("\n\n");
 
         try {
             synchronized(this) {
@@ -186,7 +188,7 @@ public class StompConnection implements Runnable {
     protected void sendUnsubscribe(String destination) {
         StringBuilder sb=new StringBuilder();
         sb.append(STOMP.ClientVerb.UNSUBSCRIBE.name()).append("\n")
-                .append("destination: ").append(destination).append("\n").append("\n");
+                .append("destination: ").append(destination).append("\n\n");
 
         try {
             synchronized(this) {

@@ -107,7 +107,7 @@ public class PropertiesToAsciidoc {
      * rest the contents */
     protected static String createAsciidocTable(List<String[]> rows, String title, String header)
       throws ParserConfigurationException, TransformerException {
-        StringBuilder sb = new StringBuilder(".").append(title).append("\n")
+        StringBuilder sb=new StringBuilder(".").append(title).append("\n")
                 .append(header).append("\n")
                 .append("|=================\n");
         for(String[] row: rows) {
