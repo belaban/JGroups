@@ -158,9 +158,8 @@ public class StompConnection implements Runnable {
 
     protected void sendSubscribe(String destination) {
         StringBuilder sb=new StringBuilder();
-        sb.append(STOMP.ClientVerb.SUBSCRIBE.name()).append("\n");
-        sb.append("destination: ").append(destination).append("\n");
-        sb.append("\n");
+        sb.append(STOMP.ClientVerb.SUBSCRIBE.name()).append("\n").append("destination: ")
+                .append(destination).append("\n").append("\n");
 
         try {
             synchronized(this) {
@@ -186,9 +185,8 @@ public class StompConnection implements Runnable {
 
     protected void sendUnsubscribe(String destination) {
         StringBuilder sb=new StringBuilder();
-        sb.append(STOMP.ClientVerb.UNSUBSCRIBE.name()).append("\n");
-        sb.append("destination: ").append(destination).append("\n");
-        sb.append("\n");
+        sb.append(STOMP.ClientVerb.UNSUBSCRIBE.name()).append("\n")
+                .append("destination: ").append(destination).append("\n").append("\n");
 
         try {
             synchronized(this) {

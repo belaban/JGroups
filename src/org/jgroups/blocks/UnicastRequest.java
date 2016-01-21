@@ -230,8 +230,7 @@ public class UnicastRequest<T> extends Request {
 
     public String toString() {
         StringBuilder ret=new StringBuilder(128);
-        ret.append(super.toString());
-        ret.append(", target=" + target);
+        ret.append(super.toString()).append(", target=" + target);
         return ret.toString();
     }
 

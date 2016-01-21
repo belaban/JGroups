@@ -457,8 +457,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     public String printStats() {
         StringBuilder sb=new StringBuilder();
-        sb.append("\nStability messages received\n");
-        sb.append(printStabilityMessages()).append("\n");
+        sb.append("\nStability messages received\n")
+                .append(printStabilityMessages()).append("\n");
 
         return sb.toString();
     }

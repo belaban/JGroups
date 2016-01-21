@@ -3152,12 +3152,12 @@ public class Util {
             if(log != null && log.isWarnEnabled()) {
                 StringBuilder sb=new StringBuilder();
                 String type=mcast_addr != null? mcast_addr instanceof Inet4Address? "IPv4" : "IPv6" : "n/a";
-                sb.append("could not bind to ").append(mcast_addr).append(" (").append(type).append(" address)");
-                sb.append("; make sure your mcast_addr is of the same type as the preferred IP stack (IPv4 or IPv6)");
-                sb.append(" by checking the value of the system properties java.net.preferIPv4Stack and java.net.preferIPv6Addresses.");
-                sb.append("\nWill ignore mcast_addr, but this may lead to cross talking " +
-                            "(see http://www.jboss.org/community/docs/DOC-9469 for details). ");
-                sb.append("\nException was: ").append(ex);
+                sb.append("could not bind to ").append(mcast_addr).append(" (").append(type).append(" address)")
+                        .append("; make sure your mcast_addr is of the same type as the preferred IP stack (IPv4 or IPv6)")
+                        .append(" by checking the value of the system properties java.net.preferIPv4Stack and java.net.preferIPv6Addresses.")
+                        .append("\nWill ignore mcast_addr, but this may lead to cross talking " +
+                                "(see http://www.jboss.org/community/docs/DOC-9469 for details). ")
+                        .append("\nException was: ").append(ex);
                 log.warn(sb.toString());
             }
         }
@@ -3906,10 +3906,9 @@ public class Util {
         String tmp=getProperty(val.substring(start_index + 2,end_index));
         if(tmp == null)
             return val;
-        StringBuilder sb=new StringBuilder();
-        sb.append(val.substring(0,start_index));
-        sb.append(tmp);
-        sb.append(val.substring(end_index + 1));
+        StringBuilder sb = new StringBuilder();
+        sb.append(val.substring(0, start_index))
+                .append(tmp).append(val.substring(end_index + 1));
         return sb.toString();
     }
 

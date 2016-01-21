@@ -204,8 +204,7 @@ public class RequestOptions {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append("mode=" + mode);
-        sb.append(", timeout=" + timeout);
+        sb.append("mode=" + mode).append(", timeout=" + timeout);
         if(use_anycasting) {
             sb.append(", anycasting=true");
             if(use_anycast_addresses)
