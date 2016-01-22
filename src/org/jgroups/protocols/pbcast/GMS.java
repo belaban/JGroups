@@ -66,14 +66,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected boolean print_physical_addrs=true;
 
     /**
-     * Setting this to false disables concurrent startups. This is only used by unit testing code for testing merging.
-     * To everybody else: don't change it to false !
-     */
-    @Property(description="Temporary switch. Default is true and should not be changed")
-    @Deprecated
-    protected boolean handle_concurrent_startup=true;
-
-    /**
      * Whether view bundling (http://jira.jboss.com/jira/browse/JGRP-144) should be enabled or not. Setting this to
      * false forces each JOIN/LEAVE/SUPSECT request to be handled separately. By default these requests are processed
      * together if they are queued at approximately the same time

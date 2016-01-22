@@ -11,8 +11,7 @@ import java.util.concurrent.*;
 
 
 /**
- * Implementation of {@link TimeScheduler}. Based on the {@link TimeScheduler2} implementation
- * with various fixes and enhancements. Uses a {@link DelayQueue} to order tasks according to execution times
+ * Implementation of {@link TimeScheduler}. Uses a {@link DelayQueue} to order tasks according to execution times
  * @author Bela Ban
  * @since  3.3
  */
@@ -38,7 +37,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
      */
     public TimeScheduler3() {
         pool=new ThreadPoolExecutor(4, 10,
-                                    5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(5000),
+                                    5000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(5000),
                                     Executors.defaultThreadFactory(), new ThreadPoolExecutor.CallerRunsPolicy());
         start();
     }
@@ -48,7 +47,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
                           String rejection_policy) {
         timer_thread_factory=factory;
         pool=new ThreadPoolExecutor(min_threads, max_threads,keep_alive_time, TimeUnit.MILLISECONDS,
-                                    new LinkedBlockingQueue<Runnable>(max_queue_size),
+                                    new LinkedBlockingQueue<>(max_queue_size),
                                     factory, Util.parseRejectionPolicy(rejection_policy));
         start();
     }

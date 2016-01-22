@@ -10,10 +10,7 @@ import org.jgroups.conf.PropertyHelper;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.protocols.TP;
-import org.jgroups.util.AsciiString;
 import org.jgroups.util.StackType;
-import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 import org.w3c.dom.Node;
 
@@ -27,7 +24,6 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
 
 
 /**
@@ -200,28 +196,9 @@ public class Configurator {
             next_layer=protocol_list.get(i + 1);
             next_layer.setDownProtocol(current_layer);
             current_layer.setUpProtocol(next_layer);
-
-             if(current_layer instanceof TP) {
-                TP transport = (TP)current_layer;                
-                if(transport.isSingleton()) {                   
-                    ConcurrentMap<AsciiString, Protocol> up_prots=transport.getUpProtocols();
-                    synchronized(up_prots) {
-                        while(true) {
-                            AsciiString key=new AsciiString(Global.DUMMY + System.currentTimeMillis());
-                            if(up_prots.containsKey(key))
-                                continue;
-                            up_prots.put(key, next_layer);
-                            break;
-                        }
-                    }
-                    current_layer.setUpProtocol(null);
-                }
-            }
         }
-
         // basic protocol sanity check
         sanityCheck(protocol_list);
-
         return current_layer;
     }
 
@@ -366,36 +343,9 @@ public class Configurator {
      */
     public static List<Protocol> createProtocols(List<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
         List<Protocol> retval=new LinkedList<>();
-        ProtocolConfiguration protocol_config;
-        Protocol layer;
-        String singleton_name;
-
         for(int i=0; i < protocol_configs.size(); i++) {
-            protocol_config=protocol_configs.get(i);
-            singleton_name=protocol_config.getProperties().get(Global.SINGLETON_NAME);
-            if(singleton_name != null && !singleton_name.trim().isEmpty()) {
-               Map<String,Tuple<TP, ProtocolStack.RefCounter>> singleton_transports=ProtocolStack.getSingletonTransports();
-                synchronized(singleton_transports) {
-                    if(i > 0) { // crude way to check whether protocol is a transport
-                        throw new IllegalArgumentException("Property 'singleton_name' can only be used in a transport" +
-                                " protocol (was used in " + protocol_config.getProtocolName() + ")");
-                    }
-                    Tuple<TP, ProtocolStack.RefCounter> val=singleton_transports.get(singleton_name);
-                    layer=val != null? val.getVal1() : null;
-                    if(layer != null) {
-                        retval.add(layer);
-                    }
-                    else {
-                        layer=createLayer(stack, protocol_config);
-                        if(layer == null)
-                            return null;
-                        singleton_transports.put(singleton_name, new Tuple<>((TP)layer,new ProtocolStack.RefCounter((short)0,(short)0)));
-                        retval.add(layer);
-                    }
-                }
-                continue;
-            }
-            layer=createLayer(stack, protocol_config);
+            ProtocolConfiguration protocol_config=protocol_configs.get(i);
+            Protocol layer=createLayer(stack, protocol_config);
             if(layer == null)
                 return null;
             retval.add(layer);

@@ -33,7 +33,7 @@ public class TRACE extends Protocol {
 
 
     public String toString() {
-        return "Protocol TRACE";
+        return "TRACE";
     }
 
 

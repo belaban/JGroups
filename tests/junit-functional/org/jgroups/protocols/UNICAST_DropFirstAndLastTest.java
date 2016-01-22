@@ -44,8 +44,6 @@ public class UNICAST_DropFirstAndLastTest {
     @DataProvider
     static Object[][] configProvider() {
         return new Object[][]{
-          {UNICAST.class},
-          {UNICAST2.class},
           {UNICAST3.class}
         };
     }
@@ -111,8 +109,6 @@ public class UNICAST_DropFirstAndLastTest {
 
     protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
         Protocol unicast=unicast_class.newInstance();
-        if(unicast instanceof UNICAST2)
-            unicast.setValue("stable_interval", 1000);
         return new JChannel(new SHARED_LOOPBACK().setValue("enable_batching", true),
                             new SHARED_LOOPBACK_PING(),
                             new NAKACK2().setValue("use_mcast_xmit", false),
@@ -136,37 +132,20 @@ public class UNICAST_DropFirstAndLastTest {
     }
 
     protected String printConnections(Protocol prot) {
-        if(prot instanceof UNICAST) {
-            UNICAST unicast=(UNICAST)prot;
-            return unicast.printConnections();
-        }
-        else if(prot instanceof UNICAST2) {
-            UNICAST2 unicast=(UNICAST2)prot;
-            return unicast.printConnections();
-        }
-        else if(prot instanceof UNICAST3) {
+        if(prot instanceof UNICAST3) {
             UNICAST3 unicast=(UNICAST3)prot;
             return unicast.printConnections();
         }
-        else
-            throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST, UNICAST2 or UNICAST3");
+        throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST3");
     }
 
     protected void removeAllConnections(Protocol prot) {
-        if(prot instanceof UNICAST) {
-            UNICAST unicast=(UNICAST)prot;
-            unicast.removeAllConnections();
-        }
-        else if(prot instanceof UNICAST2) {
-            UNICAST2 unicast=(UNICAST2)prot;
-            unicast.removeAllConnections();
-        }
-        else if(prot instanceof UNICAST3) {
+        if(prot instanceof UNICAST3) {
             UNICAST3 unicast=(UNICAST3)prot;
             unicast.removeAllConnections();
         }
         else
-            throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST, UNICAST2 or UNICAST3");
+            throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST3");
     }
 
 

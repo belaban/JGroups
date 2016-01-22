@@ -30,8 +30,6 @@ public class UNICAST_ContentionTest {
     @DataProvider
     static Object[][] provider() {
         return new Object[][] {
-          {UNICAST.class},
-          {UNICAST2.class},
           {UNICAST3.class}
         };
     }
@@ -112,12 +110,6 @@ public class UNICAST_ContentionTest {
             if(r1.getNum() == NUM_EXPECTED_MSGS && r2.getNum() == NUM_EXPECTED_MSGS)
                 break;
             Util.sleep(2000);
-            UNICAST2 unicast2=(UNICAST2)a.getProtocolStack().findProtocol(UNICAST2.class);
-            if(unicast2 != null)
-                unicast2.sendStableMessages();
-            unicast2=(UNICAST2)b.getProtocolStack().findProtocol(UNICAST2.class);
-            if(unicast2 != null)
-                unicast2.sendStableMessages();
         }
 
         System.out.println("c1 received " + r1.getNum() + " msgs, " + getNumberOfRetransmissions(a) + " retransmissions");
@@ -133,8 +125,8 @@ public class UNICAST_ContentionTest {
 
     private static long getNumberOfRetransmissions(JChannel ch) {
         Protocol prot=ch.getProtocolStack().findProtocol(Util.getUnicastProtocols());
-        if(prot instanceof UNICAST)
-            return ((UNICAST)prot).getNumXmits();
+        if(prot instanceof UNICAST3)
+            return ((UNICAST3)prot).getNumXmits();
         return 0;
     }
 

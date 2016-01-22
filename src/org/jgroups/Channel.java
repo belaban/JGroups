@@ -148,10 +148,10 @@ public abstract class Channel implements Closeable {
 
    /**
     * Destroys the channel and its associated resources (e.g., the protocol stack). After a channel
-    * has been closed, invoking methods on it throws the <code>ChannelClosed</code> exception (or
+    * has been closed, invoking methods on it throws the {@code ChannelClosed} exception (or
     * results in a null operation). It is a null operation if the channel is already closed.
     * <p>
-    * If the channel is connected to a group, <code>disconnect()</code> will be called first.
+    * If the channel is connected to a group, {@code disconnect()} will be called first.
     */
     abstract public void close();
 
@@ -196,7 +196,7 @@ public abstract class Channel implements Closeable {
    /**
     * Sends a message. The message contains
     * <ol>
-    * <li>a destination address (Address). A <code>null</code> address sends the message to all
+    * <li>a destination address (Address). A {@code null} address sends the message to all
     * group members.
     * <li>a source address. Can be left empty as it will be assigned automatically
     * <li>a byte buffer. The message contents.
@@ -252,7 +252,7 @@ public abstract class Channel implements Closeable {
     *           The offset into the buffer
     * @param length
     *           The length of the data to be sent. Has to be <= buf.length - offset. This will send
-    *           <code>length</code> bytes starting at <code>offset</code>
+    *           {@code length} bytes starting at {@code offset}
     * @throws Exception
     *            If send() failed
     */
@@ -272,7 +272,7 @@ public abstract class Channel implements Closeable {
 
    /**
     * Gets the current view. The view may only be available after a successful
-    * <code>connect()</code>. The result of calling this method on an unconnected channel is
+    * {@code connect()}. The result of calling this method on an unconnected channel is
     * implementation defined (may return null). Calling this method on a closed channel returns a
     * null view.
     * 
@@ -284,7 +284,7 @@ public abstract class Channel implements Closeable {
    /**
     * Returns the channel's own address. The result of calling this method on an unconnected channel
     * is implementation defined (may return null). Calling this method on a closed channel returns
-    * null. Addresses can be used as destination in the <code>send()</code> operation.
+    * null. Addresses can be used as destination in the {@code send()} operation.
     * 
     * @return The channel's address (opaque)
     */
@@ -302,7 +302,7 @@ public abstract class Channel implements Closeable {
     * address / logical name mappings and no remote communication is performed.
     *
     * @param member
-    * @return The logical name for <code>member</code>
+    * @return The logical name for {@code member}
     */
     abstract public String getName(Address member);
 
@@ -322,8 +322,8 @@ public abstract class Channel implements Closeable {
 
    /**
     * Returns the cluster name of the group of which the channel is a member. This is the object
-    * that was the argument to <code>connect()</code>. Calling this method on a closed channel
-    * returns <code>null</code>.
+    * that was the argument to {@code connect()}. Calling this method on a closed channel
+    * returns {@code null}.
     * 
     * @return The cluster name
     */

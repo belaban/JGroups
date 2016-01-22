@@ -199,7 +199,7 @@ public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 
     }
 
     protected static String getMethodName(ITestResult tr) {
-        String method_name=tr.getName();
+        String method_name=tr.getMethod().getMethodName();
         Object[] params=tr.getParameters();
         if(params != null && params.length > 0) {
             String tmp=null;

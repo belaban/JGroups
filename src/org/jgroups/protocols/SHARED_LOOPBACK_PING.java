@@ -20,8 +20,6 @@ public class SHARED_LOOPBACK_PING extends Discovery {
         TP tmp=getTransport();
         if(!(tmp instanceof SHARED_LOOPBACK))
             throw new IllegalStateException("the transport must be " + SHARED_LOOPBACK.class.getSimpleName());
-        if(tmp.isSingleton())
-            throw new IllegalStateException("shared transports are not supported by " + SHARED_LOOPBACK_PING.class.getSimpleName());
     }
 
     public boolean isDynamic() {

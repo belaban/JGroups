@@ -65,7 +65,6 @@ public class Util {
 
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable
-    @Deprecated  static boolean resolve_dns=false;
 
     private static final Pattern METHOD_NAME_TO_ATTR_NAME_PATTERN=Pattern.compile("[A-Z]+");
     private static final Pattern ATTR_NAME_TO_METHOD_NAME_PATTERN=Pattern.compile("_.");
@@ -86,9 +85,7 @@ public class Util {
     private static final byte[] TYPE_BOOLEAN_TRUE={TYPE_BOOLEAN, 1};
     private static final byte[] TYPE_BOOLEAN_FALSE={TYPE_BOOLEAN, 0};
 
-    public static final Class<?>[] getUnicastProtocols() {
-        return new Class<?>[]{UNICAST.class,UNICAST2.class,UNICAST3.class};
-    }
+    public static final Class<?>[] getUnicastProtocols() {return new Class<?>[]{UNICAST3.class};}
 
     public enum AddressScope {GLOBAL,SITE_LOCAL,LINK_LOCAL,LOOPBACK,NON_LOOPBACK}
 
@@ -103,14 +100,6 @@ public class Util {
     static {
         resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Thread.currentThread().getContextClassLoader());
 
-        /* Trying to get value of resolve_dns. PropertyPermission not granted if
-        * running in an untrusted environment with JNLP */
-        try {
-            resolve_dns=Boolean.valueOf(System.getProperty("resolve.dns","false"));
-        }
-        catch(SecurityException ex) {
-            resolve_dns=false;
-        }
         f=NumberFormat.getNumberInstance();
         f.setGroupingUsed(false);
         // f.setMinimumFractionDigits(2);
@@ -329,17 +318,6 @@ public class Util {
         assert list.size() == expected_size : "list doesn't have the expected (" + expected_size + ") elements: " + list;
     }
 
-
-    public static void setScope(Message msg,short scope) {
-        SCOPE.ScopeHeader hdr=SCOPE.ScopeHeader.createMessageHeader(scope);
-        msg.putHeader(Global.SCOPE_ID,hdr);
-        msg.setFlag(Message.Flag.SCOPED);
-    }
-
-    public static short getScope(Message msg) {
-        SCOPE.ScopeHeader hdr=(SCOPE.ScopeHeader)msg.getHeader(Global.SCOPE_ID);
-        return hdr != null? hdr.getScope() : 0;
-    }
 
     public static byte[] createAuthenticationDigest(String passcode,long t1,double q1) throws IOException,
                                                                                               NoSuchAlgorithmException {
@@ -1709,11 +1687,6 @@ public class Util {
     }
 
 
-    public static String format(double value) {
-        return f.format(value);
-    }
-
-
     public static long readBytesLong(String input) {
         Tuple<String,Long> tuple=readBytes(input);
         double num=Double.parseDouble(tuple.getVal1());
@@ -1793,7 +1766,7 @@ public class Util {
      * Fragments a byte buffer into smaller fragments of (max.) frag_size.
      * Example: a byte buffer of 1024 bytes and a frag_size of 248 gives 4 fragments
      * of 248 bytes each and 1 fragment of 32 bytes.
-     * @return An array of byte buffers (<code>byte[]</code>).
+     * @return An array of byte buffers ({@code byte[]}).
      */
     public static byte[][] fragmentBuffer(byte[] buf,int frag_size,final int length) {
         byte[] retval[];
@@ -1855,7 +1828,7 @@ public class Util {
 
     /**
      * Concatenates smaller fragments into entire buffers.
-     * @param fragments An array of byte buffers (<code>byte[]</code>)
+     * @param fragments An array of byte buffers ({@code byte[]})
      * @return A byte buffer
      */
     public static byte[] defragmentBuffer(byte[] fragments[]) {
@@ -2260,10 +2233,7 @@ public class Util {
 
     public static Object[][] createTimer() {
         return new Object[][]{
-          {new DefaultTimeScheduler(5)},
-          {new TimeScheduler2()},
           {new TimeScheduler3()},
-          {new HashedTimingWheel(5)}
         };
     }
 
@@ -2973,12 +2943,7 @@ public class Util {
 
     public static String shortName(InetAddress hostname) {
         if(hostname == null) return null;
-        StringBuilder sb=new StringBuilder();
-        if(resolve_dns)
-            sb.append(hostname.getHostName());
-        else
-            sb.append(hostname.getHostAddress());
-        return sb.toString();
+        return hostname.getHostAddress();
     }
 
     public static String generateLocalName() {

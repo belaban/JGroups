@@ -144,7 +144,6 @@ public class MessageBundlingTest extends ChannelTestBase {
         ProtocolStack stack=ch.getProtocolStack();
         TP transport=stack.getTransport();
         transport.setMaxBundleSize(max_bytes);
-        transport.setMaxBundleTimeout(timeout);
         GMS gms=(GMS)stack.findProtocol(GMS.class);
         gms.setViewAckCollectionTimeout(LATENCY * 2);
         gms.setJoinTimeout(LATENCY * 2);

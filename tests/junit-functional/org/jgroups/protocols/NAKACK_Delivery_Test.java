@@ -39,12 +39,12 @@ public class NAKACK_Delivery_Test {
 
         TP transport=new TP() {
             public boolean supportsMulticasting() {return false;}
-            public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {}
+            public void sendMulticast(byte[] data, int offset, int length) throws Exception {}
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
             public String getInfo() {return null;}
             public Object down(Event evt) {return null;}
             protected PhysicalAddress getPhysicalAddress() {return null;}
-            public TimeScheduler getTimer() {return new DefaultTimeScheduler(1);}
+            public TimeScheduler getTimer() {return new TimeScheduler3();}
         };
 
         transport.setId((short)100);

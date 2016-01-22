@@ -443,7 +443,7 @@ public class RequestCorrelator {
         }
 
         Message rsp=req.makeReply().setFlag(req.getFlags()).setBuffer(rsp_buf)
-          .clearFlag(Message.Flag.RSVP, Message.Flag.SCOPED, Message.Flag.INTERNAL); // JGRP-1940
+          .clearFlag(Message.Flag.RSVP, Message.Flag.INTERNAL); // JGRP-1940
 
        sendResponse(rsp, req_id, is_exception);
     }

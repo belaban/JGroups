@@ -130,23 +130,11 @@ public class TCP_NIO2 extends BasicTCP {
 
 
     protected void handleConnect() throws Exception {
-        if(isSingleton()) {
-            if(connect_count == 0)
-                server.start();
-            super.handleConnect();
-        }
-        else
-            server.start();
+        server.start();
     }
 
     protected void handleDisconnect() {
-        if(isSingleton()) {
-            super.handleDisconnect();
-            if(connect_count == 0)
-                server.stop();
-        }
-        else
-            server.stop();
+        server.stop();
     }   
 
 

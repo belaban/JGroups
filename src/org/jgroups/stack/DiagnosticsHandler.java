@@ -210,34 +210,11 @@ public class DiagnosticsHandler implements Runnable {
     protected boolean sameCluster(String req) {
         if(!req.startsWith("cluster="))
             return true;
-
         String cluster_name_pattern=req.substring("cluster=".length()).trim();
-        if(!transport.isSingleton()) {
-            String cname=transport.getClusterName();
-            if(cluster_name_pattern != null && !Util.patternMatch(cluster_name_pattern,cname != null? cname : null)) {
-                log.debug("Probe request dropped as cluster name %s does not match pattern %s", cname, cluster_name_pattern);
-                return false;
-            }
-            return true;
-        }
-        // not optimal, this matches *any* of the shared clusters. would be better to return only
-        // responses for matching clusters
-        if(transport.getUpProtocols() != null) {
-            boolean match=false;
-            List<String> cnames=new ArrayList<>();
-            for(Protocol prot: transport.getUpProtocols().values())
-                if(prot instanceof TP.ProtocolAdapter)
-                    cnames.add(((TP.ProtocolAdapter)prot).getClusterName());
-            for(String cname: cnames) {
-                if(Util.patternMatch(cluster_name_pattern, cname)) {
-                    match=true;
-                    break;
-                }
-            }
-            if(!match) {
-                log.debug("Probe request dropped as cluster names %s do not match pattern %s", cnames, cluster_name_pattern);
-                return false;
-            }
+        String cname=transport.getClusterName();
+        if(cluster_name_pattern != null && !Util.patternMatch(cluster_name_pattern,cname != null? cname : null)) {
+            log.debug("Probe request dropped as cluster name %s does not match pattern %s", cname, cluster_name_pattern);
+            return false;
         }
         return true;
     }

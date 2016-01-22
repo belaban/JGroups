@@ -129,7 +129,7 @@ public class NAKACK2_RetransmissionTest {
         public void               clear() {xmit_requests.clear();}
         public void               init() throws Exception {}
         public boolean            supportsMulticasting() {return true;}
-        public void               sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {}
+        public void               sendMulticast(byte[] data, int offset, int length) throws Exception {}
         public void               sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
         public String             getInfo() {return null;}
         protected PhysicalAddress getPhysicalAddress() {return null;}

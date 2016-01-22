@@ -329,7 +329,7 @@
 
     <target name="jgroups.jar"
             description="Creates the jgroups.jar (includes everything)"
-            depends="clean,compile-no-unittests,compile-essential-unittests,create-schema">
+            depends="clean,compile-no-unittests,compile-essential-unittests,make-schema,make-keystore">
         <mkdir dir="${dist.dir}"/>
         <xmlproperty file="${ant.file}" collapseAttributes="true" prefix="bnd"/>
         <property name="bndclasspath" refid="jg.classpath"/>
@@ -371,7 +371,7 @@
         <property name="-output" value="${conf.dir}"/>
         <taskdef resource="aQute/bnd/ant/taskdef.properties" classpathref="jg.classpath"/>
         <bnd
-              classpath=""
+              classpath="${bndclasspath}"
               eclipse="false"
               failok="false"
               exceptions="true"
@@ -502,14 +502,10 @@
         </copy>
     </target-->
 
-    <target name="make-schema" description="Creates XML schema for this version of JGroups"
-            depends="create-schema">
-    </target>
-
-	<target name="create-schema" description="Creates XML schema for this version of JGroups">
+	<target name="make-schema" description="Creates XML schema for this version of JGroups">
 		<delete dir="${compile.dir}/schema" failonerror="false"/>
 		<mkdir dir="${compile.dir}/schema"/>
-		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath">
+		<java classname="org.jgroups.util.XMLSchemaGenerator" classpathref="jg.classpath" fork="true">
 			<arg line="-o ${compile.dir}/schema"/>
 		</java>
         <copy todir="${compile.dir}/schema">
@@ -517,12 +513,13 @@
                 <include name="*.xsd"/>
             </fileset>
         </copy>
-        <copy todir="${compile.dir}/schema">
+        <!-- Leave a schema named jgrous-4.x.xsd -->
+       <!-- <copy todir="${compile.dir}/schema">
             <fileset dir="${compile.dir}/schema">
                 <include name="jgroups*.xsd"/>
             </fileset>
             <globmapper from="jgroups*.xsd" to="jgroups.xsd"/>
-        </copy>
+        </copy>-->
     </target>
 
 
@@ -573,7 +570,7 @@
     </target>
 
 
-    <target name="makeKeystore" unless="isKeyStoreGenerated"
+    <target name="make-keystore" unless="isKeyStoreGenerated"
             depends="keyStoreGenerated, compile"
             description="Generates a temp keystore in ./keystore (for unit tests)">
         <mkdir dir="${keystore.dir}"/>
@@ -598,7 +595,7 @@
 	    </condition>
 	</target>
 
-	<target name="postcompile" depends="makeKeystore">
+	<target name="postcompile" depends="make-keystore">
 	</target>
 
     <!--

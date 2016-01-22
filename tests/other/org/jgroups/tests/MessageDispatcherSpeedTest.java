@@ -11,7 +11,7 @@ import org.jgroups.util.Util;
 /**
  * @author Bela Ban
  */
-public class MessageDispatcherSpeedTest implements MembershipListener, RequestHandler {
+public class MessageDispatcherSpeedTest extends ReceiverAdapter implements RequestHandler {
     Channel             channel;
     MessageDispatcher   disp;
     String              props=null;
@@ -67,7 +67,7 @@ public class MessageDispatcherSpeedTest implements MembershipListener, RequestHa
 
         if(show <=0) show=1;
         start=System.currentTimeMillis();
-        RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, TIMEOUT).setFlags(Message.Flag.DONT_BUNDLE, Message.NO_FC);
+        RequestOptions opts=new RequestOptions(ResponseMode.GET_ALL, TIMEOUT).setFlags(Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
 
         System.out.println("-- sending " + num + " messages");
         for(int i=1; i <= num; i++) {
@@ -93,17 +93,7 @@ public class MessageDispatcherSpeedTest implements MembershipListener, RequestHa
     }
 
 
-
-    public void suspect(Address suspected_mbr) {
-    }
-
-    public void block() {
-    }
-
-    public void unblock() {
-    }
-
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         String                 props=null;
         boolean                server=false;
         int                    num=1000;
@@ -127,13 +117,8 @@ public class MessageDispatcherSpeedTest implements MembershipListener, RequestHa
         }
 
 
-        try {
-            test=new MessageDispatcherSpeedTest(props, server, num);
-            test.start();
-        }
-        catch(Exception e) {
-            System.err.println(e);
-        }
+        test=new MessageDispatcherSpeedTest(props, server, num);
+        test.start();
     }
 
     static void help() {

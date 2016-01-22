@@ -59,11 +59,10 @@ public class SHARED_LOOPBACK extends TP {
     }
 
 
-    public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {
+    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
         Map<Address,SHARED_LOOPBACK> dests=routing_table.get(this.cluster_name);
         if(dests == null) {
-            if(log.isTraceEnabled())
-                log.trace("no destination found for " + this.cluster_name);
+            log.trace("no destination found for " + this.cluster_name);
             return;
         }
         for(Map.Entry<Address,SHARED_LOOPBACK> entry: dests.entrySet()) {

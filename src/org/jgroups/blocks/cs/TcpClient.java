@@ -47,7 +47,6 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
     public TcpClient(InetAddress bind_addr, int bind_port, InetAddress server_addr, int server_port) {
         this(new DefaultThreadFactory("tcp", false), new DefaultSocketFactory());
         clientBindAddress(bind_addr).clientBindPort(bind_port);
-        useSendQueues(false); // ok for clients to block on send()
         this.remote_addr=new IpAddress(server_addr, server_port);
     }
 

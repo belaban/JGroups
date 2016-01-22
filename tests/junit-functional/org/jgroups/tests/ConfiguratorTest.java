@@ -21,10 +21,10 @@ import java.util.List;
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class ConfiguratorTest {
     ProtocolStack stack;
-    static final String props="UDP:PING:FD:pbcast.NAKACK(retransmit_timeouts=300,600):UNICAST:FC";
-    final String[] names={"FC", "UNICAST", "NAKACK", "FD", "PING", "UDP"};
-    final String[] below={"FC", "UNICAST", "TRACE", "NAKACK", "FD", "PING", "UDP"};
-    final String[] above={"FC", "TRACE", "UNICAST", "NAKACK", "FD", "PING", "UDP"};
+    static final String props="UDP:PING:FD:pbcast.NAKACK2(xmit_interval=500):UNICAST3:MFC";
+    final String[] names={"MFC", "UNICAST3", "NAKACK2", "FD", "PING", "UDP"};
+    final String[] below={"MFC", "UNICAST3", "TRACE", "NAKACK2", "FD", "PING", "UDP"};
+    final String[] above={"MFC", "TRACE", "UNICAST3", "NAKACK2", "FD", "PING", "UDP"};
 
 
 
@@ -37,11 +37,11 @@ public class ConfiguratorTest {
     
     public void testRemovalOfTop() throws Exception {
         stack.setup(Configurator.parseConfigurations(props));
-        Protocol prot=stack.removeProtocol("FC");
+        Protocol prot=stack.removeProtocol("MFC");
         assert prot != null;
         List<Protocol> protocols=stack.getProtocols();
         Assert.assertEquals(5, protocols.size());
-        assert protocols.get(0).getName().endsWith("UNICAST");
+        assert protocols.get(0).getName().endsWith("UNICAST3");
         assert  stack.getTopProtocol().getUpProtocol() != null;
         assert  stack.getTopProtocol().getDownProtocol() != null;
         assert  stack.getTopProtocol().getDownProtocol().getUpProtocol() != null;
@@ -59,8 +59,8 @@ public class ConfiguratorTest {
     
     public void testAddingAboveTop() throws Exception{
         stack.setup(Configurator.parseConfigurations(props));
-        Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
-        stack.insertProtocol(new_prot, ProtocolStack.ABOVE, FC.class);
+        Protocol new_prot=new TRACE();
+        stack.insertProtocol(new_prot, ProtocolStack.ABOVE, MFC.class);
         List<Protocol> protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());       
         assert protocols.get(0).getName().endsWith("TRACE");
@@ -73,7 +73,7 @@ public class ConfiguratorTest {
     @Test(expectedExceptions={IllegalArgumentException.class})
     public void testAddingBelowBottom() throws Exception{
         stack.setup(Configurator.parseConfigurations(props));           
-        Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
+        Protocol new_prot=new TRACE();
         stack.insertProtocol(new_prot, ProtocolStack.BELOW, UDP.class);
     }
     
@@ -93,7 +93,7 @@ public class ConfiguratorTest {
 
         // insert below
         Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
-        stack.insertProtocol(new_prot, ProtocolStack.BELOW, UNICAST.class);
+        stack.insertProtocol(new_prot, ProtocolStack.BELOW, UNICAST3.class);
         protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());
         for(int i=0; i < below.length; i++) {
@@ -115,7 +115,7 @@ public class ConfiguratorTest {
 
         // insert above
         new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
-        stack.insertProtocol(new_prot, ProtocolStack.ABOVE, UNICAST.class);
+        stack.insertProtocol(new_prot, ProtocolStack.ABOVE, UNICAST3.class);
         protocols=stack.getProtocols();
         Assert.assertEquals(7, protocols.size());
         for(int i=0; i < above.length; i++) {
@@ -126,7 +126,7 @@ public class ConfiguratorTest {
     }
 
 
-    public static void testParsing() throws Exception {
+    public void testParsing() throws Exception {
         String config="UDP(mcast_addr=ff18:eb72:479f::2:3;oob_thread_pool.max_threads=4;" +
                 "oob_thread_pool.keep_alive_time=5000;max_bundle_size=64000;mcast_send_buf_size=640000;" +
                 "oob_thread_pool.queue_max_size=10;mcast_recv_buf_size=25000000;" +

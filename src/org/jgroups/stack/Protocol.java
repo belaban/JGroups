@@ -26,8 +26,8 @@ import java.util.*;
 
 /**
  * The Protocol class provides a set of common services for protocol layers. Each layer has to
- * be a subclass of Protocol and override a number of methods (typically just <code>up()</code>,
- * <code>down()</code> and <code>getName()</code>. Layers are stacked in a certain order to form
+ * be a subclass of Protocol and override a number of methods (typically just {@code up()},
+ * {@code down()} and {@code getName()}. Layers are stacked in a certain order to form
  * a protocol stack. <a href=org.jgroups.Event.html>Events</a> are passed from lower
  * layers to upper ones and vice versa. E.g. a Message received by the UDP layer at the bottom
  * will be passed to its higher layer as an Event. That layer will in turn pass the Event to
@@ -194,7 +194,6 @@ public abstract class Protocol {
 
     /**
      * Sets a SocketFactory. Socket factories are typically provided by the transport ({@link org.jgroups.protocols.TP})
-     * or {@link org.jgroups.protocols.TP.ProtocolAdapter}
      * @param factory
      */
     public void setSocketFactory(SocketFactory factory) {
@@ -372,8 +371,8 @@ public abstract class Protocol {
      * (e.g. removing headers from a MSG event type, or updating the internal membership list
      * when receiving a VIEW_CHANGE event).
      * Finally the event is either a) discarded, or b) an event is sent down
-     * the stack using <code>down_prot.down()</code> or c) the event (or another event) is sent up
-     * the stack using <code>up_prot.up()</code>.
+     * the stack using {@code down_prot.down()} or c) the event (or another event) is sent up
+     * the stack using {@code up_prot.up()}.
      */
     public Object up(Event evt) {
         return up_prot.up(evt);
@@ -430,9 +429,9 @@ public abstract class Protocol {
      * An event is to be sent down the stack. The layer may want to examine its type and perform
      * some action on it, depending on the event's type. If the event is a message MSG, then
      * the layer may need to add a header to it (or do nothing at all) before sending it down
-     * the stack using <code>down_prot.down()</code>. In case of a GET_ADDRESS event (which tries to
+     * the stack using {@code down_prot.down()}. In case of a GET_ADDRESS event (which tries to
      * retrieve the stack's address from one of the bottom layers), the layer may need to send
-     * a new response event back up the stack using <code>up_prot.up()</code>.
+     * a new response event back up the stack using {@code up_prot.up()}.
      */
     public Object down(Event evt) {
         return down_prot.down(evt);

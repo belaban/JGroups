@@ -76,8 +76,6 @@ public class TCP extends BasicTCP {
           .log(this.log))
           .socketFactory(getSocketFactory())
           .peerAddressReadTimeout(peer_addr_read_timeout)
-          .useSendQueues(use_send_queues)
-          .sendQueueSize(send_queue_size)
           .usePeerConnections(true);
 
         if(reaper_interval > 0 || conn_expire_time > 0) {
@@ -104,24 +102,11 @@ public class TCP extends BasicTCP {
 
 
     protected void handleConnect() throws Exception {
-        if(isSingleton()) {
-            if(connect_count == 0) {
-                server.start();
-            }
-            super.handleConnect();
-        }
-        else
-            server.start();
+        server.start();
     }
 
     protected void handleDisconnect() {
-        if(isSingleton()) {
-            super.handleDisconnect();
-            if(connect_count == 0)
-                server.stop();
-        }
-        else
-            server.stop();
+        server.stop();
     }   
 
 

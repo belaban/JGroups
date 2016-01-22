@@ -4,7 +4,6 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 
 import java.util.Arrays;
-import java.util.Collection;
 
 /** Class which captures a bunch of options relevant to remote method invocation or message sending
  * @author Bela Ban
@@ -26,9 +25,6 @@ public class RequestOptions {
 
     /** Allows for filtering of responses */
     protected RspFilter     rsp_filter;
-
-    /** The scope of a message, allows for concurrent delivery of messages from the same sender */
-    protected short         scope;
 
     /** The flags set in the message in which a request is sent */
     protected short         flags; // Message.Flag.OOB, Message.Flag.DONT_BUNDLE etc
@@ -73,7 +69,6 @@ public class RequestOptions {
         this.timeout=opts.timeout;
         this.use_anycasting=opts.use_anycasting;
         this.rsp_filter=opts.rsp_filter;
-        this.scope=opts.scope;
         this.flags=opts.flags;
         this.transient_flags=opts.transient_flags;
         this.exclusion_list=opts.exclusion_list;
@@ -116,15 +111,6 @@ public class RequestOptions {
 
     public RequestOptions useAnycastAddresses(boolean flag) {
         use_anycast_addresses=flag;
-        return this;
-    }
-
-    public short getScope() {
-        return scope;
-    }
-
-    public RequestOptions setScope(short scope) {
-        this.scope=scope;
         return this;
     }
 
@@ -185,10 +171,6 @@ public class RequestOptions {
         return exclusion_list != null;
     }
 
-    @Deprecated
-    public Collection<Address> getExclusionList() {
-        return exclusion_list == null? null : Arrays.asList(exclusion_list);
-    }
 
     public Address[] exclusionList() {
         return exclusion_list;
@@ -214,8 +196,6 @@ public class RequestOptions {
             sb.append(", flags=" + Message.flagsToString(flags));
         if(transient_flags > 0)
             sb.append(", transient_flags=" + Message.transientFlagsToString(transient_flags));
-        if(scope > 0)
-            sb.append(", scope=" + scope);
         if(exclusion_list != null)
             sb.append(", exclusion list: " + Arrays.toString(exclusion_list));
         return sb.toString();

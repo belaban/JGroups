@@ -485,24 +485,6 @@ public class JChannel extends Channel {
     @ManagedAttribute(description="Returns cluster name this channel is connected to")
     public String getClusterName() {return state == State.CONNECTED? cluster_name : null;}
 
-    /**
-     * Returns the first {@link AddressGenerator} in the list, or null if none is set
-     * @return
-     * @since 2.12
-     * @deprecated Doesn't make any sense as there's list of address generators, will be removed in 4.0
-     */
-    @Deprecated
-    public AddressGenerator getAddressGenerator() {
-        return (address_generators == null || address_generators.isEmpty())? null : address_generators.get(0);
-    }
-
-    /**
-     * @deprecated Use {@link #addAddressGenerator(org.jgroups.stack.AddressGenerator)} instead
-     */
-    @Deprecated
-    public void setAddressGenerator(AddressGenerator address_generator) {
-        addAddressGenerator(address_generator);
-    }
 
     /**
      * Sets the new {@link AddressGenerator}. New addresses will be generated using the new generator. This

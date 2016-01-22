@@ -513,10 +513,6 @@ public class RELAY extends Protocol {
             String str=Util.bytesToString(tmp);
             return str != null && str.equals(this.site);
         }
-        else if(dest instanceof TopologyUUID) {
-            String tmp=((TopologyUUID)dest).getSiteId();
-            return tmp != null && tmp.equals(this.site);
-        }
         return true;
     }
 

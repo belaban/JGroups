@@ -35,8 +35,6 @@ public class UNICAST_MessagesToSelfTest {
     @DataProvider
     static Object[][] configProvider() {
         return new Object[][] {
-          {new UNICAST()},
-          {new UNICAST2()},
           {new UNICAST3()}
         };
     }
@@ -79,9 +77,6 @@ public class UNICAST_MessagesToSelfTest {
         if(discard != null)
             stack.addProtocol(discard);
 
-        if(unicast instanceof UNICAST2)
-            unicast.setValue("stable_interval", 3000);
-        
         stack.addProtocol(new SHARED_LOOPBACK_PING())
           .addProtocol(new NAKACK2().setValue("use_mcast_xmit", false))
           .addProtocol(unicast)

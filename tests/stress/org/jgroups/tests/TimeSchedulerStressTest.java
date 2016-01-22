@@ -115,7 +115,7 @@ public class TimeSchedulerStressTest {
         int num_threads=100;
         int num_tasks=100; // to process per thread
         long task_duration=50; // ms
-        TimeScheduler timer=null;
+        TimeScheduler timer=timer=new TimeScheduler3();
 
 
         for(int i=0; i < args.length; i++) {
@@ -131,30 +131,8 @@ public class TimeSchedulerStressTest {
                 task_duration=Long.parseLong(args[++i]);
                 continue;
             }
-            if(args[i].equals("-type")) {
-                String tmp=args[++i];
-                if(tmp.equals("default")) {
-                    timer=new DefaultTimeScheduler(NUM_THREADS_IN_TIMER); // ? That's not what we do in real life !
-                }
-                else if(tmp.equals("new")) {
-                    //timer=new TimeScheduler3(new DefaultThreadFactory("tmp", true, true),
-                      //                       NUM_THREADS_IN_TIMER, NUM_THREADS_IN_TIMER, 5000, 20000, "abort");
-                    timer=new TimeScheduler3();
-                }
-                else {
-                    help();
-                    return;
-                }
-                continue;
-            }
-
             help();
             return;
-        }
-
-        if(timer == null) {
-            System.out.println("timer is null, using DefaultTimeScheduler with " + NUM_THREADS_IN_TIMER + " threads");
-            timer=new DefaultTimeScheduler(NUM_THREADS_IN_TIMER);
         }
 
         TimeSchedulerStressTest test=new TimeSchedulerStressTest(timer, num_threads, num_tasks, task_duration);
@@ -162,7 +140,6 @@ public class TimeSchedulerStressTest {
     }
 
     static void help() {
-        System.out.println("TimeSchedulerStressTest [-type <\"default\" | \"new\">] [-num_threads <num>] [-num_tasks <num>]" +
-                " [-task_duration <ms>]");
+        System.out.println("TimeSchedulerStressTest [-num_threads <num>] [-num_tasks <num>] [-task_duration <ms>]");
     }
 }

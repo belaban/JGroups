@@ -3,7 +3,6 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.TP;
-import org.jgroups.protocols.UNICAST2;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
@@ -375,15 +374,12 @@ public class OOBTest extends ChannelTestBase {
             STABLE stable=(STABLE)ch.getProtocolStack().findProtocol(STABLE.class);
             if(stable != null)
                 stable.gc();
-            UNICAST2 uni=(UNICAST2)ch.getProtocolStack().findProtocol(UNICAST2.class);
-            if(uni != null)
-                uni.sendStableMessages();
         }
     }
 
     private static class BlockingReceiver extends ReceiverAdapter {
         final CountDownLatch latch;
-        final List<Integer>  msgs=Collections.synchronizedList(new LinkedList<Integer>());
+        final List<Integer>  msgs=Collections.synchronizedList(new LinkedList<>());
 
         public BlockingReceiver(CountDownLatch latch) {this.latch=latch;}
 

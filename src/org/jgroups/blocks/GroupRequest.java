@@ -368,9 +368,6 @@ public class GroupRequest<T> extends Request {
                 return num_valid >= 1 || num_received >= num_total;
             case GET_ALL:
                 return num_valid >= num_total || num_received >= num_total;
-            case GET_MAJORITY:
-                int majority=determineMajority(num_total);
-                return num_valid >= majority || num_received >= num_total;
             case GET_NONE:
                 return true;
             default:

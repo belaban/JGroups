@@ -33,14 +33,6 @@ public class DAISYCHAIN extends Protocol {
     @Property(description="Loop back multicast messages")
     boolean loopback=true;
 
-    @Property(description="The number of messages in the forward queue. This queue is used to host messages that " +
-      "need to be forwarded by us on behalf of our neighbor",deprecatedMessage="not used anymore")
-    int forward_queue_size=10000;
-
-    @Property(description="The number of messages in the send queue. This queue is used to host messages that need " +
-      "to be sent",deprecatedMessage="not used anymore")
-    int send_queue_size=10000;
-
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     protected volatile Address       local_addr, next;
     protected int                    view_size=0;
@@ -102,11 +94,7 @@ public class DAISYCHAIN extends Protocol {
                         msg.setSrc(local_addr);
 
                     Executor pool=msg.isFlagSet(Message.Flag.OOB)? oob_pool : default_pool;
-                    pool.execute(new Runnable() {
-                        public void run() {
-                            up_prot.up(evt);
-                        }
-                    });
+                    pool.execute(() -> up_prot.up(evt));
                 }
                 return down_prot.down(new Event(Event.MSG, copy));
 

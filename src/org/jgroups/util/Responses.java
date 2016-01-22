@@ -112,18 +112,6 @@ public class Responses implements Iterable<PingData>, org.jgroups.util.Condition
         return null;
     }
 
-    @Deprecated
-    public List<PingData> get(long timeout) throws InterruptedException {
-        lock.lock();
-        try {
-            waitFor(timeout);
-            return toList();
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-
 
     public boolean waitFor(long timeout) {
         return cond.waitFor(this, timeout, TimeUnit.MILLISECONDS);

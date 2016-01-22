@@ -24,7 +24,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class MessageBatchTest {
-    protected static final short UNICAST2_ID=ClassConfigurator.getProtocolId(UNICAST2.class),
+    protected static final short UNICAST3_ID=ClassConfigurator.getProtocolId(UNICAST3.class),
       PING_ID=ClassConfigurator.getProtocolId(PING.class),
       FD_ID=ClassConfigurator.getProtocolId(FD.class),
       MERGE_ID=ClassConfigurator.getProtocolId(MERGE3.class),
@@ -353,7 +353,7 @@ public class MessageBatchTest {
         MessageBatch batch=new MessageBatch(msgs);
 
         for(Message msg: batch)
-            if(msg.getHeader(UNICAST2_ID) != null)
+            if(msg.getHeader(UNICAST3_ID) != null)
                 batch.remove(msg);
         System.out.println("batch = " + batch);
         assert batch.size() == 3;
@@ -363,7 +363,7 @@ public class MessageBatchTest {
         List<Message> msgs=createMessages();
         MessageBatch batch=new MessageBatch(msgs);
         for(Message msg: batch) {
-            if(msg.getHeader(UNICAST2_ID) != null)
+            if(msg.getHeader(UNICAST3_ID) != null)
                 batch.remove(msg);
         }
         System.out.println("batch = " + batch);
@@ -380,7 +380,7 @@ public class MessageBatchTest {
 
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
             Message msg=it.next();
-            if(msg != null && msg.getHeader(UNICAST2_ID) != null)
+            if(msg != null && msg.getHeader(UNICAST3_ID) != null)
                 it.remove();
         }
         System.out.println("batch = " + batch);
@@ -507,14 +507,14 @@ public class MessageBatchTest {
         List<Message> retval=new ArrayList<>(10);
 
         for(long seqno=1; seqno <= 5; seqno++)
-            retval.add(new Message(b).putHeader(UNICAST2_ID, UNICAST2.Unicast2Header.createDataHeader(seqno, (short)22, false)));
+            retval.add(new Message(b).putHeader(UNICAST3_ID, UNICAST3.Header.createDataHeader(seqno, (short)22, false)));
 
         retval.add(new Message(b).putHeader(PING_ID, new PingHeader(PingHeader.GET_MBRS_RSP).clusterName("demo-cluster")));
         retval.add(new Message(b).putHeader(FD_ID, new FD.FdHeader(org.jgroups.protocols.FD.FdHeader.HEARTBEAT)));
         retval.add(new Message(b).putHeader(MERGE_ID, MERGE3.MergeHeader.createViewResponse()));
 
         for(long seqno=6; seqno <= 10; seqno++)
-            retval.add(new Message(b).putHeader(UNICAST2_ID, UNICAST2.Unicast2Header.createDataHeader(seqno, (short)22, false)));
+            retval.add(new Message(b).putHeader(UNICAST3_ID, UNICAST3.Header.createDataHeader(seqno, (short)22, false)));
 
         for(Message msg: retval)
             msg.putHeader(UDP_ID, new TpHeader("demo-cluster"));

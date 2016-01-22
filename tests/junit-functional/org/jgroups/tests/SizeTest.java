@@ -193,66 +193,6 @@ public class SizeTest {
 
 
 
-
-    public static void testUnicastHeader() throws Exception {
-        UNICAST.UnicastHeader hdr=UNICAST.UnicastHeader.createDataHeader(322649, (short)127, false);
-        _testSize(hdr);
-
-        hdr=UNICAST.UnicastHeader.createDataHeader(322649, Short.MAX_VALUE, false);
-        _testSize(hdr);
-
-        hdr=UNICAST.UnicastHeader.createDataHeader(322649, (short)(Short.MAX_VALUE -10), true);
-        _testSize(hdr);
-
-        hdr=UNICAST.UnicastHeader.createAckHeader(322649,(short)2);
-        _testSize(hdr);
-
-        hdr=UNICAST.UnicastHeader.createSendFirstSeqnoHeader(33333);
-        _testSize(hdr);
-    }
-
-    public static void testUnicast2Header() throws Exception {
-        UNICAST2.Unicast2Header hdr=UNICAST2.Unicast2Header.createDataHeader(322649, (short)127, false);
-        _testSize(hdr);
-        _testMarshalling(hdr);
-
-        hdr=UNICAST2.Unicast2Header.createDataHeader(322649, Short.MAX_VALUE, false);
-        _testSize(hdr);
-        _testMarshalling(hdr);
-
-        hdr=UNICAST2.Unicast2Header.createDataHeader(322649, (short)(Short.MAX_VALUE -10), true);
-        _testSize(hdr);
-        _testMarshalling(hdr);
-
-        hdr=UNICAST2.Unicast2Header.createSendFirstSeqnoHeader(322649);
-        _testSize(hdr);
-        _testMarshalling(hdr);
-
-        hdr=UNICAST2.Unicast2Header.createStableHeader((short)55, 0, 0);
-        _testSize(hdr);
-        _testMarshalling(hdr);
-
-        hdr=UNICAST2.Unicast2Header.createStableHeader((short)55, 0, 1);
-        _testSize(hdr);
-        _testMarshalling(hdr);
-
-        hdr=UNICAST2.Unicast2Header.createStableHeader((short)55, 70000, 100000);
-        _testSize(hdr);
-        _testMarshalling(hdr);
-
-        hdr=UNICAST2.Unicast2Header.createStableHeader((short)55, Integer.MAX_VALUE, (long)Integer.MAX_VALUE+1000);
-        _testSize(hdr);
-        _testMarshalling(hdr);
-
-        hdr=UNICAST2.Unicast2Header.createXmitReqHeader();
-        _testSize(hdr);
-        _testMarshalling(hdr);
-
-        hdr=UNICAST2.Unicast2Header.createSendFirstSeqnoHeader(322649);
-        _testSize(hdr);
-        _testMarshalling(hdr);
-    }
-
     public static void testUnicast3Header() throws Exception {
         UNICAST3.Header hdr=UNICAST3.Header.createDataHeader(322649, (short)127, false);
         _testSize(hdr);
@@ -357,21 +297,12 @@ public class SizeTest {
         mbrs.add(one);
         View v=new View(vid, mbrs);
         _testSize(v);
-        
+
         mbrs.add(Util.createRandomAddress("B"));
         v=new View(vid, mbrs);
         _testSize(v);
 
         mbrs.add(Util.createRandomAddress("C"));
-        v=new View(vid, mbrs);
-        _testSize(v);
-
-        // tests a view with different address types
-        mbrs.add(AdditionalDataUUID.randomUUID("additional", new byte[]{'b', 'e', 'l', 'a'}));
-        v=new View(vid, mbrs);
-        _testSize(v);
-
-        mbrs.add(TopologyUUID.randomUUID("LON", "rack-223", "linux"));
         v=new View(vid, mbrs);
         _testSize(v);
     }
@@ -739,12 +670,6 @@ public class SizeTest {
         addr=new IpAddress("127.0.0.1", 5678);
         _testWriteAddress(addr);
 
-        addr=AdditionalDataUUID.randomUUID("A", new byte[]{'b', 'e', 'l', 'a'});
-        _testWriteAddress(addr);
-
-        addr=PayloadUUID.randomUUID("A", "hello");
-        _testWriteAddress(addr);
-
         addr=new SiteMaster("sfo");
         _testWriteAddress(addr);
     }
@@ -819,25 +744,6 @@ public class SizeTest {
     }
 
 
-    public static void testAdditionalDataUUID() throws Exception {
-        Address uuid=AdditionalDataUUID.randomUUID("A", new byte[]{'b', 'e', 'l', 'a'});
-        System.out.println("uuid = " + uuid);
-        _testSize(uuid);
-
-        uuid=AdditionalDataUUID.randomUUID("A", new byte[]{'b', 'e', 'l', 'a'});
-        byte[] buf=Util.streamableToByteBuffer(uuid);
-        org.jgroups.util.UUID uuid2=(org.jgroups.util.UUID)Util.streamableFromByteBuffer(org.jgroups.util.UUID.class, buf);
-        System.out.println("uuid:  " + uuid);
-        System.out.println("uuid2: " + uuid2);
-        assert uuid.equals(uuid2);
-
-        int hash1=uuid.hashCode(), hash2=uuid2.hashCode();
-        System.out.println("hash 1: " + hash1);
-        System.out.println("hash 2: " + hash2);
-        assert hash1 == hash2;
-    }
-
-
 
     public static void testRequestCorrelatorHeader() throws Exception {
         RequestCorrelator.Header hdr;
@@ -866,7 +772,6 @@ public class SizeTest {
         Assert.assertEquals((short)356, hdr.corrId);
         Assert.assertEquals(RequestCorrelator.Header.RSP, hdr.type);
 
-
         hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, (short)356);
 
         output=new ByteArrayOutputStream();
@@ -894,17 +799,6 @@ public class SizeTest {
         _testSize(hdr);
     }
 
-
-    private static void _testMarshalling(UNICAST2.Unicast2Header hdr) throws Exception {
-        byte[] buf=Util.streamableToByteBuffer(hdr);
-        UNICAST2.Unicast2Header hdr2=(UNICAST2.Unicast2Header)Util.streamableFromByteBuffer(UNICAST2.Unicast2Header.class, buf);
-
-        assert hdr.getType()      == hdr2.getType();
-        assert hdr.getSeqno()     == hdr2.getSeqno();
-        assert hdr.getHighSeqno() == hdr2.getHighSeqno();
-        assert hdr.getConnId()    == hdr2.getConnId();
-        assert hdr.isFirst()      == hdr2.isFirst();
-    }
 
     private static void _testMarshalling(UNICAST3.Header hdr) throws Exception {
         byte[] buf=Util.streamableToByteBuffer(hdr);

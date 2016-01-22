@@ -7,7 +7,6 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.Receiver;
-import org.jgroups.util.AsciiString;
 import org.jgroups.util.Util;
 
 import java.net.InetAddress;
@@ -31,14 +30,6 @@ public abstract class BasicTCP extends TP implements Receiver {
     @Property(description="Max time connection can be idle before being reaped (in ms)")
     protected long        conn_expire_time=0; // max time a conn can be idle before being reaped
 
-    @Deprecated
-    @Property(description="Should separate send queues be used for each connection",deprecatedMessage="will be removed in 4.0")
-    protected boolean     use_send_queues=false;
-
-    @Deprecated
-    @Property(description="Max number of messages in a send queue",deprecatedMessage="will be removed in 4.0")
-    protected int         send_queue_size=2000;
-    
     @Property(description="Receiver buffer size in bytes")
     protected int         recv_buf_size=150000;
     
@@ -87,13 +78,12 @@ public abstract class BasicTCP extends TP implements Receiver {
 
     public void init() throws Exception {
         super.init();
-        if(!isSingleton() && bind_port <= 0) {
+        if(bind_port <= 0) {
             Discovery discovery_prot=(Discovery)stack.findProtocol(Discovery.class);
             if(discovery_prot != null && !discovery_prot.isDynamic())
                 throw new IllegalArgumentException("bind_port cannot be set to " + bind_port +
                                                      ", as no dynamic discovery protocol (e.g. MPING or TCPGOSSIP) has been detected.");
         }
-
         if(reaper_interval > 0 || conn_expire_time > 0) {
             if(conn_expire_time == 0 && reaper_interval > 0) {
                 log.warn("reaper interval (%d) set, but not conn_expire_time, disabling reaping", reaper_interval);
@@ -107,18 +97,8 @@ public abstract class BasicTCP extends TP implements Receiver {
     }
 
 
-    public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {
-        if(!isSingleton())
-            sendToMembers(members, data, offset, length);
-        else {
-            Collection<Address> mbrs=members;
-            if(cluster_name != null && up_prots != null) {
-                ProtocolAdapter prot_ad=(ProtocolAdapter)up_prots.get(cluster_name);
-                if(prot_ad != null)
-                    mbrs=prot_ad.getMembers();
-            }
-            sendToMembers(mbrs, data, offset, length);
-        }
+    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
+        sendToMembers(members, data, offset, length);
     }
 
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {

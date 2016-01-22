@@ -1,7 +1,6 @@
 package org.jgroups.protocols;
 
 
-import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
@@ -9,14 +8,12 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.AsciiString;
 import org.jgroups.util.SuppressLog;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.*;
-import java.util.Collection;
 import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
@@ -55,12 +52,12 @@ public class UDP extends TP {
     /**
      * Traffic class for sending unicast and multicast datagrams. Valid values
      * are (check {@link DatagramSocket#setTrafficClass(int)} ); for details):
-     * <UL>
-     * <LI><CODE>IPTOS_LOWCOST (0x02)</CODE>, <b>decimal 2</b></LI>
-     * <LI><CODE>IPTOS_RELIABILITY (0x04)</CODE><, <b>decimal 4</b>/LI>
-     * <LI><CODE>IPTOS_THROUGHPUT (0x08)</CODE>, <b>decimal 8</b></LI>
-     * <LI><CODE>IPTOS_LOWDELAY (0x10)</CODE>, <b>decimal</b> 16</LI>
-     * </UL>
+     * <ul>
+     * <li>{@code IPTOS_LOWCOST (0x02)}, <b>decimal 2</b></li>
+     * <li>{@code IPTOS_RELIABILITY (0x04)}<, <b>decimal 4</b>/li>
+     * <li>{@code IPTOS_THROUGHPUT (0x08)}, <b>decimal 8</b></li>
+     * <li>{@code IPTOS_LOWDELAY (0x10)}, <b>decimal</b> 16</li>
+     * </ul>
      */
     @Property(description="Traffic class for sending unicast and multicast datagrams. Default is 8")
     protected int tos=8; // valid values: 2, 4, 8 (default), 16
@@ -192,31 +189,19 @@ public class UDP extends TP {
         return sb.toString();
     }
 
-    public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {
-        if(ip_mcast && mcast_addr != null) {
-            _send(mcast_addr.getIpAddress(), mcast_addr.getPort(), true, data, offset, length);
-        }
-        else {
-            if(!isSingleton())
-                sendToMembers(members, data, offset, length);
-            else {
-                Collection<Address> mbrs=members;
-                if(cluster_name != null && up_prots != null) {
-                    ProtocolAdapter prot_ad=(ProtocolAdapter)up_prots.get(cluster_name);
-                    if(prot_ad != null)
-                        mbrs=prot_ad.getMembers();
-                }
-                sendToMembers(mbrs, data, offset, length);
-            }
-        }
+    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
+        if(ip_mcast && mcast_addr != null)
+            _send(mcast_addr.getIpAddress(), mcast_addr.getPort(), data, offset, length);
+        else
+            sendToMembers(members, data, offset, length);
     }
 
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-        _send(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort(), false, data, offset, length);
+        _send(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort(), data, offset, length);
     }
 
 
-    protected void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
+    protected void _send(InetAddress dest, int port, byte[] data, int offset, int length) throws Exception {
         DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
         // using the datagram socket to send multicasts or unicasts (https://issues.jboss.org/browse/JGRP-1765)
         if(sock != null) {
@@ -291,25 +276,11 @@ public class UDP extends TP {
     }
 
     protected void handleConnect() throws Exception {
-        if(isSingleton()) {
-            if(connect_count == 0) {
-                startThreads();
-            }
-            super.handleConnect();
-        }
-        else
-            startThreads();
+        startThreads();
     }
 
     protected void handleDisconnect() {
-        if(isSingleton()) {
-            super.handleDisconnect();
-            if(connect_count == 0) {
-                stopThreads();
-            }
-        }
-        else
-            stopThreads();
+        stopThreads();
     }
 
     /*--------------------------- End of Protocol interface -------------------------- */

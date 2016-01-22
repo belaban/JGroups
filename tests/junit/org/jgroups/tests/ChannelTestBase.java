@@ -164,11 +164,6 @@ public class ChannelTestBase {
 
         public Channel createChannel(boolean unique, int num) throws Exception {
             JChannel c = createChannel(channel_conf);
-            UNICAST2 uni=(UNICAST2)c.getProtocolStack().findProtocol(UNICAST2.class);
-            if(uni != null) {
-                uni.setValue("stable_interval", 5000);
-                uni.setValue("max_bytes", 1000000);
-            }
             if(unique)
                 makeUnique(c, num);
             return c;

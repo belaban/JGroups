@@ -164,7 +164,7 @@ public class UnicastUnitTest {
     protected JChannel create(String name, boolean use_batching) throws Exception {
         Protocol[] protocols={
           new SHARED_LOOPBACK(),
-          new SHARED_LOOPBACK_PING().timeout(1000),
+          new SHARED_LOOPBACK_PING(),
           new NAKACK2(),
           new MAKE_BATCH().sleepTime(100).unicasts(use_batching),
           new UNICAST3(),

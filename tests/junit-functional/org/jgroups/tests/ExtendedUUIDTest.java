@@ -4,7 +4,6 @@ import org.jgroups.Global;
 import org.jgroups.protocols.relay.SiteMaster;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.util.ExtendedUUID;
-import org.jgroups.util.TopologyUUID;
 import org.jgroups.util.UUID;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -216,15 +215,6 @@ public class ExtendedUUIDTest {
         }
     }
 
-    public void testTopologyUUID() {
-        TopologyUUID u1=TopologyUUID.randomUUID("A", "london", "rack-25", "322649");
-        System.out.println("u1 = " + u1);
-        TopologyUUID u2=TopologyUUID.randomUUID("A", "london", "rack-26", "322650");
-        System.out.println("u2 = " + u2);
-        assert u1.isSameSite(u2);
-        assert !u1.isSameRack(u2);
-        assert !u1.isSameMachine(u2);
-    }
 
 
     public void testSiteMaster() {

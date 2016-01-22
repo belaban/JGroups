@@ -12,17 +12,13 @@
     <class id="9" name="org.jgroups.protocols.FILE_PING"/>
     <class id="10" name="org.jgroups.protocols.TCPPING"/>
     <class id="11" name="org.jgroups.protocols.TCPGOSSIP"/>
-    <class id="12" name="org.jgroups.protocols.UNICAST"/>
     <class id="13" name="org.jgroups.protocols.VERIFY_SUSPECT"/>
     <class id="14" name="org.jgroups.protocols.pbcast.GMS"/>
-    <class id="15" name="org.jgroups.protocols.pbcast.NAKACK"/>
     <class id="16" name="org.jgroups.protocols.pbcast.STABLE"/>
     <class id="17" name="org.jgroups.protocols.pbcast.STATE_TRANSFER"/>
     <class id="19" name="org.jgroups.protocols.COMPRESS"/>
-    <class id="20" name="org.jgroups.protocols.FC"/>
     <class id="21" name="org.jgroups.protocols.UDP"/>
     <class id="22" name="org.jgroups.protocols.TCP"/>
-    <class id="23" name="org.jgroups.protocols.TCP_NIO"/>
     <class id="24" name="org.jgroups.protocols.TUNNEL"/>
     <class id="25" name="org.jgroups.protocols.ENCRYPT"/>
     <class id="26" name="org.jgroups.protocols.SEQUENCER"/>
@@ -34,8 +30,6 @@
     <class id="35" name="org.jgroups.protocols.pbcast.STATE_SOCK"/>
     <class id="37" name="org.jgroups.protocols.DISCARD"/>
     <class id="39" name="org.jgroups.protocols.SHARED_LOOPBACK"/>
-    <class id="40" name="org.jgroups.protocols.UNICAST2"/>
-    <class id="41" name="org.jgroups.protocols.SCOPE"/>
     <class id="42" name="org.jgroups.protocols.DAISYCHAIN"/>
     <class id="43" name="org.jgroups.protocols.RELAY"/>
     <class id="44" name="org.jgroups.protocols.MFC"/>
@@ -45,7 +39,6 @@
     <class id="48" name="org.jgroups.protocols.PRIO"/>
     <class id="49" name="org.jgroups.protocols.BPING"/>
     <class id="50" name="org.jgroups.protocols.CENTRAL_LOCK"/>
-    <class id="51" name="org.jgroups.protocols.PEER_LOCK"/>
     <class id="52" name="org.jgroups.protocols.CENTRAL_EXECUTOR"/>
     <class id="53" name="org.jgroups.protocols.COUNTER"/>
     <class id="54" name="org.jgroups.protocols.MERGE3"/>
@@ -64,7 +57,6 @@
     <class id="68" name="org.jgroups.protocols.SASL"/>
     <class id="69" name="org.jgroups.protocols.GOOGLE_PING"/>
     <class id="70" name="org.jgroups.protocols.SEQUENCER2"/>
-    <class id="71" name="org.jgroups.protocols.MERGE2"/>
     <class id="72" name="org.jgroups.protocols.FD_HOST"/>
     <class id="73" name="org.jgroups.protocols.ABP"/>
     <class id="74" name="org.jgroups.protocols.TCP_NIO2"/>

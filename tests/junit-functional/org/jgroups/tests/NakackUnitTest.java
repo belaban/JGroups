@@ -95,7 +95,7 @@ public class NakackUnitTest {
     protected JChannel create(String name, boolean use_batching) throws Exception {
         Protocol[] protocols={
           new SHARED_LOOPBACK(),
-          new SHARED_LOOPBACK_PING().timeout(1000),
+          new SHARED_LOOPBACK_PING(),
           new MAKE_BATCH().sleepTime(100).multicasts(use_batching),
           new NAKACK2(),
           new UNICAST3(),

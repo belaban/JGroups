@@ -278,7 +278,7 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
                                                                  RequestOptions options,
                                                                  FutureListener<RspList<T>> listener) throws Exception {
         GroupRequest<T> req=cast(dests,msg,options,false, listener);
-        return req != null? req : new NullFuture<>(new RspList<T>());
+        return req != null? req : new NullFuture<>(new RspList<>());
     }
 
     /**
@@ -308,8 +308,6 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         }
 
         msg.setFlag(options.getFlags()).setTransientFlag(options.getTransientFlags());
-        if(options.getScope() > 0)
-            msg.setScope(options.getScope());
 
         List<Address> real_dests;
         // we need to clone because we don't want to modify the original
@@ -404,8 +402,6 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         }
 
         msg.setFlag(opts.getFlags()).setTransientFlag(opts.getTransientFlags());
-        if(opts.getScope() > 0)
-            msg.setScope(opts.getScope());
         boolean async_rpc=opts.getMode() == ResponseMode.GET_NONE;
         if(async_rpc)
             rpc_stats.add(RpcStats.Type.UNICAST, dest, false, 0);
@@ -458,8 +454,6 @@ public class MessageDispatcher implements AsyncRequestHandler, ChannelListener, 
         }
 
         msg.setFlag(options.getFlags()).setTransientFlag(options.getTransientFlags());
-        if(options.getScope() > 0)
-            msg.setScope(options.getScope());
         rpc_stats.add(RpcStats.Type.UNICAST, dest, options.getMode() != ResponseMode.GET_NONE, 0);
         UnicastRequest<T> req=new UnicastRequest<>(msg, corr, dest, options);
         if(listener != null)

@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Bits;
 import org.jgroups.util.ForwardQueue;
@@ -11,7 +10,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -32,12 +31,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @MBean(description="Forwards unicast messages to the current coordinator")
 public class FORWARD_TO_COORD extends Protocol {
-
-    @Property(description="The delay (in ms) to wait until we resend a message to member P after P told us that " +
-      "it isn't the coordinator. Thsi can happen when we see P as new coordinator, but P hasn't yet installed the view " +
-      "which makes it coordinator (perhaps due to a slight delay)",deprecatedMessage="not used anymore, will be ignored")
-    @Deprecated
-    protected long                    resend_delay=500;
 
     /** the address of the current coordinator, all msgs are forwarded to it */
     protected volatile Address        coord=null;
@@ -63,7 +56,7 @@ public class FORWARD_TO_COORD extends Protocol {
     public int           getForwardTableSize()  {return fwd_queue.size();}
     @ManagedAttribute(description="Total number of all seqnos maintained for all receivers")
     public int           getDeliveryTableSize() {return fwd_queue.deliveryTableSize();}
-    public List<Integer> providedUpServices()   {return Arrays.asList(Event.FORWARD_TO_COORD);}
+    public List<Integer> providedUpServices()   {return Collections.singletonList(Event.FORWARD_TO_COORD);}
 
     public void start() throws Exception {
         super.start();

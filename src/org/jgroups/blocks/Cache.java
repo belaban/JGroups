@@ -1,25 +1,27 @@
 package org.jgroups.blocks;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.annotations.Experimental;
-import org.jgroups.annotations.Unsupported;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.logging.Log;
+import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
 
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.*;
-import java.io.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put().
  * @author Bela Ban
  */
-@Experimental
-@Unsupported
 public class Cache<K,V> {
     private static final Log log=LogFactory.getLog(Cache.class);
     private final ConcurrentMap<K,Value<V>> map=Util.createConcurrentMap();

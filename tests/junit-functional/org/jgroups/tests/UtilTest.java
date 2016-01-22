@@ -144,7 +144,7 @@ public class UtilTest {
         assert !rc;
     }
 
-    public static void testPrintBytes() {
+    public void testPrintBytes() {
         long num;
         String s;
 

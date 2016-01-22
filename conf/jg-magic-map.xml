@@ -6,10 +6,8 @@
     <class id="6"   name="org.jgroups.protocols.FD_SOCK$FdHeader"/>
     <class id="7"   name="org.jgroups.protocols.FragHeader"/>
     <class id="13"  name="org.jgroups.protocols.PingHeader"/>
-    <class id="21"  name="org.jgroups.protocols.UNICAST$UnicastHeader"/>
     <class id="22"  name="org.jgroups.protocols.VERIFY_SUSPECT$VerifyHeader"/>
     <class id="24"  name="org.jgroups.protocols.pbcast.GMS$GmsHeader"/>
-    <class id="25"  name="org.jgroups.protocols.pbcast.NakAckHeader"/>
     <class id="27"  name="org.jgroups.protocols.pbcast.STABLE$StableHeader"/>
     <class id="28"  name="org.jgroups.protocols.pbcast.STATE_TRANSFER$StateHeader"/>
     <class id="30"  name="org.jgroups.Message"/>
@@ -34,17 +32,12 @@
     <class id="68"  name="org.jgroups.util.UUID"/>
     <class id="71"  name="org.jgroups.blocks.RequestCorrelator$Header"/>
     <class id="72"  name="org.jgroups.blocks.RequestCorrelator$MultiDestinationHeader"/>
-    <class id="73"  name="org.jgroups.protocols.UNICAST2$Unicast2Header"/>
-    <class id="74"  name="org.jgroups.protocols.SCOPE$ScopeHeader"/>
     <class id="75"  name="org.jgroups.blocks.mux.MuxHeader"/>
     <class id="76"  name="org.jgroups.protocols.DAISYCHAIN$DaisyHeader"/>
     <class id="77"  name="org.jgroups.protocols.RELAY$RelayHeader"/>
     <class id="78"  name="org.jgroups.protocols.STOMP$StompHeader"/>
     <class id="80"  name="org.jgroups.protocols.PrioHeader"/>
     <class id="81"  name="org.jgroups.protocols.Locking$LockingHeader"/>
-    <class id="82"  name="org.jgroups.util.PayloadUUID"/>
-    <class id="83"  name="org.jgroups.util.AdditionalDataUUID"/>
-    <class id="84"  name="org.jgroups.util.TopologyUUID"/>
     <class id="85"  name="org.jgroups.protocols.Executing$ExecutorHeader"/>
     <class id="86"  name="org.jgroups.protocols.Executing$Request"/>
     <class id="87"  name="org.jgroups.blocks.executor.ExecutionService$RunnableAdapter"/>
@@ -61,8 +54,6 @@
     <class id="98"  name="org.jgroups.protocols.relay.SiteMaster"/>
     <class id="99"  name="org.jgroups.protocols.relay.RELAY2$Relay2Header"/>
     <class id="100" name="org.jgroups.protocols.FORWARD_TO_COORD$ForwardHeader"/>
-    <class id="101" name="org.jgroups.protocols.relay.CanBeSiteMaster"/>
-    <class id="102" name="org.jgroups.protocols.relay.CanBeSiteMasterTopology"/>
     <class id="103" name="org.jgroups.auth.SimpleToken"/>
     <class id="104" name="org.jgroups.auth.FixedMembershipToken"/>
     <class id="105" name="org.jgroups.auth.MD5Token"/>
@@ -74,7 +65,6 @@
     <class id="111" name="org.jgroups.util.ExtendedUUID"/>
     <class id="112" name="org.jgroups.protocols.SaslHeader"/>
     <class id="113" name="org.jgroups.protocols.SEQUENCER2$SequencerHeader"/>
-    <class id="114" name="org.jgroups.protocols.MERGE2$MergeHeader"/>
     <class id="115" name="org.jgroups.protocols.ABP$ABPHeader"/>
 </magic-number-class-mapping>
 

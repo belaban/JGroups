@@ -74,15 +74,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @Property(description="Timeout to rebroadcast messages. Default is 2000 msec")
     protected long    max_rebroadcast_timeout=2000;
 
-    /**
-     * When not finding a message on an XMIT request, include the last N
-     * stability messages in the error message
-     */
-    @Property(description="Should stability history be printed if we fail in retransmission. Default is false")
-    @Deprecated
-    protected boolean print_stability_history_on_failed_xmit=false;
-
-
     /** If true, logs messages discarded because received from other members */
     @Property(description="discards warnings about promiscuous traffic")
     protected boolean log_discard_msgs=true;

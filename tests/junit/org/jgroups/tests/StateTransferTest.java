@@ -29,7 +29,7 @@ public class StateTransferTest extends ChannelTestBase {
     static final int                     MSG_SEND_COUNT=1000;
     static final String[]                names= {"A", "B", "C", "D"};
     static final int                     APP_COUNT=names.length;
-    static final Class<?>[]              NAK_PROTS={NAKACK2.class,NAKACK.class};
+    static final Class<?>[]              NAK_PROTS={NAKACK2.class};
     static final short[]                 ids=new short[NAK_PROTS.length];
     protected StateTransferApplication[] apps=new StateTransferApplication[APP_COUNT];
 

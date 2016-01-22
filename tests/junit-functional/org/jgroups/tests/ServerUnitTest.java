@@ -268,7 +268,7 @@ public class ServerUnitTest {
     protected static BaseServer create(boolean nio, int port) {
         try {
             BaseServer retval=nio? new NioServer(bind_addr, port).maxSendBuffers(1024)
-              : new TcpServer(bind_addr, port).useSendQueues(false);
+              : new TcpServer(bind_addr, port);
             retval.usePeerConnections(true);
             retval.start();
             return retval;

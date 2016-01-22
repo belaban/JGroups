@@ -66,11 +66,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @Property(description="If true, trashes warnings about retransmission messages not found in the xmit_table (used for testing)")
     protected boolean log_not_found_msgs=true;
 
-    @Property(description="Send an ack for a batch immediately instead of using a delayed ack",
-              deprecatedMessage="replaced by ack_threshold")
-    @Deprecated
-    protected boolean ack_batches_immediately=true;
-
     @Property(description="Send an ack immediately when a batch of ack_threshold (or more) messages is received. " +
       "Otherwise send delayed acks. If 1, ack single messages (similar to UNICAST)")
     protected int     ack_threshold=5;
@@ -754,8 +749,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     /**
-     * Check whether the hashtable contains an entry e for <code>sender</code> (create if not). If
-     * e.received_msgs is null and <code>first</code> is true: create a new AckReceiverWindow(seqno) and
+     * Check whether the hashtable contains an entry e for {@code sender} (create if not). If
+     * e.received_msgs is null and {@code first} is true: create a new AckReceiverWindow(seqno) and
      * add message. Set e.received_msgs to the new window. Else just add the message.
      */
     protected void handleDataReceived(final Address sender, long seqno, short conn_id,  boolean first, final Message msg, Event evt) {
@@ -826,11 +821,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         final AtomicBoolean processing=win.getProcessing();
         if(!win.isEmpty() && !processing.get() /* && seqno < win.getHighestReceived() */) { // commented to handle hd == hr !
             Executor pool=getTransport().getDefaultThreadPool();
-            pool.execute(new Runnable() {
-                public void run() {
-                    if(processing.compareAndSet(false, true))
-                        removeAndDeliver(processing, win, sender);
-                }
+            pool.execute(() -> {
+                if(processing.compareAndSet(false, true))
+                    removeAndDeliver(processing, win, sender);
             });
         }
     }
@@ -1426,8 +1419,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         protected long              last_timestamp; // to prevent out-of-order ACKs from a receiver
 
         public SenderEntry(short send_conn_id) {
-            super(send_conn_id, new Table<Message>(xmit_table_num_rows, xmit_table_msgs_per_row, 0,
-                                                   xmit_table_resize_factor, xmit_table_max_compaction_time));
+            super(send_conn_id, new Table<>(xmit_table_num_rows, xmit_table_msgs_per_row, 0,
+                                            xmit_table_resize_factor, xmit_table_max_compaction_time));
         }
 
         long[]      watermark()                 {return watermark;}

@@ -3,7 +3,6 @@ package org.jgroups.blocks.cs;
 import org.jgroups.Address;
 import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Buffer;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
@@ -11,8 +10,6 @@ import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -25,10 +22,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class TcpConnection extends Connection {
     protected final Socket           sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
     protected final ReentrantLock    send_lock=new ReentrantLock(); // serialize send()
-    protected static final Buffer    termination=new Buffer(cookie);
     protected DataOutputStream       out;
     protected DataInputStream        in;
-    protected volatile Sender        sender;
     protected volatile Receiver      receiver;
     protected final TcpBaseServer    server;
 
@@ -67,10 +62,6 @@ public class TcpConnection extends Connection {
 
     protected long getTimestamp() {
         return server.timeService() != null? server.timeService().timestamp() : System.nanoTime();
-    }
-
-    protected boolean isSenderUsed(){
-        return server.sendQueueSize() > 0 && server.use_send_queues;
     }
 
     protected String getSockAddress() {
@@ -115,12 +106,6 @@ public class TcpConnection extends Connection {
         if(receiver != null)
             receiver.stop();
         receiver=new Receiver(server.factory).start();
-
-        if(isSenderUsed()) {
-            if(sender != null)
-                sender.stop();
-            sender=new Sender(server.factory, server.sendQueueSize()).start();
-        }
     }
 
 
@@ -132,13 +117,17 @@ public class TcpConnection extends Connection {
      * @param length
      */
     public void send(byte[] data, int offset, int length) throws Exception {
-        if(sender != null) {
-            byte[] copy=new byte[length];
-            System.arraycopy(data, offset, copy, 0, length);
-            sender.addToQueue(new Buffer(copy, 0, length));
+        send_lock.lock();
+        try {
+            doSend(data, offset, length, true, true);
+            updateLastAccessed();
         }
-        else
-            _send(data, offset, length, true, true);
+        catch(InterruptedException iex) {
+            Thread.currentThread().interrupt(); // set interrupt flag again
+        }
+        finally {
+            send_lock.unlock();
+        }
     }
 
     public void send(ByteBuffer buf) throws Exception {
@@ -155,30 +144,6 @@ public class TcpConnection extends Connection {
         }
     }
 
-    /**
-     * Sends data using the 'out' output stream of the socket
-     *
-     * @param data
-     * @param offset
-     * @param length
-     * @param acquire_lock
-     * @throws Exception
-     */
-    protected void _send(byte[] data, int offset, int length, boolean acquire_lock, boolean flush) throws Exception {
-        if(acquire_lock)
-            send_lock.lock();
-        try {
-            doSend(data, offset, length, acquire_lock, flush);
-            updateLastAccessed();
-        }
-        catch(InterruptedException iex) {
-            Thread.currentThread().interrupt(); // set interrupt flag again
-        }
-        finally {
-            if(acquire_lock)
-                send_lock.unlock();
-        }
-    }
 
     protected void doSend(byte[] data, int offset, int length, boolean acquire_lock, boolean flush) throws Exception {
         out.writeInt(length); // write the length of the data buffer first
@@ -327,71 +292,6 @@ public class TcpConnection extends Connection {
         }
     }
 
-    protected class Sender implements Runnable {
-        protected final BlockingQueue<Buffer> send_queue;
-        protected final Thread                runner;
-        protected volatile boolean            started=true;
-
-
-        public Sender(ThreadFactory tf, int send_queue_size) {
-            this.runner=tf.newThread(this, "Connection.Sender [" + getSockAddress() + "]");
-            this.send_queue=new LinkedBlockingQueue<>(send_queue_size);
-        }
-
-        public void addToQueue(Buffer data) throws Exception {
-            if(canRun())
-                if (!send_queue.offer(data, server.sock_conn_timeout, TimeUnit.MILLISECONDS))
-                    server.log.warn("%s: discarding message because TCP send_queue is full and hasn't been releasing for %d ms",
-                                    server.local_addr, server.sock_conn_timeout);
-        }
-
-        public Sender start() {
-            started=true;
-            runner.start();
-            return this;
-        }
-
-        public Sender stop() {
-            send_queue.offer(termination); // cookie is the termination signal
-            started=false;
-            return this;
-        }
-
-        public boolean isRunning() {
-            return started;
-        }
-
-        public boolean canRun() {
-            return isRunning() && isConnected();
-        }
-
-        public void run() {
-            Throwable t=null;
-            while(canRun()) {
-                Buffer data=null;
-                try {
-                    data=send_queue.take();
-                    if(data.hashCode() == termination.hashCode())
-                        break;
-                }
-                catch(InterruptedException e) {
-                    t=e;
-                    break;
-                }
-
-                if(data != null) {
-                    try {
-                        _send(data.getBuf(), 0, data.getLength(), false, send_queue.isEmpty());
-                    }
-                    catch(Throwable ignored) {
-                        t=ignored;
-                    }
-                }
-            }
-            server.notifyConnectionClosed(TcpConnection.this, String.format("%s: %s", getClass().getSimpleName(),
-                                                                            t != null? t.toString() : "normal stop"));
-        }
-    }
 
     public String toString() {
         Socket tmp_sock=sock;
@@ -432,10 +332,6 @@ public class TcpConnection extends Connection {
             if(receiver != null) {
                 receiver.stop();
                 receiver=null;
-            }
-            if(sender != null) {
-                sender.stop();
-                sender=null;
             }
         }
         finally {

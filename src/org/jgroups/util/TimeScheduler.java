@@ -23,7 +23,7 @@ public interface TimeScheduler {
 
     /** The interface that dynamic tasks
      * ({@link TimeScheduler#scheduleWithDynamicInterval(org.jgroups.util.TimeScheduler.Task)}) must implement */
-    public interface Task extends Runnable {
+    interface Task extends Runnable {
         /** @return the next scheduled interval in ms. If <= 0 the task will not be re-scheduled */
         long nextInterval();
     }
@@ -37,7 +37,7 @@ public interface TimeScheduler {
      * if task cannot be accepted for execution because the executor has been shut down.
      * @throws NullPointerException if command is null
      */
-    public void execute(Runnable command);
+    void execute(Runnable command);
     
 
     /**
@@ -51,7 +51,7 @@ public interface TimeScheduler {
      * @throws java.util.concurrent.RejectedExecutionException if the task cannot be scheduled for execution
      * @throws NullPointerException if command is null
      */
-    public Future<?> schedule(Runnable command, long delay, TimeUnit unit);
+    Future<?> schedule(Runnable command, long delay, TimeUnit unit);
 
 
     
@@ -71,7 +71,7 @@ public interface TimeScheduler {
      * @throws NullPointerException if command is null
      * @throws IllegalArgumentException if delay less than or equal to zero
      */
-    public Future<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);
+    Future<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);
 
 
       /**
@@ -99,7 +99,7 @@ public interface TimeScheduler {
      * @throws NullPointerException if command is null
      * @throws IllegalArgumentException if period less than or equal to zero
      */
-    public Future<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit);
+      Future<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit);
 
 
     
@@ -110,64 +110,64 @@ public interface TimeScheduler {
      * The task is never done until nextInterval() return a value <= 0 or the task is cancelled.
      * @param task the task to execute
      */
-    public Future<?> scheduleWithDynamicInterval(Task task);
+    Future<?> scheduleWithDynamicInterval(Task task);
 
 
-    public void setThreadFactory(ThreadFactory factory);
+    void setThreadFactory(ThreadFactory factory);
 
     /**
      * Returns a list of tasks currently waiting for execution. If there are a lot of tasks, the returned string
      * should probably only return the number of tasks rather than a full dump.
      * @return
      */
-    public String dumpTimerTasks();
+    String dumpTimerTasks();
 
     /**
      * Returns the configured core threads, or -1 if not applicable
      * @return
      */
-    public int getMinThreads();
+    int getMinThreads();
 
     /** Sets the core pool size. Can be ignored if not applicable */
-    public void setMinThreads(int size);
+    void setMinThreads(int size);
 
 
     /**
      * Returns the configured max threads, or -1 if not applicable
      * @return
      */
-    public int getMaxThreads();
+    int getMaxThreads();
 
     /** Sets the max pool size. Can be ignored if not applicable */
-    public void setMaxThreads(int size);
+    void setMaxThreads(int size);
 
     /** Returns the keep alive time (in ms) of the thread pool, or -1 if not applicable */
-    public long getKeepAliveTime();
+    long getKeepAliveTime();
 
     /** Sets the keep alive time (in ms) of the thread pool. Can be ignored if not applicable */
-    public void setKeepAliveTime(long time);
+    void setKeepAliveTime(long time);
 
 
     /**
      * Returns the current threads in the pool, or -1 if not applicable
      * @return
      */
-    public int getCurrentThreads();
+    int getCurrentThreads();
 
 
     /**
      * Returns the number of tasks currently in the queue.
      * @return The number of tasks currently in the queue.
      */
-    public int size();
+    int size();
 
 
     /**
      * Stops the scheduler if running, cancelling all pending tasks
      */
-    public void stop();
+    void stop();
     
 
     /** Returns true if stop() has been called, false otherwise */
-    public boolean isShutdown();
+    boolean isShutdown();
 }

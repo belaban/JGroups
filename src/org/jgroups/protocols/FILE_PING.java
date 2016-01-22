@@ -33,9 +33,6 @@ public class FILE_PING extends Discovery {
     @Property(description="The absolute path of the shared file")
     protected String location=File.separator + "tmp" + File.separator + "jgroups";
 
-    @Deprecated @Property(description="Interval (in milliseconds) at which the own Address is written. 0 disables it.")
-    protected long interval=60000;
-
     @Property(description="If true, on a view change, the new coordinator removes files from old coordinators")
     protected boolean remove_old_coords_on_view_change=false;
 

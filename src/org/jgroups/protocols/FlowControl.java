@@ -79,16 +79,7 @@ public abstract class FlowControl extends Protocol {
     @Property(description="Computed as max_credits x min_theshold unless explicitly set")
     protected long min_credits=0;
     
-    /**
-     * Whether an up thread that comes back down should be allowed to bypass blocking if all credits are exhausted.
-     * Avoids JGRP-465. Set to false by default in 2.5 because we have OOB messages for credit replenishments -
-     * this flag should not be set to true if the concurrent stack is used
-     */
-    @Property(description="Does not block a down message if it is a result of handling an up message in the" +
-            "same thread. Fixes JGRP-928",deprecatedMessage="not used any longer")
-    protected boolean ignore_synchronous_response=false;
-    
-    
+
     
     
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */

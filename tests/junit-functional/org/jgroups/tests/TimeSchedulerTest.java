@@ -120,10 +120,7 @@ public class TimeSchedulerTest {
             int num_executions=task.getNumExecutions();
             System.out.println("number of task executions=" + num_executions);
             assert num_executions ==0 : "task should never have executed as it was cancelled before execution";
-            if(timer instanceof DefaultTimeScheduler)
-                ((DefaultTimeScheduler)timer).purge(); // removes cancelled tasks
-            else
-                Util.sleep(1000);
+            Util.sleep(1000);
             assert timer.size() == 0;
         }
         finally {
@@ -148,10 +145,7 @@ public class TimeSchedulerTest {
             int num_executions=task.getNumExecutions();
             System.out.println("number of task executions=" + num_executions);
             assert num_executions >= 1 : "task should have executed at least 1 time, as it was cancelled after 500ms";
-            if(timer instanceof DefaultTimeScheduler)
-                ((DefaultTimeScheduler)timer).purge(); // removes cancelled tasks
-            else
-                Util.sleep(1000);
+            Util.sleep(1000);
             assert timer.size() == 0 : " timer size should be 0, but is " + size;
         }
         finally {

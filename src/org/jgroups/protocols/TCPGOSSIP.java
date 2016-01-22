@@ -44,10 +44,6 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
     @Property(description="Max time for socket creation. Default is 1000 msec")
     int sock_conn_timeout=1000;
 
-    @Property(description="Max time in milliseconds to block on a read. 0 blocks forever")
-    @Deprecated
-    int sock_read_timeout=3000;
-
     @Property(description="Interval (ms) by which a disconnected stub attempts to reconnect to the GossipRouter")
     long reconnect_interval=10000L;
     

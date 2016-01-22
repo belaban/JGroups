@@ -13,13 +13,13 @@ public class CustomProtocolTest {
 
     static final String PROTOCOL_STACK = "UDP(mcast_port=45566;ip_ttl=32):" +
             "org.jgroups.tests.CustomProtocolTest$MyProtocol:" +
-            "PING(timeout=3000;num_initial_members=6):" +
+            "PING:" +
             "FD(timeout=3000):" +
             "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.NAKACK(retransmit_timeout=600,1200,2400,4800):" +
-            "UNICAST(timeout=600,1200,2400,4800):" +
+            "pbcast.NAKACK2(xmit_interval=500):" +
+            "UNICAST3(xmit_interval=500):" +
             "pbcast.STABLE(desired_avg_gossip=10000):" +
-            "FRAG:" +
+            "FRAG2:" +
             "pbcast.GMS(join_timeout=5000;" +
             "print_local_addr=true)";
 

@@ -32,8 +32,6 @@ public class UNICAST_ConnectionTests {
     @DataProvider
     static Object[][] configProvider() {
         return new Object[][]{
-          {UNICAST.class},
-          {UNICAST2.class},
           {UNICAST3.class}
         };
     }
@@ -123,8 +121,6 @@ public class UNICAST_ConnectionTests {
      */
     @Test(dataProvider="configProvider")
     public void testBClosingUnilaterally(Class<? extends Protocol> unicast) throws Exception {
-        if(unicast.equals(UNICAST2.class))
-            return; // UNICAST2 always fails this test (due to its design), so skip it
         setup(unicast);
         sendToEachOtherAndCheck(10);
 
@@ -248,14 +244,9 @@ public class UNICAST_ConnectionTests {
 
 
     protected Header createDataHeader(Protocol unicast, long seqno, short conn_id, boolean first) {
-        if(unicast instanceof UNICAST)
-            return UNICAST.UnicastHeader.createDataHeader(seqno,conn_id, first);
-        if(unicast instanceof UNICAST2)
-            return UNICAST2.Unicast2Header.createDataHeader(seqno, conn_id, first);
         if(unicast instanceof UNICAST3)
             return UNICAST3.Header.createDataHeader(seqno, conn_id, first);
-        throw new IllegalArgumentException("protocol " + unicast.getClass().getSimpleName() + " needs to be " +
-                                             "UNICAST, UNICAST2 or UNICAST3");
+        throw new IllegalArgumentException("protocol " + unicast.getClass().getSimpleName() + " needs to be UNICAST3");
     }
 
 
@@ -302,15 +293,7 @@ public class UNICAST_ConnectionTests {
     }
 
     protected void removeConnection(Protocol prot, Address target, boolean remove) {
-        if(prot instanceof UNICAST) {
-            UNICAST unicast=(UNICAST)prot;
-            unicast.removeConnection(target);
-        }
-        else if(prot instanceof UNICAST2) {
-            UNICAST2 unicast=(UNICAST2)prot;
-            unicast.removeConnection(target);
-        }
-        else if(prot instanceof UNICAST3) {
+        if(prot instanceof UNICAST3) {
             UNICAST3 unicast=(UNICAST3)prot;
             if(remove)
                 unicast.removeReceiveConnection(target);
@@ -318,7 +301,7 @@ public class UNICAST_ConnectionTests {
                 unicast.closeConnection(target);
         }
         else
-            throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST, UNICAST2 or UNICAST3");
+            throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST3");
     }
 
 
@@ -329,8 +312,6 @@ public class UNICAST_ConnectionTests {
 
     protected JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
         Protocol unicast=unicast_class.newInstance();
-        if(unicast instanceof UNICAST2)
-            unicast.setValue("stable_interval", 1000);
         return new JChannel(new SHARED_LOOPBACK(), unicast).name(name);
     }
 

@@ -3,7 +3,6 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.DUPL;
-import org.jgroups.protocols.UNICAST2;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
@@ -175,14 +174,6 @@ public class DuplicateTest extends ChannelTestBase {
         }
     }
 
-
-    private static void sendUnicastStableMessages(JChannel ... channels) {
-        for(JChannel ch: channels) {
-            UNICAST2 unicast=(UNICAST2)ch.getProtocolStack().findProtocol(UNICAST2.class);
-            if(unicast != null)
-                unicast.sendStableMessages();
-        }
-    }
 
 
     private void createChannels(boolean copy_multicasts, boolean copy_unicasts, int num_outgoing_copies, int num_incoming_copies) throws Exception {

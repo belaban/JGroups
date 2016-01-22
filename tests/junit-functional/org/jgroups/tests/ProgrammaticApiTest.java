@@ -43,43 +43,6 @@ public class ProgrammaticApiTest {
     }
 
 
-    public void testSharedTransport() throws Exception {
-        ProtocolStack stack1=new ProtocolStack(), stack2=new ProtocolStack();
-        c1.setProtocolStack(stack1);
-        c2.setProtocolStack(stack2);
-
-        MyReceiver receiver1=new MyReceiver("A"), receiver2=new MyReceiver("B");
-
-        UDP shared_transport=(UDP)new UDP().setValue("singleton_name", "shared");
-
-        stack1.addProtocol(shared_transport).addProtocols(createProtocols());
-        stack2.addProtocol(shared_transport).addProtocols(createProtocols());
-
-        stack1.init();
-        stack2.init();
-
-        c1.setReceiver(receiver1);
-        c2.setReceiver(receiver2);
-
-        c1.connect("cluster-one");
-        c2.connect("cluster-two");
-
-        for(int i=0; i < 10; i++)
-            c1.send(new Message(null, null, "hello-" + i));
-
-        for(int i=0; i < 5; i++)
-            c2.send(new Message(null, null, "hello-" + i));
-
-        for(int i =0; i < 20; i++) {
-            if(receiver1.getNumMsgsReceived() == 10 && receiver2.getNumMsgsReceived() == 5)
-                break;
-            Util.sleep(500);
-        }
-        assert receiver1.getNumMsgsReceived() == 10 : "num msgs for A: " + receiver1.getNumMsgsReceived() + " (expected=10)";
-        assert receiver2.getNumMsgsReceived() == 5 : "num msgs for B: " + receiver1.getNumMsgsReceived() + " (expected=5)";
-    }
-
-
 
     protected static class MockProtocol1 extends Protocol {
 

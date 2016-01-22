@@ -11,7 +11,6 @@ import org.jgroups.stack.GossipData;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.stack.RouterStubManager;
-import org.jgroups.util.AsciiString;
 import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.Util;
 
@@ -24,7 +23,7 @@ import java.util.List;
 /**
  * Replacement for UDP. Instead of sending packets via UDP, a TCP connection is opened to a Router
  * (using the RouterStub client-side stub), the IP address/port of which was given using channel
- * properties <code>router_host</code> and <code>router_port</code>. All outgoing traffic is sent
+ * properties {@code router_host} and <code>router_port</code>. All outgoing traffic is sent
  * via this TCP socket to the Router which distributes it to all connected TUNNELs in this group.
  * Incoming traffic received from Router will simply be passed up the stack.
  * 
@@ -129,11 +128,6 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         super.init();
         if (timer == null)
             throw new Exception("timer cannot be retrieved from protocol stack");
-      
-        // TODO [JGRP-1194] - Revisit implementation of TUNNEL and shared transport
-        if (isSingleton())
-            throw new Exception("TUNNEL and shared transport mode are not supported!");
-
         if(gossip_router_hosts.isEmpty())
             throw new IllegalStateException("gossip_router_hosts needs to contain at least one address of a GossipRouter");
         log.debug("GossipRouters are:" + gossip_router_hosts.toString());
@@ -222,7 +216,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     }
 
 
-    public void sendMulticast(AsciiString cluster_name, byte[] data, int offset, int length) throws Exception {
+    public void sendMulticast(byte[] data, int offset, int length) throws Exception {
         throw new UnsupportedOperationException("sendMulticast() should not get called on TUNNEL");
     }
 

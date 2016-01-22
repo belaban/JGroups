@@ -18,19 +18,18 @@ import java.util.concurrent.CountDownLatch;
  * @version $Revision: 1.23 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
-    Channel             channel;
-    RpcDispatcher       disp;
-    String              props=null;
-    boolean             server=false; // role is client by default
-    boolean             jmx=false;
-    int                 num=1000;
-    int                 num_threads=1;
-    static final long   TIMEOUT=10000;
-    final Method[]      METHODS=new Method[1];
-    final Object[]      EMPTY_OBJECT_ARRAY={};
-    final Class[]       EMPTY_CLASS_ARRAY={};
-    private long        sleep=0;
-    private boolean     async, oob;
+    Channel               channel;
+    RpcDispatcher         disp;
+    String                props=null;
+    boolean               server=false; // role is client by default
+    boolean               jmx=false;
+    int                   num=1000;
+    int                   num_threads=1;
+    static final long     TIMEOUT=10000;
+    final Method[]        METHODS=new Method[1];
+    private long          sleep=0;
+    private final boolean async;
+    private final boolean oob;
 
 
     public RpcDispatcherSpeedTest(String props, boolean server, boolean async, boolean oob, int num, int num_threads,
@@ -105,8 +104,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         long    start;
         int     show=num / 10;
 
-        Method measure_method=getClass().getMethod("measure", EMPTY_CLASS_ARRAY);
-        MethodCall measure_method_call=new MethodCall(measure_method, EMPTY_OBJECT_ARRAY);
+        Method measure_method=getClass().getMethod("measure");
+        MethodCall measure_method_call=new MethodCall(measure_method);
 
         if(show <=0)
             show=1;
@@ -114,7 +113,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
 
         measure_method_call=new MethodCall((short)0);
         RequestOptions opts=new RequestOptions(request_type, TIMEOUT, false, null,
-                                               Message.Flag.DONT_BUNDLE, Message.NO_FC);
+                                               Message.Flag.DONT_BUNDLE, Message.Flag.NO_FC);
         if(oob)
             opts.setFlags(Message.Flag.OOB);
 

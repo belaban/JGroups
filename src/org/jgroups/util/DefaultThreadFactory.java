@@ -62,10 +62,6 @@ public class DefaultThreadFactory implements ThreadFactory {
         return newThread(r, baseName, null, null);
     }
 
-    public Thread newThread(ThreadGroup group, Runnable r, String name) {
-        return newThread(r, name, null, null);
-    }
-
     protected Thread newThread(Runnable r,
                                String name,
                                String addr,

@@ -7,7 +7,7 @@ import org.jgroups.Header;
 import org.jgroups.Message;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.TpHeader;
-import org.jgroups.protocols.pbcast.NakAckHeader;
+import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.Range;
 import org.jgroups.util.UUID;
@@ -464,7 +464,7 @@ public class MessageTest {
         msg.putHeader(UDP_ID, tp_hdr);
         PingHeader ping_hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName("demo-cluster");
         msg.putHeader(PING_ID, ping_hdr);
-        NakAckHeader nak_hdr=NakAckHeader.createXmitRequestHeader(100, 104, null);
+        NakAckHeader2 nak_hdr=NakAckHeader2.createXmitRequestHeader(Util.createRandomAddress("S"));
         msg.putHeader(NAKACK_ID, nak_hdr);
     }
 

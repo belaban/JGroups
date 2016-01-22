@@ -53,7 +53,6 @@ public class Message implements Streamable {
         OOB((short)            1),           // message is out-of-band
         DONT_BUNDLE(   (short)(1 <<  1)),    // don't bundle message at the transport
         NO_FC(         (short)(1 <<  2)),    // bypass flow control
-        SCOPED(        (short)(1 <<  3)),    // when a message has a scope
         NO_RELIABILITY((short)(1 <<  4)),    // bypass UNICAST(2) and NAKACK
         NO_TOTAL_ORDER((short)(1 <<  5)),    // bypass total order (e.g. SEQUENCER)
         NO_RELAY(      (short)(1 <<  6)),    // bypass relaying (RELAY)
@@ -69,15 +68,6 @@ public class Message implements Streamable {
         public short value() {return value;}
     }
 
-    @Deprecated public static final Flag OOB=Flag.OOB;
-    @Deprecated public static final Flag DONT_BUNDLE=Flag.DONT_BUNDLE;
-    @Deprecated public static final Flag NO_FC=Flag.NO_FC;
-    @Deprecated public static final Flag SCOPED=Flag.SCOPED;
-    @Deprecated public static final Flag NO_RELIABILITY=Flag.NO_RELIABILITY;
-    @Deprecated public static final Flag NO_TOTAL_ORDER=Flag.NO_TOTAL_ORDER;
-    @Deprecated public static final Flag NO_RELAY=Flag.NO_RELAY;
-    @Deprecated public static final Flag RSVP=Flag.RSVP;
-
 
 
     // =========================== Transient flags ==============================
@@ -90,10 +80,6 @@ public class Message implements Streamable {
 
         public short value() {return value;}
     }
-
-    @Deprecated
-    public static final TransientFlag OOB_DELIVERED=TransientFlag.OOB_DELIVERED; // OOB which has already been delivered up the stack
-
 
 
 
@@ -507,15 +493,6 @@ public class Message implements Streamable {
         return true;
     }
 
-
-    public Message setScope(short scope) {
-        Util.setScope(this, scope);
-        return this;
-    }
-
-    public short getScope() {
-        return Util.getScope(this);
-    }
 
     /*---------------------- Used by protocol layers ----------------------*/
 
