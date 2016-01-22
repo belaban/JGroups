@@ -160,9 +160,10 @@ public class UFC extends FlowControl {
         if(sender == null || (cred=sent.get(sender)) == null || increase <= 0)
             return;
 
-        long new_credit=Math.min(max_credits, cred.get() + increase);
-        if(log.isTraceEnabled())
+        if(log.isTraceEnabled()) {
+            long new_credit=Math.min(max_credits, cred.get() + increase);
             log.trace("received %d credits from %s, old credits: %s, new credits: %d", increase, sender, cred, new_credit);
+        }
         cred.increment(increase);
     }
     
