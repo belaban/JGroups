@@ -60,8 +60,6 @@ public class DeliveryManager {
                     msgsToDeliver.add(record.message);
                     iterator.remove();
                 } else {
-                	log.info("record.isDeliverable not not true ???????????????????? ");
-
                     break;
                 }
             }
@@ -98,8 +96,11 @@ public class DeliveryManager {
         long lastDelivery = lastDelivered.longValue();
 
         long lastOrdering = viewManager.getClientLastOrdering(messageOrderInfo, localAddress);
+        //log.info(" lastOrdering =" + lastOrdering + " / " + "lastDelivery =" + lastDelivery
+        		//+ " / " + "thisMessagesOrder =" + thisMessagesOrder);
         if (lastOrdering < 0 || (lastOrdering > 0 && lastOrdering <= lastDelivery)) {
             // lastOrder has already been delivered, so this message is deliverable
+        	// log.info(" condition true, so deliver thisMessagesOrder " + thisMessagesOrder);
             record.isDeliverable = true;
             lastDelivered.set(thisMessagesOrder);
             return true;

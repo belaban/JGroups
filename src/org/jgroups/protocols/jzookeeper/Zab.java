@@ -24,6 +24,8 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.protocols.jzookeeper.Zab2Phases.FollowerMessageHandler;
+import org.jgroups.protocols.jzookeeper.Zab2Phases.MessageHandler;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
@@ -37,7 +39,8 @@ public class Zab extends Protocol {
 	private final static String ProtocolName = "Zab";
 	private final static int numberOfSenderInEachClient = 20;
 	private final AtomicLong zxid = new AtomicLong(0);
-	private ExecutorService executor;
+	private ExecutorService executor1;
+	private ExecutorService executor2;
 	private Address local_addr;
 	private volatile Address leader;
 	private volatile View view;
@@ -51,6 +54,7 @@ public class Zab extends Protocol {
 	private final Map<Long, ZabHeader> queuedProposalMessage = Collections
 			.synchronizedMap(new HashMap<Long, ZabHeader>());
 	private final LinkedBlockingQueue<ZabHeader> queuedMessages = new LinkedBlockingQueue<ZabHeader>();
+	private final LinkedBlockingQueue<ZabHeader> delivery = new LinkedBlockingQueue<ZabHeader>();
 	private ConcurrentMap<Long, Proposal> outstandingProposals = new ConcurrentHashMap<Long, Proposal>();
 	private final Map<MessageId, Message> messageStore = Collections
 			.synchronizedMap(new HashMap<MessageId, Message>());
@@ -63,7 +67,7 @@ public class Zab extends Protocol {
 	private long countMessageFollower = 0;
 	private List<Address> clients = Collections
 			.synchronizedList(new ArrayList<Address>());
-	private ProtocolStats stats;
+	private ProtocolStats stats = new ProtocolStats();
 
 	/*
 	 * Empty constructor
@@ -94,8 +98,10 @@ public class Zab extends Protocol {
 	public void start() throws Exception {
 		super.start();
 		running = true;
-		executor = Executors.newSingleThreadExecutor();
-		executor.execute(new FollowerMessageHandler(this.id));
+		executor1 = Executors.newSingleThreadExecutor();
+		executor1.execute(new FollowerMessageHandler(this.id));
+		executor2 = Executors.newSingleThreadExecutor();
+        executor2.execute(new MessageHandler());
 		log.setLevel("trace");
 
 	}
@@ -138,7 +144,9 @@ public class Zab extends Protocol {
 	@Override
 	public void stop() {
 		running = false;
-		executor.shutdown();
+		executor1.shutdown();
+		executor2.shutdown();
+
 		super.stop();
 	}
 
@@ -199,7 +207,8 @@ public class Zab extends Protocol {
 				}
 				break;
 			case ZabHeader.COMMIT:
-				deliver(hdr.getZxid());
+				delivery.add(hdr);
+				//deliver(hdr.getZxid());
 				break;
 			case ZabHeader.STATS:
 				// log.info(" " + clients);
@@ -694,4 +703,30 @@ public class Zab extends Protocol {
 
 	}
 
+	final class MessageHandler implements Runnable {
+        @Override
+        public void run() {
+        	//if(is_leader)
+        		deliverMessages();
+			log.info("call deliverMessages()");
+
+        }
+
+        private void deliverMessages() {
+			ZabHeader hdrDelivery= null;
+            while (true) {
+    				try {
+    					hdrDelivery = delivery.take();
+    					//log.info("(deliverMessages) deliver zxid = "+ hdrDelivery.getZxid());
+    				} catch (InterruptedException e) {
+    					// TODO Auto-generated catch block
+    					e.printStackTrace();
+    				}          
+					//log.info("(going to call commit ");
+                    deliver(hdrDelivery.getZxid());
+                        
+            }
+        }
+  
+    } 
 }

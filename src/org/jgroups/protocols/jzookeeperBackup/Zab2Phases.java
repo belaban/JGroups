@@ -1,4 +1,4 @@
-package org.jgroups.protocols.jzookeeper;
+package org.jgroups.protocols.jzookeeperBackup;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,7 +24,10 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.protocols.jzookeeper.CSInteraction.MessageHandler;
+import org.jgroups.protocols.jzookeeper.MessageId;
+import org.jgroups.protocols.jzookeeper.Proposal;
+import org.jgroups.protocols.jzookeeper.ProtocolStats;
+import org.jgroups.protocols.jzookeeper.Zab2PhasesHeader;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
@@ -40,8 +43,7 @@ public class Zab2Phases extends Protocol {
 	private final static String ProtocolName = "Zab2Phases";
 	private final static int numberOfSenderInEachClient = 20;
 	private final AtomicLong zxid = new AtomicLong(0);
-	private ExecutorService executor1;
-	private ExecutorService executor2;
+	private ExecutorService executor;
 	private Address local_addr;
 	private volatile Address leader;
 	private volatile View view;
@@ -58,8 +60,6 @@ public class Zab2Phases extends Protocol {
 	private final Map<Long, Zab2PhasesHeader> queuedProposalMessage = Collections
 			.synchronizedMap(new HashMap<Long, Zab2PhasesHeader>());
 	private final LinkedBlockingQueue<Zab2PhasesHeader> queuedMessages = new LinkedBlockingQueue<Zab2PhasesHeader>();
-	private final LinkedBlockingQueue<Zab2PhasesHeader> delivery = new LinkedBlockingQueue<Zab2PhasesHeader>();
-
 	private ConcurrentMap<Long, Proposal> outstandingProposals = new ConcurrentHashMap<Long, Proposal>();
 	private final Map<MessageId, Message> messageStore = Collections
 			.synchronizedMap(new HashMap<MessageId, Message>());
@@ -100,9 +100,10 @@ public class Zab2Phases extends Protocol {
 	public void start() throws Exception {
 		super.start();
 		running = true;
-		executor1 = Executors.newSingleThreadExecutor();
-		executor1.execute(new FollowerMessageHandler(this.id));
+		executor = Executors.newSingleThreadExecutor();
+		executor.execute(new FollowerMessageHandler(this.id));
 		log.setLevel("trace");
+
 	}
 
 	/*
@@ -145,8 +146,7 @@ public class Zab2Phases extends Protocol {
 	@Override
 	public void stop() {
 		running = false;
-		executor1.shutdown();
-		//executor2.shutdown();
+		executor.shutdown();
 		super.stop();
 	}
 
@@ -362,12 +362,6 @@ public class Zab2Phases extends Protocol {
 		// make the first three joined server as ZK servers
 		if (mbrs.size() == 3) {
 			zabMembers.addAll(v.getMembers());
-			log.info("handleViewChange methods ==3****");
-			if(is_leader){
-				executor2 = Executors.newSingleThreadExecutor();
-		        executor2.execute(new MessageHandler());
-			}
-
 		}
 		if (mbrs.size() > 3 && zabMembers.isEmpty()) {
 			for (int i = 0; i < 3; i++) {
@@ -492,19 +486,19 @@ public class Zab2Phases extends Protocol {
 	 * and check if a majority is reached for particular proposal.
 	 */
 	private synchronized void processACK(Message msgACK, Address sender) {
+
 		Zab2PhasesHeader hdr = (Zab2PhasesHeader) msgACK.getHeader(this.id);
 		long ackZxid = hdr.getZxid();
 		if (lastZxidCommitted >= ackZxid) {
 			return;
 		}
-		
 		Proposal p = outstandingProposals.get(ackZxid);
 		if (p == null) {
 			return;
 		}
 		p.AckCount++;
-		//if (isQuorum(p.getAckCount())) {
-			//if (ackZxid == lastZxidCommitted + 1) {
+		if (isQuorum(p.getAckCount())) {
+			if (ackZxid == lastZxidCommitted + 1) {
 				outstandingProposals.remove(ackZxid);
 				if (!stats.isWarmup() && requestQueue.contains(hdr.getMessageId())) {
 					long stf = hdr.getMessageId().getStartLToFP();
@@ -513,14 +507,10 @@ public class Zab2Phases extends Protocol {
 					// " latency = "+((etf - stf)/1000000));
 					stats.addLatencyLToFP((int) (System.nanoTime() - stf));
 				}
-				//log.info("Store zxid "+hdr.getZxid());
-				delivery.add(new Zab2PhasesHeader(Zab2PhasesHeader.DELIVER, hdr.getZxid()));
-				//commit(hdr.getZxid());
-				//log.info("Store zxid "+hdr.getZxid());
-				//log.info("delivery size = "+delivery.size());
-			//} else
-				//System.out.println(">>> Can't commit >>>>>>>>>");
-		//}
+				commit(ackZxid);
+			} else
+				System.out.println(">>> Can't commit >>>>>>>>>");
+		}
 
 	}
 
@@ -528,14 +518,10 @@ public class Zab2Phases extends Protocol {
 	 * This method is invoked by leader and follower.
 	 */
 	private void commit(long zxidd) {
-		//log.info("(inside commit ");
-
 		// Zab2PhasesHeader hdrOrg = queuedProposalMessage.get(zxidd);
 		synchronized (this) {
 			lastZxidCommitted = zxidd;
 		}
-		//log.info("Inside commit, going to call deliver for zxid = "+ zxidd);
-
 		deliver(zxidd);
 		// if (hdrOrg == null) {
 		// log.info("??????????????????????????? Header is null (commit)"
@@ -764,30 +750,4 @@ public class Zab2Phases extends Protocol {
 		}
 
 	}
-
-    final class MessageHandler implements Runnable {
-        @Override
-        public void run() {
-        	if(is_leader){
-        		deliverMessages();
-        	}
-         }
-
-        private void deliverMessages() {
-			Zab2PhasesHeader hdrDelivery= null;
-            while (true) {
-    				try {
-    					hdrDelivery = delivery.take();
-    					//log.info("(deliverMessages) deliver zxid = "+ hdrDelivery.getZxid());
-    				} catch (InterruptedException e) {
-    					// TODO Auto-generated catch block
-    					e.printStackTrace();
-    				}          
-					//log.info("(going to call commit ");
-                    commit(hdrDelivery.getZxid());
-                        
-            }
-        }
-  
-    } 
 }

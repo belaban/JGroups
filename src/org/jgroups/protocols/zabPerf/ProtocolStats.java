@@ -27,8 +27,8 @@ import org.jgroups.protocols.jzookeeper.MessageId;
 public class ProtocolStats {
 	private List<Integer> latencies;
 	private List<Integer> fromfollowerToLeaderF;
-	private List<Integer> fromFToLOneRound;
-
+	private List<Integer> fromFToLOneRound; //point1 catch st and point2 catch et not reliable
+	private List<Integer> forwardOneRound;// use (startTime-PPT)/2 more reliable
 	private List<Integer> fromLeaderToFollowerP;
 	private List<Integer> latencyPropForward;
 	private final Map<MessageId, Long> latencyProposalForwardST;
@@ -65,6 +65,7 @@ public class ProtocolStats {
 		this.latencies = new ArrayList<Integer>();
 		this.fromfollowerToLeaderF = new ArrayList<Integer>();
 		this.fromFToLOneRound = new ArrayList<Integer>();
+		this.forwardOneRound =  new ArrayList<Integer>();
 		this.fromLeaderToFollowerP = new ArrayList<Integer>();
 		this.latencyProp = new ArrayList<Integer>();;
 		this.latencyProposalST= Collections
@@ -77,6 +78,7 @@ public class ProtocolStats {
 		this.commitPTL = new ArrayList<Integer>();
 		this.deliveryProcessTimeFL =  Collections.synchronizedMap(new HashMap<MessageId, Long>());
 		this.deliveryPTime = new ArrayList<Integer>();
+		
 //		this.fromFollowerToLeaderA1 = new ArrayList<Integer>();
 //		this.fromFollowerToLeaderA2 = new ArrayList<Integer>();
 //		this.fromFollowerToLeaderF1 = new ArrayList<Integer>();;
@@ -309,6 +311,10 @@ public class ProtocolStats {
 		fromFToLOneRound.add(latency);
 	}
 	
+	public void addForwardOneRound(int latency){
+		forwardOneRound.add(latency);
+	}
+	
 	public void addLatencyLToFP(int latency){	
 		fromLeaderToFollowerP.add(latency);
 	}
@@ -401,7 +407,8 @@ public class ProtocolStats {
 		int count = 0;
 		long avgTemp = 0;
 		long min = Long.MAX_VALUE, avg = 0, max = Long.MIN_VALUE, FToLFAvg=0, LToFPAvg=0, avgAll=0, latProp=0, latLeader=0;
-		double latPropD=0, FToLFAvgD=0, LToFPAvgD=0, avgAllD=0, latLeaderD=0, ackPTAvg=0, FToLOneRoundF=0, commitPT=0, deliveryPT=0;
+		double latPropD=0, FToLFAvgD=0, LToFPAvgD=0, avgAllD=0, latLeaderD=0, ackPTAvg=0, FToLOneRoundF=0, commitPT=0, 
+				deliveryPT=0, oneRoundF=0;
 		for (long lat : latencies) {
 			if (lat < min) {
 				min = lat;
@@ -459,6 +466,12 @@ public class ProtocolStats {
 				   ackPTAvg += lat;
 				}
 			   ackPTAvg = (double) ackPTAvg/ackProcessTime.size();
+			   
+			   for (long lat : forwardOneRound) {
+				   oneRoundF += lat;
+				}
+			   oneRoundF = (double) oneRoundF/forwardOneRound.size();
+			   
 			   	
 		   }
 			for (long lat :deliveryPTime) {
@@ -492,6 +505,8 @@ public class ProtocolStats {
 			else{
 				outFile.println("Latency From Folower to Leader (round-trip) (Forward) " + (double)(FToLFAvgD)/1000000);
 				outFile.println("ACK process Time " + (double)(ackPTAvg)/1000000);
+				outFile.println("Forward One Round " + (double)(oneRoundF)/1000000);
+
 			}
 			outFile.println("Delivery Process Time " + +(double)(deliveryPT)/1000000);
 		}

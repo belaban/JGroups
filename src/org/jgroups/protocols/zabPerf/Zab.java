@@ -183,6 +183,9 @@ public class Zab extends Protocol {
 					return up_prot.up(new Event(Event.MSG, msg));
 				break;
 			case ZabHeader.REQUEST:
+				if(!is_warmUp && is_leader){
+					stats.addLatencyProposalST(hdr.getMessageId(), System.nanoTime());
+				}
 				forwardToLeader(msg);
 				break;
 			case ZabHeader.RESET:
@@ -203,6 +206,8 @@ public class Zab extends Protocol {
 					}
 					if (!is_warmUp){
 						stats.addAckProcessTime(hdr.getMessageId(), System.nanoTime());
+						long sFTime = hdr.getMessageId().getStartTime();
+						stats.addForwardOneRound((int)(sFTime/2));
 					}
 
 					sendACK(msg, hdr);
@@ -415,7 +420,7 @@ public class Zab extends Protocol {
 				long stp = System.nanoTime();
 				hdrReq.getMessageId().setStartLToFP(stp);
 				hdrReq.getMessageId().setStartTime(stp);
-				stats.addLatencyProposalForwardST(hdrReq.getMessageId(), System.nanoTime());
+				//stats.addLatencyProposalForwardST(hdrReq.getMessageId(), System.nanoTime());
 			}
 			queuedMessages.add(hdrReq);
 		} else {
@@ -692,15 +697,20 @@ public class Zab extends Protocol {
 					Long st = stats.getLatencyProposalST(hdrReq.getMessageId());
 					if (st!=null){
 						stats.removeLatencyProposalST(hdrReq.getMessageId());
-						stats.addLatencyProp((int) (System.nanoTime() - st));
-					}					
-					else{
-						Long stL = stats.getLatencyProposalForwardST(hdrReq.getMessageId());
-						if (stL!=null){
-							stats.removeLatencyProposalForwardST(hdrReq.getMessageId());
-							stats.addLatencyPropForward((int) (System.nanoTime() - stL));
+						int prposalPT = (int) (System.nanoTime() - st);
+						stats.addLatencyProp(prposalPT);
+						if(hdrReq.getType()==ZabHeader.FORWARD){
+							long sftime = hdrProposal.getMessageId().getStartTime();
+							hdrProposal.getMessageId().setStartTime(sftime-prposalPT);
 						}
-				    }
+					}					
+//					else{
+//						Long stL = stats.getLatencyProposalForwardST(hdrReq.getMessageId());
+//						if (stL!=null){
+//							stats.removeLatencyProposalForwardST(hdrReq.getMessageId());
+//							stats.addLatencyPropForward((int) (System.nanoTime() - stL));
+//						}
+//				    }
 				}
 
 				try {

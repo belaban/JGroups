@@ -67,7 +67,6 @@ public class CSInteraction extends Protocol {
     
     private final Map<MessageId, Message> messageStore = Collections.synchronizedMap(new HashMap<MessageId, Message>());
     private final List<Address> zabMembers = new ArrayList<Address>();
-    private AtomicInteger localSequence = new AtomicInteger(); // This nodes sequence number
     private ExecutorService executor;
 
     public CSInteraction() {
@@ -106,7 +105,7 @@ public class CSInteraction extends Protocol {
             case Event.MSG:
                 Message message = (Message) event.getArg();
                 CSInteractionHeader header = (CSInteractionHeader) message.getHeader(id);
-            	log.info("CSInteractionHeader.RESPONSE: "+header);
+            	log.info("Header "+header);
 
                 if (header == null)
                     break;
@@ -137,6 +136,7 @@ public class CSInteraction extends Protocol {
                 return null;
             case Event.SET_LOCAL_ADDRESS:
                 local_addr = (Address) event.getArg();
+                deliveryManager.setLocalAddress(local_addr);
                 break;
         }
         return down_prot.down(event);
@@ -177,8 +177,6 @@ public class CSInteraction extends Protocol {
         Address destination = message.getDest();
         //Store put here, and Forward write to Z to obtain ordering
         if (destination != null && destination instanceof AnycastAddress && !message.isFlagSet(Message.Flag.NO_TOTAL_ORDER)) {
-    		log.info("AnycastAddress  destination " + message);
-
         	sendOrderingRequest(((AnycastAddress) destination).getAddresses(), message);
         }
  

@@ -1,4 +1,4 @@
-package org.jgroups.protocols.jzookeeper;
+package org.jgroups.protocols.zWithInfinspan;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;

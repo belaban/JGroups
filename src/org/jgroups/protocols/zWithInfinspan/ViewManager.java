@@ -41,7 +41,10 @@ public class ViewManager {
 
     public long getClientLastOrdering(MessageOrderInfo messageOrderInfo, Address address) {
         List<Address> destinations = getDestinations(messageOrderInfo);
+       // System.out.println(" In getClientLastOrdering destinations = " + destinations);
+        //System.out.println(" Address = " + address);
         int addressIndex = destinations.indexOf(address);
+       // System.out.println(" addressIndex = " + addressIndex);
         if (addressIndex >= 0)
             return messageOrderInfo.getclientsLastOrder()[addressIndex];
         else

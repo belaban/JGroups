@@ -67,7 +67,6 @@ public class Zab extends Protocol {
 	private final static String outDir = "/home/pg/p13/a6915654/Zab/";
 	private AtomicLong countMessageLeader = new AtomicLong(0);
 	private long countMessageFollower = 0;
-	private boolean is_warmUp = false;
 	private List<Address> clients = Collections
 			.synchronizedList(new ArrayList<Address>());
 	private AtomicLong local = new AtomicLong(0);
@@ -161,7 +160,6 @@ public class Zab extends Protocol {
 		switch (evt.getType()) {
 		case Event.MSG:
 			Message m = (Message) evt.getArg();
-			//handleClientRequest(evt, m);
 			return null; // don't pass down
 		case Event.SET_LOCAL_ADDRESS:
 			local_addr = (Address) evt.getArg();
@@ -188,7 +186,6 @@ public class Zab extends Protocol {
 					return up_prot.up(new Event(Event.MSG, msg));
 				break;
 			case ZabHeader.REQUEST:
-				log.info(" Receive Request");
 				forwardToLeader(msg);
 				break;
 			case ZabHeader.RESET:
@@ -228,17 +225,12 @@ public class Zab extends Protocol {
 			case ZabHeader.SENDMYADDRESS:
 				if (!zabMembers.contains(msg.getSrc())) {
 					clients.add(msg.getSrc());
-					System.out.println("Rceived clients address "
-							+ msg.getSrc());
-				}
+					}
 				break;
 			case ZabHeader.STARTREALTEST:
 				if (!zabMembers.contains(local_addr))
 					return up_prot.up(new Event(Event.MSG, msg));
 				break;
-			case ZabHeader.RESPONSE:
-				handleOrderingResponse(hdr);
-
 			}
 			//s
 			return null;
@@ -275,56 +267,6 @@ public class Zab extends Protocol {
 	/*
 	 * --------------------------------- Private Methods  --------------------------------
 	 */
-
-	/*
-	 * Handling all client requests, processing them according to request type
-	 */
-//	private synchronized void handleClientRequest(Event event, Message message) {
-//		ZabHeader clientHeader = ((ZabHeader) message.getHeader(this.id));
-//
-//        Address destination = message.getDest();
-//        Address zabDestination = null;
-//        //Store put here, and Forward write to Zab box to obtain otdering
-//        if (destination != null && destination instanceof AnycastAddress && !message.isFlagSet(Message.Flag.NO_TOTAL_ORDER)) {
-//			//log.info("-------> AnycastAddress Send to Zab boxes message " + message);
-//        	MessageId messageId = new MessageId(local_addr,
-//			local.getAndIncrement());
-//        	messageStore.put(messageId, message);
-//			//log.info("handleClientRequest---> " + messageId);
-//			//log.info("handleClientRequest---> " + messageId.getId());
-//			//down_prot.up(new Event(Event.MSG, message));
-//
-//        	ZabHeader hdrReq = new ZabHeader(ZabHeader.REQUEST,
-//			messageId);
-//        	indexs.incrementAndGet();
-//        	if (indexs.get() > 2)
-//        		indexs.set(0);
-//        	//log.info("Check indexxxxxxxxxxxxxxx " +indexs.get());
-//        	zabDestination = zabMembers.get(indexs.get());
-//        	Message requestMessage = new Message(zabDestination).putHeader(
-//			this.id, hdrReq);
-//        	//int diff = 1000 - hdrReq.size();
-//        	 //if (diff > 0)
-//        	//message.setBuffer(new byte[diff]); // Necessary to ensure that each msgs size is 1kb, necessary for accurate network measurements
-//        	down_prot.down(new Event(Event.MSG, requestMessage));
-//        }
-//        //Forward start call to all destinations to start the benchmark
-//        else if (clientHeader != null
-//				&& clientHeader.getType() == ZabHeader.BROADCAST) {
-//        	
-//			//log.info("******* Inside if BROADCAST) ");
-//			down_prot.down(new Event(Event.MSG, message));        	
-//        }
-//        else if (destination != null && !(destination instanceof AnycastAddress)) {
-//			//ZabHeader headerCheck = (ZabHeader) message.getHeader(this.id);
-//			//if(headerCheck!=null)
-////			log.info("-------> !(destination instanceof AnycastAddress)) " + headerCheck.getType());
-////			log.info("-------> !(destination instanceof AnycastAddress)) " + message.getHeader(this.id));
-//			down_prot.down(new Event(Event.MSG, message));
-//		}
-//
-//
-//	}
 
 	private void handleViewChange(View v) {
 		List<Address> mbrs = v.getMembers();
@@ -499,13 +441,6 @@ public class Zab extends Protocol {
 
 		}
 
-//		if (hdrOrg == null) {
-//			log.info("??????????????????????????? Header is null (commit)"
-//					+ hdrOrg + " for zxid " + zxidd);
-//			return;
-//		}
-
-
 	}
 	
 	/*
@@ -542,7 +477,6 @@ public class Zab extends Protocol {
 		CSInteractionHeader hdrResponse = new CSInteractionHeader(CSInteractionHeader.RESPONSE, messageOrderInfo);
 		Message msgResponse = new Message(messageOrderInfo.getId()
 				.getOriginator()).putHeader((short) 78, hdrResponse);
-		//log.info("About to send " + messageOrderInfo.getOrdering() + " To "+ messageOrderInfo.getId().getOriginator());
 		down_prot.down(new Event(Event.MSG, msgResponse));
 	}
 	
@@ -550,7 +484,7 @@ public class Zab extends Protocol {
 	private void setLastOrderSequences(MessageOrderInfo messageOrderInfo) {
         long[] clientLastOrder = new long[messageOrderInfo.getDestinations().length];
         List<Address> destinations = getAddresses(messageOrderInfo.getDestinations());
-        log.info("Order N# "+messageOrderInfo.getOrdering()+ " For "+destinations);
+        //log.info("Order N# "+messageOrderInfo.getOrdering()+ " For "+destinations);
         for (int i = 0; i < destinations.size(); i++) {
             Address destination = destinations.get(i);
             if (!orderStore.containsKey(destination)) {
@@ -563,30 +497,6 @@ public class Zab extends Protocol {
         messageOrderInfo.setclientsLastOrder(clientLastOrder);
     }
 
-	/*
-	 * Send replay to client
-	 */
-	private void handleOrderingResponse(ZabHeader hdrResponse) {
-//		Message message = messageStore.get(hdrResponse.getMessageId());
-//		Collection<Address> destinations = ((AnycastAddress) message.getDest()).getAddresses();
-//		if (destinations.contains(local_addr)){
-//			//message.putHeader(this.id, hdrResponse);
-//			up_prot.up(new Event(Event.MSG, message));
-//		}
-//		
-//		ZabHeader broadcast = new ZabHeader(ZabHeader.BROADCAST, hdrResponse.getZxid());
-//		message.putHeader(this.id, broadcast);
-//		for (Address destination : destinations) {
-//	          if (destination.equals(local_addr))
-//	               continue;
-//
-//	          Message messageCopy = message.copy();
-//	          messageCopy.setDest(destination);
-//	          down_prot.down(new Event(Event.MSG, messageCopy));
-//			
-//		}
-
-	}
 	/*
 	 * Check a majority
 	 */
