@@ -363,7 +363,7 @@ public class Zab2Phases extends Protocol {
 		if (mbrs.size() == 3) {
 			zabMembers.addAll(v.getMembers());
 			log.info("handleViewChange methods ==3****");
-			if(is_leader){
+			if(zabMembers.contains(local_addr)){
 				executor2 = Executors.newSingleThreadExecutor();
 		        executor2.execute(new MessageHandler());
 			}
@@ -477,7 +477,7 @@ public class Zab2Phases extends Protocol {
 		} catch (Exception ex) {
 			log.error("failed sending ACK message to Leader");
 		}
-		commit(hdrAck.getZxid());
+		delivery.add(hdrACK);
 
 		// if (hdrAck.getZxid() == lastZxidCommitted + 1) {
 		// outstandingProposals.remove(hdrAck.getZxid());
@@ -551,6 +551,9 @@ public class Zab2Phases extends Protocol {
 	 * the request, replay to the client.
 	 */
 	private void deliver(long dZxid) {
+		synchronized (this) {
+			lastZxidCommitted = dZxid;
+		}
 		Zab2PhasesHeader hdrOrginal = queuedProposalMessage.remove(dZxid);
 		// if (hdrOrginal == null) {
 		// if (log.isInfoEnabled())
@@ -768,9 +771,9 @@ public class Zab2Phases extends Protocol {
     final class MessageHandler implements Runnable {
         @Override
         public void run() {
-        	if(is_leader){
-        		deliverMessages();
-        	}
+			log.info("call deliverMessages()");
+        	deliverMessages();
+
          }
 
         private void deliverMessages() {

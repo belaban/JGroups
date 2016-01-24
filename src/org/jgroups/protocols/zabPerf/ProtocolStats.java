@@ -31,13 +31,13 @@ public class ProtocolStats {
 	private List<Integer> forwardOneRound;// use (startTime-PPT)/2 more reliable
 	private List<Integer> fromLeaderToFollowerP;
 	private List<Integer> latencyPropForward;
-	private final Map<MessageId, Long> latencyProposalForwardST;
+	private  Map<MessageId, Long> latencyProposalForwardST;
 	private List<Integer> latencyProp;
-	private final Map<MessageId, Long> latencyProposalST;
-	private final Map<MessageId, Long>  ackProcessTime;
-	private final Map<MessageId, Long>  commitProcessTimeL;
+	private  Map<MessageId, Long> latencyProposalST;
+	private  Map<MessageId, Long>  ackProcessTime;
+	private  Map<MessageId, Long>  commitProcessTimeL;
 	private List<Integer>  commitPTL;
-	private final Map<MessageId, Long>  deliveryProcessTimeFL;
+	private  Map<MessageId, Long>  deliveryProcessTimeFL;
 	private List<Integer>  deliveryPTime;
 //	private List<Integer> fromFollowerToLeaderA2;
 //	private List<Integer> fromFollowerToLeaderF1;
@@ -53,14 +53,18 @@ public class ProtocolStats {
     private AtomicInteger countMessageLeader;
     private AtomicInteger countTotalMessagesFollowers;
     private AtomicInteger countMessageFollower;
+    private boolean is_warmup = true;
     private static PrintWriter outFile;
     private String outDir;
     private AtomicInteger countDummyCall;
     protected final Log        log=LogFactory.getLog(this.getClass());
-   
-
+	   
+	 public ProtocolStats(){
+	    	
+	    }
   
-	public ProtocolStats(String protocolName, int numberOfClients, int numberOfSenderInEachClient, String outDir) {
+	public ProtocolStats(String protocolName, int numberOfClients, int numberOfSenderInEachClient, String outDir, 
+			boolean stopWarmup) {
 
 		this.latencies = new ArrayList<Integer>();
 		this.fromfollowerToLeaderF = new ArrayList<Integer>();
@@ -94,6 +98,7 @@ public class ProtocolStats {
 	    countTotalMessagesFollowers = new AtomicInteger(0);
 	    this.countDummyCall =  new AtomicInteger(0);
 	    this.outDir = outDir;
+	    this.is_warmup = stopWarmup;
 		try {
 			this.outFile = new PrintWriter(new BufferedWriter(new FileWriter(outDir
 					+ InetAddress.getLocalHost().getHostName() + protocolName +".log", true)));
@@ -290,6 +295,15 @@ public class ProtocolStats {
 	public void incnumReqDelivered() {
 		numReqDelivered.incrementAndGet();
 	}
+	
+
+	public boolean isWarmup() {
+		return is_warmup;
+	}
+
+	public void setWarmup(boolean is_warmup) {
+		this.is_warmup = is_warmup;
+	}
 
 	public void addCountTotalMessagesFollowers(int countTotalMessages) {
 		this.countTotalMessagesFollowers.addAndGet(countTotalMessages);
@@ -480,6 +494,7 @@ public class ProtocolStats {
 			deliveryPT = (double) deliveryPT/deliveryPTime.size();
 		}
 		
+		outFile.println("For Saed");
 		outFile.println("Start");
 		outFile.println(protocolName + "/" + numberOfClients + "/" + numberOfSenderInEachClient);
 		outFile.println("Number of Request Recieved = " + (numRequest));

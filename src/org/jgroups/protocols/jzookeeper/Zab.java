@@ -100,8 +100,6 @@ public class Zab extends Protocol {
 		running = true;
 		executor1 = Executors.newSingleThreadExecutor();
 		executor1.execute(new FollowerMessageHandler(this.id));
-		executor2 = Executors.newSingleThreadExecutor();
-        executor2.execute(new MessageHandler());
 		log.setLevel("trace");
 
 	}
@@ -277,7 +275,6 @@ public class Zab extends Protocol {
 				&& clientHeader.getType() == ZabHeader.START_SENDING) {
 			for (Address client : view.getMembers()) {
 				if (log.isDebugEnabled())
-					log.info("Address to check " + client);
 				if (!zabMembers.contains(client)) {
 					if (log.isDebugEnabled())
 						log.info("Address to check is not zab Members, will send start request to"
@@ -365,6 +362,12 @@ public class Zab extends Protocol {
 		// make the first three joined server as ZK servers
 		if (mbrs.size() == 3) {
 			zabMembers.addAll(v.getMembers());
+			if (zabMembers.contains(local_addr)) {
+				log.info("(going to executor2, handleViewChange  ");
+				executor2 = Executors.newSingleThreadExecutor();
+		        executor2.execute(new MessageHandler());
+			}
+
 		}
 		if (mbrs.size() > 3 && zabMembers.isEmpty()) {
 			for (int i = 0; i < 3; i++) {
@@ -491,7 +494,7 @@ public class Zab extends Protocol {
 		}
 		p.AckCount++;
 		if (isQuorum(p.getAckCount())) {
-			if (ackZxid == lastZxidCommitted + 1) {
+			//if (ackZxid == lastZxidCommitted + 1) {
 				outstandingProposals.remove(ackZxid);
 				if (!stats.isWarmup() && requestQueue.contains(hdr.getMessageId())) {
 					long stf = hdr.getMessageId().getStartLToFP();
@@ -501,8 +504,8 @@ public class Zab extends Protocol {
 					stats.addLatencyLToFP((int) (System.nanoTime() - stf));
 				}
 				commit(ackZxid);
-			} else
-				System.out.println(">>> Can't commit >>>>>>>>>");
+//			} else
+//				System.out.println(">>> Can't commit >>>>>>>>>");
 		}
 
 	}
@@ -707,8 +710,8 @@ public class Zab extends Protocol {
         @Override
         public void run() {
         	//if(is_leader)
-        		deliverMessages();
 			log.info("call deliverMessages()");
+        	deliverMessages();
 
         }
 
@@ -722,7 +725,7 @@ public class Zab extends Protocol {
     					// TODO Auto-generated catch block
     					e.printStackTrace();
     				}          
-					//log.info("(going to call commit ");
+					//log.info("(going to call deliver zxid =  "+ hdrDelivery.getZxid());
                     deliver(hdrDelivery.getZxid());
                         
             }
